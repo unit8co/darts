@@ -6,6 +6,8 @@ Some metrics to compare time series.
 """
 
 import numpy as np
+import pandas as pd
+
 from ..timeseries import TimeSeries
 from darts.utils import _parallel_apply, _build_tqdm_iterator
 from ..utils.statistics import check_seasonality
@@ -941,3 +943,101 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     warped_actual_series, warped_pred_series = alignment.warped()
 
     return metric(warped_actual_series, warped_pred_series)
+
+
+# rho-risk (quantile risk)
+@multi_ts_support
+# @multivariate_support
+def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+             pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+             rho: Union[float, Sequence[float]],
+             start: Union[pd.Timestamp, int, float] = 1,
+             end: Union[pd.Timestamp, int, float] = 1,
+             # intersect: bool = True,
+             *,
+             reduction: Callable[[np.ndarray], float] = np.mean,
+             inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+             n_jobs: int = 1,
+             verbose: bool = False) -> Union[float, np.ndarray]:
+
+    """ rho-risk (:math:`rho`-risk, quantile loss).
+
+    TODO: write docstring !!!!
+
+    # Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic (containing
+    # several samples) predictions :math:`\\hat{y}_t` of shape :math:`T x n`, rho-risk is a metric that quantifies the
+    # accuracy of a quantile :math:`rho` from the predicted value distribution for a specific forecast time span.
+    # .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
+    #           \\min_t{y_t}} \\right|}
+    #
+    # If any of the series is stochastic (containing several samples), the median sample value is considered.
+    #
+    # Parameters
+    # ----------
+    # actual_series
+    #     The `TimeSeries` or `Sequence[TimeSeries]` of actual values.
+    # pred_series
+    #     The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
+    # rho
+    #     The quantile (float [0, 1]) of interest for the risk evaluation.
+    # start
+    #     blabla
+    # end
+    #     blabla2
+    # intersect
+    #     For time series that are overlapping in time without having the same time index, setting `intersect=True`
+    #     will consider the values only over their common time interval (intersection in time).
+    # reduction
+    #     Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
+    #     the metrics of different components in case of multivariate `TimeSeries` instances.
+    # inter_reduction
+    #     Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.
+    #     This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+    #     `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair
+    #     of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise
+    #     metrics.
+    # n_jobs
+    #     The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+    #     passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+    #     (sequential). Setting the parameter to `-1` means using all the available processors.
+    # verbose
+    #     Optionally, whether to print operations progress
+    #
+    # Raises
+    # ------
+    # ValueError
+    #     If :math:`\\max_t{y_t} = \\min_t{y_t}`.
+    #
+    # Returns
+    # -------
+    # float
+    #     The Mean Absolute Ranged Relative Error (MARRE)
+    """
+
+    def rho_loss(y_true: Union[TimeSeries, Sequence[TimeSeries]],
+                 y_hat: Union[TimeSeries, Sequence[TimeSeries]],
+                 rho: Sequence[float]) -> Sequence[Union[float, np.ndarray]]:
+
+        z_true = y_true.sum(axis=0)
+        z_hat = y_hat.sum(axis=0)
+
+        z_hat_rho = z_hat.quantile(q=rho, dim='sample').transpose()
+
+        rho = np.array(rho).reshape((len(rho), 1))
+        left = np.where(z_hat_rho > z_true, 1, 0)
+        right = np.where(z_hat_rho <= z_true, 1, 0)
+
+        rho_losses = 2 * (z_hat_rho - z_true) * (rho * left - (1 - rho) * right)
+        return rho_losses, z_true
+
+    if isinstance(rho, float):
+        rho = [rho]
+
+    start = actual_series.start_time() if start is None else actual_series.get_timestamp_at_point(start)
+    end = actual_series.end_time() if end is None else actual_series.get_timestamp_at_point(end)
+
+    y_true = actual_series[start:end].data_array()
+    y_hat = pred_series[start:end].data_array()
+
+    rho_losses, z_true = rho_loss(y_true, y_hat, rho)
+    return np.array(rho_losses.sum(axis=0) / z_true.sum(axis=0))
