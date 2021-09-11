@@ -144,7 +144,7 @@ class Likelihood(ABC):
 class BernoulliLikelihood(Likelihood):
     def __init__(self, prior_p: Optional[float] = None, prior_strength=1.):
         """
-        Bernoulli Likelihood; can be used to model binary events in {0, 1}
+        Bernoulli distribution; can be used to model binary events in {0, 1}
         https://en.wikipedia.org/wiki/Bernoulli_distribution
 
         It is possible to specify a time-independent prior on the probability parameter `p` to capture a-priori
@@ -190,10 +190,10 @@ class BernoulliLikelihood(Likelihood):
 
 class BetaLikelihood(Likelihood):
     """
-    Beta Likelihood, with (0, 1) support (mind the open interval).
+    Beta distribution, with support in the open (0, 1) interval.
     https://en.wikipedia.org/wiki/Beta_distribution
 
-    It is possible to specify a time-independent priors on the alpha and beta parameters to capture a-priori
+    It is possible to specify time-independent priors on the alpha and beta parameters to capture a-priori
     knowledge about the process. Leaving both to `None` won't be using a prior,
     and corresponds to doing maximum likelihood.
 
@@ -224,7 +224,6 @@ class BetaLikelihood(Likelihood):
 
     def _distr_from_params(self, params):
         alpha, beta = params
-        print('a: {}, b: {}'.format(alpha, beta))
         return _Beta(alpha, beta)
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
@@ -243,10 +242,67 @@ class BetaLikelihood(Likelihood):
         return alpha, beta
 
 
+class CauchyLikelihood(Likelihood):
+    """
+    Cauchy Distribution.
+    https://en.wikipedia.org/wiki/Beta_distribution
+
+    It is possible to specify time-independent priors on the x_0 and gamma parameters to capture a-priori
+    knowledge about the process. Leaving both to `None` won't be using a prior,
+    and corresponds to doing maximum likelihood.
+
+    For the prior parameters, if a scalar value is provided, one value will be used as prior for all components,
+    and if an array-like is provided, one value can be specified per component.
+
+    Parameters
+    ----------
+    prior_xzero
+        location parameter x_0 of the Cauchy distribution (default: None)
+    prior_gamma
+        scale parameter gamma of the Cauchy distribution, strictly positive (default: None)
+    prior_strength
+        strength of the loss regularisation induced by the prior
+    """
+    def __init__(self, prior_xzero=None, prior_gamma=None, prior_strength=1.):
+        self.prior_xzero = prior_xzero
+        self.prior_gamma = prior_gamma
+        _check_strict_positive(self.prior_gamma, 'gamma')
+
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_xzero, self.prior_gamma
+
+    def _distr_from_params(self, params):
+        xzero, gamma = params
+        return _Cauchy(xzero, gamma)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        xzero, gamma = self._params_from_output(model_output)
+
+        # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
+        gamma[gamma < 1e-100] = 1e-100
+
+        distr = _Cauchy(xzero, gamma)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output):
+        output_size = model_output.shape[-1]
+        xzero = model_output[:, :, :output_size // 2]
+        gamma = self.softplus(model_output[:, :, output_size // 2:])
+        return xzero, gamma
+
+
 class GaussianLikelihood(Likelihood):
     def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.):
         """
-        Univariate Gaussian Likelihood
+        Univariate Gaussian distribution.
         Components are modeled by separate univariate distributions, with optional time-independent priors.
 
         It is possible to specify a prior on mu or sigma only. Leaving both to `None` won't be using a prior,
@@ -303,7 +359,7 @@ class GaussianLikelihood(Likelihood):
 class PoissonLikelihood(Likelihood):
     def __init__(self, prior_lambda: Optional[float] = None, prior_strength=1.):
         """
-        Poisson Likelihood; can typically be used to model event counts during time intervals, when the events
+        Poisson distribution; can typically be used to model event counts during time intervals, when the events
         happen independently of the time since the last event.
         https://en.wikipedia.org/wiki/Poisson_distribution
 
@@ -356,7 +412,7 @@ class PoissonLikelihood(Likelihood):
 class NegativeBinomialLikelihood(Likelihood):
     def __init__(self):
         """
-        Negative Binomial Likelihood.
+        Negative Binomial distribution.
         https://en.wikipedia.org/wiki/Negative_binomial_distribution
 
         It does not support priors.
