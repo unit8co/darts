@@ -45,6 +45,8 @@ from torch.distributions import (Normal as _Normal,
                                  Poisson as _Poisson,
                                  NegativeBinomial as _NegativeBinomial,
                                  Bernoulli as _Bernoulli,
+                                 Gamma as _Gamma,
+                                 Gumbel as _Gumbel,
                                  Laplace as _Laplace,
                                  Beta as _Beta,
                                  Exponential as _Exponential,
@@ -163,299 +165,6 @@ class Likelihood(ABC):
         pass
 
 
-class BernoulliLikelihood(Likelihood):
-    def __init__(self, prior_p=None, prior_strength=1.):
-        """
-        Bernoulli distribution.
-
-        https://en.wikipedia.org/wiki/Bernoulli_distribution
-
-        - Univariate discrete distribution.
-        - Support: :math:`\{0, 1\}`.
-        - Parameter: probability :math:`p \in (0, 1)`.
-
-        Parameters
-        ----------
-        prior_p
-            probability :math:`p` of the prior Bernoulli distribution (default: None)
-        prior_strength
-            strength of the loss regularisation induced by the prior
-        """
-        self.prior_p = prior_p
-        _check_in_open_0_1_intvl(self.prior_p, 'p')
-
-        self.sigmoid = nn.Sigmoid()
-        super().__init__(prior_strength)
-
-    @property
-    def _prior_params(self):
-        return (self.prior_p, )
-
-    def _distr_from_params(self, params):
-        p = params[0]
-        return _Bernoulli(p)
-
-    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        model_p = self._params_from_output(model_output)
-        return torch.bernoulli(model_p)
-
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
-    def _params_from_output(self, model_output: torch.Tensor):
-        p = self.sigmoid(model_output)
-        return p
-
-
-class BetaLikelihood(Likelihood):
-    """
-    Beta distribution.
-
-    https://en.wikipedia.org/wiki/Beta_distribution
-
-    - Univariate continuous distribution.
-    - Support: open interval :math:`(0,1)`
-    - Parameters: shape parameters :math:`\\alpha > 0` and :math:`\\beta > 0`.
-
-    Parameters
-    ----------
-    prior_alpha
-        shape parameter :math:`\\alpha` of the Beta distribution, strictly positive (default: None)
-    prior_beta
-        shape parameter :math:`\\beta` distribution, strictly positive (default: None)
-    prior_strength
-        strength of the loss regularisation induced by the prior
-    """
-    def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.):
-        self.prior_alpha = prior_alpha
-        self.prior_beta = prior_beta
-        _check_strict_positive(self.prior_alpha, 'alpha')
-        _check_strict_positive(self.prior_beta, 'beta')
-
-        self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
-
-    @property
-    def _prior_params(self):
-        return self.prior_alpha, self.prior_beta
-
-    def _distr_from_params(self, params):
-        alpha, beta = params
-        return _Beta(alpha, beta)
-
-    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        alpha, beta = self._params_from_output(model_output)
-        distr = _Beta(alpha, beta)
-        return distr.sample()
-
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
-    def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        alpha = self.softplus(model_output[:, :, :output_size // 2])
-        beta = self.softplus(model_output[:, :, output_size // 2:])
-        return alpha, beta
-
-
-class CauchyLikelihood(Likelihood):
-    """
-    Cauchy Distribution.
-
-    https://en.wikipedia.org/wiki/Cauchy_distribution
-
-    - Univariate continuous distribution.
-    - Support: :math:`\mathbb{R}`.
-    - Parameters: location :math:`x_0 \in \mathbb{R}`, scale :math:`\gamma > 0`.
-
-    Due to its fat tails, this distribution is typically harder to estimate,
-    and your mileage may vary. Also be aware that it typically
-    requires a large value for `num_samples` for sampling predictions.
-
-    Parameters
-    ----------
-    prior_xzero
-        location parameter :math:`x_0` of the Cauchy distribution (default: None)
-    prior_gamma
-        scale parameter :math:`\\gamma` of the Cauchy distribution, strictly positive (default: None)
-    prior_strength
-        strength of the loss regularisation induced by the prior
-    """
-    def __init__(self, prior_xzero=None, prior_gamma=None, prior_strength=1.):
-        self.prior_xzero = prior_xzero
-        self.prior_gamma = prior_gamma
-        _check_strict_positive(self.prior_gamma, 'gamma')
-
-        self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
-
-    @property
-    def _prior_params(self):
-        return self.prior_xzero, self.prior_gamma
-
-    def _distr_from_params(self, params):
-        xzero, gamma = params
-        return _Cauchy(xzero, gamma)
-
-    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        xzero, gamma = self._params_from_output(model_output)
-
-        # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
-        gamma[gamma < MIN_CAUCHY_GAMMA_SAMPLING] = MIN_CAUCHY_GAMMA_SAMPLING
-
-        distr = _Cauchy(xzero, gamma)
-        return distr.sample()
-
-    @property
-    def num_parameters(self) -> int:
-        return 2
-
-    def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        xzero = model_output[:, :, :output_size // 2]
-        gamma = self.softplus(model_output[:, :, output_size // 2:])
-        return xzero, gamma
-
-
-class ContinuousBernoulliLikelihood(Likelihood):
-    def __init__(self, prior_lambda=None, prior_strength=1.):
-        """
-        Continuous Bernoulli distribution.
-
-        https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution
-
-        - Univariate continuous distribution.
-        - Support: open interval :math:`(0, 1)`.
-        - Parameter: shape :math:`\\lambda \in (0,1)`
-
-        Parameters
-        ----------
-        prior_lambda
-            shape :math:`\\lambda` of the prior Continuous Bernoulli distribution (default: None)
-        prior_strength
-            strength of the loss regularisation induced by the prior
-        """
-        self.prior_lambda = prior_lambda
-        _check_in_open_0_1_intvl(self.prior_lambda, 'lambda')
-
-        self.sigmoid = nn.Sigmoid()
-        super().__init__(prior_strength)
-
-    @property
-    def _prior_params(self):
-        return (self.prior_lambda, )
-
-    def _distr_from_params(self, params):
-        lmbda = params[0]
-        return _ContinuousBernoulli(lmbda)
-
-    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        model_lmbda = self._params_from_output(model_output)
-        distr = _ContinuousBernoulli(model_lmbda)
-        return distr.sample()
-
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
-    def _params_from_output(self, model_output: torch.Tensor):
-        lmbda = self.sigmoid(model_output)
-        return lmbda
-
-
-class DirichletLikelihood(Likelihood):
-    def __init__(self, prior_alphas=None, prior_strength=1.):
-        """
-        Dirichlet distribution.
-
-        https://en.wikipedia.org/wiki/Dirichlet_distribution
-
-        - Multivariate continuous distribution, modeling all components of a time series jointly.
-        - Support: The :math:`K`-dimensional simplex for series of dimension :math:`K`, i.e.,
-          :math:`x_1, ..., x_K \\text{ with } x_i \in (0,1),\\; \\sum_i^K{x_i}=1`.
-        - Parameter: concentrations :math:`\\alpha_1, ..., \\alpha_K` with :math:`\\alpha_i > 0`.
-
-        Parameters
-        ----------
-        prior_alphas
-            concentrations parameters :math:`\\alpha` of the prior Dirichlet distribution.
-        prior_strength
-            strength of the loss regularisation induced by the prior
-        """
-        self.prior_alphas = prior_alphas
-        _check_strict_positive(self.prior_alphas)
-        self.softmax = nn.Softmax(dim=2)
-        super().__init__(prior_strength)
-
-    @property
-    def _prior_params(self):
-        return (self.prior_alphas, )
-
-    def _distr_from_params(self, params: Tuple):
-        alphas = params[0]
-        return _Dirichlet(alphas)
-
-    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        alphas = self._params_from_output(model_output)
-        distr = _Dirichlet(alphas)
-        return distr.sample()
-
-    @property
-    def num_parameters(self) -> int:
-        return 1  # 1 parameter per component
-
-    def _params_from_output(self, model_output):
-        alphas = self.softmax(model_output)  # take softmax over components
-        return alphas
-
-
-class ExponentialLikelihood(Likelihood):
-    def __init__(self, prior_lambda=None, prior_strength=1.):
-        """
-        Exponential distribution.
-
-        https://en.wikipedia.org/wiki/Exponential_distribution
-
-        - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}^+`.
-        - Parameter: rate :math:`\\lambda > 0`.
-
-        Parameters
-        ----------
-        prior_lambda
-            rate :math:`\\lambda` of the prior exponential distribution (default: None).
-        prior_strength
-            strength of the loss regularisation induced by the prior
-        """
-        self.prior_lambda = prior_lambda
-        _check_strict_positive(self.prior_lambda, 'lambda')
-        self.softplus = nn.Softplus()
-        super().__init__(prior_strength)
-
-    @property
-    def _prior_params(self):
-        return (self.prior_lambda, )
-
-    def _distr_from_params(self, params: Tuple):
-        lmbda = params[0]
-        return _Exponential(lmbda)
-
-    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
-        lmbda = self._params_from_output(model_output)
-        distr = _Exponential(lmbda)
-        return distr.sample()
-
-    @property
-    def num_parameters(self) -> int:
-        return 1
-
-    def _params_from_output(self, model_output: torch.Tensor):
-        lmbda = self.softplus(model_output)
-        return lmbda
-
-
 class GaussianLikelihood(Likelihood):
     def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.):
         """
@@ -465,7 +174,7 @@ class GaussianLikelihood(Likelihood):
 
         - Univariate continuous distribution.
         - Support: :math:`\mathbb{R}`.
-        - Parameters: mean :math:`\\mu \in \mathbb{R}`, standard deviation `\\sigma > 0`.
+        - Parameters: mean :math:`\\mu \in \mathbb{R}`, standard deviation :math:`\\sigma > 0`.
 
         Parameters
         ----------
@@ -544,7 +253,7 @@ class PoissonLikelihood(Likelihood):
 
     @property
     def _prior_params(self):
-        return (self.prior_lambda, )
+        return self.prior_lambda,
 
     def _distr_from_params(self, params):
         lmbda = params[0]
@@ -575,6 +284,9 @@ class NegativeBinomialLikelihood(Likelihood):
         - Univariate discrete distribution.
         - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
         - Parameters: number of failures :math:`r > 0`, success probability :math:`p \in (0, 1)`.
+
+        Behind the scenes the distribution is reparameterized so that the actual outputs of the
+        network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.
         """
         self.softplus = nn.Softplus()
         super().__init__()
@@ -612,4 +324,535 @@ class NegativeBinomialLikelihood(Likelihood):
         return 2
 
 
+class BernoulliLikelihood(Likelihood):
+    def __init__(self, prior_p=None, prior_strength=1.):
+        """
+        Bernoulli distribution.
 
+        https://en.wikipedia.org/wiki/Bernoulli_distribution
+
+        - Univariate discrete distribution.
+        - Support: :math:`\{0, 1\}`.
+        - Parameter: probability :math:`p \in (0, 1)`.
+
+        Parameters
+        ----------
+        prior_p
+            probability :math:`p` of the prior Bernoulli distribution (default: None)
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_p = prior_p
+        _check_in_open_0_1_intvl(self.prior_p, 'p')
+
+        self.sigmoid = nn.Sigmoid()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_p,
+
+    def _distr_from_params(self, params):
+        p = params[0]
+        return _Bernoulli(p)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        model_p = self._params_from_output(model_output)
+        return torch.bernoulli(model_p)
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        p = self.sigmoid(model_output)
+        return p
+
+
+class BetaLikelihood(Likelihood):
+    def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.):
+        """
+        Beta distribution.
+
+        https://en.wikipedia.org/wiki/Beta_distribution
+
+        - Univariate continuous distribution.
+        - Support: open interval :math:`(0,1)`
+        - Parameters: shape parameters :math:`\\alpha > 0` and :math:`\\beta > 0`.
+
+        Parameters
+        ----------
+        prior_alpha
+            shape parameter :math:`\\alpha` of the Beta distribution, strictly positive (default: None)
+        prior_beta
+            shape parameter :math:`\\beta` distribution, strictly positive (default: None)
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_alpha = prior_alpha
+        self.prior_beta = prior_beta
+        _check_strict_positive(self.prior_alpha, 'alpha')
+        _check_strict_positive(self.prior_beta, 'beta')
+
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_alpha, self.prior_beta
+
+    def _distr_from_params(self, params):
+        alpha, beta = params
+        return _Beta(alpha, beta)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        alpha, beta = self._params_from_output(model_output)
+        distr = _Beta(alpha, beta)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output):
+        output_size = model_output.shape[-1]
+        alpha = self.softplus(model_output[:, :, :output_size // 2])
+        beta = self.softplus(model_output[:, :, output_size // 2:])
+        return alpha, beta
+
+
+class CauchyLikelihood(Likelihood):
+    def __init__(self, prior_xzero=None, prior_gamma=None, prior_strength=1.):
+        """
+        Cauchy Distribution.
+
+        https://en.wikipedia.org/wiki/Cauchy_distribution
+
+        - Univariate continuous distribution.
+        - Support: :math:`\mathbb{R}`.
+        - Parameters: location :math:`x_0 \in \mathbb{R}`, scale :math:`\gamma > 0`.
+
+        Due to its fat tails, this distribution is typically harder to estimate,
+        and your mileage may vary. Also be aware that it typically
+        requires a large value for `num_samples` for sampling predictions.
+
+        Parameters
+        ----------
+        prior_xzero
+            location parameter :math:`x_0` of the Cauchy distribution (default: None)
+        prior_gamma
+            scale parameter :math:`\\gamma` of the Cauchy distribution, strictly positive (default: None)
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_xzero = prior_xzero
+        self.prior_gamma = prior_gamma
+        _check_strict_positive(self.prior_gamma, 'gamma')
+
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_xzero, self.prior_gamma
+
+    def _distr_from_params(self, params):
+        xzero, gamma = params
+        return _Cauchy(xzero, gamma)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        xzero, gamma = self._params_from_output(model_output)
+
+        # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
+        gamma[gamma < MIN_CAUCHY_GAMMA_SAMPLING] = MIN_CAUCHY_GAMMA_SAMPLING
+
+        distr = _Cauchy(xzero, gamma)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output):
+        output_size = model_output.shape[-1]
+        xzero = model_output[:, :, :output_size // 2]
+        gamma = self.softplus(model_output[:, :, output_size // 2:])
+        return xzero, gamma
+
+
+class ContinuousBernoulliLikelihood(Likelihood):
+    def __init__(self, prior_lambda=None, prior_strength=1.):
+        """
+        Continuous Bernoulli distribution.
+
+        https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution
+
+        - Univariate continuous distribution.
+        - Support: open interval :math:`(0, 1)`.
+        - Parameter: shape :math:`\\lambda \in (0,1)`
+
+        Parameters
+        ----------
+        prior_lambda
+            shape :math:`\\lambda` of the prior Continuous Bernoulli distribution (default: None)
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_lambda = prior_lambda
+        _check_in_open_0_1_intvl(self.prior_lambda, 'lambda')
+
+        self.sigmoid = nn.Sigmoid()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_lambda,
+
+    def _distr_from_params(self, params):
+        lmbda = params[0]
+        return _ContinuousBernoulli(lmbda)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        model_lmbda = self._params_from_output(model_output)
+        distr = _ContinuousBernoulli(model_lmbda)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        lmbda = self.sigmoid(model_output)
+        return lmbda
+
+
+class DirichletLikelihood(Likelihood):
+    def __init__(self, prior_alphas=None, prior_strength=1.):
+        """
+        Dirichlet distribution.
+
+        https://en.wikipedia.org/wiki/Dirichlet_distribution
+
+        - Multivariate continuous distribution, modeling all components of a time series jointly.
+        - Support: The :math:`K`-dimensional simplex for series of dimension :math:`K`, i.e.,
+          :math:`x_1, ..., x_K \\text{ with } x_i \in (0,1),\\; \\sum_i^K{x_i}=1`.
+        - Parameter: concentrations :math:`\\alpha_1, ..., \\alpha_K` with :math:`\\alpha_i > 0`.
+
+        Parameters
+        ----------
+        prior_alphas
+            concentrations parameters :math:`\\alpha` of the prior Dirichlet distribution.
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_alphas = prior_alphas
+        _check_strict_positive(self.prior_alphas)
+        self.softmax = nn.Softmax(dim=2)
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_alphas,
+
+    def _distr_from_params(self, params: Tuple):
+        alphas = params[0]
+        return _Dirichlet(alphas)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        alphas = self._params_from_output(model_output)
+        distr = _Dirichlet(alphas)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1  # 1 parameter per component
+
+    def _params_from_output(self, model_output):
+        alphas = self.softmax(model_output)  # take softmax over components
+        return alphas
+
+
+class ExponentialLikelihood(Likelihood):
+    def __init__(self, prior_lambda=None, prior_strength=1.):
+        """
+        Exponential distribution.
+
+        https://en.wikipedia.org/wiki/Exponential_distribution
+
+        - Univariate continuous distribution.
+        - Support: :math:`\mathbb{R}^+`.
+        - Parameter: rate :math:`\\lambda > 0`.
+
+        Parameters
+        ----------
+        prior_lambda
+            rate :math:`\\lambda` of the prior exponential distribution (default: None).
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_lambda = prior_lambda
+        _check_strict_positive(self.prior_lambda, 'lambda')
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_lambda,
+
+    def _distr_from_params(self, params: Tuple):
+        lmbda = params[0]
+        return _Exponential(lmbda)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        lmbda = self._params_from_output(model_output)
+        distr = _Exponential(lmbda)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        lmbda = self.softplus(model_output)
+        return lmbda
+
+
+class GammaLikelihood(Likelihood):
+    def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.):
+        """
+        Gamma distribution.
+
+        https://en.wikipedia.org/wiki/Gamma_distribution
+
+        - Univariate continuous distribution
+        - Support: :math:`\mathbb{R}^+`.
+        - Parameters: shape :math:`\\alpha > 0` and rate :math:`\\beta > 0`.
+
+        Parameters
+        ----------
+        prior_alpha
+            shape :math:`\\alpha` of the prior gamma distribution (default: None).
+        prior_beta
+            rate :math:`\\beta` of the prior gamma distribution (default: None).
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_alpha = prior_alpha
+        self.prior_beta = prior_beta
+        _check_strict_positive(self.prior_alpha, 'alpha')
+        _check_strict_positive(self.prior_beta, 'beta')
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_alpha, self.prior_beta
+
+    def _distr_from_params(self, params: Tuple):
+        alpha, beta = params
+        return _Gamma(alpha, beta)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        alpha, beta = self._params_from_output(model_output)
+        distr = _Gamma(alpha, beta)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        output_size = model_output.shape[-1]
+        alpha = self.softplus(model_output[:, :, :output_size // 2])
+        beta = self.softplus(model_output[:, :, output_size // 2:])
+        return alpha, beta
+
+
+class GeometricLikelihood(Likelihood):
+    def __init__(self, prior_p=None, prior_strength=1.):
+        """
+        Geometric distribution.
+
+        https://en.wikipedia.org/wiki/Geometric_distribution
+
+        - Univariate discrete distribution
+        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
+        - Parameter: success probability :math:`p \in (0, 1)`.
+
+        Parameters
+        ----------
+        prior_p
+            success probability :math:`p` of the prior geometric distribution (default: None)
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_p = prior_p
+        _check_in_open_0_1_intvl(self.prior_p, 'p')
+        self.sigmoid = nn.Sigmoid()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_p,
+
+    def _distr_from_params(self, params: Tuple):
+        p = params[0]
+        return _Geometric(p)
+
+    def sample(self, model_output):
+        p = self._params_from_output(model_output)
+        distr = _Geometric(p)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        p = self.sigmoid(model_output)
+        return p
+
+
+class GumbelLikelihood(Likelihood):
+    def __init__(self, prior_mu=None, prior_beta=None, prior_strength=1.):
+        """
+        Gumbel distribution.
+
+        https://en.wikipedia.org/wiki/Gumbel_distribution
+
+        - Univariate continuous distribution
+        - Support: :math:`\mathbb{R}`.
+        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`\\beta > 0`.
+
+        Parameters
+        ----------
+        prior_mu
+            location :math:`\\mu` of the prior Gumbel distribution (default: None).
+        prior_beta
+            scale :math:`\\beta` of the prior Gumbel distribution (default: None).
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_mu = prior_mu
+        self.prior_beta = prior_beta
+        _check_strict_positive(self.prior_beta)
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_mu, self.prior_beta
+
+    def _distr_from_params(self, params: Tuple):
+        mu, beta = params
+        return _Gumbel(mu, beta)
+
+    def sample(self, model_output):
+        mu, beta = self._params_from_output(model_output)
+        distr = _Gumbel(mu, beta)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        output_size = model_output.shape[-1]
+        mu = model_output[:, :, :output_size // 2]
+        beta = self.softplus(model_output[:, :, output_size // 2:])
+        return mu, beta
+
+
+class HalfNormalLikelihood(Likelihood):
+    def __init__(self, prior_sigma=None, prior_strength=1.):
+        """
+        Half-normal distribution.
+
+        https://en.wikipedia.org/wiki/Half-normal_distribution
+
+        - Univariate continuous distribution.
+        - Support: :math:`\mathbb{R}^+`.
+        - Parameter: rate :math:`\\sigma > 0`.
+
+        Parameters
+        ----------
+        prior_sigma
+            standard deviation :math:`\\sigma` of the prior half-normal distribution (default: None).
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_sigma = prior_sigma
+        _check_strict_positive(self.prior_sigma, 'sigma')
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_sigma,
+
+    def _distr_from_params(self, params: Tuple):
+        sigma = params[0]
+        return _HalfNormal(sigma)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        sigma = self._params_from_output(model_output)
+        distr = _HalfNormal(sigma)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        sigma = self.softplus(model_output)
+        return sigma
+
+
+class LaplaceLikelihood(Likelihood):
+    def __init__(self, prior_mu=None, prior_b=None, prior_strength=1.):
+        """
+        Laplace distribution.
+
+        https://en.wikipedia.org/wiki/Laplace_distribution
+
+        - Univariate continuous distribution
+        - Support: :math:`\mathbb{R}`.
+        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`b > 0`.
+
+        Parameters
+        ----------
+        prior_mu
+            location :math:`\\mu` of the prior Laplace distribution (default: None).
+        prior_b
+            scale :math:`b` of the prior Laplace distribution (default: None).
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_mu = prior_mu
+        self.prior_b = prior_b
+        _check_strict_positive(self.prior_b)
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_mu, self.prior_b
+
+    def _distr_from_params(self, params: Tuple):
+        mu, b = params
+        return _Laplace(mu, b)
+
+    def sample(self, model_output):
+        mu, b = self._params_from_output(model_output)
+        distr = _Laplace(mu, b)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        output_size = model_output.shape[-1]
+        mu = model_output[:, :, :output_size // 2]
+        b = self.softplus(model_output[:, :, output_size // 2:])
+        return mu, b
