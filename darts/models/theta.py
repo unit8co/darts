@@ -210,11 +210,11 @@ class FourTheta(ForecastingModel):
         self.fitted_values = None
         self.normalization = normalization
 
-        raise_if_not(model_mode in ModelMode,
+        raise_if_not(isinstance(model_mode, ModelMode),
                      "Unknown value for model_mode: {}.".format(model_mode), logger)
-        raise_if_not(trend_mode in TrendMode,
+        raise_if_not(isinstance(trend_mode, TrendMode),
                      "Unknown value for trend_mode: {}.".format(trend_mode), logger)
-        raise_if_not(season_mode in SeasonalityMode,
+        raise_if_not(isinstance(season_mode, SeasonalityMode),
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
 
     def fit(self, series):

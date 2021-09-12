@@ -463,7 +463,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                                              fill_missing_dates=True)
         # test empty pandas series error
         with self.assertRaises(ValueError):
-            TimeSeries.from_series(pd.Series(), freq='D')
+            TimeSeries.from_series(pd.Series(dtype='object'), freq='D')
         # frequency should be ignored when fill_missing_dates is False
         seriesA = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'),
                                                    range(5),
