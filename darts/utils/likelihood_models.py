@@ -1,6 +1,33 @@
 """
 Likelihood Models
 -----------------
+
+The likelihood models contain all the logic needed to train and use Darts' neural network models in
+a probabilistic way. This essentially means computing an appropriate training loss and sample from the
+distribution, given the parameters of the distribution.
+
+By default, all versions will be trained using their negative log likelihood as a loss function
+(hence performing maximum likelihood estimation when training the model).
+However, most likelihoods also optionally support specifying time-independent "prior"
+beliefs about the distribution parameters.
+In such cases, the a KL-divergence term is added to the loss in order to regularise it in the
+direction of the specified prior distribution. (Note that this is technically not purely
+a Bayesian approach as the priors are actual parameters values, and not distributions).
+The parameter `prior_strength` controls the strength of the "prior" regularisation on the loss.
+
+Some distributions (such as ``GaussianLikelihood``, and ``PoissonLikelihood``) are univariate,
+in which case they are applied to model each component of multivariate series independently.
+Some other distributions (such as ``MultivariateGaussianLikelihood`` and ``DirichletLikelihood``) are multivariate,
+in which case they will model all components of multivariate time series jointly.
+
+Univariate likelihoods accept either scalar or array-like values for the optional prior parameters.
+If a scalar is provided, it is used as a prior for all components of the series. If an array-like is provided,
+the i-th value will be used as a prior for the i-th component of the series. Multivariate likelihoods
+require array-like objects when specifying priors.
+
+The target series used for training must always lies within the distribution's support, otherwise
+errors will be raised during training. You can refer to the individual likelihoods' documentation
+to see what is the support. Similarly, the prior parameters also have to lie in some pre-defined domains.
 """
 
 # TODO: Table on README listing distribution, possible priors and wiki article
@@ -35,9 +62,9 @@ from torch.distributions import (Normal as _Normal,
                                  Weibull as _Weibull
                                  )
 
+MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 
 # Some utils for checking parameters' domains
-
 def _check(param, predicate, param_name, condition_str):
     if param is None: return
     if isinstance(param, (collections.Sequence, np.ndarray)):
@@ -58,12 +85,7 @@ def _check_in_open_0_1_intvl(param, param_name=''):
 class Likelihood(ABC):
     def __init__(self, prior_strength=1.):
         """
-        Abstract class for a likelihood model. It contains all the logic to compute the loss
-        and to sample the distribution, given the parameters of the distribution.
-        It also allows for users to specify "prior" beliefs about the distribution parameters.
-        In such cases, the a KL-divergence term is added to the loss in order to regularise it in the
-        direction of the prior distribution.
-        The parameter `prior_strength` controls the strength of the "prior" regularisation on the loss.
+        Abstract class for a likelihood model.
         """
         self.prior_strength = prior_strength
 
@@ -142,22 +164,20 @@ class Likelihood(ABC):
 
 
 class BernoulliLikelihood(Likelihood):
-    def __init__(self, prior_p: Optional[float] = None, prior_strength=1.):
+    def __init__(self, prior_p=None, prior_strength=1.):
         """
-        Bernoulli distribution; can be used to model binary events in {0, 1}
+        Bernoulli distribution.
+
         https://en.wikipedia.org/wiki/Bernoulli_distribution
 
-        It is possible to specify a time-independent prior on the probability parameter `p` to capture a-priori
-        knowledge about the process. Leaving it to `None` won't be using a prior,
-        and corresponds to doing maximum likelihood.
-
-        For the prior parameters, if a scalar value is provided, one value will be used as prior for all components,
-        and if an array-like is provided, one value can be specified per component.
+        - Univariate discrete distribution.
+        - Support: :math:`\{0, 1\}`.
+        - Parameter: probability :math:`p \in (0, 1)`.
 
         Parameters
         ----------
         prior_p
-            probability `p` of the prior Bernoulli distribution, in (0, 1) (default: None)
+            probability :math:`p` of the prior Bernoulli distribution (default: None)
         prior_strength
             strength of the loss regularisation induced by the prior
         """
@@ -190,22 +210,20 @@ class BernoulliLikelihood(Likelihood):
 
 class BetaLikelihood(Likelihood):
     """
-    Beta distribution, with support in the open (0, 1) interval.
+    Beta distribution.
+
     https://en.wikipedia.org/wiki/Beta_distribution
 
-    It is possible to specify time-independent priors on the alpha and beta parameters to capture a-priori
-    knowledge about the process. Leaving both to `None` won't be using a prior,
-    and corresponds to doing maximum likelihood.
-
-    For the prior parameters, if a scalar value is provided, one value will be used as prior for all components,
-    and if an array-like is provided, one value can be specified per component.
+    - Univariate continuous distribution.
+    - Support: open interval :math:`(0,1)`
+    - Parameters: shape parameters :math:`\\alpha > 0` and :math:`\\beta > 0`.
 
     Parameters
     ----------
     prior_alpha
-        shape parameter alpha of the Beta distribution, strictly positive (default: None)
+        shape parameter :math:`\\alpha` of the Beta distribution, strictly positive (default: None)
     prior_beta
-        shape parameter beta of the Beta distribution, strictly positive (default: None)
+        shape parameter :math:`\\beta` distribution, strictly positive (default: None)
     prior_strength
         strength of the loss regularisation induced by the prior
     """
@@ -245,21 +263,23 @@ class BetaLikelihood(Likelihood):
 class CauchyLikelihood(Likelihood):
     """
     Cauchy Distribution.
-    https://en.wikipedia.org/wiki/Beta_distribution
 
-    It is possible to specify time-independent priors on the x_0 and gamma parameters to capture a-priori
-    knowledge about the process. Leaving both to `None` won't be using a prior,
-    and corresponds to doing maximum likelihood.
+    https://en.wikipedia.org/wiki/Cauchy_distribution
 
-    For the prior parameters, if a scalar value is provided, one value will be used as prior for all components,
-    and if an array-like is provided, one value can be specified per component.
+    - Univariate continuous distribution.
+    - Support: :math:`\mathbb{R}`.
+    - Parameters: location :math:`x_0 \in \mathbb{R}`, scale :math:`\gamma > 0`.
+
+    Due to its fat tails, this distribution is typically harder to estimate,
+    and your mileage may vary. Also be aware that it typically
+    requires a large value for `num_samples` for sampling predictions.
 
     Parameters
     ----------
     prior_xzero
-        location parameter x_0 of the Cauchy distribution (default: None)
+        location parameter :math:`x_0` of the Cauchy distribution (default: None)
     prior_gamma
-        scale parameter gamma of the Cauchy distribution, strictly positive (default: None)
+        scale parameter :math:`\\gamma` of the Cauchy distribution, strictly positive (default: None)
     prior_strength
         strength of the loss regularisation induced by the prior
     """
@@ -283,7 +303,7 @@ class CauchyLikelihood(Likelihood):
         xzero, gamma = self._params_from_output(model_output)
 
         # We need this hack as sometimes the output of the softplus is 0 in practice for Cauchy...
-        gamma[gamma < 1e-100] = 1e-100
+        gamma[gamma < MIN_CAUCHY_GAMMA_SAMPLING] = MIN_CAUCHY_GAMMA_SAMPLING
 
         distr = _Cauchy(xzero, gamma)
         return distr.sample()
@@ -299,17 +319,153 @@ class CauchyLikelihood(Likelihood):
         return xzero, gamma
 
 
+class ContinuousBernoulliLikelihood(Likelihood):
+    def __init__(self, prior_lambda=None, prior_strength=1.):
+        """
+        Continuous Bernoulli distribution.
+
+        https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution
+
+        - Univariate continuous distribution.
+        - Support: open interval :math:`(0, 1)`.
+        - Parameter: shape :math:`\\lambda \in (0,1)`
+
+        Parameters
+        ----------
+        prior_lambda
+            shape :math:`\\lambda` of the prior Continuous Bernoulli distribution (default: None)
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_lambda = prior_lambda
+        _check_in_open_0_1_intvl(self.prior_lambda, 'lambda')
+
+        self.sigmoid = nn.Sigmoid()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return (self.prior_lambda, )
+
+    def _distr_from_params(self, params):
+        lmbda = params[0]
+        return _ContinuousBernoulli(lmbda)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        model_lmbda = self._params_from_output(model_output)
+        distr = _ContinuousBernoulli(model_lmbda)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        lmbda = self.sigmoid(model_output)
+        return lmbda
+
+
+class DirichletLikelihood(Likelihood):
+    def __init__(self, prior_alphas=None, prior_strength=1.):
+        """
+        Dirichlet distribution.
+
+        https://en.wikipedia.org/wiki/Dirichlet_distribution
+
+        - Multivariate continuous distribution, modeling all components of a time series jointly.
+        - Support: The :math:`K`-dimensional simplex for series of dimension :math:`K`, i.e.,
+          :math:`x_1, ..., x_K \\text{ with } x_i \in (0,1),\\; \\sum_i^K{x_i}=1`.
+        - Parameter: concentrations :math:`\\alpha_1, ..., \\alpha_K` with :math:`\\alpha_i > 0`.
+
+        Parameters
+        ----------
+        prior_alphas
+            concentrations parameters :math:`\\alpha` of the prior Dirichlet distribution.
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_alphas = prior_alphas
+        _check_strict_positive(self.prior_alphas)
+        self.softmax = nn.Softmax(dim=2)
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return (self.prior_alphas, )
+
+    def _distr_from_params(self, params: Tuple):
+        alphas = params[0]
+        return _Dirichlet(alphas)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        alphas = self._params_from_output(model_output)
+        distr = _Dirichlet(alphas)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1  # 1 parameter per component
+
+    def _params_from_output(self, model_output):
+        alphas = self.softmax(model_output)  # take softmax over components
+        return alphas
+
+
+class ExponentialLikelihood(Likelihood):
+    def __init__(self, prior_lambda=None, prior_strength=1.):
+        """
+        Exponential distribution.
+
+        https://en.wikipedia.org/wiki/Exponential_distribution
+
+        - Univariate continuous distribution.
+        - Support: :math:`\mathbb{R}^+`.
+        - Parameter: rate :math:`\\lambda > 0`.
+
+        Parameters
+        ----------
+        prior_lambda
+            rate :math:`\\lambda` of the prior exponential distribution (default: None).
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_lambda = prior_lambda
+        _check_strict_positive(self.prior_lambda, 'lambda')
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return (self.prior_lambda, )
+
+    def _distr_from_params(self, params: Tuple):
+        lmbda = params[0]
+        return _Exponential(lmbda)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        lmbda = self._params_from_output(model_output)
+        distr = _Exponential(lmbda)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 1
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        lmbda = self.softplus(model_output)
+        return lmbda
+
+
 class GaussianLikelihood(Likelihood):
     def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.):
         """
         Univariate Gaussian distribution.
-        Components are modeled by separate univariate distributions, with optional time-independent priors.
 
-        It is possible to specify a prior on mu or sigma only. Leaving both to `None` won't be using a prior,
-        and corresponds to doing maximum likelihood.
+        https://en.wikipedia.org/wiki/Normal_distribution
 
-        For the prior parameters, if a scalar value is provided, one value will be used as prior for all components,
-        and if an array-like is provided, one value can be specified per component.
+        - Univariate continuous distribution.
+        - Support: :math:`\mathbb{R}`.
+        - Parameters: mean :math:`\\mu \in \mathbb{R}`, standard deviation `\\sigma > 0`.
 
         Parameters
         ----------
@@ -357,23 +513,21 @@ class GaussianLikelihood(Likelihood):
 
 
 class PoissonLikelihood(Likelihood):
-    def __init__(self, prior_lambda: Optional[float] = None, prior_strength=1.):
+    def __init__(self, prior_lambda=None, prior_strength=1.):
         """
-        Poisson distribution; can typically be used to model event counts during time intervals, when the events
+        Poisson distribution. Can typically be used to model event counts during time intervals, when the events
         happen independently of the time since the last event.
+
         https://en.wikipedia.org/wiki/Poisson_distribution
 
-        It is possible to specify a time-independent prior rate `lambda` to capture a-priori
-        knowledge about the process. Leaving it to `None` won't be using a prior,
-        and corresponds to doing maximum likelihood.
-
-        For the prior parameters, if a scalar value is provided, one value will be used as prior for all components,
-        and if an array-like is provided, one value can be specified per component.
+        - Univariate discrete distribution
+        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
+        - Parameter: rate :math:`\\lambda > 0`.
 
         Parameters
         ----------
         prior_lambda
-            rate of the prior Poisson distribution (default: None)
+            rate :math:`\\lambda` of the prior Poisson distribution (default: None)
         prior_strength
             strength of the loss regularisation induced by the prior
         """
@@ -413,9 +567,14 @@ class NegativeBinomialLikelihood(Likelihood):
     def __init__(self):
         """
         Negative Binomial distribution.
+
         https://en.wikipedia.org/wiki/Negative_binomial_distribution
 
         It does not support priors.
+
+        - Univariate discrete distribution.
+        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
+        - Parameters: number of failures :math:`r > 0`, success probability :math:`p \in (0, 1)`.
         """
         self.softplus = nn.Softplus()
         super().__init__()
