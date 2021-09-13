@@ -53,14 +53,10 @@ from torch.distributions import (Normal as _Normal,
                                  MultivariateNormal as _MultivariateNormal,
                                  Dirichlet as _Dirichlet,
                                  Geometric as _Geometric,
-                                 Binomial as _Binomial,
                                  Cauchy as _Cauchy,
                                  ContinuousBernoulli as _ContinuousBernoulli,
                                  HalfNormal as _HalfNormal,
                                  LogNormal as _LogNormal,
-                                 LowRankMultivariateNormal as _LowRankMultivariateNormal,  # scales?
-                                 Pareto as _Pareto,
-                                 Uniform as _Uniform,
                                  Weibull as _Weibull
                                  )
 
@@ -906,6 +902,51 @@ class LogNormal(Likelihood):
         mu = model_output[:, :, :output_size // 2]
         sigma = self.softplus(model_output[:, :, output_size // 2:])
         return mu, sigma
+
+
+class WeibullLikelihood(Likelihood):
+    def __init__(self, prior_strength=1.):
+        """
+        Weibull distribution.
+
+        https://en.wikipedia.org/wiki/Weibull_distribution
+
+        - Univariate continuous distribution
+        - Support: :math:`\mathbb{R}_{>0}`.
+        - Parameters: scale :math:`\\lambda > 0` and concentration :math:`k > 0`.
+
+        It does not support priors.
+
+        Parameters
+        ----------
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return None
+
+    def _distr_from_params(self, params: Tuple):
+        lmba, k = params
+        return _Weibull(lmba, k)
+
+    def sample(self, model_output):
+        lmbda, k = self._params_from_output(model_output)
+        distr = _Weibull(lmbda, k)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        output_size = model_output.shape[-1]
+        lmbda = self.softplus(model_output[:, :, :output_size // 2])
+        k = self.softplus(model_output[:, :, output_size // 2:])
+        return lmbda, k
 
 
 if False:
