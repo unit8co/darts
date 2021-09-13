@@ -115,9 +115,28 @@ def multivariate_support(func):
     return wrapper_multivariate_support
 
 
+def _get_values(series: TimeSeries,
+                stochastic_quantile: float = 0.5) -> np.ndarray:
+    """
+    Returns the numpy values of a time series.
+    For stochastic series, return either all sample values with (stochastic_quantile=None) or the quantile sample value
+    with (stochastic_quantile {>=0,<=1})
+    """
+    if series.is_deterministic:
+        series_values = series.univariate_values()
+    else:  # stochastic
+        if stochastic_quantile is None:
+            series_values = series.data_array().values
+        else:
+            raise_if_not(isinstance(stochastic_quantile, float), 'stochastic quantile must be a float')
+            series_values = series.quantile_timeseries(quantile=stochastic_quantile)
+    return series_values
+
+
 def _get_values_or_raise(series_a: TimeSeries,
                          series_b: TimeSeries,
-                         intersect: bool) -> Tuple[np.ndarray, np.ndarray]:
+                         intersect: bool,
+                         stochastic_quantile: Optional[float] = 0.5) -> Tuple[np.ndarray, np.ndarray]:
     """
     Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
@@ -138,11 +157,10 @@ def _get_values_or_raise(series_a: TimeSeries,
                                                                     series_a.time_index, series_b.time_index),
                  logger)
 
-    # TODO: we may want to change this...
-    series_a_det = series_a_common if series_a_common.is_deterministic else series_a_common.quantile_timeseries(quantile=0.5)
-    series_b_det = series_b_common if series_b_common.is_deterministic else series_b_common.quantile_timeseries(quantile=0.5)
-
-    return series_a_det.univariate_values(), series_b_det.univariate_values()
+    # TODO: we may want to change this... -> (Dennis: 13.09.2021) how about this?
+    series_a_det = _get_values(series_a_common, stochastic_quantile=stochastic_quantile)
+    series_b_det = _get_values(series_b_common, stochastic_quantile=stochastic_quantile)
+    return series_a_det, series_b_det
 
 
 def _remove_nan_union(array_a: np.ndarray,
@@ -151,7 +169,6 @@ def _remove_nan_union(array_a: np.ndarray,
     Returns the two inputs arrays where all elements are deleted that have an index that corresponds to
     a NaN value in either of the two input arrays.
     """
-
     isnan_mask = np.logical_or(np.isnan(array_a), np.isnan(array_b))
     return np.delete(array_a, isnan_mask), np.delete(array_b, isnan_mask)
 
@@ -947,13 +964,11 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
 # rho-risk (quantile risk)
 @multi_ts_support
-# @multivariate_support
+@multivariate_support
 def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
              pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-             rho: Union[float, Sequence[float]],
-             start: Union[pd.Timestamp, int, float] = 1,
-             end: Union[pd.Timestamp, int, float] = 1,
-             # intersect: bool = True,
+             rho: float,
+             intersect: bool = True,
              *,
              reduction: Callable[[np.ndarray], float] = np.mean,
              inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
@@ -1014,30 +1029,31 @@ def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     #     The Mean Absolute Ranged Relative Error (MARRE)
     """
 
-    def rho_loss(y_true: Union[TimeSeries, Sequence[TimeSeries]],
-                 y_hat: Union[TimeSeries, Sequence[TimeSeries]],
-                 rho: Sequence[float]) -> Sequence[Union[float, np.ndarray]]:
+    def rho_loss(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+                 rho: float,
+                 intersect: bool = True) -> Sequence[Union[float, np.ndarray]]:
 
-        z_true = y_true.sum(axis=0)
-        z_hat = y_hat.sum(axis=0)
+        raise_if_not(isinstance(rho, float), 'rho (quantile) must be a float.')
 
-        z_hat_rho = z_hat.quantile(q=rho, dim='sample').transpose()
+        z_true, z_hat = _get_values_or_raise(actual_series, pred_series, intersect=intersect, stochastic_quantile=None)
 
-        rho = np.array(rho).reshape((len(rho), 1))
-        left = np.where(z_hat_rho > z_true, 1, 0)
-        right = np.where(z_hat_rho <= z_true, 1, 0)
+        if pred_series.is_probabilistic:  # in stochastic case we need to account for different shapes of z_true & z_hat
+            isnan_mask = np.logical_or(np.isnan(z_true), np.isnan(z_hat).any(axis=2).flatten())
+            z_true, z_hat = np.delete(z_true, isnan_mask), np.delete(z_hat, isnan_mask, axis=0)
+        else:
+            z_true, z_hat = _remove_nan_union(z_true, z_hat)
 
-        rho_losses = 2 * (z_hat_rho - z_true) * (rho * left - (1 - rho) * right)
-        return rho_losses, z_true
+        z_true = z_true.sum(axis=0)
+        z_hat = z_hat.sum(axis=0)
 
-    if isinstance(rho, float):
-        rho = [rho]
+        z_hat_rho = np.quantile(z_hat, q=rho)
 
-    start = actual_series.start_time() if start is None else actual_series.get_timestamp_at_point(start)
-    end = actual_series.end_time() if end is None else actual_series.get_timestamp_at_point(end)
+        pred_above = np.where(z_hat_rho > z_true, 1, 0)
+        pred_below = np.where(z_hat_rho <= z_true, 1, 0)
 
-    y_true = actual_series[start:end].data_array()
-    y_hat = pred_series[start:end].data_array()
+        loss = 2 * (z_hat_rho - z_true) * (rho * pred_above - (1 - rho) * pred_below)
+        return loss, z_true
 
-    rho_losses, z_true = rho_loss(y_true, y_hat, rho)
-    return np.array(rho_losses.sum(axis=0) / z_true.sum(axis=0))
+    loss, z_true = rho_loss(actual_series, pred_series, rho, intersect=intersect)
+    return np.array(loss / z_true)
