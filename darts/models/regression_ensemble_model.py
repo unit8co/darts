@@ -90,18 +90,12 @@ class RegressionEnsembleModel(EnsembleModel):
         else:
             forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
 
-        # fit the forecasting models
         for model in self.models:
-            if self.is_global_ensemble:
-                kwargs = dict(series=forecast_training)
-                if model.uses_past_covariates:
-                    kwargs['past_covariates'] = past_covariates
-                if model.uses_future_covariates:
-                    kwargs['future_covariates'] = future_covariates
-                model.fit(**kwargs)
-
-            else:
-                model.fit(forecast_training)
+            model._fit_wrapper(
+                series=forecast_training,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates
+            )
 
         predictions = [
             model._predict_wrapper(

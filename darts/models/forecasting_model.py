@@ -785,8 +785,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     def _fit_wrapper(self, series: TimeSeries, past_covariates: Optional[TimeSeries],
                      future_covariates: Optional[TimeSeries]):
-        self.fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
-
+        self.fit(
+            series=series,
+            past_covariates=past_covariates if self.uses_past_covariates else None,
+            future_covariates=future_covariates if self.uses_future_covariates else None
+        )
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
     """ The base class for the forecasting models that are not global, but support future covariates.
