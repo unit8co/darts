@@ -6,7 +6,6 @@ Some metrics to compare time series.
 """
 
 import numpy as np
-import pandas as pd
 
 from ..timeseries import TimeSeries
 from darts.utils import _parallel_apply, _build_tqdm_iterator
@@ -169,6 +168,7 @@ def _remove_nan_union(array_a: np.ndarray,
     Returns the two inputs arrays where all elements are deleted that have an index that corresponds to
     a NaN value in either of the two input arrays.
     """
+
     isnan_mask = np.logical_or(np.isnan(array_a), np.isnan(array_b))
     return np.delete(array_a, isnan_mask), np.delete(array_b, isnan_mask)
 
