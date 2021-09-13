@@ -52,7 +52,7 @@ class EnsembleModel(GlobalForecastingModel):
         It is left to classes inheriting from EnsembleModel to do so appropriately when overriding `fit()`
         """
         raise_if(not self.is_global_ensemble and not isinstance(series, TimeSeries),
-                 "All models are of type darts.models.ForecastingModel which do not support covariates.",
+                 "The models are not GlobalForecastingModel's and do not support training on multiple series.",
                  logger
                  )
         raise_if(not self.is_global_ensemble and past_covariates is not None,
