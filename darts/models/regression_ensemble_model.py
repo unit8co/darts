@@ -97,19 +97,13 @@ class RegressionEnsembleModel(EnsembleModel):
                 future_covariates=future_covariates
             )
 
-        predictions = [
-            model._predict_wrapper(
-                n=self.train_n_points,
-                series=forecast_training,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples
-            ) for model in self.models]
-
-        if self.is_single_series:
-            predictions = self._stack_ts_seq(predictions)
-        else:
-            predictions = self._stack_ts_multiseq(predictions)
+        predictions = self._make_multiple_predictions(
+            n=self.train_n_points,
+            series=forecast_training,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples
+        )
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(series=regression_target, future_covariates=predictions)

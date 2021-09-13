@@ -84,17 +84,12 @@ class EnsembleModel(GlobalForecastingModel):
         # stacks multiple sequences of timeseries elementwise
         return [self._stack_ts_seq(ts_list) for ts_list in zip(*predictions_list)]
 
-    def predict(self,
-                n: int,
-                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                num_samples: int = 1,
-                ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-
-        super().predict(n=n, series=series,
-                        past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
-
+    def _make_multiple_predictions(self,
+                                   n: int,
+                                   series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                                   past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                                   future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                                   num_samples: int = 1):
         predictions = [
             model._predict_wrapper(
                 n=n,
@@ -105,9 +100,28 @@ class EnsembleModel(GlobalForecastingModel):
             ) for model in self.models]
 
         if self.is_single_series:
-            predictions = self._stack_ts_seq(predictions)
+            return self._stack_ts_seq(predictions)
         else:
-            predictions = self._stack_ts_multiseq(predictions)
+            return self._stack_ts_multiseq(predictions)
+
+    def predict(self,
+                n: int,
+                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                num_samples: int = 1
+                ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+
+        super().predict(n=n, series=series,
+                        past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
+
+        predictions = self._make_multiple_predictions(
+            n=n,
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples
+        )
 
         if self.is_single_series:
             return self.ensemble(predictions)
