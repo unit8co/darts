@@ -39,7 +39,6 @@ class EnsembleModel(GlobalForecastingModel):
         super().__init__()
         self.models = models
         self.is_single_series = None
-        self.is_single_series_covariate = None
 
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -60,10 +59,17 @@ class EnsembleModel(GlobalForecastingModel):
                  )
 
         self.is_single_series = isinstance(series, TimeSeries)
-        if past_covariates is not None:
-            self.is_single_series_covariate = isinstance(past_covariates, TimeSeries)
 
-        raise_if(past_covariates is not None and (self.is_single_series != self.is_single_series_covariate),
+        # check that if timeseries is single series, than covariates are as well and vice versa
+        error = False
+
+        if past_covariates is not None:
+            error = self.is_single_series != isinstance(past_covariates, TimeSeries)
+
+        if future_covariates is not None:
+            error = self.is_single_series != isinstance(future_covariates, TimeSeries)
+
+        raise_if(error,
                  "Both series and covariates have to be either univariate or multivariate.",
                  logger
                  )
