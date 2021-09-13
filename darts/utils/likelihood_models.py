@@ -580,7 +580,7 @@ class ExponentialLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Exponential_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}^+`.
+        - Support: :math:`\mathbb{R}_{>0}`.
         - Parameter: rate :math:`\\lambda > 0`.
 
         Parameters
@@ -625,7 +625,7 @@ class GammaLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Gamma_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}^+`.
+        - Support: :math:`\mathbb{R}_{>0}`.
         - Parameters: shape :math:`\\alpha > 0` and rate :math:`\\beta > 0`.
 
         Parameters
@@ -771,7 +771,7 @@ class HalfNormalLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Half-normal_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}^+`.
+        - Support: :math:`\mathbb{R}_{>0}`.
         - Parameter: rate :math:`\\sigma > 0`.
 
         Parameters
@@ -856,3 +856,108 @@ class LaplaceLikelihood(Likelihood):
         mu = model_output[:, :, :output_size // 2]
         b = self.softplus(model_output[:, :, output_size // 2:])
         return mu, b
+
+
+class LogNormal(Likelihood):
+    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.):
+        """
+        Log-normal distribution.
+
+        https://en.wikipedia.org/wiki/Log-normal_distribution
+
+        - Univariate continuous distribution.
+        - Support: :math:`\mathbb{R}_{>0}`.
+        - Parameters: :math:`\\mu \in \mathbb{R}` and :math:`\\sigma > 0`.
+
+        Parameters
+        ----------
+        prior_mu
+            parameter :math:`\\mu` of the prior log-normal distribution (default: None).
+        prior_sigma
+            parameter :math:`\\sigma` of the prior log-normal distribution (default: None)
+        prior_strength
+            strength of the loss regularisation induced by the prior
+        """
+        self.prior_mu = prior_mu
+        self.prior_sigma = prior_sigma
+        _check_strict_positive(self.prior_sigma, 'sigma')
+        self.softplus = nn.Softplus()
+        super().__init__(prior_strength)
+
+    @property
+    def _prior_params(self):
+        return self.prior_mu, self.prior_sigma
+
+    def _distr_from_params(self, params):
+        mu, sigma = params
+        return _LogNormal(mu, sigma)
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        mu, sigma = self._params_from_output(model_output)
+        distr = _LogNormal(mu, sigma)
+        return distr.sample()
+
+    @property
+    def num_parameters(self) -> int:
+        return 2
+
+    def _params_from_output(self, model_output):
+        output_size = model_output.shape[-1]
+        mu = model_output[:, :, :output_size // 2]
+        sigma = self.softplus(model_output[:, :, output_size // 2:])
+        return mu, sigma
+
+
+if False:
+    """ TODO
+        To make it work, we'll have to change our models so they optionally accept an absolute
+        number of parameters, instead of num_perameters per component.
+    """
+
+    class MultivariateNormal(Likelihood):
+        def __init__(self, dim: int, prior_mu=None, prior_covmat=None, prior_strength=1.):
+            self.dim = dim
+            self.prior_mu = prior_mu
+            self.prior_covmat = prior_covmat
+            if self.prior_mu is not None:
+                raise_if_not(len(self.prior_mu) == self.dim, 'The provided prior_mu must have a size matching the '
+                                                             'provided dimension.')
+            if self.prior_covmat is not None:
+                raise_if_not(self.prior_covmat.shape == (self.dim, self.dim), 'The provided prior on the covariaance '
+                                                                              'matrix must have size (dim, dim).')
+                _check_strict_positive(self.prior_covmat.flatten(), 'covariance matrix')
+
+            self.softplus = nn.Softplus()
+            super().__init__(prior_strength)
+
+        @property
+        def _prior_params(self):
+            return self.prior_mu, self.prior_covmat
+
+        def _distr_from_params(self, params: Tuple):
+            mu, covmat = params
+            return _MultivariateNormal(mu, covmat)
+
+        def sample(self, model_output: torch.Tensor):
+            mu, covmat = self._params_from_output(model_output)
+            distr = _MultivariateNormal(mu, covmat)
+            return distr.sample()
+
+        @property
+        def num_parameters(self) -> int:
+            return int(self.dim + (self.dim**2 - self.dim) / 2)
+
+        def _params_from_output(self, model_output: torch.Tensor):
+            device = model_output.device
+            mu = model_output[:, :, :self.dim]
+            covmat_coefs = self.softplus(model_output[:, :, self.dim:])
+
+            print('model output: {}'.format(model_output.shape))
+
+            # build covariance matrix
+            covmat = torch.zeros((model_output.shape[0], model_output.shape[1], self.dim, self.dim)).to(device)
+            tril_indices = torch.tril_indices(row=self.dim, col=self.dim, offset=1, device=device)
+            covmat[tril_indices[0], tril_indices[1]] = covmat_coefs
+            covmat[tril_indices[1], tril_indices[0]] = covmat_coefs
+            covmat[range(self.dim), range(self.dim)] = 1.
+
