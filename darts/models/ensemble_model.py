@@ -76,9 +76,13 @@ class EnsembleModel(GlobalForecastingModel):
 
         super().fit(series, past_covariates, future_covariates)
 
-    def _stack_ts_seq(self, seq1, seq2):
-        # stacks two sequences of timeseries elementwise
-        return [ts1.stack(ts2) for ts1, ts2 in zip(seq1, seq2)]
+    def _stack_ts_seq(self, predictions):
+        # stacks list of predictions into one multivariate timeseries
+        return reduce(lambda a, b: a.stack(b), predictions)
+
+    def _stack_ts_multiseq(self, predictions_list):
+        # stacks multiple sequences of timeseries elementwise
+        return [self._stack_ts_seq(ts_list) for ts_list in zip(*predictions_list)]
 
     def predict(self,
                 n: int,
@@ -91,21 +95,24 @@ class EnsembleModel(GlobalForecastingModel):
         super().predict(n=n, series=series,
                         past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
 
-        if self.is_global_ensemble and not self.is_single_series:
-            predictions = self.models[0].predict(n=n, series=series,
-                        past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
-        else:
-            predictions = self.models[0].predict(n=n, num_samples=num_samples)
+        def get_prediction(model):
+            if self.is_global_ensemble and not self.is_single_series:
+                return model.predict(
+                    n=n,
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    num_samples=num_samples
+                )
+            else:
+                return model.predict(n, num_samples=num_samples)
 
-        if len(self.models) > 1:
-            for model in self.models[1:]:
-                if self.is_global_ensemble and not self.is_single_series:
-                    prediction = model.predict(n=n, series=series,
-                        past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
-                    predictions = self._stack_ts_seq(predictions, prediction)
-                else:
-                    prediction = model.predict(n=n, num_samples=num_samples)
-                    predictions = predictions.stack(prediction)
+        predictions = [get_prediction(model) for model in self.models]
+
+        if self.is_single_series:
+            predictions = self._stack_ts_seq(predictions)
+        else:
+            predictions = self._stack_ts_multiseq(predictions)
 
         if self.is_single_series:
             return self.ensemble(predictions)

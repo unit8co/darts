@@ -9,6 +9,7 @@ from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting_model import ForecastingModel, GlobalForecastingModel
 from darts.models import EnsembleModel, LinearRegressionModel, RegressionModel
+from functools import reduce
 
 logger = get_logger(__name__)
 
@@ -102,27 +103,21 @@ class RegressionEnsembleModel(EnsembleModel):
                 model.fit(forecast_training)
 
         # predict train_n_points points for each model
-        if self.is_global_ensemble and not self.is_single_series:
-            predictions = self.models[0].predict(
-                n=self.train_n_points,
-                series=forecast_training,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates)
-        else:
-            predictions = self.models[0].predict(self.train_n_points)
+        def get_prediction(model):
+            if self.is_global_ensemble and not self.is_single_series:
+                return model.predict(
+                    n=self.train_n_points,
+                    series=forecast_training,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates)
+            else:
+                return model.predict(self.train_n_points)
 
-        if len(self.models) > 1:
-            for model in self.models[1:]:
-                if self.is_global_ensemble and not self.is_single_series:
-                    prediction = model.predict(
-                        n=self.train_n_points,
-                        series=forecast_training,
-                        past_covariates=past_covariates,
-                        future_covariates=future_covariates)
-                    predictions = self._stack_ts_seq(predictions, prediction)
-                else:
-                    prediction = model.predict(self.train_n_points)
-                    predictions = predictions.stack(prediction)
+        predictions = [get_prediction(model) for model in self.models]
+        if self.is_single_series:
+            predictions = self._stack_ts_seq(predictions)
+        else:
+            predictions = self._stack_ts_multiseq(predictions)
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(series=regression_target, future_covariates=predictions)
