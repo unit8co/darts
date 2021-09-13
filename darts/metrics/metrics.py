@@ -129,7 +129,7 @@ def _get_values(series: TimeSeries,
             series_values = series.data_array().values
         else:
             raise_if_not(isinstance(stochastic_quantile, float), 'stochastic quantile must be a float')
-            series_values = series.quantile_timeseries(quantile=stochastic_quantile)
+            series_values = series.quantile_timeseries(quantile=stochastic_quantile).univariate_values()
     return series_values
 
 
@@ -967,87 +967,87 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 @multivariate_support
 def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
              pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-             rho: float,
+             rho: float = 0.5,
              intersect: bool = True,
              *,
              reduction: Callable[[np.ndarray], float] = np.mean,
              inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
              n_jobs: int = 1,
-             verbose: bool = False) -> Union[float, np.ndarray]:
+             verbose: bool = False) -> float:
 
-    """ rho-risk (:math:`rho`-risk, quantile loss).
+    """ :math:`\\rho`-risk (rho-risk or quantile risk).
 
-    TODO: write docstring !!!!
+    Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions
+    (containing N samples) :math:`\\hat{y}_t` of shape :math:`T \\times N`, rho-risk is a metric that quantifies the
+    accuracy of a specific quantile :math:`\\rho` from the predicted value distribution.
 
-    # Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic (containing
-    # several samples) predictions :math:`\\hat{y}_t` of shape :math:`T x n`, rho-risk is a metric that quantifies the
-    # accuracy of a quantile :math:`rho` from the predicted value distribution for a specific forecast time span.
-    # .. math:: 100 \\cdot \\frac{1}{T} \\sum_{t=1}^{T} {\\left| \\frac{y_t - \\hat{y}_t} {\\max_t{y_t} -
-    #           \\min_t{y_t}} \\right|}
-    #
-    # If any of the series is stochastic (containing several samples), the median sample value is considered.
-    #
-    # Parameters
-    # ----------
-    # actual_series
-    #     The `TimeSeries` or `Sequence[TimeSeries]` of actual values.
-    # pred_series
-    #     The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
-    # rho
-    #     The quantile (float [0, 1]) of interest for the risk evaluation.
-    # start
-    #     blabla
-    # end
-    #     blabla2
-    # intersect
-    #     For time series that are overlapping in time without having the same time index, setting `intersect=True`
-    #     will consider the values only over their common time interval (intersection in time).
-    # reduction
-    #     Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
-    #     the metrics of different components in case of multivariate `TimeSeries` instances.
-    # inter_reduction
-    #     Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.
-    #     This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
-    #     `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair
-    #     of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise
-    #     metrics.
-    # n_jobs
-    #     The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
-    #     passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
-    #     (sequential). Setting the parameter to `-1` means using all the available processors.
-    # verbose
-    #     Optionally, whether to print operations progress
-    #
-    # Raises
-    # ------
-    # ValueError
-    #     If :math:`\\max_t{y_t} = \\min_t{y_t}`.
-    #
-    # Returns
-    # -------
-    # float
-    #     The Mean Absolute Ranged Relative Error (MARRE)
+    For a univariate stochastic predicted TimeSeries the :math:`\\rho`-risk is given by:
+
+    .. math:: \\frac{ L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) } {Z},
+
+    where :math:`L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right)` is`the :math:`\\rho`-loss function:
+
+    .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( \\hat{Z}_{\\rho} - Z \\right)
+        \\left( \\rho I_{\\hat{Z}_{\\rho} > Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \leq Z} \\right),
+
+    where :math:`Z = \\sum_{t=1}^{T} y_t` (1) is the aggregated target value and :math:`\\hat{Z}_{\\rho}` is the
+    :math:`\\rho`-quantile of the predicted values. For this, each sample realization :math:`i \\in N` is first aggregated over the
+    time span similar to (1) with :math:`\\hat{Z}_{i} = \\sum_{t=1}^{T} \\hat{y}_{i,t}`.
+
+    :math:`I_{cond} = 1` if cond is True else :math:`0``
+
+    Parameters
+    ----------
+    actual_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of actual values.
+    pred_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
+    rho
+        The quantile (float [0, 1]) of interest for the risk evaluation.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate `TimeSeries` instances.
+    inter_reduction
+        Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise
+        metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+        passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        The rho-risk metric
     """
 
     def rho_loss(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
                  pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 rho: float,
-                 intersect: bool = True) -> Sequence[Union[float, np.ndarray]]:
+                 rho: float = 0.5,
+                 intersect: bool = True) -> Tuple[float, float]:
 
         raise_if_not(isinstance(rho, float), 'rho (quantile) must be a float.')
+        raise_if_not(pred_series.is_stochastic,
+                     'rho (quantile) loss should only be computed for stochastic predicted TimeSeries.')
 
         z_true, z_hat = _get_values_or_raise(actual_series, pred_series, intersect=intersect, stochastic_quantile=None)
 
-        if pred_series.is_probabilistic:  # in stochastic case we need to account for different shapes of z_true & z_hat
-            isnan_mask = np.logical_or(np.isnan(z_true), np.isnan(z_hat).any(axis=2).flatten())
-            z_true, z_hat = np.delete(z_true, isnan_mask), np.delete(z_hat, isnan_mask, axis=0)
-        else:
-            z_true, z_hat = _remove_nan_union(z_true, z_hat)
+        # adaption of _remove_nan_union(y1, y2): in stochastic case we need to account for different shapes of y1 & y2
+        isnan_mask = np.logical_or(np.isnan(z_true), np.isnan(z_hat).any(axis=2).flatten())
+        z_true, z_hat = np.delete(z_true, isnan_mask), np.delete(z_hat, isnan_mask, axis=0)
 
         z_true = z_true.sum(axis=0)
-        z_hat = z_hat.sum(axis=0)
+        z_hat = z_hat.sum(axis=0)  # aggregate all individual sample realizations
 
-        z_hat_rho = np.quantile(z_hat, q=rho)
+        z_hat_rho = np.quantile(z_hat, q=rho)  # get the quantile from aggregated samples
 
         pred_above = np.where(z_hat_rho > z_true, 1, 0)
         pred_below = np.where(z_hat_rho <= z_true, 1, 0)
@@ -1056,4 +1056,4 @@ def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         return loss, z_true
 
     loss, z_true = rho_loss(actual_series, pred_series, rho, intersect=intersect)
-    return np.array(loss / z_true)
+    return loss / z_true
