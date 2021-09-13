@@ -68,7 +68,8 @@ class RegressionEnsembleModel(EnsembleModel):
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
             past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            num_samples: int = 1
             ) -> None:
 
         super().fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
@@ -102,18 +103,15 @@ class RegressionEnsembleModel(EnsembleModel):
             else:
                 model.fit(forecast_training)
 
-        # predict train_n_points points for each model
-        def get_prediction(model):
-            if self.is_global_ensemble and not self.is_single_series:
-                return model.predict(
-                    n=self.train_n_points,
-                    series=forecast_training,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates)
-            else:
-                return model.predict(self.train_n_points)
+        predictions = [
+            model._predict_wrapper(
+                n=self.train_n_points,
+                series=forecast_training,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples
+            ) for model in self.models]
 
-        predictions = [get_prediction(model) for model in self.models]
         if self.is_single_series:
             predictions = self._stack_ts_seq(predictions)
         else:

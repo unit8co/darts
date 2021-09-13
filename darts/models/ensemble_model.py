@@ -95,19 +95,14 @@ class EnsembleModel(GlobalForecastingModel):
         super().predict(n=n, series=series,
                         past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
 
-        def get_prediction(model):
-            if self.is_global_ensemble and not self.is_single_series:
-                return model.predict(
-                    n=n,
-                    series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    num_samples=num_samples
-                )
-            else:
-                return model.predict(n, num_samples=num_samples)
-
-        predictions = [get_prediction(model) for model in self.models]
+        predictions = [
+            model._predict_wrapper(
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples
+            ) for model in self.models]
 
         if self.is_single_series:
             predictions = self._stack_ts_seq(predictions)
