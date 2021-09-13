@@ -56,7 +56,7 @@ class EnsembleModel(GlobalForecastingModel):
                  logger
                  )
         raise_if(not self.is_global_ensemble and past_covariates is not None,
-                 "All models are of type darts.models.ForecastingModel which do not support covariates.",
+                 "The models are not GlobalForecastingModel's and do not support past covariates.",
                  logger
                  )
 
