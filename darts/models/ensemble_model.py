@@ -34,13 +34,12 @@ class EnsembleModel(GlobalForecastingModel):
         self.is_global_ensemble = all(isinstance(model, GlobalForecastingModel) for model in models)
 
         raise_if_not(is_local_ensemble or self.is_global_ensemble,
-                     "All models must be instances of the same type, either darts.models.ForecastingModel"
-                     "or darts.models.GlobalForecastingModel",
+                     "All models must either be GlobalForecastingModel instances, or none of them should be.",
                      logger)
         super().__init__()
-        self.models: Union[List[ForecastingModel], List[GlobalForecastingModel]] = models
-        self.is_univariate = None
-        self.is_univariate_covariate = None
+        self.models = models
+        self.is_single_series = None
+        self.is_single_series_covariate = None
 
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -60,11 +59,11 @@ class EnsembleModel(GlobalForecastingModel):
                  logger
                  )
 
-        self.is_univariate = isinstance(series, TimeSeries)
+        self.is_single_series = isinstance(series, TimeSeries)
         if past_covariates is not None:
-            self.is_univariate_covariate = isinstance(past_covariates, TimeSeries)
+            self.is_single_series_covariate = isinstance(past_covariates, TimeSeries)
 
-        raise_if(past_covariates is not None and (self.is_univariate != self.is_univariate_covariate),
+        raise_if(past_covariates is not None and (self.is_single_series != self.is_single_series_covariate),
                  "Both series and covariates have to be either univariate or multivariate.",
                  logger
                  )
@@ -74,12 +73,6 @@ class EnsembleModel(GlobalForecastingModel):
     def _stack_ts_seq(self, seq1, seq2):
         # stacks two sequences of timeseries elementwise
         return [ts1.stack(ts2) for ts1, ts2 in zip(seq1, seq2)]
-
-    def _split_multi_ts_sequence(self, n: int, ts_sequence: Sequence[TimeSeries]
-                                 ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
-        left = [ts[:-n] for ts in ts_sequence]
-        right = [ts[-n:] for ts in ts_sequence]
-        return left, right
 
     def predict(self,
                 n: int,
@@ -92,7 +85,7 @@ class EnsembleModel(GlobalForecastingModel):
         super().predict(n=n, series=series,
                         past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
 
-        if self.is_global_ensemble and not self.is_univariate:
+        if self.is_global_ensemble and not self.is_single_series:
             predictions = self.models[0].predict(n=n, series=series,
                         past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
         else:
@@ -100,7 +93,7 @@ class EnsembleModel(GlobalForecastingModel):
 
         if len(self.models) > 1:
             for model in self.models[1:]:
-                if self.is_global_ensemble and not self.is_univariate:
+                if self.is_global_ensemble and not self.is_single_series:
                     prediction = model.predict(n=n, series=series,
                         past_covariates=past_covariates, future_covariates=future_covariates, num_samples=num_samples)
                     predictions = self._stack_ts_seq(predictions, prediction)
@@ -108,7 +101,7 @@ class EnsembleModel(GlobalForecastingModel):
                     prediction = model.predict(n=n, num_samples=num_samples)
                     predictions = predictions.stack(prediction)
 
-        if self.is_univariate:
+        if self.is_single_series:
             return self.ensemble(predictions)
         else:
             return self.ensemble(predictions, series)

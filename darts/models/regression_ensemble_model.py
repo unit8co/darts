@@ -58,6 +58,12 @@ class RegressionEnsembleModel(EnsembleModel):
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
 
+    def _split_multi_ts_sequence(self, n: int, ts_sequence: Sequence[TimeSeries]
+                                 ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+        left = [ts[:-n] for ts in ts_sequence]
+        right = [ts[-n:] for ts in ts_sequence]
+        return left, right
+
     def fit(self,
             series: Union[TimeSeries, Sequence[TimeSeries]],
             past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
@@ -67,7 +73,7 @@ class RegressionEnsembleModel(EnsembleModel):
         super().fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
 
         # spare train_n_points points to serve as regression target
-        if self.is_univariate:
+        if self.is_single_series:
             train_n_points_too_big = len(self.training_series) <= self.train_n_points
         else:
             train_n_points_too_big = any([len(s) <= self.train_n_points for s in series])
@@ -76,14 +82,14 @@ class RegressionEnsembleModel(EnsembleModel):
                  "regression_train_n_points parameter too big (must be smaller or equal to the number of points in "
                  "training_series)", logger)
 
-        if self.is_univariate:
+        if self.is_single_series:
             forecast_training = self.training_series[:-self.train_n_points]
             regression_target = self.training_series[-self.train_n_points:]
         else:
             forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
 
         if past_covariates is not None:
-            if self.is_univariate:
+            if self.is_single_series:
                 past_forecast_covariates = self.past_covariate_series[:-self.train_n_points]
             else:
                 past_forecast_covariates, _ = \
@@ -92,7 +98,7 @@ class RegressionEnsembleModel(EnsembleModel):
             past_forecast_covariates=None
 
         if future_covariates is not None:
-            if self.is_univariate:
+            if self.is_single_series:
                 split_point = len(series) - self.train_n_points
                 future_forecast_covariates = self.future_covariate_series[:split_point]
             else:
@@ -118,7 +124,7 @@ class RegressionEnsembleModel(EnsembleModel):
                 model.fit(forecast_training)
 
         # predict train_n_points points for each model
-        if self.is_global_ensemble and not self.is_univariate:
+        if self.is_global_ensemble and not self.is_single_series:
             predictions = self.models[0].predict(
                 n=self.train_n_points,
                 series=forecast_training,
@@ -129,7 +135,7 @@ class RegressionEnsembleModel(EnsembleModel):
 
         if len(self.models) > 1:
             for model in self.models[1:]:
-                if self.is_global_ensemble and not self.is_univariate:
+                if self.is_global_ensemble and not self.is_single_series:
                     prediction = model.predict(
                         n=self.train_n_points,
                         series=forecast_training,
@@ -166,7 +172,7 @@ class RegressionEnsembleModel(EnsembleModel):
     def ensemble(self,
                  predictions: Union[TimeSeries, Sequence[TimeSeries]],
                  series: Optional[Sequence[TimeSeries]] = None) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        if self.is_univariate:
+        if self.is_single_series:
             return self.regression_model.predict(n=len(predictions), future_covariates=predictions)
         else:
             return [self.regression_model.predict(n=len(prediction), series=serie, future_covariates=prediction)

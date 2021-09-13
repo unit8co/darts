@@ -22,7 +22,6 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     seq1 = [_make_ts(0), _make_ts(10), _make_ts(20)]
     cov1 = [_make_ts(5), _make_ts(15), _make_ts(25)]
 
-
     def test_input_models_local_models(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([])
