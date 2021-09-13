@@ -12,9 +12,7 @@ import torch.nn as nn
 
 from darts.logging import get_logger, raise_log, raise_if_not
 from darts.utils.torch import random_method
-from darts.models.forecasting.torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
-                                                              PastCovariatesTorchModel)
-from darts.utils.likelihood_models import Likelihood
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -65,7 +63,6 @@ class _Block(nn.Module):
                  expansion_coefficient_dim: int,
                  input_chunk_length: int,
                  target_length: int,
-                 nr_params: int,
                  g_type: GTypes):
         """ PyTorch module implementing the basic building block of the N-BEATS architecture.
 
@@ -82,8 +79,6 @@ class _Block(nn.Module):
             The length of the input sequence fed to the model.
         target_length
             The length of the forecast of the model.
-        nr_params
-            This is 1 for deterministic models, and otherwise equal to the number of parameters of the likelihood
         g_type
             The type of function that is implemented by the waveform generator.
 

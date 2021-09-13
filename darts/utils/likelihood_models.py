@@ -17,7 +17,7 @@ The parameter `prior_strength` controls the strength of the "prior" regularisati
 
 Some distributions (such as ``GaussianLikelihood``, and ``PoissonLikelihood``) are univariate,
 in which case they are applied to model each component of multivariate series independently.
-Some other distributions (such as ``MultivariateGaussianLikelihood`` and ``DirichletLikelihood``) are multivariate,
+Some other distributions (such as ``DirichletLikelihood``) are multivariate,
 in which case they will model all components of multivariate time series jointly.
 
 Univariate likelihoods accept either scalar or array-like values for the optional prior parameters.
