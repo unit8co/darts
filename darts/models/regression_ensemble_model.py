@@ -88,36 +88,14 @@ class RegressionEnsembleModel(EnsembleModel):
         else:
             forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
 
-        if past_covariates is not None:
-            if self.is_single_series:
-                past_forecast_covariates = self.past_covariate_series[:-self.train_n_points]
-            else:
-                past_forecast_covariates, _ = \
-                    self._split_multi_ts_sequence(self.train_n_points, past_covariates)
-        else:
-            past_forecast_covariates=None
-
-        if future_covariates is not None:
-            if self.is_single_series:
-                split_point = len(series) - self.train_n_points
-                future_forecast_covariates = self.future_covariate_series[:split_point]
-            else:
-                # Just for convenience, shortest `series` determines splitting point. Doesn't matter if all timeseries
-                # are of the same length.
-                split_point = min([len(s) for s in series]) - self.train_n_points
-                future_forecast_covariates, _ = \
-                    self._split_multi_ts_sequence(split_point, future_covariates)
-        else:
-            future_forecast_covariates=None
-
         # fit the forecasting models
         for model in self.models:
             if self.is_global_ensemble:
                 kwargs = dict(series=forecast_training)
                 if model.uses_past_covariates:
-                    kwargs['past_covariates'] = past_forecast_covariates
+                    kwargs['past_covariates'] = past_covariates
                 if model.uses_future_covariates:
-                    kwargs['future_covariates'] = future_forecast_covariates
+                    kwargs['future_covariates'] = future_covariates
                 model.fit(**kwargs)
 
             else:
@@ -128,8 +106,8 @@ class RegressionEnsembleModel(EnsembleModel):
             predictions = self.models[0].predict(
                 n=self.train_n_points,
                 series=forecast_training,
-                past_covariates=past_forecast_covariates,
-                future_covariates=future_forecast_covariates)
+                past_covariates=past_covariates,
+                future_covariates=future_covariates)
         else:
             predictions = self.models[0].predict(self.train_n_points)
 
@@ -139,8 +117,8 @@ class RegressionEnsembleModel(EnsembleModel):
                     prediction = model.predict(
                         n=self.train_n_points,
                         series=forecast_training,
-                        past_covariates=past_forecast_covariates,
-                        future_covariates=future_forecast_covariates)
+                        past_covariates=past_covariates,
+                        future_covariates=future_covariates)
                     predictions = self._stack_ts_seq(predictions, prediction)
                 else:
                     prediction = model.predict(self.train_n_points)
