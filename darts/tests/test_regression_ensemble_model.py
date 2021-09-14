@@ -56,8 +56,10 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
 
     def get_global_models(self, output_chunk_length=5):
-        return [RNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1),
-                BlockRNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1),
+        return [RNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1,
+                         random_state=1337),
+                BlockRNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1,
+                              random_state=1337),
                 ]
 
     def test_accepts_different_regression_models(self):
@@ -153,6 +155,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model_instance.fit(series=train_t, past_covariates=train_f)
             prediction = model_instance.predict(n=n, past_covariates=past_covariates)
             current_rmse = rmse(prediction, test_t)
+            print(f"Current RMSE: {current_rmse}")
 
             self.assertTrue(
                 current_rmse <= min_rmse,
@@ -165,7 +168,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ensemble_models = self.get_global_models(output_chunk_length=horizon)
             ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum1, self.ts_cov1, 1.2)
+            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum1, self.ts_cov1, 1.3)
 
         def test_ensemble_models_denoising_multi_input(self):
             # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
@@ -173,4 +176,4 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ensemble_models = self.get_global_models(output_chunk_length=horizon)
             ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum2, self.ts_cov2, 2.0)
+            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum2, self.ts_cov2, 1.0)
