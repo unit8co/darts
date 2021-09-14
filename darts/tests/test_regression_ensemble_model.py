@@ -1,5 +1,6 @@
 import logging
-
+import numpy as np
+import pandas as pd
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
@@ -9,6 +10,9 @@ from ..models import NaiveDrift, NaiveSeasonal
 from ..models import RegressionEnsembleModel, LinearRegressionModel, RandomForest, RegressionModel
 from ..logging import get_logger
 from .test_ensemble_models import _make_ts
+from ..metrics import rmse
+from .. import TimeSeries
+from .test_regression_models import train_test_split
 
 logger = get_logger(__name__)
 
@@ -31,6 +35,22 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     seq2 = [_make_ts(0, 20), _make_ts(10, 20), _make_ts(20, 20)]
     cov2 = [_make_ts(5, 30), _make_ts(15, 30), _make_ts(25, 30)]
+
+    np.random.seed(42)
+
+    # dummy feature and target TimeSeries instances
+    ts_periodic = tg.sine_timeseries(length=500)
+    ts_gaussian = tg.gaussian_timeseries(length=500)
+    ts_random_walk = tg.random_walk_timeseries(length=500)
+
+    ts_cov1 = ts_periodic.stack(ts_gaussian)
+    ts_cov1 = ts_cov1.pd_dataframe()
+    ts_cov1.columns = ["Periodic", "Gaussian"]
+    ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
+    ts_sum1 = ts_periodic + ts_gaussian
+
+    ts_cov2 = ts_sum1.stack(ts_random_walk)
+    ts_sum2 = ts_sum1 + ts_random_walk
 
     def get_local_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
@@ -125,3 +145,32 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ensemble = RegressionEnsembleModel(ensemble_models, 10)
             ensemble.fit(self.seq1, self.cov1)
             ensemble.predict(10, self.seq2, self.cov2)
+
+        def helper_test_models_accuracy(self, model_instance, n, series, past_covariates, min_rmse):
+            # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
+            train_f, train_t, test_f, test_t = train_test_split(past_covariates, series, pd.Timestamp("20010101"))
+
+            model_instance.fit(series=train_t, past_covariates=train_f)
+            prediction = model_instance.predict(n=n, past_covariates=past_covariates)
+            current_rmse = rmse(prediction, test_t)
+
+            self.assertTrue(
+                current_rmse <= min_rmse,
+                f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded."
+            )
+
+        def test_ensemble_models_denoising(self):
+            # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
+            horizon = 10
+            ensemble_models = self.get_global_models(output_chunk_length=horizon)
+            ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
+            ensemble = RegressionEnsembleModel(ensemble_models, horizon)
+            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum1, self.ts_cov1, 1.2)
+
+        def test_ensemble_models_denoising_multi_input(self):
+            # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
+            horizon = 10
+            ensemble_models = self.get_global_models(output_chunk_length=horizon)
+            ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
+            ensemble = RegressionEnsembleModel(ensemble_models, horizon)
+            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum2, self.ts_cov2, 2.0)
