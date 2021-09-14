@@ -96,9 +96,6 @@ class _RNNModule(nn.Module):
 
 
 class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel):
-
-    uses_past_covariates = False
-
     @random_method
     def __init__(self,
                  model: Union[str, nn.Module] = 'RNN',
