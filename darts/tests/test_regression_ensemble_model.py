@@ -6,7 +6,7 @@ from sklearn.linear_model import LinearRegression
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal
-from ..models import RegressionEnsembleModel, LinearRegressionModel, RandomForest
+from ..models import RegressionEnsembleModel, LinearRegressionModel, RandomForest, RegressionModel
 from ..logging import get_logger
 from .test_ensemble_models import _make_ts
 
@@ -30,7 +30,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     cov1 = [_make_ts(5), _make_ts(15), _make_ts(25)]
 
     seq2 = [_make_ts(0, 20), _make_ts(10, 20), _make_ts(20, 20)]
-    cov2 = [_make_ts(5, 25), _make_ts(15, 25), _make_ts(25, 25)]
+    cov2 = [_make_ts(5, 30), _make_ts(15, 30), _make_ts(25, 30)]
 
     def get_local_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
@@ -106,16 +106,22 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=2)
 
         def test_train_predict_global_models_univar(self):
-            ensemble = RegressionEnsembleModel(self.get_global_models(output_chunk_length=10), 10)
+            ensemble_models = self.get_global_models(output_chunk_length=10)
+            ensemble_models.append(RegressionModel(lags=1))
+            ensemble = RegressionEnsembleModel(ensemble_models, 10)
             ensemble.fit(series=self.combined)
             ensemble.predict(10)
 
         def test_train_predict_global_models_multivar_no_covariates(self):
-            ensemble = RegressionEnsembleModel(self.get_global_models(output_chunk_length=10), 10)
+            ensemble_models = self.get_global_models(output_chunk_length=10)
+            ensemble_models.append(RegressionModel(lags=1))
+            ensemble = RegressionEnsembleModel(ensemble_models, 10)
             ensemble.fit(self.seq1)
             ensemble.predict(10, self.seq1)
 
         def test_train_predict_global_models_multivar_with_covariates(self):
-            ensemble = RegressionEnsembleModel(self.get_global_models(output_chunk_length=10), 10)
+            ensemble_models = self.get_global_models(output_chunk_length=10)
+            ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
+            ensemble = RegressionEnsembleModel(ensemble_models, 10)
             ensemble.fit(self.seq1, self.cov1)
-            ensemble.predict(10, self.seq1, self.cov1)
+            ensemble.predict(10, self.seq2, self.cov2)
