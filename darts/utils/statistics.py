@@ -4,7 +4,7 @@ Utils for time series statistics
 """
 
 import math
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional, List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -288,7 +288,7 @@ def plot_acf(ts: TimeSeries,
     for i in range(1, max_lag + 1):
         stats.append(_bartlett_formula(r[1:], i, len(ts)))
 
-    if (axis is None):
+    if axis is None:
         plt.figure(figsize=fig_size)
         axis = plt
 
@@ -305,9 +305,54 @@ def plot_acf(ts: TimeSeries,
     axis.plot((0, max_lag + 1), (0, 0), color='black')
 
 
+def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
+              bins: Optional[Union[int, np.ndarray, List[float]]] = None,
+              density: bool = False,
+              title: Optional[str] = None,
+              fig_size: Optional[Tuple[int, int]] = None,
+              ax: Optional[plt.axis] = None) -> None:
+    """ This function plots the histogram of `data`.
+
+    Parameters
+    ----------
+    data
+        Univariate, determerministic TimeSeries instance representing residuals.
+    bins
+        Optionally, either an integer value for the number of bins to be displayed
+        or an array-like of floats determining the position of bins.
+    density
+        bool, if `density` is set to True, the bin counts will be converted to probability density
+    title
+        The title of the figure to be displayed
+    fig_size
+        The size of the figure to be displayed.
+    ax
+        Optionally, an axis object to plot the histogram on.
+    """
+
+    raise_if_not(any([isinstance(data, x) for x in [TimeSeries, list, np.ndarray]]),
+                 'input data must be a TimeSeries instance or an array-like')
+
+    if isinstance(data, TimeSeries):
+        data._assert_univariate()
+        data._assert_deterministic()
+        values = data.univariate_values()
+    else:
+        values = data
+
+    _, ax = plt.subplots(figsize=fig_size) if ax is None else (None, ax)
+
+    title = 'Histogram' if title is None else title
+
+    ax.hist(values, bins=bins, density=density)
+    ax.set_title(title)
+    ax.set_xlabel('value')
+    ax.set_ylabel('count' if not density else 'probability')
+
+
 def plot_residuals_analysis(residuals: TimeSeries,
                             num_bins: int = 20,
-                            fill_nan: bool = True):
+                            fill_nan: bool = True) -> None:
     """ Plots data relevant to residuals.
 
     This function takes a univariate TimeSeries instance of residuals and plots their values,
@@ -340,12 +385,12 @@ def plot_residuals_analysis(residuals: TimeSeries,
     ax1.set_ylabel('value')
     ax1.set_title('Residual values')
 
-    # plot distribution
+    # plot histogram and distribution
     res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
     res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
-    ax2.hist(residuals.univariate_values(), bins=num_bins)
+    plot_hist(residuals, bins=num_bins, ax=ax2)
     ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
     ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     ax2.set_title('Distribution')
