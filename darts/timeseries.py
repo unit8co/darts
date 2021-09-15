@@ -1003,18 +1003,23 @@ class TimeSeries:
                     da_concat=da_sequence[0]
                 else:
                     raise AttributeError("All concatenated have the same time axis. "
-                                         "If this is not an error, use `ignore_time_axis=True`")
+                                         "If this is not an error, use `ignore_time_axis=True`.")
             else:
-                da_concat = xr.concat(da_sequence, dim=axis)
-            # time_axis_subsequent = True
-            # if time_axis_subsequent:
-            #     da_concat = xr.concat(da_sequence, dim=axis)
-            # else:
-            #     if ignore_time_axes:
-            #         pass
-            #     else:
-            #         raise AttributeError("All concatenating time series need to have the same time axis."
-            #                              " You can override this error by setting `ignore_time_axes=True`.")
+                consecutive_time_axes = True
+                for i in range(1, len(timeserie_sequence)):
+                    if timeserie_sequence[i - 1].end_time() + pd.Timedelta(timeserie_sequence[0].freq) != \
+                            timeserie_sequence[i].start_time():
+                        consecutive_time_axes = False
+                        break
+
+                if consecutive_time_axes:
+                    da_concat = xr.concat(da_sequence, dim=axis)
+                else:
+                    raise AttributeError("When concatenating over time axis, all series need to be subsequent, i.e. "
+                                         "end_time of the previous one should be equal to start_time - 1 of the "
+                                         "following timeserie."
+                                         )
+
         else: # component or sample
             if len(set([ts.shape[0] for ts in da_sequence])) != 1:
                 raise AttributeError("All concatenating time series need to have the same time axis or at least"
