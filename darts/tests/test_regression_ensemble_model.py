@@ -184,8 +184,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             horizon = 10
             ts_sum1, ts_cov1, _, _ = self.denoising_input()
 
-            ensemble_models = self.get_global_models(output_chunk_length=horizon)
-            ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
+            ensemble_models = [
+                RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
+                BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
+                RegressionModel(lags=1, lags_past_covariates=[-1])
+            ]
+
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
             self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 0.94)
 
@@ -194,7 +198,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             horizon = 10
             _, _, ts_sum2, ts_cov2 = self.denoising_input()
 
-            ensemble_models = self.get_global_models(output_chunk_length=horizon)
-            ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
+            ensemble_models = [
+                RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
+                BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
+                RegressionModel(lags=1, lags_past_covariates=[-1]), RegressionModel(lags=1, lags_past_covariates=[-1])
+            ]
+
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
             self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 0.6)
