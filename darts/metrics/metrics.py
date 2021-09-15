@@ -115,7 +115,7 @@ def multivariate_support(func):
 
 
 def _get_values(series: TimeSeries,
-                stochastic_quantile: float = 0.5) -> np.ndarray:
+                stochastic_quantile: Optional[float] = 0.5) -> np.ndarray:
     """
     Returns the numpy values of a time series.
     For stochastic series, return either all sample values with (stochastic_quantile=None) or the quantile sample value
@@ -127,7 +127,6 @@ def _get_values(series: TimeSeries,
         if stochastic_quantile is None:
             series_values = series.data_array().values
         else:
-            raise_if_not(isinstance(stochastic_quantile, float), 'stochastic quantile must be a float')
             series_values = series.quantile_timeseries(quantile=stochastic_quantile).univariate_values()
     return series_values
 
@@ -1029,31 +1028,22 @@ def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The rho-risk metric
     """
 
-    def rho_loss(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 pred_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 rho: float = 0.5,
-                 intersect: bool = True) -> Tuple[float, float]:
+    raise_if_not(pred_series.is_stochastic,
+                 'rho (quantile) loss should only be computed for stochastic predicted TimeSeries.')
 
-        raise_if_not(isinstance(rho, float), 'rho (quantile) must be a float.')
-        raise_if_not(pred_series.is_stochastic,
-                     'rho (quantile) loss should only be computed for stochastic predicted TimeSeries.')
+    z_true, z_hat = _get_values_or_raise(actual_series, pred_series, intersect=intersect, stochastic_quantile=None)
 
-        z_true, z_hat = _get_values_or_raise(actual_series, pred_series, intersect=intersect, stochastic_quantile=None)
+    # adaption of _remove_nan_union(y1, y2): in stochastic case we need to account for different shapes of y1 & y2
+    isnan_mask = np.logical_or(np.isnan(z_true), np.isnan(z_hat).any(axis=2).flatten())
+    z_true, z_hat = np.delete(z_true, isnan_mask), np.delete(z_hat, isnan_mask, axis=0)
 
-        # adaption of _remove_nan_union(y1, y2): in stochastic case we need to account for different shapes of y1 & y2
-        isnan_mask = np.logical_or(np.isnan(z_true), np.isnan(z_hat).any(axis=2).flatten())
-        z_true, z_hat = np.delete(z_true, isnan_mask), np.delete(z_hat, isnan_mask, axis=0)
+    z_true = z_true.sum(axis=0)
+    z_hat = z_hat.sum(axis=0)  # aggregate all individual sample realizations
 
-        z_true = z_true.sum(axis=0)
-        z_hat = z_hat.sum(axis=0)  # aggregate all individual sample realizations
+    z_hat_rho = np.quantile(z_hat, q=rho)  # get the quantile from aggregated samples
 
-        z_hat_rho = np.quantile(z_hat, q=rho)  # get the quantile from aggregated samples
+    pred_above = np.where(z_hat_rho > z_true, 1, 0)
+    pred_below = np.where(z_hat_rho <= z_true, 1, 0)
 
-        pred_above = np.where(z_hat_rho > z_true, 1, 0)
-        pred_below = np.where(z_hat_rho <= z_true, 1, 0)
-
-        loss = 2 * (z_hat_rho - z_true) * (rho * pred_above - (1 - rho) * pred_below)
-        return loss, z_true
-
-    loss, z_true = rho_loss(actual_series, pred_series, rho, intersect=intersect)
-    return loss / z_true
+    rho_loss = 2 * (z_hat_rho - z_true) * (rho * pred_above - (1 - rho) * pred_below)
+    return rho_loss / z_true

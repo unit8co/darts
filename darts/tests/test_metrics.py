@@ -117,7 +117,7 @@ class MetricsTestCase(DartsBaseTestClass):
             nan_metric = metric(nan_s1 + 1, s2)
             self.assertEqual(non_nan_metric, nan_metric)
 
-            # multivariate
+            # multivariate + multi-TS
             s11 = [s1.stack(s1)] * 2
             s22 = [s2.stack(s2)] * 2
             non_nan_metric = metric([s[:9] + 1 for s in s11], [s[:9] for s in s22])
