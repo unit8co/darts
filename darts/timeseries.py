@@ -911,7 +911,9 @@ class TimeSeries:
         else:
             return self._xa[:, 0, sample].values
 
-    def head(self, samples:int = 5):
+    def head(self,
+             samples: Optional[int] = 5,
+             axis: Optional[Union[int, str]] = 'time'):
         """Return first n samples from TimeSeries.
 
             Parameters
@@ -926,9 +928,14 @@ class TimeSeries:
                 # of ``samples`` samples. [Default: 5]
         """
         # test how this will work for univariate and multivariate cases
-        pass
+        axis = TimeSeries._get_str_axis(axis)
 
-    def tail(self, samples: int = 5):
+        return TimeSeries(self._xa[{axis: range(samples)}])
+
+
+    def tail(self,
+             samples: Optional[int] = 5,
+             axis: Optional[Union[int, str]] = 'time'):
         """Return last n samples from TimeSeries.
 
             Parameters
@@ -943,7 +950,26 @@ class TimeSeries:
                 # of ``samples`` from the bottom. [Default: 5]
         """
         # test how this will work for univariate and multivariate cases
-        pass
+        axis = TimeSeries._get_str_axis(axis)
+        return TimeSeries(self._xa[{axis: range(-samples, 0)}])
+
+    @staticmethod
+    def _get_str_axis(axis: Union[int, str]):
+        """Returns correct axis name as a string, regardless whether it was string or integer"""
+        axis_error_string = "Axis parameter can be only one of the numbers (0, 1, 2) " \
+                            "or strings ('time', 'component', 'sample')"
+        if isinstance(axis, int):
+            try:
+                axis = DIMS[axis]
+            except IndexError:
+                raise AttributeError(axis_error_string)
+        elif isinstance(axis, str):
+            if axis not in DIMS:
+                raise AttributeError(axis_error_string)
+        else:
+            raise AttributeError(axis_error_string)
+
+        return axis
 
     @staticmethod
     def concatenate(timeserie_sequence: Sequence['TimeSeries'],
@@ -966,19 +992,8 @@ class TimeSeries:
             TimeSeries
                 concatenated timeseries
         """
-        axis_error_string = "Axis parameter can be only one of the numbers (0, 1, 2) " \
-                            "or strings ('time', 'component', 'sample')"
-        if isinstance(axis, int):
-            try:
-                axis = DIMS[axis]
-            except IndexError:
-                raise AttributeError(axis_error_string)
-        elif isinstance(axis, str):
-            if axis not in DIMS:
-                raise AttributeError(axis_error_string)
-        else:
-            raise AttributeError(axis_error_string)
 
+        axis = TimeSeries._get_str_axis(axis)
         if len(timeserie_sequence) < 2:
             return timeserie_sequence
 

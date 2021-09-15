@@ -798,3 +798,63 @@ class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
         self.assertEqual(pd.Timestamp('2000-02-28'), ts.end_time())
         self.assertEqual('2D', ts.freq)
 
+class TimeSeriesTestCaseHeadTail(DartsBaseTestClass):
+
+    ts = TimeSeries(
+        xr.DataArray(
+            np.random.rand(10, 10, 10),
+            [
+                ("time", pd.date_range("2000-01-01", periods=10)),
+                ("component", ['comp_'+str(i) for i in range(10)]),
+                ("sample", range(10))
+            ],
+        ))
+
+    def test_head_sunny_day_time_axis(self):
+        result = self.ts.head()
+        self.assertEqual(5, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-05"), result.end_time())
+
+    def test_head_sunny_day_component_axis(self):
+        result = self.ts.head(axis=1)
+        self.assertEqual(5, result.n_components)
+        self.assertEqual(['comp_0', 'comp_1', 'comp_2', 'comp_3', 'comp_4'],
+                         result._xa.coords['component'].values.tolist())
+
+    def test_head_sunny_day_sample_axis(self):
+        result = self.ts.head(axis=2)
+        self.assertEqual(5, result.n_samples)
+        self.assertEqual(list(range(5)),
+                         result._xa.coords['sample'].values.tolist())
+
+    def test_tail_sunny_day_time_axis(self):
+        result = self.ts.tail()
+        self.assertEqual(5, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-06"), result.start_time())
+
+    def test_tail_sunny_day_component_axis(self):
+        result = self.ts.tail(axis=1)
+        self.assertEqual(5, result.n_components)
+        self.assertEqual(['comp_5', 'comp_6', 'comp_7', 'comp_8', 'comp_9'],
+                         result._xa.coords['component'].values.tolist())
+
+    def test_head_sunny_day_sample_axis(self):
+        result = self.ts.tail(axis=2)
+        self.assertEqual(5, result.n_samples)
+        self.assertEqual(list(range(5, 10)),
+                         result._xa.coords['sample'].values.tolist())
+
+    def test_head_overshot_time_axis(self):
+        result = self.ts.head(20)
+        self.assertEqual(10, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-10"), result.end_time())
+
+
+    def test_head_overshot_component_axis(self):
+        result = self.ts.head(20, axis='component')
+        self.assertEqual(10, result.n_components)
+
+    def test_head_overshot_sample_axis(self):
+        result = self.ts.head(20, axis='sample')
+        self.assertEqual(10, result.n_samples)
+
