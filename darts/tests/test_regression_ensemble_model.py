@@ -23,8 +23,6 @@ except ImportError:
     logger.warning("Torch not available. Some tests will be skipped.")
     TORCH_AVAILABLE = False
 
-np.random.seed(42)
-
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
     sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     lin_series = tg.linear_timeseries(length=50)
@@ -36,20 +34,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     seq2 = [_make_ts(0, 20), _make_ts(10, 20), _make_ts(20, 20)]
     cov2 = [_make_ts(5, 30), _make_ts(15, 30), _make_ts(25, 30)]
-
-    # dummy feature and target TimeSeries instances
-    ts_periodic = tg.sine_timeseries(length=500)
-    ts_gaussian = tg.gaussian_timeseries(length=500)
-    ts_random_walk = tg.random_walk_timeseries(length=500)
-
-    ts_cov1 = ts_periodic.stack(ts_gaussian)
-    ts_cov1 = ts_cov1.pd_dataframe()
-    ts_cov1.columns = ["Periodic", "Gaussian"]
-    ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
-    ts_sum1 = ts_periodic + ts_gaussian
-
-    ts_cov2 = ts_sum1.stack(ts_random_walk)
-    ts_sum2 = ts_sum1 + ts_random_walk
 
     def get_local_models(self):
         return [NaiveDrift(), NaiveSeasonal(5), NaiveSeasonal(10)]
@@ -161,18 +145,40 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded."
             )
 
+        def denoising_input(self):
+            np.random.seed(42)
+
+            ts_periodic = tg.sine_timeseries(length=500)
+            ts_gaussian = tg.gaussian_timeseries(length=500)
+            ts_random_walk = tg.random_walk_timeseries(length=500)
+
+            ts_cov1 = ts_periodic.stack(ts_gaussian)
+            ts_cov1 = ts_cov1.pd_dataframe()
+            ts_cov1.columns = ["Periodic", "Gaussian"]
+            ts_cov1 = TimeSeries.from_dataframe(ts_cov1)
+            ts_sum1 = ts_periodic + ts_gaussian
+
+            ts_cov2 = ts_sum1.stack(ts_random_walk)
+            ts_sum2 = ts_sum1 + ts_random_walk
+
+            return ts_sum1, ts_cov1, ts_sum2, ts_cov2
+
         def test_ensemble_models_denoising(self):
             # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
             horizon = 10
+            ts_sum1, ts_cov1, _, _ = self.denoising_input()
+
             ensemble_models = self.get_global_models(output_chunk_length=horizon)
             ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum1, self.ts_cov1, 0.94)
+            self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 0.94)
 
         def test_ensemble_models_denoising_multi_input(self):
             # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
             horizon = 10
+            _, _, ts_sum2, ts_cov2 = self.denoising_input()
+
             ensemble_models = self.get_global_models(output_chunk_length=horizon)
             ensemble_models.append(RegressionModel(lags=1, lags_past_covariates=[-1]))
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-            self.helper_test_models_accuracy(ensemble, horizon, self.ts_sum2, self.ts_cov2, 0.6)
+            self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 0.6)
