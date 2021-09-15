@@ -131,14 +131,8 @@ class RegressionEnsembleModel(EnsembleModel):
     def ensemble(self,
                  predictions: Union[TimeSeries, Sequence[TimeSeries]],
                  series: Optional[Sequence[TimeSeries]] = None) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        # if self.is_single_series:
-        #     return self.regression_model.predict(n=len(predictions), future_covariates=predictions)
-        # else:
         if self.is_single_series:
-            predictions = [predictions]
-            series = [series]
-
-        ensembled = [self.regression_model.predict(n=len(prediction), series=serie, future_covariates=prediction)
-                      for serie, prediction in zip(series, predictions)]
-
-        return ensembled[0] if self.is_single_series else ensembled
+            return self.regression_model.predict(n=len(predictions), future_covariates=predictions)
+        else:
+            return [self.regression_model.predict(n=len(prediction), series=serie, future_covariates=prediction)
+                    for serie, prediction in zip(series, predictions)]
