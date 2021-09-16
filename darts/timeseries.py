@@ -6,6 +6,7 @@ Timeseries
 It can represent a stochastic time series by storing several samples (trajectories).
 """
 
+import pickle
 import pandas as pd
 import numpy as np
 import xarray as xr
@@ -490,6 +491,28 @@ class TimeSeries:
         """
         df = pd.read_json(json_str, orient='split')
         return TimeSeries.from_dataframe(df)
+
+    @staticmethod
+    def from_pickle(path: str) -> 'TimeSeries':
+        """
+        Reads Timeseries object that was pickled.
+
+        **Note**: Xarray docs[1] suggest not using pickle as a long-term data storage.
+
+        ..[1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
+
+        Parameters
+        ----------
+        path : string
+            path pointing to a pickle file that will be loaded
+
+        Returns
+        -------
+        TimeSeries
+            timeseries object loaded from file
+        """
+        with open(path, 'rb') as fh:
+            return pickle.load(fh)
 
     """
     Properties
@@ -1908,6 +1931,25 @@ class TimeSeries:
                                      'Consider calling quantile_df() instead.'))
 
         self.pd_dataframe().to_csv(path_or_buf=path_or_buf, sep=sep, header=header, index=index)
+
+    def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
+        """
+        Saves Timeseries object in pickle format.
+
+        **Note**: Xarray docs[1] suggest not using pickle as a long-term data storage.
+
+        ..[1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
+
+        Parameters
+        ----------
+        path : string
+            path to a file where current object will be pickled
+        protocol : integer, default highest
+            pickling protocol. The default is best in most cases, use it only if having backward compatibility issues
+        """
+
+        with open(path, 'wb') as fh:
+            pickle.dump(self, fh, protocol=protocol)
 
     def plot(self,
              new_plot: bool = False,
