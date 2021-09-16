@@ -918,9 +918,9 @@ class TimeSeries:
 
             Parameters
             ----------
-            samples [int, default: 5]
+            samples : int, default 5
                 number of samples to display
-            axis [str or int, optional, default: 'time']
+            axis : str or int, optional, default 'time'
                 axis along which we intend to display records
 
             Returns
@@ -944,9 +944,9 @@ class TimeSeries:
 
             Parameters
             ----------
-            samples [int, default: 5]
+            samples : int, default: 5
                 number of samples to display
-            axis [str or int, optional, default: 'time']
+            axis : str or int, optional, default: 'time'
                 axis along which we intend to display records
 
             Returns
