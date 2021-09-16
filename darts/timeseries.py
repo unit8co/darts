@@ -11,7 +11,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union, TextIO, Sequence, Dict
+from typing import Tuple, Optional, Callable, Any, List, Union, TextIO, Sequence
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
@@ -234,7 +234,6 @@ class TimeSeries:
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
                  freq: Optional[str] = None,
-                 parse_datetime_index: Optional[bool] = True,
                  **kwargs,) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a single CSV file.
@@ -258,24 +257,15 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
-        parse_datetime_index
-            If True, Darts will attempt to infer the format of the datetime strings in the index. If unsuccessful, index
-            will remain intact [default True]
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
         Returns
         -------
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
-
-        ..[1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.read_csv.html
         """
 
-        df = pd.read_csv(
-            filepath_or_buffer=filepath_or_buffer,
-            parse_dates=parse_datetime_index,
-            infer_datetime_format=parse_datetime_index,
-            **kwargs)
+        df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
         return TimeSeries.from_dataframe(df=df, 
                                          time_col=time_col, 
                                          value_cols=value_cols, 
