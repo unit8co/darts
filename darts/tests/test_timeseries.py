@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from tempfile import NamedTemporaryFile
+from unittest.mock import patch
 
 from .base_test_class import DartsBaseTestClass
 from ..timeseries import TimeSeries
@@ -692,8 +693,35 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         with self.assertRaises(AssertionError):
             ts.to_csv('blah.csv')
 
-    def test_to_csv_deterministic(self):
-        pass
+    @patch('darts.timeseries.TimeSeries.pd_dataframe')
+    def test_to_csv_deterministic(self, pddf_mock):
+        ts = TimeSeries(
+            xr.DataArray(
+                np.random.rand(10, 10, 1),
+                [
+                    ("time", pd.date_range("2000-01-01", periods=10)),
+                    ("component", ['comp_' + str(i) for i in range(10)]),
+                    ("sample", [0])
+                ],
+            ))
+
+        ts.to_csv('test.csv')
+        pddf_mock.assert_called_once()
+
+    @patch('darts.timeseries.TimeSeries.pd_dataframe')
+    def test_to_csv_stochastic(self, pddf_mock):
+        ts = TimeSeries(
+            xr.DataArray(
+                np.random.rand(10, 10, 10),
+                [
+                    ("time", pd.date_range("2000-01-01", periods=10)),
+                    ("component", ['comp_' + str(i) for i in range(10)]),
+                    ("sample", range(10))
+                ],
+            ))
+
+        with self.assertRaises(AssertionError):
+            ts.to_csv('test.csv')
 
 
 class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):

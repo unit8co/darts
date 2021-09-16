@@ -1885,6 +1885,23 @@ class TimeSeries:
                header: Union[bool, List[str]] = True,
                index: bool = True
                ):
+
+        """
+        Parameters
+        ----------
+        path_or_buf : str or file handle, default None
+            File path or object, if None is provided the result is returned as
+            a string.  If a non-binary file object is passed, it should be opened
+            with `newline=''`, disabling universal newlines. If a binary
+            file object is passed, `mode` might need to contain a `'b'`.
+        sep : str, default ','
+            String of length 1. Field delimiter for the output file.
+        header : bool or list of str, default True
+            Write out the column names. If a list of strings is given it is
+            assumed to be aliases for the column names.
+        index : bool, default True
+            Write row names (index).
+        """
         if not self.is_deterministic:
             raise_log(AssertionError('The pd_dataframe() method can only return DataFrames of deterministic '
                                      'time series, and this series is not deterministic (it contains several samples). '
