@@ -982,8 +982,8 @@ class TimeSeries:
 
     @staticmethod
     def concatenate(timeserie_sequence: Sequence['TimeSeries'],
-                    axis: Union[str, int] = 0,
-                    ignore_time_axes: bool = False):
+                    axis: Optional[Union[str, int]] = 0,
+                    ignore_time_axes: Optional[bool] = False):
         """Concatenates other timeseries to the current one along given axis.
 
             Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
@@ -991,10 +991,12 @@ class TimeSeries:
 
             Parameters
             ----------
-            timeseries: TimeSeries
+            timeserie_sequence : sequence of TimeSeries
                 another timeseries to concatenate to this one
-            axis:
+            axis : str or int
                 axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
+            ignore_time_axes : bool, default False
+                Ignore errors when time axis is varies for some time series. Note that this may yield unexpected results
 
             Returns
             -------
@@ -1017,7 +1019,7 @@ class TimeSeries:
             (axis == 'component' and not ((time_axis_equal or ignore_time_axes) and sample_axis_equal)) or
             (axis == 'sample' and not ((time_axis_equal or ignore_time_axes) and component_axis_equal))):
 
-            raise AttributeError('Remaining (non-concatenating) axes need to be equal.')
+            raise_log(AttributeError('Remaining (non-concatenating) axes need to be equal.'))
 
         da_sequence = [ts.data_array() for ts in timeserie_sequence]
 
@@ -1026,8 +1028,8 @@ class TimeSeries:
                 if ignore_time_axes:
                     da_concat=da_sequence[0]
                 else:
-                    raise AttributeError("All concatenated have the same time axis. "
-                                         "If this is not an error, use `ignore_time_axis=True`.")
+                    raise_log(AttributeError("All concatenated have the same time axis. "
+                                             "If this is not an error, use `ignore_time_axis=True`."))
             else:
                 consecutive_time_axes = True
                 for i in range(1, len(timeserie_sequence)):
@@ -1039,10 +1041,10 @@ class TimeSeries:
                 if consecutive_time_axes:
                     da_concat = xr.concat(da_sequence, dim=axis)
                 else:
-                    raise AttributeError("When concatenating over time axis, all series need to be subsequent, i.e. "
-                                         "end_time of the previous one should be equal to start_time - 1 of the "
-                                         "following timeserie."
-                                         )
+                    raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent, i.e."
+                                             " end_time of the previous one should be equal to start_time - 1 of the "
+                                             "following timeserie."
+                                         ))
 
         else: # component or sample
             if len(set([ts.shape[0] for ts in da_sequence])) != 1:
@@ -1058,11 +1060,9 @@ class TimeSeries:
 
                     da_concat = xr.concat(da_sequence, dim=axis)
                 else:
-                    raise AttributeError("All concatenating time series need to have the same time axis."
-                                         " You can override this error by setting `ignore_time_axes=True`.")
+                    raise_log(AttributeError("All concatenating time series need to have the same time axis."
+                                             " You can override this error by setting `ignore_time_axes=True`."))
 
-        # da_concat = xr.concat(da_sequence, dim=axis)
-        # da_concat.assign_coords(time=)
         return TimeSeries.from_xarray(da_concat, fill_missing_dates=True, freq=timeserie_sequence[0].freq_str)
 
     """
