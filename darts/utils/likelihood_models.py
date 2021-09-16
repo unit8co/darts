@@ -25,7 +25,7 @@ If a scalar is provided, it is used as a prior for all components of the series.
 the i-th value will be used as a prior for the i-th component of the series. Multivariate likelihoods
 require array-like objects when specifying priors.
 
-The target series used for training must always lies within the distribution's support, otherwise
+The target series used for training must always lie within the distribution's support, otherwise
 errors will be raised during training. You can refer to the individual likelihoods' documentation
 to see what is the support. Similarly, the prior parameters also have to lie in some pre-defined domains.
 """
