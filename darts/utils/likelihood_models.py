@@ -69,7 +69,7 @@ def _check(param, predicate, param_name, condition_str):
         raise_if_not(all(predicate(p) for p in param),
                      'All provided parameters {} must be {}.'.format(param_name, condition_str))
     else:
-        raise_if_not(0 < param, 'The parameter {} must be {}.'.format(param_name, condition_str))
+        raise_if_not(predicate(param), 'The parameter {} must be {}.'.format(param_name, condition_str))
 
 
 def _check_strict_positive(param, param_name=''):
