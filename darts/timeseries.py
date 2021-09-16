@@ -918,20 +918,24 @@ class TimeSeries:
 
             Parameters
             ----------
-            samples
+            samples [int, default: 5]
                 number of samples to display
+            axis [str or int, optional, default: 'time']
+                axis along which we intend to display records
 
             Returns
             -------
             numpy.ndarray
                 Three dimensional array of (time, component, samples) where "samples" dimension has been cut off after
-                # of ``samples`` samples. [Default: 5]
+                # of ``samples`` samples.
         """
         # test how this will work for univariate and multivariate cases
         axis = TimeSeries._get_str_axis(axis)
 
-        return TimeSeries(self._xa[{axis: range(samples)}])
-
+        try:
+            return TimeSeries(self._xa[{axis: range(samples)}])
+        except IndexError:
+            return self
 
     def tail(self,
              samples: Optional[int] = 5,
@@ -940,8 +944,10 @@ class TimeSeries:
 
             Parameters
             ----------
-            samples
+            samples [int, default: 5]
                 number of samples to display
+            axis [str or int, optional, default: 'time']
+                axis along which we intend to display records
 
             Returns
             -------
@@ -951,7 +957,10 @@ class TimeSeries:
         """
         # test how this will work for univariate and multivariate cases
         axis = TimeSeries._get_str_axis(axis)
-        return TimeSeries(self._xa[{axis: range(-samples, 0)}])
+        try:
+            return TimeSeries(self._xa[{axis: range(-samples, 0)}])
+        except IndexError:
+            return self
 
     @staticmethod
     def _get_str_axis(axis: Union[int, str]):

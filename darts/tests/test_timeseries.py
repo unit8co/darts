@@ -849,12 +849,24 @@ class TimeSeriesTestCaseHeadTail(DartsBaseTestClass):
         self.assertEqual(10, result.n_timesteps)
         self.assertEqual(pd.Timestamp("2000-01-10"), result.end_time())
 
-
     def test_head_overshot_component_axis(self):
         result = self.ts.head(20, axis='component')
         self.assertEqual(10, result.n_components)
 
     def test_head_overshot_sample_axis(self):
         result = self.ts.head(20, axis='sample')
+        self.assertEqual(10, result.n_samples)
+
+    def test_tail_overshot_time_axis(self):
+        result = self.ts.tail(20)
+        self.assertEqual(10, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-01"), result.start_time())
+
+    def test_tail_overshot_component_axis(self):
+        result = self.ts.tail(20, axis='component')
+        self.assertEqual(10, result.n_components)
+
+    def test_tail_overshot_sample_axis(self):
+        result = self.ts.tail(20, axis='sample')
         self.assertEqual(10, result.n_samples)
 
