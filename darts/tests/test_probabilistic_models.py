@@ -67,15 +67,6 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                                                                  self.constant_multivar_ts,
                                                                  self.constant_noisy_multivar_ts)
 
-    def test_probabilistic_forecast_risk(self):
-        for model_cls, model_kwargs, err in models_cls_kwargs_errs:
-            self.helper_test_probabilistic_forecast_risk(model_cls, model_kwargs, err,
-                                                             self.constant_ts, self.constant_noisy_ts)
-            if issubclass(model_cls, GlobalForecastingModel):
-                self.helper_test_probabilistic_forecast_risk(model_cls, model_kwargs, err,
-                                                                 self.constant_multivar_ts,
-                                                                 self.constant_noisy_multivar_ts)
-
     def helper_test_probabilistic_forecast_accuracy(self, model_cls, model_kwargs, err, ts, noisy_ts):
         model = model_cls(**model_kwargs)
         model.fit(noisy_ts[:100])
@@ -100,28 +91,3 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
             self.assertLess(mae_err, new_mae)
             mae_err = new_mae
-
-    def helper_test_probabilistic_forecast_risk(self, model_cls, model_kwargs, err, ts, noisy_ts):
-        model = model_cls(**model_kwargs)
-        model.fit(noisy_ts[:100])
-        pred = model.predict(n=100, num_samples=100)
-
-        # test rho-risk (at quantile=0.5) compared to the noiseless ts
-        rrisk_median = rho_risk(ts[100:], pred, rho=0.5)
-        self.assertLess(rrisk_median, err)
-
-        # test risk for increasing quantiles between 0.75 and 1 should increase
-        tested_quantiles = [0.8, 0.9, 0.95, 0.99]  # some test cases actually have minimum risk around 0.75
-        rrisk_err = rho_risk(ts[100:], pred, rho=0.75)
-        for quantile in tested_quantiles:
-            new_rrisk = rho_risk(ts[100:], pred, rho=quantile)
-            self.assertLess(rrisk_err, new_rrisk)
-            rrisk_err = new_rrisk
-
-        # test risk for decreasing quantiles between 0.25 and 0 should increase
-        tested_quantiles = [0.2, 0.1, 0.05, 0.01]  # some test cases actually have minimum risk around 0.25
-        rrisk_err = rho_risk(ts[100:], pred, rho=0.25)
-        for quantile in tested_quantiles:
-            new_rrisk = rho_risk(ts[100:], pred, rho=quantile)
-            self.assertLess(rrisk_err, new_rrisk)
-            rrisk_err = new_rrisk
