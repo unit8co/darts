@@ -727,7 +727,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
 
     #
-    # COMPONENT TESTS
+    # COMPONENT AXIS TESTS
     #
 
     def test_concatenate_component_sunny_day(self):
@@ -765,7 +765,7 @@ class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
             TimeSeries.concatenate(samples, axis='component', ignore_time_axes=True)
 
     #
-    # SAMPLE TESTS
+    # SAMPLE AXIS TESTS
     #
 
     def test_concatenate_sample_sunny_day(self):
@@ -777,7 +777,7 @@ class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
         self.assertEqual((10, 1, 3), ts._xa.shape)
 
     #
-    # TIME TESTS
+    # TIME AXIS TESTS
     #
 
     def test_concatenate_time_sunny_day(self):
@@ -825,6 +825,7 @@ class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-02-28'), ts.end_time())
         self.assertEqual('2D', ts.freq)
+
 
 class TimeSeriesTestCaseHeadTail(DartsBaseTestClass):
 
