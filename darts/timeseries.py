@@ -230,7 +230,7 @@ class TimeSeries:
 
     @staticmethod
     def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
-                 time_col: Optional[str] = None,
+                 time_col: Optional[str] = 'time',
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
                  freq: Optional[str] = None,
