@@ -986,8 +986,8 @@ def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     where :math:`L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right)` is`the :math:`\\rho`-loss function:
 
-    .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( \\hat{Z}_{\\rho} - Z \\right)
-        \\left( \\rho I_{\\hat{Z}_{\\rho} > Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \leq Z} \\right),
+    .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( Z - \\hat{Z}_{\\rho} \\right)
+        \\left( \\rho I_{\\hat{Z}_{\\rho} < Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \geq Z} \\right),
 
     where :math:`Z = \\sum_{t=1}^{T} y_t` (1) is the aggregated target value and :math:`\\hat{Z}_{\\rho}` is the
     :math:`\\rho`-quantile of the predicted values. For this, each sample realization :math:`i \\in N` is first aggregated over the
@@ -1042,8 +1042,8 @@ def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
     z_hat_rho = np.quantile(z_hat, q=rho)  # get the quantile from aggregated samples
 
-    pred_above = np.where(z_hat_rho > z_true, 1, 0)
-    pred_below = np.where(z_hat_rho <= z_true, 1, 0)
+    pred_above = np.where(z_hat_rho >= z_true, 1, 0)
+    pred_below = np.where(z_hat_rho < z_true, 1, 0)
 
-    rho_loss = 2 * (z_hat_rho - z_true) * (rho * pred_above - (1 - rho) * pred_below)
+    rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
     return rho_loss / z_true
