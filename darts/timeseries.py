@@ -284,10 +284,12 @@ class TimeSeries:
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
-                       time_col: Optional[str] = None,
+                       time_col: Optional[str] = 'time',
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
-                       freq: Optional[str] = None,) -> 'TimeSeries':
+                       freq: Optional[str] = None,
+                       parse_datetime_index: Optional[bool] = True,
+                       ) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -313,7 +315,6 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
-
         Returns
         -------
         TimeSeries
@@ -329,7 +330,7 @@ class TimeSeries:
             series_df = df[value_cols]
 
         # get time index
-        if time_col:
+        if time_col in df.columns:
             time_index = pd.DatetimeIndex(df[time_col])
         else:
             raise_if_not(isinstance(df.index, pd.Int64Index) or isinstance(df.index, pd.DatetimeIndex),
