@@ -87,7 +87,7 @@ class Likelihood(ABC):
         """
         self.prior_strength = prior_strength
 
-    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor, ):
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
         """
         Computes a loss from a `model_output`, which represents the parameters of a given probability
         distribution for every ground truth value in `target`, and the `target` itself.
