@@ -1,6 +1,7 @@
 import logging
 import numpy as np
 import pandas as pd
+import torch
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
@@ -183,6 +184,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
             horizon = 10
             ts_sum1, ts_cov1, _, _ = self.denoising_input()
+            torch.manual_seed(42)
 
             ensemble_models = [
                 RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
