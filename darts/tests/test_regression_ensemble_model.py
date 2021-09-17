@@ -24,9 +24,11 @@ except ImportError:
     logger.warning("Torch not available. Some tests will be skipped.")
     TORCH_AVAILABLE = False
 
-np.random.seed(42)
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
+
+    RANDOM_SEED = 111
+
     sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     lin_series = tg.linear_timeseries(length=50)
 
@@ -163,7 +165,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             )
 
         def denoising_input(self):
-            np.random.seed(42)
+            np.random.seed(self.RANDOM_SEED)
 
             ts_periodic = tg.sine_timeseries(length=500)
             ts_gaussian = tg.gaussian_timeseries(length=500)
@@ -184,11 +186,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             # for every model, test whether it correctly denoises ts_sum using ts_gaussian and ts_sum as inputs
             horizon = 10
             ts_sum1, ts_cov1, _, _ = self.denoising_input()
-            torch.manual_seed(42)
+            torch.manual_seed(self.RANDOM_SEED)
 
             ensemble_models = [
-                RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
-                BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
+                RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
+                BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
                 RegressionModel(lags=1, lags_past_covariates=[-1])
             ]
 
@@ -199,11 +201,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
             horizon = 10
             _, _, ts_sum2, ts_cov2 = self.denoising_input()
-            torch.manual_seed(42)
+            torch.manual_seed(self.RANDOM_SEED)
 
             ensemble_models = [
-                RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
-                BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
+                RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
+                BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
                 RegressionModel(lags=1, lags_past_covariates=[-1]), RegressionModel(lags=1, lags_past_covariates=[-1])
             ]
 
