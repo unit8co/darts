@@ -199,6 +199,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
             horizon = 10
             _, _, ts_sum2, ts_cov2 = self.denoising_input()
+            torch.manual_seed(42)
 
             ensemble_models = [
                 RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=42),
