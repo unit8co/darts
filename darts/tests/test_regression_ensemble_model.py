@@ -157,7 +157,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             model_instance.fit(series=train_t, past_covariates=train_f)
             prediction = model_instance.predict(n=n, past_covariates=past_covariates)
             current_rmse = rmse(prediction, test_t)
-            print(f"Current RMSE: {current_rmse}")
 
             self.assertTrue(
                 current_rmse <= min_rmse,

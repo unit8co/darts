@@ -69,7 +69,6 @@ class RegressionEnsembleModel(EnsembleModel):
             series: Union[TimeSeries, Sequence[TimeSeries]],
             past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            num_samples: int = 1
             ) -> None:
 
         super().fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
@@ -102,7 +101,7 @@ class RegressionEnsembleModel(EnsembleModel):
             series=forecast_training,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=num_samples
+            num_samples=1
         )
 
         # train the regression model on the individual models' predictions
