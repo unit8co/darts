@@ -3,10 +3,28 @@
 
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
-## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.10.1...develop)
+## [Unreleased](https://github.com/unit8co/darts/tree/master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.11.0...master)
 
-## [0.10.1](https://github.com/unit8co/darts/tree/0.10.0) (2021-08-19)
+## [0.11.0](https://github.com/unit8co/darts/tree/0.11.0) (2021-09-04)
+### For users of the library:
+
+**Added:**
+- New model: `LightGBMModel` is a new regression model. Regression models allow to predict future values
+of the target, given arbitrary lags of the target as well as past and/or future covariates. `RegressionModel`
+already works with any scikit-learn regression model, and now `LightGBMModel` does the same with LightGBM.
+If you want to activate LightGBM support in Darts, please read the detailed install notes on 
+the [README](https://github.com/unit8co/darts/blob/master/README.md) carefully.
+- Added stride support to gridsearch
+
+**Fixed:**
+- A bug which was causing issues when training on a GPU with a validation set
+- Some issues with custom-provided RNN modules in `RNNModel`.
+- Properly handle `kwargs` in the `fit` function of `RegressionModel`s.
+- Fixed an issue which was causing problems with latest versions of Matplotlib.
+- An issue causing errors in the FFT notebook
+
+## [0.10.1](https://github.com/unit8co/darts/tree/0.10.1) (2021-08-19)
 ### For users of the library:
 
 **Fixed:**
@@ -163,7 +181,7 @@ more closely.
 
 ### For developers of the library:
 **Added:**
-- We have added some [contribution guidelines](https://github.com/unit8co/darts/blob/develop/CONTRIBUTE.md).
+- We have added some [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTE.md).
 
 ## [0.7.0](https://github.com/unit8co/darts/tree/0.7.0) (2021-04-14)
 
@@ -316,7 +334,7 @@ All implementations of `GlobalForecastingModel`s support multivariate time serie
 ### For developers of the library
 **Changed:**
 - GitHub release workflow is now triggered manually from the GitHub "Actions" tab in the repository, providing a `#major`, `#minor`, or `#patch` argument. [\#211](https://github.com/unit8co/darts/pull/211)
-- (A limited number of) notebook examples are now run as part of the GitHub develop workflow.
+- (A limited number of) notebook examples are now run as part of the GitHub PR workflow.
 
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 

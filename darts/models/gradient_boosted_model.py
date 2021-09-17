@@ -4,18 +4,8 @@ LightGBM Model
 
 This is a LightGBM implementation of Gradient Boosted Trees algorightm.
 
-Note: to use LightGBM on your Mac, you need to have `openmp` installed. Please refer to the installation
-documentation[1] for your OS from LightGBM website[2].
-
-Warning: as of July 2021 there is an issue with ``libomp`` version 12.0 that results in segmentation fault[3]
-on Mac OS Big Sur. Please refer[4] to the github issue for details on how to downgrade the ``libomp`` library.
-
-References
-----------
-.. [1] https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html
-.. [2] https://lightgbm.readthedocs.io/en/latest/index.html
-.. [3] https://github.com/microsoft/LightGBM/issues/4229
-.. [4] https://github.com/microsoft/LightGBM/issues/4229#issue-867528353
+To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the README:
+https://github.com/unit8co/darts/blob/master/README.md
 """
 
 from ..logging import get_logger
