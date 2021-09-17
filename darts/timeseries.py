@@ -103,71 +103,6 @@ class TimeSeries:
             self._freq = 1
             self._freq_str = None
 
-    @staticmethod
-    def fill_missing_dates(xa: xr.DataArray,
-                           freq: Optional[str] = None) -> xr.DataArray:
-        """ Returns an xarray DataArray instance with missing dates inserted from an input xarray DataArray.
-        The first dimension of the input DataArray `xa` has to be the time dimension.
-
-        This requires either a provided `freq` or the possibility to infer a unique frequency (see
-        `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
-        for more info on supported frequencies) from the provided timestamps.
-
-        Parameters
-        ----------
-        xa
-            The xarray DataArray
-        freq
-            Optionally, a string representing the frequency of the Pandas DateTimeIndex to fill in the missing dates.
-
-        Returns
-        -------
-        xarray DataArray
-            xarray DataArray with filled missing dates from `xa`
-        """
-
-        raise_if(len(xa) <= 2, f"Input time series must be of (length>2) when fill_missing_dates=True.", logger)
-        sorted_xa = xa.sortby(xa.dims[0])
-        time_index = sorted_xa.get_index(xa.dims[0])
-
-        if freq is not None:
-            return sorted_xa.resample({xa.dims[0]: freq}).asfreq()
-
-        offset_alias_info = "For more information about frequency aliases, read " \
-                            "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
-        n_tests = 10
-        samples_sizes = [3, 10]
-        observed_freqs = set()
-        for samples_size in samples_sizes:
-            for i in range(n_tests):
-                inferred_freq = time_index[i:i + samples_size].inferred_freq
-                if inferred_freq not in observed_freqs and inferred_freq is not None:
-                    observed_freqs.add(inferred_freq)
-
-        raise_if_not(
-            len(observed_freqs) == 1,
-            f"Could not observe an inferred frequency from the first n_first<={samples_sizes[-1] + n_tests} "
-            f"time stamps. An explicit frequency must be evident over a span of at least 3 consecutive time "
-            f"stamps within the first n_first dates. {offset_alias_info}" if not len(observed_freqs) else
-            f"Could not find a unique inferred frequency. Observed frequencies: {observed_freqs}. "
-            f"If any of those is the actual frequency, try passing it with fill_missing_dates=True "
-            f"and freq=your_frequency. {offset_alias_info}",
-            logger)
-
-        freq = observed_freqs.pop()
-
-        filled_time_index = pd.Series(index=time_index, dtype='object').asfreq(freq)
-        contains_all_data = time_index.isin(filled_time_index.index).all()
-
-        raise_if_not(
-            contains_all_data,
-            f"Could not correctly fill missing dates with the observed/passed frequency freq='{freq}'. "
-            f"Not all input time stamps contained in the newly created TimeSeries.",
-            logger)
-
-        return sorted_xa.resample({xa.dims[0]: freq}).asfreq()
-
-
     """ 
     Factory Methods
     ===============
@@ -942,6 +877,70 @@ class TimeSeries:
     Other methods
     =============
     """
+
+    @staticmethod
+    def fill_missing_dates(xa: xr.DataArray,
+                           freq: Optional[str] = None) -> xr.DataArray:
+        """ Returns an xarray DataArray instance with missing dates inserted from an input xarray DataArray.
+        The first dimension of the input DataArray `xa` has to be the time dimension.
+
+        This requires either a provided `freq` or the possibility to infer a unique frequency (see
+        `offset aliases <https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases>`_
+        for more info on supported frequencies) from the provided timestamps.
+
+        Parameters
+        ----------
+        xa
+            The xarray DataArray
+        freq
+            Optionally, a string representing the frequency of the Pandas DateTimeIndex to fill in the missing dates.
+
+        Returns
+        -------
+        xarray DataArray
+            xarray DataArray with filled missing dates from `xa`
+        """
+
+        raise_if(len(xa) <= 2, f"Input time series must be of (length>2) when fill_missing_dates=True.", logger)
+        sorted_xa = xa.sortby(xa.dims[0])
+        time_index = sorted_xa.get_index(xa.dims[0])
+
+        if freq is not None:
+            return sorted_xa.resample({xa.dims[0]: freq}).asfreq()
+
+        offset_alias_info = "For more information about frequency aliases, read " \
+                            "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
+        n_tests = 10
+        samples_sizes = [3, 10]
+        observed_freqs = set()
+        for samples_size in samples_sizes:
+            for i in range(n_tests):
+                inferred_freq = time_index[i:i + samples_size].inferred_freq
+                if inferred_freq not in observed_freqs and inferred_freq is not None:
+                    observed_freqs.add(inferred_freq)
+
+        raise_if_not(
+            len(observed_freqs) == 1,
+            f"Could not observe an inferred frequency from the first n_first<={samples_sizes[-1] + n_tests} "
+            f"time stamps. An explicit frequency must be evident over a span of at least 3 consecutive time "
+            f"stamps within the first n_first dates. {offset_alias_info}" if not len(observed_freqs) else
+            f"Could not find a unique inferred frequency. Observed frequencies: {observed_freqs}. "
+            f"If any of those is the actual frequency, try passing it with fill_missing_dates=True "
+            f"and freq=your_frequency. {offset_alias_info}",
+            logger)
+
+        freq = observed_freqs.pop()
+
+        filled_time_index = pd.Series(index=time_index, dtype='object').asfreq(freq)
+        contains_all_data = time_index.isin(filled_time_index.index).all()
+
+        raise_if_not(
+            contains_all_data,
+            f"Could not correctly fill missing dates with the observed/passed frequency freq='{freq}'. "
+            f"Not all input time stamps contained in the newly created TimeSeries.",
+            logger)
+
+        return sorted_xa.resample({xa.dims[0]: freq}).asfreq()
 
     def gaps(self) -> pd.DataFrame:
         """
