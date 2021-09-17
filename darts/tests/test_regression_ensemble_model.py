@@ -27,7 +27,7 @@ except ImportError:
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
-    RANDOM_SEED = 111
+    RANDOM_SEED = 42
 
     sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     lin_series = tg.linear_timeseries(length=50)
@@ -194,7 +194,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ]
 
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-            self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 1.5)
+            self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 0.94)
 
         def test_ensemble_models_denoising_multi_input(self):
             # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
@@ -209,4 +209,4 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             ]
 
             ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-            self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 1.9)
+            self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 0.58)
