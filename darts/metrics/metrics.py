@@ -125,7 +125,7 @@ def _get_values(series: TimeSeries,
         series_values = series.univariate_values()
     else:  # stochastic
         if stochastic_quantile is None:
-            series_values = series.data_array().values
+            series_values = series.all_values(copy=False)
         else:
             series_values = series.quantile_timeseries(quantile=stochastic_quantile).univariate_values()
     return series_values
@@ -139,7 +139,9 @@ def _get_values_or_raise(series_a: TimeSeries,
     Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
 
-    For stochastic series, return the median sample value
+    For stochastic series, return either all values with `stochastic_quantile=None` or deterministic values at any
+    quantile by passing the quantile to `stochastic_quantile`. Default is set to `stochastic_quantile=0.5` for the
+    median deterministic values.
     """
     raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
                  logger)
@@ -155,7 +157,6 @@ def _get_values_or_raise(series_a: TimeSeries,
                                                                     series_a.time_index, series_b.time_index),
                  logger)
 
-    # TODO: we may want to change this... -> (Dennis: 13.09.2021) how about this?
     series_a_det = _get_values(series_a_common, stochastic_quantile=stochastic_quantile)
     series_b_det = _get_values(series_b_common, stochastic_quantile=stochastic_quantile)
     return series_a_det, series_b_det
