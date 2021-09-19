@@ -316,7 +316,7 @@ def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
     Parameters
     ----------
     data
-        Univariate, determerministic TimeSeries instance representing residuals.
+        Univariate TimeSeries instance from which to plot the histogram.
     bins
         Optionally, either an integer value for the number of bins to be displayed
         or an array-like of floats determining the position of bins.
@@ -335,10 +335,9 @@ def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
 
     if isinstance(data, TimeSeries):
         data._assert_univariate()
-        data._assert_deterministic()
-        values = data.univariate_values()
+        values = data.univariate_values() if data.is_deterministic else data.all_values().flatten()
     else:
-        values = data
+        values = np.array(data).flatten()
 
     _, ax = plt.subplots(figsize=fig_size) if ax is None else (None, ax)
 
