@@ -854,7 +854,7 @@ class LaplaceLikelihood(Likelihood):
         return mu, b
 
 
-class LogNormal(Likelihood):
+class LogNormalLikelihood(Likelihood):
     def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.):
         """
         Log-normal distribution.
