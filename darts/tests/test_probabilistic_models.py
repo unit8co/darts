@@ -2,10 +2,11 @@ import numpy as np
 
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
-from ..metrics import mae, rho_risk
+from ..metrics import mae
 from ..logging import get_logger
 from darts.models import ExponentialSmoothing, ARIMA
 from darts.models.forecasting_model import GlobalForecastingModel
+
 logger = get_logger(__name__)
 
 try:
@@ -72,11 +73,11 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         model.fit(noisy_ts[:100])
         pred = model.predict(n=100, num_samples=100)
 
-        # test accuracy of the median prediction and quantile (=0.5) rho-risk compared to the noiseless ts
+        # test accuracy of the median prediction compared to the noiseless ts
         mae_err_median = mae(ts[100:], pred)
         self.assertLess(mae_err_median, err)
 
-        # test accuracy for increasing quantiles between 0.7 and 1 (it should decrease, mae should increase),
+        # test accuracy for increasing quantiles between 0.7 and 1 (it should decrease, mae should increase)
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
@@ -84,7 +85,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             self.assertLess(mae_err, new_mae)
             mae_err = new_mae
 
-        # test accuracy for decreasing quantiles between 0.3 and 0 (it should decrease, mae should increase),
+        # test accuracy for decreasing quantiles between 0.3 and 0 (it should decrease, mae should increase)
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:

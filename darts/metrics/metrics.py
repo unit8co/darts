@@ -134,15 +134,29 @@ def _get_values(series: TimeSeries,
 def _get_values_or_raise(series_a: TimeSeries,
                          series_b: TimeSeries,
                          intersect: bool,
-                         stochastic_quantile: Optional[float] = 0.5) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
+                         stochastic_quantile: Optional[float] = 0.5,
+                         remove_nan_union: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+    """Returns the processed numpy values of two time series. Processing can be customized with arguments
+    `intersect, stochastic_quantile, remove_nan_union`.
+
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
 
-    For stochastic series, return either all values with `stochastic_quantile=None` or deterministic values at any
-    quantile by passing the quantile to `stochastic_quantile`. Default is set to `stochastic_quantile=0.5` for the
-    median deterministic values.
+    Parameters
+    ----------
+    series_a
+        A univariate deterministic `TimeSeries` instance (the actual series).
+    series_b
+        A univariate (deterministic or stochastic) `TimeSeries` instance (the predicted series).
+    intersect
+        A boolean for whether or not to only consider the time intersection between `series_a` and `series_b`
+    stochastic_quantile
+        Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)
+        or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
+    remove_nan_union
+        By setting `remove_non_union` to True, remove all indices from `series_a` and `series_b` which have a NaN value
+        in either of the two input series.
     """
+
     raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
                  logger)
 
@@ -159,18 +173,16 @@ def _get_values_or_raise(series_a: TimeSeries,
 
     series_a_det = _get_values(series_a_common, stochastic_quantile=stochastic_quantile)
     series_b_det = _get_values(series_b_common, stochastic_quantile=stochastic_quantile)
-    return series_a_det, series_b_det
 
+    if not remove_nan_union:
+        return series_a_det, series_b_det
 
-def _remove_nan_union(array_a: np.ndarray,
-                      array_b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Returns the two inputs arrays where all elements are deleted that have an index that corresponds to
-    a NaN value in either of the two input arrays.
-    """
-
-    isnan_mask = np.logical_or(np.isnan(array_a), np.isnan(array_b))
-    return np.delete(array_a, isnan_mask), np.delete(array_b, isnan_mask)
+    b_is_deterministic = bool(len(series_b_det.shape) == 1)
+    if b_is_deterministic:
+        isnan_mask = np.logical_or(np.isnan(series_a_det), np.isnan(series_b_det))
+    else:
+        isnan_mask = np.logical_or(np.isnan(series_a_det), np.isnan(series_b_det).any(axis=2).flatten())
+    return np.delete(series_a_det, isnan_mask), np.delete(series_b_det, isnan_mask, axis=0)
 
 
 @multi_ts_support
@@ -223,8 +235,7 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
 """
 
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
-    y1, y2 = _remove_nan_union(y1, y2)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     return np.mean(np.abs(y1 - y2))
 
 
@@ -277,8 +288,7 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Squared Error (MSE)
     """
 
-    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_pred = _remove_nan_union(y_true, y_pred)
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     return np.mean((y_true - y_pred)**2)
 
 
@@ -384,8 +394,7 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Root Mean Squared Log Error (RMSLE)
     """
 
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
-    y1, y2 = _remove_nan_union(y1, y2)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     y1, y2 = np.log(y1 + 1), np.log(y2 + 1)
     return np.sqrt(np.mean((y1 - y2)**2))
 
@@ -504,8 +513,7 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Absolute Percentage Error (MAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_hat = _remove_nan_union(y_true, y_hat)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not((y_true != 0).all(), 'The actual series must be strictly positive to compute the MAPE.', logger)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
@@ -570,8 +578,7 @@ def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The symmetric Mean Absolute Percentage Error (sMAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_hat = _remove_nan_union(y_true, y_hat)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not(np.logical_or(y_true != 0, y_hat != 0).all(),
                  'The actual series must be strictly positive to compute the sMAPE.', logger)
     return 200. * np.mean(np.abs(y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat)))
@@ -666,7 +673,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
             y_true, y_hat = _get_values_or_raise(actual_series.univariate_component(i),
                                                  pred_series.univariate_component(i),
-                                                 intersect)
+                                                 intersect, remove_nan_union=False)
 
             x_t = insample_.univariate_component(i).values()
             errors = np.abs(y_true - y_hat)
@@ -772,8 +779,7 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Overall Percentage Error (OPE)
     """
 
-    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_pred = _remove_nan_union(y_true, y_pred)
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
     raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.', logger)
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
@@ -835,8 +841,7 @@ def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Absolute Ranged Relative Error (MARRE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_hat = _remove_nan_union(y_true, y_hat)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not(y_true.max() > y_true.min(), 'The difference between the max and min values must be strictly'
                  'positive to compute the MARRE.', logger)
     true_range = y_true.max() - y_true.min()
@@ -892,8 +897,7 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     float
         The Coefficient of Determination :math:`R^2`
     """
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
-    y1, y2 = _remove_nan_union(y1, y2)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     ss_errors = np.sum((y1 - y2) ** 2)
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)
@@ -1032,11 +1036,8 @@ def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     raise_if_not(pred_series.is_stochastic,
                  'rho (quantile) loss should only be computed for stochastic predicted TimeSeries.')
 
-    z_true, z_hat = _get_values_or_raise(actual_series, pred_series, intersect=intersect, stochastic_quantile=None)
-
-    # adaption of _remove_nan_union(y1, y2): in stochastic case we need to account for different shapes of y1 & y2
-    isnan_mask = np.logical_or(np.isnan(z_true), np.isnan(z_hat).any(axis=2).flatten())
-    z_true, z_hat = np.delete(z_true, isnan_mask), np.delete(z_hat, isnan_mask, axis=0)
+    z_true, z_hat = _get_values_or_raise(actual_series, pred_series, intersect,
+                                         stochastic_quantile=None, remove_nan_union=True)
 
     z_true = z_true.sum(axis=0)
     z_hat = z_hat.sum(axis=0)  # aggregate all individual sample realizations
