@@ -25,7 +25,7 @@ DIMS = ('time', 'component', 'sample')
 
 
 class TimeSeries:
-    def __init__(self, xa: xr.DataArray):
+    def __init__(self, xa: xr.DataArray, sort_and_copy=True):
         """
         Wrapper around a (well formed) DataArray. Use the static factory methods to build instances unless
         you know what you are doing.
@@ -65,7 +65,7 @@ class TimeSeries:
         # The following sorting returns a copy, which we are relying on.
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
-        self._xa: xr.DataArray = xa.sortby(self._time_dim)
+        self._xa: xr.DataArray = xa.sortby(self._time_dim) if sort_and_copy else xa
 
         self._time_index = self._xa.get_index(self._time_dim)
 
@@ -91,6 +91,7 @@ class TimeSeries:
 
             # We have to check manually if the index is complete. Another way could be to rely
             # on `inferred_freq` being present, but this fails for series of length < 3.
+
             is_index_complete = len(pd.date_range(self._time_index.min(),
                                                   self._time_index.max(),
                                                   freq=self._freq).difference(self._time_index)) == 0
@@ -111,7 +112,8 @@ class TimeSeries:
     @staticmethod
     def from_xarray(xa: xr.DataArray,
                     fill_missing_dates: Optional[bool] = False,
-                    freq: Optional[str] = None) -> 'TimeSeries':
+                    freq: Optional[str] = None,
+                    sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from an xarray DataArray.
         The dimensions of the DataArray have to be (time, component, sample), in this order. The time
@@ -219,13 +221,10 @@ class TimeSeries:
                                coords={time_index_name: xa_.get_index(time_index_name), DIMS[1]: columns_list})
 
         # We cast the array to float
-        # TODO: is astype() always copying? (might be slightly inefficient if array is already float)
-        if np.issubdtype(xa_.values.dtype, np.float32):
-            # We conserve the float32 type
-            return TimeSeries(xa_.astype(np.float32))
+        if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(xa_.values.dtype, np.float64):
+            return TimeSeries(xa_, sort_and_copy)
         else:
-            # Otherwise we cast to float64
-            return TimeSeries(xa_.astype(np.float64))
+            return TimeSeries(xa_.astype(np.float64), sort_and_copy)
 
     @staticmethod
     def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
@@ -233,6 +232,7 @@ class TimeSeries:
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
                  freq: Optional[str] = None,
+                 sort_and_copy: Optional[bool] = True,
                  **kwargs,) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a single CSV file.
@@ -269,14 +269,16 @@ class TimeSeries:
                                          time_col=time_col, 
                                          value_cols=value_cols, 
                                          fill_missing_dates=fill_missing_dates, 
-                                         freq=freq)
+                                         freq=freq,
+                                         sort_and_copy=sort_and_copy)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
-                       freq: Optional[str] = None,) -> 'TimeSeries':
+                       freq: Optional[str] = None,
+                       sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -333,12 +335,14 @@ class TimeSeries:
                           dims=(time_index.name,) + DIMS[-2:],
                           coords={time_index.name: time_index, DIMS[1]: series_df.columns})
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
+        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates,
+                                      freq=freq, sort_and_copy=sort_and_copy)
 
     @staticmethod
     def from_series(pd_series: pd.Series,
                     fill_missing_dates: Optional[bool] = False,
-                    freq: Optional[str] = None,) -> 'TimeSeries':
+                    freq: Optional[str] = None,
+                    sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a univariate and deterministic TimeSeries built from a pandas Series.
 
@@ -370,14 +374,16 @@ class TimeSeries:
                                          time_col=None,
                                          value_cols=None,
                                          fill_missing_dates=fill_missing_dates,
-                                         freq=freq)
+                                         freq=freq,
+                                         sort_and_copy=sort_and_copy)
 
     @staticmethod
     def from_times_and_values(times: Union[pd.DatetimeIndex, pd.Int64Index],
                               values: np.ndarray,
                               fill_missing_dates: Optional[bool] = False,
                               freq: Optional[str] = None,
-                              columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
+                              columns: Optional[pd._typing.Axes] = None,
+                              sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an index and value array.
 
@@ -407,14 +413,15 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-
         raise_if_not(isinstance(times, pd.Int64Index) or isinstance(times, pd.DatetimeIndex),
                      'the `times` argument must be a Int64Index (or RangeIndex), or a DateTimeIndex. Use '
                      'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
 
         times_name = DIMS[0] if not times.name else times.name
 
-        values = np.array(values)
+        # avoid copying if data is already np.ndarray:
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+
         if len(values.shape) == 1:
             values = np.expand_dims(values, 1)
         if len(values.shape) == 2:
@@ -428,13 +435,13 @@ class TimeSeries:
                           dims=(times_name,) + DIMS[-2:],
                           coords=coords)
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
+        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates,
+                                      freq=freq, sort_and_copy=sort_and_copy)
 
     @staticmethod
     def from_values(values: np.ndarray,
-                    fill_missing_dates: Optional[bool] = False,
-                    freq: Optional[str] = None,
-                    columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
+                    columns: Optional[pd._typing.Axes] = None,
+                    sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an array of values.
         The series will have an integer index (Int64Index).
@@ -445,13 +452,6 @@ class TimeSeries:
             A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,
             and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions
             should be (time, component), and in the latter case (time, component, sample).
-        fill_missing_dates
-            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
-            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.
-            Inferring the frequency and resampling the data can induce a significant performance overhead.
-        freq
-            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
-            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
         columns
             Columns to be used by the underlying pandas DataFrame.
 
@@ -460,18 +460,18 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-
         time_index = pd.RangeIndex(0, len(values), 1)
-
         values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
+        
         return TimeSeries.from_times_and_values(times=time_index,
                                                 values=values_,
-                                                fill_missing_dates=fill_missing_dates,
-                                                freq=freq,
-                                                columns=columns)
+                                                fill_missing_dates=False,
+                                                freq=None,
+                                                columns=columns,
+                                                sort_and_copy=sort_and_copy)
 
     @staticmethod
-    def from_json(json_str: str) -> 'TimeSeries':
+    def from_json(json_str: str, sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
         """
         Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
         into a `TimeSeries` object
@@ -489,7 +489,7 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient='split')
-        return TimeSeries.from_dataframe(df)
+        return TimeSeries.from_dataframe(df, sort_and_copy=sort_and_copy)
 
     """
     Properties
