@@ -1063,6 +1063,9 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
 
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
+
+    uses_future_covariates = False
+
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
@@ -1171,6 +1174,9 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
+
+    uses_past_covariates = False
+
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
@@ -1215,6 +1221,9 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
+
+    uses_past_covariates = False
+
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
