@@ -114,7 +114,8 @@ class TimeSeries:
     @staticmethod
     def from_xarray(xa: xr.DataArray,
                     fill_missing_dates: Optional[bool] = False,
-                    freq: Optional[str] = None) -> 'TimeSeries':
+                    freq: Optional[str] = None,
+                    fill_nan: Optional[Union[int, float]] = None) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from an xarray DataArray.
         The dimensions of the DataArray have to be (time, component, sample), in this order. The time
@@ -140,6 +141,8 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        fill_nan
+            Optionally, a numeric value to fill missing values (NaNs) with.
 
         Returns
         -------
@@ -157,6 +160,8 @@ class TimeSeries:
             xa_ = TimeSeries._resample_xarray(xa, freq=freq, sort=True)
         else:
             xa_ = xa
+        if fill_nan is not None:
+            xa_ = xa_.fillna(fill_nan)
 
         # clean components (columns) names if needed (if names are not unique, or not strings)
         components = xa_.get_index(DIMS[1])
@@ -210,6 +215,7 @@ class TimeSeries:
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
                  freq: Optional[str] = None,
+                 fill_nan: Optional[Union[int, float]] = None,
                  **kwargs,) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a single CSV file.
@@ -233,8 +239,11 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        fill_nan
+            Optionally, a numeric value to fill missing values (NaNs) with.
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
+
         Returns
         -------
         TimeSeries
@@ -246,14 +255,16 @@ class TimeSeries:
                                          time_col=time_col, 
                                          value_cols=value_cols, 
                                          fill_missing_dates=fill_missing_dates, 
-                                         freq=freq)
+                                         freq=freq,
+                                         fill_nan=fill_nan)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
-                       freq: Optional[str] = None,) -> 'TimeSeries':
+                       freq: Optional[str] = None,
+                       fill_nan: Optional[Union[int, float]] = None) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -279,6 +290,8 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        fill_nan
+            Optionally, a numeric value to fill missing values (NaNs) with.
 
         Returns
         -------
@@ -310,12 +323,13 @@ class TimeSeries:
                           dims=(time_index.name,) + DIMS[-2:],
                           coords={time_index.name: time_index, DIMS[1]: series_df.columns})
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
+        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fill_nan=fill_nan)
 
     @staticmethod
     def from_series(pd_series: pd.Series,
                     fill_missing_dates: Optional[bool] = False,
-                    freq: Optional[str] = None,) -> 'TimeSeries':
+                    freq: Optional[str] = None,
+                    fill_nan: Optional[Union[int, float]] = None) -> 'TimeSeries':
         """
         Returns a univariate and deterministic TimeSeries built from a pandas Series.
 
@@ -335,6 +349,8 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        fill_nan
+            Optionally, a numeric value to fill missing values (NaNs) with.
 
         Returns
         -------
@@ -347,14 +363,16 @@ class TimeSeries:
                                          time_col=None,
                                          value_cols=None,
                                          fill_missing_dates=fill_missing_dates,
-                                         freq=freq)
+                                         freq=freq,
+                                         fill_nan=fill_nan)
 
     @staticmethod
     def from_times_and_values(times: Union[pd.DatetimeIndex, pd.Int64Index],
                               values: np.ndarray,
                               fill_missing_dates: Optional[bool] = False,
                               freq: Optional[str] = None,
-                              columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
+                              columns: Optional[pd._typing.Axes] = None,
+                              fill_nan: Optional[Union[int, float]] = None) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an index and value array.
 
@@ -377,6 +395,8 @@ class TimeSeries:
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
         columns
             Columns to be used by the underlying pandas DataFrame.
+        fill_nan
+            Optionally, a numeric value to fill missing values (NaNs) with.
 
         Returns
         -------
@@ -404,11 +424,12 @@ class TimeSeries:
                           dims=(times_name,) + DIMS[-2:],
                           coords=coords)
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq)
+        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fill_nan=fill_nan)
 
     @staticmethod
     def from_values(values: np.ndarray,
-                    columns: Optional[pd._typing.Axes] = None) -> 'TimeSeries':
+                    columns: Optional[pd._typing.Axes] = None,
+                    fill_nan: Optional[Union[int, float]] = None) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an array of values.
         The series will have an integer index (Int64Index).
@@ -421,6 +442,8 @@ class TimeSeries:
             should be (time, component), and in the latter case (time, component, sample).
         columns
             Columns to be used by the underlying pandas DataFrame.
+        fill_nan
+            Optionally, a numeric value to fill missing values (NaNs) with.
 
         Returns
         -------
@@ -433,7 +456,8 @@ class TimeSeries:
         values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
         return TimeSeries.from_times_and_values(times=time_index,
                                                 values=values_,
-                                                columns=columns)
+                                                columns=columns,
+                                                fill_nan=fill_nan)
 
     @staticmethod
     def from_json(json_str: str) -> 'TimeSeries':
