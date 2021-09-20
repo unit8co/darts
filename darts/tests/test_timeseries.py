@@ -457,12 +457,14 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             if offset_alias in offset_not_supported:
                 continue
 
+            # test with the initial full DataFrame
             df_full = pd.DataFrame(
                 data={
                     'date': pd.date_range(start=pd.to_datetime('01-04-1960'), periods=ts_length, freq=offset_alias),
                     'value': np.arange(0, ts_length, 1)
                 }
             )
+            # test fill dates with DataFrame including holes
             df_holes = pd.concat([df_full[:4], df_full[5:7], df_full[9:]])
 
             series_target = TimeSeries.from_dataframe(df_full, time_col='date')
