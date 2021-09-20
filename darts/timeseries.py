@@ -25,7 +25,7 @@ DIMS = ('time', 'component', 'sample')
 
 
 class TimeSeries:
-    def __init__(self, xa: xr.DataArray, sort_and_copy=True):
+    def __init__(self, xa: xr.DataArray, sort=True):
         """
         Wrapper around a (well formed) DataArray. Use the static factory methods to build instances unless
         you know what you are doing.
@@ -65,7 +65,7 @@ class TimeSeries:
         # The following sorting returns a copy, which we are relying on.
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
-        self._xa: xr.DataArray = xa.sortby(self._time_dim) if sort_and_copy else xa
+        self._xa: xr.DataArray = xa.sortby(self._time_dim) if sort else xa.copy()
 
         self._time_index = self._xa.get_index(self._time_dim)
 
@@ -113,7 +113,7 @@ class TimeSeries:
     def from_xarray(xa: xr.DataArray,
                     fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
-                    sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
+                    sort: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries instance built from an xarray DataArray.
         The dimensions of the DataArray have to be (time, component, sample), in this order. The time
@@ -139,6 +139,9 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        sort
+            Whether to sort over the time axis when creating the TimeSeries. Can be set to False for improving
+            performance in cases where the provided time axis is already sorted.
 
         Returns
         -------
@@ -222,9 +225,9 @@ class TimeSeries:
 
         # We cast the array to float
         if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(xa_.values.dtype, np.float64):
-            return TimeSeries(xa_, sort_and_copy)
+            return TimeSeries(xa_, sort)
         else:
-            return TimeSeries(xa_.astype(np.float64), sort_and_copy)
+            return TimeSeries(xa_.astype(np.float64), sort)
 
     @staticmethod
     def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
@@ -232,7 +235,7 @@ class TimeSeries:
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
                  freq: Optional[str] = None,
-                 sort_and_copy: Optional[bool] = True,
+                 sort: Optional[bool] = True,
                  **kwargs,) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a single CSV file.
@@ -256,6 +259,9 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        sort
+            Whether to sort over the time axis when creating the TimeSeries. Can be set to False for improving
+            performance in cases where the provided time axis is already sorted.
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
         Returns
@@ -270,7 +276,7 @@ class TimeSeries:
                                          value_cols=value_cols, 
                                          fill_missing_dates=fill_missing_dates, 
                                          freq=freq,
-                                         sort_and_copy=sort_and_copy)
+                                         sort=sort)
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
@@ -278,7 +284,7 @@ class TimeSeries:
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
                        freq: Optional[str] = None,
-                       sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
+                       sort: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
@@ -304,6 +310,9 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        sort
+            Whether to sort over the time axis when creating the TimeSeries. Can be set to False for improving
+            performance in cases where the provided time axis is already sorted.
 
         Returns
         -------
@@ -336,13 +345,13 @@ class TimeSeries:
                           coords={time_index.name: time_index, DIMS[1]: series_df.columns})
 
         return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates,
-                                      freq=freq, sort_and_copy=sort_and_copy)
+                                      freq=freq, sort=sort)
 
     @staticmethod
     def from_series(pd_series: pd.Series,
                     fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
-                    sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
+                    sort: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a univariate and deterministic TimeSeries built from a pandas Series.
 
@@ -362,6 +371,9 @@ class TimeSeries:
         freq
             Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        sort
+            Whether to sort over the time axis when creating the TimeSeries. Can be set to False for improving
+            performance in cases where the provided time axis is already sorted.
 
         Returns
         -------
@@ -375,7 +387,7 @@ class TimeSeries:
                                          value_cols=None,
                                          fill_missing_dates=fill_missing_dates,
                                          freq=freq,
-                                         sort_and_copy=sort_and_copy)
+                                         sort=sort)
 
     @staticmethod
     def from_times_and_values(times: Union[pd.DatetimeIndex, pd.Int64Index],
@@ -383,7 +395,7 @@ class TimeSeries:
                               fill_missing_dates: Optional[bool] = False,
                               freq: Optional[str] = None,
                               columns: Optional[pd._typing.Axes] = None,
-                              sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
+                              sort: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an index and value array.
 
@@ -407,6 +419,9 @@ class TimeSeries:
             in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
         columns
             Columns to be used by the underlying pandas DataFrame.
+        sort
+            Whether to sort over the time axis when creating the TimeSeries. Can be set to False for improving
+            performance in cases where the provided time axis is already sorted.
 
         Returns
         -------
@@ -436,12 +451,12 @@ class TimeSeries:
                           coords=coords)
 
         return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates,
-                                      freq=freq, sort_and_copy=sort_and_copy)
+                                      freq=freq, sort=sort)
 
     @staticmethod
     def from_values(values: np.ndarray,
                     columns: Optional[pd._typing.Axes] = None,
-                    sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
+                    sort: Optional[bool] = True) -> 'TimeSeries':
         """
         Returns a TimeSeries built from an array of values.
         The series will have an integer index (Int64Index).
@@ -454,6 +469,9 @@ class TimeSeries:
             should be (time, component), and in the latter case (time, component, sample).
         columns
             Columns to be used by the underlying pandas DataFrame.
+        sort
+            Whether to sort over the time axis when creating the TimeSeries. Can be set to False for improving
+            performance in cases where the provided time axis is already sorted.
 
         Returns
         -------
@@ -462,16 +480,16 @@ class TimeSeries:
         """
         time_index = pd.RangeIndex(0, len(values), 1)
         values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
-        
+
         return TimeSeries.from_times_and_values(times=time_index,
                                                 values=values_,
                                                 fill_missing_dates=False,
                                                 freq=None,
                                                 columns=columns,
-                                                sort_and_copy=sort_and_copy)
+                                                sort=sort)
 
     @staticmethod
-    def from_json(json_str: str, sort_and_copy: Optional[bool] = True) -> 'TimeSeries':
+    def from_json(json_str: str, sort: Optional[bool] = True) -> 'TimeSeries':
         """
         Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
         into a `TimeSeries` object
@@ -482,6 +500,9 @@ class TimeSeries:
         ----------
         json_str
             The JSON String to convert
+        sort
+            Whether to sort over the time axis when creating the TimeSeries. Can be set to False for improving
+            performance in cases where the provided time axis is already sorted.
 
         Returns
         -------
@@ -489,7 +510,7 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient='split')
-        return TimeSeries.from_dataframe(df, sort_and_copy=sort_and_copy)
+        return TimeSeries.from_dataframe(df, sort=sort)
 
     """
     Properties
@@ -756,7 +777,7 @@ class TimeSeries:
         TimeSeries
             The TimeSeries containing the desired quantile for each component.
         """
-        return TimeSeries.from_dataframe(self.quantile_df(quantile))
+        return TimeSeries.from_dataframe(self.quantile_df(quantile), sort=False)
 
     def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
         """
@@ -855,6 +876,8 @@ class TimeSeries:
         copy
             Whether to return a copy of the values, otherwise returns a view.
             Leave it to True unless you know what you are doing.
+        sample
+            For stochastic series, the sample for which to return values. Default: 0 (first sample).
 
         Returns
         -------
@@ -966,7 +989,10 @@ class TimeSeries:
         TimeSeries
             A copy of this time series.
         """
-        return TimeSeries(self._xa)  # the xarray will be copied in the TimeSeries constructor
+
+        # the xarray will be copied in the TimeSeries constructor. However,
+        # there's no need to sort it again.
+        return TimeSeries(self._xa, sort=False)
 
     def get_index_at_point(self, point: Union[pd.Timestamp, float, int], after=True) -> int:
         """
@@ -1241,7 +1267,7 @@ class TimeSeries:
         new_start_idx = df.first_valid_index()
         new_end_idx = df.last_valid_index()
         new_series = df.loc[new_start_idx:new_end_idx]
-        return TimeSeries.from_dataframe(new_series)
+        return TimeSeries.from_dataframe(new_series, sort=False)
 
     def longest_contiguous_slice(self, max_gap_size: int = 0) -> 'TimeSeries':
         """
@@ -1301,7 +1327,7 @@ class TimeSeries:
         coef = value_at_first_step / self._xa.isel({self._time_dim: [0]})
         coef = coef.values.reshape((self.n_components, self.n_samples))  # TODO: test
         new_series = coef * self._xa
-        return TimeSeries(new_series)
+        return TimeSeries(new_series, sort=False)
 
     def shift(self, n: int) -> 'TimeSeries':
         """
@@ -1337,7 +1363,7 @@ class TimeSeries:
         else:
             new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
-        return TimeSeries(new_xa)
+        return TimeSeries(new_xa, sort=False)
 
     def diff(self,
              n: Optional[int] = 1,
@@ -1384,7 +1410,7 @@ class TimeSeries:
         new_xa = _compute_diff(self._xa)
         for _ in range(n-1):
             new_xa = _compute_diff(new_xa)
-        return TimeSeries(new_xa)
+        return TimeSeries(new_xa, sort=False)
 
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
         """
@@ -1467,30 +1493,8 @@ class TimeSeries:
 
         return self.append(TimeSeries.from_times_and_values(values=values,
                                                             times=idx,
-                                                            fill_missing_dates=False))
-
-    def update(self,
-               index: pd.DatetimeIndex,
-               values: np.ndarray = None) -> 'TimeSeries':
-        """
-        Updates the TimeSeries with the new values provided.
-        If indices are not in original TimeSeries, they will be discarded.
-        Use `numpy.nan` to ignore a specific index in a series.
-
-        Parameters
-        ----------
-        index
-            A `pandas.DateTimeIndex` containing the indices to replace.
-        values
-            An array containing the values to replace (optional).
-
-        Returns
-        -------
-        TimeSeries
-            A new TimeSeries with updated values.
-        """
-        # TODO: I don't think this is needed... probably better to just create a new TimeSeries
-        raise NotImplementedError('TimeSeries.update() is not supported anymore.')
+                                                            fill_missing_dates=False,
+                                                            sort=False))
 
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
@@ -1527,7 +1531,7 @@ class TimeSeries:
         new_xa = xr.concat((self._xa, new_other_xa), dim=DIMS[1])
 
         # we call the factory method here to disambiguate column names if needed.
-        return TimeSeries.from_xarray(new_xa, fill_missing_dates=False)
+        return TimeSeries.from_xarray(new_xa, fill_missing_dates=False, sort=False)
 
     def univariate_component(self, index: Union[str, int]) -> 'TimeSeries':
         """
@@ -1549,7 +1553,7 @@ class TimeSeries:
             new_xa = self._xa.isel(component=index).expand_dims(DIMS[1], axis=1)
         else:
             new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
-        return TimeSeries(new_xa)
+        return TimeSeries(new_xa, sort=False)
 
     def add_datetime_attribute(self, attribute, one_hot: bool = False, cyclic: bool = False) -> 'TimeSeries':
         """
@@ -1640,7 +1644,7 @@ class TimeSeries:
             new_xa = resample.backfill()
         else:
             raise_log(ValueError('Unknown method: {}'.format(method)), logger)
-        return TimeSeries(new_xa)
+        return TimeSeries(new_xa, sort=False)
 
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
         """
@@ -1710,7 +1714,7 @@ class TimeSeries:
             df = None
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
-        return TimeSeries.from_dataframe(df)
+        return TimeSeries.from_dataframe(df, sort=False)
 
     def to_json(self) -> str:
         """
@@ -1862,7 +1866,7 @@ class TimeSeries:
                 }
         )
         
-        return TimeSeries(new_xa)
+        return TimeSeries(new_xa, sort=False)
 
 
     """
@@ -1926,7 +1930,7 @@ class TimeSeries:
                                                                 'of unequal shapes.', logger)
         new_xa = self._xa.copy()
         new_xa.values = combine_fn(new_xa.values, other_vals)
-        return TimeSeries(new_xa)
+        return TimeSeries(new_xa, sort=False)
 
     def __eq__(self, other):
         if isinstance(other, TimeSeries):
@@ -1941,7 +1945,7 @@ class TimeSeries:
 
     def __add__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return TimeSeries(self._xa + other)
+            return TimeSeries(self._xa + other, sort=False)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 + s2)
         else:
@@ -1953,7 +1957,7 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return TimeSeries(self._xa - other)
+            return TimeSeries(self._xa - other, sort=False)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 - s2)
         else:
@@ -1965,7 +1969,7 @@ class TimeSeries:
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return TimeSeries(self._xa * other)
+            return TimeSeries(self._xa * other, sort=False)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 * s2)
         else:
@@ -1978,7 +1982,7 @@ class TimeSeries:
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
             raise_if(n < 0, 'Attempted to raise a series to a negative power.', logger)
-            return TimeSeries(self._xa ** float(n))
+            return TimeSeries(self._xa ** float(n), sort=False)
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(n, lambda s1, s2: s1 ** s2)  # elementwise power
         else:
@@ -1989,7 +1993,7 @@ class TimeSeries:
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
-            return TimeSeries(self._xa / other)
+            return TimeSeries(self._xa / other, sort=False)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             if not (other.all_values() != 0).all():
                 raise_log(ZeroDivisionError('Cannot divide by a TimeSeries with a value 0.'), logger)
@@ -2002,16 +2006,16 @@ class TimeSeries:
         return n * (self ** (-1))
 
     def __abs__(self):
-        return TimeSeries(abs(self._xa))
+        return TimeSeries(abs(self._xa), sort=False)
 
     def __neg__(self):
-        return TimeSeries(-self._xa)
+        return TimeSeries(-self._xa, sort=False)
 
     def __contains__(self, ts: Union[int, pd.Timestamp]) -> bool:
         return ts in self.time_index
 
     def __round__(self, n=None):
-        return TimeSeries(self._xa.round(n))
+        return TimeSeries(self._xa.round(n), sort=False)
 
     def __lt__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
@@ -2069,7 +2073,7 @@ class TimeSeries:
         return self.copy()
 
     def __deepcopy__(self):
-        return TimeSeries(self._xa.copy())
+        return TimeSeries(self._xa.copy(), sort=False)
 
     def __getitem__(self,
                     key: Union[pd.DatetimeIndex,
@@ -2119,51 +2123,53 @@ class TimeSeries:
             # TODO: unit-test this
             _set_freq_in_xa(xa_)
 
-            return TimeSeries(xa_)
+            return TimeSeries(xa_, sort=True)  # note: we keep the sorting here, in case provided index is not sorted
         elif isinstance(key, pd.Int64Index):
             _check_range()
-            return TimeSeries(self._xa.sel({self._time_dim: key}))
+
+            # note: we keep the sorting here, in case provided index is not sorted
+            return TimeSeries(self._xa.sel({self._time_dim: key}), sort=True)
 
         # handle slices:
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
-                return TimeSeries(self._xa.sel({DIMS[1]: key}))
+                return TimeSeries(self._xa.sel({DIMS[1]: key}), sort=False)
             elif isinstance(key.start, (int, np.int64)) or isinstance(key.stop, (int, np.int64)):
-                return TimeSeries(self._xa.isel({self._time_dim: key}))
+                return TimeSeries(self._xa.isel({self._time_dim: key}), sort=False)
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 _check_dt()
 
                 # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
                 _set_freq_in_xa(xa_)
-                return TimeSeries(xa_)
+                return TimeSeries(xa_, sort=False)
 
         # handle simple types:
         elif isinstance(key, str):
-            return TimeSeries(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
+            return TimeSeries(self._xa.sel({DIMS[1]: [key]}), sort=False)  # have to put key in a list not to drop the dimension
         elif isinstance(key, (int, np.int64)):
-            return TimeSeries(self._xa.isel({self._time_dim: [key]}))
+            return TimeSeries(self._xa.isel({self._time_dim: [key]}), sort=False)
         elif isinstance(key, pd.Timestamp):
             _check_dt()
 
             # indexing may discard the freq so we restore it...
             xa_ = self._xa.sel({self._time_dim: [key]})
             _set_freq_in_xa(xa_)
-            return TimeSeries(xa_)
+            return TimeSeries(xa_, sort=False)
 
         # handle lists:
         if isinstance(key, list):
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
-                return TimeSeries(self._xa.sel({DIMS[1]: key}))
+                return TimeSeries(self._xa.sel({DIMS[1]: key}), sort=False)
             elif all(isinstance(i, (int, np.int64)) for i in key):
-                return TimeSeries(self._xa.isel({self._time_dim: key}))
+                return TimeSeries(self._xa.isel({self._time_dim: key}), sort=True)  # keep sorting
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
 
                 # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
                 _set_freq_in_xa(xa_)
-                return TimeSeries(xa_)
+                return TimeSeries(xa_, sort=True)  # keep sorting
 
         raise_log(IndexError("The type of your index was not matched."), logger)
