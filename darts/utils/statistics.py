@@ -13,6 +13,7 @@ from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf
 
+from warnings import warn
 from ..logging import raise_log, get_logger, raise_if_not
 from ..timeseries import TimeSeries
 from .missing_values import fill_missing_values
@@ -311,12 +312,18 @@ def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
               title: Optional[str] = None,
               fig_size: Optional[Tuple[int, int]] = None,
               ax: Optional[plt.axis] = None) -> None:
-    """ This function plots the histogram of `data`.
+    """ This function plots the histogram of values in a TimeSeries instance or an array-like.
+
+    All types of TimeSeries are supported (uni-, multivariate, deterministic, stochastic).
+    Depending on the number of components in `data`, up to four histograms can be plotted on one figure.
+    All stochastic samples will be displayed with the corresponding component.
+
+    If `data` is an array-like, ALL values will be displayed in the same histogram.
 
     Parameters
     ----------
     data
-        Univariate TimeSeries instance from which to plot the histogram.
+        TimeSeries instance or an array-like from which to plot the histogram.
     bins
         Optionally, either an integer value for the number of bins to be displayed
         or an array-like of floats determining the position of bins.
@@ -330,23 +337,45 @@ def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
         Optionally, an axis object to plot the histogram on.
     """
 
-    raise_if_not(any([isinstance(data, x) for x in [TimeSeries, list, np.ndarray]]),
-                 'input data must be a TimeSeries instance or an array-like')
+    n_plots_max = 4
 
     if isinstance(data, TimeSeries):
-        data._assert_univariate()
-        values = data.univariate_values() if data.is_deterministic else data.all_values().flatten()
-    else:
-        values = np.array(data).flatten()
+        if len(data.components) > n_plots_max:
+            logger.warning("TimeSeries contains more than 4 components. Only the first 4 components will be displayed.")
 
-    _, ax = plt.subplots(figsize=fig_size) if ax is None else (None, ax)
+        components = list(data.components[:n_plots_max])
+        values = data[components].all_values(copy=False).flatten(order='F')
+    else:
+        values = data if isinstance(data, np.ndarray) else np.array(data)
+        if len(values.shape) > 1:
+            logger.warning("Input array-like data with `dim>1d` will be flattened and displayed in one histogram.")
+
+        components = ['Data']
+        values = values.flatten(order='F')
+
+    # compute the number of columns and rows for subplots depending on shape of input data
+    n_components = len(components)
+    n_cols = 1 if n_components == 1 else 2
+    n_rows = math.ceil(n_components / n_cols)
 
     title = 'Histogram' if title is None else title
+    if ax is None:
+        fig = plt.figure(constrained_layout=True, figsize=fig_size)
+        gs = fig.add_gridspec(n_rows, n_cols)
+        fig.suptitle(title)
+        ax_all = [fig.add_subplot(gs[i]) for i in range(n_components)]
+    else:
+        if n_components > 1:
+            logger.warning("Only the first component is plotted when calling plot_hist() with a given `ax`")
+        ax.set_title(title)
+        ax_all = [ax]
 
-    ax.hist(values, bins=bins, density=density)
-    ax.set_title(title)
-    ax.set_xlabel('value')
-    ax.set_ylabel('count' if not density else 'probability')
+    n_entries = len(values) // n_components
+    for i, label, ax_i in zip(range(n_components), components, ax_all):
+        ax_i.hist(values[i * n_entries:(i + 1) * n_entries], bins=bins, density=density, label=label)
+        ax_i.set_xlabel('value')
+        ax_i.set_ylabel('count' if not density else 'probability density')
+        ax_i.legend()
 
 
 def plot_residuals_analysis(residuals: TimeSeries,
