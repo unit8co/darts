@@ -57,7 +57,7 @@ class Prophet(ForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self, series: TimeSeries):
+    def fit(self, series: TimeSeries, past_covariates: Optional[TimeSeries] = None):
         super().fit(series)
         series = self.training_series
 
@@ -78,6 +78,11 @@ class Prophet(ForecastingModel):
             self.model.add_seasonality(name='custom', period=self.freq * interval_length,
                                        fourier_order=5)
 
+        if past_covariates is not None:
+            in_df = pd.concat([in_df, pd.DataFrame(past_covariates.all_values()[:,:, 0], columns=['year', 'month'])], axis=1)
+            self.model.add_regressor('year')
+            self.model.add_regressor('month')
+
         # Input built-in country holidays
         if self.country_holidays is not None:
             self.model.add_country_holidays(self.country_holidays)
@@ -86,11 +91,14 @@ class Prophet(ForecastingModel):
 
     def predict(self,
                 n: int,
-                num_samples: int = 1) -> TimeSeries:
+                num_samples: int = 1,
+                future_covariates: Optional[TimeSeries] = None) -> TimeSeries:
         super().predict(n, num_samples)
         new_dates = self._generate_new_dates(n)
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
-
+        if future_covariates:
+            new_dates_df = pd.concat([new_dates_df, pd.DataFrame(future_covariates.all_values()[:, :, 0], columns=['year', 'month'])],
+                              axis=1)
         predictions = self.model.predict(new_dates_df)
 
         forecast = predictions['yhat'][-n:].values
