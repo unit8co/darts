@@ -24,6 +24,15 @@ class MetricsTestCase(DartsBaseTestClass):
     series21: TimeSeries = series2.stack(series1)
     series1b = TimeSeries.from_times_and_values(pd.date_range('20130111', '20130120'), series1.values())
     series2b = TimeSeries.from_times_and_values(pd.date_range('20130111', '20130120'), series2.values())
+    series12_mean = (series1 + series2) / 2
+    series11_stochastic = TimeSeries.from_times_and_values(
+        series1.time_index, np.stack([series1.values(), series1.values()], axis=2))
+    series22_stochastic = TimeSeries.from_times_and_values(
+        series2.time_index, np.stack([series2.values(), series2.values()], axis=2))
+    series33_stochastic = TimeSeries.from_times_and_values(
+        series3.time_index, np.stack([series3.values(), series3.values()], axis=2))
+    series12_stochastic = TimeSeries.from_times_and_values(
+        series1.time_index, np.stack([series1.values(), series2.values()], axis=2))
 
     def test_zero(self):
         with self.assertRaises(ValueError):
@@ -48,18 +57,31 @@ class MetricsTestCase(DartsBaseTestClass):
         self.assertEqual(metrics.marre(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.r2_score(self.series1 + 1, self.series1 + 1), 1)
         self.assertEqual(metrics.ope(self.series1 + 1, self.series1 + 1), 0)
+        self.assertEqual(metrics.rho_risk(self.series1 + 1, self.series11_stochastic + 1), 0)
 
     def helper_test_shape_equality(self, metric):
         self.assertAlmostEqual(metric(self.series12, self.series21),
                                metric(self.series1.append(self.series2b), self.series2.append(self.series1b)))
 
-    def helper_test_multivariate_duplication_equality(self, metric, **kwargs):
+    def get_test_cases(self, **kwargs):
+        # stochastic metrics (rho-risk) behave similar to deterministic metrics if all samples have equal values
+        if 'is_stochastic' in kwargs and kwargs['is_stochastic']:
+            test_cases = [
+                (self.series1 + 1, self.series22_stochastic),
+                (self.series1 + 1, self.series33_stochastic),
+                (self.series2, self.series33_stochastic)
+            ]
+            kwargs.pop('is_stochastic', 0)
+        else:
+            test_cases = [
+                (self.series1 + 1, self.series2),
+                (self.series1 + 1, self.series3),
+                (self.series2, self.series3)
+            ]
+        return test_cases, kwargs
 
-        test_cases = [
-            (self.series1 + 1, self.series2),
-            (self.series1 + 1, self.series3),
-            (self.series2, self.series3)
-        ]
+    def helper_test_multivariate_duplication_equality(self, metric, **kwargs):
+        test_cases, kwargs = self.get_test_cases(**kwargs)
 
         for s1, s2 in test_cases:
             s11 = s1.stack(s1)
@@ -72,12 +94,7 @@ class MetricsTestCase(DartsBaseTestClass):
                                    metric(s11, s22, **kwargs, reduction=(lambda x: x[0])))
 
     def helper_test_multiple_ts_duplication_equality(self, metric, **kwargs):
-
-        test_cases = [
-            (self.series1 + 1, self.series2),
-            (self.series1 + 1, self.series3),
-            (self.series2, self.series3)
-        ]
+        test_cases, kwargs = self.get_test_cases(**kwargs)
 
         for s1, s2 in test_cases:
             s11 = [s1.stack(s1)] * 2
@@ -89,14 +106,26 @@ class MetricsTestCase(DartsBaseTestClass):
             self.assertAlmostEqual(metric(s1, s2, **kwargs, reduction=np.mean, inter_reduction=np.max),
                                    metric(s11, s22, **kwargs, reduction=np.mean, inter_reduction=np.max))
 
-    def helper_test_nan(self, metric):
-        # univariate
-        non_nan_metric = metric(self.series1[:9] + 1, self.series2[:9])
-        nan_series1 = self.series1.copy()
-        nan_series1._xa.values[-1,:,:] = np.nan
-        nan_metric = metric(nan_series1 + 1, self.series2)
-        self.assertEqual(non_nan_metric, nan_metric)
-        # multivariate (TODO)
+    def helper_test_nan(self, metric, **kwargs):
+        test_cases, kwargs = self.get_test_cases(**kwargs)
+
+        for s1, s2 in test_cases:
+            # univariate
+            non_nan_metric = metric(s1[:9] + 1, s2[:9])
+            nan_s1 = s1.copy()
+            nan_s1._xa.values[-1, :, :] = np.nan
+            nan_metric = metric(nan_s1 + 1, s2)
+            self.assertEqual(non_nan_metric, nan_metric)
+
+            # multivariate + multi-TS
+            s11 = [s1.stack(s1)] * 2
+            s22 = [s2.stack(s2)] * 2
+            non_nan_metric = metric([s[:9] + 1 for s in s11], [s[:9] for s in s22])
+            nan_s11 = s11.copy()
+            for s in nan_s11:
+                s._xa.values[-1, :, :] = np.nan
+            nan_metric = metric([s + 1 for s in nan_s11], s22)
+            self.assertEqual(non_nan_metric, nan_metric)
 
     def test_r2(self):
         from sklearn.metrics import r2_score
@@ -160,13 +189,8 @@ class MetricsTestCase(DartsBaseTestClass):
     def test_mase(self):
 
         insample = self.series_train
-        test_cases = [
-            (self.series1 + 1, self.series2, insample),
-            (self.series1 + 1, self.series3, insample),
-            (self.series2, self.series3, insample)
-        ]
-
-        for s1, s2, insample in test_cases:
+        test_cases, _ = self.get_test_cases()
+        for s1, s2 in test_cases:
 
             # multivariate, series as args
             self.assertAlmostEqual(metrics.mase(s1.stack(s1), s2.stack(s2), insample.stack(insample),
@@ -208,6 +232,28 @@ class MetricsTestCase(DartsBaseTestClass):
         self.helper_test_multivariate_duplication_equality(metrics.ope)
         self.helper_test_multiple_ts_duplication_equality(metrics.ope)
         self.helper_test_nan(metrics.ope)
+
+    def test_rho_risk(self):
+        # deterministic not supported
+        with self.assertRaises(ValueError):
+            metrics.rho_risk(self.series1, self.series1)
+
+        # general univariate, multivariate and multi-ts tests
+        self.helper_test_multivariate_duplication_equality(metrics.rho_risk, is_stochastic=True)
+        self.helper_test_multiple_ts_duplication_equality(metrics.rho_risk, is_stochastic=True)
+        self.helper_test_nan(metrics.rho_risk, is_stochastic=True)
+
+        # test perfect predictions -> risk = 0
+        for rho in [0.25, 0.5]:
+            self.assertAlmostEqual(metrics.rho_risk(self.series1, self.series11_stochastic, rho=rho), 0.)
+        self.assertAlmostEqual(metrics.rho_risk(self.series12_mean, self.series12_stochastic, rho=0.5), 0.)
+
+        # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
+        s1 = self.series1
+        s2 = self.series1 * 2
+        s12_stochastic = TimeSeries.from_times_and_values(s1.time_index, np.stack([s1.values(), s2.values()], axis=2))
+        self.assertAlmostEqual(metrics.rho_risk(s1, s12_stochastic, rho=0.), 0.)
+        self.assertAlmostEqual(metrics.rho_risk(s2, s12_stochastic, rho=1.), 0.)
 
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
