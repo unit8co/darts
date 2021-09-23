@@ -3,12 +3,13 @@ Ensemble Model Base Class
 """
 
 from abc import abstractmethod
-from typing import List, Optional, Union, Sequence, Tuple
+
+from typing import List, Optional, Union, Sequence
 from functools import reduce
 
-from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_if_not, raise_if
-from ..models.forecasting_model import ForecastingModel, GlobalForecastingModel
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_if_not, raise_if
+from darts.models.forecasting.forecasting_model import ForecastingModel, GlobalForecastingModel
 
 logger = get_logger(__name__)
 

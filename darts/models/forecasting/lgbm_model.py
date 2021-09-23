@@ -6,8 +6,8 @@ A forecasting model using a linear regression of some of the target series' lags
 covariate series' lags in order to obtain a forecast.
 """
 from typing import Union, Tuple, List
-from ..logging import get_logger
-from .regression_model import RegressionModel
+from darts.logging import get_logger
+from darts.models.forecasting.regression_model import RegressionModel
 from sklearn.linear_model import LinearRegression
 
 logger = get_logger(__name__)

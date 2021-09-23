@@ -8,9 +8,11 @@ import torch
 from numpy.random import RandomState
 from typing import List, Optional, Union, Tuple
 
-from ..logging import raise_if_not, get_logger
-from ..utils.torch import random_method
-from .torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.likelihood_models import Likelihood
+from darts.logging import raise_if_not, get_logger
+from darts.utils.torch import random_method
+from darts.models.forecasting.torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
+                                                              PastCovariatesTorchModel)
 
 logger = get_logger(__name__)
 
@@ -111,7 +113,7 @@ class _BlockRNNModule(nn.Module):
         return predictions
 
 
-class BlockRNNModel(PastCovariatesTorchModel):
+class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -121,6 +123,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
                  n_rnn_layers: int = 1,
                  hidden_fc_sizes: Optional[List] = None,
                  dropout: float = 0.,
+                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -158,6 +161,9 @@ class BlockRNNModel(PastCovariatesTorchModel):
             Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
             Fraction of neurons afected by Dropout.
+        likelihood
+            Optionally, the likelihood model to be used for probabilistic forecasts.
+            If no likelihood model is provided, forecasts will be deterministic.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -206,7 +212,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        super().__init__(**kwargs)
+        super().__init__(likelihood=likelihood, **kwargs)
 
         # check we got right model type specified:
         if model not in ['RNN', 'LSTM', 'GRU']:
@@ -227,11 +233,14 @@ class BlockRNNModel(PastCovariatesTorchModel):
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
 
+        target_size = (
+            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
+        )
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
             model = _BlockRNNModule(name=self.rnn_type_or_module,
                                     input_size=input_dim,
-                                    target_size=output_dim,
+                                    target_size=target_size,
                                     hidden_dim=self.hidden_size,
                                     num_layers=self.n_rnn_layers,
                                     output_chunk_length=self.output_chunk_length,
@@ -240,3 +249,11 @@ class BlockRNNModel(PastCovariatesTorchModel):
         else:
             model = self.rnn_type_or_module
         return model
+
+    @random_method
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self.model(x)
+            return self.likelihood.sample(output)
+        else:
+            return self.model(x)
