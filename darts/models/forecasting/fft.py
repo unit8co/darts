@@ -8,10 +8,10 @@ import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
 
-from .forecasting_model import ForecastingModel
-from ..timeseries import TimeSeries
-from ..logging import get_logger
-from ..utils.missing_values import fill_missing_values
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger
+from darts.utils.missing_values import fill_missing_values
 
 logger = get_logger(__name__)
 

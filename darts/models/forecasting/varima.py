@@ -15,9 +15,9 @@ import pandas as pd
 from statsmodels.tsa.api import VARMAX as staVARMA
 from typing import Optional
 
-from .forecasting_model import DualCovariatesForecastingModel
-from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_if
+from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 

@@ -3,8 +3,8 @@ import pandas as pd
 from sklearn.gaussian_process.kernels import RBF, ExpSineSquared
 
 from ..models import GaussianProcessFilter
-from ..models.moving_average import MovingAverage
-from ..models.kalman_filter import KalmanFilter
+from darts.models.filtering.moving_average import MovingAverage
+from darts.models.filtering.kalman_filter import KalmanFilter
 from ..timeseries import TimeSeries
 from ..utils import timeseries_generation as tg
 from .base_test_class import DartsBaseTestClass

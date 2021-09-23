@@ -4,7 +4,7 @@
 
 from darts import TimeSeries, ModelMode, SeasonalityMode
 from darts.models import NaiveSeasonal, ExponentialSmoothing, Theta, FourTheta, LinearRegressionModel
-from darts.models.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.utils import _build_tqdm_iterator
