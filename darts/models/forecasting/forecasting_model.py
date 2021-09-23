@@ -177,14 +177,12 @@ class ForecastingModel(ABC):
             return TimeSeries.from_times_and_values(time_index,
                                                     points_preds,
                                                     freq=input_series.freq_str,
-                                                    columns=input_series.columns,
-                                                    sort=False)
+                                                    columns=input_series.columns)
 
         return TimeSeries.from_times_and_values(time_index,
                                                 np.stack(points_preds, axis=2),
                                                 freq=input_series.freq_str,
-                                                columns=input_series.columns,
-                                                sort=False)
+                                                columns=input_series.columns)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
