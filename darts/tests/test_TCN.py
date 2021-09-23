@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
-    from ..models.tcn_model import TCNModel
+    from darts.models.forecasting.tcn_model import TCNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. TCN tests will be skipped.')

@@ -21,9 +21,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not, raise_if
-from ..utils import (
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_log, raise_if_not, raise_if
+from darts.utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     _historical_forecasts_general_checks,
@@ -31,7 +31,7 @@ from ..utils import (
 )
 import inspect
 
-from .. import metrics
+from darts import metrics
 
 logger = get_logger(__name__)
 
