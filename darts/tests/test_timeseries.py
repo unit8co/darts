@@ -487,7 +487,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                         self.assertTrue(series == series_target)
                     self.assertTrue(series.time_index.equals(series_target.time_index))
 
-    def test_fill_nan(self):
+    def test_fillna_value(self):
         range_ = pd.date_range('20130101', '20130108', freq='D')
 
         pd_series_nan = pd.Series([np.nan] * len(range_), index=range_)
@@ -498,9 +498,9 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         series_1 = TimeSeries.from_series(pd_series_1)
         series_holes = TimeSeries.from_series(pd_series_holes, fill_missing_dates=True)
 
-        series_nan_fillna = TimeSeries.from_series(pd_series_nan, fill_nan=1.)
-        series_1_fillna = TimeSeries.from_series(pd_series_nan, fill_nan=1.)
-        series_holes_fillna = TimeSeries.from_series(pd_series_holes, fill_missing_dates=True, fill_nan=1.)
+        series_nan_fillna = TimeSeries.from_series(pd_series_nan, fillna_value=1.)
+        series_1_fillna = TimeSeries.from_series(pd_series_nan, fillna_value=1.)
+        series_holes_fillna = TimeSeries.from_series(pd_series_holes, fill_missing_dates=True, fillna_value=1.)
 
         for series_with_nan in [series_nan, series_holes]:
             self.assertTrue(np.isnan(series_with_nan.all_values(copy=False)).any())

@@ -1961,6 +1961,7 @@ class TimeSeries:
 
         step_size = 3
         n_dates = len(time_index)
+        # this creates n steps containing 3 timestamps each; used to infer frequency of time_index
         steps = np.column_stack([time_index[i: (n_dates - step_size + (i + 1))] for i in range(step_size)])
         observed_freqs = set(pd.infer_freq(step) for step in steps)
         observed_freqs.discard(None)
