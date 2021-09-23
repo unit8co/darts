@@ -385,7 +385,8 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
             attribute+"_cos": np.cos(freq * values)
         })
     else:
-        values_df = pd.DataFrame(values)
+        values_df = pd.DataFrame({attribute: values})
+
     values_df.index = time_index
 
     if one_hot:
