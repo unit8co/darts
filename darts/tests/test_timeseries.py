@@ -666,8 +666,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertNotEqual(series_01, series[['0', '1']].map(fn))
 
     def test_map_with_timestamp(self):
-        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
-        zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+        zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start=pd.Timestamp('2000-01-01'))
         zeroes = zeroes.with_columns_renamed('constant', 'linear')
         
         def function(ts, x):
@@ -677,7 +677,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(new_series, zeroes)
 
     def test_map_wrong_fn(self):
-        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
 
         def add(x, y, z):
             return x + y + z
@@ -746,8 +746,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(len(series1.longest_contiguous_slice(2)), 6)
 
     def test_with_columns_renamed(self):
-        series1 = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12).stack(
-            linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)   
+        series1 = linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12).stack(
+            linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12)
         )
 
         series1 = series1.with_columns_renamed(['linear', 'linear_1'], ['linear1', 'linear2'])
