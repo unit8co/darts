@@ -1777,7 +1777,7 @@ class TimeSeries:
         kwargs['figure'] = fig
         label = kwargs['label'] if 'label' in kwargs else ''
 
-        if 'lw' not in kwargs:
+        if not any(lw in kwargs for lw in ['lw', 'linewidth']):
             kwargs['lw'] = 2
 
         if self.n_components > 10:
