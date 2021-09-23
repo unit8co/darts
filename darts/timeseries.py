@@ -159,7 +159,7 @@ class TimeSeries:
                     for x
                     in range(len(time_index) - samples_size + 1)]
 
-                observed_frequencies = set(filter(None.__ne__, observed_frequencies))
+                observed_frequencies = set(obs_freq for obs_freq in observed_frequencies if obs_freq is not None)
 
                 raise_if_not(
                     len(observed_frequencies) == 1,
@@ -1773,7 +1773,7 @@ class TimeSeries:
         kwargs['figure'] = fig
         label = kwargs['label'] if 'label' in kwargs else ''
 
-        if 'lw' not in kwargs:
+        if not any(lw in kwargs for lw in ['lw', 'linewidth']):
             kwargs['lw'] = 2
 
         if self.n_components > 10:

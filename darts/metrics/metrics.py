@@ -6,6 +6,7 @@ Some metrics to compare time series.
 """
 
 import numpy as np
+
 from ..timeseries import TimeSeries
 from darts.utils import _parallel_apply, _build_tqdm_iterator
 from ..utils.statistics import check_seasonality
@@ -113,15 +114,49 @@ def multivariate_support(func):
     return wrapper_multivariate_support
 
 
+def _get_values(series: TimeSeries,
+                stochastic_quantile: Optional[float] = 0.5) -> np.ndarray:
+    """
+    Returns the numpy values of a time series.
+    For stochastic series, return either all sample values with (stochastic_quantile=None) or the quantile sample value
+    with (stochastic_quantile {>=0,<=1})
+    """
+    if series.is_deterministic:
+        series_values = series.univariate_values()
+    else:  # stochastic
+        if stochastic_quantile is None:
+            series_values = series.all_values(copy=False)
+        else:
+            series_values = series.quantile_timeseries(quantile=stochastic_quantile).univariate_values()
+    return series_values
+
+
 def _get_values_or_raise(series_a: TimeSeries,
                          series_b: TimeSeries,
-                         intersect: bool) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Returns the numpy values of two time series. If intersect is true, considers only their time intersection.
+                         intersect: bool,
+                         stochastic_quantile: Optional[float] = 0.5,
+                         remove_nan_union: bool = False) -> Tuple[np.ndarray, np.ndarray]:
+    """Returns the processed numpy values of two time series. Processing can be customized with arguments
+    `intersect, stochastic_quantile, remove_nan_union`.
+
     Raises a ValueError if the two time series (or their intersection) do not have the same time index.
 
-    For stochastic series, return the median sample value
+    Parameters
+    ----------
+    series_a
+        A univariate deterministic `TimeSeries` instance (the actual series).
+    series_b
+        A univariate (deterministic or stochastic) `TimeSeries` instance (the predicted series).
+    intersect
+        A boolean for whether or not to only consider the time intersection between `series_a` and `series_b`
+    stochastic_quantile
+        Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)
+        or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {>=0,<=1}.
+    remove_nan_union
+        By setting `remove_non_union` to True, remove all indices from `series_a` and `series_b` which have a NaN value
+        in either of the two input series.
     """
+
     raise_if_not(series_a.width == series_b.width, " The two time series must have the same number of components",
                  logger)
 
@@ -136,22 +171,18 @@ def _get_values_or_raise(series_a: TimeSeries,
                                                                     series_a.time_index, series_b.time_index),
                  logger)
 
-    # TODO: we may want to change this...
-    series_a_det = series_a_common if series_a_common.is_deterministic else series_a_common.quantile_timeseries(quantile=0.5)
-    series_b_det = series_b_common if series_b_common.is_deterministic else series_b_common.quantile_timeseries(quantile=0.5)
+    series_a_det = _get_values(series_a_common, stochastic_quantile=stochastic_quantile)
+    series_b_det = _get_values(series_b_common, stochastic_quantile=stochastic_quantile)
 
-    return series_a_det.univariate_values(), series_b_det.univariate_values()
+    if not remove_nan_union:
+        return series_a_det, series_b_det
 
-
-def _remove_nan_union(array_a: np.ndarray,
-                      array_b: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
-    """
-    Returns the two inputs arrays where all elements are deleted that have an index that corresponds to
-    a NaN value in either of the two input arrays.
-    """
-
-    isnan_mask = np.logical_or(np.isnan(array_a), np.isnan(array_b))
-    return np.delete(array_a, isnan_mask), np.delete(array_b, isnan_mask)
+    b_is_deterministic = bool(len(series_b_det.shape) == 1)
+    if b_is_deterministic:
+        isnan_mask = np.logical_or(np.isnan(series_a_det), np.isnan(series_b_det))
+    else:
+        isnan_mask = np.logical_or(np.isnan(series_a_det), np.isnan(series_b_det).any(axis=2).flatten())
+    return np.delete(series_a_det, isnan_mask), np.delete(series_b_det, isnan_mask, axis=0)
 
 
 @multi_ts_support
@@ -204,8 +235,7 @@ def mae(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
 """
 
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
-    y1, y2 = _remove_nan_union(y1, y2)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     return np.mean(np.abs(y1 - y2))
 
 
@@ -258,8 +288,7 @@ def mse(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Squared Error (MSE)
     """
 
-    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_pred = _remove_nan_union(y_true, y_pred)
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     return np.mean((y_true - y_pred)**2)
 
 
@@ -365,8 +394,7 @@ def rmsle(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Root Mean Squared Log Error (RMSLE)
     """
 
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
-    y1, y2 = _remove_nan_union(y1, y2)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     y1, y2 = np.log(y1 + 1), np.log(y2 + 1)
     return np.sqrt(np.mean((y1 - y2)**2))
 
@@ -485,8 +513,7 @@ def mape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Absolute Percentage Error (MAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_hat = _remove_nan_union(y_true, y_hat)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not((y_true != 0).all(), 'The actual series must be strictly positive to compute the MAPE.', logger)
     return 100. * np.mean(np.abs((y_true - y_hat) / y_true))
 
@@ -551,8 +578,7 @@ def smape(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The symmetric Mean Absolute Percentage Error (sMAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_hat = _remove_nan_union(y_true, y_hat)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not(np.logical_or(y_true != 0, y_hat != 0).all(),
                  'The actual series must be strictly positive to compute the sMAPE.', logger)
     return 200. * np.mean(np.abs(y_true - y_hat) / (np.abs(y_true) + np.abs(y_hat)))
@@ -647,7 +673,7 @@ def mase(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
 
             y_true, y_hat = _get_values_or_raise(actual_series.univariate_component(i),
                                                  pred_series.univariate_component(i),
-                                                 intersect)
+                                                 intersect, remove_nan_union=False)
 
             x_t = insample_.univariate_component(i).values()
             errors = np.abs(y_true - y_hat)
@@ -753,8 +779,7 @@ def ope(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Overall Percentage Error (OPE)
     """
 
-    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_pred = _remove_nan_union(y_true, y_pred)
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
     raise_if_not(y_true_sum > 0, 'The series of actual value cannot sum to zero when computing OPE.', logger)
     return np.abs((y_true_sum - y_pred_sum) / y_true_sum) * 100.
@@ -816,8 +841,7 @@ def marre(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
         The Mean Absolute Ranged Relative Error (MARRE)
     """
 
-    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect)
-    y_true, y_hat = _remove_nan_union(y_true, y_hat)
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not(y_true.max() > y_true.min(), 'The difference between the max and min values must be strictly'
                  'positive to compute the MARRE.', logger)
     true_range = y_true.max() - y_true.min()
@@ -873,8 +897,7 @@ def r2_score(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     float
         The Coefficient of Determination :math:`R^2`
     """
-    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect)
-    y1, y2 = _remove_nan_union(y1, y2)
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     ss_errors = np.sum((y1 - y2) ** 2)
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)
@@ -941,3 +964,88 @@ def dtw_metric(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
     warped_actual_series, warped_pred_series = alignment.warped()
 
     return metric(warped_actual_series, warped_pred_series)
+
+
+# rho-risk (quantile risk)
+@multi_ts_support
+@multivariate_support
+def rho_risk(actual_series: Union[TimeSeries, Sequence[TimeSeries]],
+             pred_series: Union[TimeSeries, Sequence[TimeSeries]],
+             rho: float = 0.5,
+             intersect: bool = True,
+             *,
+             reduction: Callable[[np.ndarray], float] = np.mean,
+             inter_reduction: Callable[[np.ndarray], Union[float, np.ndarray]] = lambda x: x,
+             n_jobs: int = 1,
+             verbose: bool = False) -> float:
+
+    """ :math:`\\rho`-risk (rho-risk or quantile risk).
+
+    Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions
+    (containing N samples) :math:`\\hat{y}_t` of shape :math:`T \\times N`, rho-risk is a metric that quantifies the
+    accuracy of a specific quantile :math:`\\rho` from the predicted value distribution.
+
+    For a univariate stochastic predicted TimeSeries the :math:`\\rho`-risk is given by:
+
+    .. math:: \\frac{ L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) } {Z},
+
+    where :math:`L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right)` is`the :math:`\\rho`-loss function:
+
+    .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( Z - \\hat{Z}_{\\rho} \\right)
+        \\left( \\rho I_{\\hat{Z}_{\\rho} < Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \geq Z} \\right),
+
+    where :math:`Z = \\sum_{t=1}^{T} y_t` (1) is the aggregated target value and :math:`\\hat{Z}_{\\rho}` is the
+    :math:`\\rho`-quantile of the predicted values. For this, each sample realization :math:`i \\in N` is first aggregated over the
+    time span similar to (1) with :math:`\\hat{Z}_{i} = \\sum_{t=1}^{T} \\hat{y}_{i,t}`.
+
+    :math:`I_{cond} = 1` if cond is True else :math:`0``
+
+    Parameters
+    ----------
+    actual_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of actual values.
+    pred_series
+        The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.
+    rho
+        The quantile (float [0, 1]) of interest for the risk evaluation.
+    intersect
+        For time series that are overlapping in time without having the same time index, setting `intersect=True`
+        will consider the values only over their common time interval (intersection in time).
+    reduction
+        Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate
+        the metrics of different components in case of multivariate `TimeSeries` instances.
+    inter_reduction
+        Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.
+        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+        `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair
+        of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise
+        metrics.
+    n_jobs
+        The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
+        passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+        (sequential). Setting the parameter to `-1` means using all the available processors.
+    verbose
+        Optionally, whether to print operations progress
+
+    Returns
+    -------
+    float
+        The rho-risk metric
+    """
+
+    raise_if_not(pred_series.is_stochastic,
+                 'rho (quantile) loss should only be computed for stochastic predicted TimeSeries.')
+
+    z_true, z_hat = _get_values_or_raise(actual_series, pred_series, intersect,
+                                         stochastic_quantile=None, remove_nan_union=True)
+
+    z_true = z_true.sum(axis=0)
+    z_hat = z_hat.sum(axis=0)  # aggregate all individual sample realizations
+
+    z_hat_rho = np.quantile(z_hat, q=rho)  # get the quantile from aggregated samples
+
+    pred_above = np.where(z_hat_rho >= z_true, 1, 0)
+    pred_below = np.where(z_hat_rho < z_true, 1, 0)
+
+    rho_loss = 2 * (z_true - z_hat_rho) * (rho * pred_below - (1 - rho) * pred_above)
+    return rho_loss / z_true
