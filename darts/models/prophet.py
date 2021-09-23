@@ -6,18 +6,21 @@ Facebook Prophet
 from typing import Optional
 import logging
 
+import numpy as np
+
 from ..timeseries import TimeSeries
-from .forecasting_model import ForecastingModel
+from .forecasting_model import DualCovariatesForecastingModel
 import pandas as pd
 from ..logging import get_logger, execute_and_suppress_output
 import prophet
+import time
 
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
 
 
-class Prophet(ForecastingModel):
+class Prophet(DualCovariatesForecastingModel):
     def __init__(self,
                  frequency: Optional[int] = None,
                  country_holidays: Optional[str] = None,
@@ -79,7 +82,7 @@ class Prophet(ForecastingModel):
                                        fourier_order=5)
 
         if past_covariates is not None:
-            in_df = pd.concat([in_df, pd.DataFrame(past_covariates.all_values()[:,:, 0], columns=['year', 'month'])], axis=1)
+            in_df = pd.concat([in_df, pd.DataFrame(past_covariates.all_values()[:, :, 0], columns=['year', 'month'])], axis=1)
             self.model.add_regressor('year')
             self.model.add_regressor('month')
 
@@ -100,6 +103,17 @@ class Prophet(ForecastingModel):
             new_dates_df = pd.concat([new_dates_df, pd.DataFrame(future_covariates.all_values()[:, :, 0], columns=['year', 'month'])],
                               axis=1)
         predictions = self.model.predict(new_dates_df)
-
-        forecast = predictions['yhat'][-n:].values
+        if num_samples == 1:
+            forecast = predictions['yhat'].values
+        else:
+            forecast = np.expand_dims(self.stochastic_samples(new_dates_df, n_samples=num_samples), axis=1)
         return self._build_forecast_series(forecast)
+
+    def stochastic_samples(self, predictions, n_samples) -> np.ndarray:
+        """small hack to get stochastic samples"""
+        predictions['t'] = (predictions['ds'] - self.model.start) / self.model.t_scale
+        predictions['floor'] = 0
+        return self.model.sample_posterior_predictive(predictions)['yhat']
+
+    def _is_probabilistic(self) -> bool:
+        return True

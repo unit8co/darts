@@ -27,8 +27,9 @@ from ..utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     _historical_forecasts_general_checks,
-    _parallel_apply
+    _parallel_apply,
 )
+from ..utils.timeseries_generation import generate_index
 import inspect
 
 from .. import metrics
@@ -37,9 +38,9 @@ logger = get_logger(__name__)
 
 
 class ForecastingModel(ABC):
-    """ The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to support.
-        The signatures in this base class are for "local" models handling only one univariate series and no covariates.
-        Sub-classes can handle more complex cases.
+    """ The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to
+        support. The signatures in this base class are for "local" models handling only one univariate series and no
+        covariates. Sub-classes can handle more complex cases.
     """
 
     @abstractmethod
@@ -149,15 +150,9 @@ class ForecastingModel(ABC):
         Generates `n` new dates after the end of the specified series
         """
         input_series = input_series if input_series is not None else self.training_series
-
-        if input_series.has_datetime_index:
-            time_index = input_series.time_index
-            new_dates = [
-                (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)
-            ]
-            return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)
-        else:
-            return pd.RangeIndex(start=input_series.end_time() + 1, stop=input_series.end_time() + n + 1, step=1)
+        last = input_series.end_time()
+        return generate_index(start=last + input_series.freq if input_series.has_datetime_index else last + 1,
+                              freq=input_series.freq, length=n)
 
     def _build_forecast_series(self,
                                points_preds: Union[np.ndarray, Sequence[np.ndarray]],
@@ -170,7 +165,8 @@ class ForecastingModel(ABC):
         time_index_length = len(points_preds) if isinstance(points_preds, np.ndarray) else len(points_preds[0])
         time_index = self._generate_new_dates(time_index_length, input_series=input_series)
         if isinstance(points_preds, np.ndarray):
-            return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str, columns=input_series.columns)
+            return TimeSeries.from_times_and_values(time_index, points_preds,
+                                                    freq=input_series.freq_str, columns=input_series.columns)
 
         return TimeSeries.from_times_and_values(time_index, np.stack(points_preds, axis=2),
                                                 freq=input_series.freq_str, columns=input_series.columns)
@@ -790,6 +786,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             past_covariates=past_covariates if self.uses_past_covariates else None,
             future_covariates=future_covariates if self.uses_future_covariates else None
         )
+
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
     """ The base class for the forecasting models that are not global, but support future covariates.

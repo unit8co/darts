@@ -17,9 +17,9 @@ from ..logging import raise_if_not, get_logger, raise_log, raise_if
 logger = get_logger(__name__)
 
 
-def _generate_index(start: Union[pd.Timestamp, int],
-                    length: int = 10,
-                    freq: str = 'D') -> Union[pd.DatetimeIndex, pd.Int64Index]:
+def generate_index(start: Union[pd.Timestamp, int],
+                   length: int = 10,
+                   freq: str = 'D') -> Union[pd.DatetimeIndex, pd.Int64Index]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas Int64Index. The index starts at
 
@@ -73,7 +73,7 @@ def constant_timeseries(value: float = 1,
         A constant TimeSeries with value 'value'.
     """
 
-    index = _generate_index(start=start, freq=freq, length=length)
+    index = generate_index(start=start, freq=freq, length=length)
     values = np.full(length, value)
 
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
@@ -115,7 +115,7 @@ def linear_timeseries(start_value: float = 0,
         A linear TimeSeries created as indicated above.
     """
 
-    index = _generate_index(start=start, freq=freq, length=length)
+    index = generate_index(start=start, freq=freq, length=length)
     values = np.linspace(start_value, end_value, length)
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
@@ -160,7 +160,7 @@ def sine_timeseries(value_frequency: float = 0.1,
         A sinusoidal TimeSeries parametrized as indicated above.
     """
 
-    index = _generate_index(start=start, freq=freq, length=length)
+    index = generate_index(start=start, freq=freq, length=length)
     values = np.array(range(length), dtype=float)
     f = np.vectorize(
         lambda x: value_amplitude * math.sin(2 * math.pi * value_frequency * x + value_phase) + value_y_offset
@@ -217,7 +217,7 @@ def gaussian_timeseries(length: int = 10,
         raise_if_not(std.shape == (length, length), 'If a matrix of standard deviations is provided, '
                                                     'its shape has to match the length of the TimeSeries.', logger)
 
-    index = _generate_index(start=start, freq=freq, length=length)
+    index = generate_index(start=start, freq=freq, length=length)
     values = np.random.normal(mean, std, size=length)
 
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
@@ -257,7 +257,7 @@ def random_walk_timeseries(length: int = 10,
         A random walk TimeSeries created as indicated above.
     """
 
-    index = _generate_index(start=start, freq=freq, length=length)
+    index = generate_index(start=start, freq=freq, length=length)
     values = np.cumsum(np.random.normal(mean, std, size=length))
 
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
