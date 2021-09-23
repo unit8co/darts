@@ -137,7 +137,7 @@ if __name__ == "__main__":
             # remove seasonality
             train_des = train
             seasonOut = 1
-            season = constant_timeseries(length=len(train), freq=train.freq_str, start_ts=train.start_time())
+            season = constant_timeseries(length=len(train), freq=train.freq_str, start=train.start_time())
             if m > 1:
                 if check_seasonality(train, m=m, max_lag=2 * m):
                     pass
