@@ -1,21 +1,23 @@
 import numpy as np
 import pandas as pd
 
-import darts.models
-from .. import TimeSeries
-from ..metrics import rmse
-from ..models import RegressionModel, RandomForest, LinearRegressionModel, LightGBMModel
+import darts
+from darts import TimeSeries
+from darts.metrics import rmse
+from darts.models import RegressionModel, RandomForest, LinearRegressionModel, LightGBMModel
 from .base_test_class import DartsBaseTestClass
-from ..utils import timeseries_generation as tg
+from darts.utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
-from sklearn.experimental import (
-    enable_hist_gradient_boosting,
-)  # enable import of HistGradientBoostingRegressor
+
+# Required to import HistGradientBoostingRegressor in sklearn
+from sklearn.experimental import enable_hist_gradient_boosting
+
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
-from darts.models.regression_model import _shift_matrices, _update_min_max
-from unittest.mock import patch, ANY
+from darts.models.forecasting.regression_model import _shift_matrices, _update_min_max
+from unittest.mock import patch
+
 
 def train_test_split(features, target, split_ts):
     """
@@ -524,15 +526,16 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             model.predict(12, series=target_train, past_covariates=covariates)
 
-    @patch.object(darts.models.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
+    @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit")
+    # @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
     def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
         """test whether these evaluation set parameters are passed to LGBRegressor """
         model = LightGBMModel(lags=4, lags_past_covariates=2)
         split_index = 450
         model.fit(series=self.ts_sum1[:split_index],
                   past_covariates=self.ts_cov1[:split_index],
-                  eval_series=self.ts_sum1[split_index:],
-                  eval_past_covariates=self.ts_cov1[split_index:],
+                  val_series=self.ts_sum1[split_index:],
+                  val_past_covariates=self.ts_cov1[split_index:],
                   early_stopping_rounds=2,
                   )
 

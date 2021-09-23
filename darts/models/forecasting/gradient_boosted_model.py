@@ -8,10 +8,10 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/README.md
 """
 
-from ..logging import get_logger
+from darts.logging import get_logger
 from typing import Union, Optional, Sequence, List, Tuple
-from .regression_model import RegressionModel
-from ..timeseries import TimeSeries
+from darts.models.forecasting.regression_model import RegressionModel
+from darts.timeseries import TimeSeries
 import lightgbm as lgb
 
 logger = get_logger(__name__)
@@ -62,29 +62,30 @@ class LightGBMModel(RegressionModel):
             series: Union[TimeSeries, Sequence[TimeSeries]],
             past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            eval_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            eval_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            eval_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             max_samples_per_ts: Optional[int] = None,
             **kwargs) -> None:
         """
         Fits/trains the model using the provided list of features time series and the target time series.
+
         Parameters
         ----------
-        series : Union[TimeSeries, Sequence[TimeSeries]]
+        series
             TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        future_covariates
             Optionally, a series or sequence of series specifying future-known covariates
-        eval_series : Union[TimeSeries, Sequence[TimeSeries]]
+        val_series
             TimeSeries or Sequence[TimeSeries] object containing the target values for evaluation dataset
-        eval_past_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates for evaluation dataset
-        eval_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
+        val_future_covariates : Union[TimeSeries, Sequence[TimeSeries]]
             Optionally, a series or sequence of series specifying future-known covariates for evaluation dataset
-        max_samples_per_ts : int
-            This is an upper bound on the number of tuples that can be produced
+        max_samples_per_ts
+            This is an integer upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
             ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
             creation) to know their sizes, which might be expensive on big datasets.
@@ -92,12 +93,12 @@ class LightGBMModel(RegressionModel):
             most recent `max_samples_per_ts` samples will be considered.
         """
 
-        if eval_series is not None:
+        if val_series is not None:
 
             kwargs['eval_set'] = self._create_lagged_data(
-                target_series=eval_series,
-                past_covariates=eval_past_covariates,
-                future_covariates=eval_future_covariates,
+                target_series=val_series,
+                past_covariates=val_past_covariates,
+                future_covariates=val_future_covariates,
                 max_samples_per_ts=max_samples_per_ts
                 )
 

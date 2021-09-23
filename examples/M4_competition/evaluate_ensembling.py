@@ -4,7 +4,7 @@
 
 from darts import TimeSeries, ModelMode, SeasonalityMode
 from darts.models import NaiveSeasonal, ExponentialSmoothing, Theta, FourTheta, LinearRegressionModel
-from darts.models.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils.statistics import check_seasonality, remove_from_series, extract_trend_and_seasonality
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.utils import _build_tqdm_iterator
@@ -137,7 +137,7 @@ if __name__ == "__main__":
             # remove seasonality
             train_des = train
             seasonOut = 1
-            season = constant_timeseries(length=len(train), freq=train.freq_str, start_ts=train.start_time())
+            season = constant_timeseries(length=len(train), freq=train.freq_str, start=train.start_time())
             if m > 1:
                 if check_seasonality(train, m=m, max_lag=2 * m):
                     pass

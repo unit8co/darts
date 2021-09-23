@@ -7,8 +7,8 @@ returns a `TimeSeries` that is a filtered version of `series`.
 
 from abc import ABC, abstractmethod
 
-from ..timeseries import TimeSeries
-from ..logging import get_logger
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
