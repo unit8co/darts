@@ -7,10 +7,10 @@ from typing import Optional
 import statsmodels.tsa.holtwinters as hw
 import numpy as np
 
-from .forecasting_model import ForecastingModel
-from ..logging import get_logger
-from ..timeseries import TimeSeries
-from ..utils.utils import ModelMode
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.logging import get_logger
+from darts.timeseries import TimeSeries
+from darts.utils.utils import ModelMode
 
 logger = get_logger(__name__)
 

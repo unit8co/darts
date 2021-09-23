@@ -8,7 +8,7 @@ from ..utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
-    from ..models.transformer_model import _TransformerModule, TransformerModel
+    from darts.models.forecasting.transformer_model import _TransformerModule, TransformerModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. Transformer tests will be skipped.')

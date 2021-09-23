@@ -7,7 +7,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models.block_rnn_model import _BlockRNNModule, BlockRNNModel
+    from darts.models.forecasting.block_rnn_model import _BlockRNNModule, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. RNN tests will be skipped.')
