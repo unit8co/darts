@@ -445,10 +445,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             'A', 'Y', 'BA', 'BY', 'AS', 'YS', 'BAS', 'BYS', 'BH', 'H', 'T', 'min', 'S', 'L', 'U', 'us', 'N']
         # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'}) -> good
         offset_aliases_raise = [
-            'B', 'C', 'SM', 'BM', 'CBM', 'SMS', 'BMS', 'CBMS', 'BQ', 'BA', 'BY', 'BAS', 'BYS', 'BH'
+            'B', 'C', 'SM', 'BM', 'CBM', 'SMS', 'BMS', 'CBMS', 'BQ', 'BA', 'BY', 'BAS', 'BYS', 'BH', 'BQS'
         ]
-        # BQS works in full df but finds multiple inferred freqs in df with holes
-        offset_holes_raise = ['BQS']
         # frequency cannot be inferred for these types (finds '15D' instead of 'SM')
         offset_not_supported = ['SM', 'SMS']
 
@@ -471,8 +469,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             for df, df_name in zip([df_full, df_holes], ['full', 'holes']):
 
                 # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'})
-                if offset_alias in offset_aliases_raise \
-                        or all([df_name == 'holes', offset_alias in offset_holes_raise]):
+                if offset_alias in offset_aliases_raise:
                     with self.assertRaises(ValueError):
                         _ = TimeSeries.from_dataframe(df, time_col='date', fill_missing_dates=True)
                     continue

@@ -1958,23 +1958,16 @@ class TimeSeries:
         offset_alias_info = "For more information about frequency aliases, read " \
                             "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
 
-        n_tests = 10
-        # sizes 3: high probability to find an inferred frequency, 10: recognize larger patterns (i.e. business hours)
-        samples_sizes = [3, 10]
-        observed_freqs = set()
-        # if we cannot infer a frequency within the first 20 dates, the input data is too chaotic anyway.
-        # within the first 20 dates, all possible frequencies (offset aliases) should be identified
-        for samples_size in samples_sizes:
-            for i in range(n_tests):
-                inferred_freq = time_index[i:i + samples_size].inferred_freq
-                if inferred_freq not in observed_freqs and inferred_freq is not None:
-                    observed_freqs.add(inferred_freq)
+        step_size = 3
+        n_times = len(time_index)
+        steps = np.column_stack([time_index[i: (n_times - step_size + (i + 1))] for i in range(step_size)])
+        observed_freqs = set(pd.infer_freq(step) for step in steps)
+        observed_freqs.discard(None)
 
         raise_if_not(
             len(observed_freqs) == 1,
-            f"Could not observe an inferred frequency from the first n_first<={samples_sizes[-1] + n_tests} "
-            f"time stamps. An explicit frequency must be evident over a span of at least 3 consecutive time "
-            f"stamps within the first n_first dates. {offset_alias_info}" if not len(observed_freqs) else
+            f"Could not observe an inferred frequency. An explicit frequency must be evident over a span of at least "
+            f"3 consecutive time stamps in the input data. {offset_alias_info}" if not len(observed_freqs) else
             f"Could not find a unique inferred frequency (not constant). Observed frequencies: {observed_freqs}. "
             f"If any of those is the actual frequency, try passing it with fill_missing_dates=True "
             f"and freq=your_frequency. {offset_alias_info}",
