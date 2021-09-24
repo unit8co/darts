@@ -373,7 +373,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        An attribute of `pd.DatetimeIndex` - e.g. "month", "weekday", "day", "hour", "minute", "second". 
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day", "hour", "minute", "second". 
         See all available attributes in https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex .
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
@@ -401,7 +401,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     time_index = _extend_time_index_until(time_index, until, add_length)
 
     raise_if_not(
-        hasattr(pd.DatetimeIndex, attribute),
+        hasattr(pd.DatetimeIndex, attribute) or (attribute in ["week", "weekofyear", "week_of_year"]),
         '"attribute" needs to be an attribute of pd.DatetimeIndex.'
         'See all available attributes in '
         'https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex',
@@ -424,11 +424,16 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         "quarter": 4,
         "dayofyear":365,
         "day_of_year":365,
-        
+        "week":52,
+        "weekofyear":52,
+        "week_of_year":52,
     }
 
-    values = getattr(time_index, attribute)
-
+    if not attribute in ["week", "weekofyear", "week_of_year"]:
+        values = getattr(time_index, attribute)
+    else:
+        values = time_index.isocalendar().set_index("week").index.astype("int64").rename('time')
+    
     if one_hot or cyclic:
         raise_if_not(
             attribute in num_values_dict,
