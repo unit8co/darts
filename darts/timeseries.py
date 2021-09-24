@@ -157,7 +157,7 @@ class TimeSeries:
             xa_ = TimeSeries._fill_missing_dates(xa, freq=freq)
         # The provided index does not have a freq; using the provided freq
         elif has_datetime_index and freq is not None and not has_frequency:
-            xa_ = TimeSeries._resample_xarray(xa, freq=freq, sort=True)
+            xa_ = TimeSeries._restore_xarray_from_frequency(xa, freq=freq)
         else:
             xa_ = xa
         if fillna_value is not None:
@@ -1939,7 +1939,7 @@ class TimeSeries:
             If `xa`'s DateTimeIndex contains less than 3 elements;
             if no unique frequency can be inferred from `xa`'s DateTimeIndex;
             if the resampled DateTimeIndex does not contain all dates from `xa` (see
-                :meth:`_resample_xarray() <TimeSeries._resample_xarray>`)
+                :meth:`_restore_xarray_from_frequency() <TimeSeries._restore_xarray_from_frequency>`)
 
         Returns
         -------
@@ -1948,13 +1948,14 @@ class TimeSeries:
         """
 
         if freq is not None:
-            return TimeSeries._resample_xarray(xa, freq, sort=True)
+            return TimeSeries._restore_xarray_from_frequency(xa, freq)
 
         raise_if(len(xa) <= 2, f"Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
                  logger)
 
-        sorted_xa = xa.sortby(xa.dims[0])
-        time_index = sorted_xa.get_index(xa.dims[0])
+        time_dim = xa.dims[0]
+        sorted_xa = xa.copy() if xa.get_index(time_dim).is_monotonic_increasing else xa.sortby(time_dim)
+        time_index = sorted_xa.get_index(time_dim)
 
         offset_alias_info = "For more information about frequency aliases, read " \
                             "https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases"
@@ -1977,14 +1978,15 @@ class TimeSeries:
 
         freq = observed_freqs.pop()
 
-        return TimeSeries._resample_xarray(sorted_xa, freq, sort=False)
+        return TimeSeries._restore_xarray_from_frequency(sorted_xa, freq)
 
     @staticmethod
-    def _resample_xarray(xa: xr.DataArray,
-                         freq: str,
-                         sort: bool = True) -> xr.DataArray:
-        """ Returns an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency `freq`.
-        Any missing dates from `xa` will be inserted into the returned DataArray with np.nan values.
+    def _restore_xarray_from_frequency(xa: xr.DataArray,
+                                       freq: str) -> xr.DataArray:
+        """ Returns an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency
+        `freq`. `freq` should be the inferred or actual frequency of `xa`. All data from `xa` is maintained in the
+        output DataArray at the corresponding dates. Any missing dates from `xa` will be inserted into the returned
+        DataArray with np.nan values.
 
         The first dimension of the input DataArray `xa` has to be the time dimension.
 
@@ -1997,9 +1999,7 @@ class TimeSeries:
         xa
             The xarray DataArray
         freq
-            A string representing the frequency of the Pandas DateTimeIndex to resample `xa` with.
-        sort
-            Optionally, if `xa` is already sorted by dates, sorting can be skipped when setting `sort=True`
+            A string representing the actual or inferred frequency of the Pandas DateTimeIndex from `xa`.
 
         Raises
         -------
@@ -2012,12 +2012,10 @@ class TimeSeries:
             xarray DataArray resampled from `xa` with `freq` including all data from `xa` and inserted missing dates
         """
 
-        if sort:
-            sorted_xa = xa.sortby(xa.dims[0])
-        else:
-            sorted_xa = xa
+        time_dim = xa.dims[0]
+        sorted_xa = xa.copy() if xa.get_index(time_dim).is_monotonic_increasing else xa.sortby(time_dim)
 
-        time_index = sorted_xa.get_index(xa.dims[0])
+        time_index = sorted_xa.get_index(time_dim)
         resampled_time_index = pd.Series(index=time_index, dtype='object').asfreq(freq)
 
         # check if new time index with inferred frequency contains all input data
