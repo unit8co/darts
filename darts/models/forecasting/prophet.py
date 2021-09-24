@@ -5,15 +5,13 @@ Facebook Prophet
 
 from typing import Optional
 import logging
-
 import numpy as np
 
-from ..timeseries import TimeSeries
-from .forecasting_model import DualCovariatesForecastingModel
+from darts.timeseries import TimeSeries
+from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
 import pandas as pd
-from ..logging import get_logger, execute_and_suppress_output
+from darts.logging import get_logger, execute_and_suppress_output
 import prophet
-import time
 
 
 logger = get_logger(__name__)

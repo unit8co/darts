@@ -10,9 +10,9 @@ from filterpy.kalman import KalmanFilter as FpKalmanFilter
 from copy import deepcopy
 import numpy as np
 
-from .filtering_model import FilteringModel
-from ..timeseries import TimeSeries
-from ..utils.utils import raise_if_not
+from darts.models.filtering.filtering_model import FilteringModel
+from darts.timeseries import TimeSeries
+from darts.utils.utils import raise_if_not
 
 
 class KalmanFilter(FilteringModel, ABC):

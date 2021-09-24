@@ -1,5 +1,6 @@
 import math
 
+import random
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -436,6 +437,76 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(series_test.start_time(), range_[0])
         self.assertEqual(series_test.end_time(), range_[-1])
         self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
+
+        # ------ test infer frequency for all offset aliases from ------
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+        offset_aliases = [
+            'B', 'C', 'D', 'W', 'M', 'SM', 'BM', 'CBM', 'MS', 'SMS', 'BMS', 'CBMS', 'Q', 'BQ', 'QS', 'BQS',
+            'A', 'Y', 'BA', 'BY', 'AS', 'YS', 'BAS', 'BYS', 'BH', 'H', 'T', 'min', 'S', 'L', 'U', 'us', 'N']
+        # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'}) -> good
+        offset_aliases_raise = [
+            'B', 'C', 'SM', 'BM', 'CBM', 'SMS', 'BMS', 'CBMS', 'BQ', 'BA', 'BY', 'BAS', 'BYS', 'BH', 'BQS'
+        ]
+        # frequency cannot be inferred for these types (finds '15D' instead of 'SM')
+        offset_not_supported = ['SM', 'SMS']
+
+        ts_length = 25
+        for offset_alias in offset_aliases:
+            if offset_alias in offset_not_supported:
+                continue
+
+            # test with the initial full DataFrame
+            df_full = pd.DataFrame(
+                data={
+                    'date': pd.date_range(start=pd.to_datetime('01-04-1960'), periods=ts_length, freq=offset_alias),
+                    'value': np.arange(0, ts_length, 1)
+                }
+            )
+            # test fill dates with DataFrame including holes
+            df_holes = pd.concat([df_full[:4], df_full[5:7], df_full[9:]])
+
+            series_target = TimeSeries.from_dataframe(df_full, time_col='date')
+            for df, df_name in zip([df_full, df_holes], ['full', 'holes']):
+
+                # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'})
+                if offset_alias in offset_aliases_raise:
+                    with self.assertRaises(ValueError):
+                        _ = TimeSeries.from_dataframe(df, time_col='date', fill_missing_dates=True)
+                    continue
+
+                # test with different arguments
+                series_out_freq1 = TimeSeries.from_dataframe(
+                    df, time_col='date', fill_missing_dates=True, freq=offset_alias)
+                series_out_freq2 = TimeSeries.from_dataframe(
+                    df, time_col='date', freq=offset_alias)
+                series_out_fill = TimeSeries.from_dataframe(
+                    df, time_col='date', fill_missing_dates=True)
+
+                for series in [series_out_freq1, series_out_freq2, series_out_fill]:
+                    if df_name == 'full':
+                        self.assertTrue(series == series_target)
+                    self.assertTrue(series.time_index.equals(series_target.time_index))
+
+    def test_fillna_value(self):
+        range_ = pd.date_range('20130101', '20130108', freq='D')
+
+        pd_series_nan = pd.Series([np.nan] * len(range_), index=range_)
+        pd_series_1 = pd.Series([1] * len(range_), index=range_)
+        pd_series_holes = pd.concat([pd_series_1[:2], pd_series_nan[3:]])
+
+        series_nan = TimeSeries.from_series(pd_series_nan)
+        series_1 = TimeSeries.from_series(pd_series_1)
+        series_holes = TimeSeries.from_series(pd_series_holes, fill_missing_dates=True)
+
+        series_nan_fillna = TimeSeries.from_series(pd_series_nan, fillna_value=1.)
+        series_1_fillna = TimeSeries.from_series(pd_series_nan, fillna_value=1.)
+        series_holes_fillna = TimeSeries.from_series(pd_series_holes, fill_missing_dates=True, fillna_value=1.)
+
+        for series_with_nan in [series_nan, series_holes]:
+            self.assertTrue(np.isnan(series_with_nan.all_values(copy=False)).any())
+        for series_no_nan in [series_1, series_nan_fillna, series_1_fillna, series_holes_fillna]:
+            self.assertTrue(not np.isnan(series_no_nan.all_values(copy=False)).any())
+            self.assertTrue(series_1 == series_no_nan)
 
     def test_resample_timeseries(self):
         times = pd.date_range('20130101', '20130110')

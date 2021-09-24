@@ -1,7 +1,6 @@
 from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
 from unittest.mock import patch
-from unittest import skip
 import tempfile
 import shutil
 import pandas as pd
@@ -10,7 +9,7 @@ from ..timeseries import TimeSeries
 logger = get_logger(__name__)
 
 try:
-    from ..models.rnn_model import RNNModel
+    from darts.models.forecasting.rnn_model import RNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. RNN tests will be skipped.')
@@ -40,7 +39,7 @@ if TORCH_AVAILABLE:
             model2 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
 
-        @patch('darts.models.torch_forecasting_model.TorchForecastingModel.reset_model')
+        @patch('darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model')
         def test_create_instance_existing_model_with_name_force(self, patch_reset_model):
             model_name = 'test_model'
             model1 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
@@ -50,7 +49,7 @@ if TORCH_AVAILABLE:
             model2 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name, force_reset=True)
             patch_reset_model.assert_not_called()
 
-        @patch('darts.models.torch_forecasting_model.TorchForecastingModel.reset_model')
+        @patch('darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model')
         def test_create_instance_existing_model_with_name_force_fit_with_reset(self, patch_reset_model):
             model_name = 'test_model'
             model1 = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir, model_name=model_name)

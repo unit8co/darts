@@ -141,7 +141,7 @@ class MonthlyMilkIncompleteDataset(DatasetLoaderCSV):
             hash="49b275c7e2f8f28a6a05224be1a049a4",
             header_time="Month",
             format_time="%Y-%m",
-            freq='M'
+            freq='MS'
         ))
 
 
