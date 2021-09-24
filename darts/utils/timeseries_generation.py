@@ -320,7 +320,8 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        An attribute of `pd.DatetimeIndex` - e.g. "month", "weekday", "day", "hour", "minute", "second"
+        An attribute of `pd.DatetimeIndex` - e.g. "month", "weekday", "day", "hour", "minute", "second". 
+        See all available attributes in https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex .
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -346,24 +347,38 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
 
     time_index = _extend_time_index_until(time_index, until, add_length)
 
-    raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
-                 'of pd.DatetimeIndex', logger)
+    raise_if_not(
+        hasattr(pd.DatetimeIndex, attribute),
+        '"attribute" needs to be an attribute of pd.DatetimeIndex.'
+        'See all available attributes in '
+        'https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex',
+        logger,
+    )
 
     raise_if(one_hot and cyclic, "set only one of one_hot or cyclic to true", logger)
 
     num_values_dict = {
-        'month': 12,
-        'day': 31,
-        'weekday': 7,
-        'hour': 24,
-        'quarter': 4
+        "month": 12,
+        "day": 31,
+        "weekday": 7,
+        "hour": 24,
+        "minute": 60,
+        "second": 60,
+        "microsecond": 1000000,
+        "nanosecond": 1000,
+        "quarter": 4,
     }
 
     values = getattr(time_index, attribute)
 
     if one_hot or cyclic:
-        raise_if_not(attribute in num_values_dict, "Given datetime attribute not supported"
-                                                   " with one-hot or cyclical encoding.", logger)
+        raise_if_not(
+            attribute in num_values_dict,
+            "Given datetime attribute not supported"
+            " with one-hot or cyclical encoding."
+            f"Supported datetime attribute: {list(num_values_dict.keys())}",
+            logger,
+        )
 
     if one_hot:
         values_df = pd.get_dummies(values)
@@ -372,25 +387,30 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
             if not (i in values_df.columns):
                 values_df[i] = 0
         values_df = values_df[range(1, num_values_dict[attribute] + 1)]
-    elif cyclic:
-        if attribute == "day":
-            periods = [time_index[i].days_in_month for i in time_index.month]
-            freq = 2*np.pi * np.reciprocal(periods)
-        else:
-            period = num_values_dict[attribute]
-            freq = 2*np.pi/period
 
-        values_df = pd.DataFrame({
-            attribute+"_sin": np.sin(freq * values),
-            attribute+"_cos": np.cos(freq * values)
-        })
+        values_df.columns = [
+            attribute + "_" + str(column_name) for column_name in values_df.columns
+        ]
+
     else:
-        values_df = pd.DataFrame({attribute: values})
+        if cyclic:
+            if attribute == "day":
+                periods = [time_index[i].days_in_month for i in time_index.month]
+                freq = 2 * np.pi * np.reciprocal(periods)
+            else:
+                period = num_values_dict[attribute]
+                freq = 2 * np.pi / period
+
+            values_df = pd.DataFrame(
+                {
+                    attribute + "_sin": np.sin(freq * values),
+                    attribute + "_cos": np.cos(freq * values),
+                }
+            )
+        else:
+            values_df = pd.DataFrame({attribute: values})
 
     values_df.index = time_index
-
-    if one_hot:
-        values_df.columns = [attribute + '_' + str(column_name) for column_name in values_df.columns]
 
     return TimeSeries.from_dataframe(values_df)
 
