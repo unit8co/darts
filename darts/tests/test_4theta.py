@@ -1,12 +1,11 @@
-import unittest
 import numpy as np
 import random
 
 from .base_test_class import DartsBaseTestClass
-from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
-from ..models import Theta, FourTheta
-from ..metrics import mape
-from ..utils.timeseries_generation import (
+from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
+from darts.models import Theta, FourTheta
+from darts.metrics import mape
+from darts.utils.timeseries_generation import (
     linear_timeseries as lt,
     sine_timeseries as st,
     random_walk_timeseries as rt,
