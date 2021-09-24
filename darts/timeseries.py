@@ -2101,7 +2101,9 @@ class TimeSeries:
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
             elif isinstance(key.start, (int, np.int64)) or isinstance(key.stop, (int, np.int64)):
-                return TimeSeries(self._xa.isel({self._time_dim: key}))
+                xa_ = self._xa.isel({self._time_dim: key})
+                _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+                return TimeSeries(xa_)
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 _check_dt()
 
@@ -2114,7 +2116,9 @@ class TimeSeries:
         elif isinstance(key, str):
             return TimeSeries(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
         elif isinstance(key, (int, np.int64)):
-            return TimeSeries(self._xa.isel({self._time_dim: [key]}))
+            xa_ = self._xa.isel({self._time_dim: [key]})
+            _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+            return TimeSeries(xa_)
         elif isinstance(key, pd.Timestamp):
             _check_dt()
 
@@ -2129,7 +2133,9 @@ class TimeSeries:
                 # when string(s) are provided, we consider it as (a list of) component(s)
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
             elif all(isinstance(i, (int, np.int64)) for i in key):
-                return TimeSeries(self._xa.isel({self._time_dim: key}))
+                xa_ = self._xa.isel({self._time_dim: key})
+                _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+                return TimeSeries(xa_)
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
 
