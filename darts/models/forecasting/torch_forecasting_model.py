@@ -32,31 +32,31 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 import datetime
 
-from ..timeseries import TimeSeries
-from ..utils import _build_tqdm_iterator
-from ..utils.torch import random_method
+from darts.timeseries import TimeSeries
+from darts.utils import _build_tqdm_iterator
+from darts.utils.torch import random_method
 
-from ..utils.data.training_dataset import (TrainingDataset,
-                                           PastCovariatesTrainingDataset,
-                                           FutureCovariatesTrainingDataset,
-                                           DualCovariatesTrainingDataset,
-                                           MixedCovariatesTrainingDataset,
-                                           SplitCovariatesTrainingDataset)
-from ..utils.data.inference_dataset import (InferenceDataset,
-                                            PastCovariatesInferenceDataset,
-                                            FutureCovariatesInferenceDataset,
-                                            DualCovariatesInferenceDataset,
-                                            MixedCovariatesInferenceDataset,
-                                            SplitCovariatesInferenceDataset)
-from ..utils.data.sequential_dataset import (PastCovariatesSequentialDataset,
-                                             FutureCovariatesSequentialDataset,
-                                             DualCovariatesSequentialDataset,
-                                             MixedCovariatesSequentialDataset,
-                                             SplitCovariatesSequentialDataset)
+from darts.utils.data.training_dataset import (TrainingDataset,
+                                               PastCovariatesTrainingDataset,
+                                               FutureCovariatesTrainingDataset,
+                                               DualCovariatesTrainingDataset,
+                                               MixedCovariatesTrainingDataset,
+                                               SplitCovariatesTrainingDataset)
+from darts.utils.data.inference_dataset import (InferenceDataset,
+                                                PastCovariatesInferenceDataset,
+                                                FutureCovariatesInferenceDataset,
+                                                DualCovariatesInferenceDataset,
+                                                MixedCovariatesInferenceDataset,
+                                                SplitCovariatesInferenceDataset)
+from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset,
+                                                 FutureCovariatesSequentialDataset,
+                                                 DualCovariatesSequentialDataset,
+                                                 MixedCovariatesSequentialDataset,
+                                                 SplitCovariatesSequentialDataset)
 
-from ..utils.likelihood_models import LikelihoodModel
-from ..logging import raise_if_not, get_logger, raise_log, raise_if
-from .forecasting_model import GlobalForecastingModel
+from darts.utils.likelihood_models import Likelihood
+from darts.logging import raise_if_not, get_logger, raise_log, raise_if
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 DEFAULT_DARTS_FOLDER = '.darts'
 CHECKPOINTS_FOLDER = 'checkpoints'
@@ -982,7 +982,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
 
 class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
-    def __init__(self, likelihood: Optional[LikelihoodModel] = None, **kwargs):
+    def __init__(self, likelihood: Optional[Likelihood] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
 
         This is a base class for pytroch parametric probabilistic models. "Parametric"
@@ -1004,7 +1004,7 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
 
     def _compute_loss(self, output, target):
         if self.likelihood:
-            return self.likelihood._compute_loss(output, target)
+            return self.likelihood.compute_loss(output, target)
         else:
             return super()._compute_loss(output, target)
 
@@ -1063,6 +1063,9 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
 
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
+
+    uses_future_covariates = False
+
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
@@ -1171,6 +1174,9 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
+
+    uses_past_covariates = False
+
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
@@ -1215,6 +1221,9 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
+
+    uses_past_covariates = False
+
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],

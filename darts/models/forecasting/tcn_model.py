@@ -9,13 +9,13 @@ import torch.nn as nn
 import torch.nn.functional as F
 from numpy.random import RandomState
 from typing import Optional, Union, Sequence, Tuple
-from ..timeseries import TimeSeries
-from ..utils.torch import random_method
-from ..utils.data import PastCovariatesShiftedDataset
-from ..utils.likelihood_models import LikelihoodModel
+from darts.timeseries import TimeSeries
+from darts.utils.torch import random_method
+from darts.utils.data import PastCovariatesShiftedDataset
+from darts.utils.likelihood_models import Likelihood
 
-from ..logging import raise_if_not, get_logger
-from .torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
+from darts.logging import raise_if_not, get_logger
+from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -84,7 +84,7 @@ class _ResidualBlock(nn.Module):
         if weight_norm:
             self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
 
-        if nr_blocks_below == 0 or nr_blocks_below == num_layers - 1:
+        if input_dim != output_dim:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
 
     def forward(self, x):
@@ -103,7 +103,7 @@ class _ResidualBlock(nn.Module):
         x = self.dropout_fn(x)
 
         # add residual
-        if self.nr_blocks_below in {0, self.num_layers - 1}:
+        if self.conv1.in_channels != self.conv2.out_channels:
             residual = self.conv3(residual)
         x += residual
 
@@ -217,7 +217,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                  dilation_base: int = 2,
                  weight_norm: bool = False,
                  dropout: float = 0.2,
-                 likelihood: Optional[LikelihoodModel] = None,
+                 likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
@@ -320,7 +320,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         output_dim = train_sample[-1].shape[1]
 
         target_size = (
-            self.likelihood._num_parameters * output_dim if self.likelihood is not None else output_dim
+            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
         )
         return _TCNModule(input_size=input_dim,
                           input_chunk_length=self.input_chunk_length,
@@ -344,12 +344,12 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                                             shift=self.output_chunk_length)
     
     @random_method
-    def _produce_predict_output(self, input):
+    def _produce_predict_output(self, x):
         if self.likelihood:
-            output = self.model(input)
-            return self.likelihood._sample(output)
+            output = self.model(x)
+            return self.likelihood.sample(output)
         else:
-            return self.model(input)
+            return self.model(x)
 
     @property
     def first_prediction_index(self) -> int:

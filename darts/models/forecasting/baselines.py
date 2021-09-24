@@ -5,13 +5,13 @@ Baseline Models
 A collection of simple benchmark models for univariate series.
 """
 
-from typing import List, Optional
+from typing import List, Optional, Union, Sequence
 import numpy as np
 
-from .forecasting_model import ForecastingModel
-from .ensemble_model import EnsembleModel
-from ..timeseries import TimeSeries
-from ..logging import raise_if_not, get_logger
+from darts.models.forecasting.forecasting_model import ForecastingModel, GlobalForecastingModel
+from darts.models.forecasting.ensemble_model import EnsembleModel
+from darts.timeseries import TimeSeries
+from darts.logging import raise_if_not, get_logger
 
 logger = get_logger(__name__)
 
@@ -109,7 +109,7 @@ class NaiveDrift(ForecastingModel):
 
 class NaiveEnsembleModel(EnsembleModel):
 
-    def __init__(self, models: List[ForecastingModel]):
+    def __init__(self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]):
         """ Naive combination model
 
         Naive implementation of `EnsembleModel`
@@ -117,11 +117,29 @@ class NaiveEnsembleModel(EnsembleModel):
         """
         super().__init__(models)
 
-    def fit(self, training_series: TimeSeries, target_series: Optional[TimeSeries] = None) -> None:
-        super().fit(training_series)
+    def fit(self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            ) -> None:
 
+        super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
         for model in self.models:
-            model.fit(self.training_series)
+            if self.is_global_ensemble:
+                kwargs = dict(series=series)
+                if model.uses_past_covariates:
+                    kwargs['past_covariates'] = past_covariates
+                if model.uses_future_covariates:
+                    kwargs['future_covariates'] = future_covariates
+                model.fit(**kwargs)
+            else:
+                model.fit(series=series)
 
-    def ensemble(self, predictions: TimeSeries):
-        return TimeSeries.from_series(predictions.pd_dataframe().sum(axis=1) / len(self.models))
+    def ensemble(self,
+                 predictions: Union[TimeSeries, Sequence[TimeSeries]],
+                 series: Optional[Sequence[TimeSeries]] = None
+                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        if isinstance(predictions, Sequence):
+            return [TimeSeries.from_series(p.pd_dataframe().sum(axis=1) / len(self.models)) for p in predictions]
+        else:
+            return TimeSeries.from_series(predictions.pd_dataframe().sum(axis=1) / len(self.models))

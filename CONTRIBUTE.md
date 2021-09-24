@@ -32,7 +32,7 @@ If there is no on-going effort on what you plan to do then we recommend to do th
 3. Clone the forked repository locally.
 4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
 5. Create a new branch:
-    * Branch off from the **develop** branch.
+    * Branch off from the **master** branch.
     * Prefix the branch with the type of update you are making:
         * `feature/`
         * `fix/`
@@ -44,4 +44,4 @@ If there is no on-going effort on what you plan to do then we recommend to do th
     * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested 
     lines with `./coverage.sh xml`
 8. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
-9. Create a pull request from your new branch into the **develop** branch.
+9. Create a pull request from your new branch into the **master** branch.

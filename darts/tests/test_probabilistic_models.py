@@ -4,14 +4,31 @@ from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..metrics import mae
 from ..logging import get_logger
+from darts import TimeSeries
 from darts.models import ExponentialSmoothing, ARIMA
-from darts.models.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 logger = get_logger(__name__)
 
 try:
-    from ..models import RNNModel, TCNModel
-    from darts.utils.likelihood_models import GaussianLikelihoodModel
+    import torch
+    from ..models import RNNModel, TCNModel, TransformerModel, BlockRNNModel
+    from darts.utils.likelihood_models import (GaussianLikelihood,
+                                               PoissonLikelihood,
+                                               NegativeBinomialLikelihood,
+                                               BernoulliLikelihood,
+                                               GammaLikelihood,
+                                               GumbelLikelihood,
+                                               LaplaceLikelihood,
+                                               BetaLikelihood,
+                                               ExponentialLikelihood,
+                                               DirichletLikelihood,
+                                               GeometricLikelihood,
+                                               CauchyLikelihood,
+                                               ContinuousBernoulliLikelihood,
+                                               HalfNormalLikelihood,
+                                               LogNormalLikelihood,
+                                               WeibullLikelihood)
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. TCN tests will be skipped.')
@@ -25,15 +42,19 @@ models_cls_kwargs_errs = [
 if TORCH_AVAILABLE:
     models_cls_kwargs_errs += [
         (RNNModel, {'input_chunk_length': 2, 'training_length': 10, 'n_epochs': 20, 'random_state': 0,
-                    'likelihood': GaussianLikelihoodModel()}, 1.9),
+                    'likelihood': GaussianLikelihood()}, 1.9),
         (TCNModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 60, 'random_state': 0,
-                    'likelihood': GaussianLikelihoodModel()}, 0.28)
+                    'likelihood': GaussianLikelihood()}, 0.28),
+        (BlockRNNModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 20, 'random_state': 0,
+                         'likelihood': GaussianLikelihood()}, 1),
+        (TransformerModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 20, 'random_state': 0,
+                            'likelihood': GaussianLikelihood()}, 1)
     ]
 
 
 class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
-
     np.random.seed(0)
+
     constant_ts = tg.constant_timeseries(length=200, value=0.5)
     constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
     constant_multivar_ts = constant_ts.stack(constant_ts)
@@ -77,18 +98,67 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         mae_err_median = mae(ts[100:], pred)
         self.assertLess(mae_err_median, err)
 
-        # test accuracy for increasing quantiles between 0.7 and 1 (it should decrease)
+        # test accuracy for increasing quantiles between 0.7 and 1 (it should ~decrease, mae should ~increase)
         tested_quantiles = [0.7, 0.8, 0.9, 0.99]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
-            self.assertLess(mae_err, new_mae)
+            self.assertLess(mae_err, new_mae+0.1)
             mae_err = new_mae
 
-        # test accuracy for decreasing quantiles between 0.3 and 0 (it should decrease)
+        # test accuracy for decreasing quantiles between 0.3 and 0 (it should ~decrease, mae should ~increase)
         tested_quantiles = [0.3, 0.2, 0.1, 0.01]
         mae_err = mae_err_median
         for quantile in tested_quantiles:
             new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
-            self.assertLess(mae_err, new_mae)
+            self.assertLess(mae_err, new_mae+0.1)
             mae_err = new_mae
+
+    """ More likelihood tests
+    """
+    if TORCH_AVAILABLE:
+        np.random.seed(42)
+        torch.manual_seed(42)
+
+        real_series = TimeSeries.from_values(np.random.randn(100, 2) + [0, 5])
+        vals = real_series.all_values()
+
+        real_pos_series = TimeSeries.from_values(np.where(vals > 0, vals, -vals))
+        discrete_pos_series = TimeSeries.from_values(np.random.randint(low=0, high=11, size=(100, 2)))
+        binary_series = TimeSeries.from_values(np.random.randint(low=0, high=2, size=(100, 2)))
+        bounded_series = TimeSeries.from_values(np.random.beta(2, 5, size=(100, 2)))
+        simplex_series = bounded_series['0'].stack(1. - bounded_series['0'])
+
+        lkl_series = ((GaussianLikelihood(), real_series, 0.1, 3),
+                      (PoissonLikelihood(), discrete_pos_series, 2, 2),
+                      (NegativeBinomialLikelihood(), discrete_pos_series, 0.5, 0.5),
+                      (BernoulliLikelihood(), binary_series, 0.15, 0.15),
+                      (GammaLikelihood(), real_pos_series, 0.3, 0.3),
+                      (GumbelLikelihood(), real_series, 0.2, 3),
+                      (LaplaceLikelihood(), real_series, 0.3, 4),
+                      (BetaLikelihood(), bounded_series, 0.1, 0.1),
+                      (ExponentialLikelihood(), real_pos_series, 0.3, 2),
+                      (DirichletLikelihood(), simplex_series, 0.3, 0.3),
+                      (GeometricLikelihood(), discrete_pos_series, 1, 1),
+                      (CauchyLikelihood(), real_series, 3, 10),
+                      (ContinuousBernoulliLikelihood(), bounded_series, 0.1, 0.1),
+                      (HalfNormalLikelihood(), real_pos_series, 0.3, 8),
+                      (LogNormalLikelihood(), real_pos_series, 0.3, 1),
+                      (WeibullLikelihood(), real_pos_series, 0.2, 2))
+
+        def test_likelihoods_and_resulting_mean_forecasts(self):
+            def _get_avgs(series):
+                return np.mean(series.all_values()[:, 0, :]), np.mean(series.all_values()[:, 1, :])
+
+            for lkl, series, diff1, diff2 in self.lkl_series:
+                model = RNNModel(input_chunk_length=5, likelihood=lkl)
+                model.fit(series, epochs=50)
+                pred = model.predict(n=50, num_samples=50)
+
+                avgs_orig, avgs_pred = _get_avgs(series), _get_avgs(pred)
+                self.assertLess(abs(avgs_orig[0] - avgs_pred[0]), diff1,
+                                'The difference between the mean forecast and the mean series is larger '
+                                'than expected on component 0 for distribution {}'.format(lkl))
+                self.assertLess(abs(avgs_orig[1] - avgs_pred[1]), diff2,
+                                'The difference between the mean forecast and the mean series is larger '
+                                'than expected on component 1 for distribution {}'.format(lkl))

@@ -4,7 +4,7 @@
 
 from darts import TimeSeries
 from darts.models import NaiveSeasonal
-from darts.models.forecasting_model import ForecastingModel
+from darts.models.forecasting.forecasting_model import ForecastingModel
 
 import pandas as pd
 import numpy as np

@@ -4,10 +4,11 @@ Regression ensemble model
 
 An ensemble model which uses a regression model to compute the ensemble forecast.
 """
-from typing import List
+from typing import Optional, List, Union, Sequence, Tuple
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
-from darts.models.forecasting_model import ForecastingModel
+
+from darts.models.forecasting.forecasting_model import ForecastingModel, GlobalForecastingModel
 from darts.models import EnsembleModel, LinearRegressionModel, RegressionModel
 
 logger = get_logger(__name__)
@@ -15,7 +16,7 @@ logger = get_logger(__name__)
 
 class RegressionEnsembleModel(EnsembleModel):
     def __init__(self,
-                 forecasting_models: List[ForecastingModel],
+                 forecasting_models: Union[List[ForecastingModel], List[GlobalForecastingModel]],
                  regression_train_n_points: int,
                  regression_model=None):
         """
@@ -58,25 +59,50 @@ class RegressionEnsembleModel(EnsembleModel):
         self.regression_model = regression_model
         self.train_n_points = regression_train_n_points
 
-    def fit(self, series: TimeSeries) -> None:
-        super().fit(series)
+    def _split_multi_ts_sequence(self, n: int, ts_sequence: Sequence[TimeSeries]
+                                 ) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+        left = [ts[:-n] for ts in ts_sequence]
+        right = [ts[-n:] for ts in ts_sequence]
+        return left, right
+
+    def fit(self,
+            series: Union[TimeSeries, Sequence[TimeSeries]],
+            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            ) -> None:
+
+        super().fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
 
         # spare train_n_points points to serve as regression target
-        raise_if(len(self.training_series) <= self.train_n_points,
+        if self.is_single_series:
+            train_n_points_too_big = len(self.training_series) <= self.train_n_points
+        else:
+            train_n_points_too_big = any([len(s) <= self.train_n_points for s in series])
+
+        raise_if(train_n_points_too_big,
                  "regression_train_n_points parameter too big (must be smaller or equal to the number of points in "
                  "training_series)", logger)
 
-        forecast_training = self.training_series[:-self.train_n_points]
-        regression_target = self.training_series[-self.train_n_points:]
+        if self.is_single_series:
+            forecast_training = self.training_series[:-self.train_n_points]
+            regression_target = self.training_series[-self.train_n_points:]
+        else:
+            forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
 
-        # fit the forecasting models
         for model in self.models:
-            model.fit(forecast_training)
+            model._fit_wrapper(
+                series=forecast_training,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates
+            )
 
-        # predict train_n_points points for each model
-        predictions = self.models[0].predict(self.train_n_points)
-        for model in self.models[1:]:
-            predictions = predictions.stack(model.predict(self.train_n_points))
+        predictions = self._make_multiple_predictions(
+            n=self.train_n_points,
+            series=forecast_training,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            num_samples=1
+        )
 
         # train the regression model on the individual models' predictions
         self.regression_model.fit(series=regression_target, future_covariates=predictions)
@@ -89,9 +115,26 @@ class RegressionEnsembleModel(EnsembleModel):
         self.models = [model.untrained_model() if hasattr(model, "untrained_model") else model
                        for model in self.models]
 
-        # fit the forecasting models
         for model in self.models:
-            model.fit(self.training_series)
+            if self.is_global_ensemble:
+                kwargs = dict(series=series)
+                if model.uses_past_covariates:
+                    kwargs['past_covariates'] = past_covariates
+                if model.uses_future_covariates:
+                    kwargs['future_covariates'] = future_covariates
+                model.fit(**kwargs)
 
-    def ensemble(self, predictions: TimeSeries) -> TimeSeries:
-        return self.regression_model.predict(n=len(predictions), future_covariates=predictions)
+            else:
+                model.fit(self.training_series)
+
+    def ensemble(self,
+                 predictions: Union[TimeSeries, Sequence[TimeSeries]],
+                 series: Optional[Sequence[TimeSeries]] = None) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        if self.is_single_series:
+            predictions = [predictions]
+            series = [series]
+
+        ensembled = [self.regression_model.predict(n=len(prediction), series=serie, future_covariates=prediction)
+                     for serie, prediction in zip(series, predictions)]
+
+        return ensembled[0] if self.is_single_series else ensembled

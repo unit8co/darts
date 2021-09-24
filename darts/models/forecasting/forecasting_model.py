@@ -21,16 +21,17 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not, raise_if
-from ..utils import (
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_log, raise_if_not, raise_if
+from darts.utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     _historical_forecasts_general_checks,
     _parallel_apply
 )
+import inspect
 
-from .. import metrics
+from darts import metrics
 
 logger = get_logger(__name__)
 
@@ -86,6 +87,14 @@ class ForecastingModel(ABC):
         probabilistic predictions.
         """
         return False
+
+    @property
+    def uses_past_covariates(self):
+        return 'past_covariates' in inspect.signature(self.fit).parameters.keys()
+
+    @property
+    def uses_future_covariates(self):
+        return 'future_covariates' in inspect.signature(self.fit).parameters.keys()
 
     @abstractmethod
     def predict(self,
@@ -776,8 +785,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
 
     def _fit_wrapper(self, series: TimeSeries, past_covariates: Optional[TimeSeries],
                      future_covariates: Optional[TimeSeries]):
-        self.fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
-
+        self.fit(
+            series=series,
+            past_covariates=past_covariates if self.uses_past_covariates else None,
+            future_covariates=future_covariates if self.uses_future_covariates else None
+        )
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
     """ The base class for the forecasting models that are not global, but support future covariates.

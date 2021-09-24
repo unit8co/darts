@@ -9,11 +9,11 @@ from typing import Optional, List
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
-from ..utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
-from .forecasting_model import ForecastingModel
-from ..logging import raise_log, get_logger, raise_if_not
-from ..timeseries import TimeSeries
-from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
+from darts.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.logging import raise_log, get_logger, raise_if_not
+from darts.timeseries import TimeSeries
+from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
 
 logger = get_logger(__name__)
 ALPHA_START = 0.2
@@ -210,11 +210,11 @@ class FourTheta(ForecastingModel):
         self.fitted_values = None
         self.normalization = normalization
 
-        raise_if_not(model_mode in ModelMode,
+        raise_if_not(isinstance(model_mode, ModelMode),
                      "Unknown value for model_mode: {}.".format(model_mode), logger)
-        raise_if_not(trend_mode in TrendMode,
+        raise_if_not(isinstance(trend_mode, TrendMode),
                      "Unknown value for trend_mode: {}.".format(trend_mode), logger)
-        raise_if_not(season_mode in SeasonalityMode,
+        raise_if_not(isinstance(season_mode, SeasonalityMode),
                      "Unknown value for season_mode: {}.".format(season_mode), logger)
 
     def fit(self, series):
@@ -363,7 +363,7 @@ class FourTheta(ForecastingModel):
             The best performing model on the time series.
         """
         # Only import if needed
-        from ..metrics import mae
+        from darts.metrics import mae
         if thetas is None:
             thetas = [1, 2, 3]
         if (ts.values() <= 0).any():
