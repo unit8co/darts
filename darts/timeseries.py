@@ -2075,11 +2075,12 @@ class TimeSeries:
 
         def _set_freq_in_xa(xa_: xr.DataArray):
             # mutates the DataArray to make sure it contains the freq
-            inferred_freq = xa_.get_index(self._time_dim).inferred_freq
-            if inferred_freq is not None:
-                xa_.get_index(self._time_dim).freq = to_offset(inferred_freq)
-            else:
-                xa_.get_index(self._time_dim).freq = self._freq
+            if isinstance(xa_.get_index(self._time_dim), pd.DatetimeIndex):
+                inferred_freq = xa_.get_index(self._time_dim).inferred_freq
+                if inferred_freq is not None:
+                    xa_.get_index(self._time_dim).freq = to_offset(inferred_freq)
+                else:
+                    xa_.get_index(self._time_dim).freq = self._freq
 
         # handle DatetimeIndex and Int64Index:
         if isinstance(key, pd.DatetimeIndex):
