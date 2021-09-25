@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.filtering_model
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.fft
-   :members:
-   :undoc-members:
-   :show-inheritance:

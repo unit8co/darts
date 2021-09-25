@@ -1,0 +1,5 @@
+
+.. automodule:: darts.models.forecasting.fft
+   :members:
+   :undoc-members:
+   :show-inheritance:

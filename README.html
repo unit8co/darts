@@ -177,7 +177,27 @@
         </li>
     
         <li class="nav-item toc-entry toc-h2">
-            <a href="#id2" class="nav-link">Installation Guide</a>
+            <a href="#id2" class="nav-link">Installation Guide</a><ul class="nav section-nav flex-column">
+                
+        <li class="nav-item toc-entry toc-h3">
+            <a href="#macos-issues-with-lightgbm" class="nav-link">MacOS Issues with LightGBM</a><ul class="nav section-nav flex-column">
+                
+        <li class="nav-item toc-entry toc-h4">
+            <a href="#running-the-examples-only-without-installing" class="nav-link">Running the examples only, without installing:</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h4">
+            <a href="#tests" class="nav-link">Tests</a>
+        </li>
+    
+        <li class="nav-item toc-entry toc-h4">
+            <a href="#id3" class="nav-link">Documentation</a>
+        </li>
+    
+            </ul>
+        </li>
+    
+            </ul>
         </li>
     
     </ul>
@@ -195,7 +215,7 @@
                 
   <section id="time-series-made-easy-in-python">
 <h1>Time Series Made Easy in Python<a class="headerlink" href="#time-series-made-easy-in-python" title="Permalink to this headline">¶</a></h1>
-<a class="reference external image-reference" href="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png"><img alt="darts" src="https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png" /></a>
+<a class="reference external image-reference" href="https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png"><img alt="darts" src="https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png" /></a>
 <hr class="docutils" />
 <a class="reference external image-reference" href="https://badge.fury.io/py/darts"><img alt="PyPI version" src="https://badge.fury.io/py/u8darts.svg" /></a>
 <a class="reference external image-reference" href="https://anaconda.org/conda-forge/u8darts-all"><img alt="Conda Version" src="https://img.shields.io/conda/vn/conda-forge/u8darts-all.svg" /></a>
@@ -276,7 +296,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.</
 </pre></div>
 </div>
 <div style="text-align:center;">
-<img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
+<img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
 </div><p>We invite you to go over the example and tutorial notebooks in
 the <a class="reference external" href="https://github.com/unit8co/darts/tree/master/examples">examples</a> directory.</p>
 </section>
@@ -478,8 +498,8 @@ We welcome pull requests and issues on Github.</p>
 <h2>Installation Guide<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
 <p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">prophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
-<p>Currently only Linux and macOS on the x86_64 architecture are fully supported with
-conda; consider using PyPI if you are running into troubles.</p>
+<p>Currently only the x86_64 architecture with Python 3.7 or 3.8
+is fully supported with conda; consider using PyPI if you are running into troubles.</p>
 <p>To create a conda environment for Python 3.7
 (after installing <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">conda</a>):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.7</span>
@@ -491,9 +511,11 @@ conda; consider using PyPI if you are running into troubles.</p>
 </div>
 <p>As some models have relatively heavy dependencies, we provide two conda-forge packages:</p>
 <ul class="simple">
-<li><p>Install darts with all available models (recommended): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">u8darts-all</span></code>.</p></li>
+<li><p>Install darts with all available models (recommended): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">-c</span> <span class="pre">pytorch</span> <span class="pre">u8darts-all</span></code>.</p></li>
+<li><p>Install core + neural networks (PyTorch): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">-c</span> <span class="pre">pytorch</span> <span class="pre">u8darts-torch</span></code></p></li>
 <li><p>Install core only (without neural networks, Prophet or AutoARIMA): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">u8darts</span></code></p></li>
 </ul>
+<p>For GPU support, please follow the instructions to install CUDA in the <a class="reference external" href="https://pytorch.org/get-started/locally/">PyTorch installation guide</a>.</p>
 <p>Install darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">darts</span></code>.</p>
 <p>If this fails on your platform, please follow the official installation guides for
 <a class="reference external" href="https://facebook.github.io/prophet/docs/installation.html#python">prophet</a>
@@ -508,6 +530,8 @@ we also maintain the <code class="docutils literal notranslate"><span class="pre
 </ul>
 <p>To enable support for LightGBM in Darts, please follow the
 <a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html">installation instructions</a> for your OS.</p>
+<section id="macos-issues-with-lightgbm">
+<h3>MacOS Issues with LightGBM<a class="headerlink" href="#macos-issues-with-lightgbm" title="Permalink to this headline">¶</a></h3>
 <p>At the time of writing, there is an issue with <code class="docutils literal notranslate"><span class="pre">libomp</span></code> 12.0.1 that results in
 <a class="reference external" href="https://github.com/microsoft/LightGBM/issues/4229">segmentation fault on Mac OS Big Sur</a>.
 Here’s the procedure to downgrade the <code class="docutils literal notranslate"><span class="pre">libomp</span></code> library (from the
@@ -524,6 +548,8 @@ Here’s the procedure to downgrade the <code class="docutils literal notranslat
 </div>
 </li>
 </ul>
+<section id="running-the-examples-only-without-installing">
+<h4>Running the examples only, without installing:<a class="headerlink" href="#running-the-examples-only-without-installing" title="Permalink to this headline">¶</a></h4>
 <p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
 To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew docker <span class="o">&amp;&amp;</span> ./gradlew dockerRun
@@ -531,6 +557,9 @@ To run the example notebooks without installing our libraries natively on your m
 </div>
 <p>Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.</p>
 <p>For this setup to work you need to have a Docker service installed. You can get it at <a class="reference external" href="https://docs.docker.com/get-docker/">Docker website</a>.</p>
+</section>
+<section id="tests">
+<h4>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h4>
 <p>The gradle setup works best when used in a python environment, but the only requirement is to have <code class="docutils literal notranslate"><span class="pre">pip</span></code> installed for Python 3+</p>
 <p>To run all tests at once just run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew test_all
@@ -543,11 +572,16 @@ To run the example notebooks without installing our libraries natively on your m
 </pre></div>
 </div>
 <p>To run the tests for specific flavours of the library, replace <code class="docutils literal notranslate"><span class="pre">_all</span></code> with <code class="docutils literal notranslate"><span class="pre">_core</span></code>, <code class="docutils literal notranslate"><span class="pre">_prophet</span></code>, <code class="docutils literal notranslate"><span class="pre">_pmdarima</span></code> or <code class="docutils literal notranslate"><span class="pre">_torch</span></code>.</p>
+</section>
+<section id="id3">
+<h4>Documentation<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
 <p>To build documentation locally just run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew buildDocs
 </pre></div>
 </div>
 <p>After that docs will be available in <code class="docutils literal notranslate"><span class="pre">./docs/build/html</span></code> directory. You can just open <code class="docutils literal notranslate"><span class="pre">./docs/build/html/index.html</span></code> using your favourite browser.</p>
+</section>
+</section>
 </section>
 </section>
 

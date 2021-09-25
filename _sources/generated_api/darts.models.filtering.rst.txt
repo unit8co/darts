@@ -1,0 +1,15 @@
+
+
+.. automodule:: darts.models.filtering
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+    .. toctree::
+        :maxdepth: 1
+        
+        
+        darts.models.filtering.filtering_model
+        darts.models.filtering.gaussian_process_filter
+        darts.models.filtering.kalman_filter
+        darts.models.filtering.moving_average

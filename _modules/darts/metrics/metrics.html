@@ -156,6 +156,7 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
 <span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="n">_parallel_apply</span><span class="p">,</span> <span class="n">_build_tqdm_iterator</span>
 <span class="kn">from</span> <span class="nn">..utils.statistics</span> <span class="kn">import</span> <span class="n">check_seasonality</span>
@@ -263,15 +264,49 @@
     <span class="k">return</span> <span class="n">wrapper_multivariate_support</span></div>
 
 
+<span class="k">def</span> <span class="nf">_get_values</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                <span class="n">stochastic_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Returns the numpy values of a time series.</span>
+<span class="sd">    For stochastic series, return either all sample values with (stochastic_quantile=None) or the quantile sample value</span>
+<span class="sd">    with (stochastic_quantile {&gt;=0,&lt;=1})</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">is_deterministic</span><span class="p">:</span>
+        <span class="n">series_values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>  <span class="c1"># stochastic</span>
+        <span class="k">if</span> <span class="n">stochastic_quantile</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">series_values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">series_values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="o">=</span><span class="n">stochastic_quantile</span><span class="p">)</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">series_values</span>
+
+
 <span class="k">def</span> <span class="nf">_get_values_or_raise</span><span class="p">(</span><span class="n">series_a</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
                          <span class="n">series_b</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-                         <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Returns the numpy values of two time series. If intersect is true, considers only their time intersection.</span>
+                         <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+                         <span class="n">stochastic_quantile</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                         <span class="n">remove_nan_union</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Returns the processed numpy values of two time series. Processing can be customized with arguments</span>
+<span class="sd">    `intersect, stochastic_quantile, remove_nan_union`.</span>
+
 <span class="sd">    Raises a ValueError if the two time series (or their intersection) do not have the same time index.</span>
 
-<span class="sd">    For stochastic series, return the median sample value</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    series_a</span>
+<span class="sd">        A univariate deterministic `TimeSeries` instance (the actual series).</span>
+<span class="sd">    series_b</span>
+<span class="sd">        A univariate (deterministic or stochastic) `TimeSeries` instance (the predicted series).</span>
+<span class="sd">    intersect</span>
+<span class="sd">        A boolean for whether or not to only consider the time intersection between `series_a` and `series_b`</span>
+<span class="sd">    stochastic_quantile</span>
+<span class="sd">        Optionally, for stochastic predicted series, return either all sample values with (`stochastic_quantile=None`)</span>
+<span class="sd">        or any deterministic quantile sample values by setting `stochastic_quantile=quantile` {&gt;=0,&lt;=1}.</span>
+<span class="sd">    remove_nan_union</span>
+<span class="sd">        By setting `remove_non_union` to True, remove all indices from `series_a` and `series_b` which have a NaN value</span>
+<span class="sd">        in either of the two input series.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
+
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">series_a</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="n">series_b</span><span class="o">.</span><span class="n">width</span><span class="p">,</span> <span class="s2">&quot; The two time series must have the same number of components&quot;</span><span class="p">,</span>
                  <span class="n">logger</span><span class="p">)</span>
 
@@ -286,22 +321,18 @@
                                                                     <span class="n">series_a</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">series_b</span><span class="o">.</span><span class="n">time_index</span><span class="p">),</span>
                  <span class="n">logger</span><span class="p">)</span>
 
-    <span class="c1"># TODO: we may want to change this...</span>
-    <span class="n">series_a_det</span> <span class="o">=</span> <span class="n">series_a_common</span> <span class="k">if</span> <span class="n">series_a_common</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">else</span> <span class="n">series_a_common</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
-    <span class="n">series_b_det</span> <span class="o">=</span> <span class="n">series_b_common</span> <span class="k">if</span> <span class="n">series_b_common</span><span class="o">.</span><span class="n">is_deterministic</span> <span class="k">else</span> <span class="n">series_b_common</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">series_a_det</span> <span class="o">=</span> <span class="n">_get_values</span><span class="p">(</span><span class="n">series_a_common</span><span class="p">,</span> <span class="n">stochastic_quantile</span><span class="o">=</span><span class="n">stochastic_quantile</span><span class="p">)</span>
+    <span class="n">series_b_det</span> <span class="o">=</span> <span class="n">_get_values</span><span class="p">(</span><span class="n">series_b_common</span><span class="p">,</span> <span class="n">stochastic_quantile</span><span class="o">=</span><span class="n">stochastic_quantile</span><span class="p">)</span>
 
-    <span class="k">return</span> <span class="n">series_a_det</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="n">series_b_det</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">remove_nan_union</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">series_a_det</span><span class="p">,</span> <span class="n">series_b_det</span>
 
-
-<span class="k">def</span> <span class="nf">_remove_nan_union</span><span class="p">(</span><span class="n">array_a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                      <span class="n">array_b</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Returns the two inputs arrays where all elements are deleted that have an index that corresponds to</span>
-<span class="sd">    a NaN value in either of the two input arrays.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-
-    <span class="n">isnan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">array_a</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">array_b</span><span class="p">))</span>
-    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">array_a</span><span class="p">,</span> <span class="n">isnan_mask</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">array_b</span><span class="p">,</span> <span class="n">isnan_mask</span><span class="p">)</span>
+    <span class="n">b_is_deterministic</span> <span class="o">=</span> <span class="nb">bool</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series_b_det</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">b_is_deterministic</span><span class="p">:</span>
+        <span class="n">isnan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">series_a_det</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">series_b_det</span><span class="p">))</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">isnan_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">series_a_det</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">series_b_det</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">series_a_det</span><span class="p">,</span> <span class="n">isnan_mask</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">series_b_det</span><span class="p">,</span> <span class="n">isnan_mask</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="mae"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.mae">[docs]</a><span class="nd">@multi_ts_support</span>
@@ -354,8 +385,7 @@
 
 <span class="sd">&quot;&quot;&quot;</span>
 
-    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y2</span><span class="p">))</span></div>
 
 
@@ -408,8 +438,7 @@
 <span class="sd">        The Mean Squared Error (MSE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_pred</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span></div>
 
 
@@ -515,8 +544,7 @@
 <span class="sd">        The Root Mean Squared Log Error (RMSLE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">y1</span> <span class="o">+</span> <span class="mi">1</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">y2</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">((</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y2</span><span class="p">)</span><span class="o">**</span><span class="mi">2</span><span class="p">))</span></div>
 
@@ -635,8 +663,7 @@
 <span class="sd">        The Mean Absolute Percentage Error (MAPE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">)</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">raise_if_not</span><span class="p">((</span><span class="n">y_true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span> <span class="s1">&#39;The actual series must be strictly positive to compute the MAPE.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
     <span class="k">return</span> <span class="mf">100.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_hat</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_true</span><span class="p">))</span></div>
 
@@ -701,8 +728,7 @@
 <span class="sd">        The symmetric Mean Absolute Percentage Error (sMAPE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">)</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_or</span><span class="p">(</span><span class="n">y_true</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span>
                  <span class="s1">&#39;The actual series must be strictly positive to compute the sMAPE.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
     <span class="k">return</span> <span class="mf">200.</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_hat</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_hat</span><span class="p">)))</span></div>
@@ -797,7 +823,7 @@
 
             <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
                                                  <span class="n">pred_series</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="n">i</span><span class="p">),</span>
-                                                 <span class="n">intersect</span><span class="p">)</span>
+                                                 <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
             <span class="n">x_t</span> <span class="o">=</span> <span class="n">insample_</span><span class="o">.</span><span class="n">univariate_component</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
             <span class="n">errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">y_true</span> <span class="o">-</span> <span class="n">y_hat</span><span class="p">)</span>
@@ -903,8 +929,7 @@
 <span class="sd">        The Overall Percentage Error (OPE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_pred</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">y_true_sum</span><span class="p">,</span> <span class="n">y_pred_sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">y_true</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">y_true_sum</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s1">&#39;The series of actual value cannot sum to zero when computing OPE.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">((</span><span class="n">y_true_sum</span> <span class="o">-</span> <span class="n">y_pred_sum</span><span class="p">)</span> <span class="o">/</span> <span class="n">y_true_sum</span><span class="p">)</span> <span class="o">*</span> <span class="mf">100.</span></div>
@@ -966,8 +991,7 @@
 <span class="sd">        The Mean Absolute Ranged Relative Error (MARRE)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span><span class="p">)</span>
+    <span class="n">y_true</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">raise_if_not</span><span class="p">(</span><span class="n">y_true</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">&gt;</span> <span class="n">y_true</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span> <span class="s1">&#39;The difference between the max and min values must be strictly&#39;</span>
                  <span class="s1">&#39;positive to compute the MARRE.&#39;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
     <span class="n">true_range</span> <span class="o">=</span> <span class="n">y_true</span><span class="o">.</span><span class="n">max</span><span class="p">()</span> <span class="o">-</span> <span class="n">y_true</span><span class="o">.</span><span class="n">min</span><span class="p">()</span>
@@ -1023,8 +1047,7 @@
 <span class="sd">    float</span>
 <span class="sd">        The Coefficient of Determination :math:`R^2`</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">)</span>
-    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_remove_nan_union</span><span class="p">(</span><span class="n">y1</span><span class="p">,</span> <span class="n">y2</span><span class="p">)</span>
+    <span class="n">y1</span><span class="p">,</span> <span class="n">y2</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">ss_errors</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y2</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
     <span class="n">y_hat</span> <span class="o">=</span> <span class="n">y1</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
     <span class="n">ss_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="n">y1</span> <span class="o">-</span> <span class="n">y_hat</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
@@ -1091,6 +1114,91 @@
     <span class="n">warped_actual_series</span><span class="p">,</span> <span class="n">warped_pred_series</span> <span class="o">=</span> <span class="n">alignment</span><span class="o">.</span><span class="n">warped</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">metric</span><span class="p">(</span><span class="n">warped_actual_series</span><span class="p">,</span> <span class="n">warped_pred_series</span><span class="p">)</span></div>
+
+
+<span class="c1"># rho-risk (quantile risk)</span>
+<div class="viewcode-block" id="rho_risk"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.rho_risk">[docs]</a><span class="nd">@multi_ts_support</span>
+<span class="nd">@multivariate_support</span>
+<span class="k">def</span> <span class="nf">rho_risk</span><span class="p">(</span><span class="n">actual_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+             <span class="n">pred_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+             <span class="n">rho</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+             <span class="n">intersect</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+             <span class="o">*</span><span class="p">,</span>
+             <span class="n">reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+             <span class="n">inter_reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]]</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="p">,</span>
+             <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+             <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+    <span class="sd">&quot;&quot;&quot; :math:`\\rho`-risk (rho-risk or quantile risk).</span>
+
+<span class="sd">    Given a time series of actual values :math:`y_t` of length :math:`T` and a time series of stochastic predictions</span>
+<span class="sd">    (containing N samples) :math:`\\hat{y}_t` of shape :math:`T \\times N`, rho-risk is a metric that quantifies the</span>
+<span class="sd">    accuracy of a specific quantile :math:`\\rho` from the predicted value distribution.</span>
+
+<span class="sd">    For a univariate stochastic predicted TimeSeries the :math:`\\rho`-risk is given by:</span>
+
+<span class="sd">    .. math:: \\frac{ L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) } {Z},</span>
+
+<span class="sd">    where :math:`L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right)` is`the :math:`\\rho`-loss function:</span>
+
+<span class="sd">    .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( Z - \\hat{Z}_{\\rho} \\right)</span>
+<span class="sd">        \\left( \\rho I_{\\hat{Z}_{\\rho} &lt; Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \geq Z} \\right),</span>
+
+<span class="sd">    where :math:`Z = \\sum_{t=1}^{T} y_t` (1) is the aggregated target value and :math:`\\hat{Z}_{\\rho}` is the</span>
+<span class="sd">    :math:`\\rho`-quantile of the predicted values. For this, each sample realization :math:`i \\in N` is first aggregated over the</span>
+<span class="sd">    time span similar to (1) with :math:`\\hat{Z}_{i} = \\sum_{t=1}^{T} \\hat{y}_{i,t}`.</span>
+
+<span class="sd">    :math:`I_{cond} = 1` if cond is True else :math:`0``</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    actual_series</span>
+<span class="sd">        The `TimeSeries` or `Sequence[TimeSeries]` of actual values.</span>
+<span class="sd">    pred_series</span>
+<span class="sd">        The `TimeSeries` or `Sequence[TimeSeries]` of predicted values.</span>
+<span class="sd">    rho</span>
+<span class="sd">        The quantile (float [0, 1]) of interest for the risk evaluation.</span>
+<span class="sd">    intersect</span>
+<span class="sd">        For time series that are overlapping in time without having the same time index, setting `intersect=True`</span>
+<span class="sd">        will consider the values only over their common time interval (intersection in time).</span>
+<span class="sd">    reduction</span>
+<span class="sd">        Function taking as input a `np.ndarray` and returning a scalar value. This function is used to aggregate</span>
+<span class="sd">        the metrics of different components in case of multivariate `TimeSeries` instances.</span>
+<span class="sd">    inter_reduction</span>
+<span class="sd">        Function taking as input a `np.ndarray` and returning either a scalar value or a `np.ndarray`.</span>
+<span class="sd">        This function can be used to aggregate the metrics of different series in case the metric is evaluated on a</span>
+<span class="sd">        `Sequence[TimeSeries]`. Defaults to the identity function, which returns the pairwise metrics for each pair</span>
+<span class="sd">        of `TimeSeries` received in input. Example: `inter_reduction=np.mean`, will return the average of the pairwise</span>
+<span class="sd">        metrics.</span>
+<span class="sd">    n_jobs</span>
+<span class="sd">        The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is</span>
+<span class="sd">        passed as input, parallelising operations regarding different `TimeSeries`. Defaults to `1`</span>
+<span class="sd">        (sequential). Setting the parameter to `-1` means using all the available processors.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Optionally, whether to print operations progress</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    float</span>
+<span class="sd">        The rho-risk metric</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">pred_series</span><span class="o">.</span><span class="n">is_stochastic</span><span class="p">,</span>
+                 <span class="s1">&#39;rho (quantile) loss should only be computed for stochastic predicted TimeSeries.&#39;</span><span class="p">)</span>
+
+    <span class="n">z_true</span><span class="p">,</span> <span class="n">z_hat</span> <span class="o">=</span> <span class="n">_get_values_or_raise</span><span class="p">(</span><span class="n">actual_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">,</span> <span class="n">intersect</span><span class="p">,</span>
+                                         <span class="n">stochastic_quantile</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">remove_nan_union</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="n">z_true</span> <span class="o">=</span> <span class="n">z_true</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">z_hat</span> <span class="o">=</span> <span class="n">z_hat</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>  <span class="c1"># aggregate all individual sample realizations</span>
+
+    <span class="n">z_hat_rho</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">quantile</span><span class="p">(</span><span class="n">z_hat</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="n">rho</span><span class="p">)</span>  <span class="c1"># get the quantile from aggregated samples</span>
+
+    <span class="n">pred_above</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z_hat_rho</span> <span class="o">&gt;=</span> <span class="n">z_true</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="n">pred_below</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">z_hat_rho</span> <span class="o">&lt;</span> <span class="n">z_true</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+
+    <span class="n">rho_loss</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">z_true</span> <span class="o">-</span> <span class="n">z_hat_rho</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">rho</span> <span class="o">*</span> <span class="n">pred_below</span> <span class="o">-</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">rho</span><span class="p">)</span> <span class="o">*</span> <span class="n">pred_above</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rho_loss</span> <span class="o">/</span> <span class="n">z_true</span></div>
 </pre></div>
 
               </div>

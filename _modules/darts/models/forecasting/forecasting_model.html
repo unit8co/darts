@@ -1,0 +1,1070 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.forecasting.forecasting_model &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../../../index.html">
+    
+      <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.models.forecasting.forecasting_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Forecasting Model Base Classes</span>
+
+<span class="sd">A forecasting model captures the future values of a time series as a function of the past as follows:</span>
+
+<span class="sd">.. math:: y_{t+1} = f(y_t, y_{t-1}, ..., y_1),</span>
+
+<span class="sd">where :math:`y_t` represents the time series&#39; value(s) at time :math:`t`.</span>
+
+<span class="sd">The main functions are `fit()` and `predict()`. `fit()` learns the function `f()`, over the history of</span>
+<span class="sd">one or several time series. The function `predict()` applies `f()` on one or several time series in order</span>
+<span class="sd">to obtain forecasts for a desired number of time stamps into the future.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
+
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">darts.utils</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_build_tqdm_iterator</span><span class="p">,</span>
+    <span class="n">_with_sanity_checks</span><span class="p">,</span>
+    <span class="n">_historical_forecasts_general_checks</span><span class="p">,</span>
+    <span class="n">_parallel_apply</span>
+<span class="p">)</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">metrics</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">ForecastingModel</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to support.</span>
+<span class="sd">        The signatures in this base class are for &quot;local&quot; models handling only one univariate series and no covariates.</span>
+<span class="sd">        Sub-classes can handle more complex cases.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># The series used for training the model through the `fit()` function.</span>
+        <span class="c1"># This is only used if the model has been fit on one time series.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># state; whether the model has been fit (on a single time series)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Trains the model on the provided univariate series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            A target time series. The model will be trained to forecast this time series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">DualCovariatesForecastingModel</span><span class="p">):</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">,</span>
+                     <span class="s2">&quot;Train series only contains </span><span class="si">{}</span><span class="s2"> elements but </span><span class="si">{}</span><span class="s2"> model requires at least </span><span class="si">{}</span><span class="s2"> entries&quot;</span>
+                     <span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">),</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_range_index</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_supports_range_index</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Checks if the forecasting model supports a range index.</span>
+<span class="sd">        Some models may not support this, if for instance the rely on underlying dates.</span>
+
+<span class="sd">        By default, returns True. Needs to be overwritten by models that do not support</span>
+<span class="sd">        range indexing and raise meaningful exception.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_is_probabilistic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks if the forecasting model supports probabilistic predictions.</span>
+<span class="sd">        By default, returns False. Needs to be overwritten by models that do support</span>
+<span class="sd">        probabilistic predictions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">uses_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;past_covariates&#39;</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">uses_future_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="s1">&#39;future_covariates&#39;</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">signature</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Forecasts values for `n` time steps after the end of the series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1</span>
+<span class="sd">            for deterministic models.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A time series containing the `n` next points after then end of the training series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The model must be fit before calling `predict()`.&#39;</span>
+                                 <span class="s1">&#39;For global models, if `predict()` is called without specifying a series,&#39;</span>
+                                 <span class="s1">&#39;the model must have been fit on a single training series.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_probabilistic</span><span class="p">()</span> <span class="ow">and</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;`num_samples &gt; 1` is only supported for probabilistic models.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_fit_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                     <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Class property defining the minimum required length for the training series.</span>
+<span class="sd">        This function/property should be overridden if a value higher than 3 is required.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="mi">3</span>
+
+    <span class="k">def</span> <span class="nf">_generate_new_dates</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                            <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                            <span class="n">input_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Generates `n` new dates after the end of the specified series</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_series</span> <span class="o">=</span> <span class="n">input_series</span> <span class="k">if</span> <span class="n">input_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
+
+        <span class="k">if</span> <span class="n">input_series</span><span class="o">.</span><span class="n">has_datetime_index</span><span class="p">:</span>
+            <span class="c1"># time_index = input_series.time_index</span>
+            <span class="c1"># new_dates = [</span>
+            <span class="c1">#     (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)</span>
+            <span class="c1"># ]</span>
+            <span class="c1"># return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)</span>
+            <span class="n">start_time</span> <span class="o">=</span> <span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">input_series</span><span class="o">.</span><span class="n">freq</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
+                                 <span class="n">end</span><span class="o">=</span><span class="n">start_time</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+                                 <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_build_forecast_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                               <span class="n">points_preds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
+                               <span class="n">input_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Builds a forecast time series starting after the end of the training time series, with the</span>
+<span class="sd">        correct time index (or after the end of the input series, if specified).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">input_series</span> <span class="o">=</span> <span class="n">input_series</span> <span class="k">if</span> <span class="n">input_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
+        <span class="n">time_index_length</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">points_preds</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">points_preds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_generate_new_dates</span><span class="p">(</span><span class="n">time_index_length</span><span class="p">,</span> <span class="n">input_series</span><span class="o">=</span><span class="n">input_series</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span>
+                                                    <span class="n">points_preds</span><span class="p">,</span>
+                                                    <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
+                                                    <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span>
+                                                <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+                                                <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
+                                                <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_historical_forecasts_sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Sanity checks for the historical_forecasts function</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        args</span>
+<span class="sd">            The args parameter(s) provided to the historical_forecasts function.</span>
+<span class="sd">        kwargs</span>
+<span class="sd">            The kwargs paramter(s) provided to the historical_forecasts function.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            when a check on the parameter does not pass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># parse args and kwargs</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">_historical_forecasts_general_checks</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_last_prediction_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="p">,</span> <span class="n">overlap_end</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">overlap_end</span><span class="p">:</span>
+            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_horizon</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">last_valid_pred_time</span>
+
+    <span class="nd">@_with_sanity_checks</span><span class="p">(</span><span class="s2">&quot;_historical_forecasts_sanity_checks&quot;</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                             <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                             <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                             <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                             <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                             <span class="n">retrain</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                             <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                             <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                             <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes the historical forecasts the model would have produced with an expanding training window</span>
+<span class="sd">        and (by default) returns a time series created from the last point of each of these individual forecasts.</span>
+<span class="sd">        To this end, it repeatedly builds a training set from the beginning of `series`. It trains the</span>
+<span class="sd">        current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves</span>
+<span class="sd">        the end of the training set forward by `stride` time steps.</span>
+
+<span class="sd">        By default, this method will return a single time series made up of the last point of each</span>
+<span class="sd">        historical forecast. This time series will thus have a frequency of `series.freq * stride`.</span>
+<span class="sd">        If `last_points_only` is set to False, it will instead return a list of the historical forecasts.</span>
+
+<span class="sd">        By default, this method always re-trains the models on the entire available history,</span>
+<span class="sd">        corresponding to an expanding window strategy.</span>
+<span class="sd">        If `retrain` is set to False (useful for models for which training might be time-consuming, such as</span>
+<span class="sd">        deep learning models), the model will only be trained on the initial training window</span>
+<span class="sd">        (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the</span>
+<span class="sd">        newly expanded input sequence will be fed to the model to produce the new output.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            The target time series to use to successively train and evaluate the historical forecasts.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            An optional past-observed covariate series. This applies only if the model supports past covariates.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            An optional future-known covariate series. This applies only if the model supports future covariates.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1</span>
+<span class="sd">            for deterministic models.</span>
+<span class="sd">        start</span>
+<span class="sd">            The first point of time at which a prediction is computed for a future time.</span>
+<span class="sd">            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
+<span class="sd">            In the case of `float`, the parameter will be treated as the proportion of the time series</span>
+<span class="sd">            that should lie before the first prediction point.</span>
+<span class="sd">            In the case of `int`, the parameter will be treated as an integer index to the time index of</span>
+<span class="sd">            `series` that will be used as first prediction time.</span>
+<span class="sd">            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time</span>
+<span class="sd">            directly.</span>
+<span class="sd">        forecast_horizon</span>
+<span class="sd">            The forecast horizon for the predictions</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between two consecutive predictions.</span>
+<span class="sd">        retrain</span>
+<span class="sd">            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`</span>
+<span class="sd">            instances such as `BlockRNNModel`, `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support</span>
+<span class="sd">            setting `retrain` to `False`.</span>
+<span class="sd">        overlap_end</span>
+<span class="sd">            Whether the returned forecasts can go beyond the series&#39; end or not</span>
+<span class="sd">        last_points_only</span>
+<span class="sd">            Whether to retain only the last point of each historical forecast.</span>
+<span class="sd">            If set to True, the method returns a single `TimeSeries` containing the successive point forecasts.</span>
+<span class="sd">            Otherwise returns a list of historical `TimeSeries` forecasts.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Whether to print progress</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries or List[TimeSeries]</span>
+<span class="sd">            By default, a single TimeSeries instance created from the last point of each individual forecast.</span>
+<span class="sd">            If `last_points_only` is set to False, a list of the historical forecasts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># TODO: do we need a check here? I&#39;d rather leave these checks to the models/datasets.</span>
+        <span class="c1"># if covariates:</span>
+        <span class="c1">#     raise_if_not(series.end_time() &lt;= covariates.end_time() and covariates.start_time() &lt;= series.start_time(),</span>
+        <span class="c1">#                  &#39;The provided covariates must be at least as long as the target series.&#39;)</span>
+
+        <span class="c1"># prepare the start parameter -&gt; pd.Timestamp</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
+
+        <span class="c1"># build the prediction times in advance (to be able to use tqdm)</span>
+        <span class="n">last_valid_pred_time</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_last_prediction_time</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="p">,</span> <span class="n">overlap_end</span><span class="p">)</span>
+
+        <span class="n">pred_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">start</span><span class="p">]</span>
+        <span class="k">while</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">last_valid_pred_time</span><span class="p">:</span>
+            <span class="c1"># compute the next prediction time and add it to pred times</span>
+            <span class="n">pred_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="n">stride</span><span class="p">)</span>
+
+        <span class="c1"># the last prediction time computed might have overshot last_valid_pred_time</span>
+        <span class="k">if</span> <span class="n">pred_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">last_valid_pred_time</span><span class="p">:</span>
+            <span class="n">pred_times</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="n">pred_times</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
+
+        <span class="c1"># Either store the whole forecasts or only the last points of each forecast, depending on last_points_only</span>
+        <span class="n">forecasts</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="n">last_points_times</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">last_points_values</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># iterate and forecast</span>
+        <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
+            <span class="n">train</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>  <span class="c1"># build the training series</span>
+
+            <span class="c1"># train_cov = covariates.drop_after(pred_time) if covariates else None</span>
+
+            <span class="k">if</span> <span class="n">retrain</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+
+            <span class="n">forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_wrapper</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+                                             <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+                                             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                             <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
+                <span class="n">last_points_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="o">.</span><span class="n">all_values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">last_points_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">forecasts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">series</span><span class="o">.</span><span class="n">has_datetime_index</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">last_points_times</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="n">stride</span><span class="p">),</span>
+                                                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">))</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">last_points_times</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                                                      <span class="n">stop</span><span class="o">=</span><span class="n">last_points_times</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                                                                      <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                                                        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">))</span>
+
+
+        <span class="k">return</span> <span class="n">forecasts</span>
+
+    <span class="k">def</span> <span class="nf">backtest</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                 <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                 <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">retrain</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">overlap_end</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
+                 <span class="n">reduction</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">],</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+                 <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]]:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Computes error scores between the historical forecasts the model would have produced</span>
+<span class="sd">        with an expanding training window over `series` and the actual values.</span>
+<span class="sd">        To this end, it repeatedly builds a training set from the beginning of `series`. It trains the current model on</span>
+<span class="sd">        the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the</span>
+<span class="sd">        training set forward by `stride` time steps. A metric (given by the `metric` function) is then evaluated</span>
+<span class="sd">        on the forecast and the actual values. Finally, the method returns a `reduction` (the mean by default)</span>
+<span class="sd">        of all these metric scores.</span>
+
+<span class="sd">        By default, this method will use each historical forecast (whole) to compute error scores.</span>
+<span class="sd">        If `last_points_only` is set to True, it will use only the last point of each historical</span>
+<span class="sd">        forecast. In this case, no reduction is used.</span>
+
+<span class="sd">        By default, this method always re-trains the models on the entire available history,</span>
+<span class="sd">        corresponding to an expanding window strategy.</span>
+<span class="sd">        If `retrain` is set to False (useful for models for which training might be time-consuming, such as</span>
+<span class="sd">        deep learning models), the model will only be trained on the initial training window</span>
+<span class="sd">        (up to `start` time stamp), and only if it has not been trained before. Then, at every iteration, the</span>
+<span class="sd">        newly expanded input sequence will be fed to the model to produce the new output.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            The target time series to use to successively train and evaluate the historical forecasts</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            An optional past-observed covariate series. This applies only if the model supports past covariates.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            An optional future-known covariate series. This applies only if the model supports future covariates.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1</span>
+<span class="sd">            for deterministic models.</span>
+<span class="sd">        start</span>
+<span class="sd">            The first prediction time, at which a prediction is computed for a future time.</span>
+<span class="sd">            This parameter supports 3 different data types: `float`, `int` and `pandas.Timestamp`.</span>
+<span class="sd">            In the case of `float`, the parameter will be treated as the proportion of the time series</span>
+<span class="sd">            that should lie before the first prediction point.</span>
+<span class="sd">            In the case of `int`, the parameter will be treated as an integer index to the time index of</span>
+<span class="sd">            `training_series` that will be used as first prediction time.</span>
+<span class="sd">            In case of `pandas.Timestamp`, this time stamp will be used to determine the first prediction time</span>
+<span class="sd">            directly.</span>
+<span class="sd">        forecast_horizon</span>
+<span class="sd">            The forecast horizon for the point prediction</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between two consecutive predictions.</span>
+<span class="sd">        retrain</span>
+<span class="sd">            Whether to retrain the model for every prediction or not. Currently only `TorchForecastingModel`</span>
+<span class="sd">            instances such as `BlockRNNModel`, `RNNModel`, `TCNModel`, `NBEATSModel` and `TransformerModel` support</span>
+<span class="sd">            setting `retrain` to `False`.</span>
+<span class="sd">        overlap_end</span>
+<span class="sd">            Whether the returned forecasts can go beyond the series&#39; end or not</span>
+<span class="sd">        last_points_only</span>
+<span class="sd">            Whether to use the whole historical forecasts or only the last point of each forecast to compute the error</span>
+<span class="sd">        metric</span>
+<span class="sd">            A function that takes two TimeSeries instances as inputs and returns a float error value.</span>
+<span class="sd">        reduction</span>
+<span class="sd">            A function used to combine the individual error scores obtained when `last_points_only` is set to False.</span>
+<span class="sd">            If explicitely set to `None`, the method will return a list of the individual error scores instead.</span>
+<span class="sd">            Set to np.mean by default.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Whether to print progress</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        float or List[float]</span>
+<span class="sd">            The error score, or the list of individual error scores if `reduction` is `None`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">forecasts</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                                              <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                              <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                              <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+                                              <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                                              <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+                                              <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+                                              <span class="n">retrain</span><span class="o">=</span><span class="n">retrain</span><span class="p">,</span>
+                                              <span class="n">overlap_end</span><span class="o">=</span><span class="n">overlap_end</span><span class="p">,</span>
+                                              <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">,</span>
+                                              <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">metric</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">forecasts</span><span class="p">)</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="p">[</span><span class="n">metric</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">forecast</span><span class="p">)</span> <span class="k">for</span> <span class="n">forecast</span> <span class="ow">in</span> <span class="n">forecasts</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">reduction</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">errors</span>
+
+        <span class="k">return</span> <span class="n">reduction</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">errors</span><span class="p">))</span>
+
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">gridsearch</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span>
+                   <span class="n">parameters</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+                   <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                   <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">forecast_horizon</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                   <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
+                   <span class="n">last_points_only</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">val_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                   <span class="n">use_fitted_values</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                   <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
+                   <span class="n">reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
+                   <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                   <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;ForecastingModel&#39;</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A function for finding the best hyper-parameters among a given set.</span>
+<span class="sd">        This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.</span>
+<span class="sd">        The three modes of operation evaluate every possible combination of hyper-parameter values</span>
+<span class="sd">        provided in the `parameters` dictionary by instantiating the `model_class` subclass</span>
+<span class="sd">        of ForecastingModel with each combination, and returning the best-performing model with regards</span>
+<span class="sd">        to the `metric` function. The `metric` function is expected to return an error value,</span>
+<span class="sd">        thus the model resulting in the smallest `metric` output will be chosen.</span>
+
+<span class="sd">        The relationship of the training data and test data depends on the mode of operation.</span>
+
+<span class="sd">        Expanding window mode (activated when `forecast_horizon` is passed):</span>
+<span class="sd">        For every hyperparameter combination, the model is repeatedly trained and evaluated on different</span>
+<span class="sd">        splits of `training_series` and `target_series`. This process is accomplished by using</span>
+<span class="sd">        the `backtest` function as a subroutine to produce historic forecasts starting from `start`</span>
+<span class="sd">        that are compared against the ground truth values of `training_series` or `target_series`, if</span>
+<span class="sd">        specified. Note that the model is retrained for every single prediction, thus this mode is slower.</span>
+
+<span class="sd">        Split window mode (activated when `val_series` is passed):</span>
+<span class="sd">        This mode will be used when the `val_series` argument is passed.</span>
+<span class="sd">        For every hyper-parameter combination, the model is trained on `series` and</span>
+<span class="sd">        evaluated on `val_series`.</span>
+
+<span class="sd">        Fitted value mode (activated when `use_fitted_values` is set to `True`):</span>
+<span class="sd">        For every hyper-parameter combination, the model is trained on `series`</span>
+<span class="sd">        and evaluated on the resulting fitted values.</span>
+<span class="sd">        Not all models have fitted values, and this method raises an error if the model doesn&#39;t have a `fitted_values`</span>
+<span class="sd">        member. The fitted values are the result of the fit of the model on `series`. Comparing with the</span>
+<span class="sd">        fitted values can be a quick way to assess the model, but one cannot see if the model is overfitting the series.</span>
+
+<span class="sd">        Derived classes must ensure that a single instance of a model will not share parameters with the other</span>
+<span class="sd">        instances, e.g., saving models in the same path. Otherwise, an unexpected behavior can arise while running</span>
+<span class="sd">        several models in parallel (when `n_jobs != 1`). If this cannot be avoided, then gridsearch should be redefined,</span>
+<span class="sd">        forcing `n_jobs = 1`.</span>
+
+<span class="sd">        Currently this method only supports deterministic predictions (i.e. `num_samples == 1`).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        model_class</span>
+<span class="sd">            The ForecastingModel subclass to be tuned for &#39;series&#39;.</span>
+<span class="sd">        parameters</span>
+<span class="sd">            A dictionary containing as keys hyperparameter names, and as values lists of values for the</span>
+<span class="sd">            respective hyperparameter.</span>
+<span class="sd">        series</span>
+<span class="sd">            The TimeSeries instance used as input and target for training.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            An optional past-observed covariate series. This applies only if the model supports past covariates.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            An optional future-known covariate series. This applies only if the model supports future covariates.</span>
+<span class="sd">        forecast_horizon</span>
+<span class="sd">            The integer value of the forecasting horizon used in expanding window mode.</span>
+<span class="sd">        stride</span>
+<span class="sd">            The number of time steps between two consecutive predictions. Only used in expanding window mode.</span>
+<span class="sd">        start</span>
+<span class="sd">            The `int`, `float` or `pandas.Timestamp` that represents the starting point in the time index</span>
+<span class="sd">            of `training_series` from which predictions will be made to evaluate the model.</span>
+<span class="sd">            For a detailed description of how the different data types are interpreted, please see the documentation</span>
+<span class="sd">            for `ForecastingModel.backtest`.</span>
+<span class="sd">        last_points_only</span>
+<span class="sd">            Whether to use the whole forecasts or only the last point of each forecast to compute the error</span>
+<span class="sd">        val_series</span>
+<span class="sd">            The TimeSeries instance used for validation in split mode. If provided, this series must start right after</span>
+<span class="sd">            the end of `series`; so that a proper comparison of the forecast can be made.</span>
+<span class="sd">        use_fitted_values</span>
+<span class="sd">            If `True`, uses the comparison with the fitted values.</span>
+<span class="sd">            Raises an error if `fitted_values` is not an attribute of `model_class`.</span>
+<span class="sd">        metric</span>
+<span class="sd">            A function that takes two TimeSeries instances as inputs and returns a float error value.</span>
+<span class="sd">        reduction</span>
+<span class="sd">            A reduction function (mapping array to float) describing how to aggregate the errors obtained</span>
+<span class="sd">            on the different validation series when backtesting. By default it&#39;ll compute the mean of errors.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Whether to print progress.</span>
+<span class="sd">        n_jobs</span>
+<span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters</span>
+<span class="sd">            combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.</span>
+<span class="sd">            Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ForecastingModel, Dict</span>
+<span class="sd">            A tuple containing an untrained &#39;model_class&#39; instance created from the best-performing hyper-parameters,</span>
+<span class="sd">            along with a dictionary containing these best hyper-parameters.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_not</span><span class="p">((</span><span class="n">forecast_horizon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="o">+</span> <span class="n">use_fitted_values</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+                     <span class="s2">&quot;Please pass exactly one of the arguments &#39;forecast_horizon&#39;, &quot;</span>
+                     <span class="s2">&quot;&#39;val_target_series&#39; or &#39;use_fitted_values&#39;.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">use_fitted_values</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">hasattr</span><span class="p">(</span><span class="n">model_class</span><span class="p">(),</span> <span class="s2">&quot;fitted_values&quot;</span><span class="p">),</span>
+                         <span class="s2">&quot;The model must have a fitted_values attribute to compare with the train TimeSeries&quot;</span><span class="p">,</span>
+                         <span class="n">logger</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">width</span> <span class="o">==</span> <span class="n">val_series</span><span class="o">.</span><span class="n">width</span><span class="p">,</span>
+                         <span class="s2">&quot;Training and validation series require the same number of components.&quot;</span><span class="p">,</span>
+                         <span class="n">logger</span><span class="p">)</span>
+
+        <span class="c1"># TODO: here too I&#39;d say we can leave these checks to the models</span>
+        <span class="c1"># if covariates is not None:</span>
+        <span class="c1">#     raise_if_not(series.has_same_time_as(covariates), &#39;The provided series and covariates must have the &#39;</span>
+        <span class="c1">#                                                       &#39;same time axes.&#39;)</span>
+
+        <span class="c1"># compute all hyperparameter combinations from selection</span>
+        <span class="n">params_cross_product</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+
+        <span class="c1"># iterate through all combinations of the provided parameters and choose the best one</span>
+        <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">),</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">))</span>
+
+        <span class="k">def</span> <span class="nf">_evaluate_combination</span><span class="p">(</span><span class="n">param_combination</span><span class="p">):</span>
+            <span class="n">param_combination_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">param_combination</span><span class="p">)))</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">param_combination_dict</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">use_fitted_values</span><span class="p">:</span>  <span class="c1"># fitted value mode</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+                <span class="n">fitted_values</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">fitted_values</span><span class="p">)</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">fitted_values</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># expanding window mode</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                                       <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                       <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                       <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                       <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+                                       <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+                                       <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
+                                       <span class="n">metric</span><span class="o">=</span><span class="n">metric</span><span class="p">,</span>
+                                       <span class="n">reduction</span><span class="o">=</span><span class="n">reduction</span><span class="p">,</span>
+                                       <span class="n">last_points_only</span><span class="o">=</span><span class="n">last_points_only</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># split mode</span>
+                <span class="n">model</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">)</span>
+                <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">_predict_wrapper</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">val_series</span><span class="p">),</span> <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">val_series</span><span class="p">)</span>
+
+            <span class="k">return</span> <span class="n">error</span>
+
+        <span class="n">errors</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">_evaluate_combination</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{})</span>
+
+        <span class="n">min_error</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
+
+        <span class="n">best_param_combination</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">params_cross_product</span><span class="p">[</span><span class="n">errors</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">min_error</span><span class="p">)])))</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Chosen parameters: &#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">best_param_combination</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">best_param_combination</span><span class="p">),</span> <span class="n">best_param_combination</span>
+
+    <span class="k">def</span> <span class="nf">residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                  <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                  <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                  <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; A function for computing the residuals produced by the current model on a univariate time series.</span>
+
+<span class="sd">        This function computes the difference between the actual observations from `series`</span>
+<span class="sd">        and the fitted values vector `p` obtained by training the model on `series`.</span>
+<span class="sd">        For every index `i` in `series`, `p[i]` is computed by training the model on</span>
+<span class="sd">        `series[:(i - forecast_horizon)]` and forecasting `forecast_horizon` into the future.</span>
+<span class="sd">        (`p[i]` will be set to the last value of the predicted series.)</span>
+<span class="sd">        The vector of residuals will be shorter than `series` due to the minimum</span>
+<span class="sd">        training series length required by the model and the gap introduced by `forecast_horizon`.</span>
+<span class="sd">        Most commonly, unless otherwise specified, the term &quot;residuals&quot; implies a value for `forecast_horizon` of 1.</span>
+
+<span class="sd">        This method works only on univariate series and does not currently support covariates. It uses the median</span>
+<span class="sd">        prediction (when dealing with stochastic forecasts having num_samples &gt; 1).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            The univariate TimeSeries instance which the residuals will be computed for.</span>
+<span class="sd">        forecast_horizon</span>
+<span class="sd">            The forecasting horizon used to predict each fitted value.</span>
+<span class="sd">        verbose</span>
+<span class="sd">            Whether to print progress.</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            The vector of residuals.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+
+        <span class="c1"># get first index not contained in the first training set</span>
+        <span class="n">first_index</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">]</span>
+
+        <span class="c1"># compute fitted values</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                                      <span class="n">start</span><span class="o">=</span><span class="n">first_index</span><span class="p">,</span>
+                                      <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
+                                      <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                                      <span class="n">retrain</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                      <span class="n">last_points_only</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                      <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+
+        <span class="c1"># compute residuals</span>
+        <span class="n">series_trimmed</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
+        <span class="n">residuals</span> <span class="o">=</span> <span class="n">series_trimmed</span> <span class="o">-</span> <span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">quantile_timeseries</span><span class="p">(</span><span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="k">if</span> <span class="n">p</span><span class="o">.</span><span class="n">is_stochastic</span> <span class="k">else</span> <span class="n">p</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">residuals</span>
+
+
+<div class="viewcode-block" id="GlobalForecastingModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.arima.GlobalForecastingModel">[docs]</a><span class="k">class</span> <span class="nc">GlobalForecastingModel</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The base class for &quot;global&quot; forecasting models, handling several time series and optional covariates.</span>
+
+<span class="sd">    Global forecasting models expand upon the functionality of `ForecastingModel` in 4 ways:</span>
+<span class="sd">    1. Models can be fitted on many series (multivariate or univariate) with different indices.</span>
+<span class="sd">    2. The input series used by `predict()` can be different from the series used to fit the model.</span>
+<span class="sd">    3. Covariates can be supported (multivariate or univariate).</span>
+<span class="sd">    4. They can allow for multivariate target series and covariates.</span>
+
+<span class="sd">    The name &quot;global&quot; stems from the fact that a training set of a forecasting model of this class is not constrained</span>
+<span class="sd">    to a temporally contiguous, &quot;local&quot;, time series.</span>
+
+<span class="sd">    All implementations have to implement the `fit()` and `predict()` methods defined below.</span>
+<span class="sd">    The `fit()` method is meant to train the model on one or several training time series, along with optional</span>
+<span class="sd">    covariates.</span>
+
+<span class="sd">    If `fit()` has been called with only one training and covariate series as argument, then calling `predict()` will</span>
+<span class="sd">    forecast the future of this series. Otherwise, the user has to provide to `predict()` the series they want</span>
+<span class="sd">    to forecast, as well as covariates, if needed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_expect_past_covariates</span><span class="p">,</span> <span class="n">_expect_future_covariates</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
+    <span class="n">past_covariate_series</span><span class="p">,</span> <span class="n">future_covariate_series</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+<div class="viewcode-block" id="GlobalForecastingModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.arima.GlobalForecastingModel.fit">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+            <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Fits/trains the model on the provided series</span>
+
+<span class="sd">        Defines behavior that should happen when calling the `fit()` method of every global forecasting model.</span>
+
+<span class="sd">        Some models support training only on one time series, while others can handle a sequence.</span>
+<span class="sd">        Similarly, some models can handle past covariates, future covariates, or both.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            One or several target time series. The model will be trained to forecast these time series.</span>
+<span class="sd">            The series may or may not be multivariate, but if multiple series are provided they must have the same number of components.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            One or several past-observed covariate time series. These time series will not be forecast, but can</span>
+<span class="sd">            be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple</span>
+<span class="sd">            covariates are provided they must have the same number of components.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            One or several future-known covariate time series. These time series will not be forecast, but can</span>
+<span class="sd">            be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple</span>
+<span class="sd">            covariates are provided they must have the same number of components.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
+            <span class="c1"># if only one series is provided, save it for prediction time (including covariates, if available)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span> <span class="o">=</span> <span class="n">series</span>
+            <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">past_covariate_series</span> <span class="o">=</span> <span class="n">past_covariates</span>
+            <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">future_covariate_series</span> <span class="o">=</span> <span class="n">future_covariates</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_expect_past_covariates</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_expect_future_covariates</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span></div>
+
+<div class="viewcode-block" id="GlobalForecastingModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.arima.GlobalForecastingModel.predict">[docs]</a>    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot; Forecasts values for a certain number of time steps after the end of the series.</span>
+
+<span class="sd">        If `fit()` has been called with only one `TimeSeries` as argument, then the `series` argument of this function</span>
+<span class="sd">        is optional, and it will simply produce the next `horizon` time steps forecast.</span>
+<span class="sd">        The `past_covariates` and `future_covariates` arguments also don&#39;t have to be provided again in this case.</span>
+
+<span class="sd">        If `fit()` has been called with `series` specified as a `Sequence[TimeSeries]`, the `series` argument must</span>
+<span class="sd">        be specified.</span>
+
+<span class="sd">        When the `series` argument is specified, this function will compute the next `n` time steps forecasts</span>
+<span class="sd">        for the simple series (or for each series in the sequence) given by `series`.</span>
+
+<span class="sd">        If multiple past or future covariates were specified during the training, some corresponding covariates must</span>
+<span class="sd">        also be specified here. For every input in `series` a matching (past and/or future) covariate time series</span>
+<span class="sd">        has to be provided.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</span>
+<span class="sd">        series</span>
+<span class="sd">            The series whose future(s) we want to predict.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            One past-observed covariate time series for every input time series in `series`. They must match the</span>
+<span class="sd">            past covariates that have been used with the `fit()` function for training in terms of dimension and type.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            One future-known covariate time series for every input time series in `series`. They must match the</span>
+<span class="sd">            past covariates that have been used with the `fit()` function for training in terms of dimension and type.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1</span>
+<span class="sd">            for deterministic models.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[TimeSeries, Sequence[TimeSeries]]</span>
+<span class="sd">            If `series` is not specified, this function returns a single time series containing the `n`</span>
+<span class="sd">            next points after then end of the training series.</span>
+<span class="sd">            If `series` is given and is a simple `TimeSeries`, this function returns the `n` next points</span>
+<span class="sd">            after the end of `series`.</span>
+<span class="sd">            If `series` is given and is a sequence of several time series, this function returns</span>
+<span class="sd">            a sequence where each element contains the corresponding `n` points forecasts.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_past_covariates</span> <span class="ow">and</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The model has been trained with past covariates. Some matching past_covariates &#39;</span>
+                                 <span class="s1">&#39;have to be provided to `predict()`.&#39;</span><span class="p">))</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_future_covariates</span> <span class="ow">and</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The model has been trained with future covariates. Some matching future_covariates &#39;</span>
+                                 <span class="s1">&#39;have to be provided to `predict()`.&#39;</span><span class="p">))</span></div>
+
+    <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_fit_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+            <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_past_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span></div>
+
+<span class="k">class</span> <span class="nc">DualCovariatesForecastingModel</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The base class for the forecasting models that are not global, but support future covariates.</span>
+<span class="sd">    Among other things, it lets Darts forecasting models wrap around statsmodels models</span>
+<span class="sd">    having a `future_covariates` parameter, which corresponds to future-known covariates.</span>
+
+<span class="sd">    All implementations have to implement the `fit()` and `predict()` methods defined below.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">_expect_covariate</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Fits/trains the model on the provided series</span>
+
+<span class="sd">        Defines behavior that should happen when calling the `fit()` method for the forecasting models handling</span>
+<span class="sd">        optional future covariates (exogenous variables).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            The model will be trained to forecast this time series. Can be multivariate if the model supports it.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            A time series of future-known covariates. This time series will not be forecasted, but can be used by</span>
+<span class="sd">            some models as an input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="c1"># TODO: is this really needed or could we find a workaround?</span>
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">),</span>
+                         <span class="s1">&#39;The target series and the future_covariates series must have the same time index.&#39;</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_expect_covariate</span> <span class="o">=</span> <span class="kc">True</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+    <span class="nd">@abstractmethod</span>
+    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+                <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Forecasts values for a certain number of time steps after the end of the series.</span>
+
+<span class="sd">        If some future covariates were specified during the training, they must also be specified here.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            The time series of future-known covariates which can be fed as input to the model. It must correspond to the</span>
+<span class="sd">            covariate time series that has been used with the `fit()` method for training, and it must be of length `n`.</span>
+<span class="sd">        num_samples</span>
+<span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1</span>
+<span class="sd">            for deterministic models.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries, a single time series containing the `n` next points after then end of the training series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_covariate</span> <span class="ow">and</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;The model has been trained with future_covariates variables. Some matching &#39;</span>
+                                 <span class="s1">&#39;future_covariates variables have to be provided to `predict()`.&#39;</span><span class="p">))</span>
+
+        <span class="c1"># TODO Here we could maybe slice the series and then check</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_covariate</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">)</span> <span class="o">!=</span> <span class="n">n</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Expecting future_covariates variables with the same length as the&#39;</span>
+                                 <span class="sa">f</span><span class="s1">&#39; forecasting horizon (</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s1">).&#39;</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">_fit_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                     <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]):</span>
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">series</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">):</span>
+            <span class="c1"># fit() expects future_covariates to have same time as the target, so we intersect it here</span>
+            <span class="c1"># in case it&#39;s longer.</span>
+            <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_predict_wrapper</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span>
+            <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="p">[</span><span class="n">start</span><span class="p">:</span><span class="n">start</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">]</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">)</span>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

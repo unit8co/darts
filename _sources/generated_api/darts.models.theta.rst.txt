@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.theta
-   :members:
-   :undoc-members:
-   :show-inheritance:

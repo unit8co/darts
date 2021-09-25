@@ -294,8 +294,31 @@ Defaults ModelMode.MULTIPLICATIVE.</p></li>
 </dd></dl>
 
 <dl class="py function">
+<dt id="darts.utils.statistics.plot_hist">
+<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">plot_hist</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">data</span><span class="p">:</span> <span class="n">Union<span class="p">[</span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a><span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">, </span>numpy.ndarray<span class="p">]</span></span></em>, <em class="sig-param"><span class="n">bins</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Union<span class="p">[</span>int<span class="p">, </span>numpy.ndarray<span class="p">, </span>List<span class="p">[</span>float<span class="p">]</span><span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">density</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">False</span></em>, <em class="sig-param"><span class="n">title</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>str<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">fig_size</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>Tuple<span class="p">[</span>int<span class="p">, </span>int<span class="p">]</span><span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ax</span><span class="p">:</span> <span class="n">Optional<span class="p">[</span>matplotlib.pyplot.axis<span class="p">]</span></span> <span class="o">=</span> <span class="default_value">None</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_hist"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.plot_hist" title="Permalink to this definition">¶</a></dt>
+<dd><p>This function plots the histogram of values in a TimeSeries instance or an array-like.</p>
+<p>All types of TimeSeries are supported (uni-, multivariate, deterministic, stochastic).
+Depending on the number of components in <cite>data</cite>, up to four histograms can be plotted on one figure.
+All stochastic samples will be displayed with the corresponding component.</p>
+<p>If <cite>data</cite> is an array-like, ALL values will be displayed in the same histogram.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
+<li><p><strong>bins</strong> – Optionally, either an integer value for the number of bins to be displayed
+or an array-like of floats determining the position of bins.</p></li>
+<li><p><strong>density</strong> – bool, if <cite>density</cite> is set to True, the bin counts will be converted to probability density</p></li>
+<li><p><strong>title</strong> – The title of the figure to be displayed</p></li>
+<li><p><strong>fig_size</strong> – The size of the figure to be displayed.</p></li>
+<li><p><strong>ax</strong> – Optionally, an axis object to plot the histogram on.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="darts.utils.statistics.plot_residuals_analysis">
-<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">plot_residuals_analysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">residuals</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">num_bins</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">20</span></em>, <em class="sig-param"><span class="n">fill_nan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
+<code class="sig-prename descclassname">darts.utils.statistics.</code><code class="sig-name descname">plot_residuals_analysis</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">residuals</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">darts.timeseries.TimeSeries</a></span></em>, <em class="sig-param"><span class="n">num_bins</span><span class="p">:</span> <span class="n">int</span> <span class="o">=</span> <span class="default_value">20</span></em>, <em class="sig-param"><span class="n">fill_nan</span><span class="p">:</span> <span class="n">bool</span> <span class="o">=</span> <span class="default_value">True</span></em><span class="sig-paren">)</span> &#x2192; None<a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots data relevant to residuals.</p>
 <p>This function takes a univariate TimeSeries instance of residuals and plots their values,
 their distribution and their ACF.

@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.rnn_model
-   :members:
-   :undoc-members:
-   :show-inheritance:

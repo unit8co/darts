@@ -8,29 +8,6 @@
     .. toctree::
         :maxdepth: 1
         
+        darts.models.filtering
+        darts.models.forecasting
         
-        darts.models.arima
-        darts.models.auto_arima
-        darts.models.baselines
-        darts.models.block_rnn_model
-        darts.models.ensemble_model
-        darts.models.exponential_smoothing
-        darts.models.fft
-        darts.models.filtering_model
-        darts.models.forecasting_model
-        darts.models.gaussian_process_filter
-        darts.models.gradient_boosted_model
-        darts.models.kalman_filter
-        darts.models.linear_regression_model
-        darts.models.moving_average
-        darts.models.nbeats
-        darts.models.prophet
-        darts.models.random_forest
-        darts.models.regression_ensemble_model
-        darts.models.regression_model
-        darts.models.rnn_model
-        darts.models.tcn_model
-        darts.models.theta
-        darts.models.torch_forecasting_model
-        darts.models.transformer_model
-        darts.models.varima

@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.regression_ensemble_model
-   :members:
-   :undoc-members:
-   :show-inheritance:

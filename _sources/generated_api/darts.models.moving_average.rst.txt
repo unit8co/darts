@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.moving_average
-   :members:
-   :undoc-members:
-   :show-inheritance:

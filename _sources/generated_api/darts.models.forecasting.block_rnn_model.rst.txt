@@ -1,0 +1,5 @@
+
+.. automodule:: darts.models.forecasting.block_rnn_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

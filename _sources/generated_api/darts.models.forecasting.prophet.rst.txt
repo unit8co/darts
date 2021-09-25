@@ -1,0 +1,5 @@
+
+.. automodule:: darts.models.forecasting.prophet
+   :members:
+   :undoc-members:
+   :show-inheritance:

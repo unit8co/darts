@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.prophet
-   :members:
-   :undoc-members:
-   :show-inheritance:

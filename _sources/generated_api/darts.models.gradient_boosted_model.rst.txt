@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.gradient_boosted_model
-   :members:
-   :undoc-members:
-   :show-inheritance:

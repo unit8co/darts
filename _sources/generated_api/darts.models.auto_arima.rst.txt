@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.auto_arima
-   :members:
-   :undoc-members:
-   :show-inheritance:

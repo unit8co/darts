@@ -1,0 +1,5 @@
+
+.. automodule:: darts.models.forecasting.ensemble_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

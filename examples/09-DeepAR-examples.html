@@ -462,7 +462,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">EnergyDataset</span>
 <span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
 <span class="kn">from</span> <span class="nn">darts.utils.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">GaussianLikelihoodModel</span>
+<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">GaussianLikelihood</span>
 
 <span class="kn">import</span> <span class="nn">warnings</span>
 <span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
@@ -525,7 +525,7 @@ div.rendered_html tbody tr:hover {
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="n">training_length</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
-    <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihoodModel</span><span class="p">()</span>
+    <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihood</span><span class="p">()</span>
 <span class="p">)</span>
 
 <span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target_train</span><span class="p">,</span>
@@ -617,7 +617,7 @@ Training loss: -51.6939
     <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
     <span class="n">training_length</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
     <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
-    <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihoodModel</span><span class="p">()</span>
+    <span class="n">likelihood</span><span class="o">=</span><span class="n">GaussianLikelihood</span><span class="p">()</span>
 <span class="p">)</span>
 
 </pre></div>

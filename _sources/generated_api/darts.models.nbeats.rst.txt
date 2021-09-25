@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.nbeats
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.gaussian_process_filter
-   :members:
-   :undoc-members:
-   :show-inheritance:

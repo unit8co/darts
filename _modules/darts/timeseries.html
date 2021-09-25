@@ -215,7 +215,8 @@
         <span class="c1"># The following sorting returns a copy, which we are relying on.</span>
         <span class="c1"># As of xarray 0.18.2, this sorting discards the freq of the index for some reason</span>
         <span class="c1"># https://github.com/pydata/xarray/issues/5466</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">sortby</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span>
+        <span class="c1"># We sort only if the time axis is not already sorted (monotically increasing).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">is_monotonic_increasing</span> <span class="k">else</span> <span class="n">xa</span><span class="o">.</span><span class="n">sortby</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span>
 
@@ -230,8 +231,11 @@
             <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DateOffset</span> <span class="o">=</span> <span class="p">(</span><span class="n">freq_tmp</span> <span class="k">if</span> <span class="n">freq_tmp</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span>
                                          <span class="n">to_offset</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">inferred_freq</span><span class="p">))</span>
             <span class="n">raise_if</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
-                     <span class="s1">&#39;The time index of the provided DataArray is missing the freq attribute, and the &#39;</span>
-                     <span class="s1">&#39;frequency cannot be inferred.&#39;</span><span class="p">,</span>
+                     <span class="s1">&#39;The time index of the provided DataArray is missing the freq attribute, and the frequency could &#39;</span>
+                     <span class="s1">&#39;not be directly inferred. &#39;</span>
+                     <span class="s1">&#39;This probably comes from inconsistent date frequencies with missing dates. &#39;</span>
+                     <span class="s1">&#39;If you know the actual frequency, try setting `fill_missing_date=True, freq=actual_frequency`. &#39;</span>
+                     <span class="s1">&#39;If not, try setting `fill_missing_dates=True, freq=None` to see if a frequency can be inferred.&#39;</span><span class="p">,</span>
                      <span class="n">logger</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">_freq_str</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="o">.</span><span class="n">freqstr</span>
@@ -241,6 +245,7 @@
 
             <span class="c1"># We have to check manually if the index is complete. Another way could be to rely</span>
             <span class="c1"># on `inferred_freq` being present, but this fails for series of length &lt; 3.</span>
+
             <span class="n">is_index_complete</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">min</span><span class="p">(),</span>
                                                   <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">max</span><span class="p">(),</span>
                                                   <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq</span><span class="p">)</span><span class="o">.</span><span class="n">difference</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">))</span> <span class="o">==</span> <span class="mi">0</span>
@@ -261,7 +266,8 @@
 <div class="viewcode-block" id="TimeSeries.from_xarray"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_xarray">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_xarray</span><span class="p">(</span><span class="n">xa</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
                     <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                    <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                    <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a TimeSeries instance built from an xarray DataArray.</span>
 <span class="sd">        The dimensions of the DataArray have to be (time, component, sample), in this order. The time</span>
@@ -270,8 +276,8 @@
 
 <span class="sd">        The first dimension (time), and second dimension (component) must be indexed (i.e., have coordinates).</span>
 <span class="sd">        The time must be indexed either with a pandas DatetimeIndex or a pandas Int64Index. If a DatetimeIndex is</span>
-<span class="sd">        used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these</span>
-<span class="sd">        issues (filling holes with NaN) at a performance cost.</span>
+<span class="sd">        used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some cases solve</span>
+<span class="sd">        these issues (filling holes with NaN, or with the provided `fillna_value` numeric value, if any).</span>
 
 <span class="sd">        If two components have the same name or are not strings, this method will disambiguate the components</span>
 <span class="sd">        names by appending a suffix of the form &quot;&lt;name&gt;_N&quot; to the N-th column with name &quot;name&quot;.</span>
@@ -282,54 +288,32 @@
 <span class="sd">            The xarray DataArray</span>
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires</span>
-<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.</span>
-<span class="sd">            Inferring the frequency and resampling the data can induce a significant performance overhead.</span>
+<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps. See</span>
+<span class="sd">            :meth:`_fill_missing_dates() &lt;TimeSeries._fill_missing_dates&gt;` for more info.</span>
 <span class="sd">        freq</span>
-<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill</span>
-<span class="sd">            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">            Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to</span>
+<span class="sd">            fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">        fillna_value</span>
+<span class="sd">            Optionally, a numeric value to fill missing values (NaNs) with.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A univariate or multivariate deterministic TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
+        <span class="n">xa_index</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="n">has_datetime_index</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xa_index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span>
+        <span class="n">has_frequency</span> <span class="o">=</span> <span class="n">has_datetime_index</span> <span class="ow">and</span> <span class="n">xa_index</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
         <span class="c1"># optionally fill missing dates; do it only when there is a DatetimeIndex (and not a Int64Index)</span>
-        <span class="k">if</span> <span class="n">fill_missing_dates</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">):</span>
-            <span class="n">sorted_xa</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">sortby</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-            <span class="n">time_index</span> <span class="o">=</span> <span class="n">sorted_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
-
-            <span class="k">if</span> <span class="ow">not</span> <span class="n">freq</span><span class="p">:</span>
-                <span class="c1"># FIXME: This is taking long, especially on longer series</span>
-                <span class="c1"># FIXME: both constructing observed_frequencies, as well as resampling the DataArray are taking long</span>
-                <span class="c1"># FIXME: can we do better?</span>
-                <span class="n">samples_size</span> <span class="o">=</span> <span class="mi">3</span>
-                <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="p">[</span>
-                    <span class="n">time_index</span><span class="p">[</span><span class="n">x</span><span class="p">:</span><span class="n">x</span> <span class="o">+</span> <span class="n">samples_size</span><span class="p">]</span><span class="o">.</span><span class="n">inferred_freq</span>
-                    <span class="k">for</span> <span class="n">x</span>
-                    <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">time_index</span><span class="p">)</span> <span class="o">-</span> <span class="n">samples_size</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-
-                <span class="n">observed_frequencies</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="kc">None</span><span class="o">.</span><span class="fm">__ne__</span><span class="p">,</span> <span class="n">observed_frequencies</span><span class="p">))</span>
-
-                <span class="n">raise_if_not</span><span class="p">(</span>
-                    <span class="nb">len</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
-                    <span class="s2">&quot;Could not infer explicit frequency. Observed frequencies: &quot;</span>
-                    <span class="o">+</span> <span class="p">(</span><span class="s1">&#39;none&#39;</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span> <span class="k">else</span> <span class="nb">str</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">))</span>
-                    <span class="o">+</span> <span class="p">(</span><span class="s2">&quot;. Is Series too short (n=</span><span class="si">{}</span><span class="s2">)?&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">samples_size</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed_frequencies</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span>
-                       <span class="k">else</span> <span class="s1">&#39;.&#39;</span><span class="p">),</span>
-                    <span class="n">logger</span><span class="p">)</span>
-
-                <span class="n">freq</span> <span class="o">=</span> <span class="n">observed_frequencies</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
-
-            <span class="n">xa_</span> <span class="o">=</span> <span class="n">sorted_xa</span><span class="o">.</span><span class="n">resample</span><span class="p">({</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">freq</span><span class="p">})</span><span class="o">.</span><span class="n">asfreq</span><span class="p">()</span>
-
-        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span> <span class="ow">and</span> \
-                <span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> \
-                <span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># The provided index does not have a freq; using the provided freq</span>
-            <span class="n">xa_</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">resample</span><span class="p">({</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">freq</span><span class="p">})</span><span class="o">.</span><span class="n">asfreq</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">fill_missing_dates</span> <span class="ow">and</span> <span class="n">has_datetime_index</span><span class="p">:</span>
+            <span class="n">xa_</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">_fill_missing_dates</span><span class="p">(</span><span class="n">xa</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
+        <span class="c1"># The provided index does not have a freq; using the provided freq</span>
+        <span class="k">elif</span> <span class="n">has_datetime_index</span> <span class="ow">and</span> <span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">has_frequency</span><span class="p">:</span>
+            <span class="n">xa_</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">_restore_xarray_from_frequency</span><span class="p">(</span><span class="n">xa</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">xa_</span> <span class="o">=</span> <span class="n">xa</span>
+        <span class="k">if</span> <span class="n">fillna_value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">xa_</span> <span class="o">=</span> <span class="n">xa_</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">fillna_value</span><span class="p">)</span>
 
         <span class="c1"># clean components (columns) names if needed (if names are not unique, or not strings)</span>
         <span class="n">components</span> <span class="o">=</span> <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
@@ -369,12 +353,9 @@
                                <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="n">time_index_name</span><span class="p">:</span> <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">time_index_name</span><span class="p">),</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">columns_list</span><span class="p">})</span>
 
         <span class="c1"># We cast the array to float</span>
-        <span class="c1"># TODO: is astype() always copying? (might be slightly inefficient if array is already float)</span>
-        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">):</span>
-            <span class="c1"># We conserve the float32 type</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span> <span class="ow">or</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="c1"># Otherwise we cast to float64</span>
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_csv"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_csv">[docs]</a>    <span class="nd">@staticmethod</span>
@@ -383,7 +364,8 @@
                  <span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                 <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span> <span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a deterministic TimeSeries instance built from a single CSV file.</span>
 <span class="sd">        One column can be used to represent the time (if not present, the time index will be an Int64Index)</span>
@@ -401,13 +383,16 @@
 <span class="sd">            `None`, all columns from the CSV file will be used (except for the time_col, if specified) </span>
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires</span>
-<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.</span>
-<span class="sd">            Inferring the frequency and resampling the data can induce a significant performance overhead.</span>
+<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps. See</span>
+<span class="sd">            :meth:`_fill_missing_dates() &lt;TimeSeries._fill_missing_dates&gt;` for more info.</span>
 <span class="sd">        freq</span>
-<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill</span>
-<span class="sd">            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">            Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to</span>
+<span class="sd">            fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">        fillna_value</span>
+<span class="sd">            Optionally, a numeric value to fill missing values (NaNs) with.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional arguments to be passed to `pandas.read_csv` function</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
@@ -415,18 +400,20 @@
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath_or_buffer</span><span class="o">=</span><span class="n">filepath_or_buffer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> 
-                                         <span class="n">time_col</span><span class="o">=</span><span class="n">time_col</span><span class="p">,</span> 
-                                         <span class="n">value_cols</span><span class="o">=</span><span class="n">value_cols</span><span class="p">,</span> 
-                                         <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span> 
-                                         <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span>
+                                         <span class="n">time_col</span><span class="o">=</span><span class="n">time_col</span><span class="p">,</span>
+                                         <span class="n">value_cols</span><span class="o">=</span><span class="n">value_cols</span><span class="p">,</span>
+                                         <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span>
+                                         <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
+                                         <span class="n">fillna_value</span><span class="o">=</span><span class="n">fillna_value</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_dataframe"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">,</span>
                        <span class="n">time_col</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">value_cols</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                        <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                       <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                       <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                       <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.</span>
 <span class="sd">        One column (or the DataFrame index) has to represent the time,</span>
@@ -440,18 +427,20 @@
 <span class="sd">            The time column name. If set, the column will be cast to a pandas DatetimeIndex.</span>
 <span class="sd">            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is</span>
 <span class="sd">            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is</span>
-<span class="sd">            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these</span>
-<span class="sd">            issues (filling holes with NaN) at a performance cost.</span>
+<span class="sd">            used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve</span>
+<span class="sd">            these issues (filling holes with NaN, or with the provided `fillna_value` numeric value, if any).</span>
 <span class="sd">        value_cols</span>
 <span class="sd">            A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to</span>
 <span class="sd">            `None`, the whole DataFrame will be used.</span>
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires</span>
-<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.</span>
-<span class="sd">            Inferring the frequency and resampling the data can induce a significant performance overhead.</span>
+<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps. See</span>
+<span class="sd">            :meth:`_fill_missing_dates() &lt;TimeSeries._fill_missing_dates&gt;` for more info.</span>
 <span class="sd">        freq</span>
-<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill</span>
-<span class="sd">            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">            Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to</span>
+<span class="sd">            fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">        fillna_value</span>
+<span class="sd">            Optionally, a numeric value to fill missing values (NaNs) with.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -483,19 +472,20 @@
                           <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">,)</span> <span class="o">+</span> <span class="n">DIMS</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:],</span>
                           <span class="n">coords</span><span class="o">=</span><span class="p">{</span><span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">:</span> <span class="n">time_index</span><span class="p">,</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">series_df</span><span class="o">.</span><span class="n">columns</span><span class="p">})</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">xa</span><span class="o">=</span><span class="n">xa</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">xa</span><span class="o">=</span><span class="n">xa</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">fillna_value</span><span class="o">=</span><span class="n">fillna_value</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_series"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_series">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_series</span><span class="p">(</span><span class="n">pd_series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">,</span>
                     <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                    <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                    <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a univariate and deterministic TimeSeries built from a pandas Series.</span>
 
 <span class="sd">        The series must contain an index that is</span>
 <span class="sd">        either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is</span>
-<span class="sd">        used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these</span>
-<span class="sd">        issues (filling holes with NaN) at a performance cost.</span>
+<span class="sd">        used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some cases solve</span>
+<span class="sd">        these issues (filling holes with NaN, or with the provided `fillna_value` numeric value, if any).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -503,11 +493,13 @@
 <span class="sd">            The pandas Series instance.</span>
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires</span>
-<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.</span>
-<span class="sd">            Inferring the frequency and resampling the data can induce a significant performance overhead.</span>
+<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps. See</span>
+<span class="sd">            :meth:`_fill_missing_dates() &lt;TimeSeries._fill_missing_dates&gt;` for more info.</span>
 <span class="sd">        freq</span>
-<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill</span>
-<span class="sd">            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">            Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to</span>
+<span class="sd">            fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">        fillna_value</span>
+<span class="sd">            Optionally, a numeric value to fill missing values (NaNs) with.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -520,14 +512,16 @@
                                          <span class="n">time_col</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                          <span class="n">value_cols</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                          <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span>
-                                         <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span></div>
+                                         <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
+                                         <span class="n">fillna_value</span><span class="o">=</span><span class="n">fillna_value</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_times_and_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_times_and_values">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Int64Index</span><span class="p">],</span>
                               <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
                               <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                               <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                              <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">_typing</span><span class="o">.</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                              <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">_typing</span><span class="o">.</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                              <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a TimeSeries built from an index and value array.</span>
 
@@ -535,36 +529,39 @@
 <span class="sd">        ----------</span>
 <span class="sd">        times</span>
 <span class="sd">            A `pandas.DateTimeIndex` or `pandas.Int64Index` (or `pandas.RangeIndex`) representing the time axis</span>
-<span class="sd">            for the time series. If a DatetimeIndex is</span>
-<span class="sd">            used, it is better if it has no holes; although setting `fill_missing_dates` can in some cases solve these</span>
-<span class="sd">            issues (filling holes with NaN) at a performance cost.</span>
+<span class="sd">            for the time series. If a DatetimeIndex is used, it is better if it has no holes; alternatively setting</span>
+<span class="sd">            `fill_missing_dates` can in some cases solve these issues (filling holes with NaN, or with the</span>
+<span class="sd">            provided `fillna_value` numeric value, if any).</span>
 <span class="sd">        values</span>
 <span class="sd">            A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,</span>
 <span class="sd">            and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions</span>
 <span class="sd">            should be (time, component), and in the latter case (time, component, sample).</span>
 <span class="sd">        fill_missing_dates</span>
 <span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires</span>
-<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.</span>
-<span class="sd">            Inferring the frequency and resampling the data can induce a significant performance overhead.</span>
+<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps. See</span>
+<span class="sd">            :meth:`_fill_missing_dates() &lt;TimeSeries._fill_missing_dates&gt;` for more info.</span>
 <span class="sd">        freq</span>
-<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill</span>
-<span class="sd">            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
+<span class="sd">            Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to</span>
+<span class="sd">            fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
 <span class="sd">        columns</span>
 <span class="sd">            Columns to be used by the underlying pandas DataFrame.</span>
+<span class="sd">        fillna_value</span>
+<span class="sd">            Optionally, a numeric value to fill missing values (NaNs) with.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Int64Index</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">times</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">),</span>
                      <span class="s1">&#39;the `times` argument must be a Int64Index (or RangeIndex), or a DateTimeIndex. Use &#39;</span>
                      <span class="s1">&#39;TimeSeries.from_values() if you want to use an automatic RangeIndex.&#39;</span><span class="p">)</span>
 
         <span class="n">times_name</span> <span class="o">=</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">times</span><span class="o">.</span><span class="n">name</span> <span class="k">else</span> <span class="n">times</span><span class="o">.</span><span class="n">name</span>
 
-        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="c1"># avoid copying if data is already np.ndarray:</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">values</span><span class="p">)</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="k">else</span> <span class="n">values</span>
+
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -578,13 +575,12 @@
                           <span class="n">dims</span><span class="o">=</span><span class="p">(</span><span class="n">times_name</span><span class="p">,)</span> <span class="o">+</span> <span class="n">DIMS</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">:],</span>
                           <span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">xa</span><span class="o">=</span><span class="n">xa</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">xa</span><span class="o">=</span><span class="n">xa</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">fillna_value</span><span class="o">=</span><span class="n">fillna_value</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_values">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_values</span><span class="p">(</span><span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                    <span class="n">fill_missing_dates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
-                    <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                    <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">_typing</span><span class="o">.</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+                    <span class="n">columns</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">_typing</span><span class="o">.</span><span class="n">Axes</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                    <span class="n">fillna_value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns a TimeSeries built from an array of values.</span>
 <span class="sd">        The series will have an integer index (Int64Index).</span>
@@ -595,30 +591,25 @@
 <span class="sd">            A Numpy array of values for the TimeSeries. Both 2-dimensional arrays, for deterministic series,</span>
 <span class="sd">            and 3-dimensional arrays, for probabilistic series, are accepted. In the former case the dimensions</span>
 <span class="sd">            should be (time, component), and in the latter case (time, component, sample).</span>
-<span class="sd">        fill_missing_dates</span>
-<span class="sd">            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires</span>
-<span class="sd">            either a provided `freq` or the possibility to infer the frequency from the provided timestamps.</span>
-<span class="sd">            Inferring the frequency and resampling the data can induce a significant performance overhead.</span>
-<span class="sd">        freq</span>
-<span class="sd">            Optionally, a string representing the frequency of the Pandas DataFrame. This is useful in order to fill</span>
-<span class="sd">            in missing values if some dates are missing and `fill_missing_dates` is set to `True`.</span>
 <span class="sd">        columns</span>
 <span class="sd">            Columns to be used by the underlying pandas DataFrame.</span>
+<span class="sd">        fillna_value</span>
+<span class="sd">            Optionally, a numeric value to fill missing values (NaNs) with.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A TimeSeries constructed from the inputs.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-
         <span class="n">time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
-
         <span class="n">values_</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">values</span><span class="p">,</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span> <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span> <span class="k">else</span> <span class="n">values</span>
+
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span>
                                                 <span class="n">values</span><span class="o">=</span><span class="n">values_</span><span class="p">,</span>
-                                                <span class="n">fill_missing_dates</span><span class="o">=</span><span class="n">fill_missing_dates</span><span class="p">,</span>
-                                                <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
-                                                <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">)</span></div>
+                                                <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                <span class="n">freq</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                                <span class="n">columns</span><span class="o">=</span><span class="n">columns</span><span class="p">,</span>
+                                                <span class="n">fillna_value</span><span class="o">=</span><span class="n">fillna_value</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.from_json"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_json">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">from_json</span><span class="p">(</span><span class="n">json_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
@@ -845,11 +836,11 @@
         <span class="k">if</span> <span class="n">copy</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
                                 <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
-                                <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="s1">&#39;component&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+                                <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">,</span>
                                 <span class="n">index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="p">,</span>
-                                <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="s1">&#39;component&#39;</span><span class="p">))</span></div>
+                                <span class="n">columns</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span></div>
 
 <div class="viewcode-block" id="TimeSeries.quantile_df"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.quantile_df">[docs]</a>    <span class="k">def</span> <span class="nf">quantile_df</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">quantile</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1005,6 +996,8 @@
 <span class="sd">        copy</span>
 <span class="sd">            Whether to return a copy of the values, otherwise returns a view.</span>
 <span class="sd">            Leave it to True unless you know what you are doing.</span>
+<span class="sd">        sample</span>
+<span class="sd">            For stochastic series, the sample for which to return values. Default: 0 (first sample).</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -1116,7 +1109,9 @@
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A copy of this time series.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">)</span>  <span class="c1"># the xarray will be copied in the TimeSeries constructor</span></div>
+
+        <span class="c1"># the xarray will be copied in the TimeSeries constructor.</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.get_index_at_point"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.get_index_at_point">[docs]</a>    <span class="k">def</span> <span class="nf">get_index_at_point</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">point</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">after</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1591,7 +1586,6 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_has_datetime_index</span><span class="p">:</span>
             <span class="n">new_xa</span> <span class="o">=</span> <span class="n">new_xa</span><span class="o">.</span><span class="n">reset_index</span><span class="p">(</span><span class="n">dims_or_levels</span><span class="o">=</span><span class="n">new_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
 
-        <span class="c1"># TODO: fill_missing_dates takes a performance hit; do we need it here</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">new_xa</span><span class="p">,</span> <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_freq_str</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.append_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.append_values">[docs]</a>    <span class="k">def</span> <span class="nf">append_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
@@ -1618,29 +1612,6 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span>
                                                             <span class="n">times</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
                                                             <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span></div>
-
-<div class="viewcode-block" id="TimeSeries.update"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-               <span class="n">index</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span>
-               <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Updates the TimeSeries with the new values provided.</span>
-<span class="sd">        If indices are not in original TimeSeries, they will be discarded.</span>
-<span class="sd">        Use `numpy.nan` to ignore a specific index in a series.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        index</span>
-<span class="sd">            A `pandas.DateTimeIndex` containing the indices to replace.</span>
-<span class="sd">        values</span>
-<span class="sd">            An array containing the values to replace (optional).</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        TimeSeries</span>
-<span class="sd">            A new TimeSeries with updated values.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># TODO: I don&#39;t think this is needed... probably better to just create a new TimeSeries</span>
-        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;TimeSeries.update() is not supported anymore.&#39;</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.stack"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.stack">[docs]</a>    <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -1923,7 +1894,7 @@
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;figure&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fig</span>
         <span class="n">label</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;label&#39;</span><span class="p">]</span> <span class="k">if</span> <span class="s1">&#39;label&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">else</span> <span class="s1">&#39;&#39;</span>
 
-        <span class="k">if</span> <span class="s1">&#39;lw&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">any</span><span class="p">(</span><span class="n">lw</span> <span class="ow">in</span> <span class="n">kwargs</span> <span class="k">for</span> <span class="n">lw</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;lw&#39;</span><span class="p">,</span> <span class="s1">&#39;linewidth&#39;</span><span class="p">]):</span>
             <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;lw&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
 
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="p">:</span>
@@ -2056,7 +2027,6 @@
 <span class="sd">    Dunder methods</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="c1">#</span>
     <span class="k">def</span> <span class="nf">_combine_arrays</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                         <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="s1">&#39;TimeSeries&#39;</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
                         <span class="n">combine_fn</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
@@ -2077,6 +2047,131 @@
         <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
         <span class="n">new_xa</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">combine_fn</span><span class="p">(</span><span class="n">new_xa</span><span class="o">.</span><span class="n">values</span><span class="p">,</span> <span class="n">other_vals</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TimeSeries._fill_missing_dates"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries._fill_missing_dates">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_fill_missing_dates</span><span class="p">(</span><span class="n">xa</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
+                            <span class="n">freq</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Returns an xarray DataArray instance with missing dates inserted from an input xarray DataArray.</span>
+<span class="sd">        The first dimension of the input DataArray `xa` has to be the time dimension.</span>
+
+<span class="sd">        This requires either a provided `freq` or the possibility to infer a unique frequency (see</span>
+<span class="sd">        `offset aliases &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases&gt;`_</span>
+<span class="sd">        for more info on supported frequencies) from the provided timestamps.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        xa</span>
+<span class="sd">            The xarray DataArray</span>
+<span class="sd">        freq</span>
+<span class="sd">            Optionally, a string representing the frequency of the Pandas DateTimeIndex to fill in the missing dates.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        -------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If `xa`&#39;s DateTimeIndex contains less than 3 elements;</span>
+<span class="sd">            if no unique frequency can be inferred from `xa`&#39;s DateTimeIndex;</span>
+<span class="sd">            if the resampled DateTimeIndex does not contain all dates from `xa` (see</span>
+<span class="sd">                :meth:`_restore_xarray_from_frequency() &lt;TimeSeries._restore_xarray_from_frequency&gt;`)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        xarray DataArray</span>
+<span class="sd">            xarray DataArray with filled missing dates from `xa`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">_restore_xarray_from_frequency</span><span class="p">(</span><span class="n">xa</span><span class="p">,</span> <span class="n">freq</span><span class="p">)</span>
+
+        <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">xa</span><span class="p">)</span> <span class="o">&lt;=</span> <span class="mi">2</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Input time series must be of (length&gt;=3) when fill_missing_dates=True and freq=None.&quot;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+
+        <span class="n">time_dim</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">sorted_xa</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">is_monotonic_increasing</span> <span class="k">else</span> <span class="n">xa</span><span class="o">.</span><span class="n">sortby</span><span class="p">(</span><span class="n">time_dim</span><span class="p">)</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">sorted_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">time_dim</span><span class="p">)</span>
+
+        <span class="n">offset_alias_info</span> <span class="o">=</span> <span class="s2">&quot;For more information about frequency aliases, read &quot;</span> \
+                            <span class="s2">&quot;https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases&quot;</span>
+
+        <span class="n">step_size</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">n_dates</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">time_index</span><span class="p">)</span>
+        <span class="c1"># this creates n steps containing 3 timestamps each; used to infer frequency of time_index</span>
+        <span class="n">steps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">time_index</span><span class="p">[</span><span class="n">i</span><span class="p">:</span> <span class="p">(</span><span class="n">n_dates</span> <span class="o">-</span> <span class="n">step_size</span> <span class="o">+</span> <span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">step_size</span><span class="p">)])</span>
+        <span class="n">observed_freqs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">infer_freq</span><span class="p">(</span><span class="n">step</span><span class="p">)</span> <span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="n">steps</span><span class="p">)</span>
+        <span class="n">observed_freqs</span><span class="o">.</span><span class="n">discard</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">observed_freqs</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not observe an inferred frequency. An explicit frequency must be evident over a span of at least &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;3 consecutive time stamps in the input data. </span><span class="si">{</span><span class="n">offset_alias_info</span><span class="si">}</span><span class="s2">&quot;</span> <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">observed_freqs</span><span class="p">)</span> <span class="k">else</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not find a unique inferred frequency (not constant). Observed frequencies: </span><span class="si">{</span><span class="n">observed_freqs</span><span class="si">}</span><span class="s2">. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;If any of those is the actual frequency, try passing it with fill_missing_dates=True &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;and freq=your_frequency. </span><span class="si">{</span><span class="n">offset_alias_info</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">)</span>
+
+        <span class="n">freq</span> <span class="o">=</span> <span class="n">observed_freqs</span><span class="o">.</span><span class="n">pop</span><span class="p">()</span>
+
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">_restore_xarray_from_frequency</span><span class="p">(</span><span class="n">sorted_xa</span><span class="p">,</span> <span class="n">freq</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="TimeSeries._restore_xarray_from_frequency"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries._restore_xarray_from_frequency">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_restore_xarray_from_frequency</span><span class="p">(</span><span class="n">xa</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span>
+                                       <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; Returns an xarray DataArray instance that is resampled from an input xarray DataArray `xa` with frequency</span>
+<span class="sd">        `freq`. `freq` should be the inferred or actual frequency of `xa`. All data from `xa` is maintained in the</span>
+<span class="sd">        output DataArray at the corresponding dates. Any missing dates from `xa` will be inserted into the returned</span>
+<span class="sd">        DataArray with np.nan values.</span>
+
+<span class="sd">        The first dimension of the input DataArray `xa` has to be the time dimension.</span>
+
+<span class="sd">        This requires a provided `freq` (see `offset aliases</span>
+<span class="sd">        &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases&gt;`_ for more info on</span>
+<span class="sd">        supported frequencies).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        xa</span>
+<span class="sd">            The xarray DataArray</span>
+<span class="sd">        freq</span>
+<span class="sd">            A string representing the actual or inferred frequency of the Pandas DateTimeIndex from `xa`.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        -------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the resampled DateTimeIndex does not contain all dates from `xa`</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        xarray DataArray</span>
+<span class="sd">            xarray DataArray resampled from `xa` with `freq` including all data from `xa` and inserted missing dates</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">time_dim</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">sorted_xa</span> <span class="o">=</span> <span class="n">xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">if</span> <span class="n">xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">is_monotonic_increasing</span> <span class="k">else</span> <span class="n">xa</span><span class="o">.</span><span class="n">sortby</span><span class="p">(</span><span class="n">time_dim</span><span class="p">)</span>
+
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">sorted_xa</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="n">time_dim</span><span class="p">)</span>
+        <span class="n">resampled_time_index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="n">time_index</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;object&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">asfreq</span><span class="p">(</span><span class="n">freq</span><span class="p">)</span>
+
+        <span class="c1"># check if new time index with inferred frequency contains all input data</span>
+        <span class="n">contains_all_data</span> <span class="o">=</span> <span class="n">time_index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">resampled_time_index</span><span class="o">.</span><span class="n">index</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+        <span class="n">offset_alias_info</span> <span class="o">=</span> <span class="s2">&quot;For more information about frequency aliases, read &quot;</span> \
+                            <span class="s2">&quot;https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases&quot;</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">contains_all_data</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;Could not correctly fill missing dates with the observed/passed frequency freq=&#39;</span><span class="si">{</span><span class="n">freq</span><span class="si">}</span><span class="s2">&#39;. &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Not all input time stamps contained in the newly created TimeSeries. </span><span class="si">{</span><span class="n">offset_alias_info</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">)</span>
+
+        <span class="n">coords</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">resampled_time_index</span><span class="o">.</span><span class="n">index</span><span class="p">),</span>
+            <span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">xa</span><span class="o">.</span><span class="n">coords</span><span class="p">[</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span>
+        <span class="p">}</span>
+
+        <span class="n">resampled_xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">data</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">resampled_time_index</span><span class="p">),)</span> <span class="o">+</span> <span class="n">xa</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:])),</span>
+                                    <span class="n">dims</span><span class="o">=</span><span class="n">xa</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span>
+                                    <span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">)</span>
+        <span class="n">resampled_xa</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+        <span class="n">resampled_xa</span><span class="p">[</span><span class="n">resampled_time_index</span><span class="o">.</span><span class="n">index</span><span class="o">.</span><span class="n">isin</span><span class="p">(</span><span class="n">time_index</span><span class="p">)]</span> <span class="o">=</span> <span class="n">sorted_xa</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">return</span> <span class="n">resampled_xa</span></div>
 
     <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
@@ -2254,11 +2349,12 @@
 
         <span class="k">def</span> <span class="nf">_set_freq_in_xa</span><span class="p">(</span><span class="n">xa_</span><span class="p">:</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">):</span>
             <span class="c1"># mutates the DataArray to make sure it contains the freq</span>
-            <span class="n">inferred_freq</span> <span class="o">=</span> <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">inferred_freq</span>
-            <span class="k">if</span> <span class="n">inferred_freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="n">to_offset</span><span class="p">(</span><span class="n">inferred_freq</span><span class="p">)</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">),</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">):</span>
+                <span class="n">inferred_freq</span> <span class="o">=</span> <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">inferred_freq</span>
+                <span class="k">if</span> <span class="n">inferred_freq</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="n">to_offset</span><span class="p">(</span><span class="n">inferred_freq</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">xa_</span><span class="o">.</span><span class="n">get_index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">)</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq</span>
 
         <span class="c1"># handle DatetimeIndex and Int64Index:</span>
         <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">):</span>
@@ -2272,6 +2368,7 @@
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Int64Index</span><span class="p">):</span>
             <span class="n">_check_range</span><span class="p">()</span>
+
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">key</span><span class="p">}))</span>
 
         <span class="c1"># handle slices:</span>
@@ -2279,7 +2376,9 @@
             <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
                 <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">key</span><span class="p">}))</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">))</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
-                <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">key</span><span class="p">}))</span>
+                <span class="n">xa_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">key</span><span class="p">})</span>
+                <span class="n">_set_freq_in_xa</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>  <span class="c1"># indexing may discard the freq so we restore it...</span>
+                <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>
             <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">stop</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
                 <span class="n">_check_dt</span><span class="p">()</span>
 
@@ -2292,7 +2391,9 @@
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
             <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="p">[</span><span class="n">key</span><span class="p">]}))</span>  <span class="c1"># have to put key in a list not to drop the dimension</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">)):</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="p">[</span><span class="n">key</span><span class="p">]}))</span>
+            <span class="n">xa_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="p">[</span><span class="n">key</span><span class="p">]})</span>
+            <span class="n">_set_freq_in_xa</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>  <span class="c1"># indexing may discard the freq so we restore it...</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
             <span class="n">_check_dt</span><span class="p">()</span>
 
@@ -2307,7 +2408,9 @@
                 <span class="c1"># when string(s) are provided, we consider it as (a list of) component(s)</span>
                 <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">sel</span><span class="p">({</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span> <span class="n">key</span><span class="p">}))</span>
             <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">key</span><span class="p">):</span>
-                <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">key</span><span class="p">}))</span>
+                <span class="n">xa_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">isel</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_time_dim</span><span class="p">:</span> <span class="n">key</span><span class="p">})</span>
+                <span class="n">_set_freq_in_xa</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>  <span class="c1"># indexing may discard the freq so we restore it...</span>
+                <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">xa_</span><span class="p">)</span>
             <span class="k">elif</span> <span class="nb">all</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">key</span><span class="p">):</span>
                 <span class="n">_check_dt</span><span class="p">()</span>
 

@@ -6,8 +6,8 @@ Time Series Made Easy in Python
 ===============================
 
 
-.. image:: https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png
-   :target: https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png
+.. image:: https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png
+   :target: https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png
    :alt: darts
 
 
@@ -141,7 +141,7 @@ Plot the median, 5th and 95th percentiles:
 .. raw:: html
 
    <div style="text-align:center;">
-   <img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
+   <img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
    </div>
 
 
@@ -342,8 +342,8 @@ A Conda environment is thus recommended because it will handle all of those in o
 From conda-forge
 ^^^^^^^^^^^^^^^^
 
-Currently only Linux and macOS on the x86_64 architecture are fully supported with
-conda; consider using PyPI if you are running into troubles.
+Currently only the x86_64 architecture with Python 3.7 or 3.8 
+is fully supported with conda; consider using PyPI if you are running into troubles.
 
 To create a conda environment for Python 3.7
 (after installing `conda <https://docs.conda.io/en/latest/miniconda.html>`_\ ):
@@ -363,8 +363,11 @@ Don't forget to activate your virtual environment
 As some models have relatively heavy dependencies, we provide two conda-forge packages:
 
 
-* Install darts with all available models (recommended): ``conda install -c conda-forge u8darts-all``.
+* Install darts with all available models (recommended): ``conda install -c conda-forge -c pytorch u8darts-all``.
+* Install core + neural networks (PyTorch): ``conda install -c conda-forge -c pytorch u8darts-torch``
 * Install core only (without neural networks, Prophet or AutoARIMA): ``conda install -c conda-forge u8darts``
+
+For GPU support, please follow the instructions to install CUDA in the `PyTorch installation guide <https://pytorch.org/get-started/locally/>`_.
 
 From PyPI
 ^^^^^^^^^
@@ -385,13 +388,13 @@ we also maintain the ``u8darts`` package, which provides the following alternate
 * Install core + AutoARIMA: ``pip install 'u8darts[pmdarima]'``
 
 Enabling Support for LightGBM
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To enable support for LightGBM in Darts, please follow the 
 `installation instructions <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ for your OS.
 
 MacOS Issues with LightGBM
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+""""""""""""""""""""""""""
 
 At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in 
 `segmentation fault on Mac OS Big Sur <https://github.com/microsoft/LightGBM/issues/4229>`_. 

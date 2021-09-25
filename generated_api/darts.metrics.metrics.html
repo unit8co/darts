@@ -593,6 +593,54 @@ passed as input, parallelising operations regarding different <cite>TimeSeries</
 </dd></dl>
 
 <dl class="py function">
+<dt id="darts.metrics.metrics.rho_risk">
+<code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rho_risk</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], rho: float = 0.5, intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; float<a class="reference internal" href="../_modules/darts/metrics/metrics.html#rho_risk"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rho_risk" title="Permalink to this definition">¶</a></dt>
+<dd><p><span class="math notranslate nohighlight">\(\rho\)</span>-risk (rho-risk or quantile risk).</p>
+<p>Given a time series of actual values <span class="math notranslate nohighlight">\(y_t\)</span> of length <span class="math notranslate nohighlight">\(T\)</span> and a time series of stochastic predictions
+(containing N samples) <span class="math notranslate nohighlight">\(\hat{y}_t\)</span> of shape <span class="math notranslate nohighlight">\(T \times N\)</span>, rho-risk is a metric that quantifies the
+accuracy of a specific quantile <span class="math notranslate nohighlight">\(\rho\)</span> from the predicted value distribution.</p>
+<p>For a univariate stochastic predicted TimeSeries the <span class="math notranslate nohighlight">\(\rho\)</span>-risk is given by:</p>
+<div class="math notranslate nohighlight">
+\[\frac{ L_{\rho} \left( Z, \hat{Z}_{\rho} \right) } {Z},\]</div>
+<p>where <span class="math notranslate nohighlight">\(L_{\rho} \left( Z, \hat{Z}_{\rho} \right)\)</span> is`the <span class="math notranslate nohighlight">\(\rho\)</span>-loss function:</p>
+<div class="math notranslate nohighlight">
+\[L_{\rho} \left( Z, \hat{Z}_{\rho} \right) = 2 \left( Z - \hat{Z}_{\rho} \right)
+\left( \rho I_{\hat{Z}_{\rho} &lt; Z} - \left( 1 - \rho \right) I_{\hat{Z}_{\rho} \geq Z} \right),\]</div>
+<p>where <span class="math notranslate nohighlight">\(Z = \sum_{t=1}^{T} y_t\)</span> (1) is the aggregated target value and <span class="math notranslate nohighlight">\(\hat{Z}_{\rho}\)</span> is the
+<span class="math notranslate nohighlight">\(\rho\)</span>-quantile of the predicted values. For this, each sample realization <span class="math notranslate nohighlight">\(i \in N\)</span> is first aggregated over the
+time span similar to (1) with <span class="math notranslate nohighlight">\(\hat{Z}_{i} = \sum_{t=1}^{T} \hat{y}_{i,t}\)</span>.</p>
+<p><span class="math notranslate nohighlight">\(I_{cond} = 1\)</span> if cond is True else <span class="math notranslate nohighlight">\(0\)</span></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>actual_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of actual values.</p></li>
+<li><p><strong>pred_series</strong> – The <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> of predicted values.</p></li>
+<li><p><strong>rho</strong> – The quantile (float [0, 1]) of interest for the risk evaluation.</p></li>
+<li><p><strong>intersect</strong> – For time series that are overlapping in time without having the same time index, setting <cite>intersect=True</cite>
+will consider the values only over their common time interval (intersection in time).</p></li>
+<li><p><strong>reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning a scalar value. This function is used to aggregate
+the metrics of different components in case of multivariate <cite>TimeSeries</cite> instances.</p></li>
+<li><p><strong>inter_reduction</strong> – Function taking as input a <cite>np.ndarray</cite> and returning either a scalar value or a <cite>np.ndarray</cite>.
+This function can be used to aggregate the metrics of different series in case the metric is evaluated on a
+<cite>Sequence[TimeSeries]</cite>. Defaults to the identity function, which returns the pairwise metrics for each pair
+of <cite>TimeSeries</cite> received in input. Example: <cite>inter_reduction=np.mean</cite>, will return the average of the pairwise
+metrics.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.</p></li>
+<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The rho-risk metric</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
 <dt id="darts.metrics.metrics.rmse">
 <code class="sig-prename descclassname">darts.metrics.metrics.</code><code class="sig-name descname">rmse</code><span class="sig-paren">(</span><em class="sig-param">actual_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], pred_series: Union[darts.timeseries.TimeSeries, Sequence[darts.timeseries.TimeSeries]], intersect: bool = True, *, reduction: Callable[[numpy.ndarray], float] = &lt;function mean&gt;, inter_reduction: Callable[[numpy.ndarray], Union[float, numpy.ndarray]] = &lt;function &lt;lambda&gt;&gt;, n_jobs: int = 1, verbose: bool = False</em><span class="sig-paren">)</span> &#x2192; Union<span class="p">[</span>float<span class="p">, </span>numpy.ndarray<span class="p">]</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#rmse"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.metrics.metrics.rmse" title="Permalink to this definition">¶</a></dt>
 <dd><p>Root Mean Squared Error (RMSE).</p>

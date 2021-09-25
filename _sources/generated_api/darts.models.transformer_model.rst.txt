@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.transformer_model
-   :members:
-   :undoc-members:
-   :show-inheritance:

@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.exponential_smoothing
-   :members:
-   :undoc-members:
-   :show-inheritance:

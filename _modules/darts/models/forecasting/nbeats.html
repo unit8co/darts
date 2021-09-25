@@ -1,0 +1,681 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.forecasting.nbeats &#8212; darts  documentation</title>
+    
+  <link rel="stylesheet" href="../../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/open-sans_all/1.44.1/index.css">
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
+
+    
+    <link rel="stylesheet" href="../../../../_static/basic.css" type="text/css" />
+    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.3da636dd464baa7582d2.js">
+
+    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/language_data.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en" />
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
+<div class="container-xl">
+
+    <a class="navbar-brand" href="../../../../index.html">
+    
+      <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    
+    </a>
+    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
+      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
+        
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../README.html">Home</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../generated_api/darts.html">API Reference</a>
+        </li>
+        
+        <li class="nav-item ">
+            <a class="nav-link" href="../../../../examples.html">Examples</a>
+        </li>
+        
+        
+      </ul>
+
+
+      <form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form>
+      
+
+      <ul class="navbar-nav">
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
+              <span><i class="fab fa-github-square"></i></span>
+            </a>
+          </li>
+        
+        
+          <li class="nav-item">
+            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
+              <span><i class="fab fa-twitter-square"></i></span>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+
+    <div class="bd-toc-item active">
+    
+  
+    <ul class="nav bd-sidenav">
+        
+        
+        
+        
+        
+        
+        
+      </ul>
+  
+  </nav>
+          </div>
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+              
+
+<nav id="bd-toc-nav">
+    <ul class="nav section-nav flex-column">
+    
+    </ul>
+</nav>
+
+
+              
+          </div>
+          
+
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.models.forecasting.nbeats</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">N-BEATS</span>
+<span class="sd">-------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">NewType</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">RandomState</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_GType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">GENERIC</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">TREND</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">SEASONALITY</span> <span class="o">=</span> <span class="mi">3</span>
+
+
+<span class="n">GTypes</span> <span class="o">=</span> <span class="n">NewType</span><span class="p">(</span><span class="s1">&#39;GTypes&#39;</span><span class="p">,</span> <span class="n">_GType</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_TrendGenerator</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">expansion_coefficient_dim</span><span class="p">,</span>
+                 <span class="n">output_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_TrendGenerator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)</span> <span class="o">/</span> <span class="n">output_dim</span><span class="p">)</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">expansion_coefficient_dim</span><span class="p">)],</span> <span class="mi">1</span><span class="p">),</span>
+            <span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_SeasonalityGenerator</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">output_dim</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_SeasonalityGenerator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="n">half_minus_one</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">output_dim</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">cos_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_minus_one</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">sin_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_minus_one</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)]</span> <span class="o">+</span> <span class="n">cos_vectors</span> <span class="o">+</span> <span class="n">sin_vectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+                              <span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_Block</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">layer_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">g_type</span><span class="p">:</span> <span class="n">GTypes</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; PyTorch module implementing the basic building block of the N-BEATS architecture.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers.</span>
+<span class="sd">        layer_width</span>
+<span class="sd">            The number of neurons that make up each fully connected layer.</span>
+<span class="sd">        expansion_coefficient_dim</span>
+<span class="sd">            The dimensionality of the waveform generator parameters, also known as expansion coefficients.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">        target_length</span>
+<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">        g_type</span>
+<span class="sd">            The type of function that is implemented by the waveform generator.</span>
+
+<span class="sd">        Inputs</span>
+<span class="sd">        ------</span>
+<span class="sd">        x of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the input sequence.</span>
+
+<span class="sd">        Outputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        x_hat of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the &#39;backcast&#39; of the block, which represents an approximation of `x`</span>
+<span class="sd">            given the constraints of the functional space determined by `g`.</span>
+<span class="sd">        y_hat of shape `(batch_size, output_chunk_length)`</span>
+<span class="sd">            Tensor containing the forward forecast of the block.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_Block</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_width</span> <span class="o">=</span> <span class="n">layer_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">g_type</span> <span class="o">=</span> <span class="n">g_type</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">relu</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
+
+        <span class="c1"># fully connected stack before fork</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span> <span class="o">+=</span> <span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fc_stack</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="p">)</span>
+
+        <span class="c1"># fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters)</span>
+        <span class="k">if</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">SEASONALITY</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">input_chunk_length</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">target_length</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">)</span>
+
+        <span class="c1"># waveform generator functions</span>
+        <span class="k">if</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">GENERIC</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">backcast_g</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_g</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">target_length</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">TREND</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">backcast_g</span> <span class="o">=</span> <span class="n">_TrendGenerator</span><span class="p">(</span><span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_g</span> <span class="o">=</span> <span class="n">_TrendGenerator</span><span class="p">(</span><span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">target_length</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">SEASONALITY</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">backcast_g</span> <span class="o">=</span> <span class="n">_SeasonalityGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_g</span> <span class="o">=</span> <span class="n">_SeasonalityGenerator</span><span class="p">(</span><span class="n">target_length</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;g_type not supported&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># fully connected layer stack</span>
+        <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+
+        <span class="c1"># forked linear layers producing waveform generator parameters</span>
+        <span class="n">theta_backcast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">theta_forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># waveform generator applications</span>
+        <span class="n">x_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backcast_g</span><span class="p">(</span><span class="n">theta_backcast</span><span class="p">)</span>
+        <span class="n">y_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_g</span><span class="p">(</span><span class="n">theta_forecast</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">y_hat</span>
+
+
+<span class="k">class</span> <span class="nc">_Stack</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">num_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">layer_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">g_type</span><span class="p">:</span> <span class="n">GTypes</span><span class="p">,</span>
+                 <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        num_blocks</span>
+<span class="sd">            The number of blocks making up this stack.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers in each block.</span>
+<span class="sd">        layer_width</span>
+<span class="sd">            The number of neurons that make up each fully connected layer in each block.</span>
+<span class="sd">        expansion_coefficient_dim</span>
+<span class="sd">            The dimensionality of the waveform generator parameters, also known as expansion coefficients.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">        target_length</span>
+<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">        g_type</span>
+<span class="sd">            The function that is implemented by the waveform generators in each block.</span>
+
+<span class="sd">        Inputs</span>
+<span class="sd">        ------</span>
+<span class="sd">        stack_input of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the input sequence.</span>
+
+<span class="sd">        Outputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        stack_residual of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the &#39;backcast&#39; of the block, which represents an approximation of `x`</span>
+<span class="sd">            given the constraints of the functional space determined by `g`.</span>
+<span class="sd">        stack_forecast of shape `(batch_size, output_chunk_length)`</span>
+<span class="sd">            Tensor containing the forward forecast of the stack.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_Stack</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">target_length</span>
+
+        <span class="k">if</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">GENERIC</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">_Block</span><span class="p">(</span><span class="n">num_layers</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">target_length</span><span class="p">,</span> <span class="n">g_type</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># same block instance is used for weight sharing</span>
+            <span class="n">interpretable_block</span> <span class="o">=</span> <span class="n">_Block</span><span class="p">(</span><span class="n">num_layers</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">,</span>
+                                         <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">target_length</span><span class="p">,</span> <span class="n">g_type</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">interpretable_block</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_blocks</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span><span class="p">:</span>
+            <span class="c1"># pass input through block</span>
+            <span class="n">x_hat</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+            <span class="c1"># add block forecast to stack forecast</span>
+            <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">stack_forecast</span> <span class="o">+</span> <span class="n">y_hat</span>
+
+            <span class="c1"># subtract backcast from input to produce residual</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x_hat</span>
+
+        <span class="n">stack_residual</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="k">return</span> <span class="n">stack_residual</span><span class="p">,</span> <span class="n">stack_forecast</span>
+
+
+<span class="k">class</span> <span class="nc">_NBEATSModule</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">generic_architecture</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+                 <span class="n">num_stacks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">num_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">layer_widths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+                 <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">trend_polynomial_degree</span><span class="p">:</span> <span class="nb">int</span>
+                 <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; PyTorch module implementing the N-BEATS architecture.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">        generic_architecture</span>
+<span class="sd">            Boolean value indicating whether the generic architecture of N-BEATS is used.</span>
+<span class="sd">            If not, the interpretable architecture outlined in the paper (consisting of one trend</span>
+<span class="sd">            and one seasonality stack with appropriate waveform generator functions).</span>
+<span class="sd">        num_stacks</span>
+<span class="sd">            The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        num_blocks</span>
+<span class="sd">            The number of blocks making up every stack.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers in each block of every stack.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        layer_widths</span>
+<span class="sd">            Determines the number of neurons that make up each fully connected layer in each block of every stack.</span>
+<span class="sd">            If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds</span>
+<span class="sd">            to the layer width of the corresponding stack. If an integer is passed, every stack will have blocks</span>
+<span class="sd">            with FC layers of the same width.</span>
+<span class="sd">        expansion_coefficient_dim</span>
+<span class="sd">            The dimensionality of the waveform generator parameters, also known as expansion coefficients.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        trend_polynomial_degree</span>
+<span class="sd">            The degree of the polynomial used as waveform generator in trend stacks. Only used if</span>
+<span class="sd">            `generic_architecture` is set to `False`.</span>
+
+<span class="sd">        Inputs</span>
+<span class="sd">        ------</span>
+<span class="sd">        x of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the input sequence.</span>
+
+<span class="sd">        Outputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        y of shape `(batch_size, output_chunk_length)`</span>
+<span class="sd">            Tensor containing the output of the NBEATS module.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">_NBEATSModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span> <span class="o">=</span> <span class="n">input_chunk_length</span><span class="o">*</span><span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span><span class="o">*</span><span class="n">input_dim</span>
+
+        <span class="k">if</span> <span class="n">generic_architecture</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="n">_Stack</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">,</span>
+                       <span class="n">num_layers</span><span class="p">,</span>
+                       <span class="n">layer_widths</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                       <span class="n">expansion_coefficient_dim</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
+                       <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
+                       <span class="n">_GType</span><span class="o">.</span><span class="n">GENERIC</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_stacks</span><span class="p">)</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">num_stacks</span> <span class="o">=</span> <span class="mi">2</span>
+            <span class="n">trend_stack</span> <span class="o">=</span> <span class="n">_Stack</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">,</span>
+                                 <span class="n">num_layers</span><span class="p">,</span>
+                                 <span class="n">layer_widths</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                 <span class="n">trend_polynomial_degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
+                                 <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
+                                 <span class="n">_GType</span><span class="o">.</span><span class="n">TREND</span><span class="p">)</span>
+            <span class="n">seasonality_stack</span> <span class="o">=</span> <span class="n">_Stack</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">,</span>
+                                       <span class="n">num_layers</span><span class="p">,</span>
+                                       <span class="n">layer_widths</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                       <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
+                                       <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
+                                       <span class="n">_GType</span><span class="o">.</span><span class="n">SEASONALITY</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">trend_stack</span><span class="p">,</span> <span class="n">seasonality_stack</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">)</span>
+
+        <span class="c1"># setting the last backcast &quot;branch&quot; to be not trainable (without next block/stack, it doesn&#39;t need to be</span>
+        <span class="c1"># backpropagated). Removing this lines would cause logtensorboard to crash, since no gradient is stored</span>
+        <span class="c1"># on this params (the last block backcast is not part of the final output of the net).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_g</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+
+        <span class="c1"># if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts</span>
+        <span class="c1"># we reshape into x1, y1, a1, x2, y2, a2... etc</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># squeeze last dimension (because model is univariate)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">:</span>
+            <span class="c1"># compute stack output</span>
+            <span class="n">stack_residual</span><span class="p">,</span> <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+            <span class="c1"># add stack forecast to final output</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">stack_forecast</span>
+
+            <span class="c1"># set current stack residual as input for next stack</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">stack_residual</span>
+
+        <span class="c1"># in multivariate case, we get a result x1, y1, z1 we want to reshape to original format</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">)</span>
+
+        <span class="c1"># if some covariates, we don&#39;t want them for the output to be predicted.</span>
+        <span class="c1"># the covariates are by construction added as extra time series on the right side. So we need to get rid of this</span>
+        <span class="c1"># right output</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">y</span>
+
+
+<div class="viewcode-block" id="NBEATSModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel">[docs]</a><span class="k">class</span> <span class="nc">NBEATSModel</span><span class="p">(</span><span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
+    <span class="nd">@random_method</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">generic_architecture</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                 <span class="n">num_stacks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">30</span><span class="p">,</span>
+                 <span class="n">num_blocks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+                 <span class="n">layer_widths</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
+                 <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
+                 <span class="n">trend_polynomial_degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot; Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).</span>
+
+<span class="sd">        This is an implementation of the N-BEATS architecture, as outlined in this paper:</span>
+<span class="sd">        https://openreview.net/forum?id=r1ecqn4YwB</span>
+
+<span class="sd">        In addition to the univariate version presented in the paper, our implementation also</span>
+<span class="sd">        supports multivariate series (and covariates) by flattening the model inputs to a 1-D series</span>
+<span class="sd">        and reshaping the outputs to a tensor of appropriate dimensions.</span>
+
+<span class="sd">        This model supports past covariates (known for `input_chunk_length` points before prediction time).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">        generic_architecture</span>
+<span class="sd">            Boolean value indicating whether the generic architecture of N-BEATS is used.</span>
+<span class="sd">            If not, the interpretable architecture outlined in the paper (consisting of one trend</span>
+<span class="sd">            and one seasonality stack with appropriate waveform generator functions).</span>
+<span class="sd">        num_stacks</span>
+<span class="sd">            The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">            The interpretable architecture always uses two stacks - one for trend and one for seasonality.</span>
+<span class="sd">        num_blocks</span>
+<span class="sd">            The number of blocks making up every stack.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers in each block of every stack.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        layer_widths</span>
+<span class="sd">            Determines the number of neurons that make up each fully connected layer in each block of every stack.</span>
+<span class="sd">            If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds</span>
+<span class="sd">            to the layer width of the corresponding stack. If an integer is passed, every stack will have blocks</span>
+<span class="sd">            with FC layers of the same width.</span>
+<span class="sd">        expansion_coefficient_dim</span>
+<span class="sd">            The dimensionality of the waveform generator parameters, also known as expansion coefficients.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        trend_polynomial_degree</span>
+<span class="sd">            The degree of the polynomial used as waveform generator in trend stacks. Only used if</span>
+<span class="sd">            `generic_architecture` is set to `False`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of the weights initialization. Check this</span>
+<span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random-state&gt;`_ for more details.</span>
+
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{&#39;lr&#39;: 1e-3}`</span>
+<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`</span>
+<span class="sd">            will be used.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds</span>
+<span class="sd">            to using a constant learning rate.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer.</span>
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for training.</span>
+<span class="sd">            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.</span>
+<span class="sd">            Default: `torch.nn.MSELoss()`.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string &quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;, where the initial part of the</span>
+<span class="sd">            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at</span>
+<span class="sd">            the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            2021-06-14_09:53:32_torch_model_run_44607.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            (default: current working directory).</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            `[work_dir]/.darts/runs/`.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            `TimeSeries` is passed to the `fit()` method).</span>
+<span class="sd">        torch_device_str</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
+<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;input_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;output_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_stacks</span><span class="p">,</span>
+                     <span class="s2">&quot;Please pass an integer or a list of integers with length `num_stacks`&quot;</span>
+                     <span class="s2">&quot;as value for the `layer_widths` argument.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generic_architecture</span> <span class="o">=</span> <span class="n">generic_architecture</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span> <span class="o">=</span> <span class="n">num_stacks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_blocks</span> <span class="o">=</span> <span class="n">num_blocks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="n">layer_widths</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">expansion_coefficient_dim</span> <span class="o">=</span> <span class="n">expansion_coefficient_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trend_polynomial_degree</span> <span class="o">=</span> <span class="n">trend_polynomial_degree</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">generic_architecture</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span> <span class="o">=</span> <span class="mi">2</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">layer_widths</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_stacks</span>
+
+    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>
+        <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">_NBEATSModule</span><span class="p">(</span>
+            <span class="n">input_dim</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
+            <span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+            <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">generic_architecture</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generic_architecture</span><span class="p">,</span>
+            <span class="n">num_stacks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span><span class="p">,</span>
+            <span class="n">num_blocks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_blocks</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+            <span class="n">layer_widths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span><span class="p">,</span>
+            <span class="n">expansion_coefficient_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expansion_coefficient_dim</span><span class="p">,</span>
+            <span class="n">trend_polynomial_degree</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_polynomial_degree</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <div class='prev-next-bottom'>
+                
+
+              </div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+
+    
+  <script src="../../../../_static/js/index.3da636dd464baa7582d2.js"></script>
+
+
+    <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    <p>
+          &copy; Copyright 2021, Unit8 SA.<br/>
+        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
+    </p>
+  </div>
+</footer>
+  </body>
+</html>

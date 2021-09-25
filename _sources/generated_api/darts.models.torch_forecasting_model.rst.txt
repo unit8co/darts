@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.torch_forecasting_model
-   :members:
-   :undoc-members:
-   :show-inheritance:
