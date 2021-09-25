@@ -29,7 +29,7 @@ from darts.utils import (
     _historical_forecasts_general_checks,
     _parallel_apply,
 )
-from ..utils.timeseries_generation import generate_index
+from darts.utils.timeseries_generation import generate_index
 import inspect
 
 from darts import metrics

@@ -58,8 +58,8 @@ class Prophet(DualCovariatesForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self, series: TimeSeries, past_covariates: Optional[TimeSeries] = None):
-        super().fit(series)
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        super().fit(series, future_covariates)
         series = self.training_series
 
         in_df = pd.DataFrame(data={
@@ -79,8 +79,8 @@ class Prophet(DualCovariatesForecastingModel):
             self.model.add_seasonality(name='custom', period=self.freq * interval_length,
                                        fourier_order=5)
 
-        if past_covariates is not None:
-            in_df = pd.concat([in_df, pd.DataFrame(past_covariates.all_values()[:, :, 0], columns=['year', 'month'])], axis=1)
+        if future_covariates is not None:
+            in_df = pd.concat([in_df, pd.DataFrame(future_covariates.all_values()[:, :, 0], columns=['year', 'month'])], axis=1)
             self.model.add_regressor('year')
             self.model.add_regressor('month')
 
@@ -92,26 +92,32 @@ class Prophet(DualCovariatesForecastingModel):
 
     def predict(self,
                 n: int,
-                num_samples: int = 1,
-                future_covariates: Optional[TimeSeries] = None) -> TimeSeries:
-        super().predict(n, num_samples)
-        new_dates = self._generate_new_dates(n)
-        new_dates_df = pd.DataFrame(data={'ds': new_dates})
+                future_covariates: Optional[TimeSeries] = None,
+                num_samples: int = 1) -> TimeSeries:
+        super().predict(n, future_covariates, num_samples)
+        predict_dates_df = pd.DataFrame(data={'ds': self._generate_new_dates(n)})
         if future_covariates:
-            new_dates_df = pd.concat([new_dates_df, pd.DataFrame(future_covariates.all_values()[:, :, 0], columns=['year', 'month'])],
+            predict_dates_df = pd.concat([predict_dates_df, pd.DataFrame(future_covariates.all_values()[:, :, 0], columns=['year', 'month'])],
                               axis=1)
-        predictions = self.model.predict(new_dates_df)
+
         if num_samples == 1:
-            forecast = predictions['yhat'].values
+            forecast = self.model.predict(predict_dates_df)['yhat'].values
         else:
-            forecast = np.expand_dims(self.stochastic_samples(new_dates_df, n_samples=num_samples), axis=1)
+            forecast = np.expand_dims(self.stochastic_samples(predict_dates_df, n_samples=num_samples), axis=1)
         return self._build_forecast_series(forecast)
 
-    def stochastic_samples(self, predictions, n_samples) -> np.ndarray:
+    def stochastic_samples(self, predict_dates_df, n_samples) -> np.ndarray:
         """small hack to get stochastic samples"""
-        predictions['t'] = (predictions['ds'] - self.model.start) / self.model.t_scale
-        predictions['floor'] = 0
-        return self.model.sample_posterior_predictive(predictions)['yhat']
+        n_samples_default = self.model.uncertainty_samples
+        self.model.uncertainty_samples = n_samples
+
+        predict_dates_df['t'] = (predict_dates_df['ds'] - self.model.start) / self.model.t_scale
+        predict_dates_df['floor'] = 0
+
+        forecast = self.model.sample_posterior_predictive(predict_dates_df)['yhat']
+
+        self.model.uncertainty_samples = n_samples_default
+        return forecast
 
     def _is_probabilistic(self) -> bool:
         return True
