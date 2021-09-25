@@ -80,9 +80,9 @@ class Prophet(DualCovariatesForecastingModel):
                                        fourier_order=5)
 
         if future_covariates is not None:
-            in_df = pd.concat([in_df, pd.DataFrame(future_covariates.all_values()[:, :, 0], columns=['year', 'month'])], axis=1)
-            self.model.add_regressor('year')
-            self.model.add_regressor('month')
+            in_df = in_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True)
+            for covariate in future_covariates.columns:
+                self.model.add_regressor(covariate)
 
         # Input built-in country holidays
         if self.country_holidays is not None:
@@ -97,9 +97,7 @@ class Prophet(DualCovariatesForecastingModel):
         super().predict(n, future_covariates, num_samples)
         predict_dates_df = pd.DataFrame(data={'ds': self._generate_new_dates(n)})
         if future_covariates:
-            predict_dates_df = pd.concat([predict_dates_df, pd.DataFrame(future_covariates.all_values()[:, :, 0], columns=['year', 'month'])],
-                              axis=1)
-
+            predict_dates_df = predict_dates_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True)
         if num_samples == 1:
             forecast = self.model.predict(predict_dates_df)['yhat'].values
         else:
