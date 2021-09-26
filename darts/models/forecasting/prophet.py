@@ -62,7 +62,7 @@ class Prophet(DualCovariatesForecastingModel):
         super().fit(series, future_covariates)
         series = self.training_series
 
-        in_df = pd.DataFrame(data={
+        fit_df = pd.DataFrame(data={
             'ds': series.time_index,
             'y': series.univariate_values()
         })
@@ -80,7 +80,7 @@ class Prophet(DualCovariatesForecastingModel):
                                        fourier_order=5)
 
         if future_covariates is not None:
-            in_df = in_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True)
+            fit_df = fit_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True, how='left')
             for covariate in future_covariates.columns:
                 self.model.add_regressor(covariate)
 
@@ -88,31 +88,46 @@ class Prophet(DualCovariatesForecastingModel):
         if self.country_holidays is not None:
             self.model.add_country_holidays(self.country_holidays)
 
-        execute_and_suppress_output(self.model.fit, logger, logging.WARNING, in_df)
+        execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
 
     def predict(self,
                 n: int,
                 future_covariates: Optional[TimeSeries] = None,
                 num_samples: int = 1) -> TimeSeries:
         super().predict(n, future_covariates, num_samples)
-        predict_dates_df = pd.DataFrame(data={'ds': self._generate_new_dates(n)})
-        if future_covariates:
-            predict_dates_df = predict_dates_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True)
+
+        predict_df = pd.DataFrame(data={'ds': self._generate_new_dates(n)})
+        if future_covariates is not None:
+            predict_df = predict_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True, how='left')
+
         if num_samples == 1:
-            forecast = self.model.predict(predict_dates_df)['yhat'].values
+            forecast = self.model.predict(predict_df)['yhat'].values
         else:
-            forecast = np.expand_dims(self.stochastic_samples(predict_dates_df, n_samples=num_samples), axis=1)
+            forecast = np.expand_dims(self.stochastic_samples(predict_df, n_samples=num_samples), axis=1)
         return self._build_forecast_series(forecast)
 
-    def stochastic_samples(self, predict_dates_df, n_samples) -> np.ndarray:
-        """small hack to get stochastic samples"""
+    def stochastic_samples(self, predict_df, n_samples) -> np.ndarray:
+        """Returns stochastic forecast of `n_samples` samples.
+        This method is a replicate of Prophet.predict() which suspends simplification of stochastic samples to
+        deterministic target values."""
+
         n_samples_default = self.model.uncertainty_samples
         self.model.uncertainty_samples = n_samples
 
-        predict_dates_df['t'] = (predict_dates_df['ds'] - self.model.start) / self.model.t_scale
-        predict_dates_df['floor'] = 0
+        if self.model.history is None:
+            raise Exception('Model has not been fit.')
 
-        forecast = self.model.sample_posterior_predictive(predict_dates_df)['yhat']
+        if predict_df is None:
+            predict_df = self.model.history.copy()
+        else:
+            if predict_df.shape[0] == 0:
+                raise ValueError('Dataframe has no rows.')
+            predict_df = self.model.setup_dataframe(predict_df.copy())
+
+        predict_df['trend'] = self.model.predict_trend(predict_df)
+        seasonal_components = self.model.predict_seasonal_components(predict_df)
+
+        forecast = self.model.sample_posterior_predictive(predict_df)['yhat']
 
         self.model.uncertainty_samples = n_samples_default
         return forecast
