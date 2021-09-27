@@ -27,7 +27,7 @@ from darts.utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     _historical_forecasts_general_checks,
-    _parallel_apply,
+    _parallel_apply
 )
 from darts.utils.timeseries_generation import _generate_index
 import inspect

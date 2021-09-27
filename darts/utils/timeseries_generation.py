@@ -30,9 +30,9 @@ def _generate_index(start: Union[pd.Timestamp, int],
         The start of the returned index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index.
     end
-        Optionally, the end of the returned index. Must have the same type as `start`. Only works is `length` is not set.
+        Optionally, the end of the returned index. Must be of same type as `start`. Only works if `length` is not set.
     length
-        Optionally, the length of the returned index. Only works is `length` is not set.
+        Optionally, the length of the returned index. Only works if `end` is not set.
     freq
         The time difference between two adjacent entries in the returned index. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
@@ -59,7 +59,7 @@ def constant_timeseries(value: float = 1,
                         freq: str = 'D',
                         column_name: Optional[str] = 'constant') -> TimeSeries:
     """
-    Creates a constant univariate TimeSeries with the given value, length, start date and frequency.
+    Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.
 
     Parameters
     ----------
@@ -69,9 +69,9 @@ def constant_timeseries(value: float = 1,
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index.
     end
-        Optionally, the end of the returned index. Must have the same type as `start`. Only works is `length` is not set.
+        Optionally, the end of the returned index. Must be of same type as `start`. Only works if `length` is not set.
     length
-        Optionally, the length of the returned index. Only works is `length` is not set.
+        Optionally, the length of the returned index. Only works if `end` is not set.
     freq
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
@@ -114,9 +114,9 @@ def linear_timeseries(start_value: float = 0,
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index.
     end
-        Optionally, the end of the returned index. Must have the same type as `start`. Only works is `length` is not set.
+        Optionally, the end of the returned index. Must be of same type as `start`. Only works if `length` is not set.
     length
-        Optionally, the length of the returned index. Only works is `length` is not set.
+        Optionally, the length of the returned index. Only works if `end` is not set.
     freq
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
@@ -162,9 +162,9 @@ def sine_timeseries(value_frequency: float = 0.1,
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index.
     end
-        Optionally, the end of the returned index. Must have the same type as `start`. Only works is `length` is not set.
+        Optionally, the end of the returned index. Must be of same type as `start`. Only works if `length` is not set.
     length
-        Optionally, the length of the returned index. Only works is `length` is not set.
+        Optionally, the length of the returned index. Only works if `end` is not set.
     freq
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
@@ -215,9 +215,9 @@ def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index.
     end
-        Optionally, the end of the returned index. Must have the same type as `start`. Only works is `length` is not set.
+        Optionally, the end of the returned index. Must be of same type as `start`. Only works if `length` is not set.
     length
-        Optionally, the length of the returned index. Only works is `length` is not set.
+        Optionally, the length of the returned index. Only works if `end` is not set.
     freq
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
@@ -265,9 +265,9 @@ def random_walk_timeseries(mean: float = 0.,
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index.
     end
-        Optionally, the end of the returned index. Must have the same type as `start`. Only works is `length` is not set.
+        Optionally, the end of the returned index. Must be of same type as `start`. Only works if `length` is not set.
     length
-        Optionally, the length of the returned index. Only works is `length` is not set.
+        Optionally, the length of the returned index. Only works if `end` is not set.
     freq
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see

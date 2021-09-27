@@ -142,7 +142,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
     def test_generate_index(self):
         def test_routine(start, end=None, length=None, freq='D'):
-            # testing for constant value
+            # testing length, correct start and if sorted (monotonic increasing)
             index = _generate_index(start=start, end=end, length=length, freq=freq)
             self.assertEqual(len(index), length_assert)
             self.assertTrue(index.is_monotonic_increasing)
