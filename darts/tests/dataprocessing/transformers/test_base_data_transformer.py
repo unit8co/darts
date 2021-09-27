@@ -24,11 +24,11 @@ class BaseDataTransformerTestCase(unittest.TestCase):
 
     def test_input_transformed(self):
         # given
-        test_input = constant_timeseries(value=1)
+        test_input = constant_timeseries(value=1, length=10)
         mock = self.DataTransformerMock()
 
         # when
         transformed = mock.transform(test_input)
 
-        expected = constant_timeseries(value=11)
+        expected = constant_timeseries(value=11, length=10)
         self.assertEqual(transformed, expected)
