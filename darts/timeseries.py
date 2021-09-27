@@ -1078,7 +1078,7 @@ class TimeSeries:
                     # all timeseries need to have same length along time axis
                     raise_if(len(set([ts.shape[0] for ts in da_sequence])) != 1,
                              "All concatenating time series need to have the same time axis or at least"
-                             " be of the same length.")
+                             " be of the same length.", logger)
 
                     ts1_time_coord = da_sequence[0].coords[DIMS[0]]
                     axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
@@ -1906,9 +1906,7 @@ class TimeSeries:
         """
         return self.pd_dataframe().to_json(orient='split', date_format='iso')
 
-    def to_csv(self,
-               **kwargs
-               ):
+    def to_csv(self, *args, **kwargs):
 
         """
         Writes deterministic time series to CSV file. For a list of parameters, refer to the documentation of
@@ -1921,7 +1919,7 @@ class TimeSeries:
                                      'time series, and this series is not deterministic (it contains several samples). '
                                      'Consider calling quantile_df() instead.'))
 
-        self.pd_dataframe().to_csv(**kwargs)
+        self.pd_dataframe().to_csv(*args, **kwargs)
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """

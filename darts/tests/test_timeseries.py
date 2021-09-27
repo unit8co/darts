@@ -761,7 +761,7 @@ class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-11'), freq='D'),
                    linear_timeseries(start_value=30, length=20, start_ts=pd.Timestamp('2000-02-11'), freq='D')]
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             TimeSeries.concatenate(samples, axis='component', ignore_time_axes=True)
 
     #
