@@ -956,10 +956,8 @@ class TimeSeries:
         # test how this will work for univariate and multivariate cases
         axis = TimeSeries._get_str_axis(axis)
 
-        try:
-            return TimeSeries(self._xa[{axis: range(samples)}])
-        except IndexError:
-            return self
+        display_n = range(min(samples, self._xa.sizes[axis]))
+        return TimeSeries(self._xa[{axis: display_n}])
 
     def tail(self,
              samples: Optional[int] = 5,
