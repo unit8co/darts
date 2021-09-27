@@ -27,9 +27,8 @@ from darts.utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     _historical_forecasts_general_checks,
-    _parallel_apply,
+    _parallel_apply
 )
-from darts.utils.timeseries_generation import generate_index
 import inspect
 
 from darts import metrics
@@ -38,9 +37,9 @@ logger = get_logger(__name__)
 
 
 class ForecastingModel(ABC):
-    """ The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to
-        support. The signatures in this base class are for "local" models handling only one univariate series and no
-        covariates. Sub-classes can handle more complex cases.
+    """ The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to support.
+        The signatures in this base class are for "local" models handling only one univariate series and no covariates.
+        Sub-classes can handle more complex cases.
     """
 
     @abstractmethod
@@ -151,9 +150,18 @@ class ForecastingModel(ABC):
         """
         input_series = input_series if input_series is not None else self.training_series
 
-        last = input_series.end_time()
-        return generate_index(start=last + input_series.freq if input_series.has_datetime_index else last + 1,
-                              freq=input_series.freq, length=n)
+        if input_series.has_datetime_index:
+            # time_index = input_series.time_index
+            # new_dates = [
+            #     (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)
+            # ]
+            # return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)
+            start_time = input_series.end_time() + input_series.freq
+            return pd.date_range(start=start_time,
+                                 end=start_time + (n-1) * input_series.freq,
+                                 freq=input_series.freq)
+        else:
+            return pd.RangeIndex(start=input_series.end_time() + 1, stop=input_series.end_time() + n + 1, step=1)
 
     def _build_forecast_series(self,
                                points_preds: Union[np.ndarray, Sequence[np.ndarray]],
@@ -791,7 +799,6 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             past_covariates=past_covariates if self.uses_past_covariates else None,
             future_covariates=future_covariates if self.uses_future_covariates else None
         )
-
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
     """ The base class for the forecasting models that are not global, but support future covariates.
