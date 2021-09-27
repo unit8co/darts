@@ -943,13 +943,13 @@ class TimeSeries:
             Parameters
             ----------
             samples : int, default 5
-                number of samples to display
+                number of samples to retain
             axis : str or int, optional, default 'time'
                 axis along which we intend to display records
 
             Returns
             -------
-            numpy.ndarray
+            TimeSeries
                 Three dimensional array of (time, component, samples) where "samples" dimension has been cut off after
                 # of ``samples`` samples.
         """
@@ -967,7 +967,7 @@ class TimeSeries:
             Parameters
             ----------
             samples : int, default: 5
-                number of samples to display
+                number of samples to retain
             axis : str or int, optional, default: 'time'
                 axis along which we intend to display records
 
@@ -1009,7 +1009,7 @@ class TimeSeries:
         """Concatenates other timeseries to the current one along given axis.
 
             Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
-            concatenated series and remaining series will have their date indices overwritten.
+            the resulting series, and the remaining series will have their date indices overwritten.
 
             Parameters
             ----------
@@ -1018,7 +1018,7 @@ class TimeSeries:
             axis : str or int
                 axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
             ignore_time_axes : bool, default False
-                Ignore errors when time axis is varies for some time series. Note that this may yield unexpected results
+                Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
 
             Returns
             -------
@@ -1043,9 +1043,9 @@ class TimeSeries:
 
             raise_log(AttributeError('Remaining (non-concatenating) axes need to be equal.'))
 
-        da_sequence = [ts.data_array() for ts in timeserie_sequence]
+        da_sequence = [ts.data_array(copy=False) for ts in timeserie_sequence]
 
-        if axis == DIMS[0]: # time
+        if axis == DIMS[0]:  # time
             if time_axis_equal:
                 if ignore_time_axes:
                     da_concat=da_sequence[0]
@@ -1068,7 +1068,7 @@ class TimeSeries:
                                              "following timeserie."
                                          ))
 
-        else: # component or sample
+        else:  # component or sample
             if len(set([ts.shape[0] for ts in da_sequence])) != 1:
                 raise AttributeError("All concatenating time series need to have the same time axis or at least"
                                      " be of the same length.")
