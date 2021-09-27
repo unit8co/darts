@@ -65,7 +65,8 @@ class TimeSeries:
         # The following sorting returns a copy, which we are relying on.
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
-        self._xa: xr.DataArray = xa.sortby(self._time_dim)
+        # We sort only if the time axis is not already sorted (monotically increasing).
+        self._xa = xa.copy() if xa.get_index(self._time_dim).is_monotonic_increasing else xa.sortby(self._time_dim)
 
         self._time_index = self._xa.get_index(self._time_dim)
 
@@ -94,6 +95,7 @@ class TimeSeries:
 
             # We have to check manually if the index is complete. Another way could be to rely
             # on `inferred_freq` being present, but this fails for series of length < 3.
+
             is_index_complete = len(pd.date_range(self._time_index.min(),
                                                   self._time_index.max(),
                                                   freq=self._freq).difference(self._time_index)) == 0
@@ -201,12 +203,9 @@ class TimeSeries:
                                coords={time_index_name: xa_.get_index(time_index_name), DIMS[1]: columns_list})
 
         # We cast the array to float
-        # TODO: is astype() always copying? (might be slightly inefficient if array is already float)
-        if np.issubdtype(xa_.values.dtype, np.float32):
-            # We conserve the float32 type
-            return TimeSeries(xa_.astype(np.float32))
+        if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(xa_.values.dtype, np.float64):
+            return TimeSeries(xa_)
         else:
-            # Otherwise we cast to float64
             return TimeSeries(xa_.astype(np.float64))
 
     @staticmethod
@@ -404,14 +403,15 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-
         raise_if_not(isinstance(times, pd.Int64Index) or isinstance(times, pd.DatetimeIndex),
                      'the `times` argument must be a Int64Index (or RangeIndex), or a DateTimeIndex. Use '
                      'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
 
         times_name = DIMS[0] if not times.name else times.name
 
-        values = np.array(values)
+        # avoid copying if data is already np.ndarray:
+        values = np.array(values) if not isinstance(values, np.ndarray) else values
+
         if len(values.shape) == 1:
             values = np.expand_dims(values, 1)
         if len(values.shape) == 2:
@@ -451,12 +451,13 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-
         time_index = pd.RangeIndex(0, len(values), 1)
-
         values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
+
         return TimeSeries.from_times_and_values(times=time_index,
                                                 values=values_,
+                                                fill_missing_dates=False,
+                                                freq=None,
                                                 columns=columns,
                                                 fillna_value=fillna_value)
 
@@ -845,6 +846,8 @@ class TimeSeries:
         copy
             Whether to return a copy of the values, otherwise returns a view.
             Leave it to True unless you know what you are doing.
+        sample
+            For stochastic series, the sample for which to return values. Default: 0 (first sample).
 
         Returns
         -------
@@ -956,7 +959,9 @@ class TimeSeries:
         TimeSeries
             A copy of this time series.
         """
-        return TimeSeries(self._xa)  # the xarray will be copied in the TimeSeries constructor
+
+        # the xarray will be copied in the TimeSeries constructor.
+        return TimeSeries(self._xa)
 
     def get_index_at_point(self, point: Union[pd.Timestamp, float, int], after=True) -> int:
         """
@@ -1457,29 +1462,6 @@ class TimeSeries:
         return self.append(TimeSeries.from_times_and_values(values=values,
                                                             times=idx,
                                                             fill_missing_dates=False))
-
-    def update(self,
-               index: pd.DatetimeIndex,
-               values: np.ndarray = None) -> 'TimeSeries':
-        """
-        Updates the TimeSeries with the new values provided.
-        If indices are not in original TimeSeries, they will be discarded.
-        Use `numpy.nan` to ignore a specific index in a series.
-
-        Parameters
-        ----------
-        index
-            A `pandas.DateTimeIndex` containing the indices to replace.
-        values
-            An array containing the values to replace (optional).
-
-        Returns
-        -------
-        TimeSeries
-            A new TimeSeries with updated values.
-        """
-        # TODO: I don't think this is needed... probably better to just create a new TimeSeries
-        raise NotImplementedError('TimeSeries.update() is not supported anymore.')
 
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
@@ -2217,11 +2199,12 @@ class TimeSeries:
 
         def _set_freq_in_xa(xa_: xr.DataArray):
             # mutates the DataArray to make sure it contains the freq
-            inferred_freq = xa_.get_index(self._time_dim).inferred_freq
-            if inferred_freq is not None:
-                xa_.get_index(self._time_dim).freq = to_offset(inferred_freq)
-            else:
-                xa_.get_index(self._time_dim).freq = self._freq
+            if isinstance(xa_.get_index(self._time_dim), pd.DatetimeIndex):
+                inferred_freq = xa_.get_index(self._time_dim).inferred_freq
+                if inferred_freq is not None:
+                    xa_.get_index(self._time_dim).freq = to_offset(inferred_freq)
+                else:
+                    xa_.get_index(self._time_dim).freq = self._freq
 
         # handle DatetimeIndex and Int64Index:
         if isinstance(key, pd.DatetimeIndex):
@@ -2235,6 +2218,7 @@ class TimeSeries:
             return TimeSeries(xa_)
         elif isinstance(key, pd.Int64Index):
             _check_range()
+
             return TimeSeries(self._xa.sel({self._time_dim: key}))
 
         # handle slices:
@@ -2242,7 +2226,9 @@ class TimeSeries:
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
             elif isinstance(key.start, (int, np.int64)) or isinstance(key.stop, (int, np.int64)):
-                return TimeSeries(self._xa.isel({self._time_dim: key}))
+                xa_ = self._xa.isel({self._time_dim: key})
+                _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+                return TimeSeries(xa_)
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 _check_dt()
 
@@ -2255,7 +2241,9 @@ class TimeSeries:
         elif isinstance(key, str):
             return TimeSeries(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
         elif isinstance(key, (int, np.int64)):
-            return TimeSeries(self._xa.isel({self._time_dim: [key]}))
+            xa_ = self._xa.isel({self._time_dim: [key]})
+            _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+            return TimeSeries(xa_)
         elif isinstance(key, pd.Timestamp):
             _check_dt()
 
@@ -2270,7 +2258,9 @@ class TimeSeries:
                 # when string(s) are provided, we consider it as (a list of) component(s)
                 return TimeSeries(self._xa.sel({DIMS[1]: key}))
             elif all(isinstance(i, (int, np.int64)) for i in key):
-                return TimeSeries(self._xa.isel({self._time_dim: key}))
+                xa_ = self._xa.isel({self._time_dim: key})
+                _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
+                return TimeSeries(xa_)
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
 
