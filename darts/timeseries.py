@@ -960,14 +960,14 @@ class TimeSeries:
         return TimeSeries(self._xa[{axis: display_n}])
 
     def tail(self,
-             samples: Optional[int] = 5,
+             size: Optional[int] = 5,
              axis: Optional[Union[int, str]] = 'time') -> 'TimeSeries':
         """
         Return last n samples from TimeSeries.
 
         Parameters
         ----------
-        samples : int, default: 5
+        size : int, default: 5
             number of samples to retain
         axis : str or int, optional, default: 'time'
             axis along which we intend to display records
@@ -980,10 +980,8 @@ class TimeSeries:
         """
 
         axis = TimeSeries._get_str_axis(axis)
-        try:
-            return TimeSeries(self._xa[{axis: range(-samples, 0)}])
-        except IndexError:
-            return self
+        display_n = range(-min(size, self._xa.sizes[axis]), 0)
+        return TimeSeries(self._xa[{axis: display_n}])
 
     @staticmethod
     def _get_str_axis(axis: Union[int, str]):
@@ -996,7 +994,7 @@ class TimeSeries:
         elif isinstance(axis, str):
             raise_if(axis not in DIMS, axis_error_string)
         else:
-            raise raise_log(AttributeError(axis_error_string))
+            raise_log(AttributeError(axis_error_string))
 
         return axis
 
@@ -1078,9 +1076,10 @@ class TimeSeries:
             else:
                 if ignore_time_axes:
                     # all timeseries need to have same length along time axis
-                    if len(set([ts.shape[0] for ts in da_sequence])) != 1:
-                        raise AttributeError("All concatenating time series need to have the same time axis or at least"
-                                             " be of the same length.")
+                    raise_if(len(set([ts.shape[0] for ts in da_sequence])) != 1,
+                             "All concatenating time series need to have the same time axis or at least"
+                             " be of the same length.")
+
                     ts1_time_coord = da_sequence[0].coords[DIMS[0]]
                     axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
 
@@ -1908,34 +1907,21 @@ class TimeSeries:
         return self.pd_dataframe().to_json(orient='split', date_format='iso')
 
     def to_csv(self,
-               path_or_buf: Optional[Union[str, TextIO]],
-               sep: str = ",",
-               header: Union[bool, List[str]] = True,
-               index: bool = True
+               **kwargs
                ):
 
         """
-        Parameters
-        ----------
-        path_or_buf : str or file handle, default None
-            File path or object, if None is provided the result is returned as
-            a string.  If a non-binary file object is passed, it should be opened
-            with `newline=''`, disabling universal newlines. If a binary
-            file object is passed, `mode` might need to contain a `'b'`.
-        sep : str, default ','
-            String of length 1. Field delimiter for the output file.
-        header : bool or list of str, default True
-            Write out the column names. If a list of strings is given it is
-            assumed to be aliases for the column names.
-        index : bool, default True
-            Write row names (index).
+        Writes deterministic time series to CSV file. For a list of parameters, refer to the documentation of
+        pandas.DataFrame.to_csv().[1]
+
+        ..[1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
         """
         if not self.is_deterministic:
             raise_log(AssertionError('The pd_dataframe() method can only return DataFrames of deterministic '
                                      'time series, and this series is not deterministic (it contains several samples). '
                                      'Consider calling quantile_df() instead.'))
 
-        self.pd_dataframe().to_csv(path_or_buf=path_or_buf, sep=sep, header=header, index=index)
+        self.pd_dataframe().to_csv(**kwargs)
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """
