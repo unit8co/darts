@@ -815,6 +815,16 @@ class TimeSeriesTestCaseConcatenate(DartsBaseTestClass):
         with self.assertRaises(AttributeError):
             TimeSeries.concatenate(samples, axis='time')
 
+    def test_concatenate_time_different_time_axes_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-13'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start_ts=pd.Timestamp('2000-01-19'), freq='D')]
+
+        ts = TimeSeries.concatenate(samples, axis='time', ignore_time_axes=True)
+        self.assertEqual((30, 1, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
+
     def test_concatenate_time_different_time_axes_no_force_2_day_freq(self):
         samples = [linear_timeseries(start_value=10, length=10, start_ts=pd.Timestamp('2000-01-01'), freq='2D'),
                    linear_timeseries(start_value=20, length=10, start_ts=pd.Timestamp('2000-01-21'), freq='2D'),

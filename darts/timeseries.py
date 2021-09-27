@@ -278,7 +278,6 @@ class TimeSeries:
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
                        freq: Optional[str] = None,
-                       parse_datetime_index: Optional[bool] = True,
                        ) -> 'TimeSeries':
         """
         Returns a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -936,48 +935,50 @@ class TimeSeries:
             return self._xa[:, 0, sample].values
 
     def head(self,
-             samples: Optional[int] = 5,
-             axis: Optional[Union[int, str]] = 'time'):
-        """Return first n samples from TimeSeries.
-
-            Parameters
-            ----------
-            samples : int, default 5
-                number of samples to retain
-            axis : str or int, optional, default 'time'
-                axis along which we intend to display records
-
-            Returns
-            -------
-            TimeSeries
-                Three dimensional array of (time, component, samples) where "samples" dimension has been cut off after
-                # of ``samples`` samples.
+             size: Optional[int] = 5,
+             axis: Optional[Union[int, str]] = 'time') -> 'TimeSeries':
         """
-        # test how this will work for univariate and multivariate cases
+        Return first n samples from TimeSeries.
+
+        Parameters
+        ----------
+        size : int, default 5
+            number of samples to retain
+        axis : str or int, optional, default 'time'
+            axis along which we intend to display records
+
+        Returns
+        -------
+        TimeSeries
+            Three dimensional array of (time, component, samples) where "samples" dimension has been cut off after
+            # of ``samples`` samples.
+        """
+
         axis = TimeSeries._get_str_axis(axis)
 
-        display_n = range(min(samples, self._xa.sizes[axis]))
+        display_n = range(min(size, self._xa.sizes[axis]))
         return TimeSeries(self._xa[{axis: display_n}])
 
     def tail(self,
              samples: Optional[int] = 5,
-             axis: Optional[Union[int, str]] = 'time'):
-        """Return last n samples from TimeSeries.
-
-            Parameters
-            ----------
-            samples : int, default: 5
-                number of samples to retain
-            axis : str or int, optional, default: 'time'
-                axis along which we intend to display records
-
-            Returns
-            -------
-            numpy.ndarray
-                Three dimensional array of (time, component, samples) where "samples" dimension has been cut off except
-                # of ``samples`` from the bottom. [Default: 5]
+             axis: Optional[Union[int, str]] = 'time') -> 'TimeSeries':
         """
-        # test how this will work for univariate and multivariate cases
+        Return last n samples from TimeSeries.
+
+        Parameters
+        ----------
+        samples : int, default: 5
+            number of samples to retain
+        axis : str or int, optional, default: 'time'
+            axis along which we intend to display records
+
+        Returns
+        -------
+        TimeSeries
+            Three dimensional array of (time, component, samples) where "samples" dimension has been cut off except
+            # of ``samples`` from the bottom. [Default: 5]
+        """
+
         axis = TimeSeries._get_str_axis(axis)
         try:
             return TimeSeries(self._xa[{axis: range(-samples, 0)}])
@@ -990,15 +991,12 @@ class TimeSeries:
         axis_error_string = "Axis parameter can be only one of the numbers (0, 1, 2) " \
                             "or strings ('time', 'component', 'sample')"
         if isinstance(axis, int):
-            try:
-                axis = DIMS[axis]
-            except IndexError:
-                raise AttributeError(axis_error_string)
+            raise_if_not(0 <= axis <= 2, axis_error_string)
+            axis = DIMS[axis]
         elif isinstance(axis, str):
-            if axis not in DIMS:
-                raise AttributeError(axis_error_string)
+            raise_if(axis not in DIMS, axis_error_string)
         else:
-            raise AttributeError(axis_error_string)
+            raise raise_log(AttributeError(axis_error_string))
 
         return axis
 
@@ -1028,7 +1026,7 @@ class TimeSeries:
 
         axis = TimeSeries._get_str_axis(axis)
         if len(timeserie_sequence) < 2:
-            return timeserie_sequence
+            return timeserie_sequence[0]
 
         start_date_equal = len(set([ts.start_time() for ts in timeserie_sequence])) == 1
         end_date_equal = len(set([ts.end_time() for ts in timeserie_sequence])) == 1
@@ -1037,9 +1035,9 @@ class TimeSeries:
         component_axis_equal = len(set([ts.width for ts in timeserie_sequence])) == 1
         sample_axis_equal = len(set([ts.n_samples for ts in timeserie_sequence])) == 1
 
-        if ((axis == 'time' and not (component_axis_equal and sample_axis_equal)) or
-            (axis == 'component' and not ((time_axis_equal or ignore_time_axes) and sample_axis_equal)) or
-            (axis == 'sample' and not ((time_axis_equal or ignore_time_axes) and component_axis_equal))):
+        if ((axis == DIMS[0] and not (component_axis_equal and sample_axis_equal)) or
+            (axis == DIMS[1] and not ((time_axis_equal or ignore_time_axes) and sample_axis_equal)) or
+            (axis == DIMS[2] and not ((time_axis_equal or ignore_time_axes) and component_axis_equal))):
 
             raise_log(AttributeError('Remaining (non-concatenating) axes need to be equal.'))
 
@@ -1055,7 +1053,7 @@ class TimeSeries:
             else:
                 consecutive_time_axes = True
                 for i in range(1, len(timeserie_sequence)):
-                    if timeserie_sequence[i - 1].end_time() + pd.Timedelta(timeserie_sequence[0].freq) != \
+                    if timeserie_sequence[i - 1].end_time() + timeserie_sequence[0].freq != \
                             timeserie_sequence[i].start_time():
                         consecutive_time_axes = False
                         break
@@ -1063,10 +1061,21 @@ class TimeSeries:
                 if consecutive_time_axes:
                     da_concat = xr.concat(da_sequence, dim=axis)
                 else:
-                    raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent, i.e."
-                                             " end_time of the previous one should be equal to start_time - 1 of the "
-                                             "following timeserie."
-                                         ))
+                    if ignore_time_axes:
+                        da_concat = xr.concat(da_sequence, dim=axis)
+                        # reset index
+                        tindex = pd.date_range(timeserie_sequence[0].start_time(),
+                                               freq=timeserie_sequence[0].freq,
+                                               periods=da_concat.sizes[axis]
+                                               )
+                        da_concat = da_concat.assign_coords({DIMS[0]:tindex})
+                    else:
+                        raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent,"
+                                                 " i.e. end_time of the previous one should be equal to start_time - 1"
+                                                 " of the following timeserie. Use `ignore_time_axis=True` to override "
+                                                 "this behavior and concatenate timeseries as is with time index reset"
+                                                 " to the index of the first timeserie."
+                                             ))
 
         else:  # component or sample
             if len(set([ts.shape[0] for ts in da_sequence])) != 1:
@@ -1074,18 +1083,21 @@ class TimeSeries:
                                      " be of the same length.")
             if time_axis_equal:
                 da_concat = xr.concat(da_sequence, dim=axis)
+                axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
+                da_concat = da_concat.assign_coords({axis: axis_index})
             else:
                 if ignore_time_axes:
                     ts1_time_coord = da_sequence[0].coords[DIMS[0]]
-                    for i in range(1, len(da_sequence)):
-                        da_sequence[i] = da_sequence[i].assign_coords(time=ts1_time_coord)
+                    axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
 
-                    da_concat = xr.concat(da_sequence, dim=axis)
+                    da_concat = xr.concat(da_sequence, dim=axis, join='left')
+                    da_concat = da_concat.assign_coords({DIMS[0]: ts1_time_coord,
+                                                                   axis: axis_index})
                 else:
                     raise_log(AttributeError("All concatenating time series need to have the same time axis."
                                              " You can override this error by setting `ignore_time_axes=True`."))
 
-        return TimeSeries.from_xarray(da_concat, fill_missing_dates=True, freq=timeserie_sequence[0].freq_str)
+        return TimeSeries(da_concat)
 
     """
     Other methods
