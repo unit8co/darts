@@ -86,12 +86,17 @@ class Prophet(ForecastingModel):
 
     def predict(self,
                 n: int,
-                num_samples: int = 1) -> TimeSeries:
+                num_samples: int = 1,
+                raw: bool = False) -> TimeSeries:
         super().predict(n, num_samples)
         new_dates = self._generate_new_dates(n)
         new_dates_df = pd.DataFrame(data={'ds': new_dates})
 
         predictions = self.model.predict(new_dates_df)
 
+        # Return raw prophet output
+        if raw is True:
+            return predictions[-n:]
+        
         forecast = predictions['yhat'][-n:].values
         return self._build_forecast_series(forecast)
