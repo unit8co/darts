@@ -1009,18 +1009,19 @@ class TimeSeries:
 
         return axis
 
-    @staticmethod
-    def concatenate(timeserie_sequence: Sequence['TimeSeries'],
+
+    def concatenate(self,
+                    other: 'TimeSeries',
                     axis: Optional[Union[str, int]] = 0,
                     ignore_time_axes: Optional[bool] = False):
-        """Concatenates other timeseries to the current one along given axis.
+        """Concatenates another timeseries to the current one along given axis.
 
             Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
             the resulting series, and the remaining series will have their date indices overwritten.
 
             Parameters
             ----------
-            timeserie_sequence : sequence of TimeSeries
+            other : sequence of TimeSeries
                 another timeseries to concatenate to this one
             axis : str or int
                 axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
@@ -1032,76 +1033,7 @@ class TimeSeries:
             TimeSeries
                 concatenated timeseries
         """
-
-        axis = TimeSeries._get_str_axis(axis)
-        if len(timeserie_sequence) < 2:
-            return timeserie_sequence[0]
-
-        start_date_equal = len(set([ts.start_time() for ts in timeserie_sequence])) == 1
-        end_date_equal = len(set([ts.end_time() for ts in timeserie_sequence])) == 1
-        freq_equal = len(set([ts.freq_str for ts in timeserie_sequence])) == 1
-        time_axis_equal = start_date_equal and end_date_equal and freq_equal
-        component_axis_equal = len(set([ts.width for ts in timeserie_sequence])) == 1
-        sample_axis_equal = len(set([ts.n_samples for ts in timeserie_sequence])) == 1
-
-        if ((axis == DIMS[0] and not (component_axis_equal and sample_axis_equal)) or
-            (axis == DIMS[1] and not ((time_axis_equal or ignore_time_axes) and sample_axis_equal)) or
-            (axis == DIMS[2] and not ((time_axis_equal or ignore_time_axes) and component_axis_equal))):
-
-            raise_log(AttributeError('Remaining (non-concatenating) axes need to be equal.'))
-
-        da_sequence = [ts.data_array(copy=False) for ts in timeserie_sequence]
-
-        if axis == DIMS[0]:  # time
-
-            # check, if timeseries are consecutive
-            consecutive_time_axes = True
-            for i in range(1, len(timeserie_sequence)):
-                if timeserie_sequence[i - 1].end_time() + timeserie_sequence[0].freq != \
-                        timeserie_sequence[i].start_time():
-                    consecutive_time_axes = False
-                    break
-
-            da_concat = xr.concat(da_sequence, dim=axis)
-
-            if not consecutive_time_axes:
-                if ignore_time_axes:
-                    tindex = pd.date_range(timeserie_sequence[0].start_time(),
-                                           freq=timeserie_sequence[0].freq,
-                                           periods=da_concat.sizes[axis]
-                                           )
-                    da_concat = da_concat.assign_coords({DIMS[0]:tindex})
-                else:
-                    raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent,"
-                                             " i.e. end_time of the previous one should be equal to start_time - 1"
-                                             " of the following timeserie. Use `ignore_time_axis=True` to override "
-                                             "this behavior and concatenate timeseries as is with time index reset"
-                                             " to the index of the first timeserie."
-                                         ))
-
-        else:  # component or sample
-            if time_axis_equal:
-                da_concat = xr.concat(da_sequence, dim=axis)
-                axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
-                da_concat = da_concat.assign_coords({axis: axis_index})
-            else:
-                if ignore_time_axes:
-                    # all timeseries need to have same length along time axis
-                    raise_if(len(set([ts.shape[0] for ts in da_sequence])) != 1,
-                             "All concatenating time series need to have the same time axis or at least"
-                             " be of the same length.", logger)
-
-                    ts1_time_coord = da_sequence[0].coords[DIMS[0]]
-                    axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
-
-                    da_concat = xr.concat(da_sequence, dim=axis, join='left')
-                    da_concat = da_concat.assign_coords({DIMS[0]: ts1_time_coord,
-                                                                   axis: axis_index})
-                else:
-                    raise_log(AttributeError("All concatenating time series need to have the same time axis."
-                                             " You can override this error by setting `ignore_time_axes=True`."))
-
-        return TimeSeries(da_concat)
+        return concatenate(timeserie_sequence=[self, other], axis=axis, ignore_time_axes=ignore_time_axes)
 
     """
     Other methods
@@ -2503,3 +2435,97 @@ class TimeSeries:
                 return TimeSeries(xa_)
 
         raise_log(IndexError("The type of your index was not matched."), logger)
+
+
+def concatenate(timeserie_sequence: Sequence['TimeSeries'],
+                axis: Optional[Union[str, int]] = 0,
+                ignore_time_axes: Optional[bool] = False):
+    """Concatenates multiple timeseries along given axis.
+
+    Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
+    the resulting series, and the remaining series will have their date indices overwritten.
+
+    Parameters
+    ----------
+    timeserie_sequence : sequence of TimeSeries
+        sequence of timeseries to concatenate
+    axis : str or int
+        axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
+    ignore_time_axes : bool, default False
+        Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
+
+    Returns
+    -------
+    TimeSeries
+        concatenated timeseries
+    """
+
+    axis = TimeSeries._get_str_axis(axis)
+    if len(timeserie_sequence) < 2:
+        return timeserie_sequence[0]
+
+    start_date_equal = len(set([ts.start_time() for ts in timeserie_sequence])) == 1
+    end_date_equal = len(set([ts.end_time() for ts in timeserie_sequence])) == 1
+    freq_equal = len(set([ts.freq_str for ts in timeserie_sequence])) == 1
+    time_axis_equal = start_date_equal and end_date_equal and freq_equal
+    component_axis_equal = len(set([ts.width for ts in timeserie_sequence])) == 1
+    sample_axis_equal = len(set([ts.n_samples for ts in timeserie_sequence])) == 1
+
+    if ((axis == DIMS[0] and not (component_axis_equal and sample_axis_equal)) or
+        (axis == DIMS[1] and not ((time_axis_equal or ignore_time_axes) and sample_axis_equal)) or
+        (axis == DIMS[2] and not ((time_axis_equal or ignore_time_axes) and component_axis_equal))):
+
+        raise_log(AttributeError('Remaining (non-concatenating) axes need to be equal.'))
+
+    da_sequence = [ts.data_array(copy=False) for ts in timeserie_sequence]
+
+    if axis == DIMS[0]:  # time
+
+        # check, if timeseries are consecutive
+        consecutive_time_axes = True
+        for i in range(1, len(timeserie_sequence)):
+            if timeserie_sequence[i - 1].end_time() + timeserie_sequence[0].freq != \
+                    timeserie_sequence[i].start_time():
+                consecutive_time_axes = False
+                break
+
+        da_concat = xr.concat(da_sequence, dim=axis)
+
+        if not consecutive_time_axes:
+            if ignore_time_axes:
+                tindex = pd.date_range(timeserie_sequence[0].start_time(),
+                                       freq=timeserie_sequence[0].freq,
+                                       periods=da_concat.sizes[axis]
+                                       )
+                da_concat = da_concat.assign_coords({DIMS[0]:tindex})
+            else:
+                raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent,"
+                                         " i.e. end_time of the previous one should be equal to start_time - 1"
+                                         " of the following timeserie. Use `ignore_time_axis=True` to override "
+                                         "this behavior and concatenate timeseries as is with time index reset"
+                                         " to the index of the first timeserie."
+                                     ))
+
+    else:  # component or sample
+        if time_axis_equal:
+            da_concat = xr.concat(da_sequence, dim=axis)
+            axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
+            da_concat = da_concat.assign_coords({axis: axis_index})
+        else:
+            if ignore_time_axes:
+                # all timeseries need to have same length along time axis
+                raise_if(len(set([ts.shape[0] for ts in da_sequence])) != 1,
+                         "All concatenating time series need to have the same time axis or at least"
+                         " be of the same length.", logger)
+
+                ts1_time_coord = da_sequence[0].coords[DIMS[0]]
+                axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
+
+                da_concat = xr.concat(da_sequence, dim=axis, join='left')
+                da_concat = da_concat.assign_coords({DIMS[0]: ts1_time_coord,
+                                                               axis: axis_index})
+            else:
+                raise_log(AttributeError("All concatenating time series need to have the same time axis."
+                                         " You can override this error by setting `ignore_time_axes=True`."))
+
+    return TimeSeries(da_concat)

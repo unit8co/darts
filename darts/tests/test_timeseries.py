@@ -1,6 +1,5 @@
 import math
 
-import random
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -8,7 +7,7 @@ from tempfile import NamedTemporaryFile
 from unittest.mock import patch
 
 from .base_test_class import DartsBaseTestClass
-from ..timeseries import TimeSeries
+from ..timeseries import TimeSeries, concatenate
 from ..utils.timeseries_generation import linear_timeseries, constant_timeseries
 
 
@@ -789,7 +788,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
 
-        ts = TimeSeries.concatenate(samples, axis='component')
+        ts = concatenate(samples, axis='component')
         self.assertEqual((10, 3, 1), ts._xa.shape)
 
     def test_concatenate_component_different_time_axes_no_force(self):
@@ -798,14 +797,14 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-11'), freq='D')]
 
         with self.assertRaises(AttributeError):
-            ts = TimeSeries.concatenate(samples, axis='component')
+            ts = concatenate(samples, axis='component')
 
     def test_concatenate_component_different_time_axes_with_force(self):
         samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-11'), freq='D')]
 
-        ts = TimeSeries.concatenate(samples, axis='component', ignore_time_axes=True)
+        ts = concatenate(samples, axis='component', ignore_time_axes=True)
         self.assertEqual((10, 3, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-01-10'), ts.end_time())
@@ -816,7 +815,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=30, length=20, start=pd.Timestamp('2000-02-11'), freq='D')]
 
         with self.assertRaises(ValueError):
-            TimeSeries.concatenate(samples, axis='component', ignore_time_axes=True)
+            concatenate(samples, axis='component', ignore_time_axes=True)
 
     #
     # SAMPLE AXIS TESTS
@@ -827,7 +826,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
 
-        ts = TimeSeries.concatenate(samples, axis='sample')
+        ts = concatenate(samples, axis='sample')
         self.assertEqual((10, 1, 3), ts._xa.shape)
 
     #
@@ -839,7 +838,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-21'), freq='D')]
 
-        ts = TimeSeries.concatenate(samples, axis='time')
+        ts = concatenate(samples, axis='time')
         self.assertEqual((30, 1, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
@@ -850,14 +849,14 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
 
         with self.assertRaises(AttributeError):
-            TimeSeries.concatenate(samples, axis='time')
+            concatenate(samples, axis='time')
 
     def test_concatenate_time_same_time_force(self):
         samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
 
-        ts = TimeSeries.concatenate(samples, axis='time', ignore_time_axes=True)
+        ts = concatenate(samples, axis='time', ignore_time_axes=True)
         self.assertEqual((30, 1, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
@@ -868,14 +867,14 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-18'), freq='D')]
 
         with self.assertRaises(AttributeError):
-            TimeSeries.concatenate(samples, axis='time')
+            concatenate(samples, axis='time')
 
     def test_concatenate_time_different_time_axes_force(self):
         samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-13'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-19'), freq='D')]
 
-        ts = TimeSeries.concatenate(samples, axis='time', ignore_time_axes=True)
+        ts = concatenate(samples, axis='time', ignore_time_axes=True)
         self.assertEqual((30, 1, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
@@ -885,11 +884,21 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-21'), freq='2D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-10'), freq='2D')]
 
-        ts = TimeSeries.concatenate(samples, axis='time')
+        ts = concatenate(samples, axis='time')
         self.assertEqual((30, 1, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-02-28'), ts.end_time())
         self.assertEqual('2D', ts.freq)
+
+    def test_concatenate_timeseries_method(self):
+        ts1 = linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D')
+        ts2 = linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D')
+
+        result_ts = ts1.concatenate(ts2, axis='time')
+        self.assertEqual((20, 1, 1), result_ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), result_ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-20'), result_ts.end_time())
+        self.assertEqual('D', result_ts.freq)
 
 
 class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
