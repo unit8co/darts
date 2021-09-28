@@ -991,6 +991,7 @@ class TimeSeries:
         """
 
         axis = TimeSeries._get_str_axis(axis)
+        
         display_n = range(-min(size, self._xa.sizes[axis]), 0)
         return TimeSeries(self._xa[{axis: display_n}])
 
@@ -1013,7 +1014,7 @@ class TimeSeries:
     def concatenate(self,
                     other: 'TimeSeries',
                     axis: Optional[Union[str, int]] = 0,
-                    ignore_time_axes: Optional[bool] = False):
+                    ignore_time_axes: Optional[bool] = False) -> 'TimeSeries':
         """Concatenates another timeseries to the current one along given axis.
 
             Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
@@ -1021,7 +1022,7 @@ class TimeSeries:
 
             Parameters
             ----------
-            other : sequence of TimeSeries
+            other : TimeSeries
                 another timeseries to concatenate to this one
             axis : str or int
                 axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
