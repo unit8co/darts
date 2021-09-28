@@ -4,7 +4,40 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.11.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.12.0...master)
+
+## [0.12.0](https://github.com/unit8co/darts/tree/0.12.0) (2021-09-25)
+### For users of the library:
+
+**Added**:
+- Improved probabilistic forecasting with neural networks
+  - Now all neural networks based forecasting models (except `NBEATSModel`) support probabilistic forecasting,
+    by providing the `likelihood` parameter to the model's constructor method.
+  - `darts.utils.likelihood_models` now contains many more distributions. The complete list of likelihoods
+    available to train neural networks based models is 
+    available here: https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html
+  - Many of the available likelihood models now offer the possibility to specify "priors" on the distribution's
+    parameters. Specifying such priors will regularize the training loss to make the output distribution
+    more like the one specified by the prior parameters values.  
+- Performance improvements on `TimeSeries` creation. creating `TimeSeries` is now be significantly faster,
+  especially for large series, and filling missing dates has also been significantly sped up.
+- New rho-risk metric for probabilistic forecasts.
+- New method `darts.utils.statistics.plot_hist()` to plot histograms of time series data (e.g. backtest errors).
+- New argument `fillna_value` to `TimeSeries` factory methods, allowing to specify a value to fill missing dates
+(instead of `np.nan`).
+- Synthetic `TimeSeries` generated with `darts.utils.timeseries_generation` methods can now be integer-index
+(just pass an integer instead of a timestamp for the `start` argument).
+- Removed some deprecation warnings
+- Updated conda installation instructions
+
+**Fixed:**
+- Removed [extra 1x1 convolutions](https://github.com/unit8co/darts/issues/470) in TCN Model.
+- Fixed an issue with linewidth parameter when plotting `TimeSeries`.
+- Fixed a column name issue in datetime attribute time series.
+
+### For developers of the library:
+- We have removed the `develop` branch.
+- We force sklearn<1.0 has we have observed issues with pmdarima and sklearn==1.0
 
 ## [0.11.0](https://github.com/unit8co/darts/tree/0.11.0) (2021-09-04)
 ### For users of the library:

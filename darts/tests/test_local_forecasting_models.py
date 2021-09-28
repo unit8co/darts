@@ -138,7 +138,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 self.forecasting_horizon,
                 future_covariates=tg.gaussian_timeseries(
                     length=self.forecasting_horizon,
-                    start_ts=self.ts_gaussian.end_time() + self.ts_gaussian.freq))
+                    start=self.ts_gaussian.end_time() + self.ts_gaussian.freq))
 
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 

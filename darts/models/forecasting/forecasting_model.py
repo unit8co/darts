@@ -21,9 +21,9 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ..timeseries import TimeSeries
-from ..logging import get_logger, raise_log, raise_if_not, raise_if
-from ..utils import (
+from darts.timeseries import TimeSeries
+from darts.logging import get_logger, raise_log, raise_if_not, raise_if
+from darts.utils import (
     _build_tqdm_iterator,
     _with_sanity_checks,
     _historical_forecasts_general_checks,
@@ -31,7 +31,7 @@ from ..utils import (
 )
 import inspect
 
-from .. import metrics
+from darts import metrics
 
 logger = get_logger(__name__)
 
@@ -151,11 +151,15 @@ class ForecastingModel(ABC):
         input_series = input_series if input_series is not None else self.training_series
 
         if input_series.has_datetime_index:
-            time_index = input_series.time_index
-            new_dates = [
-                (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)
-            ]
-            return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)
+            # time_index = input_series.time_index
+            # new_dates = [
+            #     (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)
+            # ]
+            # return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)
+            start_time = input_series.end_time() + input_series.freq
+            return pd.date_range(start=start_time,
+                                 end=start_time + (n-1) * input_series.freq,
+                                 freq=input_series.freq)
         else:
             return pd.RangeIndex(start=input_series.end_time() + 1, stop=input_series.end_time() + n + 1, step=1)
 
@@ -170,10 +174,15 @@ class ForecastingModel(ABC):
         time_index_length = len(points_preds) if isinstance(points_preds, np.ndarray) else len(points_preds[0])
         time_index = self._generate_new_dates(time_index_length, input_series=input_series)
         if isinstance(points_preds, np.ndarray):
-            return TimeSeries.from_times_and_values(time_index, points_preds, freq=input_series.freq_str, columns=input_series.columns)
+            return TimeSeries.from_times_and_values(time_index,
+                                                    points_preds,
+                                                    freq=input_series.freq_str,
+                                                    columns=input_series.columns)
 
-        return TimeSeries.from_times_and_values(time_index, np.stack(points_preds, axis=2),
-                                                freq=input_series.freq_str, columns=input_series.columns)
+        return TimeSeries.from_times_and_values(time_index,
+                                                np.stack(points_preds, axis=2),
+                                                freq=input_series.freq_str,
+                                                columns=input_series.columns)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function

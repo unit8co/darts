@@ -167,8 +167,8 @@ Some of the models depend on `prophet` and `torch`, which have non-Python depend
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 ### From conda-forge
-Currently only Linux and macOS on the x86_64 architecture with Python 3.7 or 3.8 
-are fully supported with conda; consider using PyPI if you are running into troubles.
+Currently only the x86_64 architecture with Python 3.7 or 3.8 
+is fully supported with conda; consider using PyPI if you are running into troubles.
 
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
@@ -181,9 +181,11 @@ Don't forget to activate your virtual environment
 
 As some models have relatively heavy dependencies, we provide two conda-forge packages:
 
-* Install darts with all available models (recommended): `conda install -c conda-forge u8darts-all`.
-* Install core + neural networks (PyTorch): `conda install -c conda-forge u8darts-torch`
+* Install darts with all available models (recommended): `conda install -c conda-forge -c pytorch u8darts-all`.
+* Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
 * Install core only (without neural networks, Prophet or AutoARIMA): `conda install -c conda-forge u8darts`
+
+For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
 
 
 ### From PyPI

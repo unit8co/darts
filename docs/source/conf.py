@@ -21,7 +21,7 @@ sys.path.insert(0, os.path.abspath('../../..'))
 project = 'darts'
 copyright = '2021, Unit8 SA'
 author = 'Unit8 SA'
-version = '0.11.0'
+version = '0.12.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -102,3 +102,14 @@ html_static_path = ['static']
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
+
+
+# Ensure that otherwise excluded methods get included.
+include_private_methods = ["_fill_missing_dates", "_restore_xarray_from_frequency"]
+def skip(app, what, name, obj, skip, options):
+    if name in include_private_methods:
+        return False
+    return skip
+
+def setup(app):
+    app.connect("autodoc-skip-member", skip)

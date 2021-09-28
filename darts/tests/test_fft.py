@@ -1,7 +1,7 @@
 import numpy as np
 
 from .base_test_class import DartsBaseTestClass
-from ..models.fft import _find_relevant_timestamp_attributes
+from darts.models.forecasting.fft import _find_relevant_timestamp_attributes
 from ..utils import timeseries_generation as tg
 
 
