@@ -70,20 +70,17 @@ class Prophet(DualCovariatesForecastingModel):
 
         self.model = prophet.Prophet(**self.prophet_kwargs)
 
+        # add user defined seasonalities (pre-fit)
         for seasonality in self.add_seasonalities:
             args, kwargs = self.add_seasonalities[seasonality]
             self.model.add_seasonality(*args, **kwargs)
 
-        # TODO: user-provided seasonalities, or "auto" based on stepduration
+        # add user defined seasonalities (at model creation)
         if self.seasonal_periods is not None:
-            if series.freq_str in ['MS', 'M', 'ME']:
-                interval_length = 30.4375
-            elif series.freq_str == 'Y':
-                interval_length = 365.25
-            else:
-                interval_length = pd.to_timedelta(series.freq_str).days
-            self.model.add_seasonality(name='custom', period=self.seasonal_periods * interval_length,
-                                       fourier_order=5)
+            interval_length = self.freq_to_days(series.freq_str)
+            self.model.add_seasonality(name=f'{self.seasonal_periods}_{series.freq_str}',
+                                       period=self.seasonal_periods * interval_length,
+                                       fourier_order=10)
 
         if future_covariates is not None:
             fit_df = fit_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True, how='left')
@@ -120,7 +117,9 @@ class Prophet(DualCovariatesForecastingModel):
         Methods of the base Prophet model can be accessed with self.model.method() (i.e. self.model.plot_components())
         """
         super().predict(n, future_covariates, num_samples=1)
+
         predict_df = self.generate_predict_df(n=n, future_covariates=future_covariates)
+
         return self.model.predict(predict_df)
 
     def generate_predict_df(self,
@@ -168,3 +167,32 @@ class Prophet(DualCovariatesForecastingModel):
 
     def _is_probabilistic(self) -> bool:
         return True
+
+    @staticmethod
+    def freq_to_days(freq: str) -> float:
+        seconds_per_day = 86400
+        if freq == ['A', 'BYS', 'BA', 'RE'] or freq.startswith(('A', 'BYS', 'BA', 'RE-')):  # year
+            days = 365.25
+        elif freq == ['Q', 'BQ', 'REQ'] or freq.startswith(('Q', 'BQ', 'REQ')):  # quarter
+            days = 3 * 30.4375
+        elif freq in ['M', 'BM', 'CBM', 'SM'] or freq.startswith(('M', 'BM', 'BS', 'CBM', 'SM')):  # month
+            days = 30.4375
+        elif freq in 'W' or freq.startswith('W-'):  # week
+            days = 7.
+        elif freq in ['D', 'B', 'C'] or freq.startswith(('D-', 'B-', 'C-')):  # day
+            days = 1.
+        elif freq in ['H', 'BH', 'CBH'] or freq.startswith(('H', 'BH', 'CBH')):  # hour
+            days = 1/24
+        elif freq in ['T', 'min'] or freq.startswith(('H', 'BH', 'CBH')):  # minute
+            days = 1 / seconds_per_day
+        elif freq == 'S' or freq.startswith('S'):  # second
+            days = 1 / (seconds_per_day * 10**3)
+        elif freq in ['L', 'ms'] or freq.startswith(('L', 'ms')):  # millisecond
+            days = 1 / (seconds_per_day * 10**6)
+        elif freq == ['U', 'us'] or freq.startswith(('U', 'us')):  # microsecond
+            days = 1 / (seconds_per_day * 10**9)
+        elif freq == 'N' or freq.startswith('N'):  # nanosecond
+            days = 1 / (seconds_per_day * 10**12)
+        else:  # pragma : no cover
+            raise ValueError("freq {} not understood. Please report if you think this is in error.".format(freq))
+        return days
