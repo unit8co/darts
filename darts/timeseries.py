@@ -230,7 +230,7 @@ class TimeSeries:
 
     @staticmethod
     def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
-                 time_col: Optional[str] = 'time',
+                 time_col: Optional[str] = None,
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
                  freq: Optional[str] = None,
@@ -274,7 +274,7 @@ class TimeSeries:
 
     @staticmethod
     def from_dataframe(df: pd.DataFrame,
-                       time_col: Optional[str] = 'time',
+                       time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
                        freq: Optional[str] = None,
@@ -319,8 +319,26 @@ class TimeSeries:
             series_df = df[value_cols]
 
         # get time index
-        if time_col in df.columns:
-            time_index = pd.DatetimeIndex(df[time_col])
+        if time_col:
+            if time_col in df.columns:
+                if np.issubdtype(df[time_col].dtype, object):
+                    try:
+                        time_index = pd.Int64Index(df[time_col].astype(int))
+                    except ValueError:
+                        try:
+                            time_index = pd.DatetimeIndex(df[time_col])
+                        except ValueError:
+                            raise_log(
+                                AttributeError("'time_col' is of 'object' dtype but doesn't contain valid timestamps"))
+                elif np.issubdtype(df[time_col].dtype, np.number):
+                    time_index = pd.Int64Index(df[time_col])
+                elif np.issubdtype(df[time_col].dtype, np.datetime64):
+                    time_index = pd.DatetimeIndex(df[time_col])
+                else:
+                    raise_log(AttributeError(
+                        "Invalid type of `time_col`: it needs to be of either 'str', 'datetime' or 'int' dtype."))
+            else:
+                raise_log(AttributeError('time_col=\'{}\' is not present.'.format(time_col)))
         else:
             raise_if_not(isinstance(df.index, pd.Int64Index) or isinstance(df.index, pd.DatetimeIndex),
                          'If time_col is not specified, the DataFrame must be indexed either with'
