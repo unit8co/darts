@@ -2439,8 +2439,8 @@ class TimeSeries:
 
 
 def concatenate(timeserie_sequence: Sequence['TimeSeries'],
-                axis: Optional[Union[str, int]] = 0,
-                ignore_time_axes: Optional[bool] = False):
+                axis: Union[str, int] = 0,
+                ignore_time_axes: bool = False):
     """Concatenates multiple timeseries along given axis.
 
     Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
