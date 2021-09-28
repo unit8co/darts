@@ -1017,7 +1017,7 @@ class TimeSeries:
                     ignore_time_axes: Optional[bool] = False) -> 'TimeSeries':
         """Concatenates another timeseries to the current one along given axis.
 
-            Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
+            Note: when concatenating along the ``time`` dimension, timeseries `self` marks the start date of
             the resulting series, and the remaining series will have their date indices overwritten.
 
             Parameters
