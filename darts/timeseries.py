@@ -319,7 +319,7 @@ class TimeSeries:
                         except ValueError:
                             raise_log(
                                 AttributeError("'time_col' is of 'object' dtype but doesn't contain valid timestamps"))
-                elif np.issubdtype(df[time_col].dtype, np.number):
+                elif np.issubdtype(df[time_col].dtype, np.integer):
                     time_index = pd.Int64Index(df[time_col])
                 elif np.issubdtype(df[time_col].dtype, np.datetime64):
                     time_index = pd.DatetimeIndex(df[time_col])
@@ -947,7 +947,7 @@ class TimeSeries:
 
     def head(self,
              size: Optional[int] = 5,
-             axis: Optional[Union[int, str]] = 'time') -> 'TimeSeries':
+             axis: Optional[Union[int, str]] = 0) -> 'TimeSeries':
         """
         Return first n samples from TimeSeries.
 
@@ -961,7 +961,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            Three dimensional array of (time, component, samples) where "samples" dimension has been cut off after
+            Three dimensional array of (time, component, samples) where "axis" dimension has been cut off after
             # of ``samples`` samples.
         """
 
@@ -972,7 +972,7 @@ class TimeSeries:
 
     def tail(self,
              size: Optional[int] = 5,
-             axis: Optional[Union[int, str]] = 'time') -> 'TimeSeries':
+             axis: Optional[Union[int, str]] = 0) -> 'TimeSeries':
         """
         Return last n samples from TimeSeries.
 
@@ -980,13 +980,13 @@ class TimeSeries:
         ----------
         size : int, default: 5
             number of samples to retain
-        axis : str or int, optional, default: 'time'
+        axis : str or int, optional, default: 0 (time dimension)
             axis along which we intend to display records
 
         Returns
         -------
         TimeSeries
-            Three dimensional array of (time, component, samples) where "samples" dimension has been cut off except
+            Three dimensional array of (time, component, samples) where "axis" dimension has been cut off except
             # of ``samples`` from the bottom. [Default: 5]
         """
 
@@ -1025,7 +1025,7 @@ class TimeSeries:
             other : TimeSeries
                 another timeseries to concatenate to this one
             axis : str or int
-                axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
+                axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 0 (time)]
             ignore_time_axes : bool, default False
                 Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
 
@@ -2498,7 +2498,7 @@ def concatenate(timeserie_sequence: Sequence['TimeSeries'],
                                        freq=timeserie_sequence[0].freq,
                                        periods=da_concat.sizes[axis]
                                        )
-                da_concat = da_concat.assign_coords({DIMS[0]:tindex})
+                da_concat = da_concat.assign_coords({DIMS[0]: tindex})
             else:
                 raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent,"
                                          " i.e. end_time of the previous one should be equal to start_time - 1"
