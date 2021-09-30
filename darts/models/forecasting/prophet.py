@@ -71,12 +71,13 @@ class Prophet(DualCovariatesForecastingModel):
 
         super().__init__()
 
-        self.auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
-        self.add_seasonalities = dict()
-        if not isinstance(add_seasonalities, list):
-            add_seasonalities = [add_seasonalities]
-        for add_seasonality in add_seasonalities:
-            self._process_seasonality_call(seasonality_call=add_seasonality)
+        self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
+
+        self._add_seasonalities = dict()
+        add_seasonality_calls = add_seasonalities if isinstance(add_seasonalities, list) else [add_seasonalities]
+        for call in add_seasonality_calls:
+            self._store_add_seasonality_call(seasonality_call=call)
+
         self.country_holidays = country_holidays
         self.prophet_kwargs = prophet_kwargs
         self.model = None
@@ -96,19 +97,20 @@ class Prophet(DualCovariatesForecastingModel):
         self.model = prophet.Prophet(**self.prophet_kwargs)
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
-        if self.add_seasonalities:
+        if self._add_seasonalities:
             interval_length = self._freq_to_days(series.freq_str)
-            for seasonality_name, attributes in self.add_seasonalities.items():
+            for seasonality_name, attributes in self._add_seasonalities.items():
                 self.model.add_seasonality(name=seasonality_name,
                                            period=attributes['seasonal_periods'] * interval_length,
                                            fourier_order=attributes['fourier_order'])
 
+        # add covariates
         if future_covariates is not None:
             fit_df = fit_df.merge(future_covariates.pd_dataframe(), left_on='ds', right_index=True, how='left')
             for covariate in future_covariates.columns:
                 self.model.add_regressor(covariate)
 
-        # Input built-in country holidays
+        # add built-in country holidays
         if self.country_holidays is not None:
             self.model.add_country_holidays(self.country_holidays)
 
@@ -150,6 +152,7 @@ class Prophet(DualCovariatesForecastingModel):
         This method is a replicate of Prophet.predict() which suspends simplification of stochastic samples to
         deterministic target values."""
 
+        # save default number of uncertainty_samples and set user-defined n_samples
         n_samples_default = self.model.uncertainty_samples
         self.model.uncertainty_samples = n_samples
 
@@ -167,6 +170,7 @@ class Prophet(DualCovariatesForecastingModel):
 
         forecast = self.model.sample_posterior_predictive(predict_df)
 
+        # reset default number of uncertainty_samples
         self.model.uncertainty_samples = n_samples_default
         return forecast['yhat']
 
@@ -218,11 +222,13 @@ class Prophet(DualCovariatesForecastingModel):
             'prior_scale': prior_scale,
             'mode': mode
         }
-        self._process_seasonality_call(seasonality_call=function_call)
+        self._store_add_seasonality_call(seasonality_call=function_call)
 
-    def _process_seasonality_call(self,
+    def _store_add_seasonality_call(self,
                                  seasonality_call: Optional[dict] = None) -> None:
-        """Checks the validity of a add_seasonality() call and stores valid calls.
+        """Checks the validity of an add_seasonality() call and stores valid calls.
+        As the actual model is only created at fitting time, and seasonalities are added pre-fit,
+        the add_seasonality calls must be stored and checked on Darts' side.
 
         Raises
         ----------
@@ -232,6 +238,8 @@ class Prophet(DualCovariatesForecastingModel):
             if `seasonality_call` with `name` already exists.
 
             if `seasonality_call` has invalid keys/arguments
+
+            if `seasonality_call` has invalid dtypes
         """
 
         if seasonality_call is None:
@@ -257,7 +265,7 @@ class Prophet(DualCovariatesForecastingModel):
                  logger)
 
         seasonality_name = add_seasonality_call['name']
-        raise_if(seasonality_name in self.auto_seasonalities or seasonality_name in self.add_seasonalities,
+        raise_if(seasonality_name in self._auto_seasonalities or seasonality_name in self._add_seasonalities,
                  f'Adding seasonality with `name={seasonality_name}` failed. A seasonality with this name already '
                  f'exists.')
 
@@ -274,7 +282,7 @@ class Prophet(DualCovariatesForecastingModel):
                  f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
                  f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
                  logger)
-        self.add_seasonalities[seasonality_name] = add_seasonality_call
+        self._add_seasonalities[seasonality_name] = add_seasonality_call
 
     @staticmethod
     def _extract_auto_seasonality(prophet_kwargs: dict) -> list:
@@ -313,7 +321,7 @@ class Prophet(DualCovariatesForecastingModel):
         elif freq in ['T', 'min'] or freq.startswith(('H', 'BH', 'CBH')):  # minute
             days = 1/(24 * 60)
         elif freq == 'S' or freq.startswith('S'):  # second
-            days = 1/(seconds_per_day)
+            days = 1/seconds_per_day
         elif freq in ['L', 'ms'] or freq.startswith(('L', 'ms')):  # millisecond
             days = 1/(seconds_per_day * 10**3)
         elif freq == ['U', 'us'] or freq.startswith(('U', 'us')):  # microsecond

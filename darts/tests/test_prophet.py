@@ -7,12 +7,18 @@ from ..timeseries import TimeSeries
 class ProphetTestCase(DartsBaseTestClass):
 
     def test_add_seasonality_calls(self):
-        kwargs_mandatory = {'name': '2Days', 'seasonal_periods': 48, 'fourier_order': 4}
+        # test if adding seasonality at model creation and with method model.add_seasonality() are equal
+        kwargs_mandatory = {'name': 'custom', 'seasonal_periods': 48, 'fourier_order': 4}
+        kwargs_mandatory2 = {'name': 'custom2', 'seasonal_periods': 24, 'fourier_order': 1}
         kwargs_all = dict(kwargs_mandatory, **{'prior_scale': 1., 'mode': 'additive'})
         model1 = Prophet(add_seasonalities=kwargs_all)
         model2 = Prophet()
         model2.add_seasonality(**kwargs_all)
-        self.assertEqual(model1.add_seasonalities, model2.add_seasonalities)
+        self.assertEqual(model1._add_seasonalities, model2._add_seasonalities)
+
+        # add multiple seasonalities
+        model3 = Prophet(add_seasonalities=[kwargs_mandatory, kwargs_mandatory2])
+        self.assertEqual(len(model3._add_seasonalities), 2)
 
         # seasonality already exists
         with self.assertRaises(ValueError):
@@ -25,11 +31,14 @@ class ProphetTestCase(DartsBaseTestClass):
 
         # invalid keywords
         with self.assertRaises(ValueError):
-            Prophet(add_seasonalities=dict(kwargs_mandatory, **{'some_random_keyword': '2Days'}))
+            Prophet(add_seasonalities=dict(kwargs_mandatory, **{'some_random_keyword': 'custom'}))
 
         # invalid value dtypes
         with self.assertRaises(ValueError):
             Prophet(add_seasonalities=dict({kw: None for kw in kwargs_mandatory}))
+
+        with self.assertRaises(ValueError):
+            Prophet(add_seasonalities=dict([]))
 
     def test_prophet_model(self):
         """runs `helper_test_model` with several frequencies and periods
