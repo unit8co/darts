@@ -26,8 +26,8 @@ class Prophet(DualCovariatesForecastingModel):
         """ Facebook Prophet
 
         This class provides a basic wrapper around `Facebook Prophet <https://github.com/facebook/prophet>`_.
-        It supports country holidays as well as custom seasonalities and adds support for stochastic forecasting and
-        future covariates.
+        It supports adding country holidays as well as custom seasonalities and adds support for stochastic
+        forecasting and future covariates.
 
         Parameters
         ----------
@@ -38,7 +38,7 @@ class Prophet(DualCovariatesForecastingModel):
             dict({
                 `'name': str` (name of the seasonality component),
 
-                `'seasonal_periods': int` (number of timesteps after which the custom seasonal cycle repeats),
+                `'seasonal_periods': int` (number of timesteps after which the seasonal cycle repeats),
 
                 `'fourier_order': int` (number of Fourier components to use),
 
@@ -48,11 +48,12 @@ class Prophet(DualCovariatesForecastingModel):
                 })
 
             An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
-            after 48 hours -> `seasonal_periods=48`
+            after 48 hours then set `seasonal_periods=48`.
+
             Apart from `seasonal_periods`, this is very similar to how you would call Facebook Prophet's
             `add_seasonality()` method.
             Alternatively, you can add seasonalities after model creation and before fitting with
-            `self.add_seasonality()`
+            :meth:`add_seasonality() <Prophet.add_seasonality()>`.
         country_holidays
             An optional country code, for which holidays can be taken into account by Prophet.
 
@@ -96,7 +97,7 @@ class Prophet(DualCovariatesForecastingModel):
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         if self.add_seasonalities:
-            interval_length = self.freq_to_days(series.freq_str)
+            interval_length = self._freq_to_days(series.freq_str)
             for seasonality_name, attributes in self.add_seasonalities.items():
                 self.model.add_seasonality(name=seasonality_name,
                                            period=attributes['seasonal_periods'] * interval_length,
@@ -119,16 +120,16 @@ class Prophet(DualCovariatesForecastingModel):
                 num_samples: int = 1) -> TimeSeries:
         super().predict(n, future_covariates, num_samples)
 
-        predict_df = self.generate_predict_df(n=n, future_covariates=future_covariates)
+        predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
         if num_samples == 1:
             forecast = self.model.predict(predict_df)['yhat'].values
         else:
-            forecast = np.expand_dims(self.stochastic_samples(predict_df, n_samples=num_samples), axis=1)
+            forecast = np.expand_dims(self._stochastic_samples(predict_df, n_samples=num_samples), axis=1)
 
         return self._build_forecast_series(forecast)
 
-    def generate_predict_df(self,
+    def _generate_predict_df(self,
                             n: int,
                             future_covariates: Optional[TimeSeries] = None) -> pd.DataFrame:
         """Returns a pandas DataFrame in the format required for Prophet.predict() with `n` dates after the end of
@@ -142,7 +143,7 @@ class Prophet(DualCovariatesForecastingModel):
     def _is_probabilistic(self) -> bool:
         return True
 
-    def stochastic_samples(self,
+    def _stochastic_samples(self,
                            predict_df,
                            n_samples) -> np.ndarray:
         """Returns stochastic forecast of `n_samples` samples.
@@ -172,19 +173,24 @@ class Prophet(DualCovariatesForecastingModel):
     def predict_raw(self,
                     n: int,
                     future_covariates: Optional[TimeSeries] = None) -> pd.DataFrame:
-        """Returns the output of the base Prophet model in form of a pandas DataFrame. Note however, that the outpu of
-        method is not supported for further processing with the Darts API.
+        """Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,
+        that the output of this method is not supported for further processing with the Darts API.
 
         Methods of the base Prophet model can be accessed with self.model.method() (i.e. self.model.plot_components())
         """
         super().predict(n, future_covariates, num_samples=1)
 
-        predict_df = self.generate_predict_df(n=n, future_covariates=future_covariates)
+        predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
         return self.model.predict(predict_df)
 
-    def add_seasonality(self, name, seasonal_periods, fourier_order, **kwargs) -> None:
-        """Adds a custom seasonality to the model that reapeats after every n=`seasonal_periods` timesteps.
+    def add_seasonality(self,
+                        name: str,
+                        seasonal_periods: int,
+                        fourier_order: int,
+                        prior_scale: Optional[float] = None,
+                        mode: Optional[str] = None) -> None:
+        """Adds a custom seasonality to the model that reapeats after every n `seasonal_periods` timesteps.
         An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
         after 48 hours -> `seasonal_periods=48`.
 
@@ -195,18 +201,23 @@ class Prophet(DualCovariatesForecastingModel):
         Parameters
         ----------
         name
-            string name of the seasonality component.
-        seasonal_periods
             name of the seasonality component
+        seasonal_periods
+            number of timesteps after which the seasonal cycle repeats
         fourier_order
-            number of timesteps after which the custom seasonal cycle repeats
+            number of Fourier components to use
         prior_scale
-            optionally, number of Fourier components to use
+            optionally, a prior scale for this component
         mode
             optionally, 'additive' or 'multiplicative'
         """
-        args = {'name': name, 'seasonal_periods': seasonal_periods, 'fourier_order': fourier_order}
-        function_call = dict(args, **kwargs)
+        function_call = {
+            'name': name,
+            'seasonal_periods': seasonal_periods,
+            'fourier_order': fourier_order,
+            'prior_scale': prior_scale,
+            'mode': mode
+        }
         self._process_seasonality_call(seasonality_call=function_call)
 
     def _process_seasonality_call(self,
@@ -226,20 +237,23 @@ class Prophet(DualCovariatesForecastingModel):
         if seasonality_call is None:
             return
 
-        seasonality_default = {
-            'name': None,
-            'seasonal_periods': None,
-            'fourier_order': None,
-            'prior_scale': None,
-            'mode': None
+        seasonality_properties = {
+            'name': {'default': None, 'dtype': str},
+            'seasonal_periods': {'default': None, 'dtype': int},
+            'fourier_order': {'default': None, 'dtype': int},
+            'prior_scale': {'default': None, 'dtype': float},
+            'mode': {'default': None, 'dtype': str}
         }
-        mandatory_args = ['name', 'seasonal_periods', 'fourier_order']
+        seasonality_default = {kw: seasonality_properties[kw]['default'] for kw in seasonality_properties}
+
+        mandatory_keywords = ['name', 'seasonal_periods', 'fourier_order']
 
         add_seasonality_call = dict(seasonality_default, **seasonality_call)
 
-        missing_args = [arg for arg in mandatory_args if add_seasonality_call[arg] is None]
-        raise_if(len(missing_args) > 0,
-                 f'add_seasonality has missing or empty mandatory add_seasonality keys/arguments: {missing_args}.',
+        missing_kws = [kw for kw in mandatory_keywords if add_seasonality_call[kw] is None]
+        raise_if(len(missing_kws) > 0,
+                 f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
+                 f'{missing_kws}.',
                  logger)
 
         seasonality_name = add_seasonality_call['name']
@@ -247,12 +261,19 @@ class Prophet(DualCovariatesForecastingModel):
                  f'Adding seasonality with `name={seasonality_name}` failed. A seasonality with this name already '
                  f'exists.')
 
-        invalid_args = [arg for arg in add_seasonality_call.keys() if arg not in seasonality_default]
-        raise_if(len(invalid_args) > 0,
-                 f'invalid add_seasonality keys/arguments: {invalid_args}. Only the following arguments are supported: '
-                 f'{list(seasonality_default)}',
+        invalid_kws = [kw for kw in add_seasonality_call if kw not in seasonality_default]
+        raise_if(len(invalid_kws) > 0,
+                 f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
+                 f'following arguments are supported: {list(seasonality_default)}',
                  logger)
 
+        invalid_types = [kw for kw, value in add_seasonality_call.items()
+                         if not isinstance(value, seasonality_properties[kw]['dtype'])
+                         and value is not None]
+        raise_if(len(invalid_types) > 0,
+                 f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
+                 f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
+                 logger)
         self.add_seasonalities[seasonality_name] = add_seasonality_call
 
     @staticmethod
@@ -266,8 +287,8 @@ class Prophet(DualCovariatesForecastingModel):
         return auto_seasonalities
 
     @staticmethod
-    def freq_to_days(freq: str) -> float:
-        """Converts a frequency to number of days required by Prophet
+    def _freq_to_days(freq: str) -> float:
+        """Converts a frequency to number of days required by Facebook Prophet
 
         Parameters
         ----------
@@ -283,20 +304,22 @@ class Prophet(DualCovariatesForecastingModel):
             days = 30.4375
         elif freq in 'W' or freq.startswith('W-'):  # week
             days = 7.
-        elif freq in ['D', 'B', 'C'] or freq.startswith(('D-', 'B-', 'C-')):  # day
+        elif freq in ['B', 'C'] or freq.startswith(('B-', 'C-')):  # business day
+            days = 1 * 7/5
+        elif freq in ['D'] or freq.startswith('D-'):  # day
             days = 1.
         elif freq in ['H', 'BH', 'CBH'] or freq.startswith(('H', 'BH', 'CBH')):  # hour
             days = 1/24
         elif freq in ['T', 'min'] or freq.startswith(('H', 'BH', 'CBH')):  # minute
-            days = 1 / seconds_per_day
+            days = 1/(24 * 60)
         elif freq == 'S' or freq.startswith('S'):  # second
-            days = 1 / (seconds_per_day * 10**3)
+            days = 1/(seconds_per_day)
         elif freq in ['L', 'ms'] or freq.startswith(('L', 'ms')):  # millisecond
-            days = 1 / (seconds_per_day * 10**6)
+            days = 1/(seconds_per_day * 10**3)
         elif freq == ['U', 'us'] or freq.startswith(('U', 'us')):  # microsecond
-            days = 1 / (seconds_per_day * 10**9)
+            days = 1/(seconds_per_day * 10**6)
         elif freq == 'N' or freq.startswith('N'):  # nanosecond
-            days = 1 / (seconds_per_day * 10**12)
+            days = 1/(seconds_per_day * 10**9)
         else:
             raise ValueError("freq {} not understood. Please report if you think this is in error.".format(freq))
         return days
