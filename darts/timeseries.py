@@ -6,11 +6,12 @@ Timeseries
 It can represent a stochastic time series by storing several samples (trajectories).
 """
 
+import pickle
 import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union
+from typing import Tuple, Optional, Callable, Any, List, Union, TextIO, Sequence
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
@@ -308,7 +309,25 @@ class TimeSeries:
 
         # get time index
         if time_col:
-            time_index = pd.DatetimeIndex(df[time_col])
+            if time_col in df.columns:
+                if np.issubdtype(df[time_col].dtype, object):
+                    try:
+                        time_index = pd.Int64Index(df[time_col].astype(int))
+                    except ValueError:
+                        try:
+                            time_index = pd.DatetimeIndex(df[time_col])
+                        except ValueError:
+                            raise_log(
+                                AttributeError("'time_col' is of 'object' dtype but doesn't contain valid timestamps"))
+                elif np.issubdtype(df[time_col].dtype, np.integer):
+                    time_index = pd.Int64Index(df[time_col])
+                elif np.issubdtype(df[time_col].dtype, np.datetime64):
+                    time_index = pd.DatetimeIndex(df[time_col])
+                else:
+                    raise_log(AttributeError(
+                        "Invalid type of `time_col`: it needs to be of either 'str', 'datetime' or 'int' dtype."))
+            else:
+                raise_log(AttributeError('time_col=\'{}\' is not present.'.format(time_col)))
         else:
             raise_if_not(isinstance(df.index, pd.Int64Index) or isinstance(df.index, pd.DatetimeIndex),
                          'If time_col is not specified, the DataFrame must be indexed either with'
@@ -481,6 +500,28 @@ class TimeSeries:
         """
         df = pd.read_json(json_str, orient='split')
         return TimeSeries.from_dataframe(df)
+
+    @staticmethod
+    def from_pickle(path: str) -> 'TimeSeries':
+        """
+        Reads Timeseries object that was pickled.
+
+        **Note**: Xarray docs[1] suggest not using pickle as a long-term data storage.
+
+        ..[1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
+
+        Parameters
+        ----------
+        path : string
+            path pointing to a pickle file that will be loaded
+
+        Returns
+        -------
+        TimeSeries
+            timeseries object loaded from file
+        """
+        with open(path, 'rb') as fh:
+            return pickle.load(fh)
 
     """
     Properties
@@ -903,6 +944,97 @@ class TimeSeries:
             return np.copy(self._xa[:, 0, sample].values)
         else:
             return self._xa[:, 0, sample].values
+
+    def head(self,
+             size: Optional[int] = 5,
+             axis: Optional[Union[int, str]] = 0) -> 'TimeSeries':
+        """
+        Return first n samples from TimeSeries.
+
+        Parameters
+        ----------
+        size : int, default 5
+            number of samples to retain
+        axis : str or int, optional, default 'time'
+            axis along which we intend to display records
+
+        Returns
+        -------
+        TimeSeries
+            Three dimensional array of (time, component, samples) where "axis" dimension has been cut off after
+            # of ``samples`` samples.
+        """
+
+        axis = TimeSeries._get_str_axis(axis)
+
+        display_n = range(min(size, self._xa.sizes[axis]))
+        return TimeSeries(self._xa[{axis: display_n}])
+
+    def tail(self,
+             size: Optional[int] = 5,
+             axis: Optional[Union[int, str]] = 0) -> 'TimeSeries':
+        """
+        Return last n samples from TimeSeries.
+
+        Parameters
+        ----------
+        size : int, default: 5
+            number of samples to retain
+        axis : str or int, optional, default: 0 (time dimension)
+            axis along which we intend to display records
+
+        Returns
+        -------
+        TimeSeries
+            Three dimensional array of (time, component, samples) where "axis" dimension has been cut off except
+            # of ``samples`` from the bottom. [Default: 5]
+        """
+
+        axis = TimeSeries._get_str_axis(axis)
+        
+        display_n = range(-min(size, self._xa.sizes[axis]), 0)
+        return TimeSeries(self._xa[{axis: display_n}])
+
+    @staticmethod
+    def _get_str_axis(axis: Union[int, str]):
+        """Returns correct axis name as a string, regardless whether it was string or integer"""
+        axis_error_string = "Axis parameter can be only one of the numbers (0, 1, 2) " \
+                            "or strings ('time', 'component', 'sample')"
+        if isinstance(axis, int):
+            raise_if_not(0 <= axis <= 2, axis_error_string)
+            axis = DIMS[axis]
+        elif isinstance(axis, str):
+            raise_if(axis not in DIMS, axis_error_string)
+        else:
+            raise_log(AttributeError(axis_error_string))
+
+        return axis
+
+
+    def concatenate(self,
+                    other: 'TimeSeries',
+                    axis: Optional[Union[str, int]] = 0,
+                    ignore_time_axes: Optional[bool] = False) -> 'TimeSeries':
+        """Concatenates another timeseries to the current one along given axis.
+
+            Note: when concatenating along the ``time`` dimension, timeseries `self` marks the start date of
+            the resulting series, and the remaining series will have their date indices overwritten.
+
+            Parameters
+            ----------
+            other : TimeSeries
+                another timeseries to concatenate to this one
+            axis : str or int
+                axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 0 (time)]
+            ignore_time_axes : bool, default False
+                Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
+
+            Returns
+            -------
+            TimeSeries
+                concatenated timeseries
+        """
+        return concatenate(timeserie_sequence=[self, other], axis=axis, ignore_time_axes=ignore_time_axes)
 
     """
     Other methods
@@ -1696,6 +1828,40 @@ class TimeSeries:
         """
         return self.pd_dataframe().to_json(orient='split', date_format='iso')
 
+    def to_csv(self, *args, **kwargs):
+
+        """
+        Writes deterministic time series to CSV file. For a list of parameters, refer to the documentation of
+        pandas.DataFrame.to_csv().[1]
+
+        ..[1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
+        """
+        if not self.is_deterministic:
+            raise_log(AssertionError('The pd_dataframe() method can only return DataFrames of deterministic '
+                                     'time series, and this series is not deterministic (it contains several samples). '
+                                     'Consider calling quantile_df() instead.'))
+
+        self.pd_dataframe().to_csv(*args, **kwargs)
+
+    def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
+        """
+        Saves Timeseries object in pickle format.
+
+        **Note**: Xarray docs[1] suggest not using pickle as a long-term data storage.
+
+        ..[1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
+
+        Parameters
+        ----------
+        path : string
+            path to a file where current object will be pickled
+        protocol : integer, default highest
+            pickling protocol. The default is best in most cases, use it only if having backward compatibility issues
+        """
+
+        with open(path, 'wb') as fh:
+            pickle.dump(self, fh, protocol=protocol)
+
     def plot(self,
              new_plot: bool = False,
              central_quantile: Union[float, str] = 0.5,
@@ -2270,3 +2436,97 @@ class TimeSeries:
                 return TimeSeries(xa_)
 
         raise_log(IndexError("The type of your index was not matched."), logger)
+
+
+def concatenate(timeserie_sequence: Sequence['TimeSeries'],
+                axis: Union[str, int] = 0,
+                ignore_time_axes: bool = False):
+    """Concatenates multiple timeseries along given axis.
+
+    Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
+    the resulting series, and the remaining series will have their date indices overwritten.
+
+    Parameters
+    ----------
+    timeserie_sequence : sequence of TimeSeries
+        sequence of timeseries to concatenate
+    axis : str or int
+        axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
+    ignore_time_axes : bool, default False
+        Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
+
+    Returns
+    -------
+    TimeSeries
+        concatenated timeseries
+    """
+
+    axis = TimeSeries._get_str_axis(axis)
+    if len(timeserie_sequence) < 2:
+        return timeserie_sequence[0]
+
+    start_date_equal = len(set([ts.start_time() for ts in timeserie_sequence])) == 1
+    end_date_equal = len(set([ts.end_time() for ts in timeserie_sequence])) == 1
+    freq_equal = len(set([ts.freq_str for ts in timeserie_sequence])) == 1
+    time_axis_equal = start_date_equal and end_date_equal and freq_equal
+    component_axis_equal = len(set([ts.width for ts in timeserie_sequence])) == 1
+    sample_axis_equal = len(set([ts.n_samples for ts in timeserie_sequence])) == 1
+
+    if ((axis == DIMS[0] and not (component_axis_equal and sample_axis_equal)) or
+        (axis == DIMS[1] and not ((time_axis_equal or ignore_time_axes) and sample_axis_equal)) or
+        (axis == DIMS[2] and not ((time_axis_equal or ignore_time_axes) and component_axis_equal))):
+
+        raise_log(AttributeError('Remaining (non-concatenating) axes need to be equal.'))
+
+    da_sequence = [ts.data_array(copy=False) for ts in timeserie_sequence]
+
+    if axis == DIMS[0]:  # time
+
+        # check, if timeseries are consecutive
+        consecutive_time_axes = True
+        for i in range(1, len(timeserie_sequence)):
+            if timeserie_sequence[i - 1].end_time() + timeserie_sequence[0].freq != \
+                    timeserie_sequence[i].start_time():
+                consecutive_time_axes = False
+                break
+
+        da_concat = xr.concat(da_sequence, dim=axis)
+
+        if not consecutive_time_axes:
+            if ignore_time_axes:
+                tindex = pd.date_range(timeserie_sequence[0].start_time(),
+                                       freq=timeserie_sequence[0].freq,
+                                       periods=da_concat.sizes[axis]
+                                       )
+                da_concat = da_concat.assign_coords({DIMS[0]: tindex})
+            else:
+                raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent,"
+                                         " i.e. end_time of the previous one should be equal to start_time - 1"
+                                         " of the following timeserie. Use `ignore_time_axis=True` to override "
+                                         "this behavior and concatenate timeseries as is with time index reset"
+                                         " to the index of the first timeserie."
+                                     ))
+
+    else:  # component or sample
+        if time_axis_equal:
+            da_concat = xr.concat(da_sequence, dim=axis)
+            axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
+            da_concat = da_concat.assign_coords({axis: axis_index})
+        else:
+            if ignore_time_axes:
+                # all timeseries need to have same length along time axis
+                raise_if(len(set([ts.shape[0] for ts in da_sequence])) != 1,
+                         "All concatenating time series need to have the same time axis or at least"
+                         " be of the same length.", logger)
+
+                ts1_time_coord = da_sequence[0].coords[DIMS[0]]
+                axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
+
+                da_concat = xr.concat(da_sequence, dim=axis, join='left')
+                da_concat = da_concat.assign_coords({DIMS[0]: ts1_time_coord,
+                                                               axis: axis_index})
+            else:
+                raise_log(AttributeError("All concatenating time series need to have the same time axis."
+                                         " You can override this error by setting `ignore_time_axes=True`."))
+
+    return TimeSeries(da_concat)
