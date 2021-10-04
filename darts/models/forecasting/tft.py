@@ -9,6 +9,7 @@ import numpy as np
 from numpy.random import RandomState
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 
 from darts.logging import get_logger, raise_log, raise_if_not
 from darts.utils.torch import random_method
@@ -26,206 +27,7 @@ class _GType(Enum):
 GTypes = NewType('GTypes', _GType)
 
 
-class _TrendGenerator(nn.Module):
-
-    def __init__(self,
-                 expansion_coefficient_dim,
-                 output_dim):
-        super(_TrendGenerator, self).__init__()
-        self.T = nn.Parameter(
-            torch.stack([(torch.arange(output_dim) / output_dim)**i for i in range(expansion_coefficient_dim)], 1),
-            False)
-
-    def forward(self, x):
-        return torch.matmul(x, self.T.T)
-
-
-class _SeasonalityGenerator(nn.Module):
-
-    def __init__(self,
-                 output_dim):
-        super(_SeasonalityGenerator, self).__init__()
-        half_minus_one = int(output_dim / 2 - 1)
-        cos_vectors = [torch.cos(torch.arange(output_dim) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        sin_vectors = [torch.sin(torch.arange(output_dim) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        self.S = nn.Parameter(torch.stack([torch.ones(output_dim)] + cos_vectors + sin_vectors, 1),
-                              False)
-
-    def forward(self, x):
-        return torch.matmul(x, self.S.T)
-
-
-class _Block(nn.Module):
-
-    def __init__(self,
-                 num_layers: int,
-                 layer_width: int,
-                 expansion_coefficient_dim: int,
-                 input_chunk_length: int,
-                 target_length: int,
-                 g_type: GTypes):
-        """ PyTorch module implementing the basic building block of the N-BEATS architecture.
-
-        Parameters
-        ----------
-        num_layers
-            The number of fully connected layers preceding the final forking layers.
-        layer_width
-            The number of neurons that make up each fully connected layer.
-        expansion_coefficient_dim
-            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-            Only used if `generic_architecture` is set to `True`.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        target_length
-            The length of the forecast of the model.
-        g_type
-            The type of function that is implemented by the waveform generator.
-
-        Inputs
-        ------
-        x of shape `(batch_size, input_chunk_length)`
-            Tensor containing the input sequence.
-
-        Outputs
-        -------
-        x_hat of shape `(batch_size, input_chunk_length)`
-            Tensor containing the 'backcast' of the block, which represents an approximation of `x`
-            given the constraints of the functional space determined by `g`.
-        y_hat of shape `(batch_size, output_chunk_length)`
-            Tensor containing the forward forecast of the block.
-
-        """
-        super(_Block, self).__init__()
-
-        self.num_layers = num_layers
-        self.layer_width = layer_width
-        self.g_type = g_type
-        self.relu = nn.ReLU()
-
-        # fully connected stack before fork
-        self.linear_layer_stack_list = [nn.Linear(input_chunk_length, layer_width)]
-        self.linear_layer_stack_list += [nn.Linear(layer_width, layer_width) for _ in range(num_layers - 1)]
-        self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
-
-        # fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters)
-        if g_type == _GType.SEASONALITY:
-            self.backcast_linear_layer = nn.Linear(layer_width, 2 * int(input_chunk_length / 2 - 1) + 1)
-            self.forecast_linear_layer = nn.Linear(layer_width, 2 * int(target_length / 2 - 1) + 1)
-        else:
-            self.backcast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
-            self.forecast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
-
-        # waveform generator functions
-        if g_type == _GType.GENERIC:
-            self.backcast_g = nn.Linear(expansion_coefficient_dim, input_chunk_length)
-            self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length)
-        elif g_type == _GType.TREND:
-            self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_chunk_length)
-            self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length)
-        elif g_type == _GType.SEASONALITY:
-            self.backcast_g = _SeasonalityGenerator(input_chunk_length)
-            self.forecast_g = _SeasonalityGenerator(target_length)
-        else:
-            raise_log(ValueError("g_type not supported"), logger)
-
-    def forward(self, x):
-        # fully connected layer stack
-        for layer in self.linear_layer_stack_list:
-            x = self.relu(layer(x))
-
-        # forked linear layers producing waveform generator parameters
-        theta_backcast = self.backcast_linear_layer(x)
-        theta_forecast = self.forecast_linear_layer(x)
-
-        # waveform generator applications
-        x_hat = self.backcast_g(theta_backcast)
-        y_hat = self.forecast_g(theta_forecast)
-
-        return x_hat, y_hat
-
-
-class _Stack(nn.Module):
-
-    def __init__(self,
-                 num_blocks: int,
-                 num_layers: int,
-                 layer_width: int,
-                 expansion_coefficient_dim: int,
-                 input_chunk_length: int,
-                 target_length: int,
-                 g_type: GTypes,
-                 ):
-        """ PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
-
-        Parameters
-        ----------
-        num_blocks
-            The number of blocks making up this stack.
-        num_layers
-            The number of fully connected layers preceding the final forking layers in each block.
-        layer_width
-            The number of neurons that make up each fully connected layer in each block.
-        expansion_coefficient_dim
-            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-            Only used if `generic_architecture` is set to `True`.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        target_length
-            The length of the forecast of the model.
-        g_type
-            The function that is implemented by the waveform generators in each block.
-
-        Inputs
-        ------
-        stack_input of shape `(batch_size, input_chunk_length)`
-            Tensor containing the input sequence.
-
-        Outputs
-        -------
-        stack_residual of shape `(batch_size, input_chunk_length)`
-            Tensor containing the 'backcast' of the block, which represents an approximation of `x`
-            given the constraints of the functional space determined by `g`.
-        stack_forecast of shape `(batch_size, output_chunk_length)`
-            Tensor containing the forward forecast of the stack.
-
-        """
-        super(_Stack, self).__init__()
-
-        self.input_chunk_length = input_chunk_length
-        self.target_length = target_length
-
-        if g_type == _GType.GENERIC:
-            self.blocks_list = [
-                _Block(num_layers, layer_width, expansion_coefficient_dim, input_chunk_length, target_length, g_type)
-                for _ in range(num_blocks)
-            ]
-        else:
-            # same block instance is used for weight sharing
-            interpretable_block = _Block(num_layers, layer_width, expansion_coefficient_dim,
-                                         input_chunk_length, target_length, g_type)
-            self.blocks_list = [interpretable_block] * num_blocks
-
-        self.blocks = nn.ModuleList(self.blocks_list)
-
-    def forward(self, x):
-        stack_forecast = torch.zeros(x.shape[0], self.target_length, device=x.device)
-        for block in self.blocks_list:
-            # pass input through block
-            x_hat, y_hat = block(x)
-
-            # add block forecast to stack forecast
-            stack_forecast = stack_forecast + y_hat
-
-            # subtract backcast from input to produce residual
-            x = x - x_hat
-
-        stack_residual = x
-
-        return stack_residual, stack_forecast
-
-
-class _TFFModule(nn.Module):
+class _TFTModule(nn.Module):
 
     def __init__(self,
                  input_dim: int,
@@ -279,10 +81,10 @@ class _TFFModule(nn.Module):
         Outputs
         -------
         y of shape `(batch_size, output_chunk_length)`
-            Tensor containing the output of the TFF module.
+            Tensor containing the output of the TFT module.
 
         """
-        super(_TFFModule, self).__init__()
+        super(_TFTModule, self).__init__()
 
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -357,7 +159,7 @@ class _TFFModule(nn.Module):
         return y
 
 
-class TFFModel(PastCovariatesTorchModel):
+class TFTModel(PastCovariatesTorchModel):
     @random_method
     def __init__(self,
                  input_chunk_length: int,
@@ -371,7 +173,7 @@ class TFFModel(PastCovariatesTorchModel):
                  trend_polynomial_degree: int = 2,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
-        """Temporal Fusion Transformers (TFF) for Interpretable Multi-horizon Time Series Forecasting.
+        """Temporal Fusion Transformers (TFT) for Interpretable Multi-horizon Time Series Forecasting.
 
         This is an implementation of the N-BEATS architecture, as outlined in this paper:
         https://openreview.net/forum?id=r1ecqn4YwB
@@ -481,12 +283,12 @@ class TFFModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * num_stacks
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
 
-        return _TFFModule(
+        return _TFTModule(
             input_dim=input_dim,
             output_dim=output_dim,
             input_chunk_length=self.input_chunk_length,
