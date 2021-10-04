@@ -85,7 +85,7 @@ class TimeSeries:
                      'The time index of the provided DataArray is missing the freq attribute, and the frequency could '
                      'not be directly inferred. '
                      'This probably comes from inconsistent date frequencies with missing dates. '
-                     'If you know the actual frequency, try setting `fill_missing_date=True, freq=actual_frequency`. '
+                     'If you know the actual frequency, try setting `fill_missing_dates=True, freq=actual_frequency`. '
                      'If not, try setting `fill_missing_dates=True, freq=None` to see if a frequency can be inferred.',
                      logger)
 
