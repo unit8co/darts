@@ -21,7 +21,7 @@ except ModuleNotFoundError:
     logger.warning("Support for AutoARIMA is not available. To enable it, install u8darts[pmdarima] or u8darts[all].")
 
 try:
-    from darts.models.forecasting.prophet import Prophet
+    from darts.models.forecasting.prophet_model import Prophet
 except ModuleNotFoundError:
     logger.warning("Support Facebook Prophet is not available. "
                    "To enable it, install u8darts[prophet] or u8darts[all].")
