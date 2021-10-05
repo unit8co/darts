@@ -135,7 +135,6 @@ class RNN(ABC, nn.RNNBase):
                 return out, hidden_state
 
 
-
 class LSTM(RNN, nn.LSTM):
     """LSTM that can handle zero-length sequences"""
 
@@ -146,7 +145,6 @@ class LSTM(RNN, nn.LSTM):
         hidden = hidden.masked_scatter(no_encoding, initial_hidden_state[0])
         cell = cell.masked_scatter(no_encoding, initial_hidden_state[0])
         return hidden, cell
-
 
     def init_hidden_state(self, x: torch.Tensor) -> HiddenState:
         num_directions = 2 if self.bidirectional else 1
@@ -166,13 +164,11 @@ class LSTM(RNN, nn.LSTM):
         )
         return hidden, cell
 
-
     def repeat_interleave(self, hidden_state: HiddenState, n_samples: int) -> HiddenState:
         hidden, cell = hidden_state
         hidden = hidden.repeat_interleave(n_samples, 1)
         cell = cell.repeat_interleave(n_samples, 1)
         return hidden, cell
-
 
 
 class MultiEmbedding(nn.Module):
@@ -246,6 +242,7 @@ class MultiEmbedding(nn.Module):
                 input_vectors[name] = emb(x[..., self.x_categoricals.index(name)])
         return input_vectors
 
+
 class TimeDistributed(nn.Module):
     def __init__(self, module: nn.Module, batch_first: bool = False):
         super().__init__()
@@ -271,19 +268,16 @@ class TimeDistributed(nn.Module):
 
 
 class TimeDistributedInterpolation(nn.Module):
-    def __init__(self, output_size: int, batch_first: bool = False, trainable: bool = False):
+    """interpolates input size to output size
+    TODO check this
+    """
+    def __init__(self, output_size: int, batch_first: bool = False):
         super().__init__()
         self.output_size = output_size
         self.batch_first = batch_first
-        self.trainable = trainable
-        if self.trainable:
-            self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float32))
-            self.gate = nn.Sigmoid()
 
     def interpolate(self, x):
         upsampled = F.interpolate(x.unsqueeze(1), self.output_size, mode="linear", align_corners=True).squeeze(1)
-        if self.trainable:
-            upsampled = upsampled * self.gate(self.mask.unsqueeze(0)) * 2.0
         return upsampled
 
     def forward(self, x):
@@ -308,13 +302,14 @@ class TimeDistributedInterpolation(nn.Module):
 class GatedLinearUnit(nn.Module):
     """Gated Linear Unit"""
 
-    def __init__(self, input_size: int, hidden_size: int = None, dropout: float = None):
+    def __init__(self,
+                 input_size: int,
+                 hidden_size: int = None,
+                 dropout: float = None):
+
         super().__init__()
 
-        if dropout is not None:
-            self.dropout = nn.Dropout(dropout)
-        else:
-            self.dropout = dropout
+        self.dropout = nn.Dropout(dropout) if dropout is not None else dropout
         self.hidden_size = hidden_size or input_size
         self.fc = nn.Linear(input_size, self.hidden_size * 2)
 
@@ -336,68 +331,65 @@ class GatedLinearUnit(nn.Module):
 
 
 class ResampleNorm(nn.Module):
-    def __init__(self, input_size: int, output_size: int = None, trainable_add: bool = True):
+    """Resamples an input to an output size
+    TODO: why??
+    I think this was added by pytorch-forecasting -> read model description
+    """
+
+    def __init__(self,
+                 input_size: int,
+                 output_size: int = None):
+
         super().__init__()
 
         self.input_size = input_size
-        self.trainable_add = trainable_add
         self.output_size = output_size or input_size
 
-        if self.input_size != self.output_size:
-            self.resample = TimeDistributedInterpolation(self.output_size, batch_first=True, trainable=False)
+        if input_size != output_size:
+            self.resample = TimeDistributedInterpolation(output_size, batch_first=True)
 
-        if self.trainable_add:
-            self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
-            self.gate = nn.Sigmoid()
-        self.norm = nn.LayerNorm(self.output_size)
+        self.mask = nn.Parameter(torch.zeros(output_size, dtype=torch.float))
+        self.gate = nn.Sigmoid()
+        self.norm = nn.LayerNorm(output_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.input_size != self.output_size:
             x = self.resample(x)
 
-        if self.trainable_add:
-            x = x * self.gate(self.mask) * 2.0
+        x = x * self.gate(self.mask) * 2.0
 
         output = self.norm(x)
         return output
 
 
 class AddNorm(nn.Module):
-    def __init__(self, input_size: int, skip_size: int = None, trainable_add: bool = True):
+    def __init__(self, input_size: int, skip_size: int = None):
         super().__init__()
 
         self.input_size = input_size
-        self.trainable_add = trainable_add
         self.skip_size = skip_size or input_size
 
         if self.input_size != self.skip_size:
-            self.resample = TimeDistributedInterpolation(self.input_size, batch_first=True, trainable=False)
+            self.resample = TimeDistributedInterpolation(self.input_size, batch_first=True)
 
-        if self.trainable_add:
-            self.mask = nn.Parameter(torch.zeros(self.input_size, dtype=torch.float))
-            self.gate = nn.Sigmoid()
         self.norm = nn.LayerNorm(self.input_size)
 
     def forward(self, x: torch.Tensor, skip: torch.Tensor):
         if self.input_size != self.skip_size:
             skip = self.resample(skip)
 
-        if self.trainable_add:
-            skip = skip * self.gate(self.mask) * 2.0
-
         output = self.norm(x + skip)
         return output
 
 
 class GateAddNorm(nn.Module):
-    def __init__(
-        self,
-        input_size: int,
-        hidden_size: int = None,
-        skip_size: int = None,
-        trainable_add: bool = False,
-        dropout: float = None,
-    ):
+    """Equation (2)"""
+    def __init__(self,
+                 input_size: int,
+                 hidden_size: int = None,
+                 skip_size: int = None,
+                 dropout: float = None):
+
         super().__init__()
 
         self.input_size = input_size
@@ -406,7 +398,7 @@ class GateAddNorm(nn.Module):
         self.dropout = dropout
 
         self.glu = GatedLinearUnit(self.input_size, hidden_size=self.hidden_size, dropout=self.dropout)
-        self.add_norm = AddNorm(self.hidden_size, skip_size=self.skip_size, trainable_add=trainable_add)
+        self.add_norm = AddNorm(self.hidden_size, skip_size=self.skip_size)
 
     def forward(self, x, skip):
         output = self.glu(x)
@@ -415,49 +407,47 @@ class GateAddNorm(nn.Module):
 
 
 class GatedResidualNetwork(nn.Module):
-    def __init__(
-        self,
-        input_size: int,
-        hidden_size: int,
-        output_size: int,
-        dropout: float = 0.1,
-        context_size: int = None,
-        residual: bool = False,
-    ):
+    """Top right graph in Figure 2 and formulas (2) -- (5)
+
+    """
+    def __init__(self,
+                 input_size: int,
+                 hidden_size: int,
+                 output_size: int,
+                 dropout: float = 0.1,
+                 context_size: int = None):
+
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
         self.context_size = context_size
         self.hidden_size = hidden_size
         self.dropout = dropout
-        self.residual = residual
 
-        if self.input_size != self.output_size and not self.residual:
-            residual_size = self.input_size
-        else:
-            residual_size = self.output_size
+        # convert raw input into output size for residuals
+        if input_size != output_size:
+            self.resample_norm = ResampleNorm(input_size, output_size)
 
-        if self.output_size != residual_size:
-            self.resample_norm = ResampleNorm(residual_size, self.output_size)
-
-        self.fc1 = nn.Linear(self.input_size, self.hidden_size)
+        self.fc1 = nn.Linear(input_size, hidden_size)
         self.elu = nn.ELU()
 
-        if self.context_size is not None:
-            self.context = nn.Linear(self.context_size, self.hidden_size, bias=False)
+        if context_size is not None:
+            # according to equation (4), no context bias
+            self.context = nn.Linear(context_size, hidden_size, bias=False)
 
-        self.fc2 = nn.Linear(self.hidden_size, self.hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        # TODO: what does this do?
         self.init_weights()
 
-        self.gate_norm = GateAddNorm(
-            input_size=self.hidden_size,
-            skip_size=self.output_size,
-            hidden_size=self.output_size,
-            dropout=self.dropout,
-            trainable_add=False,
+        self.gate_add_norm = GateAddNorm(
+            input_size=hidden_size,
+            skip_size=output_size,
+            hidden_size=output_size,
+            dropout=dropout,
         )
 
     def init_weights(self):
+        # TODO: what is this?
         for name, p in self.named_parameters():
             if "bias" in name:
                 torch.nn.init.zeros_(p)
@@ -470,16 +460,18 @@ class GatedResidualNetwork(nn.Module):
         if residual is None:
             residual = x
 
-        if self.input_size != self.output_size and not self.residual:
+        if self.input_size != self.output_size:
             residual = self.resample_norm(residual)
 
+        # TODO: why not both a and c into the same fc (dense layer)?
+        # -> paper equation (4) supports this
         x = self.fc1(x)
         if context is not None:
             context = self.context(context)
             x = x + context
         x = self.elu(x)
         x = self.fc2(x)
-        x = self.gate_norm(x, residual)
+        x = self.gate_add_norm(x, residual)
         return x
 
 
@@ -508,20 +500,18 @@ class VariableSelectionNetwork(nn.Module):
         if self.num_inputs > 1:
             if self.context_size is not None:
                 self.flattened_grn = GatedResidualNetwork(
-                    self.input_size_total,
-                    min(self.hidden_size, self.num_inputs),
-                    self.num_inputs,
-                    self.dropout,
-                    self.context_size,
-                    residual=False,
+                    input_size=self.input_size_total,
+                    hidden_size=min(self.hidden_size, self.num_inputs),
+                    output_size=self.num_inputs,
+                    dropout=self.dropout,
+                    context_size=self.context_size
                 )
             else:
                 self.flattened_grn = GatedResidualNetwork(
-                    self.input_size_total,
-                    min(self.hidden_size, self.num_inputs),
-                    self.num_inputs,
-                    self.dropout,
-                    residual=False,
+                    input_size=self.input_size_total,
+                    hidden_size=min(self.hidden_size, self.num_inputs),
+                    output_size=self.num_inputs,
+                    dropout=self.dropout,
                 )
 
         self.single_variable_grns = nn.ModuleDict()
@@ -533,8 +523,8 @@ class VariableSelectionNetwork(nn.Module):
                 self.single_variable_grns[name] = ResampleNorm(input_size, self.hidden_size)
             else:
                 self.single_variable_grns[name] = GatedResidualNetwork(
-                    input_size,
-                    min(input_size, self.hidden_size),
+                    input_size=input_size,
+                    hidden_size=min(input_size, self.hidden_size),
                     output_size=self.hidden_size,
                     dropout=self.dropout,
                 )

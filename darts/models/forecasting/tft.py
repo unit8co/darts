@@ -170,18 +170,18 @@ class _TFTModule(nn.Module):
             self.shared_single_variable_grns = nn.ModuleDict()
             for name, input_size in encoder_input_sizes.items():
                 self.shared_single_variable_grns[name] = GatedResidualNetwork(
-                    input_size,
-                    min(input_size, hidden_size),
-                    hidden_size,
-                    dropout,
+                    input_size=input_size,
+                    hidden_size=min(input_size, hidden_size),
+                    output_size=hidden_size,
+                    dropout=dropout,
                 )
             for name, input_size in decoder_input_sizes.items():
                 if name not in self.shared_single_variable_grns:
                     self.shared_single_variable_grns[name] = GatedResidualNetwork(
-                        input_size,
-                        min(input_size, hidden_size),
-                        hidden_size,
-                        dropout,
+                        input_size=input_size,
+                        hidden_size=min(input_size, hidden_size),
+                        output_size=hidden_size,
+                        dropout=dropout,
                     )
 
         self.encoder_variable_selection = VariableSelectionNetwork(
@@ -235,7 +235,10 @@ class _TFTModule(nn.Module):
 
         # for post lstm static enrichment
         self.static_context_enrichment = GatedResidualNetwork(
-            hidden_size, hidden_size, hidden_size, dropout
+            input_size=hidden_size,
+            hidden_size=hidden_size,
+            output_size=hidden_size,
+            dropout=dropout
         )
 
         # TODO: Check LSTMs
@@ -277,9 +280,7 @@ class _TFTModule(nn.Module):
         # skip connection for lstm
         self.post_lstm_gate_encoder = GatedLinearUnit(hidden_size, dropout=dropout)
         self.post_lstm_gate_decoder = self.post_lstm_gate_encoder
-        # self.post_lstm_gate_decoder = GatedLinearUnit(hidden_size, dropout=dropout)
-        self.post_lstm_add_norm_encoder = AddNorm(hidden_size, trainable_add=False)
-        # self.post_lstm_add_norm_decoder = AddNorm(hidden_size, trainable_add=True)
+        self.post_lstm_add_norm_encoder = AddNorm(hidden_size)
         self.post_lstm_add_norm_decoder = self.post_lstm_add_norm_encoder
 
         # static enrichment and processing past LSTM
@@ -296,14 +297,17 @@ class _TFTModule(nn.Module):
             d_model=hidden_size, n_head=attention_head_size, dropout=dropout
         )
         self.post_attn_gate_norm = GateAddNorm(
-            hidden_size, dropout=dropout, trainable_add=False
+            hidden_size, dropout=dropout
         )
         self.pos_wise_ff = GatedResidualNetwork(
-            hidden_size, hidden_size, hidden_size, dropout=dropout
+            input_size=hidden_size,
+            hidden_size=hidden_size,
+            output_size=hidden_size,
+            dropout=dropout
         )
 
         # output processing -> no dropout at this late stage
-        self.pre_output_gate_norm = GateAddNorm(hidden_size, dropout=None, trainable_add=False)
+        self.pre_output_gate_norm = GateAddNorm(hidden_size, dropout=None)
 
         if self.n_targets > 1:  # if to run with multiple targets
             self.output_layer = nn.ModuleList(
@@ -636,6 +640,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.lstm_layers = lstm_layers
         self.dropout = dropout
         self.output_size = output_size
+
         self.loss_fn = loss_fn
         self.attention_head_size = attention_head_size
         self.max_encoder_length = max_encoder_length
@@ -706,21 +711,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             share_single_variable_networks=self.share_single_variable_networks,
             logging_metrics=self.logging_metrics
         )
-
-    def _build_train_dataset(self,
-                             target: Sequence[TimeSeries],
-                             past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesShiftedDataset:
-
-        return MixedCovariatesTorchModel(target_series=target,
-                                            covariates=future_covariates,
-                                            length=self.training_length,
-                                            shift=1)
-
-    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        raise_if_not(isinstance(train_dataset, DualCovariatesShiftedDataset),
-                     'RNNModel requires a training dataset of type DualCovariatesShiftedDataset.')
-        raise_if_not(train_dataset.ds_past.shift == 1, 'RNNModel requires a shifted training dataset with shift=1.')
 
     def _produce_train_output(self, input_batch: Tuple):
         past_target, historic_future_covariates, future_covariates = input_batch
