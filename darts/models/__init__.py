@@ -32,6 +32,7 @@ try:
     from darts.models.forecasting.tcn_model import TCNModel
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.transformer_model import TransformerModel
+    from darts.models.forecasting.tft import TFTModel
 
 except ModuleNotFoundError:
     logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")
