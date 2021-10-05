@@ -130,7 +130,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `AutoARIMA` | x | | | | | |
 `ExponentialSmoothing` | x | | x | | | |
 `Theta` and `FourTheta` | x | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
-`Prophet` | x | | | | | | [Prophet repo](https://github.com/facebook/prophet)
+`Prophet` | x | | x | | | x | [Prophet repo](https://github.com/facebook/prophet)
 `FFT` (Fast Fourier Transform) | x | | | | | |
 `RegressionModel` (incl `RandomForest`, `LinearRegressionModel` and `LightGBMModel`) | x | x | | x | x | x |
 `RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | | x | [DeepAR paper](https://arxiv.org/abs/1704.04110)
