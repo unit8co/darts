@@ -146,32 +146,45 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             index = _generate_index(start=start, end=end, length=length, freq=freq)
             self.assertEqual(len(index), length_assert)
             self.assertTrue(index.is_monotonic_increasing)
-            self.assertTrue(index[0] == start)
+            self.assertTrue(index[0] == start_assert)
+            self.assertTrue(index[-1] == end_assert)
 
         for length_assert in [1, 2, 5, 10, 100]:
             for start_pos in [0, 1]:
                 # pandas.Int64Index
-                test_routine(start=start_pos, length=length_assert, freq='')
-                test_routine(start=start_pos, length=length_assert, freq='D')
-                test_routine(start=start_pos, end=start_pos + length_assert - 1)
-                test_routine(start=start_pos, end=start_pos + length_assert - 1, freq='D')
+                start_assert, end_assert = start_pos, start_pos + length_assert -1
+                test_routine(start=start_assert, length=length_assert, freq='')
+                test_routine(start=start_assert, length=length_assert, freq='D')
+                test_routine(start=start_assert, end=end_assert)
+                test_routine(start=start_assert, end=end_assert, freq='D')
+                test_routine(start=None, end=end_assert, length=length_assert, freq='BH')
                 # pandas.DatetimeIndex
-                dates = _generate_index(start=pd.Timestamp('2000-01-01'), length=length_assert)
-                dates += dates.freq * start_pos
-                start_date, end_date = dates[0], dates[-1]
-                test_routine(start=start_date, length=length_assert)
-                end_date = _generate_index(start=start_date, length=length_assert)[-1]
-                test_routine(start=start_date, end=end_date)
+                start_date = pd.DatetimeIndex(['2000-01-01'], freq='D')
+                start_date += start_date.freq * start_pos
+                # dates = _generate_index(start=start_date[0], length=length_assert)
+                dates = _generate_index(start=start_date[0], length=length_assert)
+                start_assert, end_assert = dates[0], dates[-1]
+                test_routine(start=start_assert, length=length_assert)
+                test_routine(start=start_assert, end=end_assert)
+                test_routine(start=None, end=end_assert, length=length_assert, freq='D')
 
-        # `end` and `length` cannot both be set
+        # `start`, `end` and `length` cannot both be set simultaneously
         with self.assertRaises(ValueError):
-            test_routine(start=0, end=1, length=10)
+            _generate_index(start=0, end=9, length=10)
+        # same as above but `start` defaults to timestamp '2000-01-01' in all timeseries generation functions
+        with self.assertRaises(ValueError):
+            linear_timeseries(end=9, length=10)
 
-        # either `end` or `length` must be set
+        # exactly two of [`start`, `end`, `length`] must be set
         with self.assertRaises(ValueError):
-            test_routine(start=0, end=pd.Timestamp('2000-01-01'))
+            test_routine(start=0)
+        with self.assertRaises(ValueError):
+            test_routine(start=None, end=1)
+        with self.assertRaises(ValueError):
+            test_routine(start=None, end=None, length=10)
 
         # `start` and `end` must have same type
         with self.assertRaises(ValueError):
             test_routine(start=0, end=pd.Timestamp('2000-01-01'))
+        with self.assertRaises(ValueError):
             test_routine(start=pd.Timestamp('2000-01-01'), end=10)

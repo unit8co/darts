@@ -17,7 +17,7 @@ from ..logging import raise_if_not, get_logger, raise_log, raise_if
 logger = get_logger(__name__)
 
 
-def _generate_index(start: Union[pd.Timestamp, int],
+def _generate_index(start: Optional[Union[pd.Timestamp, int]] = None,
                     end: Optional[Union[pd.Timestamp, int]] = None,
                     length: Optional[int] = None,
                     freq: str = 'D') -> Union[pd.DatetimeIndex, pd.Int64Index]:
@@ -40,22 +40,30 @@ def _generate_index(start: Union[pd.Timestamp, int],
         pandas Timestamp. A DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     """
-
-    raise_if((end is None and length is None) or (end is not None and length is not None),
-             'index generation requires setting one and only one of (`end`, `length`).',
+    constructors = [
+        arg_name for arg, arg_name in zip([start, end, length], ['start', 'end', 'length']) if arg is not None
+    ]
+    raise_if(len(constructors) != 2,
+             'index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. '
+             f'Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting '
+             f'`start` to None.',
              logger)
-    raise_if(end is not None and type(start) != type(end),
-             'index generation with `end` requires equal object types of `start` and `end`')
+    raise_if(end is not None and start is not None and type(start) != type(end),
+             'index generation with `start` and `end` requires equal object types of `start` and `end`',
+             logger)
 
-    if isinstance(start, pd.Timestamp):
+    if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         index = pd.date_range(start=start, end=end, periods=length, freq=freq)
     else:  # int
-        index = pd.Int64Index(range(start, start + length if end is None else end + 1))
+        index = pd.Int64Index(range(
+            start if start is not None else end - length + 1,
+            end + 1 if end is not None else start + length
+        ))
     return index
 
 
 def constant_timeseries(value: float = 1,
-                        start: Union[pd.Timestamp, int] = pd.Timestamp('2000-01-01'),
+                        start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
                         end: Optional[Union[pd.Timestamp, int]] = None,
                         length: Optional[int] = None,
                         freq: str = 'D',
@@ -97,7 +105,7 @@ def constant_timeseries(value: float = 1,
 
 def linear_timeseries(start_value: float = 0,
                       end_value: float = 1,
-                      start: Union[pd.Timestamp, int] = pd.Timestamp('2000-01-01'),
+                      start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
                       end: Optional[Union[pd.Timestamp, int]] = None,
                       length: Optional[int] = None,
                       freq: str = 'D',
@@ -145,7 +153,7 @@ def sine_timeseries(value_frequency: float = 0.1,
                     value_amplitude: float = 1.,
                     value_phase: float = 0.,
                     value_y_offset: float = 0.,
-                    start: Union[pd.Timestamp, int] = pd.Timestamp('2000-01-01'),
+                    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
                     end: Optional[Union[pd.Timestamp, int]] = None,
                     length: Optional[int] = None,
                     freq: str = 'D',
@@ -198,7 +206,7 @@ def sine_timeseries(value_frequency: float = 0.1,
 
 def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
                         std: Union[float, np.ndarray] = 1.,
-                        start: Union[pd.Timestamp, int] = pd.Timestamp('2000-01-01'),
+                        start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
                         end: Optional[Union[pd.Timestamp, int]] = None,
                         length: Optional[int] = None,
                         freq: str = 'D',
@@ -256,7 +264,7 @@ def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
 
 def random_walk_timeseries(mean: float = 0.,
                            std: float = 1.,
-                           start: Union[pd.Timestamp, int] = pd.Timestamp('2000-01-01'),
+                           start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
                            end: Optional[Union[pd.Timestamp, int]] = None,
                            length: Optional[int] = None,
                            freq: str = 'D',
