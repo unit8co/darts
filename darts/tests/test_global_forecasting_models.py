@@ -284,7 +284,7 @@ if TORCH_AVAILABLE:
             # TS with 50 timestamps. TorchForecastingModels will use the SequentialDataset for producing training
             # samples, which means we will have 50 - 22 - 2 + 1 = 27 samples, which is < 32 (batch_size). The model
             # should still train on those samples and not crash in any way
-            ts = linear_timeseries(0, 1, 50)
+            ts = linear_timeseries(start_value=0, end_value=1, length=50)
 
             model = RNNModel(input_chunk_length=20,
                              output_chunk_length=2,

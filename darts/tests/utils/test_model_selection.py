@@ -4,7 +4,7 @@ from darts.utils.timeseries_generation import constant_timeseries
 
 
 def make_dataset(rows, cols):
-    return [constant_timeseries(i, cols) for i in range(rows)]
+    return [constant_timeseries(value=i, length=cols) for i in range(rows)]
 
 
 def verify_shape(dataset, rows, cols):
@@ -128,11 +128,11 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
     def test_single_timeseries_no_horizon_no_n(self):
         with self.assertRaises(AttributeError):
             # even if the default axis is 0, but since it is a single timeseries, default axis is 1
-            train_test_split(constant_timeseries(123, 10), test_size=2, vertical_split_type=MODEL_AWARE)
+            train_test_split(constant_timeseries(value=123, length=10), test_size=2, vertical_split_type=MODEL_AWARE)
 
     def test_single_timeseries_sunny_day(self):
-        train_set, test_set = train_test_split(constant_timeseries(123, 10), test_size=2, input_size=1, horizon=2,
-                                               vertical_split_type = MODEL_AWARE
+        train_set, test_set = train_test_split(constant_timeseries(value=123, length=10), test_size=2, input_size=1,
+                                               horizon=2, vertical_split_type=MODEL_AWARE
                                                )
 
         self.assertTrue(
@@ -143,9 +143,9 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     def test_multi_timeseries_variable_ts_length_sunny_day(self):
         data = [
-            constant_timeseries(123, 10),
-            constant_timeseries(123, 100),
-            constant_timeseries(123, 1000)
+            constant_timeseries(value=123, length=10),
+            constant_timeseries(value=123, length=100),
+            constant_timeseries(value=123, length=1000)
         ]
         train_set, test_set = train_test_split(data, axis=1, test_size=2, input_size=1, horizon=2,
                                                vertical_split_type=MODEL_AWARE)
@@ -160,9 +160,9 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
 
     def test_multi_timeseries_variable_ts_length_one_ts_too_small(self):
         data = [
-            constant_timeseries(123, 21),
-            constant_timeseries(123, 100),
-            constant_timeseries(123, 1000)
+            constant_timeseries(value=123, length=21),
+            constant_timeseries(value=123, length=100),
+            constant_timeseries(value=123, length=1000)
         ]
 
         with self.assertRaisesRegex(AttributeError,

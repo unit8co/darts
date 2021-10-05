@@ -741,7 +741,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             series1.with_columns_renamed('linear7', 'linear5')
 
     def test_to_csv_probabilistic_ts(self):
-        samples = [linear_timeseries(10), linear_timeseries(20), linear_timeseries(30)]
+        samples = [linear_timeseries(start_value=val, length=10) for val in [10, 20, 30]]
         ts = concatenate(samples, axis=2)
         with self.assertRaises(AssertionError):
             ts.to_csv('blah.csv')

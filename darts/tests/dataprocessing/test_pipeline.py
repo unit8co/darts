@@ -24,7 +24,7 @@ class PipelineTestCase(unittest.TestCase):
 
         @staticmethod
         def ts_transform(data: TimeSeries) -> TimeSeries:
-            return data.append_values(constant_timeseries(1, 3).values())
+            return data.append_values(constant_timeseries(value=1, length=3).values())
 
         def transform(self, data, *args, **kwargs) -> TimeSeries:
             self.transform_called = True
@@ -44,7 +44,7 @@ class PipelineTestCase(unittest.TestCase):
 
         @staticmethod
         def ts_transform(series: TimeSeries) -> TimeSeries:
-            return series.append_values(constant_timeseries(2, 3).values())
+            return series.append_values(constant_timeseries(value=2, length=3).values())
 
         @staticmethod
         def ts_inverse_transform(series: TimeSeries) -> TimeSeries:
@@ -95,7 +95,7 @@ class PipelineTestCase(unittest.TestCase):
         # given
         mock1 = self.DataTransformerMock1()
         mock2 = self.DataTransformerMock2()
-        data = constant_timeseries(0, 3)
+        data = constant_timeseries(value=0, length=3)
         transformers = [mock1] * 10 + [mock2] * 10
         p = Pipeline(transformers)
         # when
@@ -124,14 +124,14 @@ class PipelineTestCase(unittest.TestCase):
         p = Pipeline([mock], copy=True)
 
         # when
-        p.transform(constant_timeseries(1, 10))
+        p.transform(constant_timeseries(value=1, length=10))
 
         # then
         self.assertFalse(mock.transform_called)
 
     def test_fit(self):
         # given
-        data = constant_timeseries(0, 3)
+        data = constant_timeseries(value=0, length=3)
         transformers = [
             self.DataTransformerMock1() for _ in range(10)
         ] + [self.DataTransformerMock2() for _ in range(10)]
@@ -148,7 +148,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_fit_skips_superfluous_transforms(self):
         # given
-        data = constant_timeseries(0, 100)
+        data = constant_timeseries(value=0, length=100)
         transformers = [self.DataTransformerMock1() for _ in range(10)]\
             + [self.DataTransformerMock2()]\
             + [self. DataTransformerMock1() for _ in range(10)]
@@ -167,7 +167,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_transform_fit(self):
         # given
-        data = constant_timeseries(0, 3)
+        data = constant_timeseries(value=0, length=3)
         transformers = [
             self.DataTransformerMock1() for _ in range(10)
         ] + [self.DataTransformerMock2() for _ in range(10)]
@@ -186,7 +186,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_inverse_transform(self):
         # given
-        data = constant_timeseries(0., 3)
+        data = constant_timeseries(value=0., length=3)
 
         transformers = [self.PlusTenTransformer(), self.TimesTwoTransformer()]
         p = Pipeline(transformers)
@@ -231,8 +231,8 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_multi_ts(self):
 
-        series1 = constant_timeseries(0., 3)
-        series2 = constant_timeseries(1., 3)
+        series1 = constant_timeseries(value=0., length=3)
+        series2 = constant_timeseries(value=1., length=3)
 
         data = [series1, series2]
 
@@ -250,7 +250,7 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(data, back)
 
     def test_pipeline_partial_inverse(self):
-        series = constant_timeseries(0., 3)
+        series = constant_timeseries(value=0., length=3)
 
         def plus_ten(x):
             return x + 10
