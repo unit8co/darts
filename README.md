@@ -134,10 +134,10 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `FFT` (Fast Fourier Transform) | x | | | | | |
 `RegressionModel` (incl `RandomForest`, `LinearRegressionModel` and `LightGBMModel`) | x | x | | x | x | x |
 `RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | | x | [DeepAR paper](https://arxiv.org/abs/1704.04110)
-`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | |
+`BlockRNNModel` (incl. LSTM and GRU) | x | x | x | x | x | |
 `NBEATSModel` | x | x | | x | x | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
 `TCNModel` | x | x | x | x | x | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
-`TransformerModel` | x | x | | x | x | | 
+`TransformerModel` | x | x | x | x | x | | 
 Naive Baselines | x | | | | | |
 
 
