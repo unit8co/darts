@@ -61,7 +61,7 @@ class ProphetTestCase(DartsBaseTestClass):
         univariate and stochastic forecasting with the validation timeseries and Prophet's base model output.
 
         The underlying curve to forecast is a sine timeseries multiplied with another sine timeseries.
-        The curve shape repeats every 48 hours (seasonal_periods=48).
+        The curve shape repeats every 2*period timesteps (i.e. for period=24 hours -> seasonal_periods=48).
         We take the second sine wave as a covariate for the model.
         With the added custom seasonality and covariate, the model should have a very accurate forecast.
         """

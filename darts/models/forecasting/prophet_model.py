@@ -4,14 +4,15 @@ Facebook Prophet
 """
 
 from typing import Optional, Union, List
+
 import logging
+import prophet
 import numpy as np
+import pandas as pd
 
 from darts.timeseries import TimeSeries
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
-import pandas as pd
 from darts.logging import get_logger, execute_and_suppress_output, raise_if
-import prophet
 
 
 logger = get_logger(__name__)
@@ -85,7 +86,10 @@ class Prophet(DualCovariatesForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def fit(self,
+            series: TimeSeries,
+            future_covariates: Optional[TimeSeries] = None) -> None:
+
         super().fit(series, future_covariates)
         series = self.training_series
 
@@ -97,12 +101,11 @@ class Prophet(DualCovariatesForecastingModel):
         self.model = prophet.Prophet(**self.prophet_kwargs)
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
-        if self._add_seasonalities:
-            interval_length = self._freq_to_days(series.freq_str)
-            for seasonality_name, attributes in self._add_seasonalities.items():
-                self.model.add_seasonality(name=seasonality_name,
-                                           period=attributes['seasonal_periods'] * interval_length,
-                                           fourier_order=attributes['fourier_order'])
+        interval_length = self._freq_to_days(series.freq_str)
+        for seasonality_name, attributes in self._add_seasonalities.items():
+            self.model.add_seasonality(name=seasonality_name,
+                                       period=attributes['seasonal_periods'] * interval_length,
+                                       fourier_order=attributes['fourier_order'])
 
         # add covariates
         if future_covariates is not None:
@@ -120,6 +123,7 @@ class Prophet(DualCovariatesForecastingModel):
                 n: int,
                 future_covariates: Optional[TimeSeries] = None,
                 num_samples: int = 1) -> TimeSeries:
+
         super().predict(n, future_covariates, num_samples)
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
@@ -132,8 +136,8 @@ class Prophet(DualCovariatesForecastingModel):
         return self._build_forecast_series(forecast)
 
     def _generate_predict_df(self,
-                            n: int,
-                            future_covariates: Optional[TimeSeries] = None) -> pd.DataFrame:
+                             n: int,
+                             future_covariates: Optional[TimeSeries] = None) -> pd.DataFrame:
         """Returns a pandas DataFrame in the format required for Prophet.predict() with `n` dates after the end of
         the fitted TimeSeries"""
 
@@ -146,8 +150,8 @@ class Prophet(DualCovariatesForecastingModel):
         return True
 
     def _stochastic_samples(self,
-                           predict_df,
-                           n_samples) -> np.ndarray:
+                            predict_df,
+                            n_samples) -> np.ndarray:
         """Returns stochastic forecast of `n_samples` samples.
         This method is a replicate of Prophet.predict() which suspends simplification of stochastic samples to
         deterministic target values."""
@@ -157,7 +161,7 @@ class Prophet(DualCovariatesForecastingModel):
         self.model.uncertainty_samples = n_samples
 
         if self.model.history is None:
-            raise Exception('Model has not been fit.')
+            raise ValueError('Model has not been fit.')
 
         if predict_df is None:
             predict_df = self.model.history.copy()
@@ -225,7 +229,7 @@ class Prophet(DualCovariatesForecastingModel):
         self._store_add_seasonality_call(seasonality_call=function_call)
 
     def _store_add_seasonality_call(self,
-                                 seasonality_call: Optional[dict] = None) -> None:
+                                    seasonality_call: Optional[dict] = None) -> None:
         """Checks the validity of an add_seasonality() call and stores valid calls.
         As the actual model is only created at fitting time, and seasonalities are added pre-fit,
         the add_seasonality calls must be stored and checked on Darts' side.
