@@ -28,6 +28,7 @@ from darts.models.forecasting.tft_submodels import (
     VariableSelectionNetwork,
     MultiEmbedding,
     LSTM,
+    QuantileLoss
 )
 
 logger = get_logger(__name__)
@@ -64,7 +65,7 @@ class _TFTModule(nn.Module):
                  lstm_layers: int = 1,
                  dropout: float = 0.1,
                  output_size: Union[int, List[int]] = 7,
-                 loss_fn: Optional[nn.Module] = torch.nn.MSELoss,
+                 loss_fn: Optional[nn.Module] = None,
                  attention_head_size: int = 4,
                  max_encoder_length: int = 10,
                  static_categoricals: List[str] = [],
@@ -191,9 +192,7 @@ class _TFTModule(nn.Module):
             dropout=dropout,
             context_size=hidden_size,
             prescalers=self.prescalers,
-            single_variable_grns={}
-            if not share_single_variable_networks
-            else self.shared_single_variable_grns,
+            single_variable_grns={} if not share_single_variable_networks else self.shared_single_variable_grns,
         )
 
         self.decoder_variable_selection = VariableSelectionNetwork(
@@ -203,9 +202,7 @@ class _TFTModule(nn.Module):
             dropout=dropout,
             context_size=hidden_size,
             prescalers=self.prescalers,
-            single_variable_grns={}
-            if not share_single_variable_networks
-            else self.shared_single_variable_grns,
+            single_variable_grns={} if not share_single_variable_networks else self.shared_single_variable_grns
         )
 
         # static encoders

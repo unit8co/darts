@@ -33,6 +33,7 @@ try:
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.transformer_model import TransformerModel
     from darts.models.forecasting.tft import TFTModel
+    from darts.models.forecasting.tft_pytorch import TemporalFusionTransformer
 
 except ModuleNotFoundError:
     logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")

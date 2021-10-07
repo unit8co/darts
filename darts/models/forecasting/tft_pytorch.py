@@ -4,6 +4,7 @@ The temporal fusion transformer is a powerful predictive model for forecasting t
 from copy import copy
 from typing import Dict, List, Tuple, Union
 
+from matplotlib import pyplot as plt
 import numpy as np
 import torch
 from torch import nn
@@ -11,7 +12,7 @@ from torch import nn
 from pytorch_forecasting.data import TimeSeriesDataSet
 from pytorch_forecasting.metrics import MAE, MAPE, MASE, RMSE, SMAPE, MultiHorizonMetric, MultiLoss, QuantileLoss
 from pytorch_forecasting.models.base_model import BaseModelWithCovariates
-from pytorch_forecasting.models import LSTM, MultiEmbedding
+# from pytorch_forecasting.models import LSTM, MultiEmbedding
 from darts.models.forecasting.tft_submodels import (
     AddNorm,
     GateAddNorm,
@@ -19,8 +20,10 @@ from darts.models.forecasting.tft_submodels import (
     GatedResidualNetwork,
     InterpretableMultiHeadAttention,
     VariableSelectionNetwork,
+    LSTM,
+    MultiEmbedding
 )
-from pytorch_forecasting.utils import create_mask, detach
+from pytorch_forecasting.utils import autocorrelation, create_mask, detach, integer_histogram, padded_stack, to_list
 
 
 class TemporalFusionTransformer(BaseModelWithCovariates):
@@ -285,7 +288,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         self.post_lstm_gate_encoder = GatedLinearUnit(self.hparams.hidden_size, dropout=self.hparams.dropout)
         self.post_lstm_gate_decoder = self.post_lstm_gate_encoder
         # self.post_lstm_gate_decoder = GatedLinearUnit(self.hparams.hidden_size, dropout=self.hparams.dropout)
-        self.post_lstm_add_norm_encoder = AddNorm(self.hparams.hidden_size, trainable_add=False)
+        self.post_lstm_add_norm_encoder = AddNorm(self.hparams.hidden_size)
         # self.post_lstm_add_norm_decoder = AddNorm(self.hparams.hidden_size, trainable_add=True)
         self.post_lstm_add_norm_decoder = self.post_lstm_add_norm_encoder
 
@@ -300,17 +303,17 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
 
         # attention for long-range processing
         self.multihead_attn = InterpretableMultiHeadAttention(
-            d_model=self.hparams.hidden_size, n_head=self.hparams.attention_head_size, dropout=self.hparams.dropout
+            d_model=self.hparams.hidden_size, n_head=self.hparams.attention_head_size
         )
         self.post_attn_gate_norm = GateAddNorm(
-            self.hparams.hidden_size, dropout=self.hparams.dropout, trainable_add=False
+            self.hparams.hidden_size, dropout=self.hparams.dropout
         )
         self.pos_wise_ff = GatedResidualNetwork(
             self.hparams.hidden_size, self.hparams.hidden_size, self.hparams.hidden_size, dropout=self.hparams.dropout
         )
 
         # output processing -> no dropout at this late stage
-        self.pre_output_gate_norm = GateAddNorm(self.hparams.hidden_size, dropout=None, trainable_add=False)
+        self.pre_output_gate_norm = GateAddNorm(self.hparams.hidden_size, dropout=None)
 
         if self.n_targets > 1:  # if to run with multiple targets
             self.output_layer = nn.ModuleList(
@@ -391,6 +394,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         """
         encoder_lengths = x["encoder_lengths"]
         decoder_lengths = x["decoder_lengths"]
+
         x_cat = torch.cat([x["encoder_cat"], x["decoder_cat"]], dim=1)  # concatenate in time dimension
         x_cont = torch.cat([x["encoder_cont"], x["decoder_cont"]], dim=1)  # concatenate in time dimension
         timesteps = x_cont.size(1)  # encode + decode length
@@ -528,3 +532,278 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         """
         if self.log_interval > 0:
             self.log_interpretation(outputs)
+
+    def interpret_output(
+        self,
+        out: Dict[str, torch.Tensor],
+        reduction: str = "none",
+        attention_prediction_horizon: int = 0,
+        attention_as_autocorrelation: bool = False,
+    ) -> Dict[str, torch.Tensor]:
+        """
+        interpret output of model
+
+        Args:
+            out: output as produced by ``forward()``
+            reduction: "none" for no averaging over batches, "sum" for summing attentions, "mean" for
+                normalizing by encode lengths
+            attention_prediction_horizon: which prediction horizon to use for attention
+            attention_as_autocorrelation: if to record attention as autocorrelation - this should be set to true in
+                case of ``reduction != "none"`` and differing prediction times of the samples. Defaults to False
+
+        Returns:
+            interpretations that can be plotted with ``plot_interpretation()``
+        """
+
+        # histogram of decode and encode lengths
+        encoder_length_histogram = integer_histogram(out["encoder_lengths"], min=0, max=self.hparams.max_encoder_length)
+        decoder_length_histogram = integer_histogram(
+            out["decoder_lengths"], min=1, max=out["decoder_variables"].size(1)
+        )
+
+        # mask where decoder and encoder where not applied when averaging variable selection weights
+        encoder_variables = out["encoder_variables"].squeeze(-2)
+        encode_mask = create_mask(encoder_variables.size(1), out["encoder_lengths"])
+        encoder_variables = encoder_variables.masked_fill(encode_mask.unsqueeze(-1), 0.0).sum(dim=1)
+        encoder_variables /= (
+            out["encoder_lengths"]
+            .where(out["encoder_lengths"] > 0, torch.ones_like(out["encoder_lengths"]))
+            .unsqueeze(-1)
+        )
+
+        decoder_variables = out["decoder_variables"].squeeze(-2)
+        decode_mask = create_mask(decoder_variables.size(1), out["decoder_lengths"])
+        decoder_variables = decoder_variables.masked_fill(decode_mask.unsqueeze(-1), 0.0).sum(dim=1)
+        decoder_variables /= out["decoder_lengths"].unsqueeze(-1)
+
+        # static variables need no masking
+        static_variables = out["static_variables"].squeeze(1)
+        # attention is batch x time x heads x time_to_attend
+        # average over heads + only keep prediction attention and attention on observed timesteps
+        attention = out["attention"][
+            :, attention_prediction_horizon, :, : out["encoder_lengths"].max() + attention_prediction_horizon
+        ].mean(1)
+
+        if reduction != "none":  # if to average over batches
+            static_variables = static_variables.sum(dim=0)
+            encoder_variables = encoder_variables.sum(dim=0)
+            decoder_variables = decoder_variables.sum(dim=0)
+
+            # reorder attention or averaging
+            for i in range(len(attention)):  # very inefficient but does the trick
+                if 0 < out["encoder_lengths"][i] < attention.size(1) - attention_prediction_horizon - 1:
+                    relevant_attention = attention[
+                        i, : out["encoder_lengths"][i] + attention_prediction_horizon
+                    ].clone()
+                    if attention_as_autocorrelation:
+                        relevant_attention = autocorrelation(relevant_attention)
+                    attention[i, -out["encoder_lengths"][i] - attention_prediction_horizon :] = relevant_attention
+                    attention[i, : attention.size(1) - out["encoder_lengths"][i] - attention_prediction_horizon] = 0.0
+                elif attention_as_autocorrelation:
+                    attention[i] = autocorrelation(attention[i])
+
+            attention = attention.sum(dim=0)
+            if reduction == "mean":
+                attention = attention / encoder_length_histogram[1:].flip(0).cumsum(0).clamp(1)
+                attention = attention / attention.sum(-1).unsqueeze(-1)  # renormalize
+            elif reduction == "sum":
+                pass
+            else:
+                raise ValueError(f"Unknown reduction {reduction}")
+
+            attention = torch.zeros(
+                self.hparams.max_encoder_length + attention_prediction_horizon, device=self.device
+            ).scatter(
+                dim=0,
+                index=torch.arange(
+                    self.hparams.max_encoder_length + attention_prediction_horizon - attention.size(-1),
+                    self.hparams.max_encoder_length + attention_prediction_horizon,
+                    device=self.device,
+                ),
+                src=attention,
+            )
+        else:
+            attention = attention / attention.sum(-1).unsqueeze(-1)  # renormalize
+
+        interpretation = dict(
+            attention=attention,
+            static_variables=static_variables,
+            encoder_variables=encoder_variables,
+            decoder_variables=decoder_variables,
+            encoder_length_histogram=encoder_length_histogram,
+            decoder_length_histogram=decoder_length_histogram,
+        )
+        return interpretation
+
+    def plot_prediction(
+        self,
+        x: Dict[str, torch.Tensor],
+        out: Dict[str, torch.Tensor],
+        idx: int,
+        plot_attention: bool = True,
+        add_loss_to_title: bool = False,
+        show_future_observed: bool = True,
+        ax=None,
+        **kwargs,
+    ) -> plt.Figure:
+        """
+        Plot actuals vs prediction and attention
+
+        Args:
+            x (Dict[str, torch.Tensor]): network input
+            out (Dict[str, torch.Tensor]): network output
+            idx (int): sample index
+            plot_attention: if to plot attention on secondary axis
+            add_loss_to_title: if to add loss to title. Default to False.
+            show_future_observed: if to show actuals for future. Defaults to True.
+            ax: matplotlib axes to plot on
+
+        Returns:
+            plt.Figure: matplotlib figure
+        """
+
+        # plot prediction as normal
+        fig = super().plot_prediction(
+            x,
+            out,
+            idx=idx,
+            add_loss_to_title=add_loss_to_title,
+            show_future_observed=show_future_observed,
+            ax=ax,
+            **kwargs,
+        )
+
+        # add attention on secondary axis
+        if plot_attention:
+            interpretation = self.interpret_output(out)
+            for f in to_list(fig):
+                ax = f.axes[0]
+                ax2 = ax.twinx()
+                ax2.set_ylabel("Attention")
+                encoder_length = x["encoder_lengths"][idx]
+                ax2.plot(
+                    torch.arange(-encoder_length, 0),
+                    interpretation["attention"][idx, :encoder_length].detach().cpu(),
+                    alpha=0.2,
+                    color="k",
+                )
+                f.tight_layout()
+        return fig
+
+    def plot_interpretation(self, interpretation: Dict[str, torch.Tensor]) -> Dict[str, plt.Figure]:
+        """
+        Make figures that interpret model.
+
+        * Attention
+        * Variable selection weights / importances
+
+        Args:
+            interpretation: as obtained from ``interpret_output()``
+
+        Returns:
+            dictionary of matplotlib figures
+        """
+        figs = {}
+
+        # attention
+        fig, ax = plt.subplots()
+        attention = interpretation["attention"].detach().cpu()
+        attention = attention / attention.sum(-1).unsqueeze(-1)
+        ax.plot(
+            np.arange(-self.hparams.max_encoder_length, attention.size(0) - self.hparams.max_encoder_length), attention
+        )
+        ax.set_xlabel("Time index")
+        ax.set_ylabel("Attention")
+        ax.set_title("Attention")
+        figs["attention"] = fig
+
+        # variable selection
+        def make_selection_plot(title, values, labels):
+            fig, ax = plt.subplots(figsize=(7, len(values) * 0.25 + 2))
+            order = np.argsort(values)
+            values = values / values.sum(-1).unsqueeze(-1)
+            ax.barh(np.arange(len(values)), values[order] * 100, tick_label=np.asarray(labels)[order])
+            ax.set_title(title)
+            ax.set_xlabel("Importance in %")
+            plt.tight_layout()
+            return fig
+
+        figs["static_variables"] = make_selection_plot(
+            "Static variables importance", interpretation["static_variables"].detach().cpu(), self.static_variables
+        )
+        figs["encoder_variables"] = make_selection_plot(
+            "Encoder variables importance", interpretation["encoder_variables"].detach().cpu(), self.encoder_variables
+        )
+        figs["decoder_variables"] = make_selection_plot(
+            "Decoder variables importance", interpretation["decoder_variables"].detach().cpu(), self.decoder_variables
+        )
+
+        return figs
+
+    def log_interpretation(self, outputs):
+        """
+        Log interpretation metrics to tensorboard.
+        """
+        # extract interpretations
+        interpretation = {
+            # use padded_stack because decoder length histogram can be of different length
+            name: padded_stack([x["interpretation"][name].detach() for x in outputs], side="right", value=0).sum(0)
+            for name in outputs[0]["interpretation"].keys()
+        }
+        # normalize attention with length histogram squared to account for: 1. zeros in attention and
+        # 2. higher attention due to less values
+        attention_occurances = interpretation["encoder_length_histogram"][1:].flip(0).cumsum(0).float()
+        attention_occurances = attention_occurances / attention_occurances.max()
+        attention_occurances = torch.cat(
+            [
+                attention_occurances,
+                torch.ones(
+                    interpretation["attention"].size(0) - attention_occurances.size(0),
+                    dtype=attention_occurances.dtype,
+                    device=attention_occurances.device,
+                ),
+            ],
+            dim=0,
+        )
+        interpretation["attention"] = interpretation["attention"] / attention_occurances.pow(2).clamp(1.0)
+        interpretation["attention"] = interpretation["attention"] / interpretation["attention"].sum()
+
+        figs = self.plot_interpretation(interpretation)  # make interpretation figures
+        label = ["val", "train"][self.training]
+        # log to tensorboard
+        for name, fig in figs.items():
+            self.logger.experiment.add_figure(
+                f"{label.capitalize()} {name} importance", fig, global_step=self.global_step
+            )
+
+        # log lengths of encoder/decoder
+        for type in ["encoder", "decoder"]:
+            fig, ax = plt.subplots()
+            lengths = (
+                padded_stack([out["interpretation"][f"{type}_length_histogram"] for out in outputs])
+                .sum(0)
+                .detach()
+                .cpu()
+            )
+            if type == "decoder":
+                start = 1
+            else:
+                start = 0
+            ax.plot(torch.arange(start, start + len(lengths)), lengths)
+            ax.set_xlabel(f"{type.capitalize()} length")
+            ax.set_ylabel("Number of samples")
+            ax.set_title(f"{type.capitalize()} length distribution in {label} epoch")
+
+            self.logger.experiment.add_figure(
+                f"{label.capitalize()} {type} length distribution", fig, global_step=self.global_step
+            )
+
+    def log_embeddings(self):
+        """
+        Log embeddings to tensorboard
+        """
+        for name, emb in self.input_embeddings.items():
+            labels = self.hparams.embedding_labels[name]
+            self.logger.experiment.add_embedding(
+                emb.weight.data.detach().cpu(), metadata=labels, tag=name, global_step=self.global_step
+            )
