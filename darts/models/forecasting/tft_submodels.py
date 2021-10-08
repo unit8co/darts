@@ -18,16 +18,39 @@ Implementations of flexible GRU and LSTM that can handle sequences of length 0.
 
 HiddenState = Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]
 
+# 0: all False, 1: all True, 2: optimal
+adaption_case = 0
 # setting GRN, VSN and RESAMPLE to True might have better learning rates
-USE_ADAPTION_GLU = True  # use True, see https://leimao.github.io/blog/Gated-Linear-Units/
-USE_ADAPTION_GRN = True
-USE_ADAPTION_VSN = True
-USE_ADAPTION_RESAMPLE = False
-USE_ADAPTION_SCALED_DOT_TRANSFORM = True
-USE_ADAPTION_NO_ATTENTION_DROPOUT = False
-USE_ADAPTION_NO_BIAS_IMHA = True
-USE_ADAPTION_IMHA_SHAPE = False
-USE_BUILTIN_LSTM = False
+
+if adaption_case == 0:
+    USE_ADAPTION_GLU = False  # use True, see https://leimao.github.io/blog/Gated-Linear-Units/
+    USE_ADAPTION_GRN = False
+    USE_ADAPTION_VSN = False
+    USE_ADAPTION_RESAMPLE = False
+    USE_ADAPTION_SCALED_DOT_TRANSFORM = False  # this doesn't exist anymore
+    USE_ADAPTION_NO_ATTENTION_DROPOUT = False
+    USE_ADAPTION_NO_BIAS_IMHA = False
+    USE_BUILTIN_LSTM = False
+elif adaption_case == 1:
+    USE_ADAPTION_GLU = True  # use True, see https://leimao.github.io/blog/Gated-Linear-Units/
+    USE_ADAPTION_GRN = True
+    USE_ADAPTION_VSN = True
+    USE_ADAPTION_RESAMPLE = True
+    USE_ADAPTION_SCALED_DOT_TRANSFORM = True  # this doesn't exist anymore
+    USE_ADAPTION_NO_ATTENTION_DROPOUT = True
+    USE_ADAPTION_NO_BIAS_IMHA = True
+    USE_BUILTIN_LSTM = False
+elif adaption_case == 2:
+    USE_ADAPTION_GLU = False  # use True, see https://leimao.github.io/blog/Gated-Linear-Units/
+    USE_ADAPTION_GRN = True
+    USE_ADAPTION_VSN = True
+    USE_ADAPTION_RESAMPLE = False
+    USE_ADAPTION_SCALED_DOT_TRANSFORM = False  # this doesn't exist anymore
+    USE_ADAPTION_NO_ATTENTION_DROPOUT = False
+    USE_ADAPTION_NO_BIAS_IMHA = True
+    USE_BUILTIN_LSTM = False
+else:
+    raise ValueError('adaption case not corect')
 
 
 class QuantileLoss(nn.Module):
@@ -410,8 +433,7 @@ class GatedLinearUnit(nn.Module):
             self.fc1 = nn.Linear(self.input_size, self.hidden_size)
             self.fc2 = nn.Linear(self.input_size, self.hidden_size)
             self.sigmoid = nn.Sigmoid()
-            # TODO: here maybe self.init_weigths() as well?
-            # self.init_weights()
+            self.init_weights()
 
     def init_weights(self):
         for n, p in self.named_parameters():
@@ -430,7 +452,7 @@ class GatedLinearUnit(nn.Module):
         else:  # I actually think this is better, see https://leimao.github.io/blog/Gated-Linear-Units/
             x_sig = self.sigmoid(self.fc1(x))
             x = self.fc2(x)
-            x = torch.mul(x, x_sig)
+            x = torch.mul(x_sig, x)
         return x
 
 
@@ -553,7 +575,10 @@ class GatedResidualNetwork(nn.Module):
             else:
                 self.resample_norm = TimeDistributedInterpolation(self.output_size, batch_first=True)
 
-        self.fc1 = nn.Linear(self.input_size, self.hidden_size)
+        try:
+            self.fc1 = nn.Linear(self.input_size, self.hidden_size)
+        except ZeroDivisionError:
+            d = 1
         if self.context_size is not None:
             # according to equation (4), no context bias
             self.context = nn.Linear(self.context_size, self.hidden_size, bias=False)
@@ -627,14 +652,15 @@ class VariableSelectionNetwork(nn.Module):
         self.num_inputs = len(self.input_sizes)
         self.input_sizes_total = sum(self.input_sizes.values())
 
-        # right side of figure 2 bottom right graph
-        self.vars_flattened_grn = GatedResidualNetwork(
-            input_size=self.input_sizes_total,
-            hidden_size=min(self.hidden_size, self.num_inputs) if not USE_ADAPTION_VSN else self.hidden_size,
-            output_size=self.num_inputs,
-            dropout=self.dropout,
-            context_size=self.context_size
-        )
+        if self.num_inputs > 1:
+            # right side of figure 2 bottom right graph
+            self.vars_flattened_grn = GatedResidualNetwork(
+                input_size=self.input_sizes_total,
+                hidden_size=min(self.hidden_size, self.num_inputs) if not USE_ADAPTION_VSN else self.hidden_size,
+                output_size=self.num_inputs,
+                dropout=self.dropout,
+                context_size=self.context_size
+            )
 
         # left side of figure 2 bottom right graph
         # TODO: Check prescalers, embeddings, linear transformations
@@ -788,9 +814,9 @@ class InterpretableMultiHeadAttention(nn.Module):
 
     def init_weights(self):
         for name, p in self.named_parameters():
-            if "bias" not in name:
+            if "bias" not in name:  # layer weigths
                 torch.nn.init.xavier_uniform_(p)
-            else:
+            else:  # bias
                 torch.nn.init.zeros_(p)
 
     def forward(self, q, k, v, mask=None) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -807,16 +833,10 @@ class InterpretableMultiHeadAttention(nn.Module):
             heads.append(head)
             attns.append(attn)
 
-        if not USE_ADAPTION_IMHA_SHAPE:
-            head = torch.stack(heads, dim=2) if self.n_head > 1 else heads[0]
-            attn = torch.stack(attns, dim=2)
+        head = torch.stack(heads, dim=2) if self.n_head > 1 else heads[0]
+        attn = torch.stack(attns, dim=2)
 
-            outputs = torch.mean(head, dim=2) if self.n_head > 1 else head
-        else:
-            head = torch.stack(heads, dim=0) if self.n_head > 1 else heads[0]
-            attn = torch.stack(attns, dim=0)
-
-            outputs = torch.mean(head, dim=0) if self.n_head > 1 else head
+        outputs = torch.mean(head, dim=2) if self.n_head > 1 else head
 
         outputs = self.w_h(outputs)
         if not USE_ADAPTION_NO_ATTENTION_DROPOUT:
