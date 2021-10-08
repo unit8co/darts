@@ -2498,7 +2498,7 @@ def concatenate(timeserie_sequence: Sequence['TimeSeries'],
                                        freq=timeserie_sequence[0].freq,
                                        periods=da_concat.sizes[axis]
                                        )
-                da_concat = da_concat.assign_coords({DIMS[0]: tindex})
+                da_concat = da_concat.assign_coords({da_sequence[0].dims[0]: tindex})
             else:
                 raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent,"
                                          " i.e. end_time of the previous one should be equal to start_time - 1"
@@ -2519,12 +2519,12 @@ def concatenate(timeserie_sequence: Sequence['TimeSeries'],
                          "All concatenating time series need to have the same time axis or at least"
                          " be of the same length.", logger)
 
-                ts1_time_coord = da_sequence[0].coords[DIMS[0]]
+                ts1_time_coord = da_sequence[0].coords[da_sequence[0].dims[0]]
                 axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
 
                 da_concat = xr.concat(da_sequence, dim=axis, join='left')
-                da_concat = da_concat.assign_coords({DIMS[0]: ts1_time_coord,
-                                                               axis: axis_index})
+                da_concat = da_concat.assign_coords({da_sequence[0].dims[0]: ts1_time_coord,
+                                                                             axis: axis_index})
             else:
                 raise_log(AttributeError("All concatenating time series need to have the same time axis."
                                          " You can override this error by setting `ignore_time_axes=True`."))
