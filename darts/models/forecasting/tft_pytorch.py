@@ -10,10 +10,11 @@ import torch
 from torch import nn
 
 from pytorch_forecasting.data import TimeSeriesDataSet
-from pytorch_forecasting.metrics import MAE, MAPE, MASE, RMSE, SMAPE, MultiHorizonMetric, MultiLoss, QuantileLoss
+# from pytorch_forecasting.metrics import MAE, MAPE, MASE, RMSE, SMAPE, MultiHorizonMetric, MultiLoss, QuantileLoss
+from pytorch_forecasting.metrics import MAE, MAPE, MASE, RMSE, SMAPE, MultiHorizonMetric, MultiLoss
 from pytorch_forecasting.models.base_model import BaseModelWithCovariates
 # from pytorch_forecasting.models import LSTM, MultiEmbedding
-from darts.models.forecasting.tft_submodels import (
+from darts.models.forecasting.tft_submodels_orig import (
     AddNorm,
     GateAddNorm,
     GatedLinearUnit,
@@ -21,7 +22,8 @@ from darts.models.forecasting.tft_submodels import (
     InterpretableMultiHeadAttention,
     VariableSelectionNetwork,
     LSTM,
-    MultiEmbedding
+    MultiEmbedding,
+    QuantileLoss
 )
 from pytorch_forecasting.utils import autocorrelation, create_mask, detach, integer_histogram, padded_stack, to_list
 
@@ -135,7 +137,8 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         if loss is None:
             loss = QuantileLoss()
         self.save_hyperparameters()
-        # store loss function separately as it is a module
+        # # store loss function separately as it is a module
+        # assert isinstance(loss, LightningMetric), "Loss has to be a PyTorch Lightning `Metric`"
         super().__init__(loss=loss, logging_metrics=logging_metrics, **kwargs)
 
         # processing inputs
@@ -287,9 +290,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         # skip connection for lstm
         self.post_lstm_gate_encoder = GatedLinearUnit(self.hparams.hidden_size, dropout=self.hparams.dropout)
         self.post_lstm_gate_decoder = self.post_lstm_gate_encoder
-        # self.post_lstm_gate_decoder = GatedLinearUnit(self.hparams.hidden_size, dropout=self.hparams.dropout)
         self.post_lstm_add_norm_encoder = AddNorm(self.hparams.hidden_size)
-        # self.post_lstm_add_norm_decoder = AddNorm(self.hparams.hidden_size, trainable_add=True)
         self.post_lstm_add_norm_decoder = self.post_lstm_add_norm_encoder
 
         # static enrichment and processing past LSTM
@@ -303,11 +304,9 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
 
         # attention for long-range processing
         self.multihead_attn = InterpretableMultiHeadAttention(
-            d_model=self.hparams.hidden_size, n_head=self.hparams.attention_head_size
+            d_model=self.hparams.hidden_size, n_head=self.hparams.attention_head_size, dropout=self.hparams.dropout
         )
-        self.post_attn_gate_norm = GateAddNorm(
-            self.hparams.hidden_size, dropout=self.hparams.dropout
-        )
+        self.post_attn_gate_norm = GateAddNorm(self.hparams.hidden_size, dropout=self.hparams.dropout)
         self.pos_wise_ff = GatedResidualNetwork(
             self.hparams.hidden_size, self.hparams.hidden_size, self.hparams.hidden_size, dropout=self.hparams.dropout
         )
@@ -394,7 +393,6 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         """
         encoder_lengths = x["encoder_lengths"]
         decoder_lengths = x["decoder_lengths"]
-
         x_cat = torch.cat([x["encoder_cat"], x["decoder_cat"]], dim=1)  # concatenate in time dimension
         x_cont = torch.cat([x["encoder_cont"], x["decoder_cont"]], dim=1)  # concatenate in time dimension
         timesteps = x_cont.size(1)  # encode + decode length

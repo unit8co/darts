@@ -2,7 +2,6 @@
 Implementation of ``nn.Modules`` for temporal fusion transformer.
 """
 from abc import ABC, abstractmethod
-import math
 from typing import Dict, Tuple, List, Union, Optional
 
 import torch
@@ -10,7 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import rnn
 
-# # # 
+# # #
 
 """
 Implementations of flexible GRU and LSTM that can handle sequences of length 0.
@@ -18,231 +17,193 @@ Implementations of flexible GRU and LSTM that can handle sequences of length 0.
 
 HiddenState = Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]
 
-# 0: all False, 1: all True, 2: optimal
-adaption_case = 0
-# setting GRN, VSN and RESAMPLE to True might have better learning rates
 
-if adaption_case == 0:
-    USE_ADAPTION_GLU = False  # use True, see https://leimao.github.io/blog/Gated-Linear-Units/
-    USE_ADAPTION_GRN = False
-    USE_ADAPTION_VSN = False
-    USE_ADAPTION_RESAMPLE = False
-    USE_ADAPTION_SCALED_DOT_TRANSFORM = False  # this doesn't exist anymore
-    USE_ADAPTION_NO_ATTENTION_DROPOUT = False
-    USE_ADAPTION_NO_BIAS_IMHA = False
-    USE_BUILTIN_LSTM = False
-elif adaption_case == 1:
-    USE_ADAPTION_GLU = True  # use True, see https://leimao.github.io/blog/Gated-Linear-Units/
-    USE_ADAPTION_GRN = True
-    USE_ADAPTION_VSN = True
-    USE_ADAPTION_RESAMPLE = True
-    USE_ADAPTION_SCALED_DOT_TRANSFORM = True  # this doesn't exist anymore
-    USE_ADAPTION_NO_ATTENTION_DROPOUT = True
-    USE_ADAPTION_NO_BIAS_IMHA = True
-    USE_BUILTIN_LSTM = False
-elif adaption_case == 2:
-    USE_ADAPTION_GLU = False  # use True, see https://leimao.github.io/blog/Gated-Linear-Units/
-    USE_ADAPTION_GRN = True
-    USE_ADAPTION_VSN = True
-    USE_ADAPTION_RESAMPLE = False
-    USE_ADAPTION_SCALED_DOT_TRANSFORM = False  # this doesn't exist anymore
-    USE_ADAPTION_NO_ATTENTION_DROPOUT = False
-    USE_ADAPTION_NO_BIAS_IMHA = True
-    USE_BUILTIN_LSTM = False
-else:
-    raise ValueError('adaption case not corect')
+USE_ADAPTION_GLU = False  # seems to work better without
+USE_ADAPTION_RESAMPLE = False  # seems to work better without
+USE_ADAPTION_VSN = False  # seems to work better without
+USE_ADAPTION_NO_ATTENTION_DROPOUT = False  # seems to work better without
 
 
 class QuantileLoss(nn.Module):
     """From: https://medium.com/the-artificial-impostor/quantile-regression-part-2-6fdbc26b2629"""
 
-    def __init__(self, quantiles):
+    def __init__(self,
+                 quantiles: Optional[List[float]] = None):
         """
         Arguments:
             quantiles: list of quantiles
         """
         super().__init__()
-        self.quantiles = quantiles
+        self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
 
-    def forward(self, preds, target):
-        assert not target.requires_grad
-        assert preds.shape[0] == target.shape[0]
+    def forward(self, y_pred, y_true):
         losses = []
         for i, q in enumerate(self.quantiles):
-            errors = target - preds[:, i]
-            losses.append(
-                torch.max(
-                    (q - 1) * errors,
-                    q * errors
-                ).unsqueeze(1))
-        loss = torch.mean(
-            torch.sum(torch.cat(losses, dim=1), dim=1))
+            errors = y_true - y_pred[:, i]
+            losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(1))
+        loss = torch.mean(torch.sum(torch.cat(losses, dim=1), dim=1))
         return loss
 
 
-if not USE_BUILTIN_LSTM:
-    class RNN(ABC, nn.RNNBase):
+class RNN(ABC, nn.RNNBase):
+    """
+    Base class flexible RNNs.
+
+    Forward function can handle sequences of length 0.
+    """
+
+    @abstractmethod
+    def handle_no_encoding(self,
+                           hidden_state: HiddenState,
+                           no_encoding: torch.BoolTensor,
+                           initial_hidden_state: HiddenState) -> HiddenState:
         """
-        Base class flexible RNNs.
+        Mask the hidden_state where there is no encoding.
 
-        Forward function can handle sequences of length 0.
+        Args:
+            hidden_state (HiddenState): hidden state where some entries need replacement
+            no_encoding (torch.BoolTensor): positions that need replacement
+            initial_hidden_state (HiddenState): hidden state to use for replacement
+
+        Returns:
+            HiddenState: hidden state with propagated initial hidden state where appropriate
         """
+        pass
 
-        @abstractmethod
-        def handle_no_encoding(self,
-                               hidden_state: HiddenState,
-                               no_encoding: torch.BoolTensor,
-                               initial_hidden_state: HiddenState) -> HiddenState:
-            """
-            Mask the hidden_state where there is no encoding.
+    @abstractmethod
+    def init_hidden_state(self,
+                          x: torch.Tensor) -> HiddenState:
+        """
+        Initialise a hidden_state.
 
-            Args:
-                hidden_state (HiddenState): hidden state where some entries need replacement
-                no_encoding (torch.BoolTensor): positions that need replacement
-                initial_hidden_state (HiddenState): hidden state to use for replacement
+        Args:
+            x (torch.Tensor): network input
 
-            Returns:
-                HiddenState: hidden state with propagated initial hidden state where appropriate
-            """
-            pass
+        Returns:
+            HiddenState: default (zero-like) hidden state
+        """
+        pass
 
-        @abstractmethod
-        def init_hidden_state(self,
-                              x: torch.Tensor) -> HiddenState:
-            """
-            Initialise a hidden_state.
+    @abstractmethod
+    def repeat_interleave(self,
+                          hidden_state: HiddenState,
+                          n_samples: int) -> HiddenState:
+        """
+        Duplicate the hidden_state n_samples times.
 
-            Args:
-                x (torch.Tensor): network input
+        Args:
+            hidden_state (HiddenState): hidden state to repeat
+            n_samples (int): number of repetitions
 
-            Returns:
-                HiddenState: default (zero-like) hidden state
-            """
-            pass
+        Returns:
+            HiddenState: repeated hidden state
+        """
+        pass
 
-        @abstractmethod
-        def repeat_interleave(self,
-                              hidden_state: HiddenState,
-                              n_samples: int) -> HiddenState:
-            """
-            Duplicate the hidden_state n_samples times.
+    def forward(self,
+                x: Union[rnn.PackedSequence, torch.Tensor],
+                hx: HiddenState = None,
+                lengths: torch.LongTensor = None,
+                enforce_sorted: bool = True) -> Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]:
+        """
+        Forward function of rnn that allows zero-length sequences.
 
-            Args:
-                hidden_state (HiddenState): hidden state to repeat
-                n_samples (int): number of repetitions
+        Functions as normal for RNN. Only changes output if lengths are defined.
 
-            Returns:
-                HiddenState: repeated hidden state
-            """
-            pass
+        Args:
+            x (Union[rnn.PackedSequence, torch.Tensor]): input to RNN. either packed sequence or tensor of
+                padded sequences
+            hx (HiddenState, optional): hidden state. Defaults to None.
+            lengths (torch.LongTensor, optional): lengths of sequences. If not None, used to determine correct returned
+                hidden state. Can contain zeros. Defaults to None.
+            enforce_sorted (bool, optional): if lengths are passed, determines if RNN expects them to be sorted.
+                Defaults to True.
 
-        def forward(self,
-                    x: Union[rnn.PackedSequence, torch.Tensor],
-                    hx: HiddenState = None,
-                    lengths: torch.LongTensor = None,
-                    enforce_sorted: bool = True) -> Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]:
-            """
-            Forward function of rnn that allows zero-length sequences.
+        Returns:
+            Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]: output and hidden state.
+                Output is packed sequence if input has been a packed sequence.
+        """
+        if isinstance(x, rnn.PackedSequence) or lengths is None:
+            assert lengths is None, "cannot combine x of type PackedSequence with lengths argument"
+            return super().forward(x, hx=hx)
+        else:
+            min_length = lengths.min()
+            max_length = lengths.max()
+            assert min_length >= 0, "sequence lengths must be great equals 0"
 
-            Functions as normal for RNN. Only changes output if lengths are defined.
-
-            Args:
-                x (Union[rnn.PackedSequence, torch.Tensor]): input to RNN. either packed sequence or tensor of
-                    padded sequences
-                hx (HiddenState, optional): hidden state. Defaults to None.
-                lengths (torch.LongTensor, optional): lengths of sequences. If not None, used to determine correct returned
-                    hidden state. Can contain zeros. Defaults to None.
-                enforce_sorted (bool, optional): if lengths are passed, determines if RNN expects them to be sorted.
-                    Defaults to True.
-
-            Returns:
-                Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]: output and hidden state.
-                    Output is packed sequence if input has been a packed sequence.
-            """
-            if isinstance(x, rnn.PackedSequence) or lengths is None:
-                assert lengths is None, "cannot combine x of type PackedSequence with lengths argument"
-                return super().forward(x, hx=hx)
-            else:
-                min_length = lengths.min()
-                max_length = lengths.max()
-                assert min_length >= 0, "sequence lengths must be great equals 0"
-
-                if max_length == 0:
-                    hidden_state = self.init_hidden_state(x)
-                    if self.batch_first:
-                        out = torch.zeros(lengths.shape[0], x.shape[1], self.hidden_size, dtype=x.dtype, device=x.device)
-                    else:
-                        out = torch.zeros(x.shape[0], lengths.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
-                    return out, hidden_state
+            if max_length == 0:
+                hidden_state = self.init_hidden_state(x)
+                if self.batch_first:
+                    out = torch.zeros(lengths.shape[0], x.shape[1], self.hidden_size, dtype=x.dtype, device=x.device)
                 else:
-                    pack_lengths = lengths.where(lengths > 0, torch.ones_like(lengths))
-                    packed_out, hidden_state = super().forward(
-                        rnn.pack_padded_sequence(
-                            x, pack_lengths.cpu(), enforce_sorted=enforce_sorted, batch_first=self.batch_first
-                        ),
-                        hx=hx,
-                    )
-                    # replace hidden cell with initial input if encoder_length is zero to determine correct initial state
-                    if min_length == 0:
-                        no_encoding = (lengths == 0)[
-                            None, :, None
-                        ]  # shape: n_layers * n_directions x batch_size x hidden_size
-                        if hx is None:
-                            initial_hidden_state = self.init_hidden_state(x)
-                        else:
-                            initial_hidden_state = hx
-                        # propagate initial hidden state when sequence length was 0
-                        hidden_state = self.handle_no_encoding(hidden_state, no_encoding, initial_hidden_state)
-
-                    # return unpacked sequence
-                    out, _ = rnn.pad_packed_sequence(packed_out, batch_first=self.batch_first)
-                    return out, hidden_state
-
-
-    class LSTM(RNN, nn.LSTM):
-        """LSTM that can handle zero-length sequences"""
-
-        def handle_no_encoding(self,
-                               hidden_state: HiddenState,
-                               no_encoding: torch.BoolTensor,
-                               initial_hidden_state: HiddenState) -> HiddenState:
-
-            hidden, cell = hidden_state
-            hidden = hidden.masked_scatter(no_encoding, initial_hidden_state[0])
-            cell = cell.masked_scatter(no_encoding, initial_hidden_state[0])
-            return hidden, cell
-
-        def init_hidden_state(self,
-                              x: torch.Tensor) -> HiddenState:
-
-            num_directions = 2 if self.bidirectional else 1
-            if self.batch_first:
-                batch_size = x.shape[0]
+                    out = torch.zeros(x.shape[0], lengths.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+                return out, hidden_state
             else:
-                batch_size = x.shape[1]
-            hidden = torch.zeros(
-                (self.num_layers * num_directions, batch_size, self.hidden_size),
-                device=x.device,
-                dtype=x.dtype,
-            )
-            cell = torch.zeros(
-                (self.num_layers * num_directions, batch_size, self.hidden_size),
-                device=x.device,
-                dtype=x.dtype,
-            )
-            return hidden, cell
+                pack_lengths = lengths.where(lengths > 0, torch.ones_like(lengths))
+                packed_out, hidden_state = super().forward(
+                    rnn.pack_padded_sequence(
+                        x, pack_lengths.cpu(), enforce_sorted=enforce_sorted, batch_first=self.batch_first
+                    ),
+                    hx=hx,
+                )
+                # replace hidden cell with initial input if encoder_length is zero to determine correct initial state
+                if min_length == 0:
+                    no_encoding = (lengths == 0)[
+                        None, :, None
+                    ]  # shape: n_layers * n_directions x batch_size x hidden_size
+                    if hx is None:
+                        initial_hidden_state = self.init_hidden_state(x)
+                    else:
+                        initial_hidden_state = hx
+                    # propagate initial hidden state when sequence length was 0
+                    hidden_state = self.handle_no_encoding(hidden_state, no_encoding, initial_hidden_state)
 
-        def repeat_interleave(self,
-                              hidden_state: HiddenState,
-                              n_samples: int) -> HiddenState:
+                # return unpacked sequence
+                out, _ = rnn.pad_packed_sequence(packed_out, batch_first=self.batch_first)
+                return out, hidden_state
 
-            hidden, cell = hidden_state
-            hidden = hidden.repeat_interleave(n_samples, 1)
-            cell = cell.repeat_interleave(n_samples, 1)
-            return hidden, cell
 
-else:
-    LSTM = nn.LSTM
+class LSTM(RNN, nn.LSTM):
+    """LSTM that can handle zero-length sequences"""
+
+    def handle_no_encoding(self,
+                           hidden_state: HiddenState,
+                           no_encoding: torch.BoolTensor,
+                           initial_hidden_state: HiddenState) -> HiddenState:
+
+        hidden, cell = hidden_state
+        hidden = hidden.masked_scatter(no_encoding, initial_hidden_state[0])
+        cell = cell.masked_scatter(no_encoding, initial_hidden_state[0])
+        return hidden, cell
+
+    def init_hidden_state(self,
+                          x: torch.Tensor) -> HiddenState:
+
+        num_directions = 2 if self.bidirectional else 1
+        if self.batch_first:
+            batch_size = x.shape[0]
+        else:
+            batch_size = x.shape[1]
+        hidden = torch.zeros(
+            (self.num_layers * num_directions, batch_size, self.hidden_size),
+            device=x.device,
+            dtype=x.dtype,
+        )
+        cell = torch.zeros(
+            (self.num_layers * num_directions, batch_size, self.hidden_size),
+            device=x.device,
+            dtype=x.dtype,
+        )
+        return hidden, cell
+
+    def repeat_interleave(self,
+                          hidden_state: HiddenState,
+                          n_samples: int) -> HiddenState:
+
+        hidden, cell = hidden_state
+        hidden = hidden.repeat_interleave(n_samples, 1)
+        cell = cell.repeat_interleave(n_samples, 1)
+        return hidden, cell
 
 
 class TimeDistributedEmbeddingBag(nn.EmbeddingBag):
@@ -257,7 +218,7 @@ class TimeDistributedEmbeddingBag(nn.EmbeddingBag):
     def forward(self, x):
 
         if len(x.size()) <= 2:
-            return super().forward(x)
+            return self.forward(x)
 
         # Squash samples and timesteps into a single axis
         x_reshape = x.contiguous().view(-1, x.shape[-1])  # (samples * timesteps, input_size)
@@ -331,42 +292,11 @@ class MultiEmbedding(nn.Module):
         for name, emb in self.embeddings.items():
             if name in self.categorical_groups:
                 input_vectors[name] = emb(
-                    x[
-                        ...,
-                        [self.x_categoricals.index(cat_name) for cat_name in self.categorical_groups[name]],
-                    ]
+                    x[..., [self.x_categoricals.index(cat_name) for cat_name in self.categorical_groups[name]],]
                 )
             else:
                 input_vectors[name] = emb(x[..., self.x_categoricals.index(name)])
         return input_vectors
-
-
-class TimeDistributed(nn.Module):
-    """==========================================CHECKED==========================================
-    TODO: NOT USED IN TFT BUT MAYBE REPLACE WITH ResampleNorm() OR TimeDistributedInterpolation()
-    Takes any module and stacks the time dimension with the batch dimenison of inputs before apply the module
-    From: https://discuss.pytorch.org/t/any-pytorch-function-can-work-as-keras-timedistributed/1346/4"""
-    def __init__(self, module: nn.Module, batch_first: bool = False):
-        super().__init__()
-        self.module = module
-        self.batch_first = batch_first
-
-    def forward(self, x):
-
-        if len(x.size()) <= 2:
-            return self.module(x)
-
-        # Squash samples and timesteps into a single axis
-        x_reshape = x.contiguous().view(-1, x.shape[-1])  # (samples * timesteps, input_size)
-
-        y = self.module(x_reshape)
-
-        # We have to reshape Y
-        if self.batch_first:
-            y = y.contiguous().view(x.shape[0], -1, y.shape[-1])  # (samples, timesteps, output_size)
-        else:
-            y = y.view(-1, x.shape[1], y.shape[-1])  # (timesteps, samples, output_size)
-        return y
 
 
 class TimeDistributedInterpolation(nn.Module):
@@ -405,7 +335,6 @@ class TimeDistributedInterpolation(nn.Module):
 
 
 class GatedLinearUnit(nn.Module):
-    """==========================================CHECKED=========================================="""
     def __init__(self,
                  input_size: int,
                  hidden_size: int = None,
@@ -425,21 +354,20 @@ class GatedLinearUnit(nn.Module):
         self.dropout = nn.Dropout(dropout) if dropout is not None else dropout
 
         if not USE_ADAPTION_GLU:
-            # TODO: WHY IS IT hidden_size * 2??? is it because glu() splits half along a given dimension?
+            # from pytorch-forecasting: built-in glu() splits input half along given dimension
             self.fc = nn.Linear(self.input_size, self.hidden_size * 2)
-
-            self.init_weights()
-        else:
+        else:  # according to paper this would be the correct way
             self.fc1 = nn.Linear(self.input_size, self.hidden_size)
             self.fc2 = nn.Linear(self.input_size, self.hidden_size)
             self.sigmoid = nn.Sigmoid()
-            self.init_weights()
+
+        self.init_weights()
 
     def init_weights(self):
         for n, p in self.named_parameters():
             if "bias" in n:
                 torch.nn.init.zeros_(p)
-            elif "fc" in n:
+            elif "weight" in n:
                 torch.nn.init.xavier_uniform_(p)
 
     def forward(self, x):
@@ -489,7 +417,6 @@ class ResampleNorm(nn.Module):
 
 
 class AddNorm(nn.Module):
-    """==========================================CHECKED=========================================="""
     def __init__(self,
                  input_size: int,
                  skip_size: int = None):
@@ -517,8 +444,7 @@ class AddNorm(nn.Module):
 
 
 class GateAddNorm(nn.Module):
-    """==========================================CHECKED==========================================
-    Equation (2)"""
+    """Equation (2)"""
     def __init__(self,
                  input_size: int,
                  hidden_size: int = None,
@@ -543,10 +469,8 @@ class GateAddNorm(nn.Module):
 
 
 class GatedResidualNetwork(nn.Module):
-    """==========================================CHECKED==========================================
-    Top right graph in Figure 2 and formulas (2) -- (5)
+    """Top right graph in Figure 2 and formulas (2) -- (5)"""
 
-    """
     def __init__(self,
                  input_size: int,
                  hidden_size: int,
@@ -575,10 +499,7 @@ class GatedResidualNetwork(nn.Module):
             else:
                 self.resample_norm = TimeDistributedInterpolation(self.output_size, batch_first=True)
 
-        try:
-            self.fc1 = nn.Linear(self.input_size, self.hidden_size)
-        except ZeroDivisionError:
-            d = 1
+        self.fc1 = nn.Linear(self.input_size, self.hidden_size)
         if self.context_size is not None:
             # according to equation (4), no context bias
             self.context = nn.Linear(self.context_size, self.hidden_size, bias=False)
@@ -586,9 +507,7 @@ class GatedResidualNetwork(nn.Module):
 
         self.fc2 = nn.Linear(self.hidden_size, self.hidden_size)
 
-        if not USE_ADAPTION_GRN:
-            # TODO: what does this do?
-            self.init_weights()
+        self.init_weights()
 
         self.gate_add_norm = GateAddNorm(
             input_size=self.hidden_size,
@@ -602,12 +521,12 @@ class GatedResidualNetwork(nn.Module):
         for name, p in self.named_parameters():
             if "bias" in name:
                 torch.nn.init.zeros_(p)
-            elif "fc1" in name or "fc2" in name:
+            elif "fc" in name:  # fc weights
                 torch.nn.init.kaiming_normal_(p, a=0, mode="fan_in", nonlinearity="leaky_relu")
-            elif "context" in name:
+            elif "context" in name:  # context weights
                 torch.nn.init.xavier_uniform_(p)
 
-    def forward(self, x, context=None, residual=None):
+    def forward(self, x, context=None):
         """seems to be correct"""
 
         # residual, also called `skip` basically bypasses until add_norm
@@ -627,7 +546,6 @@ class GatedResidualNetwork(nn.Module):
 
 
 class VariableSelectionNetwork(nn.Module):
-    """==========================================SEMI-----CHECKED=========================================="""
     def __init__(self,
                  input_sizes: Dict[str, int],
                  hidden_size: int,
@@ -637,7 +555,7 @@ class VariableSelectionNetwork(nn.Module):
                  single_variable_grns: Optional[Dict[str, GatedResidualNetwork]] = None,
                  prescalers: Optional[torch.nn.ModuleDict] = None):
         """
-        Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
+        Calculate weights for ``num_inputs`` variables  which are each of size ``input_size``
         """
         super().__init__()
 
@@ -663,7 +581,6 @@ class VariableSelectionNetwork(nn.Module):
             )
 
         # left side of figure 2 bottom right graph
-        # TODO: Check prescalers, embeddings, linear transformations
         self.vars_single_grns = nn.ModuleDict()
         self.prescalers = nn.ModuleDict()
         for name, input_size in self.input_sizes.items():
@@ -701,7 +618,6 @@ class VariableSelectionNetwork(nn.Module):
             vars_out.append(self.vars_single_grns[var_name](var_transformed))
             transformed.append(var_transformed)
 
-        # TODO: Check stack/cat with dim=-1
         vars_out = torch.stack(vars_out, dim=-1)
 
         # calculate variable weights with flattened variables (right side of figure 2 bottom right graph)
@@ -715,32 +631,11 @@ class VariableSelectionNetwork(nn.Module):
         return outputs, selection_weights
 
 
-class PositionalEncoder(torch.nn.Module):
-    def __init__(self, d_model, max_seq_len=160):
-        super().__init__()
-        assert d_model % 2 == 0, "model dimension has to be multiple of 2 (encode sin(pos) and cos(pos))"
-        self.d_model = d_model
-        pe = torch.zeros(max_seq_len, d_model)
-        for pos in range(max_seq_len):
-            for i in range(0, d_model, 2):
-                pe[pos, i] = math.sin(pos / (10000 ** ((2 * i) / d_model)))
-                pe[pos, i + 1] = math.cos(pos / (10000 ** ((2 * (i + 1)) / d_model)))
-        pe = pe.unsqueeze(0)
-        self.register_buffer("pe", pe)
-
-    def forward(self, x):
-        with torch.no_grad():
-            x = x * math.sqrt(self.d_model)
-            seq_len = x.shape[0]
-            pe = self.pe[:, :seq_len].view(seq_len, 1, self.d_model)
-            x = x + pe
-            return x
-
-
 class ScaledDotProductAttention(nn.Module):
-    """==========================================CHECKED==========================================
-    ScaledDotProductAttention is an self-attention mechanism to learn long-term relationships across different time
-    steps. It scales values V based on relationship between Keys K and queries Q.
+    """ScaledDotProductAttention is an self-attention mechanism to learn long-term
+    relationships across different time steps. It scales values V based on relationship
+    between Keys K and queries Q.
+
     From equations (9) -- (10)"""
 
     def __init__(self):
@@ -772,8 +667,7 @@ class ScaledDotProductAttention(nn.Module):
 
 
 class InterpretableMultiHeadAttention(nn.Module):
-    """==========================================CHECKED==========================================
-    Equations (13) -- (16)"""
+    """Equations (13) -- (16)"""
 
     def __init__(self,
                  n_head: int,
@@ -797,16 +691,13 @@ class InterpretableMultiHeadAttention(nn.Module):
         self.n_head = n_head
         self.d_model = d_model
         self.d_k = self.d_q = self.d_v = d_model // n_head
+        self.dropout = nn.Dropout(p=dropout) if dropout is not None else dropout
 
-        if not USE_ADAPTION_NO_ATTENTION_DROPOUT:
-            self.dropout = nn.Dropout(p=dropout) if dropout is not None else dropout
-
-        bias = True if not USE_ADAPTION_NO_BIAS_IMHA else False
-        self.q_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_q, bias=bias) for _ in range(self.n_head)])
-        self.k_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_k, bias=bias) for _ in range(self.n_head)])
         # use same value layer to facilitate interpretation
-        self.v_layer = nn.Linear(self.d_model, self.d_v, bias=bias)
-
+        self.v_layer = nn.Linear(self.d_model, self.d_v)
+        self.q_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)])
+        self.k_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)])
+        # use same value layer to facilitate interpretation
         self.attention = ScaledDotProductAttention()
         self.w_h = nn.Linear(self.d_v, self.d_model, bias=False)
 
@@ -814,9 +705,9 @@ class InterpretableMultiHeadAttention(nn.Module):
 
     def init_weights(self):
         for name, p in self.named_parameters():
-            if "bias" not in name:  # layer weigths
+            if 'weight' in name:
                 torch.nn.init.xavier_uniform_(p)
-            else:  # bias
+            elif 'bias' in name:
                 torch.nn.init.zeros_(p)
 
     def forward(self, q, k, v, mask=None) -> Tuple[torch.Tensor, torch.Tensor]:
