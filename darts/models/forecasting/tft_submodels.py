@@ -239,7 +239,7 @@ class MultiEmbedding(nn.Module):
                  categorical_groups: Dict[str, List[str]],
                  embedding_paddings: List[str],
                  x_categoricals: List[str],
-                 max_embedding_size: int):
+                 max_embedding_size: Optional[int] = None):
 
         super().__init__()
         self.embedding_sizes = {key: list(size_tuple) for key, size_tuple in embedding_sizes.items()}
@@ -253,7 +253,9 @@ class MultiEmbedding(nn.Module):
     def init_embeddings(self):
         embeddings = nn.ModuleDict()
         for name in self.embedding_sizes:
-            embedding_size = min(self.embedding_sizes[name][1], self.max_embedding_size)
+            embedding_size = self.embedding_sizes[name][1]
+            if self.max_embedding_size is not None:
+                embedding_size = min(embedding_size, self.max_embedding_size)
             self.embedding_sizes[name][1] = embedding_size
 
             if name in self.categorical_groups:  # embedding bag if related embeddings
@@ -534,7 +536,6 @@ class GatedResidualNetwork(nn.Module):
             residual = self.resample_norm(x)
         else:
             residual = x
-
         x = self.fc1(x)
         if context is not None:
             context = self.context(context)
@@ -622,6 +623,7 @@ class VariableSelectionNetwork(nn.Module):
 
         # calculate variable weights with flattened variables (right side of figure 2 bottom right graph)
         flattened = torch.cat(transformed, dim=-1)
+
         selection_weights = self.vars_flattened_grn(flattened, context)
         selection_weights = self.softmax(selection_weights).unsqueeze(-2)
 
