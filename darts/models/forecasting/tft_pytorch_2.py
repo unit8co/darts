@@ -29,39 +29,37 @@ from pytorch_forecasting.utils import autocorrelation, create_mask, detach, inte
 
 
 class TemporalFusionTransformer(BaseModelWithCovariates):
-    def __init__(
-        self,
-        hidden_size: int = 16,
-        lstm_layers: int = 1,
-        dropout: float = 0.1,
-        output_size: Union[int, List[int]] = 7,
-        loss: MultiHorizonMetric = None,
-        attention_head_size: int = 4,
-        max_encoder_length: int = 10,
-        static_categoricals: List[str] = [],
-        static_reals: List[str] = [],
-        time_varying_categoricals_encoder: List[str] = [],
-        time_varying_categoricals_decoder: List[str] = [],
-        categorical_groups: Dict[str, List[str]] = {},
-        time_varying_reals_encoder: List[str] = [],
-        time_varying_reals_decoder: List[str] = [],
-        x_reals: List[str] = [],
-        x_categoricals: List[str] = [],
-        hidden_continuous_size: int = 8,
-        hidden_continuous_sizes: Dict[str, int] = {},
-        embedding_sizes: Dict[str, Tuple[int, int]] = {},
-        embedding_paddings: List[str] = [],
-        embedding_labels: Dict[str, np.ndarray] = {},
-        learning_rate: float = 1e-3,
-        log_interval: Union[int, float] = -1,
-        log_val_interval: Union[int, float] = None,
-        log_gradient_flow: bool = False,
-        reduce_on_plateau_patience: int = 1000,
-        monotone_constaints: Dict[str, int] = {},
-        share_single_variable_networks: bool = False,
-        logging_metrics: nn.ModuleList = None,
-        **kwargs,
-    ):
+    def __init__(self,
+                 hidden_size: int = 16,
+                 lstm_layers: int = 1,
+                 dropout: float = 0.1,
+                 output_size: Union[int, List[int]] = 7,
+                 loss: MultiHorizonMetric = None,
+                 attention_head_size: int = 4,
+                 max_encoder_length: int = 10,
+                 static_categoricals: List[str] = [],
+                 static_reals: List[str] = [],
+                 time_varying_categoricals_encoder: List[str] = [],
+                 time_varying_categoricals_decoder: List[str] = [],
+                 categorical_groups: Dict[str, List[str]] = {},
+                 time_varying_reals_encoder: List[str] = [],
+                 time_varying_reals_decoder: List[str] = [],
+                 x_reals: List[str] = [],
+                 x_categoricals: List[str] = [],
+                 hidden_continuous_size: int = 8,
+                 hidden_continuous_sizes: Dict[str, int] = {},
+                 embedding_sizes: Dict[str, Tuple[int, int]] = {},
+                 embedding_paddings: List[str] = [],
+                 embedding_labels: Dict[str, np.ndarray] = {},
+                 learning_rate: float = 1e-3,
+                 log_interval: Union[int, float] = -1,
+                 log_val_interval: Union[int, float] = None,
+                 log_gradient_flow: bool = False,
+                 reduce_on_plateau_patience: int = 1000,
+                 monotone_constaints: Dict[str, int] = {},
+                 share_single_variable_networks: bool = False,
+                 logging_metrics: nn.ModuleList = None,
+                 **kwargs):
         """
         Temporal Fusion Transformer for forecasting timeseries - use its :py:meth:`~from_dataset` method if possible.
 
@@ -136,193 +134,224 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
             logging_metrics = nn.ModuleList([SMAPE(), MAE(), RMSE(), MAPE()])
         if loss is None:
             loss = QuantileLoss()
-        self.save_hyperparameters()
         # # store loss function separately as it is a module
         # assert isinstance(loss, LightningMetric), "Loss has to be a PyTorch Lightning `Metric`"
+        self.save_hyperparameters()
         super().__init__(loss=loss, logging_metrics=logging_metrics, **kwargs)
+
+        self.hidden_size = hidden_size
+        self.lstm_layers = lstm_layers
+        self.dropout = dropout
+        self.output_size = output_size
+        self.loss = loss
+        self.attention_head_size = attention_head_size
+        self.max_encoder_length = max_encoder_length
+        self.static_categoricals = static_categoricals
+        self.static_reals = static_reals
+        self.time_varying_categoricals_encoder = time_varying_categoricals_encoder
+        self.time_varying_categoricals_decoder = time_varying_categoricals_decoder
+        self.categorical_groups = categorical_groups
+        self.time_varying_reals_encoder = time_varying_reals_encoder
+        self.time_varying_reals_decoder = time_varying_reals_decoder
+        self.x_reals = x_reals
+        self.x_categoricals = x_categoricals
+        self.hidden_continuous_size = hidden_continuous_size
+        self.hidden_continuous_sizes = hidden_continuous_sizes
+        self.embedding_sizes = embedding_sizes
+        self.embedding_paddings = embedding_paddings
+        self.embedding_labels = embedding_labels
+        self.learning_rate = learning_rate
+        self.log_interval = log_interval
+        self.log_val_interval = log_val_interval
+        self.log_gradient_flow = log_gradient_flow
+        self.reduce_on_plateau_patience = reduce_on_plateau_patience
+        self.monotone_constaints = monotone_constaints
+        self.share_single_variable_networks = share_single_variable_networks
+        self.logging_metrics = logging_metrics
+        self.kwargs = kwargs
 
         # processing inputs
         # embeddings
         self.input_embeddings = MultiEmbedding(
-            embedding_sizes=self.hparams.embedding_sizes,
-            categorical_groups=self.hparams.categorical_groups,
-            embedding_paddings=self.hparams.embedding_paddings,
-            x_categoricals=self.hparams.x_categoricals,
-            max_embedding_size=self.hparams.hidden_size,
+            embedding_sizes=self.embedding_sizes,
+            categorical_groups=self.categorical_groups,
+            embedding_paddings=self.embedding_paddings,
+            x_categoricals=self.x_categoricals,
+            max_embedding_size=self.hidden_size,
         )
 
         # update embedding sizes
-        self.hparams.embedding_sizes = self.input_embeddings.embedding_sizes
+        self.embedding_sizes = self.input_embeddings.embedding_sizes
 
         # continuous variable processing
         self.prescalers = nn.ModuleDict(
             {
-                name: nn.Linear(1, self.hparams.hidden_continuous_sizes.get(name, self.hparams.hidden_continuous_size))
+                name: nn.Linear(1, self.hidden_continuous_sizes.get(name, self.hidden_continuous_size))
                 for name in self.reals
             }
         )
 
         # variable selection
         # variable selection for static variables
-        static_input_sizes = {name: self.input_embeddings.embedding_sizes[name][1] for name in self.hparams.static_categoricals}
+        static_input_sizes = {name: self.input_embeddings.embedding_sizes[name][1] for name in self.static_categoricals}
         static_input_sizes.update(
             {
-                name: self.hparams.hidden_continuous_sizes.get(name, self.hparams.hidden_continuous_size)
-                for name in self.hparams.static_reals
+                name: self.hidden_continuous_sizes.get(name, self.hidden_continuous_size)
+                for name in self.static_reals
             }
         )
         self.static_variable_selection = VariableSelectionNetwork(
             input_sizes=static_input_sizes,
-            hidden_size=self.hparams.hidden_size,
-            input_embedding_flags={name: True for name in self.hparams.static_categoricals},
-            dropout=self.hparams.dropout,
+            hidden_size=self.hidden_size,
+            input_embedding_flags={name: True for name in self.static_categoricals},
+            dropout=self.dropout,
             prescalers=self.prescalers,
         )
 
         # variable selection for encoder and decoder
         encoder_input_sizes = {
-            name: self.input_embeddings.embedding_sizes[name][1] for name in self.hparams.time_varying_categoricals_encoder
+            name: self.input_embeddings.embedding_sizes[name][1] for name in self.time_varying_categoricals_encoder
         }
         encoder_input_sizes.update(
             {
-                name: self.hparams.hidden_continuous_sizes.get(name, self.hparams.hidden_continuous_size)
-                for name in self.hparams.time_varying_reals_encoder
+                name: self.hidden_continuous_sizes.get(name, self.hidden_continuous_size)
+                for name in self.time_varying_reals_encoder
             }
         )
 
         decoder_input_sizes = {
-            name: self.input_embeddings.embedding_sizes[name][1] for name in self.hparams.time_varying_categoricals_decoder
+            name: self.input_embeddings.embedding_sizes[name][1] for name in self.time_varying_categoricals_decoder
         }
         decoder_input_sizes.update(
             {
-                name: self.hparams.hidden_continuous_sizes.get(name, self.hparams.hidden_continuous_size)
-                for name in self.hparams.time_varying_reals_decoder
+                name: self.hidden_continuous_sizes.get(name, self.hidden_continuous_size)
+                for name in self.time_varying_reals_decoder
             }
         )
 
         # create single variable grns that are shared across decoder and encoder
-        if self.hparams.share_single_variable_networks:
+        if self.share_single_variable_networks:
             self.shared_single_variable_grns = nn.ModuleDict()
             for name, input_size in encoder_input_sizes.items():
                 self.shared_single_variable_grns[name] = GatedResidualNetwork(
                     input_size,
-                    min(input_size, self.hparams.hidden_size),
-                    self.hparams.hidden_size,
-                    self.hparams.dropout,
+                    min(input_size, self.hidden_size),
+                    self.hidden_size,
+                    self.dropout,
                 )
             for name, input_size in decoder_input_sizes.items():
                 if name not in self.shared_single_variable_grns:
                     self.shared_single_variable_grns[name] = GatedResidualNetwork(
                         input_size,
-                        min(input_size, self.hparams.hidden_size),
-                        self.hparams.hidden_size,
-                        self.hparams.dropout,
+                        min(input_size, self.hidden_size),
+                        self.hidden_size,
+                        self.dropout,
                     )
 
         self.encoder_variable_selection = VariableSelectionNetwork(
             input_sizes=encoder_input_sizes,
-            hidden_size=self.hparams.hidden_size,
-            input_embedding_flags={name: True for name in self.hparams.time_varying_categoricals_encoder},
-            dropout=self.hparams.dropout,
-            context_size=self.hparams.hidden_size,
+            hidden_size=self.hidden_size,
+            input_embedding_flags={name: True for name in self.time_varying_categoricals_encoder},
+            dropout=self.dropout,
+            context_size=self.hidden_size,
             prescalers=self.prescalers,
             single_variable_grns={}
-            if not self.hparams.share_single_variable_networks
+            if not self.share_single_variable_networks
             else self.shared_single_variable_grns,
         )
 
         self.decoder_variable_selection = VariableSelectionNetwork(
             input_sizes=decoder_input_sizes,
-            hidden_size=self.hparams.hidden_size,
-            input_embedding_flags={name: True for name in self.hparams.time_varying_categoricals_decoder},
-            dropout=self.hparams.dropout,
-            context_size=self.hparams.hidden_size,
+            hidden_size=self.hidden_size,
+            input_embedding_flags={name: True for name in self.time_varying_categoricals_decoder},
+            dropout=self.dropout,
+            context_size=self.hidden_size,
             prescalers=self.prescalers,
             single_variable_grns={}
-            if not self.hparams.share_single_variable_networks
+            if not self.share_single_variable_networks
             else self.shared_single_variable_grns,
         )
 
         # static encoders
         # for variable selection
         self.static_context_variable_selection = GatedResidualNetwork(
-            input_size=self.hparams.hidden_size,
-            hidden_size=self.hparams.hidden_size,
-            output_size=self.hparams.hidden_size,
-            dropout=self.hparams.dropout,
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size,
+            output_size=self.hidden_size,
+            dropout=self.dropout,
         )
 
         # for hidden state of the lstm
         self.static_context_initial_hidden_lstm = GatedResidualNetwork(
-            input_size=self.hparams.hidden_size,
-            hidden_size=self.hparams.hidden_size,
-            output_size=self.hparams.hidden_size,
-            dropout=self.hparams.dropout,
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size,
+            output_size=self.hidden_size,
+            dropout=self.dropout,
         )
 
         # for cell state of the lstm
         self.static_context_initial_cell_lstm = GatedResidualNetwork(
-            input_size=self.hparams.hidden_size,
-            hidden_size=self.hparams.hidden_size,
-            output_size=self.hparams.hidden_size,
-            dropout=self.hparams.dropout,
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size,
+            output_size=self.hidden_size,
+            dropout=self.dropout,
         )
 
         # for post lstm static enrichment
         self.static_context_enrichment = GatedResidualNetwork(
-            self.hparams.hidden_size, self.hparams.hidden_size, self.hparams.hidden_size, self.hparams.dropout
+            self.hidden_size, self.hidden_size, self.hidden_size, self.dropout
         )
 
         # lstm encoder (history) and decoder (future) for local processing
         self.lstm_encoder = LSTM(
-            input_size=self.hparams.hidden_size,
-            hidden_size=self.hparams.hidden_size,
-            num_layers=self.hparams.lstm_layers,
-            dropout=self.hparams.dropout if self.hparams.lstm_layers > 1 else 0,
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size,
+            num_layers=self.lstm_layers,
+            dropout=self.dropout if self.lstm_layers > 1 else 0,
             batch_first=True,
         )
 
         self.lstm_decoder = LSTM(
-            input_size=self.hparams.hidden_size,
-            hidden_size=self.hparams.hidden_size,
-            num_layers=self.hparams.lstm_layers,
-            dropout=self.hparams.dropout if self.hparams.lstm_layers > 1 else 0,
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size,
+            num_layers=self.lstm_layers,
+            dropout=self.dropout if self.lstm_layers > 1 else 0,
             batch_first=True,
         )
 
         # skip connection for lstm
-        self.post_lstm_gate_encoder = GatedLinearUnit(self.hparams.hidden_size, dropout=self.hparams.dropout)
+        self.post_lstm_gate_encoder = GatedLinearUnit(self.hidden_size, dropout=self.dropout)
         self.post_lstm_gate_decoder = self.post_lstm_gate_encoder
-        self.post_lstm_add_norm_encoder = AddNorm(self.hparams.hidden_size)
+        self.post_lstm_add_norm_encoder = AddNorm(self.hidden_size)
         self.post_lstm_add_norm_decoder = self.post_lstm_add_norm_encoder
 
         # static enrichment and processing past LSTM
         self.static_enrichment = GatedResidualNetwork(
-            input_size=self.hparams.hidden_size,
-            hidden_size=self.hparams.hidden_size,
-            output_size=self.hparams.hidden_size,
-            dropout=self.hparams.dropout,
-            context_size=self.hparams.hidden_size,
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size,
+            output_size=self.hidden_size,
+            dropout=self.dropout,
+            context_size=self.hidden_size,
         )
 
         # attention for long-range processing
         self.multihead_attn = InterpretableMultiHeadAttention(
-            d_model=self.hparams.hidden_size, n_head=self.hparams.attention_head_size, dropout=self.hparams.dropout
+            d_model=self.hidden_size, n_head=self.attention_head_size, dropout=self.dropout
         )
-        self.post_attn_gate_norm = GateAddNorm(self.hparams.hidden_size, dropout=self.hparams.dropout)
+        self.post_attn_gate_norm = GateAddNorm(self.hidden_size, dropout=self.dropout)
         self.pos_wise_ff = GatedResidualNetwork(
-            self.hparams.hidden_size, self.hparams.hidden_size, self.hparams.hidden_size, dropout=self.hparams.dropout
+            self.hidden_size, self.hidden_size, self.hidden_size, dropout=self.dropout
         )
 
         # output processing -> no dropout at this late stage
-        self.pre_output_gate_norm = GateAddNorm(self.hparams.hidden_size, dropout=None)
+        self.pre_output_gate_norm = GateAddNorm(self.hidden_size, dropout=None)
 
         if self.n_targets > 1:  # if to run with multiple targets
             self.output_layer = nn.ModuleList(
-                [nn.Linear(self.hparams.hidden_size, output_size) for output_size in self.hparams.output_size]
+                [nn.Linear(self.hidden_size, output_size) for output_size in self.output_size]
             )
         else:
-            self.output_layer = nn.Linear(self.hparams.hidden_size, self.hparams.output_size)
+            self.output_layer = nn.Linear(self.hidden_size, self.output_size)
 
     @classmethod
     def from_dataset(
@@ -404,7 +433,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         input_vectors.update(
             {
                 name: x_cont[..., idx].unsqueeze(-1)
-                for idx, name in enumerate(self.hparams.x_reals)
+                for idx, name in enumerate(self.x_reals)
                 if name in self.reals
             }
         )
@@ -416,7 +445,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
             static_embedding, static_variable_selection = self.static_variable_selection(static_embedding)
         else:
             static_embedding = torch.zeros(
-                (x_cont.size(0), self.hparams.hidden_size), dtype=self.dtype, device=self.device
+                (x_cont.size(0), self.hidden_size), dtype=self.dtype, device=self.device
             )
             static_variable_selection = torch.zeros((x_cont.size(0), 0), dtype=self.dtype, device=self.device)
 
@@ -443,9 +472,9 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         # LSTM
         # calculate initial state
         input_hidden = self.static_context_initial_hidden_lstm(static_embedding).expand(
-            self.hparams.lstm_layers, -1, -1
+            self.lstm_layers, -1, -1
         )
-        input_cell = self.static_context_initial_cell_lstm(static_embedding).expand(self.hparams.lstm_layers, -1, -1)
+        input_cell = self.static_context_initial_cell_lstm(static_embedding).expand(self.lstm_layers, -1, -1)
 
         # run local encoder
         encoder_output, (hidden, cell) = self.lstm_encoder(
@@ -557,7 +586,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         """
 
         # histogram of decode and encode lengths
-        encoder_length_histogram = integer_histogram(out["encoder_lengths"], min=0, max=self.hparams.max_encoder_length)
+        encoder_length_histogram = integer_histogram(out["encoder_lengths"], min=0, max=self.max_encoder_length)
         decoder_length_histogram = integer_histogram(
             out["decoder_lengths"], min=1, max=out["decoder_variables"].size(1)
         )
@@ -613,12 +642,12 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
                 raise ValueError(f"Unknown reduction {reduction}")
 
             attention = torch.zeros(
-                self.hparams.max_encoder_length + attention_prediction_horizon, device=self.device
+                self.max_encoder_length + attention_prediction_horizon, device=self.device
             ).scatter(
                 dim=0,
                 index=torch.arange(
-                    self.hparams.max_encoder_length + attention_prediction_horizon - attention.size(-1),
-                    self.hparams.max_encoder_length + attention_prediction_horizon,
+                    self.max_encoder_length + attention_prediction_horizon - attention.size(-1),
+                    self.max_encoder_length + attention_prediction_horizon,
                     device=self.device,
                 ),
                 src=attention,
@@ -711,7 +740,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         attention = interpretation["attention"].detach().cpu()
         attention = attention / attention.sum(-1).unsqueeze(-1)
         ax.plot(
-            np.arange(-self.hparams.max_encoder_length, attention.size(0) - self.hparams.max_encoder_length), attention
+            np.arange(-self.max_encoder_length, attention.size(0) - self.max_encoder_length), attention
         )
         ax.set_xlabel("Time index")
         ax.set_ylabel("Attention")
@@ -804,7 +833,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         Log embeddings to tensorboard
         """
         for name, emb in self.input_embeddings.items():
-            labels = self.hparams.embedding_labels[name]
+            labels = self.embedding_labels[name]
             self.logger.experiment.add_embedding(
                 emb.weight.data.detach().cpu(), metadata=labels, tag=name, global_step=self.global_step
             )

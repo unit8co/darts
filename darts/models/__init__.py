@@ -32,7 +32,7 @@ try:
     from darts.models.forecasting.tcn_model import TCNModel
     from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.transformer_model import TransformerModel
-    from darts.models.forecasting.tft import TFTModel
+    from darts.models.forecasting.tft_copy import TFTModel
     from darts.models.forecasting.tft_pytorch import TemporalFusionTransformer
 
 except ModuleNotFoundError:

@@ -1,19 +1,26 @@
 """
-The temporal fusion transformer is a powerful predictive model for forecasting timeseries
+N-BEATS
+-------
 """
+
 from copy import copy
-from typing import Dict, List, Tuple, Union
+from typing import NewType, Union, List, Optional, Tuple, Dict, Sequence
+from enum import Enum
 
 from matplotlib import pyplot as plt
 import numpy as np
+from numpy.random import RandomState
+
 import torch
 from torch import nn
 
-from pytorch_forecasting.data import TimeSeriesDataSet
-# from pytorch_forecasting.metrics import MAE, MAPE, MASE, RMSE, SMAPE, MultiHorizonMetric, MultiLoss, QuantileLoss
-from pytorch_forecasting.metrics import MAE, MAPE, MASE, RMSE, SMAPE, MultiHorizonMetric, MultiLoss
-from pytorch_forecasting.models.base_model import BaseModelWithCovariates
-# from pytorch_forecasting.models import LSTM, MultiEmbedding
+from darts import TimeSeries
+from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset, MixedCovariatesShiftedDataset
+from darts.utils.likelihood_models import Likelihood
+from darts.utils.torch import random_method
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel, TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
+from darts.logging import get_logger, raise_log, raise_if_not
+
 from darts.models.forecasting.tft_submodels import (
     AddNorm,
     GateAddNorm,
@@ -25,16 +32,34 @@ from darts.models.forecasting.tft_submodels import (
     MultiEmbedding,
     QuantileLoss
 )
-from pytorch_forecasting.utils import autocorrelation, create_mask, detach, integer_histogram, padded_stack, to_list
 
+logger = get_logger(__name__)
 
-class TemporalFusionTransformer(BaseModelWithCovariates):
+DARTS_IMPLEMENTATION = True
+
+class _TFTModule(nn.Module):
+
     def __init__(self,
-                 hidden_size: int = 16,
+                 # input_dim: int,
+                 # output_dim: int,
+                 # input_chunk_length: int,
+                 # output_chunk_length: int,
+                 # generic_architecture: bool,
+                 # num_stacks: int,
+                 # num_blocks: int,
+                 # num_layers: int,
+                 # layer_widths: List[int],
+                 # expansion_coefficient_dim: int,
+                 # trend_polynomial_degree: int
+                 input_dim: int,
+                 output_dim: int,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
+                 hidden_size: Union[int, List[int]] = 16,
                  lstm_layers: int = 1,
                  dropout: float = 0.1,
                  output_size: Union[int, List[int]] = 7,
-                 loss: MultiHorizonMetric = None,
+                 loss_fn: nn.Module = QuantileLoss(),
                  attention_head_size: int = 4,
                  max_encoder_length: int = 10,
                  static_categoricals: List[str] = [],
@@ -59,91 +84,24 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
                  monotone_constaints: Dict[str, int] = {},
                  share_single_variable_networks: bool = False,
                  logging_metrics: nn.ModuleList = None,
-                 **kwargs):
+                 **kwargs
+                 ):
+        """ PyTorch module implementing the TFT architecture.
+
         """
-        Temporal Fusion Transformer for forecasting timeseries - use its :py:meth:`~from_dataset` method if possible.
+        super(_TFTModule, self).__init__()
 
-        Implementation of the article
-        `Temporal Fusion Transformers for Interpretable Multi-horizon Time Series
-        Forecasting <https://arxiv.org/pdf/1912.09363.pdf>`_. The network outperforms DeepAR by Amazon by 36-69%
-        in benchmarks.
-
-        Enhancements compared to the original implementation (apart from capabilities added through base model
-        such as monotone constraints):
-
-        * static variables can be continuous
-        * multiple categorical variables can be summarized with an EmbeddingBag
-        * variable encoder and decoder length by sample
-        * categorical embeddings are not transformed by variable selection network (because it is a redundant operation)
-        * variable dimension in variable selection network are scaled up via linear interpolation to reduce
-          number of parameters
-        * non-linear variable processing in variable selection network can be shared among decoder and encoder
-          (not shared by default)
-
-        Tune its hyperparameters with
-        :py:func:`~pytorch_forecasting.models.temporal_fusion_transformer.tuning.optimize_hyperparameters`.
-
-        Args:
-
-            hidden_size: hidden size of network which is its main hyperparameter and can range from 8 to 512
-            lstm_layers: number of LSTM layers (2 is mostly optimal)
-            dropout: dropout rate
-            output_size: number of outputs (e.g. number of quantiles for QuantileLoss and one target or list
-                of output sizes).
-            loss: loss function taking prediction and targets
-            attention_head_size: number of attention heads (4 is a good default)
-            max_encoder_length: length to encode (can be far longer than the decoder length but does not have to be)
-            static_categoricals: names of static categorical variables
-            static_reals: names of static continuous variables
-            time_varying_categoricals_encoder: names of categorical variables for encoder
-            time_varying_categoricals_decoder: names of categorical variables for decoder
-            time_varying_reals_encoder: names of continuous variables for encoder
-            time_varying_reals_decoder: names of continuous variables for decoder
-            categorical_groups: dictionary where values
-                are list of categorical variables that are forming together a new categorical
-                variable which is the key in the dictionary
-            x_reals: order of continuous variables in tensor passed to forward function
-            x_categoricals: order of categorical variables in tensor passed to forward function
-            hidden_continuous_size: default for hidden size for processing continous variables (similar to categorical
-                embedding size)
-            hidden_continuous_sizes: dictionary mapping continuous input indices to sizes for variable selection
-                (fallback to hidden_continuous_size if index is not in dictionary)
-            embedding_sizes: dictionary mapping (string) indices to tuple of number of categorical classes and
-                embedding size
-            embedding_paddings: list of indices for embeddings which transform the zero's embedding to a zero vector
-            embedding_labels: dictionary mapping (string) indices to list of categorical labels
-            learning_rate: learning rate
-            log_interval: log predictions every x batches, do not log if 0 or less, log interpretation if > 0. If < 1.0
-                , will log multiple entries per batch. Defaults to -1.
-            log_val_interval: frequency with which to log validation set metrics, defaults to log_interval
-            log_gradient_flow: if to log gradient flow, this takes time and should be only done to diagnose training
-                failures
-            reduce_on_plateau_patience (int): patience after which learning rate is reduced by a factor of 10
-            monotone_constaints (Dict[str, int]): dictionary of monotonicity constraints for continuous decoder
-                variables mapping
-                position (e.g. ``"0"`` for first position) to constraint (``-1`` for negative and ``+1`` for positive,
-                larger numbers add more weight to the constraint vs. the loss but are usually not necessary).
-                This constraint significantly slows down training. Defaults to {}.
-            share_single_variable_networks (bool): if to share the single variable networks between the encoder and
-                decoder. Defaults to False.
-            logging_metrics (nn.ModuleList[LightningMetric]): list of metrics that are logged during training.
-                Defaults to nn.ModuleList([SMAPE(), MAE(), RMSE(), MAPE()]).
-            **kwargs: additional arguments to :py:class:`~BaseModel`.
-        """
-        if logging_metrics is None:
-            logging_metrics = nn.ModuleList([SMAPE(), MAE(), RMSE(), MAPE()])
-        if loss is None:
-            loss = QuantileLoss()
-        # # store loss function separately as it is a module
-        # assert isinstance(loss, LightningMetric), "Loss has to be a PyTorch Lightning `Metric`"
-        self.save_hyperparameters()
-        super().__init__(loss=loss, logging_metrics=logging_metrics, **kwargs)
+        self.input_dim = input_dim
+        self.output_dim = output_dim
+        self.input_chunk_length_multi = input_chunk_length*input_dim
+        self.output_chunk_length = output_chunk_length
+        self.target_length = output_chunk_length*input_dim
 
         self.hidden_size = hidden_size
         self.lstm_layers = lstm_layers
         self.dropout = dropout
         self.output_size = output_size
-        self.loss = loss
+        self.loss_fn = loss_fn
         self.attention_head_size = attention_head_size
         self.max_encoder_length = max_encoder_length
         self.static_categoricals = static_categoricals
@@ -161,7 +119,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         self.embedding_paddings = embedding_paddings
         self.embedding_labels = embedding_labels
         self.learning_rate = learning_rate
-        # self.log_interval = log_interval
+        self.log_interval = log_interval
         self.log_val_interval = log_val_interval
         self.log_gradient_flow = log_gradient_flow
         self.reduce_on_plateau_patience = reduce_on_plateau_patience
@@ -169,6 +127,7 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         self.share_single_variable_networks = share_single_variable_networks
         self.logging_metrics = logging_metrics
         self.kwargs = kwargs
+        self.n_targets = output_dim
 
         # processing inputs
         # embeddings
@@ -390,34 +349,32 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         """List of all decoder variables in model (excluding static variables)"""
         return self.time_varying_categoricals_decoder + self.time_varying_reals_decoder
 
-    @classmethod
-    def from_dataset(
-        cls,
-        dataset: TimeSeriesDataSet,
-        allowed_encoder_known_variable_names: List[str] = None,
-        **kwargs,
-    ):
-        """
-        Create model from dataset.
-
-        Args:
-            dataset: timeseries dataset
-            allowed_encoder_known_variable_names: List of known variables that are allowed in encoder, defaults to all
-            **kwargs: additional arguments such as hyperparameters for model (see ``__init__()``)
-
-        Returns:
-            TemporalFusionTransformer
-        """
-        # add maximum encoder length
-        # update defaults
-        new_kwargs = copy(kwargs)
-        new_kwargs["max_encoder_length"] = dataset.max_encoder_length
-        new_kwargs.update(cls.deduce_default_output_parameters(dataset, kwargs, QuantileLoss()))
-
-        # create class and return
-        return super().from_dataset(
-            dataset, allowed_encoder_known_variable_names=allowed_encoder_known_variable_names, **new_kwargs
-        )
+    # @classmethod
+    # def from_dataset(cls,
+    #                  dataset: TimeSeriesDataSet,
+    #                  allowed_encoder_known_variable_names: List[str] = None,
+    #                  **kwargs):
+    #     """
+    #     Create model from dataset.
+    #
+    #     Args:
+    #         dataset: timeseries dataset
+    #         allowed_encoder_known_variable_names: List of known variables that are allowed in encoder, defaults to all
+    #         **kwargs: additional arguments such as hyperparameters for model (see ``__init__()``)
+    #
+    #     Returns:
+    #         TemporalFusionTransformer
+    #     """
+    #     # add maximum encoder length
+    #     # update defaults
+    #     new_kwargs = copy(kwargs)
+    #     new_kwargs["max_encoder_length"] = dataset.max_encoder_length
+    #     new_kwargs.update(cls.deduce_default_output_parameters(dataset, kwargs, QuantileLoss()))
+    #
+    #     # create class and return
+    #     return super().from_dataset(
+    #         dataset, allowed_encoder_known_variable_names=allowed_encoder_known_variable_names, **new_kwargs
+    #     )
 
     def expand_static_context(self, context, timesteps):
         """
@@ -456,22 +413,36 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         )
         return mask
 
-    def forward(self, x: Dict[str, torch.Tensor]) -> Dict[str, torch.Tensor]:
+    def forward(self,
+                x) -> Dict[str, torch.Tensor]:
         """
         input dimensions: n_samples x time x variables
         """
-        encoder_lengths = x["encoder_lengths"]
-        decoder_lengths = x["decoder_lengths"]
-        x_cat = torch.cat([x["encoder_cat"], x["decoder_cat"]], dim=1)  # concatenate in time dimension
-        x_cont = torch.cat([x["encoder_cont"], x["decoder_cont"]], dim=1)  # concatenate in time dimension
-        timesteps = x_cont.size(1)  # encode + decode length
-        max_encoder_length = int(encoder_lengths.max())
+        # data is of size (batch_size, input_length, input_size)
+
+        # encoder_lengths = x["encoder_lengths"]
+        # decoder_lengths = x["decoder_lengths"]
+        # x_cat = torch.cat([x["encoder_cat"], x["decoder_cat"]], dim=1)  # concatenate in time dimension
+        # x_cont = torch.cat([x["encoder_cont"], x["decoder_cont"]], dim=1)  # concatenate in time dimension
+
+        # timesteps = x_cont.size(1)  # encode + decode length
+        # max_encoder_length = int(encoder_lengths.max())
+
+        batch_size = x.shape[0]
+        encoder_lengths = x.shape[1]
+        decoder_lengths = self.output_chunk_length
+
+        # TODO: if we ever have categoricals
+        x_cat = torch.empty(x.shape, dtype=x.dtype)
+        x_cont = x
+
+        timesteps = x_cont.size(1)
+        max_encoder_length = encoder_lengths
+
         input_vectors = self.input_embeddings(x_cat)
         input_vectors.update(
             {
-                name: x_cont[..., idx].unsqueeze(-1)
-                for idx, name in enumerate(self.x_reals)
-                if name in self.reals
+                f'real_{idx}': x_cont[..., idx].unsqueeze(-1) for idx in range(x_cont.shape[-1])
             }
         )
 
@@ -482,9 +453,9 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
             static_embedding, static_variable_selection = self.static_variable_selection(static_embedding)
         else:
             static_embedding = torch.zeros(
-                (x_cont.size(0), self.hidden_size), dtype=self.dtype, device=self.device
+                (x_cont.size(0), self.hidden_size), dtype=x.dtype, device=x.device
             )
-            static_variable_selection = torch.zeros((x_cont.size(0), 0), dtype=self.dtype, device=self.device)
+            static_variable_selection = torch.zeros((x_cont.size(0), 0), dtype=x.dtype, device=x.device)
 
         static_context_variable_selection = self.expand_static_context(
             self.static_context_variable_selection(static_embedding), timesteps
@@ -600,13 +571,11 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         if self.log_interval > 0:
             self.log_interpretation(outputs)
 
-    def interpret_output(
-        self,
-        out: Dict[str, torch.Tensor],
-        reduction: str = "none",
-        attention_prediction_horizon: int = 0,
-        attention_as_autocorrelation: bool = False,
-    ) -> Dict[str, torch.Tensor]:
+    def interpret_output(self,
+                         out: Dict[str, torch.Tensor],
+                         reduction: str = "none",
+                         attention_prediction_horizon: int = 0,
+                         attention_as_autocorrelation: bool = False) -> Dict[str, torch.Tensor]:
         """
         interpret output of model
 
@@ -702,17 +671,14 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
         )
         return interpretation
 
-    def plot_prediction(
-        self,
-        x: Dict[str, torch.Tensor],
-        out: Dict[str, torch.Tensor],
-        idx: int,
-        plot_attention: bool = True,
-        add_loss_to_title: bool = False,
-        show_future_observed: bool = True,
-        ax=None,
-        **kwargs,
-    ) -> plt.Figure:
+    def plot_prediction(self,
+                        x: Dict[str, torch.Tensor],
+                        out: Dict[str, torch.Tensor],
+                        idx: int,plot_attention: bool = True,
+                        add_loss_to_title: bool = False,
+                        show_future_observed: bool = True,
+                        ax=None,
+                        **kwargs) -> plt.Figure:
         """
         Plot actuals vs prediction and attention
 
@@ -757,7 +723,8 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
                 f.tight_layout()
         return fig
 
-    def plot_interpretation(self, interpretation: Dict[str, torch.Tensor]) -> Dict[str, plt.Figure]:
+    def plot_interpretation(self,
+                            interpretation: Dict[str, torch.Tensor]) -> Dict[str, plt.Figure]:
         """
         Make figures that interpret model.
 
@@ -874,3 +841,306 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
             self.logger.experiment.add_embedding(
                 emb.weight.data.detach().cpu(), metadata=labels, tag=name, global_step=self.global_step
             )
+
+
+class TFTModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel):
+    @random_method
+    def __init__(self,
+                 # training_length: int = 24,
+                 likelihood: Optional[Likelihood] = None,
+                 random_state: Optional[Union[int, RandomState]] = None,
+
+                 input_chunk_length: int = 12,
+                 output_chunk_length: int = 1,
+                 output_size: Union[int, List[int]] = 7,
+                 hidden_size: Union[int, List[int]] = 16,
+                 lstm_layers: int = 1,
+                 dropout: float = 0.1,
+                 loss_fn: Optional[nn.Module] = torch.nn.MSELoss,
+                 attention_head_size: int = 4,
+                 max_encoder_length: int = 10,
+                 static_categoricals: List[str] = [],
+                 static_reals: List[str] = [],
+                 time_varying_categoricals_encoder: List[str] = [],
+                 time_varying_categoricals_decoder: List[str] = [],
+                 categorical_groups: Dict[str, List[str]] = {},
+                 time_varying_reals_encoder: List[str] = [],
+                 time_varying_reals_decoder: List[str] = [],
+                 x_reals: List[str] = [],
+                 x_categoricals: List[str] = [],
+                 hidden_continuous_size: int = 8,
+                 hidden_continuous_sizes: Dict[str, int] = {},
+                 embedding_sizes: Dict[str, Tuple[int, int]] = {},
+                 embedding_paddings: List[str] = [],
+                 embedding_labels: Dict[str, np.ndarray] = {},
+                 learning_rate: float = 1e-3,
+                 log_interval: Union[int, float] = -1,
+                 log_val_interval: Union[int, float] = None,
+                 log_gradient_flow: bool = False,
+                 reduce_on_plateau_patience: int = 1000,
+                 monotone_constaints: Dict[str, int] = {},
+                 share_single_variable_networks: bool = False,
+                 logging_metrics: nn.ModuleList = None,
+                 **kwargs
+                 ):
+        """Temporal Fusion Transformers (TFT) for Interpretable Multi-horizon Time Series Forecasting.
+
+        This is an implementation of the TFT architecture, as outlined in this paper:
+        https://arxiv.org/pdf/1912.09363.pdf
+
+        This model supports mixed covariates (includes static covariates; past covariates known for `input_chunk_length`
+        points before prediction time; future covariates known for `input_chunk_length` points before prediction time
+        and `input_chunk_length` after prediction time).
+
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
+        generic_architecture
+            Boolean value indicating whether the generic architecture of N-BEATS is used.
+            If not, the interpretable architecture outlined in the paper (consisting of one trend
+            and one seasonality stack with appropriate waveform generator functions).
+        num_stacks
+            The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
+            The interpretable architecture always uses two stacks - one for trend and one for seasonality.
+        num_blocks
+            The number of blocks making up every stack.
+        num_layers
+            The number of fully connected layers preceding the final forking layers in each block of every stack.
+            Only used if `generic_architecture` is set to `True`.
+        layer_widths
+            Determines the number of neurons that make up each fully connected layer in each block of every stack.
+            If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds
+            to the layer width of the corresponding stack. If an integer is passed, every stack will have blocks
+            with FC layers of the same width.
+        expansion_coefficient_dim
+            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
+            Only used if `generic_architecture` is set to `True`.
+        trend_polynomial_degree
+            The degree of the polynomial used as waveform generator in trend stacks. Only used if
+            `generic_architecture` is set to `False`.
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+        batch_size
+            Number of time series (input and output sequences) used in each training pass.
+        n_epochs
+            Number of epochs over which to train the model.
+        optimizer_cls
+            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
+            will be used.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
+            to using a constant learning rate.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer.
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
+            Default: `torch.nn.MSELoss()`.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
+            the same time by different processes to share the same model_name). E.g.,
+            2021-06-14_09:53:32_torch_model_run_44607.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            `[work_dir]/.darts/runs/`.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            `TimeSeries` is passed to the `fit()` method).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
+            is available, otherwise "cpu")
+        force_reset
+            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
+        """
+
+        kwargs['input_chunk_length'] = 24 * 7
+        kwargs['output_chunk_length'] = 24
+        super().__init__(likelihood=likelihood, **kwargs)
+
+        self.dropout = dropout
+        # self.training_length = [input_chunk_length, output_chunk_length]
+        self.training_length = 10
+
+        self.hidden_size = 16
+        self.lstm_layers = 2
+        self.dropout = 0.1
+        self.output_size = 7
+
+        self.loss_fn = QuantileLoss()
+        self.attention_head_size = 4
+        self.max_encoder_length = 24*7
+        self.static_categoricals = static_categoricals
+        self.static_reals = static_reals
+        self.time_varying_categoricals_encoder = time_varying_categoricals_encoder
+        self.time_varying_categoricals_decoder = time_varying_categoricals_decoder
+        self.categorical_groups = categorical_groups
+        self.time_varying_reals_encoder = time_varying_reals_encoder
+        self.time_varying_reals_decoder = time_varying_reals_decoder
+        self.x_reals = x_reals
+        self.x_categoricals = x_categoricals
+        self.hidden_continuous_size = hidden_continuous_size
+        self.hidden_continuous_sizes = hidden_continuous_sizes
+        self.embedding_sizes = embedding_sizes
+        self.embedding_paddings = embedding_paddings
+        self.embedding_labels = embedding_labels
+        self.learning_rate = 0.03
+        self.log_interval = 5
+        self.log_val_interval = log_val_interval
+        self.log_gradient_flow = log_gradient_flow
+        self.reduce_on_plateau_patience = 4
+        self.monotone_constaints = monotone_constaints
+        self.share_single_variable_networks = share_single_variable_networks
+        self.logging_metrics = logging_metrics
+
+        # if isinstance(self.hidden_size, int):
+        #     self.hidden_size = [self.hidden_size] * lstm_layers
+
+    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> nn.Module:
+        """
+        Attributes:
+            static_reals:
+            time_varying_reals_encoder:
+            time_varying_reals_decoder:
+            x_reals:
+
+            static_categoricals:
+            time_varying_categoricals_encoder:
+            time_varying_categoricals_decoder:
+            x_categoricals
+
+        """
+        # samples are made of (past_target, past_covariates, future_target)
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        output_dim = train_sample[-1].shape[1]
+
+        if DARTS_IMPLEMENTATION:
+            # reals
+            print('WARNING -------------- implement decoder/categoricals/static')
+            static_reals = []
+            time_varying_reals_encoder = [f'reals_{i}' for i in range(input_dim)]
+            time_varying_reals_decoder = [f'reals_{i}' for i in range(output_dim)]
+            # categoricals
+            static_categoricals = []
+            time_varying_categoricals_encoder = []
+            time_varying_categoricals_decoder = []
+
+        return _TFTModule(
+            input_dim=input_dim,
+            output_dim=output_dim,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            hidden_size=self.hidden_size,
+            lstm_layers=self.lstm_layers,
+            dropout=self.dropout,
+            output_size=self.output_size,
+            loss_fn=self.loss_fn,
+            attention_head_size=self.attention_head_size,
+            max_encoder_length=self.max_encoder_length,
+            static_categoricals=static_categoricals,
+            static_reals=static_reals,
+            time_varying_categoricals_encoder=time_varying_categoricals_encoder,
+            time_varying_categoricals_decoder=time_varying_categoricals_decoder,
+            categorical_groups=self.categorical_groups,
+            time_varying_reals_encoder=time_varying_reals_encoder,
+            time_varying_reals_decoder=time_varying_reals_decoder,
+            x_reals=self.x_reals,
+            x_categoricals=self.x_categoricals,
+            hidden_continuous_size=self.hidden_continuous_size,
+            hidden_continuous_sizes=self.hidden_continuous_sizes,
+            embedding_sizes=self.embedding_sizes,
+            embedding_paddings=self.embedding_paddings,
+            embedding_labels=self.embedding_labels,
+            learning_rate=self.learning_rate,
+            log_interval=self.log_interval,
+            log_val_interval=self.log_val_interval,
+            log_gradient_flow=self.log_gradient_flow,
+            reduce_on_plateau_patience=self.reduce_on_plateau_patience,
+            monotone_constaints=self.monotone_constaints,
+            share_single_variable_networks=self.share_single_variable_networks,
+            logging_metrics=self.logging_metrics,
+        )
+
+    def _build_train_dataset(self,
+                             target: Sequence[TimeSeries],
+                             past_covariates: Optional[Sequence[TimeSeries]],
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesShiftedDataset:
+
+        return DualCovariatesShiftedDataset(target_series=target,
+                                            covariates=future_covariates,
+                                            length=self.training_length,
+                                            shift=1)
+
+    def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
+        raise_if_not(isinstance(train_dataset, DualCovariatesShiftedDataset),
+                     'RNNModel requires a training dataset of type DualCovariatesShiftedDataset.')
+        raise_if_not(train_dataset.ds_past.shift == 1, 'RNNModel requires a shifted training dataset with shift=1.')
+
+    def _produce_train_output(self, input_batch: Tuple):
+        past_target, historic_future_covariates, future_covariates = input_batch
+        # For the RNN we concatenate the past_target with the future_covariates
+        # (they have the same length because we enforce a Shift dataset for RNNs)
+        model_input = torch.cat([past_target, future_covariates],
+                                dim=2) if future_covariates is not None else past_target
+        return self.model(model_input)[0]
+
+    @random_method
+    def _produce_predict_output(self, x, last_hidden_state=None):
+        if self.likelihood:
+            output, hidden = self.model(x, last_hidden_state)
+            return self.likelihood.sample(output), hidden
+        else:
+            return self.model(x, last_hidden_state)
+
+    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+        """
+        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
+        """
+        past_target, historic_future_covariates, future_covariates = input_batch
+
+        if historic_future_covariates is not None:
+            # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
+            all_covariates = torch.cat([historic_future_covariates[:, 1:, :], future_covariates], dim=1)
+            cov_past, cov_future = all_covariates[:, :past_target.shape[1], :], all_covariates[:, past_target.shape[1]:, :]
+            input_series = torch.cat([past_target, cov_past], dim=2)
+        else:
+            input_series = past_target
+            cov_future = None
+
+        batch_prediction = []
+        out, last_hidden_state = self._produce_predict_output(input_series)
+        batch_prediction.append(out[:, -1:, :])
+        prediction_length = 1
+
+        while prediction_length < n:
+
+            # create new input to model from last prediction and current covariates, if available
+            new_input = (
+                torch.cat([out[:, -1:, :], cov_future[:, prediction_length - 1:prediction_length, :]], dim=2)
+                if cov_future is not None else out[:, -1:, :]
+            )
+
+            # feed new input to model, including the last hidden state from the previous iteration
+            out, last_hidden_state = self._produce_predict_output(new_input, last_hidden_state)
+
+            # append prediction to batch prediction array, increase counter
+            batch_prediction.append(out[:, -1:, :])
+            prediction_length += 1
+
+        # bring predictions into desired format and drop unnecessary values
+        batch_prediction = torch.cat(batch_prediction, dim=1)
+        batch_prediction = batch_prediction[:, :n, :]
+
+        return batch_prediction
