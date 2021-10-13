@@ -21,7 +21,7 @@ from darts.utils.torch import random_method
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel, TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
 from darts.logging import get_logger, raise_log, raise_if_not
 
-from darts.models.forecasting.tft_submodels import (
+from darts.models.forecasting.tft_submodels_darts import (
     AddNorm,
     GateAddNorm,
     GatedLinearUnit,
@@ -315,7 +315,7 @@ class _TFTModule(nn.Module):
         return context[:, None].expand(-1, timesteps, -1)
 
     def get_attention_mask(self,
-                           encoder_lengths: torch.LongTensor,
+                           encoder_lengths: torch.Tensor,
                            decoder_length: int,
                            device: str):
         """
@@ -431,23 +431,24 @@ class _TFTModule(nn.Module):
             static_variable_selection = torch.zeros((past_target.size(0), 0), dtype=past_target.dtype, device=past_target.device)
 
         static_context_variable_selection = self.expand_static_context(
-            self.static_context_variable_selection(static_embedding), timesteps
+            context=self.static_context_variable_selection(static_embedding),
+            timesteps=timesteps
         )
 
         embeddings_varying_encoder = {
             name: input_vectors_past[name] for name in self.encoder_variables
         }
         embeddings_varying_encoder, encoder_sparse_weights = self.encoder_variable_selection(
-            embeddings_varying_encoder,
-            static_context_variable_selection[:, :max_encoder_length],
+            x=embeddings_varying_encoder,
+            context=static_context_variable_selection[:, :max_encoder_length],
         )
 
         embeddings_varying_decoder = {
             name: input_vectors_future[name] for name in self.decoder_variables
         }
         embeddings_varying_decoder, decoder_sparse_weights = self.decoder_variable_selection(
-            embeddings_varying_decoder,
-            static_context_variable_selection[:, max_encoder_length:],
+            x=embeddings_varying_decoder,
+            context=static_context_variable_selection[:, max_encoder_length:],
         )
 
         # LSTM
@@ -485,7 +486,9 @@ class _TFTModule(nn.Module):
         # static enrichment
         static_context_enrichment = self.static_context_enrichment(static_embedding)
         attn_input = self.static_enrichment(
-            lstm_output, self.expand_static_context(static_context_enrichment, timesteps)
+            lstm_output, self.expand_static_context(
+                context=static_context_enrichment,
+                timesteps=timesteps)
         )
 
         # Attention
@@ -512,7 +515,8 @@ class _TFTModule(nn.Module):
             output = [output_layer(output) for output_layer in self.output_layer]
         else:
             output = self.output_layer(output)
-
+        # x_scale = torch.tensor([[0.5477, 0.2469]], dtype=past_target.dtype)
+        # output = self.loss_fn.rescale_parameters(output, target_scale=x_scale, encoder=self.output_transformer)
         # return self.to_network_output(
         #     prediction=self.transform_output(output, target_scale=x["target_scale"]),
         #     attention=attn_output_weights,
@@ -835,7 +839,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  hidden_size: Union[int, List[int]] = 16,
                  lstm_layers: int = 1,
                  dropout: float = 0.1,
-                 loss_fn: Optional[nn.Module] = QuantileLoss,
+                 loss_fn: Optional[nn.Module] = QuantileLoss(),
                  attention_head_size: int = 4,
                  max_encoder_length: int = 10,
                  categorical_groups: Dict[str, List[str]] = {},
@@ -938,9 +942,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).
         """
-
-        kwargs['input_chunk_length'] = 24 * 7
-        kwargs['output_chunk_length'] = 24
+        kwargs['loss_fn'] = loss_fn
+        kwargs['input_chunk_length'] = input_chunk_length
+        kwargs['output_chunk_length'] = output_chunk_length
         super().__init__(likelihood=likelihood, **kwargs)
 
         self.dropout = dropout
@@ -1117,34 +1121,43 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         return self.model(input_batch)[0]
 
     @random_method
-    def _produce_predict_output(self, x, last_hidden_state=None):
-        if self.likelihood:
-            output, hidden = self.model(x, last_hidden_state)
-            return self.likelihood.sample(output), hidden
-        else:
-            return self.model(x, last_hidden_state)
+    def _produce_predict_output(self, x):
+        output = self.model(x).median(dim=2)[0].unsqueeze(dim=2)
+        return output if not self.likelihood else self.likelihood.sample(output)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
-        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
+        This model is a MixedCovariate model
+
+        Parameters:
+        ----------
+        input_batch
+            (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
         """
-        past_target, historic_future_covariates, future_covariates = input_batch
 
-        if historic_future_covariates is not None:
-            # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
-            all_covariates = torch.cat([historic_future_covariates[:, 1:, :], future_covariates], dim=1)
-            cov_past, cov_future = all_covariates[:, :past_target.shape[1], :], all_covariates[:, past_target.shape[1]:, :]
-            input_series = torch.cat([past_target, cov_past], dim=2)
-        else:
-            input_series = past_target
-            cov_future = None
+        series_names = [
+            'past_target', 'past_covariates', 'historic_future_covariates', 'future_covariates',
+            'future_past_covariates'
+        ]
+        roll_series = {
+            name: torch.clone(series) for name, series in zip(series_names, input_batch) if not series is None
+        }
 
+        # determine split point for future series
+        output_chunk_start = \
+            roll_series['past_target'].shape[1] if n >= self.output_chunk_length else -(self.output_chunk_length - n)
+
+
+
+        input_series = tuple(roll_series.get(name, None) for name in series_names[:-1])
         batch_prediction = []
-        out, last_hidden_state = self._produce_predict_output(input_series)
-        batch_prediction.append(out[:, -1:, :])
-        prediction_length = 1
+        out = self._produce_predict_output(input_series)
+        batch_prediction.append(out[:, :roll_size, :])
+        prediction_length = roll_size
 
         while prediction_length < n:
+
+
 
             # create new input to model from last prediction and current covariates, if available
             new_input = (

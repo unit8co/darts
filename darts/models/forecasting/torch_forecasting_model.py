@@ -836,9 +836,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 elif verbose:
                     print("Training loss: {:.4f}".format(training_loss), end="\r")
 
-            if (epoch + 1) % 5 == 0:
-                break
-
     def _compute_loss(self, output, target):
         return self.criterion(output, target)
 
@@ -1073,7 +1070,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     ----------
     train_sample
         (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
-    predict_sample:
+    predict_sample
         (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates, ts_target)
     """
     # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
