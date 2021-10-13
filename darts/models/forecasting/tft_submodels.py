@@ -571,7 +571,7 @@ class VariableSelectionNetwork(nn.Module):
         self.num_inputs = len(self.input_sizes)
         self.input_sizes_total = sum(self.input_sizes.values())
 
-        if self.num_inputs > 1:
+        if self.num_inputs >= 1:
             # right side of figure 2 bottom right graph
             self.vars_flattened_grn = GatedResidualNetwork(
                 input_size=self.input_sizes_total,

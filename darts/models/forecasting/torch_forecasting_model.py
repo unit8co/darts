@@ -836,6 +836,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 elif verbose:
                     print("Training loss: {:.4f}".format(training_loss), end="\r")
 
+            if (epoch + 1) % 5 == 0:
+                break
+
     def _compute_loss(self, output, target):
         return self.criterion(output, target)
 
@@ -1060,6 +1063,41 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
              cov_train.shape[-1] != cov_pred.shape[-1],
              'The provided covariates must have dimensionality matching that of the covariates used for training '
              'the model.')
+
+
+def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
+    """
+    For models relying on MixedCovariates.
+
+    Parameters:
+    ----------
+    train_sample
+        (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
+    predict_sample:
+        (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates, ts_target)
+    """
+    # datasets; we skip future_target for train and predict, and skip future_past_covariates for predict datasets
+    ds_names = ['past_target', 'past_covariates', 'historic_future_covariates', 'future_covariates']
+
+    train_has_ds = [ds is not None for ds in train_sample[:-1]]
+    predict_has_ds = [ds is not None for ds in predict_sample[:4]]
+
+    train_datasets = train_sample[:-1]
+    predict_datasets = predict_sample[:4]
+
+    tgt_train, tgt_pred = train_datasets[0], predict_datasets[0]
+    raise_if_not(tgt_train.shape[-1] == tgt_pred.shape[-1],
+                 'The provided target has a dimension (width) that does not match the dimension '
+                 'of the target this model has been trained on.')
+
+    for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(zip(train_has_ds, predict_has_ds, ds_names)):
+        raise_if(ds_in_train and not ds_in_predict and ds_in_train,
+                 f'This model has been trained with {ds_name}; some {ds_name} of matching dimensionality are needed '
+                 f'for prediction.')
+        raise_if(ds_in_train and not ds_in_predict and ds_in_predict,
+                 f'This model has been trained without {ds_name}; No {ds_name} should be provided for prediction.')
+        raise_if(ds_in_train and ds_in_predict and train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1],
+                 f'The provided {ds_name} must have dimensionality that of the {ds_name} used for training the model.')
 
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
@@ -1296,8 +1334,7 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         _raise_if_wrong_type(inference_dataset, MixedCovariatesInferenceDataset)
 
     def _verify_predict_sample(self, predict_sample: Tuple):
-        # TODO: we have to check both past and future covariates
-        raise NotImplementedError()
+        _mixed_compare_sample(self.train_sample, predict_sample)
 
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         # both covariates are supported; do nothing
