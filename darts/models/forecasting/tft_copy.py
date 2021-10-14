@@ -19,7 +19,7 @@ from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset, Mixe
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel, TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
-from darts.logging import get_logger, raise_log, raise_if_not
+from darts.logging import get_logger, raise_log, raise_if_not, raise_if
 
 from darts.models.forecasting.tft_submodels_darts import (
     AddNorm,
@@ -156,18 +156,18 @@ class _TFTModule(nn.Module):
             self.shared_single_variable_grns = nn.ModuleDict()
             for name, input_size in encoder_input_sizes.items():
                 self.shared_single_variable_grns[name] = GatedResidualNetwork(
-                    input_size,
-                    min(input_size, self.hidden_size),
-                    self.hidden_size,
-                    self.dropout,
+                    input_size=input_size,
+                    hidden_size=min(input_size, self.hidden_size),
+                    output_size=self.hidden_size,
+                    dropout=self.dropout
                 )
             for name, input_size in decoder_input_sizes.items():
                 if name not in self.shared_single_variable_grns:
                     self.shared_single_variable_grns[name] = GatedResidualNetwork(
-                        input_size,
-                        min(input_size, self.hidden_size),
-                        self.hidden_size,
-                        self.dropout,
+                        input_size=input_size,
+                        hidden_size=min(input_size, self.hidden_size),
+                        output_size=self.hidden_size,
+                        dropout=self.dropout,
                     )
 
         self.encoder_variable_selection = VariableSelectionNetwork(
@@ -528,31 +528,31 @@ class _TFTModule(nn.Module):
         # )
         return output
 
-    def on_fit_end(self):
-        if self.log_interval > 0:
-            self.log_embeddings()
-
-    def create_log(self, x, y, out, batch_idx, **kwargs):
-        log = super().create_log(x, y, out, batch_idx, **kwargs)
-        if self.log_interval > 0:
-            log["interpretation"] = self._log_interpretation(out)
-        return log
-
-    def _log_interpretation(self, out):
-        # calculate interpretations etc for latter logging
-        interpretation = self.interpret_output(
-            detach(out),
-            reduction="sum",
-            attention_prediction_horizon=0,  # attention only for first prediction horizon
-        )
-        return interpretation
-
-    def epoch_end(self, outputs):
-        """
-        run at epoch end for training or validation
-        """
-        if self.log_interval > 0:
-            self.log_interpretation(outputs)
+    # def on_fit_end(self):
+    #     if self.log_interval > 0:
+    #         self.log_embeddings()
+    #
+    # def create_log(self, x, y, out, batch_idx, **kwargs):
+    #     log = super().create_log(x, y, out, batch_idx, **kwargs)
+    #     if self.log_interval > 0:
+    #         log["interpretation"] = self._log_interpretation(out)
+    #     return log
+    #
+    # def _log_interpretation(self, out):
+    #     # calculate interpretations etc for latter logging
+    #     interpretation = self.interpret_output(
+    #         detach(out),
+    #         reduction="sum",
+    #         attention_prediction_horizon=0,  # attention only for first prediction horizon
+    #     )
+    #     return interpretation
+    #
+    # def epoch_end(self, outputs):
+    #     """
+    #     run at epoch end for training or validation
+    #     """
+    #     if self.log_interval > 0:
+    #         self.log_interpretation(outputs)
 
     def interpret_output(self,
                          out: Dict[str, torch.Tensor],
@@ -757,73 +757,73 @@ class _TFTModule(nn.Module):
 
         return figs
 
-    def log_interpretation(self, outputs):
-        """
-        Log interpretation metrics to tensorboard.
-        """
-        # extract interpretations
-        interpretation = {
-            # use padded_stack because decoder length histogram can be of different length
-            name: padded_stack([x["interpretation"][name].detach() for x in outputs], side="right", value=0).sum(0)
-            for name in outputs[0]["interpretation"].keys()
-        }
-        # normalize attention with length histogram squared to account for: 1. zeros in attention and
-        # 2. higher attention due to less values
-        attention_occurances = interpretation["encoder_length_histogram"][1:].flip(0).cumsum(0).float()
-        attention_occurances = attention_occurances / attention_occurances.max()
-        attention_occurances = torch.cat(
-            [
-                attention_occurances,
-                torch.ones(
-                    interpretation["attention"].size(0) - attention_occurances.size(0),
-                    dtype=attention_occurances.dtype,
-                    device=attention_occurances.device,
-                ),
-            ],
-            dim=0,
-        )
-        interpretation["attention"] = interpretation["attention"] / attention_occurances.pow(2).clamp(1.0)
-        interpretation["attention"] = interpretation["attention"] / interpretation["attention"].sum()
-
-        figs = self.plot_interpretation(interpretation)  # make interpretation figures
-        label = ["val", "train"][self.training]
-        # log to tensorboard
-        for name, fig in figs.items():
-            self.logger.experiment.add_figure(
-                f"{label.capitalize()} {name} importance", fig, global_step=self.global_step
-            )
-
-        # log lengths of encoder/decoder
-        for type in ["encoder", "decoder"]:
-            fig, ax = plt.subplots()
-            lengths = (
-                padded_stack([out["interpretation"][f"{type}_length_histogram"] for out in outputs])
-                .sum(0)
-                .detach()
-                .cpu()
-            )
-            if type == "decoder":
-                start = 1
-            else:
-                start = 0
-            ax.plot(torch.arange(start, start + len(lengths)), lengths)
-            ax.set_xlabel(f"{type.capitalize()} length")
-            ax.set_ylabel("Number of samples")
-            ax.set_title(f"{type.capitalize()} length distribution in {label} epoch")
-
-            self.logger.experiment.add_figure(
-                f"{label.capitalize()} {type} length distribution", fig, global_step=self.global_step
-            )
-
-    def log_embeddings(self):
-        """
-        Log embeddings to tensorboard
-        """
-        for name, emb in self.input_embeddings.items():
-            labels = self.embedding_labels[name]
-            self.logger.experiment.add_embedding(
-                emb.weight.data.detach().cpu(), metadata=labels, tag=name, global_step=self.global_step
-            )
+    # def log_interpretation(self, outputs):
+    #     """
+    #     Log interpretation metrics to tensorboard.
+    #     """
+    #     # extract interpretations
+    #     interpretation = {
+    #         # use padded_stack because decoder length histogram can be of different length
+    #         name: padded_stack([x["interpretation"][name].detach() for x in outputs], side="right", value=0).sum(0)
+    #         for name in outputs[0]["interpretation"].keys()
+    #     }
+    #     # normalize attention with length histogram squared to account for: 1. zeros in attention and
+    #     # 2. higher attention due to less values
+    #     attention_occurances = interpretation["encoder_length_histogram"][1:].flip(0).cumsum(0).float()
+    #     attention_occurances = attention_occurances / attention_occurances.max()
+    #     attention_occurances = torch.cat(
+    #         [
+    #             attention_occurances,
+    #             torch.ones(
+    #                 interpretation["attention"].size(0) - attention_occurances.size(0),
+    #                 dtype=attention_occurances.dtype,
+    #                 device=attention_occurances.device,
+    #             ),
+    #         ],
+    #         dim=0,
+    #     )
+    #     interpretation["attention"] = interpretation["attention"] / attention_occurances.pow(2).clamp(1.0)
+    #     interpretation["attention"] = interpretation["attention"] / interpretation["attention"].sum()
+    #
+    #     figs = self.plot_interpretation(interpretation)  # make interpretation figures
+    #     label = ["val", "train"][self.training]
+    #     # log to tensorboard
+    #     for name, fig in figs.items():
+    #         self.logger.experiment.add_figure(
+    #             f"{label.capitalize()} {name} importance", fig, global_step=self.global_step
+    #         )
+    #
+    #     # log lengths of encoder/decoder
+    #     for type in ["encoder", "decoder"]:
+    #         fig, ax = plt.subplots()
+    #         lengths = (
+    #             padded_stack([out["interpretation"][f"{type}_length_histogram"] for out in outputs])
+    #             .sum(0)
+    #             .detach()
+    #             .cpu()
+    #         )
+    #         if type == "decoder":
+    #             start = 1
+    #         else:
+    #             start = 0
+    #         ax.plot(torch.arange(start, start + len(lengths)), lengths)
+    #         ax.set_xlabel(f"{type.capitalize()} length")
+    #         ax.set_ylabel("Number of samples")
+    #         ax.set_title(f"{type.capitalize()} length distribution in {label} epoch")
+    #
+    #         self.logger.experiment.add_figure(
+    #             f"{label.capitalize()} {type} length distribution", fig, global_step=self.global_step
+    #         )
+    #
+    # def log_embeddings(self):
+    #     """
+    #     Log embeddings to tensorboard
+    #     """
+    #     for name, emb in self.input_embeddings.items():
+    #         labels = self.embedding_labels[name]
+    #         self.logger.experiment.add_embedding(
+    #             emb.weight.data.detach().cpu(), metadata=labels, tag=name, global_step=self.global_step
+    #         )
 
 
 class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorchModel):
@@ -832,7 +832,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  # training_length: int = 24,
                  likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
-
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
                  output_size: Union[int, List[int]] = 7,
@@ -956,11 +955,18 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.hidden_size = 16
         self.lstm_layers = 2
         self.dropout = 0.1
-        self.output_size = 7
+
+        # TODO: now we just have univariate case, or static quantile losses with 7 quantiles
+        if output_size is not None:
+            raise_if(isinstance(loss_fn, QuantileLoss) and output_size != len(QuantileLoss().quantiles),
+                     'For now when using QuantileLoss, the output_size must be equal to 7 (quantiles)')
+            self.output_size = output_size
+        else:
+            self.output_size = len(QuantileLoss().quantiles) if isinstance(loss_fn, QuantileLoss) else 1
 
         self.loss_fn = QuantileLoss()
-        self.attention_head_size = 4
-        self.max_encoder_length = 24*7
+        self.attention_head_size = attention_head_size
+        self.max_encoder_length = max_encoder_length
         self.categorical_groups = categorical_groups
         self.x_reals = x_reals
         self.x_categoricals = x_categoricals
@@ -969,7 +975,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.embedding_sizes = embedding_sizes
         self.embedding_paddings = embedding_paddings
         self.embedding_labels = embedding_labels
-        self.learning_rate = 0.03
+        self.learning_rate = learning_rate
         self.log_interval = 5
         self.log_val_interval = log_val_interval
         self.log_gradient_flow = log_gradient_flow
@@ -1104,25 +1110,15 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                      'TFTModel requires a training dataset of type MixedCovariatesSequentialDataset.')
 
     def _produce_train_output(self, input_batch: Tuple):
-        # for MixedCovariatesSequentialDataset
-        # past_target, past_covariates, historic_future_covariates, future_covariates = input_batch
-
-
-        # for DualCovariatesShiftedDataset
-        # past_target, historic_future_covariates, future_covariates = input_batch
-
-        # For the RNN we concatenate the past_target with the future_covariates
-        # (they have the same length because we enforce a Shift dataset for RNNs)
-
-        # model_input = torch.cat
-        # model_input = (past_target, past_covariates, historic_future_covariates, future_covariates)
-        # model_input = torch.cat([past_target, future_covariates],
-        #                         dim=2) if future_covariates is not None else past_target
-        return self.model(input_batch)[0]
+        return self.model(input_batch)
 
     @random_method
     def _produce_predict_output(self, x):
-        output = self.model(x).median(dim=2)[0].unsqueeze(dim=2)
+        if isinstance(self.loss_fn, QuantileLoss):
+            p50_index = QuantileLoss().quantiles.index(0.5)
+            output = self.model(x)[:, :, p50_index].unsqueeze(dim=2)
+        else:
+            output = self.model(x)
         return output if not self.likelihood else self.likelihood.sample(output)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:

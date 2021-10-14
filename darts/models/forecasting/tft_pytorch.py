@@ -563,10 +563,9 @@ class TemporalFusionTransformer(BaseModelWithCovariates):
             output = [output_layer(output) for output_layer in self.output_layer]
         else:
             output = self.output_layer(output)
-        # print(x['target_scale'])
+
         return self.to_network_output(
-            # prediction=self.transform_output(output, target_scale=x["target_scale"]),
-            prediction=output,
+            prediction=self.transform_output(output, target_scale=x["target_scale"]),
             attention=attn_output_weights,
             static_variables=static_variable_selection,
             encoder_variables=encoder_sparse_weights,

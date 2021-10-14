@@ -37,12 +37,20 @@ class QuantileLoss(nn.Module):
         self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
 
     def forward(self, y_pred, y_true):
+        # losses = []
+        # for i, q in enumerate(self.quantiles):
+        #     errors = y_true - y_pred[:, i]
+        #     losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(1))
+        # loss = torch.mean(torch.sum(torch.cat(losses, dim=1), dim=1))
+
+
+        # TODO: check loss for multivariate case
         losses = []
         for i, q in enumerate(self.quantiles):
-            errors = y_true - y_pred[:, i]
-            losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(1))
-        loss = torch.mean(torch.sum(torch.cat(losses, dim=1), dim=1))
-        return loss
+            errors = y_true - y_pred[:, :, i].unsqueeze(-1)
+            losses.append(torch.max((q - 1) * errors, q * errors))
+        losses = torch.sum(torch.cat(losses, dim=2) / len(losses))
+        return losses
 
 
 class RNN(ABC, nn.RNNBase):
