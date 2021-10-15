@@ -11,7 +11,7 @@ import numpy as np
 from scipy.stats import norm
 from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import acf
+from statsmodels.tsa.stattools import acf, pacf
 
 from warnings import warn
 from ..logging import raise_log, get_logger, raise_if_not
@@ -289,6 +289,67 @@ def plot_acf(ts: TimeSeries,
     ts._assert_univariate()
 
     r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=bartlett_confint)
+
+    if axis is None:
+        plt.figure(figsize=fig_size)
+        axis = plt
+
+    for i in range(len(r)):
+        axis.plot((i, i),
+                  (0, r[i]),
+                  color=('#b512b8' if m is not None and i == m else 'black'),
+                  lw=(1 if m is not None and i == m else .5))
+
+    # Calculates the upper band of the confidence interval for level alpha for all lags.
+    upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
+
+    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
+    axis.plot((0, max_lag + 1), (0, 0), color='black')
+
+
+def plot_pacf(ts: TimeSeries,
+              m: Optional[int] = None,
+              max_lag: int = 24,
+              method: str = "ywadjusted",
+              alpha: float = 0.05,
+              fig_size: Tuple[int, int] = (10, 5),
+              axis: Optional[plt.axis] = None) -> None:
+    """
+    Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
+
+    Parameters
+    ----------
+    ts
+        The TimeSeries whose ACF should be plotted.
+    m
+        Optionally, a time lag to highlight on the plot.
+    max_lag
+        The maximal lag order to consider.
+    method
+        The method to be used for the PACF calculation.
+        - "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
+          denominator for acovf. Default.
+        - "ywm" or "ywmle" : Yule-Walker without adjustment.
+        - "ols" : regression of time series on lags of it and on constant.
+        - "ols-inefficient" : regression of time series on lags using a single
+          common sample to estimate all pacf coefficients.
+        - "ols-adjusted" : regression of time series on lags with a bias
+          adjustment.
+        - "ld" or "ldadjusted" : Levinson-Durbin recursion with bias
+          correction.
+        - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
+          correction.
+    alpha
+        The confidence interval to display.
+    fig_size
+        The size of the figure to be displayed.
+    axis
+        Optionally, an axis object to plot the ACF on.
+    """
+
+    ts._assert_univariate()
+
+    r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
 
     if axis is None:
         plt.figure(figsize=fig_size)
