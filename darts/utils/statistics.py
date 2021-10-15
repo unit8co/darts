@@ -282,12 +282,7 @@ def plot_acf(ts: TimeSeries,
 
     ts._assert_univariate()
 
-    r = acf(ts.values(), nlags=max_lag, fft=False)  # , alpha=alpha) and confint as output too
-
-    # Computes the confidence interval at level alpha for all lags.
-    stats = []
-    for i in range(1, max_lag + 1):
-        stats.append(_bartlett_formula(r[1:], i, len(ts)))
+    r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=True)
 
     if axis is None:
         plt.figure(figsize=fig_size)
@@ -299,10 +294,10 @@ def plot_acf(ts: TimeSeries,
                   color=('#b512b8' if m is not None and i == m else 'black'),
                   lw=(1 if m is not None and i == m else .5))
 
-    upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
-    acf_band = [upp_band * stat for stat in stats]
+    # Calculates the upper band of the confidence interval for level alpha for all lags.
+    upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
-    axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='#003DFD', alpha=.25)
+    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
     axis.plot((0, max_lag + 1), (0, 0), color='black')
 
 
