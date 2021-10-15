@@ -259,6 +259,7 @@ def plot_acf(ts: TimeSeries,
              m: Optional[int] = None,
              max_lag: int = 24,
              alpha: float = 0.05,
+             bartlett_confint: bool = True,
              fig_size: Tuple[int, int] = (10, 5),
              axis: Optional[plt.axis] = None) -> None:
     """
@@ -274,6 +275,11 @@ def plot_acf(ts: TimeSeries,
         The maximal lag order to consider.
     alpha
         The confidence interval to display.
+    bartlett_confint
+        The boolean value indicating whether the confidence interval should be
+        calculated using Bartlett's formula. This is useful in the model identification
+        stage for fitting ARIMA models. If set to False, the confidence interval can be
+        used to test if there is any significant autocorrelation in the data.
     fig_size
         The size of the figure to be displayed.
     axis
@@ -282,7 +288,7 @@ def plot_acf(ts: TimeSeries,
 
     ts._assert_univariate()
 
-    r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=True)
+    r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=bartlett_confint)
 
     if axis is None:
         plt.figure(figsize=fig_size)
