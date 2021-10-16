@@ -261,3 +261,21 @@ To build documentation locally just run
 ./gradlew buildDocs
 ```
 After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
+
+
+## Citation
+If you are using Darts in your scientific work, we would appreciate citations to the following paper.
+
+[Darts: User-Friendly Modern Machine Learning for Time Series](https://arxiv.org/abs/2110.03224)
+
+Bibtex entry:
+```
+@misc{herzen2021darts,
+      title={Darts: User-Friendly Modern Machine Learning for Time Series}, 
+      author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
+      year={2021},
+      eprint={2110.03224},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
