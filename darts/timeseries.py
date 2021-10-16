@@ -2504,7 +2504,7 @@ def concatenate(series: Sequence['TimeSeries'],
         elif axis == DIMS[2]:
             axis = 2
         else:
-            raise_if_not(len(time_dims) == len(set(time_dims)) and axis == time_dims[0],
+            raise_if_not(len(set(time_dims)) == 1 and axis == time_dims[0],
                          'Unrecognised `axis` name. If `axis` denotes the time axis, all provided '
                          'series must have the same time axis name (if that is not the case, try providing '
                          '`axis=0` to concatenate along time dimension).')
@@ -2533,21 +2533,19 @@ def concatenate(series: Sequence['TimeSeries'],
                 break
 
         if not consecutive_time_axes:
-            if ignore_time_axes:
-                if series[0].has_datetime_index:
-                    tindex = pd.date_range(series[0].start_time(),
-                                           freq=series[0].freq,
-                                           periods=da_concat.sizes[0])
-                else:
-                    tindex = pd.RangeIndex(start=series[0].start_time(),
-                                           stop=series[0].start_time() + da_concat.sizes[0],
-                                           step=1)
-                da_concat = da_concat.assign_coords({time_dim_name: tindex})
+            raise_if_not(ignore_time_axes, "When concatenating over time axis, all series need to be contiguous"
+                                           "in the time dimension. Use `ignore_time_axis=True` to override "
+                                           "this behavior and concatenate the series by extending the time axis "
+                                           "of the first series.")
+            if series[0].has_datetime_index:
+                tindex = pd.date_range(series[0].start_time(),
+                                       freq=series[0].freq,
+                                       periods=da_concat.shape[0])
             else:
-                raise_log(AttributeError("When concatenating over time axis, all series need to be contiguous"
-                                         "in the time dimension. Use `ignore_time_axis=True` to override "
-                                         "this behavior and concatenate the series by extending the time axis "
-                                         "of the first series."))
+                tindex = pd.RangeIndex(start=series[0].start_time(),
+                                       stop=series[0].start_time() + da_concat.shape[0],
+                                       step=1)
+            da_concat = da_concat.assign_coords({time_dim_name: tindex})
 
     else:
         time_axes_equal = all(list(map(lambda t: t[0].has_same_time_as(t[1]), zip(series[0:-1], series[1:]))))

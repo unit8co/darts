@@ -796,7 +796,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-11'), freq='D')]
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             ts = concatenate(samples, axis='component')
 
     def test_concatenate_component_different_time_axes_with_force(self):
@@ -848,7 +848,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             concatenate(samples, axis='time')
 
     def test_concatenate_time_same_time_force(self):
@@ -866,7 +866,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-12'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-18'), freq='D')]
 
-        with self.assertRaises(AttributeError):
+        with self.assertRaises(ValueError):
             concatenate(samples, axis='time')
 
     def test_concatenate_time_different_time_axes_force(self):
