@@ -956,14 +956,14 @@ class TimeSeries:
              size: Optional[int] = 5,
              axis: Optional[Union[int, str]] = 0) -> 'TimeSeries':
         """
-        Return first n samples from TimeSeries.
+        Return a TimeSeries made of the first n samples of this TimeSeries
 
         Parameters
         ----------
         size : int, default 5
-            number of samples to retain
-        axis : str or int, optional, default 'time'
-            axis along which we intend to display records
+               number of samples to retain
+        axis : str or int, optional, default: 0
+               axis along which to slice the series
 
         Returns
         -------
@@ -972,10 +972,9 @@ class TimeSeries:
             # of ``samples`` samples.
         """
 
-        axis = TimeSeries._get_str_axis(axis)
-
-        display_n = range(min(size, self._xa.sizes[axis]))
-        return TimeSeries(self._xa[{axis: display_n}])
+        axis_str = self._get_dim_name(axis)
+        display_n = range(min(size, self._xa.sizes[axis_str]))
+        return TimeSeries(self._xa[{axis_str: display_n}])
 
     def tail(self,
              size: Optional[int] = 5,
@@ -997,10 +996,9 @@ class TimeSeries:
             # of ``samples`` from the bottom. [Default: 5]
         """
 
-        axis = TimeSeries._get_str_axis(axis)
-        
-        display_n = range(-min(size, self._xa.sizes[axis]), 0)
-        return TimeSeries(self._xa[{axis: display_n}])
+        axis_str = self._get_dim_name(axis)
+        display_n = range(-min(size, self._xa.sizes[axis_str]), 0)
+        return TimeSeries(self._xa[{axis_str: display_n}])
 
     def concatenate(self,
                     other: 'TimeSeries',
@@ -1025,7 +1023,7 @@ class TimeSeries:
             TimeSeries
                 concatenated timeseries
         """
-        return concatenate(timeserie_sequence=[self, other], axis=axis, ignore_time_axes=ignore_time_axes)
+        return concatenate(series=[self, other], axis=axis, ignore_time_axes=ignore_time_axes)
 
     """
     Other methods
@@ -2179,6 +2177,30 @@ class TimeSeries:
         resampled_xa[:] = np.nan
         resampled_xa[resampled_time_index.index.isin(time_index)] = sorted_xa.data
         return resampled_xa
+
+    def _get_dim_name(self, axis: Union[int, str]) -> str:
+        if isinstance(axis, int):
+            if axis == 0:
+                return self._time_dim
+            elif axis == 1 or axis == 2:
+                return DIMS[axis]
+            else:
+                raise_if(True, 'If `axis` is an integer it must be between 0 and 2.')
+        else:
+            known_dims = (self._time_dim,) + DIMS[1:]
+            raise_if_not(axis in known_dims,
+                         '`axis` must be a known dimension of this series: {}'.format(known_dims))
+            return axis
+
+    def _get_dim(self, axis: Union[int, str]) -> int:
+        if isinstance(axis, int):
+            raise_if_not(0 <= axis <= 2, 'If `axis` is an integer it must be between 0 and 2.')
+            return axis
+        else:
+            known_dims = (self._time_dim,) + DIMS[1:]
+            raise_if_not(axis in known_dims,
+                         '`axis` must be a known dimension of this series: {}'.format(known_dims))
+            return known_dims.index(axis)
 
     def __eq__(self, other):
         if isinstance(other, TimeSeries):
