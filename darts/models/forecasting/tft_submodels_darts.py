@@ -27,8 +27,7 @@ USE_ADAPTION_NO_ATTENTION_DROPOUT = False  # seems to work better without
 class QuantileLoss(nn.Module):
     """From: https://medium.com/the-artificial-impostor/quantile-regression-part-2-6fdbc26b2629"""
 
-    def __init__(self,
-                 quantiles: Optional[List[float]] = None):
+    def __init__(self, quantiles: Optional[List[float]] = None):
         """
         Arguments:
             quantiles: list of quantiles
@@ -37,20 +36,16 @@ class QuantileLoss(nn.Module):
         self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
 
     def forward(self, y_pred, y_true):
-        # losses = []
-        # for i, q in enumerate(self.quantiles):
-        #     errors = y_true - y_pred[:, i]
-        #     losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(1))
-        # loss = torch.mean(torch.sum(torch.cat(losses, dim=1), dim=1))
-
-
-        # TODO: check loss for multivariate case
+        # TODO: check loss for multivariate case; so far (univariate), y_pred is (samples, timesteps, quantiles) for
+        #  multivariate could be (samples, timesteps, quantiles, variables) or
+        #  (samples, timesteps, variables, quantiles)
+        dim_q = 2
         losses = []
         for i, q in enumerate(self.quantiles):
-            errors = y_true - y_pred[:, :, i].unsqueeze(-1)
+            errors = y_true - y_pred[:, :, i].unsqueeze(dim=dim_q)
             losses.append(torch.max((q - 1) * errors, q * errors))
-        losses = torch.sum(torch.cat(losses, dim=2) / len(losses))
-        return losses
+        losses = torch.cat(losses, dim=dim_q)
+        return losses.sum(dim=dim_q).mean()
 
 
 class RNN(ABC, nn.RNNBase):

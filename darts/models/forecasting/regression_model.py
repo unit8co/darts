@@ -24,7 +24,6 @@ denoting past lags and positive values including 0 denoting future lags).
 """
 from typing import Union, Sequence, Optional, Tuple, List
 import numpy as np
-import pandas as pd
 
 from darts.timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
@@ -32,7 +31,7 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.logging import raise_if, raise_if_not, get_logger, raise_log
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
-from darts.utils.timeseries_generation import _generate_index
+
 
 logger = get_logger(__name__)
 
@@ -513,15 +512,12 @@ class RegressionModel(GlobalForecastingModel):
         lag_cov_X_dim_0 | lag_cov_X_dim_1 | .., that means, the lag X value of all the dimension of the covariate
         series (when multivariate).
         """
-        target_matrix = np.array([target_matrix[0][i::in_dim] for i in range(in_dim)])
         for i in range(n):
             # building training matrix
             X = []
             if self.lags is not None:
-                target_series = target_matrix
-                X += [ts for ts in target_series]
-                # target_series = target_matrix[:, self.lags]
-                # X.append(target_series)
+                target_series = target_matrix[:, self.lags]
+                X.append(target_series)
 
             covariates_matrices = [
                 (past_covariates_matrix, self.lags_past_covariates),
@@ -534,7 +530,7 @@ class RegressionModel(GlobalForecastingModel):
                     covariates = covariate_matrix[:, lags]
                     X.append(covariates.reshape(covariates.shape[0], -1))
 
-            # X = np.concatenate(X, axis=1)
+            X = np.concatenate(X, axis=1)
             prediction = self.model.predict(X, **kwargs)
             prediction = prediction.reshape(-1, 1)
             # appending prediction to final predictions
@@ -558,14 +554,8 @@ class RegressionModel(GlobalForecastingModel):
                     historic_future_covariates_matrix, future_covariates_matrix = _shift_matrices(
                         historic_future_covariates_matrix, future_covariates_matrix)
 
-        predictions = np.concatenate(predictions, axis=1).T
-        # end_index, freq = series[0].end_time(), series[0].freq
-        # start_index = end_index + freq if isinstance(series[0].time_index, pd.DatetimeIndex) else end_index + 1
-        # pred_index = _generate_index(start=start_index,
-        #                              freq=freq,
-        #                              length=n)
-        # ts_pred = TimeSeries.from_times_and_values(times=pred_index, values=predictions, columns=series[0].components)
-        predictions = [self._build_forecast_series(row, input_tgt) for row, input_tgt in zip([predictions], series)]
+        predictions = np.concatenate(predictions, axis=1)
+        predictions = [self._build_forecast_series(row, input_tgt) for row, input_tgt in zip(predictions, series)]
 
         return predictions[0] if called_with_single_series else predictions
 

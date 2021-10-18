@@ -2,7 +2,7 @@
 Inference Dataset
 -----------------
 """
-
+import math
 from typing import Union, Sequence, Optional, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
@@ -285,9 +285,12 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                                                       output_chunk_length=output_chunk_length)
 
         # This dataset is in charge of serving historic and future future covariates
+
+        # future covariates need to be known in advance for the entire `output_chunk_length` enclosing `n`
+        n_out = math.ceil(n/output_chunk_length) * output_chunk_length
         self.ds_future = DualCovariatesInferenceDataset(target_series=target_series,
                                                         covariates=future_covariates,
-                                                        n=n,
+                                                        n=n_out,
                                                         input_chunk_length=input_chunk_length,
                                                         output_chunk_length=output_chunk_length)
 

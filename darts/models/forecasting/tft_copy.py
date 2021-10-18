@@ -371,10 +371,22 @@ class _TFTModule(nn.Module):
                                    historic_future_covariates,
                                    static_covariates] if tensor is not None], dim=2
         )
+        
         x_cont_future = torch.cat(
             [tensor for tensor in [future_covariates,
                                    static_covariates] if tensor is not None], dim=2
         )
+
+        # x_cont_past = \
+        #     [tensor for tensor in [past_target,
+        #                            past_covariates,
+        #                            historic_future_covariates,
+        #                            static_covariates] if tensor is not None]
+        #
+        # x_cont_future = \
+        #     [tensor for tensor in [future_covariates,
+        #                            static_covariates] if tensor is not None]
+
         # encoder_lengths = x["encoder_lengths"]
         # decoder_lengths = x["decoder_lengths"]
         # x_cat = torch.cat([x["encoder_cat"], x["decoder_cat"]], dim=1)  # concatenate in time dimension
@@ -384,8 +396,8 @@ class _TFTModule(nn.Module):
         # max_encoder_length = int(encoder_lengths.max())
 
         # batch_size = x.shape[0]
-        encoder_lengths = torch.tensor([self.input_chunk_length] * x_cont_past.shape[0], dtype=past_target.dtype)
-        decoder_lengths = torch.tensor([self.output_chunk_length] * x_cont_future.shape[0], dtype=past_target.dtype)
+        encoder_lengths = torch.tensor([self.input_chunk_length] * past_target.shape[0], dtype=past_target.dtype)
+        decoder_lengths = torch.tensor([self.output_chunk_length] * future_covariates.shape[0], dtype=past_target.dtype)
 
         # TODO: if we ever have categoricals
         # x_cat = torch.empty(x.shape, dtype=x.dtype)
@@ -503,7 +515,6 @@ class _TFTModule(nn.Module):
             output = [output_layer(output) for output_layer in self.output_layer]
         else:
             output = self.output_layer(output)
-        # x_scale = torch.tensor([[0.5477, 0.2469]], dtype=past_target.dtype)
         # output = self.loss_fn.rescale_parameters(output, target_scale=x_scale, encoder=self.output_transformer)
         # return self.to_network_output(
         #     prediction=self.transform_output(output, target_scale=x["target_scale"]),
@@ -1086,43 +1097,105 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         input_batch
             (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
         """
+        dim_component = 2
+        past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates \
+            = input_batch
 
-        series_names = [
-            'past_target', 'past_covariates', 'historic_future_covariates', 'future_covariates',
-            'future_past_covariates'
-        ]
-        roll_series = {
-            name: torch.clone(series) for name, series in zip(series_names, input_batch) if not series is None
-        }
+        n_targets = past_target.shape[dim_component]
+        n_past_covs = past_covariates.shape[dim_component] if not past_covariates is None else 0
+        n_future_covs = future_covariates.shape[dim_component] if not future_covariates is None else 0
 
-        # determine split point for future series
-        output_chunk_start = \
-            roll_series['past_target'].shape[1] if n >= self.output_chunk_length else -(self.output_chunk_length - n)
+        input_past = torch.cat(
+            [ds for ds in [past_target, past_covariates, historic_future_covariates] if ds is not None],
+            dim=dim_component
+        )
 
+        input_future = torch.clone(future_covariates[:, :roll_size, :]) if future_covariates is not None else None
 
+        out = self._produce_predict_output(
+            x=(past_target, past_covariates, historic_future_covariates, input_future)
+        )[:, self.first_prediction_index:, :]
 
-        input_series = tuple(roll_series.get(name, None) for name in series_names[:-1])
-        batch_prediction = []
-        out = self._produce_predict_output(input_series)
-        batch_prediction.append(out[:, :roll_size, :])
+        batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
+        print('1st prediction')
+        print(f'prediction_length: {prediction_length}')
+        print(f'prediction_end: {prediction_length + self.output_chunk_length}')
+        print(f'roll_size : {roll_size}')
+
         while prediction_length < n:
-            # create new input to model from last prediction and current covariates, if available
-            new_input = (
-                torch.cat([out[:, -1:, :], cov_future[:, prediction_length - 1:prediction_length, :]], dim=2)
-                if cov_future is not None else out[:, -1:, :]
-            )
+            # we want the last prediction to end exactly at `n` into the future.
+            # this means we may have to truncate the previous prediction and step
+            # back the roll size for the last chunk
+            if prediction_length + self.output_chunk_length > n:
+                spillover_prediction_length = prediction_length + self.output_chunk_length - n
+                roll_size -= spillover_prediction_length
+                prediction_length -= spillover_prediction_length
+                batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
-            # feed new input to model, including the last hidden state from the previous iteration
-            out, last_hidden_state = self._produce_predict_output(new_input, last_hidden_state)
+            # ==========> PAST INPUT <==========
+            # roll over input series to contain latest target and covariate
+            input_past = torch.roll(input_past, -roll_size, 1)
 
-            # append prediction to batch prediction array, increase counter
-            batch_prediction.append(out[:, -1:, :])
-            prediction_length += 1
+            # update target input to include next `roll_size` predictions
+            if self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, :n_targets] = out[:, :roll_size, :]
+            else:
+                input_past[:, :, :n_targets] = out[:, -self.input_chunk_length:, :]
+
+            # set left and right boundaries for extracting future elements
+            if self.input_chunk_length >= roll_size:
+                left_past, right_past = prediction_length - roll_size, prediction_length
+            else:
+                left_past, right_past = prediction_length - self.input_chunk_length, prediction_length
+
+            # update past covariates to include next `roll_size` future past covariates elements
+            if n_past_covs and self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
+            elif n_past_covs:
+                input_past[:, :, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
+
+            # update historic future covariates to include next `roll_size` future covariates elements
+            if n_future_covs and self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, n_targets + n_past_covs:] = (
+                    future_covariates[:, left_past:right_past, :]
+                )
+            elif n_future_covs:
+                input_past[:, :, n_targets + n_past_covs:] = (
+                    future_covariates[:, left_past:right_past, :]
+                )
+
+            # ==========> FUTURE INPUT <==========
+            left_future, right_future = right_past, right_past + self.output_chunk_length
+            # update future covariates to include next `roll_size` future covariates elements
+            input_future = future_covariates[:, left_future:right_future, :]
+            print('')
+            print(f'prediction_length: {prediction_length}')
+            print(f'prediction_end: {prediction_length + self.output_chunk_length}')
+            print(f'roll_size : {roll_size}')
+            print(f'left/right past : {left_past, right_past}')
+            print(f'left/right future : {left_future, right_future}')
+
+            # convert back into separate datasets
+            input_past_target = input_past[:, :, :n_targets]
+            input_past_covs = input_past[:, :, n_targets:n_targets + n_past_covs] if n_past_covs else None
+            input_historic_future_covs = input_past[:, :, n_targets + n_past_covs:] if n_future_covs else None
+            input_future_covs = input_future if n_future_covs else None
+
+            # take only last part of the output sequence where needed
+            out = self._produce_predict_output(
+                x=(input_past_target, input_past_covs, input_historic_future_covs, input_future_covs)
+            )[:, self.first_prediction_index:, :]
+
+            batch_prediction.append(out)
+            prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
-
         return batch_prediction
