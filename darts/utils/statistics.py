@@ -287,6 +287,12 @@ def plot_acf(ts: TimeSeries,
     """
 
     ts._assert_univariate()
+    if max_lag is not None and (max_lag < 1 or not isinstance(max_lag, int)):
+        raise_log(ValueError('max_lag must be an integer greater than or equal to 1.'), logger)
+    if m is not None and (m < 0 or m > max_lag or not isinstance(m, int)):
+        raise_log(ValueError('m must be an integer greater than or equal to 0 and less than or equal to max_lag.'), logger)
+    if alpha is not None and not (0 < alpha < 1):
+        raise_log(ValueError('alpha must be greater than 0 and less than 1.'), logger)
 
     r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=bartlett_confint)
 
@@ -300,7 +306,7 @@ def plot_acf(ts: TimeSeries,
                   color=('#b512b8' if m is not None and i == m else 'black'),
                   lw=(1 if m is not None and i == m else .5))
 
-    # Calculates the upper band of the confidence interval for level alpha for all lags.
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
     axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
@@ -348,6 +354,12 @@ def plot_pacf(ts: TimeSeries,
     """
 
     ts._assert_univariate()
+    if max_lag is not None and (max_lag < 1 or not isinstance(max_lag, int)):
+        raise_log(ValueError('max_lag must be an integer greater than or equal to 1.'), logger)
+    if m is not None and (m < 0 or m > max_lag or not isinstance(m, int)):
+        raise_log(ValueError('m must be an integer greater than or equal to 0 and less than or equal to max_lag.'), logger)
+    if alpha is not None and not (0 < alpha < 1):
+        raise_log(ValueError('alpha must be greater than 0 and less than 1.'), logger)
 
     r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
 
@@ -361,7 +373,7 @@ def plot_pacf(ts: TimeSeries,
                   color=('#b512b8' if m is not None and i == m else 'black'),
                   lw=(1 if m is not None and i == m else .5))
 
-    # Calculates the upper band of the confidence interval for level alpha for all lags.
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
     axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
