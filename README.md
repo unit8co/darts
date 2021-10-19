@@ -138,6 +138,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `NBEATSModel` | x | x | | x | x | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
 `TCNModel` | x | x | x | x | x | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 `TransformerModel` | x | x | | x | x | | 
+`TFTModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
 Naive Baselines | x | | | | | |
 
 

@@ -54,9 +54,8 @@ class _TFTModule(nn.Module):
                  loss_fn: nn.Module = QuantileLoss(),
                  share_single_variable_networks: bool = False):
 
-        """ PyTorch module implementing the TFT architecture.
-        `pytorch-forecasting's TemporalFusionTransformer <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_
-        This implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
+        """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
+        The implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_.
 
         Parameters
