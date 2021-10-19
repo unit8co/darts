@@ -30,6 +30,7 @@ class QuantileLoss(nn.Module):
         Arguments:
             quantiles: list of quantiles
         """
+
         super().__init__()
         self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
         self.check_quantiles(self.quantiles)
@@ -44,6 +45,7 @@ class QuantileLoss(nn.Module):
         y_true
             must be of shape (n_samples, n_timesteps, n_target_variables)
         """
+
         dim_q = 3
 
         if self.first:  # test if torch model forward produces correct output
@@ -54,14 +56,6 @@ class QuantileLoss(nn.Module):
                          'mismatch between number of predicted quantiles and target quantiles',
                          logger)
             self.first = False
-
-        losses = []
-        for i, q in enumerate(self.quantiles):
-            errors = y_true - y_pred[..., i]
-            losses.append(torch.max((q - 1) * errors, q * errors))
-        losses = torch.cat(losses, dim=2)
-        losses2 = losses.sum(dim=2).mean()
-
 
         losses = []
         for i, q in enumerate(self.quantiles):
@@ -84,7 +78,7 @@ class QuantileLoss(nn.Module):
                      logger)
 
 
-class RNN(ABC, nn.RNNBase):
+class _RNN(ABC, nn.RNNBase):
     """
     Base class flexible RNNs.
 
@@ -107,6 +101,7 @@ class RNN(ABC, nn.RNNBase):
         Returns:
             HiddenState: hidden state with propagated initial hidden state where appropriate
         """
+
         pass
 
     @abstractmethod
@@ -121,6 +116,7 @@ class RNN(ABC, nn.RNNBase):
         Returns:
             HiddenState: default (zero-like) hidden state
         """
+
         pass
 
     @abstractmethod
@@ -137,6 +133,7 @@ class RNN(ABC, nn.RNNBase):
         Returns:
             HiddenState: repeated hidden state
         """
+
         pass
 
     def forward(self,
@@ -162,6 +159,7 @@ class RNN(ABC, nn.RNNBase):
             Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]: output and hidden state.
                 Output is packed sequence if input has been a packed sequence.
         """
+
         if isinstance(x, rnn.PackedSequence) or lengths is None:
             assert lengths is None, "cannot combine x of type PackedSequence with lengths argument"
             return super().forward(x, hx=hx)
@@ -202,7 +200,7 @@ class RNN(ABC, nn.RNNBase):
                 return out, hidden_state
 
 
-class LSTM(RNN, nn.LSTM):
+class _LSTM(_RNN, nn.LSTM):
     """LSTM that can handle zero-length sequences"""
 
     def handle_no_encoding(self,
@@ -245,7 +243,9 @@ class LSTM(RNN, nn.LSTM):
         return hidden, cell
 
 
-class TimeDistributedEmbeddingBag(nn.EmbeddingBag):
+class _TimeDistributedEmbeddingBag(nn.EmbeddingBag):
+    """Used for categorical embedding"""
+
     def __init__(self,
                  *args,
                  batch_first: bool = False,
@@ -272,7 +272,9 @@ class TimeDistributedEmbeddingBag(nn.EmbeddingBag):
         return y
 
 
-class MultiEmbedding(nn.Module):
+class _MultiEmbedding(nn.Module):
+    """Can be used to do multi-embed categorical variables"""
+
     def __init__(self,
                  embedding_sizes: Dict[str, Tuple[int, int]],
                  categorical_groups: Dict[str, List[str]],
@@ -298,7 +300,7 @@ class MultiEmbedding(nn.Module):
             self.embedding_sizes[name][1] = embedding_size
 
             if name in self.categorical_groups:  # embedding bag if related embeddings
-                embeddings[name] = TimeDistributedEmbeddingBag(
+                embeddings[name] = _TimeDistributedEmbeddingBag(
                     self.embedding_sizes[name][0], embedding_size, mode="sum", batch_first=True
                 )
             else:
@@ -340,11 +342,9 @@ class MultiEmbedding(nn.Module):
         return input_vectors
 
 
-class TimeDistributedInterpolation(nn.Module):
-    """==========================================CHECKED==========================================
-    interpolates input size to output size.
-    This is lke TimeDistributed with interpolation
-    """
+class _TimeDistributedInterpolation(nn.Module):
+    """interpolates input size to output size."""
+
     def __init__(self,
                  output_size: int,
                  batch_first: bool = False):
@@ -375,17 +375,22 @@ class TimeDistributedInterpolation(nn.Module):
         return y
 
 
-class GatedLinearUnit(nn.Module):
+class _GatedLinearUnit(nn.Module):
     def __init__(self,
                  input_size: int,
                  hidden_size: int = None,
                  dropout: float = None):
 
         """Applies a Gated Linear Unit (GLU) to an input, see equation (5).
-            Args:
-                input_size: input size of x
-                hidden_size: Dimension of GLU
-                dropout: Dropout rate to apply if any
+
+        Parameters
+        ----------
+        input_size
+            input size of x
+        hidden_size
+            Dimension of GLU
+        dropout
+            Dropout rate to apply if any
         """
 
         super().__init__()
@@ -425,11 +430,8 @@ class GatedLinearUnit(nn.Module):
         return x
 
 
-class ResampleNorm(nn.Module):
-    """==========================================SEMI-CHECKED==========================================
-    Added option USE_ADAPTION_RESAMPLE to see if it's better just with TimeDistributedInterpolation.
-    Resamples an input to an output size
-    """
+class _ResampleNorm(nn.Module):
+    """Resamples an input to an output size"""
 
     def __init__(self,
                  input_size: int,
@@ -441,7 +443,7 @@ class ResampleNorm(nn.Module):
         self.output_size = output_size or input_size
 
         if self.input_size != self.output_size:
-            self.resample = TimeDistributedInterpolation(self.output_size, batch_first=True)
+            self.resample = _TimeDistributedInterpolation(self.output_size, batch_first=True)
 
         self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
         self.gate = nn.Sigmoid()
@@ -457,12 +459,12 @@ class ResampleNorm(nn.Module):
         return output
 
 
-class AddNorm(nn.Module):
+class _AddNorm(nn.Module):
+    """Applies skip connection followed by layer normalisation."""
+
     def __init__(self,
                  input_size: int,
                  skip_size: int = None):
-        """Applies skip connection followed by layer normalisation.
-        """
 
         super().__init__()
 
@@ -470,7 +472,7 @@ class AddNorm(nn.Module):
         self.skip_size = skip_size or input_size
 
         if self.input_size != self.skip_size:
-            self.resample = TimeDistributedInterpolation(self.input_size, batch_first=True)
+            self.resample = _TimeDistributedInterpolation(self.input_size, batch_first=True)
 
         self.norm = nn.LayerNorm(self.input_size)
 
@@ -484,8 +486,9 @@ class AddNorm(nn.Module):
         return output
 
 
-class GateAddNorm(nn.Module):
+class _GateAddNorm(nn.Module):
     """Equation (2)"""
+
     def __init__(self,
                  input_size: int,
                  hidden_size: int = None,
@@ -499,8 +502,8 @@ class GateAddNorm(nn.Module):
         self.skip_size = skip_size or self.hidden_size
         self.dropout = dropout
 
-        self.glu = GatedLinearUnit(self.input_size, hidden_size=self.hidden_size, dropout=self.dropout)
-        self.add_norm = AddNorm(self.hidden_size, skip_size=self.skip_size)
+        self.glu = _GatedLinearUnit(self.input_size, hidden_size=self.hidden_size, dropout=self.dropout)
+        self.add_norm = _AddNorm(self.hidden_size, skip_size=self.skip_size)
 
     def forward(self, x, skip):
         # skip is the same as residual
@@ -509,7 +512,7 @@ class GateAddNorm(nn.Module):
         return output
 
 
-class GatedResidualNetwork(nn.Module):
+class _GatedResidualNetwork(nn.Module):
     """Top right graph in Figure 2 and formulas (2) -- (5)"""
 
     def __init__(self,
@@ -519,11 +522,17 @@ class GatedResidualNetwork(nn.Module):
                  dropout: float = 0.1,
                  context_size: Optional[int] = None):
         """Applies the gated residual network (GRN) as defined in paper.
-        Args:
-            hidden_size: Internal state size
-            output_size: Size of output layer
-            dropout: Dropout rate if dropout is applied
-            context_size: size of optional context vector
+
+        Parameters
+        ----------
+        hidden_size
+            Internal state size
+        output_size
+            Size of output layer
+        dropout
+            Dropout rate if dropout is applied
+        context_size
+            size of optional context vector
         """
 
         super().__init__()
@@ -536,9 +545,9 @@ class GatedResidualNetwork(nn.Module):
         # convert raw input into output size for residuals
         if self.input_size != self.output_size:
             if not USE_ADAPTION_RESAMPLE:
-                self.resample_norm = ResampleNorm(self.input_size, self.output_size)
+                self.resample_norm = _ResampleNorm(self.input_size, self.output_size)
             else:
-                self.resample_norm = TimeDistributedInterpolation(self.output_size, batch_first=True)
+                self.resample_norm = _TimeDistributedInterpolation(self.output_size, batch_first=True)
 
         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
         if self.context_size is not None:
@@ -550,7 +559,7 @@ class GatedResidualNetwork(nn.Module):
 
         self.init_weights()
 
-        self.gate_add_norm = GateAddNorm(
+        self.gate_add_norm = _GateAddNorm(
             input_size=self.hidden_size,
             skip_size=self.output_size,
             hidden_size=self.output_size,
@@ -568,9 +577,7 @@ class GatedResidualNetwork(nn.Module):
                 torch.nn.init.xavier_uniform_(p)
 
     def forward(self, x, context=None):
-        """seems to be correct"""
-
-        # residual, also called `skip` basically bypasses until add_norm
+        # residual connection, also called `skip` basically bypasses until add_norm
         if self.input_size != self.output_size:
             residual = self.resample_norm(x)
         else:
@@ -585,18 +592,23 @@ class GatedResidualNetwork(nn.Module):
         return x
 
 
-class VariableSelectionNetwork(nn.Module):
+class _VariableSelectionNetwork(nn.Module):
     def __init__(self,
                  input_sizes: Dict[str, int],
                  hidden_size: int,
                  input_embedding_flags: Optional[Dict[str, bool]] = None,
                  dropout: float = 0.1,
                  context_size: Optional[int] = None,
-                 single_variable_grns: Optional[Dict[str, GatedResidualNetwork]] = None,
+                 single_variable_grns: Optional[Dict[str, _GatedResidualNetwork]] = None,
                  prescalers: Optional[torch.nn.ModuleDict] = None):
         """
-        Calculate weights for ``num_inputs`` variables  which are each of size ``input_size``
+        From paper https://arxiv.org/pdf/1912.09363.pdf:
+        TFT is designed to provide instance-wise variable selection through the use of variable selection networks
+        applied to both static covariates and time-dependent covariates. Beyond provid- ing insights into which
+        variables are most significant for the prediction problem, variable selection also allows TFT to remove any
+        unnecessary noisy inputs which could negatively impact performance.
         """
+
         super().__init__()
 
         self.input_sizes = input_sizes
@@ -612,7 +624,7 @@ class VariableSelectionNetwork(nn.Module):
 
         if self.num_inputs >= 1:
             # right side of figure 2 bottom right graph
-            self.vars_flattened_grn = GatedResidualNetwork(
+            self.vars_flattened_grn = _GatedResidualNetwork(
                 input_size=self.input_sizes_total,
                 hidden_size=min(self.hidden_size, self.num_inputs) if not USE_ADAPTION_VSN else self.hidden_size,
                 output_size=self.num_inputs,
@@ -620,7 +632,7 @@ class VariableSelectionNetwork(nn.Module):
                 context_size=self.context_size
             )
 
-        # TODO: this can be cleaner, also think about moving prescalers out of VariableSelectionNetwork
+        # TODO: (dbader) this can be cleaner, also think about moving prescalers out of _VariableSelectionNetwork
         # left side of figure 2 bottom right graph
         self.vars_single_grns = nn.ModuleDict()
         self.prescalers = nn.ModuleDict()
@@ -629,11 +641,11 @@ class VariableSelectionNetwork(nn.Module):
                 self.vars_single_grns[name] = single_variable_grns[name]
             elif self.input_embedding_flags.get(name, False):
                 if not USE_ADAPTION_RESAMPLE:
-                    self.vars_single_grns[name] = ResampleNorm(input_size, self.hidden_size)
+                    self.vars_single_grns[name] = _ResampleNorm(input_size, self.hidden_size)
                 else:
-                    self.vars_single_grns[name] = TimeDistributedInterpolation(self.hidden_size, batch_first=True)
+                    self.vars_single_grns[name] = _TimeDistributedInterpolation(self.hidden_size, batch_first=True)
             else:
-                self.vars_single_grns[name] = GatedResidualNetwork(
+                self.vars_single_grns[name] = _GatedResidualNetwork(
                     input_size=input_size,
                     hidden_size=min(input_size, self.hidden_size) if not USE_ADAPTION_VSN else self.hidden_size,
                     output_size=self.hidden_size,
@@ -673,8 +685,8 @@ class VariableSelectionNetwork(nn.Module):
         return outputs, selection_weights
 
 
-class ScaledDotProductAttention(nn.Module):
-    """ScaledDotProductAttention is an self-attention mechanism to learn long-term
+class _ScaledDotProductAttention(nn.Module):
+    """_ScaledDotProductAttention is a self-attention mechanism to learn long-term
     relationships across different time steps. It scales values V based on relationship
     between Keys K and queries Q.
 
@@ -682,17 +694,22 @@ class ScaledDotProductAttention(nn.Module):
 
     def __init__(self):
 
-        super(ScaledDotProductAttention, self).__init__()
+        super(_ScaledDotProductAttention, self).__init__()
 
         self.softmax = nn.Softmax(dim=2)
 
     def forward(self, q, k, v, mask=None):
         """
-        Attributes:
-            q: Queries matrix of dimension (N x d_attention)
-            k: Keys matrix of dimension (N x d_attention)
-            v: Values matrix of dimension (N x d_Values)
-            mask: masking if required -- sets softmax to very large value
+        Parameters
+        ----------
+        q
+            Queries matrix of dimension (N x d_attention)
+        k
+            Keys matrix of dimension (N x d_attention)
+        v
+            Values matrix of dimension (N x d_Values)
+        mask
+            masking if required -- sets softmax to very large value
         """
 
         attn = torch.bmm(q, k.transpose(1, 2))
@@ -708,7 +725,7 @@ class ScaledDotProductAttention(nn.Module):
         return output, attn
 
 
-class InterpretableMultiHeadAttention(nn.Module):
+class _InterpretableMultiHeadAttention(nn.Module):
     """Equations (13) -- (16)"""
 
     def __init__(self,
@@ -716,7 +733,7 @@ class InterpretableMultiHeadAttention(nn.Module):
                  d_model: int,
                  dropout: Optional[float] = None):
         """
-        Attributes:
+        Description of parameters
             n_head: number of heads
             d_model: TFT state dimensionality
             d_k: Key/query dimensionality per head
@@ -728,7 +745,7 @@ class InterpretableMultiHeadAttention(nn.Module):
             w_h: output head weight matrix to project internal state to the original TFT state size
         """
 
-        super(InterpretableMultiHeadAttention, self).__init__()
+        super(_InterpretableMultiHeadAttention, self).__init__()
 
         self.n_head = n_head
         self.d_model = d_model
@@ -740,7 +757,7 @@ class InterpretableMultiHeadAttention(nn.Module):
         self.q_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)])
         self.k_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)])
 
-        self.attention = ScaledDotProductAttention()
+        self.attention = _ScaledDotProductAttention()
         self.w_h = nn.Linear(self.d_v, self.d_model, bias=False)
 
         self.init_weights()
