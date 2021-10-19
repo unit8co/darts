@@ -14,7 +14,7 @@ from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf, pacf
 
 from warnings import warn
-from ..logging import raise_log, get_logger, raise_if_not
+from ..logging import raise_log, get_logger, raise_if_not, raise_if
 from ..timeseries import TimeSeries
 from .missing_values import fill_missing_values
 from .utils import SeasonalityMode, ModelMode
@@ -288,12 +288,11 @@ def plot_acf(ts: TimeSeries,
     """
 
     ts._assert_univariate()
-    if max_lag is not None and (max_lag < 1 or not isinstance(max_lag, int)):
-        raise_log(ValueError('max_lag must be an integer greater than or equal to 1.'), logger)
-    if m is not None and (m < 0 or m > max_lag or not isinstance(m, int)):
-        raise_log(ValueError('m must be an integer greater than or equal to 0 and less than or equal to max_lag.'), logger)
-    if alpha is not None and not (0 < alpha < 1):
-        raise_log(ValueError('alpha must be greater than 0 and less than 1.'), logger)
+    raise_if(max_lag is None or not (1 <= max_lag < len(ts)),
+             'max_lag must be greater than or equal to 1 and less than len(ts).')
+    raise_if(m is not None and not (0 <= m <= max_lag),
+             'm must be greater than or equal to 0 and less than or equal to max_lag.')
+    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
 
     r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=bartlett_confint)
 
@@ -355,12 +354,11 @@ def plot_pacf(ts: TimeSeries,
     """
 
     ts._assert_univariate()
-    if max_lag is not None and (max_lag < 1 or not isinstance(max_lag, int)):
-        raise_log(ValueError('max_lag must be an integer greater than or equal to 1.'), logger)
-    if m is not None and (m < 0 or m > max_lag or not isinstance(m, int)):
-        raise_log(ValueError('m must be an integer greater than or equal to 0 and less than or equal to max_lag.'), logger)
-    if alpha is not None and not (0 < alpha < 1):
-        raise_log(ValueError('alpha must be greater than 0 and less than 1.'), logger)
+    raise_if(max_lag is None or not (1 <= max_lag < len(ts)//2),
+             'max_lag must be greater than or equal to 1 and less than len(ts)//2.')
+    raise_if(m is not None and not (0 <= m <= max_lag),
+             'm must be greater than or equal to 0 and less than or equal to max_lag.')
+    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
 
     r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
 
