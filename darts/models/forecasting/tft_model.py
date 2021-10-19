@@ -20,7 +20,7 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchParametricProbabilisticForecastingModel
 )
-from darts.models.forecasting.tft_submodels_darts import (
+from darts.models.forecasting.tft_submodels import (
     _AddNorm,
     _GateAddNorm,
     _GatedLinearUnit,
