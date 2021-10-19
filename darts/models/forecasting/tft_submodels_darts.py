@@ -9,19 +9,17 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn.utils import rnn
 
-# # #
+from darts.logging import get_logger, raise_if_not
 
-"""
-Implementations of flexible GRU and LSTM that can handle sequences of length 0.
-"""
+logger = get_logger(__name__)
 
 HiddenState = Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]
-
 
 USE_ADAPTION_GLU = False  # seems to work better without
 USE_ADAPTION_RESAMPLE = False  # seems to work better without
 USE_ADAPTION_VSN = False  # seems to work better without
 USE_ADAPTION_NO_ATTENTION_DROPOUT = False  # seems to work better without
+USE_ADAPTION_GOOGLE = False
 
 
 class QuantileLoss(nn.Module):
@@ -34,18 +32,56 @@ class QuantileLoss(nn.Module):
         """
         super().__init__()
         self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
+        self.check_quantiles(self.quantiles)
+        self.first = True
 
     def forward(self, y_pred, y_true):
-        # TODO: check loss for multivariate case; so far (univariate), y_pred is (samples, timesteps, quantiles) for
-        #  multivariate could be (samples, timesteps, quantiles, variables) or
-        #  (samples, timesteps, variables, quantiles)
-        dim_q = 2
+        """
+        Parameters
+        ----------
+        y_pred
+            must be of shape (n_samples, n_timesteps, n_target_variables, n_quantiles)
+        y_true
+            must be of shape (n_samples, n_timesteps, n_target_variables)
+        """
+        dim_q = 3
+
+        if self.first:  # test if torch model forward produces correct output
+            raise_if_not(len(y_pred.shape) == 4 or len(y_true.shape) == 3 or y_pred.shape[:2] != y_true.shape[:2],
+                         'mismatch between predicted and target shape',
+                         logger)
+            raise_if_not(y_pred.shape[dim_q] == len(self.quantiles),
+                         'mismatch between number of predicted quantiles and target quantiles',
+                         logger)
+            self.first = False
+
         losses = []
         for i, q in enumerate(self.quantiles):
-            errors = y_true - y_pred[:, :, i].unsqueeze(dim=dim_q)
+            errors = y_true - y_pred[..., i]
             losses.append(torch.max((q - 1) * errors, q * errors))
+        losses = torch.cat(losses, dim=2)
+        losses2 = losses.sum(dim=2).mean()
+
+
+        losses = []
+        for i, q in enumerate(self.quantiles):
+            errors = y_true - y_pred[..., i]
+            losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(dim_q))
         losses = torch.cat(losses, dim=dim_q)
         return losses.sum(dim=dim_q).mean()
+
+    @staticmethod
+    def check_quantiles(quantiles):
+        median_q = 0.5
+        raise_if_not(median_q in quantiles,
+                     'median quantile `q=0.5` must be in `quantiles`',
+                     logger)
+        is_centered = [(median_q - left_q) == -(median_q - right_q)
+                       for left_q, right_q in zip(quantiles, quantiles[::-1])]
+        raise_if_not(all(is_centered),
+                     'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
+                     'higher than `q=0.5`',
+                     logger)
 
 
 class RNN(ABC, nn.RNNBase):
@@ -584,6 +620,7 @@ class VariableSelectionNetwork(nn.Module):
                 context_size=self.context_size
             )
 
+        # TODO: this can be cleaner, also think about moving prescalers out of VariableSelectionNetwork
         # left side of figure 2 bottom right graph
         self.vars_single_grns = nn.ModuleDict()
         self.prescalers = nn.ModuleDict()
@@ -702,7 +739,7 @@ class InterpretableMultiHeadAttention(nn.Module):
         self.v_layer = nn.Linear(self.d_model, self.d_v)
         self.q_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)])
         self.k_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)])
-        # use same value layer to facilitate interpretation
+
         self.attention = ScaledDotProductAttention()
         self.w_h = nn.Linear(self.d_v, self.d_model, bias=False)
 
@@ -723,9 +760,8 @@ class InterpretableMultiHeadAttention(nn.Module):
             qs = self.q_layers[i](q)
             ks = self.k_layers[i](k)
             head, attn = self.attention(qs, ks, vs, mask)
-            if not USE_ADAPTION_NO_ATTENTION_DROPOUT:
-                if self.dropout is not None:
-                    head = self.dropout(head)
+            if self.dropout is not None:
+                head = self.dropout(head)
             heads.append(head)
             attns.append(attn)
 
@@ -735,8 +771,7 @@ class InterpretableMultiHeadAttention(nn.Module):
         outputs = torch.mean(head, dim=2) if self.n_head > 1 else head
 
         outputs = self.w_h(outputs)
-        if not USE_ADAPTION_NO_ATTENTION_DROPOUT:
-            if self.dropout is not None:
-                outputs = self.dropout(outputs)
+        if self.dropout is not None:
+            outputs = self.dropout(outputs)
 
         return outputs, attn

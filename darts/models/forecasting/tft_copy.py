@@ -1,13 +1,11 @@
 """
-N-BEATS
+Temporal Fusion Transformer (TFT)
 -------
 """
 
-from copy import copy
 from typing import NewType, Union, List, Optional, Tuple, Dict, Sequence
 from enum import Enum
 
-from matplotlib import pyplot as plt
 import numpy as np
 from numpy.random import RandomState
 
@@ -15,10 +13,10 @@ import torch
 from torch import nn
 
 from darts import TimeSeries
-from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset, MixedCovariatesShiftedDataset, MixedCovariatesSequentialDataset
+from darts.utils.data import TrainingDataset, MixedCovariatesSequentialDataset
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
-from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel, TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel, TorchParametricProbabilisticForecastingModel
 from darts.logging import get_logger, raise_log, raise_if_not, raise_if
 
 from darts.models.forecasting.tft_submodels_darts import (
@@ -35,16 +33,17 @@ from darts.models.forecasting.tft_submodels_darts import (
 
 logger = get_logger(__name__)
 
+USE_POST_LSTM_GLU = False
+
 
 class _TFTModule(nn.Module):
 
     def __init__(self,
                  variables: Dict[str, Dict[str, List[str]]],
                  input_dim: int,
-                 output_dim: int,
+                 output_dim: Tuple[int, int],
                  input_chunk_length: int,
                  output_chunk_length: int,
-                 output_size: Union[int, List[int]] = 7,
                  hidden_size: Union[int, List[int]] = 16,
                  lstm_layers: int = 2,
                  dropout: float = 0.1,
@@ -56,26 +55,25 @@ class _TFTModule(nn.Module):
                  x_categoricals: List[str] = [],
                  hidden_continuous_size: int = 8,
                  hidden_continuous_sizes: Dict[str, int] = {},
-                 embedding_sizes: Dict[str, Tuple[int, int]] = {},
-                 embedding_paddings: List[str] = [],
-                 embedding_labels: Dict[str, np.ndarray] = {},
-                 learning_rate: float = 1e-3,
-                 log_interval: Union[int, float] = -1,
-                 log_val_interval: Union[int, float] = None,
-                 log_gradient_flow: bool = False,
-                 reduce_on_plateau_patience: int = 1000,
-                 monotone_constaints: Dict[str, int] = {},
                  share_single_variable_networks: bool = False,
-                 logging_metrics: nn.ModuleList = None,
                  **kwargs
                  ):
         """ PyTorch module implementing the TFT architecture.
 
+        Parameters
+        ----------
+        output_dim : Tuple[int, int]
+            shape of output given by (n_targerts, loss_size).
+
+
         """
+
+        print('Get rid of mutable default function arguments')
+
         super(_TFTModule, self).__init__()
 
         self.input_dim = input_dim
-        self.output_dim = output_dim
+        self.n_targets, self.loss_size = output_dim
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.variables = variables
@@ -83,7 +81,6 @@ class _TFTModule(nn.Module):
         self.hidden_size = hidden_size
         self.lstm_layers = lstm_layers
         self.dropout = dropout
-        self.output_size = output_size
         self.loss_fn = loss_fn
         self.attention_head_size = attention_head_size
         self.max_encoder_length = max_encoder_length
@@ -92,23 +89,12 @@ class _TFTModule(nn.Module):
         self.x_categoricals = x_categoricals
         self.hidden_continuous_size = hidden_continuous_size
         self.hidden_continuous_sizes = hidden_continuous_sizes
-        self.embedding_sizes = embedding_sizes
-        self.embedding_paddings = embedding_paddings
-        self.embedding_labels = embedding_labels
-        self.learning_rate = learning_rate
-        self.log_interval = log_interval
-        self.log_val_interval = log_val_interval
-        self.log_gradient_flow = log_gradient_flow
-        self.reduce_on_plateau_patience = reduce_on_plateau_patience
-        self.monotone_constaints = monotone_constaints
         self.share_single_variable_networks = share_single_variable_networks
-        self.logging_metrics = logging_metrics
         self.kwargs = kwargs
-        self.n_targets = output_dim
 
         # # processing inputs
         # continuous variable processing
-        self.prescalers = nn.ModuleDict(
+        self.prescalers_linear = nn.ModuleDict(
             {
                 name: nn.Linear(1, self.hidden_continuous_sizes.get(name, self.hidden_continuous_size))
                 for name in self.reals
@@ -120,12 +106,14 @@ class _TFTModule(nn.Module):
             for name in self.static_variables
         }
 
-        self.static_variable_selection = VariableSelectionNetwork(
+        self.static_covariate_var = VariableSelectionNetwork(
             input_sizes=static_input_sizes,
             hidden_size=self.hidden_size,
             input_embedding_flags={},  # this would be required for categorical inputs
             dropout=self.dropout,
-            prescalers=self.prescalers,
+            prescalers=self.prescalers_linear,
+            single_variable_grns=None,
+            context_size=None  # no context for static variables
         )
 
         # variable selection for encoder and decoder
@@ -158,23 +146,23 @@ class _TFTModule(nn.Module):
                         dropout=self.dropout,
                     )
 
-        self.encoder_variable_selection = VariableSelectionNetwork(
+        self.encoder_vsn = VariableSelectionNetwork(
             input_sizes=encoder_input_sizes,
             hidden_size=self.hidden_size,
             input_embedding_flags={},  # this would be required for categorical inputs
             dropout=self.dropout,
             context_size=self.hidden_size,
-            prescalers=self.prescalers,
+            prescalers=self.prescalers_linear,
             single_variable_grns={} if not self.share_single_variable_networks else self.shared_single_variable_grns
         )
 
-        self.decoder_variable_selection = VariableSelectionNetwork(
+        self.decoder_vsn = VariableSelectionNetwork(
             input_sizes=decoder_input_sizes,
             hidden_size=self.hidden_size,
             input_embedding_flags={},  # this would be required for categorical inputs
             dropout=self.dropout,
             context_size=self.hidden_size,
-            prescalers=self.prescalers,
+            prescalers=self.prescalers_linear,
             single_variable_grns={}
             if not self.share_single_variable_networks
             else self.shared_single_variable_grns,
@@ -182,7 +170,7 @@ class _TFTModule(nn.Module):
 
         # static encoders
         # for variable selection
-        self.static_context_variable_selection = GatedResidualNetwork(
+        self.static_context_grn = GatedResidualNetwork(
             input_size=self.hidden_size,
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
@@ -207,7 +195,10 @@ class _TFTModule(nn.Module):
 
         # for post lstm static enrichment
         self.static_context_enrichment = GatedResidualNetwork(
-            self.hidden_size, self.hidden_size, self.hidden_size, self.dropout
+            input_size=self.hidden_size,
+            hidden_size=self.hidden_size,
+            output_size=self.hidden_size,
+            dropout=self.dropout
         )
 
         # lstm encoder (history) and decoder (future) for local processing
@@ -227,11 +218,17 @@ class _TFTModule(nn.Module):
             batch_first=True,
         )
 
-        # skip connection for lstm
-        self.post_lstm_gate_encoder = GatedLinearUnit(self.hidden_size, dropout=self.dropout)
-        self.post_lstm_gate_decoder = self.post_lstm_gate_encoder
-        self.post_lstm_add_norm_encoder = AddNorm(self.hidden_size)
-        self.post_lstm_add_norm_decoder = self.post_lstm_add_norm_encoder
+        if not USE_POST_LSTM_GLU:
+            # skip connection for lstm
+            self.post_lstm_encoder_glu = GatedLinearUnit(self.hidden_size, dropout=self.dropout)
+            self.post_lstm_decoder_glu = self.post_lstm_encoder_glu
+            self.post_lstm_encoder_an = AddNorm(self.hidden_size)
+            self.post_lstm_decoder_an = self.post_lstm_encoder_an
+        else:
+            self.post_lstm_gan = GateAddNorm(
+                input_size=self.hidden_size,
+                dropout=self.dropout
+            )
 
         # static enrichment and processing past LSTM
         self.static_enrichment = GatedResidualNetwork(
@@ -246,20 +243,16 @@ class _TFTModule(nn.Module):
         self.multihead_attn = InterpretableMultiHeadAttention(
             d_model=self.hidden_size, n_head=self.attention_head_size, dropout=self.dropout
         )
-        self.post_attn_gate_norm = GateAddNorm(self.hidden_size, dropout=self.dropout)
-        self.pos_wise_ff = GatedResidualNetwork(
+        self.post_attn_gan = GateAddNorm(self.hidden_size, dropout=self.dropout)
+        self.positionwise_feedforward_grn = GatedResidualNetwork(
             self.hidden_size, self.hidden_size, self.hidden_size, dropout=self.dropout
         )
 
         # output processing -> no dropout at this late stage
-        self.pre_output_gate_norm = GateAddNorm(self.hidden_size, dropout=None)
+        self.pre_output_gan = GateAddNorm(self.hidden_size, dropout=None)
 
-        if self.n_targets > 1:  # if to run with multiple targets
-            self.output_layer = nn.ModuleList(
-                [nn.Linear(self.hidden_size, output_size) for output_size in self.output_size]
-            )
-        else:
-            self.output_layer = nn.Linear(self.hidden_size, self.output_size)
+        self.output_layer = \
+            nn.ModuleList([nn.Linear(self.hidden_size, self.loss_size) for _ in range(self.n_targets)])
 
     @property
     def reals(self) -> List[str]:
@@ -281,19 +274,16 @@ class _TFTModule(nn.Module):
     @property
     def static_variables(self) -> List[str]:
         """List of all static variables in model"""
-        # return self.static_categoricals + self.static_reals
         return self.variables['model_config']['static_input']
 
     @property
     def encoder_variables(self) -> List[str]:
         """List of all encoder variables in model (excluding static variables)"""
-        # return self.time_varying_categoricals_encoder + self.time_varying_reals_encoder
         return self.variables['model_config']['time_varying_encoder_input']
 
     @property
     def decoder_variables(self) -> List[str]:
         """List of all decoder variables in model (excluding static variables)"""
-        # return self.time_varying_categoricals_decoder + self.time_varying_reals_decoder
         return self.variables['model_config']['time_varying_decoder_input']
 
     def expand_static_context(self, context, timesteps):
@@ -317,12 +307,6 @@ class _TFTModule(nn.Module):
         # indices for which is predicted
         predict_step = torch.arange(0, decoder_length, device=device)[:, None]
         # do not attend to steps to self or after prediction
-        # todo: there is potential value in attending to future forecasts if they are made with knowledge currently
-        #   available
-        #   one possibility is here to use a second attention layer for future attention (assuming different effects
-        #   matter in the future than the past)
-        #   or alternatively using the same layer but allowing forward attention - i.e. only masking out non-available
-        #   data and self
         decoder_mask = attend_step >= predict_step
         # do not attend to steps where data is padded
         encoder_mask = self.create_mask(encoder_lengths.max(), encoder_lengths)
@@ -330,7 +314,7 @@ class _TFTModule(nn.Module):
         mask = torch.cat(
             (
                 encoder_mask.unsqueeze(1).expand(-1, decoder_length, -1),
-                decoder_mask.unsqueeze(0).expand(encoder_lengths.size(0), -1, -1),
+                decoder_mask.unsqueeze(0).expand(encoder_lengths.shape[0], -1, -1),
             ),
             dim=2,
         )
@@ -361,20 +345,33 @@ class _TFTModule(nn.Module):
         """
         input dimensions: n_samples x time x variables
         """
+        dim_samples, dim_time, dim_variable, dim_loss = (0, 1, 2, 3)
         past_target, past_covariates, historic_future_covariates, future_covariates = x
+
         # TODO: impelement static covariates
         static_covariates = None
+
+        # when there are no future_covariates we will need to create a zero tensor of
+        # shape (n_samples, output_chunk_length, 1) in _TFTModule.forward()
+        if future_covariates is None:
+            historic_future_covariates = torch.zeros((past_target.shape[dim_samples], self.input_chunk_length, 1),
+                                                     dtype=past_target.dtype,
+                                                     device=past_target.device)
+            future_covariates = torch.zeros((past_target.shape[dim_samples], self.output_chunk_length, 1),
+                                            dtype=past_target.dtype,
+                                            device=past_target.device)
+
         # data is of size (batch_size, input_length, input_size)
         x_cont_past = torch.cat(
             [tensor for tensor in [past_target,
                                    past_covariates,
                                    historic_future_covariates,
-                                   static_covariates] if tensor is not None], dim=2
+                                   static_covariates] if tensor is not None], dim=dim_variable
         )
-        
+
         x_cont_future = torch.cat(
             [tensor for tensor in [future_covariates,
-                                   static_covariates] if tensor is not None], dim=2
+                                   static_covariates] if tensor is not None], dim=dim_variable
         )
 
         # x_cont_past = \
@@ -396,8 +393,12 @@ class _TFTModule(nn.Module):
         # max_encoder_length = int(encoder_lengths.max())
 
         # batch_size = x.shape[0]
-        encoder_lengths = torch.tensor([self.input_chunk_length] * past_target.shape[0], dtype=past_target.dtype)
-        decoder_lengths = torch.tensor([self.output_chunk_length] * future_covariates.shape[0], dtype=past_target.dtype)
+        encoder_lengths = torch.tensor(
+            [self.input_chunk_length] * x_cont_past.shape[dim_samples], dtype=past_target.dtype
+        )
+        decoder_lengths = torch.tensor(
+            [self.output_chunk_length] * x_cont_future.shape[dim_samples], dtype=past_target.dtype
+        )
 
         # TODO: if we ever have categoricals
         # x_cat = torch.empty(x.shape, dtype=x.dtype)
@@ -422,33 +423,40 @@ class _TFTModule(nn.Module):
         if static_covariates is not None:
             # # static embeddings will be constant over entire batch
             # static_embedding = {name: input_vectors[name][:, 0] for name in self.static_variables}
-            # static_embedding, static_variable_selection = self.static_variable_selection(static_embedding)
-            pass
+            # static_embedding, static_covariate_var = self.static_covariate_var(static_embedding)
+            raise NotImplementedError('Static covariates have yet to be defined')
         else:
-            static_embedding = torch.zeros(
-                (past_target.size(0), self.hidden_size), dtype=past_target.dtype, device=past_target.device
-            )
-            static_variable_selection = torch.zeros((past_target.size(0), 0), dtype=past_target.dtype, device=past_target.device)
+            static_embedding = torch.zeros((past_target.shape[0], self.hidden_size),
+                                           dtype=past_target.dtype,
+                                           device=past_target.device)
 
-        static_context_variable_selection = self.expand_static_context(
-            context=self.static_context_variable_selection(static_embedding),
+            # this is only to interpret the output
+            static_covariate_var = torch.zeros((past_target.shape[0], 0),
+                                               dtype=past_target.dtype,
+                                               device=past_target.device)
+
+        if future_covariates is None and static_covariates is None:
+            raise NotImplementedError('make zero tensor if future covariates is None')
+
+        static_context_expanded = self.expand_static_context(
+            context=self.static_context_grn(static_embedding),
             timesteps=timesteps
         )
 
         embeddings_varying_encoder = {
             name: input_vectors_past[name] for name in self.encoder_variables
         }
-        embeddings_varying_encoder, encoder_sparse_weights = self.encoder_variable_selection(
+        embeddings_varying_encoder, encoder_sparse_weights = self.encoder_vsn(
             x=embeddings_varying_encoder,
-            context=static_context_variable_selection[:, :max_encoder_length],
+            context=static_context_expanded[:, :max_encoder_length],
         )
 
         embeddings_varying_decoder = {
             name: input_vectors_future[name] for name in self.decoder_variables
         }
-        embeddings_varying_decoder, decoder_sparse_weights = self.decoder_variable_selection(
+        embeddings_varying_decoder, decoder_sparse_weights = self.decoder_vsn(
             x=embeddings_varying_decoder,
-            context=static_context_variable_selection[:, max_encoder_length:],
+            context=static_context_expanded[:, max_encoder_length:],
         )
 
         # LSTM
@@ -456,7 +464,9 @@ class _TFTModule(nn.Module):
         input_hidden = self.static_context_initial_hidden_lstm(static_embedding).expand(
             self.lstm_layers, -1, -1
         )
-        input_cell = self.static_context_initial_cell_lstm(static_embedding).expand(self.lstm_layers, -1, -1)
+        input_cell = self.static_context_initial_cell_lstm(static_embedding).expand(
+            self.lstm_layers, -1, -1
+        )
 
         # run local encoder
         encoder_output, (hidden, cell) = self.lstm_encoder(
@@ -468,27 +478,40 @@ class _TFTModule(nn.Module):
 
         # run local decoder
         decoder_output, _ = self.lstm_decoder(
-            embeddings_varying_decoder,
-            (hidden, cell),
+            x=embeddings_varying_decoder,
+            hx=(hidden, cell),
             lengths=decoder_lengths,
             enforce_sorted=False,
         )
 
-        # skip connection over lstm
-        lstm_output_encoder = self.post_lstm_gate_encoder(encoder_output)
-        lstm_output_encoder = self.post_lstm_add_norm_encoder(lstm_output_encoder, embeddings_varying_encoder)
+        # TODO why not simply GateAddNorm??
+        if not USE_POST_LSTM_GLU:
+            # skip connection over lstm
+            lstm_output_encoder = self.post_lstm_encoder_glu(encoder_output)
+            lstm_output_encoder = self.post_lstm_encoder_an(
+                x=lstm_output_encoder,
+                skip=embeddings_varying_encoder
+            )
 
-        lstm_output_decoder = self.post_lstm_gate_decoder(decoder_output)
-        lstm_output_decoder = self.post_lstm_add_norm_decoder(lstm_output_decoder, embeddings_varying_decoder)
-
-        lstm_output = torch.cat([lstm_output_encoder, lstm_output_decoder], dim=1)
+            lstm_output_decoder = self.post_lstm_decoder_glu(decoder_output)
+            lstm_output_decoder = self.post_lstm_decoder_an(
+                x=lstm_output_decoder,
+                skip=embeddings_varying_decoder
+            )
+            lstm_output = torch.cat([lstm_output_encoder, lstm_output_decoder], dim=1)
+        else:
+            lstm_out = torch.cat([encoder_output, decoder_output], dim=1)
+            input_embeddings = torch.cat([embeddings_varying_encoder, embeddings_varying_decoder], dim=1)
+            lstm_output = self.post_lstm_gan(
+                x=lstm_out,
+                skip=input_embeddings
+            )
 
         # static enrichment
-        static_context_enrichment = self.static_context_enrichment(static_embedding)
+        static_context_enriched = self.static_context_enrichment(static_embedding)
         attn_input = self.static_enrichment(
-            lstm_output, self.expand_static_context(
-                context=static_context_enrichment,
-                timesteps=timesteps)
+            x=lstm_output,
+            context=self.expand_static_context(context=static_context_enriched, timesteps=timesteps)
         )
 
         # Attention
@@ -504,325 +527,43 @@ class _TFTModule(nn.Module):
         )
 
         # skip connection over attention
-        attn_output = self.post_attn_gate_norm(attn_output, attn_input[:, max_encoder_length:])
+        attn_output = self.post_attn_gan(
+            x=attn_output,
+            skip=attn_input[:, max_encoder_length:]
+        )
 
-        output = self.pos_wise_ff(attn_output)
+        output = self.positionwise_feedforward_grn(
+            x=attn_output,
+            context=None
+        )
 
-        # skip connection over temporal fusion decoder (not LSTM decoder despite the LSTM output contains
-        # a skip from the variable selection network)
-        output = self.pre_output_gate_norm(output, lstm_output[:, max_encoder_length:])
-        if self.n_targets > 1:  # if to use multi-target architecture
-            output = [output_layer(output) for output_layer in self.output_layer]
-        else:
-            output = self.output_layer(output)
-        # output = self.loss_fn.rescale_parameters(output, target_scale=x_scale, encoder=self.output_transformer)
+        # skip connection over temporal fusion decoder from LSTM post GateAddNorm
+        output = self.pre_output_gan(
+            x=output,
+            skip=lstm_output[:, max_encoder_length:]
+        )
+
+        # generate output for n_targets and loss_size elements for loss evaluation
+        output = [output_layer(output) for output_layer in self.output_layer]
+
+        # stack output
+        if self.loss_size == 1 and self.n_targets == 1:
+            output = output[0]
+        elif self.loss_size == 1 and self.n_targets > 1:
+            output = torch.cat(output, dim=dim_variable)
+        else:  # loss_size > 1 for losses such as QuantileLoss
+            output = torch.cat([out_i.unsqueeze(dim_variable) for out_i in output], dim=dim_variable)
+
         # return self.to_network_output(
         #     prediction=self.transform_output(output, target_scale=x["target_scale"]),
         #     attention=attn_output_weights,
-        #     static_variables=static_variable_selection,
+        #     static_variables=static_covariate_var,
         #     encoder_variables=encoder_sparse_weights,
         #     decoder_variables=decoder_sparse_weights,
         #     decoder_lengths=decoder_lengths,
         #     encoder_lengths=encoder_lengths,
         # )
         return output
-
-    # def on_fit_end(self):
-    #     if self.log_interval > 0:
-    #         self.log_embeddings()
-    #
-    # def create_log(self, x, y, out, batch_idx, **kwargs):
-    #     log = super().create_log(x, y, out, batch_idx, **kwargs)
-    #     if self.log_interval > 0:
-    #         log["interpretation"] = self._log_interpretation(out)
-    #     return log
-    #
-    # def _log_interpretation(self, out):
-    #     # calculate interpretations etc for latter logging
-    #     interpretation = self.interpret_output(
-    #         detach(out),
-    #         reduction="sum",
-    #         attention_prediction_horizon=0,  # attention only for first prediction horizon
-    #     )
-    #     return interpretation
-    #
-    # def epoch_end(self, outputs):
-    #     """
-    #     run at epoch end for training or validation
-    #     """
-    #     if self.log_interval > 0:
-    #         self.log_interpretation(outputs)
-    #
-    # def interpret_output(self,
-    #                      out: Dict[str, torch.Tensor],
-    #                      reduction: str = "none",
-    #                      attention_prediction_horizon: int = 0,
-    #                      attention_as_autocorrelation: bool = False) -> Dict[str, torch.Tensor]:
-    #     """
-    #     interpret output of model
-    #
-    #     Args:
-    #         out: output as produced by ``forward()``
-    #         reduction: "none" for no averaging over batches, "sum" for summing attentions, "mean" for
-    #             normalizing by encode lengths
-    #         attention_prediction_horizon: which prediction horizon to use for attention
-    #         attention_as_autocorrelation: if to record attention as autocorrelation - this should be set to true in
-    #             case of ``reduction != "none"`` and differing prediction times of the samples. Defaults to False
-    #
-    #     Returns:
-    #         interpretations that can be plotted with ``plot_interpretation()``
-    #     """
-    #
-    #     # histogram of decode and encode lengths
-    #     encoder_length_histogram = integer_histogram(out["encoder_lengths"], min=0, max=self.max_encoder_length)
-    #     decoder_length_histogram = integer_histogram(
-    #         out["decoder_lengths"], min=1, max=out["decoder_variables"].size(1)
-    #     )
-    #
-    #     # mask where decoder and encoder where not applied when averaging variable selection weights
-    #     encoder_variables = out["encoder_variables"].squeeze(-2)
-    #     encode_mask = create_mask(encoder_variables.size(1), out["encoder_lengths"])
-    #     encoder_variables = encoder_variables.masked_fill(encode_mask.unsqueeze(-1), 0.0).sum(dim=1)
-    #     encoder_variables /= (
-    #         out["encoder_lengths"]
-    #         .where(out["encoder_lengths"] > 0, torch.ones_like(out["encoder_lengths"]))
-    #         .unsqueeze(-1)
-    #     )
-    #
-    #     decoder_variables = out["decoder_variables"].squeeze(-2)
-    #     decode_mask = create_mask(decoder_variables.size(1), out["decoder_lengths"])
-    #     decoder_variables = decoder_variables.masked_fill(decode_mask.unsqueeze(-1), 0.0).sum(dim=1)
-    #     decoder_variables /= out["decoder_lengths"].unsqueeze(-1)
-    #
-    #     # static variables need no masking
-    #     static_variables = out["static_variables"].squeeze(1)
-    #     # attention is batch x time x heads x time_to_attend
-    #     # average over heads + only keep prediction attention and attention on observed timesteps
-    #     attention = out["attention"][
-    #         :, attention_prediction_horizon, :, : out["encoder_lengths"].max() + attention_prediction_horizon
-    #     ].mean(1)
-    #
-    #     if reduction != "none":  # if to average over batches
-    #         static_variables = static_variables.sum(dim=0)
-    #         encoder_variables = encoder_variables.sum(dim=0)
-    #         decoder_variables = decoder_variables.sum(dim=0)
-    #
-    #         # reorder attention or averaging
-    #         for i in range(len(attention)):  # very inefficient but does the trick
-    #             if 0 < out["encoder_lengths"][i] < attention.size(1) - attention_prediction_horizon - 1:
-    #                 relevant_attention = attention[
-    #                     i, : out["encoder_lengths"][i] + attention_prediction_horizon
-    #                 ].clone()
-    #                 if attention_as_autocorrelation:
-    #                     relevant_attention = autocorrelation(relevant_attention)
-    #                 attention[i, -out["encoder_lengths"][i] - attention_prediction_horizon :] = relevant_attention
-    #                 attention[i, : attention.size(1) - out["encoder_lengths"][i] - attention_prediction_horizon] = 0.0
-    #             elif attention_as_autocorrelation:
-    #                 attention[i] = autocorrelation(attention[i])
-    #
-    #         attention = attention.sum(dim=0)
-    #         if reduction == "mean":
-    #             attention = attention / encoder_length_histogram[1:].flip(0).cumsum(0).clamp(1)
-    #             attention = attention / attention.sum(-1).unsqueeze(-1)  # renormalize
-    #         elif reduction == "sum":
-    #             pass
-    #         else:
-    #             raise ValueError(f"Unknown reduction {reduction}")
-    #
-    #         attention = torch.zeros(
-    #             self.max_encoder_length + attention_prediction_horizon, device=self.device
-    #         ).scatter(
-    #             dim=0,
-    #             index=torch.arange(
-    #                 self.max_encoder_length + attention_prediction_horizon - attention.size(-1),
-    #                 self.max_encoder_length + attention_prediction_horizon,
-    #                 device=self.device,
-    #             ),
-    #             src=attention,
-    #         )
-    #     else:
-    #         attention = attention / attention.sum(-1).unsqueeze(-1)  # renormalize
-    #
-    #     interpretation = dict(
-    #         attention=attention,
-    #         static_variables=static_variables,
-    #         encoder_variables=encoder_variables,
-    #         decoder_variables=decoder_variables,
-    #         encoder_length_histogram=encoder_length_histogram,
-    #         decoder_length_histogram=decoder_length_histogram,
-    #     )
-    #     return interpretation
-    #
-    # def plot_prediction(self,
-    #                     x: Dict[str, torch.Tensor],
-    #                     out: Dict[str, torch.Tensor],
-    #                     idx: int,plot_attention: bool = True,
-    #                     add_loss_to_title: bool = False,
-    #                     show_future_observed: bool = True,
-    #                     ax=None,
-    #                     **kwargs) -> plt.Figure:
-    #     """
-    #     Plot actuals vs prediction and attention
-    #
-    #     Args:
-    #         x (Dict[str, torch.Tensor]): network input
-    #         out (Dict[str, torch.Tensor]): network output
-    #         idx (int): sample index
-    #         plot_attention: if to plot attention on secondary axis
-    #         add_loss_to_title: if to add loss to title. Default to False.
-    #         show_future_observed: if to show actuals for future. Defaults to True.
-    #         ax: matplotlib axes to plot on
-    #
-    #     Returns:
-    #         plt.Figure: matplotlib figure
-    #     """
-    #
-    #     # plot prediction as normal
-    #     fig = super().plot_prediction(
-    #         x,
-    #         out,
-    #         idx=idx,
-    #         add_loss_to_title=add_loss_to_title,
-    #         show_future_observed=show_future_observed,
-    #         ax=ax,
-    #         **kwargs,
-    #     )
-    #
-    #     # add attention on secondary axis
-    #     if plot_attention:
-    #         interpretation = self.interpret_output(out)
-    #         for f in to_list(fig):
-    #             ax = f.axes[0]
-    #             ax2 = ax.twinx()
-    #             ax2.set_ylabel("Attention")
-    #             encoder_length = x["encoder_lengths"][idx]
-    #             ax2.plot(
-    #                 torch.arange(-encoder_length, 0),
-    #                 interpretation["attention"][idx, :encoder_length].detach().cpu(),
-    #                 alpha=0.2,
-    #                 color="k",
-    #             )
-    #             f.tight_layout()
-    #     return fig
-    #
-    # def plot_interpretation(self,
-    #                         interpretation: Dict[str, torch.Tensor]) -> Dict[str, plt.Figure]:
-    #     """
-    #     Make figures that interpret model.
-    #
-    #     * Attention
-    #     * Variable selection weights / importances
-    #
-    #     Args:
-    #         interpretation: as obtained from ``interpret_output()``
-    #
-    #     Returns:
-    #         dictionary of matplotlib figures
-    #     """
-    #     figs = {}
-    #
-    #     # attention
-    #     fig, ax = plt.subplots()
-    #     attention = interpretation["attention"].detach().cpu()
-    #     attention = attention / attention.sum(-1).unsqueeze(-1)
-    #     ax.plot(
-    #         np.arange(-self.max_encoder_length, attention.size(0) - self.max_encoder_length), attention
-    #     )
-    #     ax.set_xlabel("Time index")
-    #     ax.set_ylabel("Attention")
-    #     ax.set_title("Attention")
-    #     figs["attention"] = fig
-    #
-    #     # variable selection
-    #     def make_selection_plot(title, values, labels):
-    #         fig, ax = plt.subplots(figsize=(7, len(values) * 0.25 + 2))
-    #         order = np.argsort(values)
-    #         values = values / values.sum(-1).unsqueeze(-1)
-    #         ax.barh(np.arange(len(values)), values[order] * 100, tick_label=np.asarray(labels)[order])
-    #         ax.set_title(title)
-    #         ax.set_xlabel("Importance in %")
-    #         plt.tight_layout()
-    #         return fig
-    #
-    #     figs["static_variables"] = make_selection_plot(
-    #         "Static variables importance", interpretation["static_variables"].detach().cpu(), self.static_variables
-    #     )
-    #     figs["encoder_variables"] = make_selection_plot(
-    #         "Encoder variables importance", interpretation["encoder_variables"].detach().cpu(), self.encoder_variables
-    #     )
-    #     figs["decoder_variables"] = make_selection_plot(
-    #         "Decoder variables importance", interpretation["decoder_variables"].detach().cpu(), self.decoder_variables
-    #     )
-    #
-    #     return figs
-
-    # def log_interpretation(self, outputs):
-    #     """
-    #     Log interpretation metrics to tensorboard.
-    #     """
-    #     # extract interpretations
-    #     interpretation = {
-    #         # use padded_stack because decoder length histogram can be of different length
-    #         name: padded_stack([x["interpretation"][name].detach() for x in outputs], side="right", value=0).sum(0)
-    #         for name in outputs[0]["interpretation"].keys()
-    #     }
-    #     # normalize attention with length histogram squared to account for: 1. zeros in attention and
-    #     # 2. higher attention due to less values
-    #     attention_occurances = interpretation["encoder_length_histogram"][1:].flip(0).cumsum(0).float()
-    #     attention_occurances = attention_occurances / attention_occurances.max()
-    #     attention_occurances = torch.cat(
-    #         [
-    #             attention_occurances,
-    #             torch.ones(
-    #                 interpretation["attention"].size(0) - attention_occurances.size(0),
-    #                 dtype=attention_occurances.dtype,
-    #                 device=attention_occurances.device,
-    #             ),
-    #         ],
-    #         dim=0,
-    #     )
-    #     interpretation["attention"] = interpretation["attention"] / attention_occurances.pow(2).clamp(1.0)
-    #     interpretation["attention"] = interpretation["attention"] / interpretation["attention"].sum()
-    #
-    #     figs = self.plot_interpretation(interpretation)  # make interpretation figures
-    #     label = ["val", "train"][self.training]
-    #     # log to tensorboard
-    #     for name, fig in figs.items():
-    #         self.logger.experiment.add_figure(
-    #             f"{label.capitalize()} {name} importance", fig, global_step=self.global_step
-    #         )
-    #
-    #     # log lengths of encoder/decoder
-    #     for type in ["encoder", "decoder"]:
-    #         fig, ax = plt.subplots()
-    #         lengths = (
-    #             padded_stack([out["interpretation"][f"{type}_length_histogram"] for out in outputs])
-    #             .sum(0)
-    #             .detach()
-    #             .cpu()
-    #         )
-    #         if type == "decoder":
-    #             start = 1
-    #         else:
-    #             start = 0
-    #         ax.plot(torch.arange(start, start + len(lengths)), lengths)
-    #         ax.set_xlabel(f"{type.capitalize()} length")
-    #         ax.set_ylabel("Number of samples")
-    #         ax.set_title(f"{type.capitalize()} length distribution in {label} epoch")
-    #
-    #         self.logger.experiment.add_figure(
-    #             f"{label.capitalize()} {type} length distribution", fig, global_step=self.global_step
-    #         )
-    #
-    # def log_embeddings(self):
-    #     """
-    #     Log embeddings to tensorboard
-    #     """
-    #     for name, emb in self.input_embeddings.items():
-    #         labels = self.embedding_labels[name]
-    #         self.logger.experiment.add_embedding(
-    #             emb.weight.data.detach().cpu(), metadata=labels, tag=name, global_step=self.global_step
-    #         )
 
 
 class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorchModel):
@@ -831,7 +572,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  random_state: Optional[Union[int, RandomState]] = None,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 output_size: Union[int, List[int]] = 7,
                  hidden_size: Union[int, List[int]] = 16,
                  lstm_layers: int = 1,
                  dropout: float = 0.1,
@@ -840,11 +580,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  max_encoder_length: int = 10,
                  hidden_continuous_size: int = 8,
                  hidden_continuous_sizes: Dict[str, int] = {},
-                 embedding_sizes: Dict[str, Tuple[int, int]] = {},
-                 embedding_paddings: List[str] = [],
-                 embedding_labels: Dict[str, np.ndarray] = {},
                  share_single_variable_networks: bool = False,
                  likelihood: Optional[Likelihood] = None,
+                 max_samples_per_ts: Optional[int] = None,
                  **kwargs
                  ):
         """Temporal Fusion Transformers (TFT) for Interpretable Multi-horizon Time Series Forecasting.
@@ -936,51 +674,40 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
-
-        # TODO: now we just have univariate case, or static quantile losses with 7 quantiles
-        if output_size is not None:
-            raise_if(isinstance(loss_fn, QuantileLoss) and output_size != len(QuantileLoss().quantiles),
-                     'For now when using QuantileLoss, the output_size must be equal to 7 (quantiles)')
-            raise_if(not isinstance(loss_fn, QuantileLoss) and output_size != 1)
-            self.output_size = output_size
-        else:
-            self.output_size = len(QuantileLoss().quantiles) if isinstance(loss_fn, QuantileLoss) else 1
-
         self.hidden_size = hidden_size
         self.lstm_layers = lstm_layers
         self.dropout = dropout
         self.loss_fn = loss_fn
+        # QuantileLoss requires one output per quantile, MSELoss requires 1
+        self.loss_size = 1 if not isinstance(loss_fn, QuantileLoss) else len(loss_fn.quantiles)
         self.attention_head_size = attention_head_size
         self.max_encoder_length = max_encoder_length
         self.hidden_continuous_size = hidden_continuous_size
         self.hidden_continuous_sizes = hidden_continuous_sizes
-        self.embedding_sizes = embedding_sizes
-        self.embedding_paddings = embedding_paddings
-        self.embedding_labels = embedding_labels
         self.share_single_variable_networks = share_single_variable_networks
         self.likelihood = likelihood
+        self.max_sample_per_ts = max_samples_per_ts
 
-    def _create_model(self, train_sample: Tuple[torch.Tensor]) -> nn.Module:
+    def _create_model(self,
+                      train_sample: Tuple[torch.Tensor,
+                                          torch.Tensor,
+                                          torch.Tensor,
+                                          torch.Tensor,
+                                          torch.Tensor]) -> nn.Module:
         """
-        `train_samples` contains tensors: 
+        `train_sample` contains the following tensors:
             (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
             
             each tensor has shape (n_timesteps, n_variables)
-            - past/historic tensors (input_chunk_length, n_variables)
-            - future tensors (output_chun_length, n_variables)
+            - past/historic tensors have shape (input_chunk_length, n_variables)
+            - future tensors have shape (output_chunk_length, n_variables)
         
-        From Darts POV
-        past_targets -> time_varying_unknown (known in past but not in future)
-        past_covariates -> time_varying_unknown
-        historic_future_covariates -> time_varying_known (in past of prediction point)
-        future_covariates -> time_varying_known (in future of prediction point)
-        
-        From pytorch-forecasting POV
-        time_varying_knowns : future_covariates (including historic_future_covariates)
-        time_varying_unknowns : past_targets, past_covariates
-        
-        time_varying_encoders : [past_targets, past_covariates, historic_future_covariates, future_covariates]
-        time_varying_decoders : [historic_future_covariates, future_covariates]
+        Darts Interpretation of pytorch-forecasting's TimeSeriesDataSet:
+            time_varying_knowns : future_covariates (including historic_future_covariates)
+            time_varying_unknowns : past_targets, past_covariates
+
+            time_varying_encoders : [past_targets, past_covariates, historic_future_covariates, future_covariates]
+            time_varying_decoders : [historic_future_covariates, future_covariates]
         
         x_reals : all variables from (past_targets, past_covariates, historic_future_covariates)
         
@@ -993,8 +720,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             t.shape[1] for t in [past_target, past_covariate, historic_future_covariate] if t is not None
         ])
 
-        print('TODO: make output size dependent on quantile losses and multivariate use output_size somehow')
-        output_dim = future_target.shape[1]
+        output_dim = (future_target.shape[1], self.loss_size)
 
         tensors = [
             past_target, past_covariate, historic_future_covariate,  # for time varying encoders
@@ -1020,6 +746,13 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             'model_config': {}
         }
 
+        # when there are no future_covariates we will need to create a zero tensor of
+        # shape (n_samples, output_chunk_length, 1) in _TFTModule.forward()
+        if future_covariate is None:
+            dummy_name = 'future_covariate_0'
+            variables['input']['historic_future_covariate'] = [dummy_name]
+            variables['input']['future_covariate'] = [dummy_name]
+
         reals_input = []
         time_varying_encoder_input = []
         time_varying_decoder_input = []
@@ -1044,7 +777,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             variables=variables,
             input_dim=input_dim,
             output_dim=output_dim,
-            output_size=self.output_size,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             hidden_size=self.hidden_size,
@@ -1054,9 +786,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             max_encoder_length=self.max_encoder_length,
             hidden_continuous_size=self.hidden_continuous_size,
             hidden_continuous_sizes=self.hidden_continuous_sizes,
-            embedding_sizes=self.embedding_sizes,
-            embedding_paddings=self.embedding_paddings,
-            embedding_labels=self.embedding_labels,
             share_single_variable_networks=self.share_single_variable_networks,
         )
 
@@ -1070,7 +799,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
-                                                max_samples_per_ts=None)
+                                                max_samples_per_ts=self.max_sample_per_ts)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(isinstance(train_dataset, MixedCovariatesSequentialDataset),
@@ -1083,14 +812,15 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
     def _produce_predict_output(self, x):
         if isinstance(self.loss_fn, QuantileLoss):
             p50_index = QuantileLoss().quantiles.index(0.5)
-            output = self.model(x)[:, :, p50_index].unsqueeze(dim=2)
+            output = self.model(x)[..., p50_index]
         else:
             output = self.model(x)
         return output if not self.likelihood else self.likelihood.sample(output)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
-        This model is a MixedCovariate model
+        Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to farecast
+        the next `n` target values per target variable.
 
         Parameters:
         ----------
@@ -1173,7 +903,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             # ==========> FUTURE INPUT <==========
             left_future, right_future = right_past, right_past + self.output_chunk_length
             # update future covariates to include next `roll_size` future covariates elements
-            input_future = future_covariates[:, left_future:right_future, :]
+            if n_future_covs:
+                input_future = future_covariates[:, left_future:right_future, :]
             print('')
             print(f'prediction_length: {prediction_length}')
             print(f'prediction_end: {prediction_length + self.output_chunk_length}')
