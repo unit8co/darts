@@ -52,7 +52,8 @@ class _TFTModule(nn.Module):
                  hidden_continuous_size: int = 8,
                  dropout: float = 0.1,
                  loss_fn: nn.Module = QuantileLoss(),
-                 share_single_variable_networks: bool = False):
+                 share_single_variable_networks: bool = False,
+                 likelihood: Optional[Likelihood] = None):
 
         """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
         The implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
@@ -102,6 +103,7 @@ class _TFTModule(nn.Module):
         self.dropout = dropout
         self.loss_fn = loss_fn
         self.share_single_variable_networks = share_single_variable_networks
+        self.likelihood = likelihood
 
         # general information on variable name endings:
         # _vsn: VariableSelectionNetwork
@@ -279,7 +281,7 @@ class _TFTModule(nn.Module):
         """
         List of all categorical variables in model
         """
-        # TODO: (Darts: dbader) we might want to include categorical variables in the future?
+        # TODO: (Darts) we might want to include categorical variables in the future?
         # return list(
         #     dict.fromkeys(
         #         self.static_categoricals
@@ -540,14 +542,18 @@ class _TFTModule(nn.Module):
         output = [output_layer(output) for output_layer in self.output_layer]
 
         # stack output
-        if self.loss_size == 1 and self.n_targets == 1:
-            output = output[0]
-        elif self.loss_size == 1 and self.n_targets > 1:
+        if self.likelihood is not None or self.loss_size == 1 and self.n_targets > 1:
+            # returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)
             output = torch.cat(output, dim=dim_variable)
-        else:  # loss_size > 1 for losses such as QuantileLoss
+        elif self.loss_size == 1 and self.n_targets == 1:
+            # returns shape (n_samples, n_timesteps, 1) for univariate
+            output = output[0]
+        else:
+            # loss_size > 1 for losses such as QuantileLoss
+            # returns shape (n_samples, n_timesteps, n_targets, n_losses)
             output = torch.cat([out_i.unsqueeze(dim_variable) for out_i in output], dim=dim_variable)
 
-        # TODO: (Darts: dbader) remember this in case we want to output interpretation
+        # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
         #     prediction=self.transform_output(output, target_scale=x["target_scale"]),
         #     attention=attn_output_weights,
@@ -557,6 +563,7 @@ class _TFTModule(nn.Module):
         #     decoder_lengths=decoder_lengths,
         #     encoder_lengths=encoder_lengths,
         # )
+
         return output
 
 
@@ -684,6 +691,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.share_single_variable_networks = share_single_variable_networks
         self.likelihood = likelihood
         self.max_sample_per_ts = max_samples_per_ts
+        self.output_dim: Tuple[int, int] = None
 
     def _create_model(self,
                       train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
@@ -709,7 +717,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         past_target, past_covariate, historic_future_covariate, future_covariate, future_target = train_sample
         static_covariates = None
 
-        output_dim = (future_target.shape[1], self.loss_size) if self.likelihood is None else \
+        self.output_dim = (future_target.shape[1], self.loss_size) if self.likelihood is None else \
             (future_target.shape[1], self.likelihood.num_parameters)
 
         tensors = [
@@ -766,7 +774,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
         return _TFTModule(
             variables_meta=variables_meta,
-            output_dim=output_dim,
+            output_dim=self.output_dim,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             hidden_size=self.hidden_size,
@@ -775,6 +783,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             attention_head_size=self.attention_head_size,
             hidden_continuous_size=self.hidden_continuous_size,
             share_single_variable_networks=self.share_single_variable_networks,
+            likelihood=self.likelihood
         )
 
     def _build_train_dataset(self,
@@ -798,12 +807,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
     @random_method
     def _produce_predict_output(self, x):
-        if isinstance(self.loss_fn, QuantileLoss):
+        output = self.model(x)
+        if self.likelihood is not None:
+            return self.likelihood.sample(output)
+        elif isinstance(self.loss_fn, QuantileLoss):
             p50_index = QuantileLoss().quantiles.index(0.5)
-            output = self.model(x)[..., p50_index]
+            return output[..., p50_index]
         else:
-            output = self.model(x)
-        return output if not self.likelihood else self.likelihood.sample(output)
+            return output
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """

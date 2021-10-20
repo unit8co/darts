@@ -18,8 +18,6 @@ HiddenState = Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]
 USE_ADAPTION_GLU = False  # seems to work better without
 USE_ADAPTION_RESAMPLE = False  # seems to work better without
 USE_ADAPTION_VSN = False  # seems to work better without
-USE_ADAPTION_NO_ATTENTION_DROPOUT = False  # seems to work better without
-USE_ADAPTION_GOOGLE = False
 
 
 class QuantileLoss(nn.Module):
