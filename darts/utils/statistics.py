@@ -278,7 +278,7 @@ def plot_acf(ts: TimeSeries,
         The confidence interval to display.
     bartlett_confint : bool, default: True
         The boolean value indicating whether the confidence interval should be
-        calculated using Bartlett's formula. : f set to True, the confidence interval
+        calculated using Bartlett's formula. If set to True, the confidence interval
         can be used in the model identification stage for fitting ARIMA models.
         If set to False, the confidence interval can be used to test for randomness
         (i.e. there is no time dependence in the data) of the data.
