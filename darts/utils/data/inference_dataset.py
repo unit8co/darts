@@ -2,7 +2,6 @@
 Inference Dataset
 -----------------
 """
-import math
 from typing import Union, Sequence, Optional, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
