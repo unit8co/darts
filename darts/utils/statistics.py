@@ -264,26 +264,27 @@ def plot_acf(ts: TimeSeries,
              axis: Optional[plt.axis] = None) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
+    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
 
     Parameters
     ----------
-    ts
+    ts : TimeSeries
         The TimeSeries whose ACF should be plotted.
-    m
+    m : int, optional
         Optionally, a time lag to highlight on the plot.
-    max_lag
+    max_lag : int, default: 24
         The maximal lag order to consider.
-    alpha
+    alpha : float, default: 0.05
         The confidence interval to display.
-    bartlett_confint
+    bartlett_confint : bool, default: True
         The boolean value indicating whether the confidence interval should be
-        calculated using Bartlett's formula. If set to True, the confidence interval
+        calculated using Bartlett's formula. : f set to True, the confidence interval
         can be used in the model identification stage for fitting ARIMA models.
         If set to False, the confidence interval can be used to test for randomness
         (i.e. there is no time dependence in the data) of the data.
-    fig_size
+    fig_size : tuple of int, default: (10, 5)
         The size of the figure to be displayed.
-    axis
+    axis : plt.axis, optional
         Optionally, an axis object to plot the ACF on.
     """
 
@@ -322,16 +323,17 @@ def plot_pacf(ts: TimeSeries,
               axis: Optional[plt.axis] = None) -> None:
     """
     Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
+    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
 
     Parameters
     ----------
-    ts
+    ts : TimeSeries
         The TimeSeries whose ACF should be plotted.
-    m
+    m : int, optional
         Optionally, a time lag to highlight on the plot.
-    max_lag
+    max_lag : int, default: 24
         The maximal lag order to consider.
-    method
+    method : str, default: "ywadjusted"
         The method to be used for the PACF calculation.
         - "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
           denominator for acovf. Default.
@@ -345,11 +347,11 @@ def plot_pacf(ts: TimeSeries,
           correction.
         - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
           correction.
-    alpha
+    alpha : float, default: 0.05
         The confidence interval to display.
-    fig_size
+    fig_size : tuple of int, default: (10, 5)
         The size of the figure to be displayed.
-    axis
+    axis : plt.axis, optional
         Optionally, an axis object to plot the ACF on.
     """
 
