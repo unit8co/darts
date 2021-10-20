@@ -21,7 +21,9 @@ USE_ADAPTION_VSN = False  # seems to work better without
 
 
 class QuantileLoss(nn.Module):
-    """From: https://medium.com/the-artificial-impostor/quantile-regression-part-2-6fdbc26b2629"""
+    """Quantile Loss Metric for custom quantiles centered around q=0.5
+
+    From: https://medium.com/the-artificial-impostor/quantile-regression-part-2-6fdbc26b2629"""
 
     def __init__(self, quantiles: Optional[List[float]] = None):
         """
@@ -31,7 +33,7 @@ class QuantileLoss(nn.Module):
 
         super().__init__()
         self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
-        self.check_quantiles(self.quantiles)
+        self._check_quantiles(self.quantiles)
         self.first = True
 
     def forward(self, y_pred, y_true):
@@ -63,7 +65,7 @@ class QuantileLoss(nn.Module):
         return losses.sum(dim=dim_q).mean()
 
     @staticmethod
-    def check_quantiles(quantiles):
+    def _check_quantiles(quantiles):
         median_q = 0.5
         raise_if_not(median_q in quantiles,
                      'median quantile `q=0.5` must be in `quantiles`',

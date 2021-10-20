@@ -584,7 +584,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs
                  ):
-        """Temporal Fusion Transformers (TFT) for Interpretable Multi-horizon Time Series Forecasting.
+        """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
 
         This is an implementation of the TFT architecture, as outlined in this paper:
         https://arxiv.org/pdf/1912.09363.pdf.
@@ -592,14 +592,13 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         The internal TFT architecture uses a majority of `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
 
-        This model supports mixed covariates (includes static covariates; past covariates known for `input_chunk_length`
-        points before prediction time; future covariates known for `input_chunk_length` points before prediction time
-        and `input_chunk_length` after prediction time).
+        This model supports mixed covariates (includes past covariates known for `input_chunk_length`
+        points before prediction time and future covariates known for `output_chunk_length` after prediction time).
 
         The TFT applies multi-head attention queries on future inputs. Without future covariates, the model performs
         much worse. Consider supplying a cyclic encoding of the time index as future_covariates to the `fit()` and
         `predict()` methods. See :meth:`darts.utils.timeseries_generation.datetime_attribute_timeseries()
-        <TimeSeries._fill_missing_dates>`.
+        <darts.utils.timeseries_generation.datetime_attribute_timeseries>`.
 
         Parameters
         ----------
@@ -619,7 +618,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
             Per default the TFT uses quantile loss as defined in the original paper.
-            Default: `darts.models.forecasting.tft_submodels.QuantileLoss()`.
+            Default: :meth:`darts.models.forecasting.tft_submodels.QuantileLoss()
+            <darts.models.forecasting.tft_submodels.QuantileLoss>`
         hidden_continuous_size : int
             default for hidden size for processing continuous variables (similar to categorical embedding size)
         share_single_variable_networks : bool
@@ -715,7 +715,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         `variable_meta` is used in TFT to access specific variables
         """
         past_target, past_covariate, historic_future_covariate, future_covariate, future_target = train_sample
-        static_covariates = None
+
+        static_covariates = None  # placeholder for future
 
         self.output_dim = (future_target.shape[1], self.loss_size) if self.likelihood is None else \
             (future_target.shape[1], self.likelihood.num_parameters)
@@ -744,7 +745,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             'model_config': {}
         }
 
-        # TODO: we might want to include cyclic encoding here?
+        # TODO: we might want to include cyclic encoding variable here (which will need to be added to
+        #  train and predict datasets)?
         # when there are no future_covariates we will need to create a zero tensor of
         # shape (n_samples, output_chunk_length, 1) in _TFTModule.forward()
         if future_covariate is None:
