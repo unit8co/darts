@@ -807,6 +807,17 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
     def _produce_train_output(self, input_batch: Tuple):
         return self.model(input_batch)
 
+    def predict(self, n, **kwargs):
+        """
+        since we have future covariates, the inference dataset for future input must be at least of length
+        `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
+        `input_chunk_length`.
+        """
+        if n >= self.output_chunk_length:
+            return super().predict(n, **kwargs)
+        else:
+            return super().predict(self.output_chunk_length, **kwargs)[:n]
+
     @random_method
     def _produce_predict_output(self, x):
         output = self.model(x)
