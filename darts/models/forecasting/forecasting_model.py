@@ -17,6 +17,7 @@ from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
 from abc import ABC, abstractmethod
 from inspect import signature
+from random import sample
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -456,7 +457,8 @@ class ForecastingModel(ABC):
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                    reduction: Callable[[np.ndarray], float] = np.mean,
                    verbose=False,
-                   n_jobs: int = 1) -> Tuple['ForecastingModel', Dict]:
+                   n_jobs: int = 1,
+                   n_samples: Union[int, float] = -1) -> Tuple['ForecastingModel', Dict]:
         """
         A function for finding the best hyper-parameters among a given set.
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -535,6 +537,10 @@ class ForecastingModel(ABC):
             The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
             combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
+        n_samples
+            The number of hyperparameter combininations to select from the full parameter grid. This will perform a random search
+            instead of the full grid. If n_samples is an inteeger it will select n)samples from the full range. If n_samples is a float between 0 and 1,
+            it will select n_samples percent of the full array. Setting n_samples to -1 means it will be ignored and the full hyperparameter range will be used.
 
         Returns
         -------
@@ -563,6 +569,21 @@ class ForecastingModel(ABC):
 
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
+
+        #If n_samples has been set, randomly select a subset of the full parameter cross product to search with
+        if n_samples != -1:
+            if type(n_samples) == int:
+                raise_if_not((n_samples > 0) + (n_samples <= len(params_cross_product)),
+                             "If supplied as an integer, n_samples must be greater than 0 and less than the cross product of the hyperparameters.")
+            if type(n_samples) == float:
+                raise_if_not((n_samples > 0.0) + (n_samples < 1.0),
+                             "If supplied as a float, n_samples must be greater than 0.0 and less than 1.0.")
+
+            # Select the absolute number of samples randomly if an integer has been supplied. If a float has been supplied, select a percentage
+            if type(n_samples) == int:
+                params_cross_product = random.sample(params_cross_product, n_samples)
+            elif type(n_samples) == float:
+                params_cross_product = random.sample(params_cross_product, int(n_samples * len(params_cross_product)))
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
