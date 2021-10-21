@@ -88,8 +88,6 @@ class _TFTModule(nn.Module):
             if to share the single variable networks between the encoder and decoder. Defaults to False.
         """
 
-        print('Get rid of mutable default function arguments')
-
         super(_TFTModule, self).__init__()
 
         self.n_targets, self.loss_size = output_dim
@@ -824,7 +822,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         if self.likelihood is not None:
             return self.likelihood.sample(output)
         elif isinstance(self.loss_fn, QuantileLoss):
-            p50_index = QuantileLoss().quantiles.index(0.5)
+            p50_index = self.loss_fn.quantiles.index(0.5)
             return output[..., p50_index]
         else:
             return output
