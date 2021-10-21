@@ -5,19 +5,17 @@ from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..dataprocessing.transformers import Scaler
 from ..logging import get_logger
-from matplotlib import pyplot as plt
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.tft_model import TFTModel
     from darts.models.forecasting.tft_submodels import QuantileLoss
     from torch.nn import MSELoss
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning('Torch not available. TCN tests will be skipped.')
+    logger.warning('Torch not available. TFT tests will be skipped.')
     TORCH_AVAILABLE = False
 
 
