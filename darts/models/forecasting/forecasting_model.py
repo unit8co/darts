@@ -283,6 +283,14 @@ class ForecastingModel(ABC):
         #     raise_if_not(series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
         #                  'The provided covariates must be at least as long as the target series.')
 
+        # only GlobalForecastingModels support historical forecastings without retraining the model
+        base_class_name = self.__class__.__base__.__name__
+        raise_if(not isinstance(self, GlobalForecastingModel) and not retrain,
+                 f'{base_class_name} does not support historical forecastings with `retrain` set to `False`. '
+                 f'For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. '
+                 f'Fore more information, read the documentation for `retrain` in `historical_forecastings()`',
+                 logger)
+
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
 
