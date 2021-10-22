@@ -804,7 +804,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-11'), freq='D')]
 
-        ts = concatenate(samples, axis='component', ignore_time_axes=True)
+        ts = concatenate(samples, axis='component', ignore_time_axis=True)
         self.assertEqual((10, 3, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-01-10'), ts.end_time())
@@ -815,7 +815,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=30, length=20, start=pd.Timestamp('2000-02-11'), freq='D')]
 
         with self.assertRaises(ValueError):
-            concatenate(samples, axis='component', ignore_time_axes=True)
+            concatenate(samples, axis='component', ignore_time_axis=True)
 
     #
     # SAMPLE AXIS TESTS
@@ -856,7 +856,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
 
-        ts = concatenate(samples, axis='time', ignore_time_axes=True)
+        ts = concatenate(samples, axis='time', ignore_time_axis=True)
         self.assertEqual((30, 1, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
@@ -874,7 +874,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
                    linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-13'), freq='D'),
                    linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-19'), freq='D')]
 
-        ts = concatenate(samples, axis='time', ignore_time_axes=True)
+        ts = concatenate(samples, axis='time', ignore_time_axis=True)
         self.assertEqual((30, 1, 1), ts._xa.shape)
         self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
         self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())

@@ -1023,7 +1023,7 @@ class TimeSeries:
             TimeSeries
                 concatenated timeseries
         """
-        return concatenate(series=[self, other], axis=axis, ignore_time_axes=ignore_time_axes)
+        return concatenate(series=[self, other], axis=axis, ignore_time_axis=ignore_time_axes)
 
     """
     Other methods
@@ -2453,7 +2453,7 @@ class TimeSeries:
 
 def concatenate(series: Sequence['TimeSeries'],
                 axis: Union[str, int] = 0,
-                ignore_time_axes: bool = False):
+                ignore_time_axis: bool = False):
     """Concatenates multiple ``TimeSeries`` along a given axis.
 
     ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively,
@@ -2465,7 +2465,7 @@ def concatenate(series: Sequence['TimeSeries'],
         sequence of ``TimeSeries`` to concatenate
     axis : Union[str, int]
         axis along which the series will be concatenated.
-    ignore_time_axes : bool
+    ignore_time_axis : bool
         Allow concatenation even when some series do not have matching time axes.
         When done along component or sample dimensions, concatenation will work as long as the series
         have the same lengths (in this case the resulting series will have the time axis of the first
@@ -2515,7 +2515,7 @@ def concatenate(series: Sequence['TimeSeries'],
                 break
 
         if not consecutive_time_axes:
-            raise_if_not(ignore_time_axes, "When concatenating over time axis, all series need to be contiguous"
+            raise_if_not(ignore_time_axis, "When concatenating over time axis, all series need to be contiguous"
                                            "in the time dimension. Use `ignore_time_axis=True` to override "
                                            "this behavior and concatenate the series by extending the time axis "
                                            "of the first series.")
@@ -2531,11 +2531,11 @@ def concatenate(series: Sequence['TimeSeries'],
 
     else:
         time_axes_equal = all(list(map(lambda t: t[0].has_same_time_as(t[1]), zip(series[0:-1], series[1:]))))
-        time_axes_ok = (time_axes_equal if not ignore_time_axes else len(set([len(ts) for ts in series])) == 1)
+        time_axes_ok = (time_axes_equal if not ignore_time_axis else len(set([len(ts) for ts in series])) == 1)
 
         raise_if_not((time_axes_ok and (axis == 1 and sample_axis_equal) or (axis == 2 and component_axis_equal)),
                      'When concatenating along component or sample dimensions, all the series must have the same time '
-                     'axes (unless `ignore_time_axes` is True), or time axes of same lengths (if `ignore_time_axes` is '
+                     'axes (unless `ignore_time_axis` is True), or time axes of same lengths (if `ignore_time_axis` is '
                      'True), and all series must have the same number of samples (if concatenating along component '
                      'dimension), or the same number of components (if concatenating along sample dimension).')
 
