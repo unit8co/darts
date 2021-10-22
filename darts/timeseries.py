@@ -2451,24 +2451,6 @@ class TimeSeries:
         raise_log(IndexError("The type of your index was not matched."), logger)
 
 
-"""
-@staticmethod
-def _get_str_axis(axis: Union[int, str]):
-    # Returns correct axis name as a string, regardless whether it was string or integer
-    axis_error_string = "Axis parameter can be only one of the numbers (0, 1, 2) " \
-                        "or strings ('time', 'component', 'sample')"
-    if isinstance(axis, int):
-        raise_if_not(0 <= axis <= 2, axis_error_string)
-        axis = DIMS[axis]
-    elif isinstance(axis, str):
-        raise_if(axis not in DIMS, axis_error_string)
-    else:
-        raise_log(AttributeError(axis_error_string))
-
-    return axis
-"""
-
-
 def concatenate(series: Sequence['TimeSeries'],
                 axis: Union[str, int] = 0,
                 ignore_time_axes: bool = False):
