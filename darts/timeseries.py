@@ -2528,7 +2528,7 @@ def concatenate(series: Sequence['TimeSeries'],
         time_axes_equal = all(list(map(lambda t: t[0].has_same_time_as(t[1]), zip(series[0:-1], series[1:]))))
         time_axes_ok = (time_axes_equal if not ignore_time_axis else len(set([len(ts) for ts in series])) == 1)
 
-        raise_if_not((time_axes_ok and (axis == 1 and sample_axis_equal) or (axis == 2 and component_axis_equal)),
+        raise_if_not((time_axes_ok and ((axis == 1 and sample_axis_equal) or (axis == 2 and component_axis_equal))),
                      'When concatenating along component or sample dimensions, all the series must have the same time '
                      'axes (unless `ignore_time_axis` is True), or time axes of same lengths (if `ignore_time_axis` is '
                      'True), and all series must have the same number of samples (if concatenating along component '
