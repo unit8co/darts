@@ -95,7 +95,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None,
-                 force_reset=False):
+                 force_reset=False,
+                 save_checkpoints=True):
 
         """ Pytorch-based Forecasting Model.
 
@@ -194,11 +195,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.likelihood = None
 
         self.force_reset = force_reset
+        self.save_checkpoints = save_checkpoints
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         self.checkpoint_exists = \
             os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0
 
-        if self.checkpoint_exists:
+        if self.checkpoint_exists and self.save_checkpoints:
             if self.force_reset:
                 self.reset_model()
             else:
@@ -281,7 +283,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
 
-        self._save_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
+        if self.save_checkpoints:
+            self.save_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
     @abstractmethod
     def _create_model(self, train_sample: Tuple[Tensor]) -> torch.nn.Module:
@@ -759,7 +762,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return tuple(batch)
 
     def untrained_model(self):
-        return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
+        return self.load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
     @property
     def first_prediction_index(self) -> int:
@@ -817,7 +820,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
             self.total_epochs = epoch + 1
-            self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
+
+            if self.save_checkpoints:
+                self.save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
             if epoch % self.nr_epochs_val_period == 0:
                 training_loss = total_loss / len(train_loader)
@@ -828,7 +833,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     if validation_loss < best_loss:
                         best_loss = validation_loss
-                        self._save_model(True, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
+                        if self.save_checkpoints:
+                            self.save_model(True, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
 
                     if verbose:
                         print("Training loss: {:.4f}, validation loss: {:.4f}, best val loss: {:.4f}".
@@ -856,10 +862,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         validation_loss = total_loss / (batch_idx + 1)
         return validation_loss
 
-    def _save_model(self,
-                    is_best: bool,
-                    folder: str,
-                    epoch: int):
+    def save_model(self,
+                   is_best: bool,
+                   folder: str,
+                   epoch: int):
         """
         Saves the whole torch model object to a file
 
@@ -892,14 +898,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def _save_untrained_model(self, folder):
+    def save_untrained_model(self, folder):
         os.makedirs(folder, exist_ok=True)
         filename = os.path.join(folder, 'model.pth.tar')
 
         with open(filename, 'wb') as f:
             torch.save(self, f)
 
-    def _load_untrained_model(self, folder):
+    def load_untrained_model(self, folder):
         filename = os.path.join(folder, 'model.pth.tar')
 
         with open(filename, 'rb') as f:
