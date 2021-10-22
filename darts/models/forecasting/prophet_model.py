@@ -335,3 +335,11 @@ class Prophet(DualCovariatesForecastingModel):
         else:
             raise ValueError("freq {} not understood. Please report if you think this is in error.".format(freq))
         return days
+
+    def _supports_range_index(self) -> bool:
+        """Prophet does not support integer range index."""
+        raise_if(True,
+                 'Prophet does not support integer range index. The index of the TimeSeries must be of type '
+                 'pandas.DatetimeIndex',
+                 logger)
+        return False
