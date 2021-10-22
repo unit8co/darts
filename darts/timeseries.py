@@ -2519,14 +2519,10 @@ def concatenate(series: Sequence['TimeSeries'],
                                            "in the time dimension. Use `ignore_time_axis=True` to override "
                                            "this behavior and concatenate the series by extending the time axis "
                                            "of the first series.")
-            if series[0].has_datetime_index:
-                tindex = pd.date_range(series[0].start_time(),
-                                       freq=series[0].freq,
-                                       periods=da_concat.shape[0])
-            else:
-                tindex = pd.RangeIndex(start=series[0].start_time(),
-                                       stop=series[0].start_time() + da_concat.shape[0],
-                                       step=1)
+
+            from darts.utils.timeseries_generation import _generate_index
+            tindex = _generate_index(start=series[0].start_time(), freq=series[0].freq_str, length=da_concat.shape[0])
+
             da_concat = da_concat.assign_coords({time_dim_name: tindex})
 
     else:
