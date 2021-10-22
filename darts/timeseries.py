@@ -2500,7 +2500,7 @@ def concatenate(series: Sequence['TimeSeries'],
 
     if axis == 0:
         # time
-        raise_if((axis == 0 and not (component_axis_equal and sample_axis_equal)),
+        raise_if((not (component_axis_equal and sample_axis_equal)),
                  'when concatenating along time dimension, the component and sample dimensions of all '
                  'provided series must match.')
 
