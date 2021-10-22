@@ -11,10 +11,10 @@ import numpy as np
 from scipy.stats import norm
 from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import acf
+from statsmodels.tsa.stattools import acf, pacf
 
 from warnings import warn
-from ..logging import raise_log, get_logger, raise_if_not
+from ..logging import raise_log, get_logger, raise_if_not, raise_if
 from ..timeseries import TimeSeries
 from .missing_values import fill_missing_values
 from .utils import SeasonalityMode, ModelMode
@@ -259,35 +259,43 @@ def plot_acf(ts: TimeSeries,
              m: Optional[int] = None,
              max_lag: int = 24,
              alpha: float = 0.05,
+             bartlett_confint: bool = True,
              fig_size: Tuple[int, int] = (10, 5),
              axis: Optional[plt.axis] = None) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
+    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
 
     Parameters
     ----------
-    ts
+    ts : TimeSeries
         The TimeSeries whose ACF should be plotted.
-    m
+    m : int, optional
         Optionally, a time lag to highlight on the plot.
-    max_lag
+    max_lag : int, default: 24
         The maximal lag order to consider.
-    alpha
+    alpha : float, default: 0.05
         The confidence interval to display.
-    fig_size
+    bartlett_confint : bool, default: True
+        The boolean value indicating whether the confidence interval should be
+        calculated using Bartlett's formula. If set to True, the confidence interval
+        can be used in the model identification stage for fitting ARIMA models.
+        If set to False, the confidence interval can be used to test for randomness
+        (i.e. there is no time dependence in the data) of the data.
+    fig_size : tuple of int, default: (10, 5)
         The size of the figure to be displayed.
-    axis
+    axis : plt.axis, optional
         Optionally, an axis object to plot the ACF on.
     """
 
     ts._assert_univariate()
+    raise_if(max_lag is None or not (1 <= max_lag < len(ts)),
+             'max_lag must be greater than or equal to 1 and less than len(ts).')
+    raise_if(m is not None and not (0 <= m <= max_lag),
+             'm must be greater than or equal to 0 and less than or equal to max_lag.')
+    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
 
-    r = acf(ts.values(), nlags=max_lag, fft=False)  # , alpha=alpha) and confint as output too
-
-    # Computes the confidence interval at level alpha for all lags.
-    stats = []
-    for i in range(1, max_lag + 1):
-        stats.append(_bartlett_formula(r[1:], i, len(ts)))
+    r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=bartlett_confint)
 
     if axis is None:
         plt.figure(figsize=fig_size)
@@ -299,10 +307,77 @@ def plot_acf(ts: TimeSeries,
                   color=('#b512b8' if m is not None and i == m else 'black'),
                   lw=(1 if m is not None and i == m else .5))
 
-    upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
-    acf_band = [upp_band * stat for stat in stats]
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
+    upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
-    axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='#003DFD', alpha=.25)
+    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
+    axis.plot((0, max_lag + 1), (0, 0), color='black')
+
+
+def plot_pacf(ts: TimeSeries,
+              m: Optional[int] = None,
+              max_lag: int = 24,
+              method: str = "ywadjusted",
+              alpha: float = 0.05,
+              fig_size: Tuple[int, int] = (10, 5),
+              axis: Optional[plt.axis] = None) -> None:
+    """
+    Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
+    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+
+    Parameters
+    ----------
+    ts : TimeSeries
+        The TimeSeries whose ACF should be plotted.
+    m : int, optional
+        Optionally, a time lag to highlight on the plot.
+    max_lag : int, default: 24
+        The maximal lag order to consider.
+    method : str, default: "ywadjusted"
+        The method to be used for the PACF calculation.
+        - "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
+          denominator for acovf. Default.
+        - "ywm" or "ywmle" : Yule-Walker without adjustment.
+        - "ols" : regression of time series on lags of it and on constant.
+        - "ols-inefficient" : regression of time series on lags using a single
+          common sample to estimate all pacf coefficients.
+        - "ols-adjusted" : regression of time series on lags with a bias
+          adjustment.
+        - "ld" or "ldadjusted" : Levinson-Durbin recursion with bias
+          correction.
+        - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
+          correction.
+    alpha : float, default: 0.05
+        The confidence interval to display.
+    fig_size : tuple of int, default: (10, 5)
+        The size of the figure to be displayed.
+    axis : plt.axis, optional
+        Optionally, an axis object to plot the ACF on.
+    """
+
+    ts._assert_univariate()
+    raise_if(max_lag is None or not (1 <= max_lag < len(ts)//2),
+             'max_lag must be greater than or equal to 1 and less than len(ts)//2.')
+    raise_if(m is not None and not (0 <= m <= max_lag),
+             'm must be greater than or equal to 0 and less than or equal to max_lag.')
+    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
+
+    r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
+
+    if axis is None:
+        plt.figure(figsize=fig_size)
+        axis = plt
+
+    for i in range(len(r)):
+        axis.plot((i, i),
+                  (0, r[i]),
+                  color=('#b512b8' if m is not None and i == m else 'black'),
+                  lw=(1 if m is not None and i == m else .5))
+
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
+    upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
+
+    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
     axis.plot((0, max_lag + 1), (0, 0), color='black')
 
 
