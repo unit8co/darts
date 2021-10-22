@@ -2509,8 +2509,7 @@ def concatenate(series: Sequence['TimeSeries'],
         # check, if timeseries are consecutive
         consecutive_time_axes = True
         for i in range(1, len(series)):
-            if series[i - 1].end_time() + series[0].freq != \
-                    series[i].start_time():
+            if series[i - 1].end_time() + series[0].freq != series[i].start_time():
                 consecutive_time_axes = False
                 break
 
