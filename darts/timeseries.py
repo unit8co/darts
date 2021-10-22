@@ -61,7 +61,7 @@ class TimeSeries:
                      'The components (columns) names must be unique. Provided: {}'.format(components),
                      logger)
 
-        self._time_dim = xa.dims[0]  # how the time dimension is named
+        self._time_dim = str(xa.dims[0])  # how the time dimension is named; we convert hashable to string
 
         # The following sorting returns a copy, which we are relying on.
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
@@ -593,6 +593,13 @@ class TimeSeries:
         return self._time_index.copy()
 
     @property
+    def time_dim(self) -> str:
+        """
+        The name of the time dimension for this time series
+        """
+        return self._time_dim
+
+    @property
     def has_datetime_index(self) -> bool:
         """
         Whether this series is indexed with a DatetimeIndex (otherwise it is indexed with an Int64Index)
@@ -949,14 +956,14 @@ class TimeSeries:
              size: Optional[int] = 5,
              axis: Optional[Union[int, str]] = 0) -> 'TimeSeries':
         """
-        Return first n samples from TimeSeries.
+        Return a TimeSeries made of the first n samples of this TimeSeries
 
         Parameters
         ----------
         size : int, default 5
-            number of samples to retain
-        axis : str or int, optional, default 'time'
-            axis along which we intend to display records
+               number of samples to retain
+        axis : str or int, optional, default: 0
+               axis along which to slice the series
 
         Returns
         -------
@@ -965,10 +972,9 @@ class TimeSeries:
             # of ``samples`` samples.
         """
 
-        axis = TimeSeries._get_str_axis(axis)
-
-        display_n = range(min(size, self._xa.sizes[axis]))
-        return TimeSeries(self._xa[{axis: display_n}])
+        axis_str = self._get_dim_name(axis)
+        display_n = range(min(size, self._xa.sizes[axis_str]))
+        return TimeSeries(self._xa[{axis_str: display_n}])
 
     def tail(self,
              size: Optional[int] = 5,
@@ -990,26 +996,9 @@ class TimeSeries:
             # of ``samples`` from the bottom. [Default: 5]
         """
 
-        axis = TimeSeries._get_str_axis(axis)
-        
-        display_n = range(-min(size, self._xa.sizes[axis]), 0)
-        return TimeSeries(self._xa[{axis: display_n}])
-
-    @staticmethod
-    def _get_str_axis(axis: Union[int, str]):
-        """Returns correct axis name as a string, regardless whether it was string or integer"""
-        axis_error_string = "Axis parameter can be only one of the numbers (0, 1, 2) " \
-                            "or strings ('time', 'component', 'sample')"
-        if isinstance(axis, int):
-            raise_if_not(0 <= axis <= 2, axis_error_string)
-            axis = DIMS[axis]
-        elif isinstance(axis, str):
-            raise_if(axis not in DIMS, axis_error_string)
-        else:
-            raise_log(AttributeError(axis_error_string))
-
-        return axis
-
+        axis_str = self._get_dim_name(axis)
+        display_n = range(-min(size, self._xa.sizes[axis_str]), 0)
+        return TimeSeries(self._xa[{axis_str: display_n}])
 
     def concatenate(self,
                     other: 'TimeSeries',
@@ -1034,7 +1023,7 @@ class TimeSeries:
             TimeSeries
                 concatenated timeseries
         """
-        return concatenate(timeserie_sequence=[self, other], axis=axis, ignore_time_axes=ignore_time_axes)
+        return concatenate(series=[self, other], axis=axis, ignore_time_axis=ignore_time_axes)
 
     """
     Other methods
@@ -2189,6 +2178,30 @@ class TimeSeries:
         resampled_xa[resampled_time_index.index.isin(time_index)] = sorted_xa.data
         return resampled_xa
 
+    def _get_dim_name(self, axis: Union[int, str]) -> str:
+        if isinstance(axis, int):
+            if axis == 0:
+                return self._time_dim
+            elif axis == 1 or axis == 2:
+                return DIMS[axis]
+            else:
+                raise_if(True, 'If `axis` is an integer it must be between 0 and 2.')
+        else:
+            known_dims = (self._time_dim,) + DIMS[1:]
+            raise_if_not(axis in known_dims,
+                         '`axis` must be a known dimension of this series: {}'.format(known_dims))
+            return axis
+
+    def _get_dim(self, axis: Union[int, str]) -> int:
+        if isinstance(axis, int):
+            raise_if_not(0 <= axis <= 2, 'If `axis` is an integer it must be between 0 and 2.')
+            return axis
+        else:
+            known_dims = (self._time_dim,) + DIMS[1:]
+            raise_if_not(axis in known_dims,
+                         '`axis` must be a known dimension of this series: {}'.format(known_dims))
+            return known_dims.index(axis)
+
     def __eq__(self, other):
         if isinstance(other, TimeSeries):
             return self._xa.equals(other.data_array(copy=False))
@@ -2438,95 +2451,112 @@ class TimeSeries:
         raise_log(IndexError("The type of your index was not matched."), logger)
 
 
-def concatenate(timeserie_sequence: Sequence['TimeSeries'],
+def concatenate(series: Sequence['TimeSeries'],
                 axis: Union[str, int] = 0,
-                ignore_time_axes: bool = False):
-    """Concatenates multiple timeseries along given axis.
+                ignore_time_axis: bool = False):
+    """Concatenates multiple ``TimeSeries`` along a given axis.
 
-    Note: when concatenating along the ``time`` dimension, first concatenated timeserie marks the start date of
-    the resulting series, and the remaining series will have their date indices overwritten.
+    ``axis`` can be an integer in (0, 1, 2) to denote (time, component, sample) or, alternatively,
+    a string denoting the corresponding dimension of the underlying ``DataArray``.
 
     Parameters
     ----------
-    timeserie_sequence : sequence of TimeSeries
-        sequence of timeseries to concatenate
-    axis : str or int
-        axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 'time']
-    ignore_time_axes : bool, default False
-        Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
+    series : Sequence[TimeSeries]
+        sequence of ``TimeSeries`` to concatenate
+    axis : Union[str, int]
+        axis along which the series will be concatenated.
+    ignore_time_axis : bool
+        Allow concatenation even when some series do not have matching time axes.
+        When done along component or sample dimensions, concatenation will work as long as the series
+        have the same lengths (in this case the resulting series will have the time axis of the first
+        provided series). When done along time dimension, concatenation will work even if the time axes
+        are not contiguous (in this case, the resulting series will have a start time matching the start time
+        of the first provided series). Default: False.
 
     Returns
     -------
     TimeSeries
-        concatenated timeseries
+        concatenated series
     """
 
-    axis = TimeSeries._get_str_axis(axis)
-    if len(timeserie_sequence) < 2:
-        return timeserie_sequence[0]
+    time_dims = [ts.time_dim for ts in series]
+    if isinstance(axis, str):
+        if axis == DIMS[1]:
+            axis = 1
+        elif axis == DIMS[2]:
+            axis = 2
+        else:
+            raise_if_not(len(set(time_dims)) == 1 and axis == time_dims[0],
+                         'Unrecognised `axis` name. If `axis` denotes the time axis, all provided '
+                         'series must have the same time axis name (if that is not the case, try providing '
+                         '`axis=0` to concatenate along time dimension).')
+            axis = 0
+    time_dim_name = time_dims[0]  # At this point all series are supposed to have same time dim name
 
-    start_date_equal = len(set([ts.start_time() for ts in timeserie_sequence])) == 1
-    end_date_equal = len(set([ts.end_time() for ts in timeserie_sequence])) == 1
-    freq_equal = len(set([ts.freq_str for ts in timeserie_sequence])) == 1
-    time_axis_equal = start_date_equal and end_date_equal and freq_equal
-    component_axis_equal = len(set([ts.width for ts in timeserie_sequence])) == 1
-    sample_axis_equal = len(set([ts.n_samples for ts in timeserie_sequence])) == 1
+    da_sequence = [ts.data_array(copy=False) for ts in series]
 
-    if ((axis == DIMS[0] and not (component_axis_equal and sample_axis_equal)) or
-        (axis == DIMS[1] and not ((time_axis_equal or ignore_time_axes) and sample_axis_equal)) or
-        (axis == DIMS[2] and not ((time_axis_equal or ignore_time_axes) and component_axis_equal))):
+    component_axis_equal = len(set([ts.width for ts in series])) == 1
+    sample_axis_equal = len(set([ts.n_samples for ts in series])) == 1
 
-        raise_log(AttributeError('Remaining (non-concatenating) axes need to be equal.'))
+    if axis == 0:
+        # time
+        raise_if((not (component_axis_equal and sample_axis_equal)),
+                 'when concatenating along time dimension, the component and sample dimensions of all '
+                 'provided series must match.')
 
-    da_sequence = [ts.data_array(copy=False) for ts in timeserie_sequence]
-
-    if axis == DIMS[0]:  # time
+        da_concat = xr.concat(da_sequence, dim=time_dim_name)
 
         # check, if timeseries are consecutive
         consecutive_time_axes = True
-        for i in range(1, len(timeserie_sequence)):
-            if timeserie_sequence[i - 1].end_time() + timeserie_sequence[0].freq != \
-                    timeserie_sequence[i].start_time():
+        for i in range(1, len(series)):
+            if series[i - 1].end_time() + series[0].freq != series[i].start_time():
                 consecutive_time_axes = False
                 break
 
-        da_concat = xr.concat(da_sequence, dim=axis)
-
         if not consecutive_time_axes:
-            if ignore_time_axes:
-                tindex = pd.date_range(timeserie_sequence[0].start_time(),
-                                       freq=timeserie_sequence[0].freq,
-                                       periods=da_concat.sizes[axis]
-                                       )
-                da_concat = da_concat.assign_coords({DIMS[0]: tindex})
-            else:
-                raise_log(AttributeError("When concatenating over time axis, all series need to be subsequent,"
-                                         " i.e. end_time of the previous one should be equal to start_time - 1"
-                                         " of the following timeserie. Use `ignore_time_axis=True` to override "
-                                         "this behavior and concatenate timeseries as is with time index reset"
-                                         " to the index of the first timeserie."
-                                     ))
+            raise_if_not(ignore_time_axis, "When concatenating over time axis, all series need to be contiguous"
+                                           "in the time dimension. Use `ignore_time_axis=True` to override "
+                                           "this behavior and concatenate the series by extending the time axis "
+                                           "of the first series.")
 
-    else:  # component or sample
-        if time_axis_equal:
-            da_concat = xr.concat(da_sequence, dim=axis)
-            axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
-            da_concat = da_concat.assign_coords({axis: axis_index})
+            from darts.utils.timeseries_generation import _generate_index
+            tindex = _generate_index(start=series[0].start_time(), freq=series[0].freq_str, length=da_concat.shape[0])
+
+            da_concat = da_concat.assign_coords({time_dim_name: tindex})
+
+    else:
+        time_axes_equal = all(list(map(lambda t: t[0].has_same_time_as(t[1]), zip(series[0:-1], series[1:]))))
+        time_axes_ok = (time_axes_equal if not ignore_time_axis else len(set([len(ts) for ts in series])) == 1)
+
+        raise_if_not((time_axes_ok and ((axis == 1 and sample_axis_equal) or (axis == 2 and component_axis_equal))),
+                     'When concatenating along component or sample dimensions, all the series must have the same time '
+                     'axes (unless `ignore_time_axis` is True), or time axes of same lengths (if `ignore_time_axis` is '
+                     'True), and all series must have the same number of samples (if concatenating along component '
+                     'dimension), or the same number of components (if concatenating along sample dimension).')
+
+        # we concatenate raw values using Numpy because not all series might have the same time axes
+        # and joining using xarray.concatenate() won't work in some cases
+        concat_vals = np.concatenate([da.values for da in da_sequence], axis=axis)
+
+        if axis == 1:
+            # when concatenating along component dimension, we have to re-create a component index
+            component_coords = []
+            existing_components = set()
+            for i, ts in enumerate(series):
+                for comp in ts.components:
+                    if comp not in existing_components:
+                        component_coords.append(comp)
+                        existing_components.add(comp)
+                    else:
+                        new_comp_name = '{}_{}'.format(i, comp)
+                        component_coords.append(new_comp_name)
+                        existing_components.add(new_comp_name)
+            component_index = pd.Index(component_coords)
         else:
-            if ignore_time_axes:
-                # all timeseries need to have same length along time axis
-                raise_if(len(set([ts.shape[0] for ts in da_sequence])) != 1,
-                         "All concatenating time series need to have the same time axis or at least"
-                         " be of the same length.", logger)
+            component_index = da_sequence[0].get_index(DIMS[1])
 
-                ts1_time_coord = da_sequence[0].coords[DIMS[0]]
-                axis_index = pd.Index([axis + '_' + str(i) for i in range(len(da_sequence))], name=axis)
-
-                da_concat = xr.concat(da_sequence, dim=axis, join='left')
-                da_concat = da_concat.assign_coords({DIMS[0]: ts1_time_coord,
-                                                               axis: axis_index})
-            else:
-                raise_log(AttributeError("All concatenating time series need to have the same time axis."
-                                         " You can override this error by setting `ignore_time_axes=True`."))
+        da_concat = xr.DataArray(concat_vals,
+                                 dims=(time_dim_name,) + DIMS[-2:],
+                                 coords={time_dim_name: series[0].time_index, DIMS[1]: component_index})
 
     return TimeSeries(da_concat)
