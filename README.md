@@ -125,21 +125,21 @@ on bringing more models and features.
 
 Model | Univariate | Multivariate | Probabilistic | Multiple-series training | Past-observed covariates support | Future-known covariates support | Reference
 --- | --- | --- | --- | --- | --- | --- | ---
-`ARIMA` | x | | x | | | |
-`VARIMA` | x | x | | | | |
-`AutoARIMA` | x | | | | | |
-`ExponentialSmoothing` | x | | x | | | |
-`Theta` and `FourTheta` | x | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
-`Prophet` | x | | x | | | x | [Prophet repo](https://github.com/facebook/prophet)
-`FFT` (Fast Fourier Transform) | x | | | | | |
-`RegressionModel` (incl `RandomForest`, `LinearRegressionModel` and `LightGBMModel`) | x | x | | x | x | x |
-`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | | x | [DeepAR paper](https://arxiv.org/abs/1704.04110)
-`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | |
-`NBEATSModel` | x | x | | x | x | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
-`TCNModel` | x | x | x | x | x | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
-`TransformerModel` | x | x | | x | x | | 
+`ARIMA` | ✅ | | ✅ | | | ✅ |
+`VARIMA` | ✅ | ✅ | | | | ✅ |
+`AutoARIMA` | ✅ | | | | | ✅ |
+`ExponentialSmoothing` | ✅ | | ✅ | | | |
+`Theta` and `FourTheta` | ✅ | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
+`Prophet` | ✅ | | ✅ | | | ✅ | [Prophet repo](https://github.com/facebook/prophet)
+`FFT` (Fast Fourier Transform) | ✅ | | | | | |
+`RegressionModel` (incl `RandomForest`, `LinearRegressionModel` and `LightGBMModel`) | ✅ | ✅ | | ✅ | ✅ | ✅ |
+`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | [DeepAR paper](https://arxiv.org/abs/1704.04110)
+`BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | |
+`NBEATSModel` | ✅ | ✅ | | ✅ | ✅ | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
+`TCNModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
+`TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | 
 `TFTModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
-Naive Baselines | x | | | | | |
+Naive Baselines | ✅ | | | | | |
 
 
 ## Community & Contact
@@ -262,3 +262,21 @@ To build documentation locally just run
 ./gradlew buildDocs
 ```
 After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
+
+
+## Citation
+If you are using Darts in your scientific work, we would appreciate citations to the following paper.
+
+[Darts: User-Friendly Modern Machine Learning for Time Series](https://arxiv.org/abs/2110.03224)
+
+Bibtex entry:
+```
+@misc{herzen2021darts,
+      title={Darts: User-Friendly Modern Machine Learning for Time Series}, 
+      author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
+      year={2021},
+      eprint={2110.03224},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```
