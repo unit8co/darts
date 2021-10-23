@@ -39,6 +39,7 @@ def _generate_index(start: Optional[Union[pd.Timestamp, int]] = None,
         The time difference between two adjacent entries in the returned index. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        The freq is optional for generating an integer index.
     """
     constructors = [
         arg_name for arg, arg_name in zip([start, end, length], ['start', 'end', 'length']) if arg is not None
