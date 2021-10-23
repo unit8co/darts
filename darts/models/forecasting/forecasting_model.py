@@ -89,6 +89,15 @@ class ForecastingModel(ABC):
         """
         return False
 
+    def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        """
+        Checks if the forecasting model supports historical forecasts without retraining
+        the model. By default, returns False. Needs to be overwritten by models that do
+        support historical forecasts without retraining.
+        """
+        return False
+
+
     @property
     def uses_past_covariates(self):
         return 'past_covariates' in inspect.signature(self.fit).parameters.keys()
@@ -282,6 +291,14 @@ class ForecastingModel(ABC):
         # if covariates:
         #     raise_if_not(series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
         #                  'The provided covariates must be at least as long as the target series.')
+
+        # only GlobalForecastingModels support historical forecastings without retraining the model
+        base_class_name = self.__class__.__base__.__name__
+        raise_if(not retrain and not self._supports_non_retrainable_historical_forecasts(),
+                 f'{base_class_name} does not support historical forecastings with `retrain` set to `False`. '
+                 f'For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. '
+                 f'Fore more information, read the documentation for `retrain` in `historical_forecastings()`',
+                 logger)
 
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
@@ -791,6 +808,10 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             past_covariates=past_covariates if self.uses_past_covariates else None,
             future_covariates=future_covariates if self.uses_future_covariates else None
         )
+
+    def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        """GlobalForecastingModel supports historical forecasts without retraining the model"""
+        return True
 
 
 class DualCovariatesForecastingModel(ForecastingModel, ABC):
