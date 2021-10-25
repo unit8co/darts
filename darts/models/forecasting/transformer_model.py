@@ -24,29 +24,27 @@ class _PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=500):
         """ An implementation of positional encoding as described in 'Attention is All you Need' by Vaswani et al. (2017)
 
-                Parameters
-                ----------
-                d_model
-                    the number of expected features in the transformer encoder/decoder inputs.
-                    Last dimension of the input
-                dropout
-                    Fraction of neurons affected by Dropout (default=0.1).
-                max_len
-                    The dimensionality of the computed positional encoding array.
-                    Only its first "input_size" elements will be considered in the output
+        Parameters
+        ----------
+        d_model
+            the number of expected features in the transformer encoder/decoder inputs.
+            Last dimension of the input
+        dropout
+            Fraction of neurons affected by Dropout (default=0.1).
+        max_len
+            The dimensionality of the computed positional encoding array.
+            Only its first "input_size" elements will be considered in the output
 
+        Inputs
+        ------
+        x of shape `(batch_size, input_size, d_model)`
+            Tensor containing the embedded time series
 
-
-                Inputs
-                ------
-                x of shape `(batch_size, input_size, d_model)`
-                    Tensor containing the embedded time series
-
-                Outputs
-                -------
-                y of shape `(batch_size, input_size, d_model)`
-                    Tensor containing the embedded time series enhanced with positional encoding
-                """
+        Outputs
+        -------
+        y of shape `(batch_size, input_size, d_model)`
+            Tensor containing the embedded time series enhanced with positional encoding
+        """
         super(_PositionalEncoding, self).__init__()
         self.dropout = nn.Dropout(p=dropout)
 
