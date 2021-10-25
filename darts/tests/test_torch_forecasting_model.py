@@ -48,12 +48,15 @@ if TORCH_AVAILABLE:
             model1.save_model(path=os.path.join(self.temp_work_dir, model_name))
             patch_save_model.assert_called()
 
-        def test_aa_manual_save(self):
-            model_name = 'test_model'
-            model_manual_save = RNNModel('RNN', 10, 10, model_name=model_name + '_manual', work_dir=self.temp_work_dir,
-                                         save_checkpoints=False)
-            model_auto_save = RNNModel('RNN', 10, 10, model_name=model_name + '_automatic', work_dir=self.temp_work_dir,
-                                       save_checkpoints=True)
+        def test_manual_save_and_load(self):
+            """validate manual save with automatic save files by comparing output between the two"""
+
+            manual_name = 'test_save_manual'
+            auto_name = 'test_save_automatic'
+            model_manual_save = RNNModel('RNN', 10, 10, model_name=manual_name, work_dir=self.temp_work_dir,
+                                         save_checkpoints=False, random_state=42)
+            model_auto_save = RNNModel('RNN', 10, 10, model_name=auto_name, work_dir=self.temp_work_dir,
+                                       save_checkpoints=True, random_state=42)
 
             times = pd.date_range('20130101', '20130410')
             pd_series = pd.Series(range(100), index=times)
@@ -64,18 +67,36 @@ if TORCH_AVAILABLE:
 
             checkpoints_dir = os.path.join(self.temp_work_dir, 'checkpoints')
 
-            self.assertFalse(os.path.exists(os.path.join(checkpoints_dir, 'test_model_manual')))
-            self.assertTrue(os.path.exists(os.path.join(checkpoints_dir, 'test_model_automatic')))
+            # check that file was not created with manual save
+            self.assertFalse(os.path.exists(os.path.join(checkpoints_dir, manual_name)))
+            # check that file was created with automatic save
+            self.assertTrue(os.path.exists(os.path.join(checkpoints_dir, auto_name)))
 
-            out_path_manual = os.path.join(checkpoints_dir, 'test_model_manual')
+            # create manually saved model checkpoints folder
+            checkpoint_path_manual = os.path.join(checkpoints_dir, manual_name)
+            os.mkdir(checkpoint_path_manual)
 
-            os.mkdir(out_path_manual)
-            model_manual_save.save_model(os.path.join(out_path_manual, 'checkpoint_0.pth.tar'))
+            # save manually saved model
+            checkpoint_file_name = 'checkpoint_0.pth.tar'
+            model_path_manual = os.path.join(checkpoint_path_manual, checkpoint_file_name)
+            model_manual_save.save_model(model_path_manual)
+            self.assertTrue(os.path.exists(model_path_manual))
 
-            self.assertTrue(os.path.exists())
+            # load manual save model and compare with automatic model results
+            model_manual_save = RNNModel.load_model(model_path_manual)
+            self.assertEqual(model_manual_save.predict(n=4), model_auto_save.predict(n=4))
 
+            # load automatically saved model with manual load_model() and load_from_checkpoint()
+            model_path_automatic = os.path.join(checkpoints_dir, auto_name, checkpoint_file_name)
+            model_auto_save1 = RNNModel.load_model(model_path_automatic)
 
+            model_auto_save2 = RNNModel.load_from_checkpoint(model_name=auto_name,
+                                                             work_dir=self.temp_work_dir,
+                                                             best=False)
 
+            # compare manual load with manual save
+            self.assertEqual(model_manual_save.predict(n=4), model_auto_save1.predict(n=4))
+            self.assertEqual(model_manual_save.predict(n=4), model_auto_save2.predict(n=4))
 
         def test_create_instance_new_model_no_name_set(self):
             model = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir)

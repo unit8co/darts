@@ -951,11 +951,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(fin)
         return model
 
-    def _load_untrained_model(self, folder: str) -> 'TorchForecastingModel':
+    @staticmethod
+    def _load_untrained_model(folder: str) -> 'TorchForecastingModel':
         """loads the untrained model from path '{folder}/model.pth.tar'."""
 
         file_path = os.path.join(folder, 'model.pth.tar')
-        return self.load_model(file_path)
+        return TorchForecastingModel.load_model(file_path)
 
     def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)
@@ -972,19 +973,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             tb_writer = None
         return tb_writer
 
-    def load_from_checkpoint(self,
-                             model_name: str,
+    @staticmethod
+    def load_from_checkpoint(model_name: str,
                              work_dir: str = None,
                              file_name: str = None,
                              best: bool = True) -> 'TorchForecastingModel':
         """
-        Load the model from automatically saved checkpoints under '{work_dir}/{model_name}/'.
+        Load the model from automatically saved checkpoints under '{work_dir}/checkpoints/{model_name}/'.
         This method is used for models that were created with `save_checkpoints=True`.
         If you manually saved your model, consider using :meth:`load_model() <TorchForeCastingModel.load_model()>` .
 
-        If `file_name` is given, returns the model saved under '{work_dir}/{model_name}/{file_name}'
+        If `file_name` is given, returns the model saved under '{work_dir}/checkpoints/{model_name}/{file_name}'
         
-        If `file_name` is not given, will try to restore the most recent checkpoint from '{work_dir}/{model_name}'.
+        If `file_name` is not given, will try to restore the best checkpoint (if `best` is `True`) or the most
+        recent checkpoint (if `best` is `False`cfrom '{work_dir}/checkpoints/{model_name}'.
 
         Parameters
         ----------
@@ -1022,7 +1024,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         file_path = os.path.join(checkpoint_dir, file_name)
         print('loading {}'.format(file_name))
-        return self.load_model(file_path)
+        return TorchForecastingModel.load_model(file_path)
 
     def _get_best_torch_device(self):
         is_cuda = torch.cuda.is_available()
