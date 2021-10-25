@@ -567,23 +567,21 @@ class ForecastingModel(ABC):
         #     raise_if_not(series.has_same_time_as(covariates), 'The provided series and covariates must have the '
         #                                                       'same time axes.')
 
+
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
 
         #If n_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_samples != -1:
             if type(n_samples) == int:
-                raise_if_not((n_samples > 0) + (n_samples <= len(params_cross_product)),
+                raise_if_not((n_samples > 0) and (n_samples <= len(params_cross_product)),
                              "If supplied as an integer, n_samples must be greater than 0 and less than the cross product of the hyperparameters.")
             if type(n_samples) == float:
-                raise_if_not((n_samples > 0.0) + (n_samples < 1.0),
+                raise_if_not((n_samples > 0.0) and (n_samples < 1.0),
                              "If supplied as a float, n_samples must be greater than 0.0 and less than 1.0.")
 
-            # Select the absolute number of samples randomly if an integer has been supplied. If a float has been supplied, select a percentage
-            if type(n_samples) == int:
-                params_cross_product = random.sample(params_cross_product, n_samples)
-            elif type(n_samples) == float:
-                params_cross_product = random.sample(params_cross_product, int(n_samples * len(params_cross_product)))
+            params_cross_product = ForecastingModel._sample_params(params_cross_product, n_samples)
+            
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
@@ -674,6 +672,13 @@ class ForecastingModel(ABC):
 
         return residuals
 
+    @classmethod
+    def _sample_params(model_class, params, n_samples):
+        #Select the absolute number of samples randomly if an integer has been supplied. If a float has been supplied, select a percentage
+        if type(n_samples) == int:
+            return sample(params, n_samples)
+        elif type(n_samples) == float:
+            return sample(params, int(n_samples * len(params)))
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """ The base class for "global" forecasting models, handling several time series and optional covariates.
