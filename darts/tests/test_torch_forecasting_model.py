@@ -1,10 +1,12 @@
-from .base_test_class import DartsBaseTestClass
-from ..logging import get_logger
-from unittest.mock import patch
+import os
 import tempfile
 import shutil
 import pandas as pd
+
 from ..timeseries import TimeSeries
+from .base_test_class import DartsBaseTestClass
+from ..logging import get_logger
+from unittest.mock import patch
 
 logger = get_logger(__name__)
 
@@ -24,6 +26,56 @@ if TORCH_AVAILABLE:
 
         def tearDown(self):
             shutil.rmtree(self.temp_work_dir)
+
+        @patch('darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save_model')
+        def test_suppress_automatic_save(self, patch_save_model):
+            model_name = 'test_model'
+            model1 = RNNModel('RNN', 10, 10, model_name=model_name, work_dir=self.temp_work_dir, save_checkpoints=False)
+            model2 = RNNModel('RNN', 10, 10, model_name=model_name, work_dir=self.temp_work_dir, force_reset=True,
+                             save_checkpoints=False)
+
+            times = pd.date_range('20130101', '20130410')
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+            model1.fit(series, epochs=1)
+            model2.fit(series, epochs=1)
+
+            model1.predict(n=1)
+            model2.predict(n=2)
+
+            patch_save_model.assert_not_called()
+
+            model1.save_model(path=os.path.join(self.temp_work_dir, model_name))
+            patch_save_model.assert_called()
+
+        def test_aa_manual_save(self):
+            model_name = 'test_model'
+            model_manual_save = RNNModel('RNN', 10, 10, model_name=model_name + '_manual', work_dir=self.temp_work_dir,
+                                         save_checkpoints=False)
+            model_auto_save = RNNModel('RNN', 10, 10, model_name=model_name + '_automatic', work_dir=self.temp_work_dir,
+                                       save_checkpoints=True)
+
+            times = pd.date_range('20130101', '20130410')
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+
+            model_manual_save.fit(series, epochs=1)
+            model_auto_save.fit(series, epochs=1)
+
+            checkpoints_dir = os.path.join(self.temp_work_dir, 'checkpoints')
+
+            self.assertFalse(os.path.exists(os.path.join(checkpoints_dir, 'test_model_manual')))
+            self.assertTrue(os.path.exists(os.path.join(checkpoints_dir, 'test_model_automatic')))
+
+            out_path_manual = os.path.join(checkpoints_dir, 'test_model_manual')
+
+            os.mkdir(out_path_manual)
+            model_manual_save.save_model(os.path.join(out_path_manual, 'checkpoint_0.pth.tar'))
+
+            self.assertTrue(os.path.exists())
+
+
+
 
         def test_create_instance_new_model_no_name_set(self):
             model = RNNModel('RNN', 10, 10, work_dir=self.temp_work_dir)
