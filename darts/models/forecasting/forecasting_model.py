@@ -475,7 +475,7 @@ class ForecastingModel(ABC):
                    reduction: Callable[[np.ndarray], float] = np.mean,
                    verbose=False,
                    n_jobs: int = 1,
-                   n_samples: Union[int, float] = -1) -> Tuple['ForecastingModel', Dict]:
+                   n_samples: Optional[Union[int, float]] = None) -> Tuple['ForecastingModel', Dict]:
         """
         A function for finding the best hyper-parameters among a given set.
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -556,8 +556,8 @@ class ForecastingModel(ABC):
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
         n_samples
             The number of hyperparameter combininations to select from the full parameter grid. This will perform a random search
-            instead of the full grid. If n_samples is an inteeger it will select n)samples from the full range. If n_samples is a float between 0 and 1,
-            it will select n_samples percent of the full array. Setting n_samples to -1 means it will be ignored and the full hyperparameter range will be used.
+            instead of the full grid. If n_samples is an integer it will select n samples from the grid. If n_samples is a float between 0 and 1,
+            it will select n_samples percent of the grid. Setting n_samples to -1 means the full hyperparameter grid will be used.
 
         Returns
         -------
@@ -589,15 +589,15 @@ class ForecastingModel(ABC):
         params_cross_product = list(product(*parameters.values()))
 
         #If n_samples has been set, randomly select a subset of the full parameter cross product to search with
-        if n_samples != -1:
-            if type(n_samples) == int:
+        if n_samples is not None:
+            if isinstance(n_samples, int):
                 raise_if_not((n_samples > 0) and (n_samples <= len(params_cross_product)),
-                             "If supplied as an integer, n_samples must be greater than 0 and less than the cross product of the hyperparameters.")
+                             "If supplied as an integer, n_samples must be greater than 0 and less than or equal to the size of the cartesian product of the hyperparameters.")
             if type(n_samples) == float:
-                raise_if_not((n_samples > 0.0) and (n_samples < 1.0),
+                raise_if_not((n_samples > 0.0) and (n_samples <= 1.0),
                              "If supplied as a float, n_samples must be greater than 0.0 and less than 1.0.")
 
-            params_cross_product = ForecastingModel._sample_params(params_cross_product, n_samples)
+            params_cross_product = model_class._sample_params(params_cross_product, n_samples)
             
 
         # iterate through all combinations of the provided parameters and choose the best one
@@ -691,7 +691,8 @@ class ForecastingModel(ABC):
 
     @classmethod
     def _sample_params(model_class, params, n_samples):
-        #Select the absolute number of samples randomly if an integer has been supplied. If a float has been supplied, select a percentage
+        """Select the absolute number of samples randomly if an integer has been supplied. If a float has been
+        supplied, select a percentage"""
         if type(n_samples) == int:
             return sample(params, n_samples)
         elif type(n_samples) == float:
