@@ -555,9 +555,13 @@ class ForecastingModel(ABC):
             combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
         n_samples
-            The number of hyperparameter combininations to select from the full parameter grid. This will perform a random search
-            instead of the full grid. If n_samples is an integer it will select n samples from the grid. If n_samples is a float between 0 and 1,
-            it will select n_samples percent of the grid. Setting n_samples to -1 means the full hyperparameter grid will be used.
+            The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform 
+            a random search instead of using the full grid. 
+            If an integer, `n_samples` is the number of parameter combinations selected from the full grid and must
+            be between `0` and the total number of parameter combinations.
+            If a float, `n_samples` is the ratio of parameter combinations selected from the full grid and must be
+            between `0` and `1`.
+            Defaults to `None` for which random selection will be ignored.
 
         Returns
         -------
