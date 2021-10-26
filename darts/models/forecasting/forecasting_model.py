@@ -594,13 +594,6 @@ class ForecastingModel(ABC):
 
         #If n_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_samples is not None:
-            if isinstance(n_samples, int):
-                raise_if_not((n_samples > 0) and (n_samples <= len(params_cross_product)),
-                             "If supplied as an integer, n_samples must be greater than 0 and less than or equal to the size of the cartesian product of the hyperparameters.")
-            if type(n_samples) == float:
-                raise_if_not((n_samples > 0.0) and (n_samples <= 1.0),
-                             "If supplied as a float, n_samples must be greater than 0.0 and less than 1.0.")
-
             params_cross_product = model_class._sample_params(params_cross_product, n_samples)
             
 
@@ -696,11 +689,18 @@ class ForecastingModel(ABC):
     @classmethod
     def _sample_params(model_class, params, n_samples):
         """Select the absolute number of samples randomly if an integer has been supplied. If a float has been
-        supplied, select a percentage"""
-        if type(n_samples) == int:
+        supplied, select a fraction"""
+
+        if isinstance(n_samples, int):
+            raise_if_not((n_samples > 0) and (n_samples <= len(params)),
+                         "If supplied as an integer, n_samples must be greater than 0 and less than or equal to the size of the cartesian product of the hyperparameters.")
             return sample(params, n_samples)
-        elif type(n_samples) == float:
+
+        if isinstance(n_samples, float):
+            raise_if_not((n_samples > 0.0) and (n_samples <= 1.0),
+                         "If supplied as a float, n_samples must be greater than 0.0 and less than 1.0.")
             return sample(params, int(n_samples * len(params)))
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """ The base class for "global" forecasting models, handling several time series and optional covariates.
