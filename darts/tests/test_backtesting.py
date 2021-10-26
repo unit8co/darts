@@ -257,14 +257,14 @@ class BacktestingTestCase(DartsBaseTestClass):
             }
 
         model = RandomForest(lags=1)
-        result = model.gridsearch(params, dummy_series, forecast_horizon=1, n_samples=5)
+        result = model.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples=5)
 
         self.assertEqual(type(result[0]), RandomForest)
         self.assertEqual(type(result[1]['lags']), int)
         self.assertTrue(min(param_range) <= result[1]['lags'] <= max(param_range))
 
 
-    def test_gridsearch_n_samples_bad_arguments(self):
+    def test_gridsearch_n_random_samples_bad_arguments(self):
         ts_length = 50
         dummy_series = (
             lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
@@ -276,16 +276,16 @@ class BacktestingTestCase(DartsBaseTestClass):
             }
         
         with self.assertRaises(ValueError):
-            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_samples = -5)
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = -5)
         with self.assertRaises(ValueError):
-            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_samples = 105)
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = 105)
         with self.assertRaises(ValueError):            
-            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_samples = -24.56)
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = -24.56)
         with self.assertRaises(ValueError):
-            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_samples = 1.5)
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = 1.5)
 
 
-    def test_gridsearch_n_samples(self):
+    def test_gridsearch_n_random_samples(self):
         np.random.seed(1)
 
         params = {
