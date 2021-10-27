@@ -34,7 +34,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 from darts.utils.utils import raise_if_not
 
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import collections
 
 import numpy as np
@@ -61,6 +61,7 @@ from torch.distributions import (Normal as _Normal,
                                  )
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
+
 
 # Some utils for checking parameters' domains
 def _check(param, predicate, param_name, condition_str):
@@ -948,6 +949,93 @@ class WeibullLikelihood(Likelihood):
         k = self.softplus(model_output[:, :, output_size // 2:])
         return lmbda, k
 
+
+class QuantileRegression(Likelihood):
+    def __init__(self, quantiles: Optional[List[float]] = None):
+        """
+        The "likelihood" corresponding to quantile regression.
+        It uses the Quantile Loss Metric for custom quantiles centered around q=0.5.
+
+        This class can be used as any other Likelihood objects even though it is not
+        representing the likelihood of a well defined distribution.
+
+        Parameters:
+        -----------
+        quantiles
+            list of quantiles
+        """
+
+        super().__init__()
+        self.quantiles = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99] if quantiles is None else quantiles
+        self._check_quantiles(self.quantiles)
+        self.first = True
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        """
+        Select a quantile (for each batch example) and return this quantile (over time and components).
+
+        model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
+        """
+        batch_size = model_output.size()[0]
+        quantile = torch.randint(low=0, high=len(self.quantiles), size=(batch_size,)).to(model_output.device)
+        batch_idx = torch.tensor(range(len(self.quantiles))).to(model_output.device)
+        return model_output[batch_idx, :, :, quantile]
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.quantiles)
+
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
+        """
+        We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood
+
+        Parameters
+        ----------
+        model_output
+            must be of shape (n_samples, n_timesteps, n_target_variables, n_quantiles)
+        target
+            must be of shape (n_samples, n_timesteps, n_target_variables)
+        """
+
+        dim_q = 3
+
+        if self.first:  # test if torch model forward produces correct output
+            raise_if_not(len(model_output.shape) == 4 or len(target.shape) == 3 or
+                         model_output.shape[:2] != target.shape[:2],
+                         'mismatch between predicted and target shape')
+            raise_if_not(model_output.shape[dim_q] == len(self.quantiles),
+                         'mismatch between number of predicted quantiles and target quantiles')
+            self.first = False
+
+        losses = []
+        for i, q in enumerate(self.quantiles):
+            errors = target - model_output[..., i]
+            losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(dim_q))
+        losses = torch.cat(losses, dim=dim_q)
+        return losses.sum(dim=dim_q).mean()
+
+    @staticmethod
+    def _check_quantiles(quantiles):
+        raise_if_not(all([0 < q < 1 for q in quantiles]),
+                     'All provided quantiles must be between 0 and 1.')
+
+        # TODO: are those checks required, or can we have more arbitrary quantiles?
+        median_q = 0.5
+        raise_if_not(median_q in quantiles,
+                     'median quantile `q=0.5` must be in `quantiles`')
+        is_centered = [(median_q - left_q) == -(median_q - right_q)
+                       for left_q, right_q in zip(quantiles, quantiles[::-1])]
+        raise_if_not(all(is_centered),
+                     'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
+                     'higher than `q=0.5`')
+
+    def _distr_from_params(self, params: Tuple) -> torch.distributions.Distribution:
+        # This should not be called in this class (we are abusing Likelihood)
+        return None
+
+    def _params_from_output(self, model_output: torch.Tensor):
+        # This should not be called in this class (we are abusing Likelihood)
+        return None
 
 if False:
     """ TODO
