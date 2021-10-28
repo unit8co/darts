@@ -966,8 +966,13 @@ class QuantileRegression(Likelihood):
         """
 
         super().__init__()
-        self.quantiles = [0.01, 0.1, 0.25, 0.5, 0.75, 0.9, 0.99] if quantiles is None else quantiles
+        if quantiles is None:
+            self.quantiles = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5,
+                              0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99]
+        else:
+            self.quantiles = sorted(quantiles)
         self._check_quantiles(self.quantiles)
+        self._median_idx = self.quantiles.index(0.5)
         self.first = True
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
@@ -977,9 +982,22 @@ class QuantileRegression(Likelihood):
         model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
         """
         batch_size = model_output.size()[0]
-        quantile = torch.randint(low=0, high=len(self.quantiles), size=(batch_size,)).to(model_output.device)
+        device = model_output.device
+
+        quantiles = torch.tile(torch.tensor(self.quantiles), (batch_size, 1)).to(device)
+        probas = torch.tile(torch.rand(size=(batch_size,)), (len(self.quantiles), 1)).to(device)
+
+        quantile_idxs = torch.sum(probas.T > quantiles, axis=1)
+
+        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
+        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
+        # too often as it would capture the "probability buckets" preceding and following it.
+        #
+        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
+        quantile_idxs = torch.where(quantile_idxs <= self.median_idx, quantile_idxs, quantile_idxs - 1)
+
         batch_idx = torch.tensor(range(len(self.quantiles))).to(model_output.device)
-        return model_output[batch_idx, :, :, quantile]
+        return model_output[batch_idx, :, :, quantile_idxs]
 
     @property
     def num_parameters(self) -> int:
@@ -1019,7 +1037,8 @@ class QuantileRegression(Likelihood):
         raise_if_not(all([0 < q < 1 for q in quantiles]),
                      'All provided quantiles must be between 0 and 1.')
 
-        # TODO: are those checks required, or can we have more arbitrary quantiles?
+        # we require the median to be present and the quantiles to be symmetric around it,
+        # for correctness of sampling.
         median_q = 0.5
         raise_if_not(median_q in quantiles,
                      'median quantile `q=0.5` must be in `quantiles`')
