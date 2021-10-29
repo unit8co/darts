@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 
 try:
     from darts.models.forecasting.tft_model import TFTModel
-    from darts.models.forecasting.tft_submodels import QuantileLoss
+    from darts.utils.likelihood_models import QuantileRegression
     from torch.nn import MSELoss
 
     TORCH_AVAILABLE = True
@@ -22,27 +22,17 @@ except ImportError:
 if TORCH_AVAILABLE:
     class TFTModelTestCase(DartsBaseTestClass):
 
-        def test_model_creation_with_losses(self):
-            # MSELoss
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1, loss_fn=MSELoss())
-            self.assertEqual(model.loss_size, 1)
-
-            # QuantileLoss
-            q_valid = [0.1, 0.5, 0.9]
+        def test_quantile_regression(self):
             q_no_50 = [0.1, 0.4, 0.9]
             q_non_symmetric = [0.2, 0.5, 0.9]
 
-            # valid model creation
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1, loss_fn=QuantileLoss(quantiles=q_valid))
-            self.assertEqual(model.loss_size, len(q_valid))
-
             # if a QuantileLoss is used, it must have to q=0.5 quantile
             with self.assertRaises(ValueError):
-                TFTModel(input_chunk_length=1, output_chunk_length=1, loss_fn=QuantileLoss(quantiles=q_no_50))
+                QuantileRegression(q_no_50)
 
             # if a QuantileLoss is used, it must be symmetric around q=0.5 quantile (i.e. [0.1, 0.5, 0.9])
             with self.assertRaises(ValueError):
-                TFTModel(input_chunk_length=1, output_chunk_length=1, loss_fn=QuantileLoss(quantiles=q_non_symmetric))
+                QuantileRegression(q_non_symmetric)
 
         def test_prediction_shape(self):
             """checks whether prediction has same number of variable as input series and
@@ -106,7 +96,7 @@ if TORCH_AVAILABLE:
                 'n_epochs': 10,
                 'lstm_layers': 2,
                 'hidden_size': 32,
-                'loss_fn': QuantileLoss(quantiles=[0.1, 0.5, 0.9]),
+                'likelihood': QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
                 'random_state': 42
             }
 
@@ -208,8 +198,14 @@ if TORCH_AVAILABLE:
                       verbose=False)
 
             series = None if isinstance(ts_train, TimeSeries) else ts_train
+
             y_hat = model.predict(n=predict_n,
                                   series=series,
                                   past_covariates=past_covariates,
-                                  future_covariates=future_covariates)
+                                  future_covariates=future_covariates,
+                                  num_samples=100)
+            if isinstance(y_hat, TimeSeries):
+                y_hat = y_hat.quantile_timeseries(0.5)
+            else:
+                y_hat = [ts.quantile_timeseries(0.5) for ts in y_hat]
             return y_hat
