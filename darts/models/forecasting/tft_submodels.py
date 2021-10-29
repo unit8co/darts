@@ -20,64 +20,6 @@ USE_ADAPTION_RESAMPLE = False  # seems to work better without
 USE_ADAPTION_VSN = False  # seems to work better without
 
 
-class QuantileLoss(nn.Module):
-    """Quantile Loss Metric for custom quantiles centered around q=0.5
-
-    From: https://medium.com/the-artificial-impostor/quantile-regression-part-2-6fdbc26b2629"""
-
-    def __init__(self, quantiles: Optional[List[float]] = None):
-        """
-        Arguments:
-            quantiles: list of quantiles
-        """
-
-        super().__init__()
-        self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
-        self._check_quantiles(self.quantiles)
-        self.first = True
-
-    def forward(self, y_pred, y_true):
-        """
-        Parameters
-        ----------
-        y_pred
-            must be of shape (n_samples, n_timesteps, n_target_variables, n_quantiles)
-        y_true
-            must be of shape (n_samples, n_timesteps, n_target_variables)
-        """
-
-        dim_q = 3
-
-        if self.first:  # test if torch model forward produces correct output
-            raise_if_not(len(y_pred.shape) == 4 or len(y_true.shape) == 3 or y_pred.shape[:2] != y_true.shape[:2],
-                         'mismatch between predicted and target shape',
-                         logger)
-            raise_if_not(y_pred.shape[dim_q] == len(self.quantiles),
-                         'mismatch between number of predicted quantiles and target quantiles',
-                         logger)
-            self.first = False
-
-        losses = []
-        for i, q in enumerate(self.quantiles):
-            errors = y_true - y_pred[..., i]
-            losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(dim_q))
-        losses = torch.cat(losses, dim=dim_q)
-        return losses.sum(dim=dim_q).mean()
-
-    @staticmethod
-    def _check_quantiles(quantiles):
-        median_q = 0.5
-        raise_if_not(median_q in quantiles,
-                     'median quantile `q=0.5` must be in `quantiles`',
-                     logger)
-        is_centered = [(median_q - left_q) == -(median_q - right_q)
-                       for left_q, right_q in zip(quantiles, quantiles[::-1])]
-        raise_if_not(all(is_centered),
-                     'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
-                     'higher than `q=0.5`',
-                     logger)
-
-
 class _RNN(ABC, nn.RNNBase):
     """
     Base class flexible RNNs.

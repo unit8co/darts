@@ -981,7 +981,9 @@ class QuantileRegression(Likelihood):
 
         model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
         """
-        batch_size = model_output.size()[0]
+        batch_size, length = model_output.shape[:2]
+        model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
+
         device = model_output.device
 
         quantiles = torch.tile(torch.tensor(self.quantiles), (batch_size, 1)).to(device)
@@ -994,9 +996,9 @@ class QuantileRegression(Likelihood):
         # too often as it would capture the "probability buckets" preceding and following it.
         #
         # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
-        quantile_idxs = torch.where(quantile_idxs <= self.median_idx, quantile_idxs, quantile_idxs - 1)
+        quantile_idxs = torch.where(quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1)
 
-        batch_idx = torch.tensor(range(len(self.quantiles))).to(model_output.device)
+        batch_idx = torch.tensor(range(batch_size)).to(device)
         return model_output[batch_idx, :, :, quantile_idxs]
 
     @property
@@ -1010,12 +1012,15 @@ class QuantileRegression(Likelihood):
         Parameters
         ----------
         model_output
-            must be of shape (n_samples, n_timesteps, n_target_variables, n_quantiles)
+            must be of shape (batch_size, n_timesteps, n_target_variables, n_quantiles)
         target
             must be of shape (n_samples, n_timesteps, n_target_variables)
         """
 
         dim_q = 3
+
+        batch_size, length = model_output.shape[:2]
+        model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
 
         if self.first:  # test if torch model forward produces correct output
             raise_if_not(len(model_output.shape) == 4 or len(target.shape) == 3 or
@@ -1042,7 +1047,7 @@ class QuantileRegression(Likelihood):
         median_q = 0.5
         raise_if_not(median_q in quantiles,
                      'median quantile `q=0.5` must be in `quantiles`')
-        is_centered = [(median_q - left_q) == -(median_q - right_q)
+        is_centered = [-1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
                        for left_q, right_q in zip(quantiles, quantiles[::-1])]
         raise_if_not(all(is_centered),
                      'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
