@@ -40,7 +40,7 @@ def _shift_matrices(past_matrix: Optional[np.ndarray],
                     future_matrix: np.ndarray) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Given two matrices, consumes the first column of the past_matrix (if available), and moves the first column of
-    the future_matrix to the end of the future_matrix. This can be seen as a time shift, sending the new past value
+    the future_matrix to the end of the past_matrix. This can be seen as a time shift, sending the new past value
     to the past_matrix. `None` will be returned in case a matrix is empty after performing the operation.
     """
     raise_if(future_matrix is None,
@@ -50,8 +50,6 @@ def _shift_matrices(past_matrix: Optional[np.ndarray],
 
     if past_matrix is not None:
         past_matrix = past_matrix[:, 1:, :] if past_matrix.shape[1] > 1 else None
-
-    if past_matrix is not None:
         new_past_matrix = [past_matrix]
 
     first_future = future_matrix[:, 0, :]
@@ -250,7 +248,7 @@ class RegressionModel(GlobalForecastingModel):
         for past_target, past_covariate, historic_future_covariate, future_covariate, future_target in training_dataset:
             row = []
             if self.lags is not None:
-                row.append(past_target[self.lags].T)
+                row.append(past_target[self.lags].reshape(1, -1))
             covariates = [
                 (past_covariate, self.lags_past_covariates),
                 (historic_future_covariate, self.lags_historical_covariates),
@@ -261,10 +259,10 @@ class RegressionModel(GlobalForecastingModel):
                     row.append(covariate[lags].reshape(1, -1))
 
             training_samples.append(np.concatenate(row, axis=1))
-            training_labels.append(future_target[0])
+            training_labels.append(future_target[0].reshape(1, -1))
 
         training_samples = np.concatenate(training_samples, axis=0)
-        training_labels = np.concatenate(training_labels, axis=0).ravel()
+        training_labels = np.concatenate(training_labels, axis=0)
         return training_samples, training_labels
 
     def _create_lagged_data(self, target_series, past_covariates, future_covariates, max_samples_per_ts):
@@ -379,8 +377,7 @@ class RegressionModel(GlobalForecastingModel):
         for (past_target, past_covariates, historic_future_covariates, future_covariates,
              future_past_covariates, _) in prediction_dataset:
 
-            # past target will have ndim = 2 (time, dim), we remove dim since we have the univariate assumption
-            target_matrix.append(past_target.ravel())
+            target_matrix.append(past_target)
 
             if past_covariates is not None:
                 past_covariates_matrix.append(past_covariates)
@@ -495,7 +492,7 @@ class RegressionModel(GlobalForecastingModel):
             output_chunk_length=1
         )
 
-        # ------------------
+        # all matrices have dimensions (n_series, time, n_components)
         (
             target_matrix,
             past_covariates_matrix,
@@ -513,11 +510,12 @@ class RegressionModel(GlobalForecastingModel):
         series (when multivariate).
         """
         for i in range(n):
-            # building training matrix
+            # building prediction matrix
             X = []
             if self.lags is not None:
                 target_series = target_matrix[:, self.lags]
-                X.append(target_series)
+
+                X.append(target_series.reshape(len(series), -1))
 
             covariates_matrices = [
                 (past_covariates_matrix, self.lags_past_covariates),
@@ -528,11 +526,12 @@ class RegressionModel(GlobalForecastingModel):
             for covariate_matrix, lags in covariates_matrices:
                 if lags is not None:
                     covariates = covariate_matrix[:, lags]
-                    X.append(covariates.reshape(covariates.shape[0], -1))
+                    X.append(covariates.reshape(len(series), -1))
 
             X = np.concatenate(X, axis=1)
             prediction = self.model.predict(X, **kwargs)
-            prediction = prediction.reshape(-1, 1)
+            # reshape to (n_series, time (always 1), n_components)
+            prediction = prediction.reshape(len(series), 1, -1)
             # appending prediction to final predictions
             predictions.append(prediction)
 
