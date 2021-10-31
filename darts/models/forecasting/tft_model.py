@@ -334,6 +334,7 @@ class _TFTModule(nn.Module):
         # do not attend to steps where data is padded
         encoder_mask = self.create_mask(encoder_lengths.max(), encoder_lengths)
         # combine masks along attended time - first encoder and then decoder
+
         mask = torch.cat(
             (
                 encoder_mask.unsqueeze(1).expand(-1, decoder_length, -1),
@@ -398,10 +399,14 @@ class _TFTModule(nn.Module):
 
         # batch_size = x.shape[0]
         encoder_lengths = torch.tensor(
-            [self.input_chunk_length] * x_cont_past.shape[dim_samples], dtype=past_target.dtype
+            [self.input_chunk_length] * x_cont_past.shape[dim_samples], 
+            dtype=past_target.dtype,
+            device=past_target.device
         )
         decoder_lengths = torch.tensor(
-            [self.output_chunk_length] * x_cont_future.shape[dim_samples], dtype=past_target.dtype
+            [self.output_chunk_length] * x_cont_future.shape[dim_samples], 
+            dtype=past_target.dtype,
+            device=past_target.device
         )
 
         timesteps = self.input_chunk_length + self.output_chunk_length
