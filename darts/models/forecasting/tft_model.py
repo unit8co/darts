@@ -20,15 +20,33 @@ from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
     TorchParametricProbabilisticForecastingModel
 )
+
+from pytorch_forecasting.models.temporal_fusion_transformer.sub_modules import (
+    AddNorm as _AddNorm,
+    GateAddNorm as _GateAddNorm,
+    GatedLinearUnit as _GatedLinearUnit,
+    GatedResidualNetwork as _GatedResidualNetwork,
+    InterpretableMultiHeadAttention as _InterpretableMultiHeadAttention,
+    VariableSelectionNetwork as _VariableSelectionNetwork,
+)
+
+from pytorch_forecasting.models.nn.rnn import (
+    LSTM as _LSTM,
+)
+
+from pytorch_forecasting.models.nn.embeddings import (
+    MultiEmbedding as _MultiEmbedding
+)
+
 from darts.models.forecasting.tft_submodels import (
-    _AddNorm,
-    _GateAddNorm,
-    _GatedLinearUnit,
-    _GatedResidualNetwork,
-    _InterpretableMultiHeadAttention,
-    _VariableSelectionNetwork,
-    _LSTM,
-    _MultiEmbedding,
+    # _AddNorm,
+    # _GateAddNorm,
+    # _GatedLinearUnit,
+    # _GatedResidualNetwork,
+    # _InterpretableMultiHeadAttention,
+    # _VariableSelectionNetwork,
+    # _LSTM,
+    # _MultiEmbedding,
     QuantileLoss
 )
 
@@ -52,7 +70,6 @@ class _TFTModule(nn.Module):
                  hidden_continuous_size: int = 8,
                  dropout: float = 0.1,
                  loss_fn: nn.Module = QuantileLoss(),
-                 share_single_variable_networks: bool = False,
                  likelihood: Optional[Likelihood] = None):
 
         """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -84,8 +101,6 @@ class _TFTModule(nn.Module):
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
             Per default the TFT uses quantile loss as defined in the original paper.
             Default: `darts.models.forecasting.tft_submodels.QuantileLoss()`.
-        share_single_variable_networks : bool
-            if to share the single variable networks between the encoder and decoder. Defaults to False.
         """
 
         super(_TFTModule, self).__init__()
@@ -100,7 +115,6 @@ class _TFTModule(nn.Module):
         self.attention_head_size = attention_head_size
         self.dropout = dropout
         self.loss_fn = loss_fn
-        self.share_single_variable_networks = share_single_variable_networks
         self.likelihood = likelihood
 
         # general information on variable name endings:
@@ -113,17 +127,9 @@ class _TFTModule(nn.Module):
 
         # # processing inputs
         # continuous variable processing
-        self.prescalers_linear = nn.ModuleDict(
-            {
-                name: nn.Linear(1, self.hidden_continuous_size)
-                for name in self.reals
-            }
-        )
+        self.prescalers_linear = {name: nn.Linear(1, self.hidden_continuous_size) for name in self.reals}
 
-        static_input_sizes = {
-            name: self.hidden_continuous_size
-            for name in self.static_variables
-        }
+        static_input_sizes = {name: self.hidden_continuous_size for name in self.static_variables}
 
         self.static_covariates_vsn = _VariableSelectionNetwork(
             input_sizes=static_input_sizes,
@@ -131,7 +137,7 @@ class _TFTModule(nn.Module):
             input_embedding_flags={},  # this would be required for categorical inputs
             dropout=self.dropout,
             prescalers=self.prescalers_linear,
-            single_variable_grns=None,
+            single_variable_grns={},
             context_size=None  # no context for static variables
         )
 
@@ -140,25 +146,6 @@ class _TFTModule(nn.Module):
 
         decoder_input_sizes = {name: self.hidden_continuous_size for name in self.decoder_variables}
 
-        # create single variable grns that are shared across decoder and encoder
-        if self.share_single_variable_networks:
-            self.shared_single_variable_grns = nn.ModuleDict()
-            for name, input_size in encoder_input_sizes.items():
-                self.shared_single_variable_grns[name] = _GatedResidualNetwork(
-                    input_size=input_size,
-                    hidden_size=min(input_size, self.hidden_size),
-                    output_size=self.hidden_size,
-                    dropout=self.dropout
-                )
-            for name, input_size in decoder_input_sizes.items():
-                if name not in self.shared_single_variable_grns:
-                    self.shared_single_variable_grns[name] = _GatedResidualNetwork(
-                        input_size=input_size,
-                        hidden_size=min(input_size, self.hidden_size),
-                        output_size=self.hidden_size,
-                        dropout=self.dropout,
-                    )
-
         self.encoder_vsn = _VariableSelectionNetwork(
             input_sizes=encoder_input_sizes,
             hidden_size=self.hidden_size,
@@ -166,7 +153,7 @@ class _TFTModule(nn.Module):
             dropout=self.dropout,
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
-            single_variable_grns={} if not self.share_single_variable_networks else self.shared_single_variable_grns
+            single_variable_grns={}
         )
 
         self.decoder_vsn = _VariableSelectionNetwork(
@@ -177,8 +164,6 @@ class _TFTModule(nn.Module):
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
             single_variable_grns={}
-            if not self.share_single_variable_networks
-            else self.shared_single_variable_grns,
         )
 
         # static encoders
@@ -581,7 +566,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  dropout: float = 0.1,
                  loss_fn: Optional[nn.Module] = QuantileLoss(),
                  hidden_continuous_size: int = 8,
-                 share_single_variable_networks: bool = False,
                  likelihood: Optional[Likelihood] = None,
                  max_samples_per_ts: Optional[int] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
@@ -625,8 +609,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             <darts.models.forecasting.tft_submodels.QuantileLoss>`
         hidden_continuous_size : int
             default for hidden size for processing continuous variables (similar to categorical embedding size)
-        share_single_variable_networks : bool
-            if to share the single variable networks between the encoder and decoder. Defaults to False.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -691,7 +673,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.loss_size = 1 if not isinstance(loss_fn, QuantileLoss) else len(loss_fn.quantiles)
         self.attention_head_size = attention_head_size
         self.hidden_continuous_size = hidden_continuous_size
-        self.share_single_variable_networks = share_single_variable_networks
         self.likelihood = likelihood
         self.max_sample_per_ts = max_samples_per_ts
         self.output_dim: Tuple[int, int] = None
@@ -787,7 +768,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             dropout=self.dropout,
             attention_head_size=self.attention_head_size,
             hidden_continuous_size=self.hidden_continuous_size,
-            share_single_variable_networks=self.share_single_variable_networks,
             likelihood=self.likelihood
         )
 
