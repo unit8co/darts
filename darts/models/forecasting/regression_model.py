@@ -296,6 +296,9 @@ class RegressionModel(GlobalForecastingModel):
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts)
 
+        # if training_labels is of shape (n_samples, 1) we flatten it to have shape (n_samples,)
+        if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
+            training_labels = training_labels.ravel()
         self.model.fit(training_samples, training_labels, **kwargs)
 
     def fit(
