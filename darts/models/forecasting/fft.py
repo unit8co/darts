@@ -171,7 +171,7 @@ def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) 
         return series
 
     first_ts = series.time_index[0]
-    freq = first_ts.freq
+    freq = series.freq
     pred_ts = series.time_index[-1] + freq
 
     # start at first timestamp of given series and move forward until a matching timestamp is found
