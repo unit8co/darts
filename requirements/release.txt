@@ -1,12 +1,13 @@
 # docs
-jinja2==2.11.3
-sphinx==3.2.1
+jinja2==3.0.2
+sphinx==4.2.0
 sphinx-automodapi==0.13
-sphinx_autodoc_typehints==1.11.1
-nbsphinx==0.8.0
-pydata-sphinx-theme==0.4.1
+sphinx_autodoc_typehints==1.12.0
+nbsphinx==0.8.7
+pydata-sphinx-theme==0.7.1
 recommonmark==0.7.1
-m2r2==0.3.0
+m2r2==0.3.1
+docutils<=0.17.1
 
 # publish
 twine==3.3.0
