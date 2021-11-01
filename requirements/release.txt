@@ -7,6 +7,7 @@ nbsphinx==0.8.0
 pydata-sphinx-theme==0.4.1
 recommonmark==0.7.1
 m2r2==0.3.0
+docutils<=0.17.1
 
 # publish
 twine==3.3.0
