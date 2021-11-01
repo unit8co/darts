@@ -179,8 +179,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         training_samples, training_labels = model_instance._get_training_data(training_dataset=training_dataset)
 
         # checking number of dimensions
-        self.assertEqual(len(training_samples.shape), 2)
-        self.assertEqual(len(training_labels.shape), 1)
+        self.assertEqual(len(training_samples.shape), 2)  # samples, features
+        self.assertEqual(len(training_labels.shape), 2)  # samples, components (multivariate)
         self.assertEqual(training_samples.shape[0], training_labels.shape[0])
         self.assertEqual(training_samples.shape[1],
                          len(self.lags_1) + len(self.lags_past_covariates_1) * 2 + len(self.lags_future_covariates_1))
@@ -223,7 +223,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(matrix.shape[0], 1)  # we are training on a single ts
 
         # checking matrices dimensions
-        self.assertEqual(target_matrix.ndim, 2)  # samples, time (univariate)
+        self.assertEqual(target_matrix.ndim, 3)  # samples, time, dim (multivariate)
         self.assertEqual(past_covariates_matrix.ndim, 3)  # samples, time, dim (could be multivariate)
         self.assertEqual(historic_future_covariates_matrix.ndim, 3)  # same
         self.assertEqual(future_covariates_matrix.ndim, 3)  # same
