@@ -1,14 +1,44 @@
 # Darts Covariates
 
 ## Overview
+### Summary - TL;DR
+In Darts, **covariates** refer to external data that can be used as inputs to models.
+In the context of forecasting models, the **target** is the series to be forecasted/predicted, and the
+covariates themselves are not predicted. We distinguish two kinds of covariates: 
+
+* **past covariates** are (by definition) covariates known only into the past (e.g. measurements)
+* **future covariates** are (by definition) covariates known into the future (e.g., weather forecasts)
+
+Models in Darts accept `past_covariates` and/or `future_covariates` in their `fit()` and `predict()` methods, 
+depending on their capabilities (some models accept no covariates at all). At the moment in Darts, all covariates
+have to be `TimeSeries` themselves. We are also working on supporting **static covariates** but it's not the
+case yet. Models supporting covariates expect one covariate series per target series (i.e., one `past_covariates`
+series per target series and/or one `future_covariates` series per target series.). If you have several covariate
+values that you want to use; e.g., as past covariates, you should `stack()` them together in a single `TimeSeries` 
+first.
+
+If you train a model using `past_covariates`, you'll have to also provide the `past_covariates` at
+prediction time, and similarly for `future_covariates`. The nuance is that `future_covariates` have to extend far 
+enough into the future at prediction time (all the way to the forecast horizon).
+
+![figure0](./static/images/covariates/highlevel.png)
+
+There are some extra nuances that might be good to know. For instance, deep learning models in Darts
+can (in general) forecast `output_chunk_length` points at a time. However it is still possible for models 
+trained with past covariates to make forecasts for some horizon `n > output_chunk_length` if the `past_covariates`
+are known far enough into the future. In such cases, the forecasts are obtained by consuming future values
+of the past covariates, and using auto-regression on the target series. If you want to know more details, read on.
+
+
+### Content of this document
 
 [Section 1](#1-introduction) and [section 2](#2-darts-xcovariatesmodels) cover the most important points:
 
 - What are covariates in general and in Darts
 - How to find out which type of covariate your variable is
-- Intro to Darts' `XCovariatesModel` and which covariate types they support
+- Intro to Darts' `{X}CovariatesModel` and which covariate types they support
 - Covariate support for each of Darts' forecasting models
-- How to use covariates in Darts' Standard and Torch Forecasting Models
+- How to use covariates in Darts' Standard and Torch Forecasting Models (deep learning moels)
 
 [Section 3](#3-in-depth-look-at-how-past-and-future-covariates-are-used-in-a-sequential-torch-forecasting-model) gives
 an in-depth guide of how covariates are used in Darts' Torch Forecasting Models and which requirements they have to
@@ -18,42 +48,49 @@ fulfil.
 
 ## 1.1. What are covariates (in Darts)?
 
-- covariates provide additional information/context that can be useful to improve the prediction of the target variable.
-- covariates can hold information about the past (including present time) or future. This is always relative to the
-  prediction point (in time) after which we want to forecast the future.
-    - past covariates example: daily average **measured** temperature of the last 7 days before prediction time
-    - future covariates example: **estimated** temperature of the next day after prediction time
-- covariates can be time-varying or static (static not yet supported in Darts)
-    - time-varying example: daily average measured temperature over the course of a year for several named cities
-    - static example: the name of each city `city_name` that does not change over time
-- we do not predict the covariates themselves, only use them for prediction of other variables (target variables).
-    - example: use past ice-cream sales (past target), daily average measured temperature of the last 7 days
-      (past covariate) and estimated temperature of the next day (future covariate) to predict ice-cream sales of the
-      next day (future target).
+- Covariates provide additional information/context that can be useful to improve the prediction of the target series.
+- Covariates can hold information about the past (upto and including present time) or future. 
+  This is always relative to the prediction point (in time) after which we want to forecast the future.
+    - Past covariates example: daily average **measured** traffic in neighboring stores for the last 7 days 
+      before prediction time
+    - Future covariates example: **estimated** temperature of the next day after prediction time
+- Covariates can be time-varying or static (static not yet supported in Darts)
+    - Time-varying example: daily average measured temperature over the course of a year for several named cities
+    - Static example: location of each city, which does not change over time
+- We do not predict the covariates themselves, only use them for prediction of other variables (target series).
+    - Example: use past ice-cream sales (past target), daily average measured traffic in a neighboring store for
+      the last 7 days (past covariate) and estimated temperature of the next day (future covariate) 
+      to predict ice-cream sales of the next day (future target).
 
 ## 1.2. A few notes on using covariates with Darts' models
 
-- if you want to use covariates, you can find out which type you have by
+- If you want to use covariates, you can find out which type you have by
   reading [section 1.3](#13-how-to-determine-what-type-of-covariates-you-have)
-- each model has a unique support of covariates. Some do not support covariates at all, others support either past or
+- Models have different support modes for covariates. Some do not support covariates at all, others support either past or
   future covariates and some support both.
-    - find the models' covariates support in [section 2](#2-darts-xcovariatesmodels), or in
-      the [Darts Documentation](https://unit8co.github.io/darts/README.html#forecasting-models).
-- there are currently five different `XCovariateModel` classes implemented in Darts that cover all combinations of past
+    - Find the (detailed) models' covariates support in [section 2](#2-darts-xcovariatesmodels), or a summary in
+      the [README](https://unit8co.github.io/darts/README.html#forecasting-models).
+- There are currently five different `{X}CovariatesModel` classes implemented in Darts that cover all combinations of past
   and future covariates. We will look at those later on in [section 2](#2-darts-xcovariatesmodels).
-    - each forecasting model inherits from exactly one `CovariateModel`.
-    - example: if you fit with past_covariates only, you must predict with past_covariates only
-- independent of which model you choose, past and future covariates are supplied as optional
-  parameters `past_covariates` and `future_covariates` to `fit()` and `predict()`:
-    - more on that later on
-- whenever past and/or future covariates are used during training with `fit()`, the same types of covariates must be
+    - Each forecasting model inherits from exactly one `{X}CovariatesModel` type.
+- Independent of which model you choose, past and future covariates are supplied as optional
+  parameters `past_covariates` and `future_covariates` to `fit()` and `predict()`; more on that later on.
+- Whenever past and/or future covariates are used during training with `fit()`, the same types of covariates must be
   supplied to the prediction/forecast with `predict()` as well.
+    - Example: if you fit with `past_covariates` only, you must predict with `past_covariates` only
 
 ## 1.3. How to determine what type of covariates you have
 
-Sometimes it can be tricky to distinguish between past and future covariates. Especially when you start training your
-model and might have to supply future covariates for the past, or you make a prediction and might have to supply past
-covariates for the future.
+Here's a simple rule-of-thumb to know if your series are past or future covariates:
+
+*If the values are known in advance, it is a future covariates. If they are not, it is a past covariates.*
+
+There are some subtleties, however. You might imagine cases where you want to train a model supporting only
+`past_covariates` (such as `TCNModel`). In this case, you could use for instance, say, the temperature as a
+past covariates for the model *even though you also have access to temperature forecasts in the future*. Knowing
+such "future values of past covariates" can allow you to make forecasts further into the future (for horizons
+`n > output_chunk_length`). Similarly most models consuming future covariates can also use "historic values of future
+covariates". 
 
 Figure 1 shows all variable types defined in Darts. The left side of the picture represents the past relative to the
 prediction point, the right side the future.
@@ -61,45 +98,41 @@ prediction point, the right side the future.
 The **target variable** is the variable we want to predict. Using past data of the target variable (**past target**), we
 predict the next `n` target variable points (**future target**).
 
-**Covariates** can help improve future target predictions by supplying additional information/context. There are two **
+As explained above, **covariates** can help improve future target predictions by supplying additional information/context. There are two **
 main types** of covariates with each having one **counter-part** (see Figure 1):
 
 - **past covariates**: variables known in the past before the prediction point
-    - future **past covariates**: future data of past covariates after the prediction point required for predicting
+    - "future past covariates": future data of past covariates after the prediction point required for predicting
       longer time horizons with certrain forecasting models.
 - **future covariates**: variables known in the future after the prediction point
-    - historic **future covariates**: past/historic data of future covariates before the prediction point
+    - "historic future covariates": past/historic data of future covariates before the prediction point, which
+      can be consumed by certain models.
 
 [Section 2](#2-darts-xcovariatesmodels) will describe which covariate types are supported by each model.
 
-The main type and its counter-part **always describe the same explanatory/context variables**, they just describe **
-different points in time relative to the prediction point** (e.g. main type describes past of variable, the counter-part
-describes future in relation to the prediction point).
-
-Don't worry, this will soon become much more clear.
-
 ![figure1](./static/images/covariates/all_variable_types.png)
 
-#### Figure 1: all variable types defined in Darts' forecasting models
+**Figure 1: all variable types defined in Darts' forecasting models**
 
+### 1.3.1 Example of how to identify covariates types
 A good way to identify the **main** type of your covariates is to **think about what data is available in the
 past/future when doing the actual prediction/forecast**.
 
-Let's take the example from above with using daily average measured and estimated temperatures (covariates) and past
-ice-cream sales (past target) to predict ice-cream sales of the following day (future target). Further we assume that
-today (prediction time) is Sunday, our lookback window is 7 days (input chunk in Figure 1), and we want to predict
-ice-cream sales for tomorrow (Monday, output chunk in Figure 1).
+Let's take the example from above, where we'll try to forecast sales for an ice-cream stand (target) for the
+day ahead, using 7 days of sales history (past target), as well as both the affluence in a neighboring stand, 
+as well as temperatures (covariates). 
 
 We go through these thoughts in chronological order. First we ask ourselves if data is available for the future, and
 second if data is available for the past:
 
-- **measured** temperature variable
-    1. do we have **measured** temperature data for tomorrow (the future)? No -> this cannot be a future covariate
-    2. do we have **measured** temperature data for the past 7 days? Yes -> so this must be a past covariate without a
+- **measured** traffic in neighboring stands
+    1. do we have **measured** traffic data for tomorrow (the future)? No -> this cannot be a future covariate
+    2. do we have **measured** traffic data for the past 7 days? Yes -> so this must be a past covariate without a
        future counter-part
 - **estimated** temperature variable
-    1. do we have **estimated** temperature data for tomorrow? Yes -> this can definitely be used as a future covariate
-       but could still be used as a past covariate if data is also available for the past
+    1. do we have **estimated** temperature data for tomorrow? Yes (e.g. from weather forecasts) -> this can 
+       definitely be used as a future covariate and could also be used as a past covariate if data is also 
+       available for the past
     2. do we have **estimated** temperature data for the past 7 days? (Let's say) No -> this must be a future covariate
        without a historic counter-part
     2. same question as 2. but let's say Yes -> the past 7 days can either be used as a historic future covariate and we
@@ -107,33 +140,36 @@ second if data is available for the past:
        covariate without the historic counter-part **OR** we ignore the future part (tomorrow) and regard the variable
        as a past covariate.
 
-### Some key points can be drawn from this:
+(Side note: if you don't have future values (e.g. of measured traffic), nothing prevents you from applying
+one of Darts forecasting models to forecast future traffic, and then use this as a future covariate. Darts is
+not attempting to forecast the covariates for you, as this would introduce an extra "hidden" modeling step, which
+we think is best left to the users.)
 
-- if we don't have future data of the variable, it must be a past covariate.
-- if we only have future data of the variable, it must be a future covariate without the historic counter-part
-- if we have past and future data of the variable we can use the variable in three different ways:
-    - as a future covariate with a historic counter-part by including both future and past
-    - as a future covariate without historic counter-part by ignoring the past
-    - as a past covariate with a future counter-part by including both past and future
 
-For this particular example it wouldn't make much sense to use the historic part (the last 7 days) of our **estimated**
-temperature as we actually have the **measured** temperature for the past. So we decide to ignore the past and
-regard the **estimated** temperature as a **future covariate** without its historic counter-part.
+### Some key points can be drawn from this
 
-## Why it can be useful to have different options on how to use future covariates:
+- If we don't have future data of the variable, it must be a past covariate.
+- If we only have future data of the variable, it must be a future covariate without the historic counter-part.
+- If we have past and future data of the variable we can use the variable in three different ways:
+    - As a future covariate with a historic counter-part by including both future and past.
+    - As a future covariate without historic counter-part by ignoring the past.
+    - As a past covariate with a future counter-part by including both past and future.
+
+## Why it can be useful to have different options on how to use future covariates
 
 We saw two important facts before:
 
-- future covariates with historic information can be regarded as past covariates
-- past covariates without future information cannot be regarded as future covariates
+- Future covariates with historic information can also be used as past covariates if desired,
+- However past covariates without future information cannot be regarded as future covariates.
 
-As mentioned in [section 1.2.](#12-a-few-notes-on-using-covariates-with-darts-models), each model supports its own
-subset of covariate types. For example: if a model only supports past covariates, future covariates could be regarded as
+As mentioned in [section 1.2.](#12-a-few-notes-on-using-covariates-with-darts-models), Models offer different
+support for covariates. For example: if a model only supports past covariates, future covariates could be regarded as
 past covariates to be able to use the model. In the next section we look at the models in more detail.
 
-## 2. Darts' `XCovariatesModels`
+## 2. Darts Covariates-aware Models
 
-Darts has 5 types of `CovariateModel` classes implemented to cover different combinations of covariate types.
+Under the hood, Darts has 5 types of `{X}CovariateModel` classes implemented to cover different 
+combinations of covariate types.
 
 Class | past covariates | future past covariates | future covariates | historic future covariates
 --- | --- | --- | --- | ---
@@ -143,10 +179,11 @@ Class | past covariates | future past covariates | future covariates | historic 
 `MixedCovariatesModel` | ✅ | ✅ | ✅ | ✅ |
 `SplitCovariatesModel` | ✅ | ✅ | ✅ |  |
 
-#### Table 1: Darts' `XCovariatesModels` covariate support
+**Table 1: Darts' `{X}CovariatesModels` covariate support**
 
-Each of Darts' forecasting model inherits from maximum one `XCovariateModel`. In Table 2 below you can find all models
-with their corresponding `XCovariateModel`. Covariate class names are abbreviated by the `X`-part.
+Each of Darts' forecasting model inherits from at most one `{X}CovariatesModel`. 
+In Table 2 below you can find all models
+with their corresponding `{X}CovariatesModel`. Covariate class names are abbreviated by the `X`-part.
 
 Additionally, the 2nd and 3rd table columns indicate whether the model is a standard forecasting model or a neural
 network based forecasting model (Torch).
@@ -168,7 +205,7 @@ Model | Standard <br /> Forecasting Model | Torch <br /> Forecasting Model | `Pa
 `TransformerModel` |  | 🟢 | ✅ |  |  |  |  |
 `TFT` |  | 🟢 |  |  |  | ✅ |  |
 
-#### Table 2: Darts' forecasting models and their `XCovariateModel`
+**Table 2: Darts' forecasting models and their `{X}CovariatesModel`**
 
 `*` models that do not support covariates
 
