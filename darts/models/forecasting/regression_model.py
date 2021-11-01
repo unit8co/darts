@@ -27,6 +27,7 @@ import numpy as np
 
 from darts.timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
+from sklearn.multioutput import MultiOutputRegressor
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.logging import raise_if, raise_if_not, get_logger, raise_log
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
@@ -48,9 +49,9 @@ def _shift_matrices(past_matrix: Optional[np.ndarray],
 
     new_past_matrix = []
 
-    if past_matrix is not None:
-        past_matrix = past_matrix[:, 1:, :] if past_matrix.shape[1] > 1 else None
-        new_past_matrix = [past_matrix]
+    # if more than one timestep in past_matrix add all except for the oldest timestep to new_past_matrix
+    if past_matrix.shape[1] > 1:
+        new_past_matrix.append(past_matrix[:, 1:, :])
 
     first_future = future_matrix[:, 0, :]
     first_future = first_future.reshape(first_future.shape[0], 1, first_future.shape[1])
@@ -98,7 +99,8 @@ class RegressionModel(GlobalForecastingModel):
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
         model
-            Scikit-learn-like model with `fit()` and `predict()` methods.
+            Scikit-learn-like model with `fit()` and `predict()` methods. Also possible to use model that doesn't
+            support multi-output regression for multivariate timeseries.
             If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1)`
         """
 
@@ -309,19 +311,21 @@ class RegressionModel(GlobalForecastingModel):
 
         Parameters
         ----------
-        series
+        series : TimeSeries or list of TimeSeries
             TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates
+        past_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates
+        future_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, a series or sequence of series specifying future-known covariates
-        max_samples_per_ts
+        max_samples_per_ts : int, optional
             This is an integer upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
             ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to the `fit` method of the model.
         """
         super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
 
@@ -357,6 +361,10 @@ class RegressionModel(GlobalForecastingModel):
                     covariates_dim += covariates[0].width
 
         self.input_dim = series_dim + covariates_dim
+
+        # if series is multivariate wrap model with MultiOutputRegressor
+        if not series[0].is_univariate:
+            self.model = MultiOutputRegressor(self.model, n_jobs=1)
 
         self._fit_model(series, past_covariates, future_covariates, max_samples_per_ts, **kwargs)
 
@@ -417,20 +425,21 @@ class RegressionModel(GlobalForecastingModel):
         ----------
         n : int
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
-        series
+        series : TimeSeries or list of TimeSeries, optional
             Optionally, one or several input `TimeSeries`, representing the history of the target series whose future
             is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
             returns the forecast of the (single) training series.
-        past_covariates
+        past_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, the past-observed covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
-        future_covariates
+        future_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
-        num_samples
+        num_samples : int, default: 1
             Currently this parameter is ignored for regression models.
-        **kwargs
-            Additional keyword arguments passed to the `predict` method of the model.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to the `predict` method of the model. Only works with
+            univariate target series.
         """
         super().predict(n, series, past_covariates, future_covariates, num_samples)
         if series is None:
@@ -504,7 +513,7 @@ class RegressionModel(GlobalForecastingModel):
         predictions = []
 
         """
-        The columns of the prediction matrix has to have the same column order as during the training step, which is
+        The columns of the prediction matrix need to have the same column order as during the training step, which is
         as follows: lags | lag_cov_0 | lag_cov_1 | .. where each lag_cov_X is a shortcut for
         lag_cov_X_dim_0 | lag_cov_X_dim_1 | .., that means, the lag X value of all the dimension of the covariate
         series (when multivariate).
