@@ -23,6 +23,7 @@ from darts.models import (
     ARIMA
 )
 
+from itertools import product
 
 from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
@@ -241,6 +242,67 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertTrue(
             compare_best_against_random(ExponentialSmoothing, es_params, dummy_series)
         )
+
+    def test_gridsearch_random_search(self):
+        np.random.seed(1)
+
+        ts_length = 50
+        dummy_series = (
+            lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
+        )
+
+        param_range = list(range(10, 20))
+        params = {
+            "lags": param_range
+            }
+
+        model = RandomForest(lags=1)
+        result = model.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples=5)
+
+        self.assertEqual(type(result[0]), RandomForest)
+        self.assertEqual(type(result[1]['lags']), int)
+        self.assertTrue(min(param_range) <= result[1]['lags'] <= max(param_range))
+
+
+    def test_gridsearch_n_random_samples_bad_arguments(self):
+        ts_length = 50
+        dummy_series = (
+            lt(length=ts_length, end_value=10) + st(length=ts_length, value_y_offset=10) + rt(length=ts_length)
+        )
+
+        params = {
+            "lags": list(range(1, 11)),
+            "past_covariates": list(range(1, 11))
+            }
+        
+        with self.assertRaises(ValueError):
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = -5)
+        with self.assertRaises(ValueError):
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = 105)
+        with self.assertRaises(ValueError):            
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = -24.56)
+        with self.assertRaises(ValueError):
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = 1.5)
+
+
+    def test_gridsearch_n_random_samples(self):
+        np.random.seed(1)
+
+        params = {
+            "lags": list(range(1, 11)),
+            "past_covariates": list(range(1, 11))
+            }
+
+        params_cross_product = list(product(*params.values()))
+        
+        #Test absolute sample
+        absolute_sampled_result = RandomForest._sample_params(params_cross_product, 10)
+        self.assertEqual(len(absolute_sampled_result), 10)
+
+        #Test percentage sample
+        percentage_sampled_result = RandomForest._sample_params(params_cross_product, 0.37)
+        self.assertEqual(len(percentage_sampled_result), 37)
+
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_jobs(self):
