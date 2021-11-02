@@ -1003,7 +1003,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             The name of the checkpoint file. If not specified, use the most recent one.
         best
             If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
-            works when `file_name` is not given.
+            is ignored when `file_name` is given.
 
         Returns
         -------
