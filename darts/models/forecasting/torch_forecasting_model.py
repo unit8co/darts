@@ -96,7 +96,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None,
                  force_reset=False,
-                 save_checkpoints=True):
+                 save_checkpoints=False):
 
         """ Pytorch-based Forecasting Model.
 
