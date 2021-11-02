@@ -175,7 +175,8 @@ class ForecastingModel(ABC):
         """
         model_parameters = dict()
         for param, param_value in local_params.items():
-            if param == 'kwargs':
+            # apart from `kwargs` there are some special cases such as `prophet_kwargs`
+            if 'kwargs' in param:
                 for kwarg, kwarg_value in local_params[param].items():
                     model_parameters[kwarg] = kwarg_value
             elif not param == 'self' and not param.startswith('_'):
