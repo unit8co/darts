@@ -459,7 +459,7 @@ class NBEATSModel(PastCovariatesTorchModel):
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-        super().__init__(**kwargs)
+        super().__init__(local_parameters=locals(), **kwargs)
 
         raise_if_not(isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
                      "Please pass an integer or a list of integers with length `num_stacks`"

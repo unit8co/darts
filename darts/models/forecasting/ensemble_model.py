@@ -37,7 +37,7 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if_not(is_local_ensemble or self.is_global_ensemble,
                      "All models must either be GlobalForecastingModel instances, or none of them should be.",
                      logger)
-        super().__init__()
+        super().__init__(local_parameters={})
         self.models = models
         self.is_single_series = None
 

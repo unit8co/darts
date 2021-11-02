@@ -41,6 +41,7 @@ class LinearRegressionModel(RegressionModel):
         """
         self.kwargs = kwargs
         super().__init__(
+            local_parameters=locals(),
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,

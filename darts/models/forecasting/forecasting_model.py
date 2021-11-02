@@ -45,13 +45,24 @@ class ForecastingModel(ABC):
     """
 
     @abstractmethod
-    def __init__(self):
+    def __init__(self, local_parameters: Dict):
+        """
+        Parameters
+        ----------
+        local_parameters
+            Local parameters are used to save model parameters.
+            All top-level models except EnsembleModels must pass local parameters down to the base ForecastingModel with
+            super().__init__(local_parameters=locals(), ...)
+        """
+
         # The series used for training the model through the `fit()` function.
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
 
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
+
+        self.model_params = self._get_model_parameters(local_parameters)
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> None:
@@ -152,6 +163,26 @@ class ForecastingModel(ABC):
         This function/property should be overridden if a value higher than 3 is required.
         """
         return 3
+
+    def _get_model_parameters(self, local_params: Dict) -> Dict:
+        """ Extracts and returns relevant model parameters from `local_params`
+
+        Parameters
+        ----------
+        local params
+            All top-level models except EnsembleModels must pass local parameters down to the base ForecastingModel with
+            super().__init__(local_parameters=locals(), ...)
+        """
+        model_parameters = dict()
+        for param, param_value in local_params.items():
+            if param == 'kwargs':
+                for kwarg, kwarg_value in local_params[param].items():
+                    model_parameters[kwarg] = kwarg_value
+            elif not param == 'self' and not param.startswith('_'):
+                model_parameters[param] = param_value
+            else:
+                continue
+        return model_parameters
 
     def _generate_new_dates(self,
                             n: int,

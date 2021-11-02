@@ -303,7 +303,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
 
-        super().__init__(likelihood=likelihood, **kwargs)
+        super().__init__(local_parameters=locals(), likelihood=likelihood, **kwargs)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length

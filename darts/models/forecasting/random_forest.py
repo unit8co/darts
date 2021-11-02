@@ -61,6 +61,7 @@ class RandomForest(RegressionModel):
         self.kwargs["max_depth"] = self.max_depth
 
         super().__init__(
+            local_parameters=locals(),
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,

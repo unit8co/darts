@@ -43,7 +43,7 @@ class VARIMA(DualCovariatesForecastingModel):
             ‘c’ a constant term, ‘t’ linear trend in time, and ‘ct’ includes both.
             Default is ‘c’ for models without integration, and no trend for models with integration.
         """
-        super().__init__()
+        super().__init__(local_parameters=locals())
         self.p = p
         self.d = d
         self.q = q

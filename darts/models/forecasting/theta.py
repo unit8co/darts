@@ -51,7 +51,7 @@ class Theta(ForecastingModel):
             Defaults to `SeasonalityMode.MULTIPLICATIVE`.
         """
 
-        super().__init__()
+        super().__init__(local_parameters=locals())
 
         self.model = None
         self.coef = 1
@@ -191,7 +191,7 @@ class FourTheta(ForecastingModel):
             If `True`, the data is normalized so that the mean is 1. Defaults to `True`.
         """
 
-        super().__init__()
+        super().__init__(local_parameters=locals())
 
         self.model = None
         self.drift = None

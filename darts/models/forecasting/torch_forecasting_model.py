@@ -81,6 +81,7 @@ def _get_runs_folder(work_dir, model_name):
 class TorchForecastingModel(GlobalForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
+                 local_parameters: Dict,
                  input_chunk_length: int,
                  output_chunk_length: int,
                  batch_size: int = 32,
@@ -156,7 +157,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
             <TorchForeCastingModel.load_model()>`.
         """
-        super().__init__()
+        super().__init__(local_parameters)
 
         if torch_device_str is None:
             self.device = self._get_best_torch_device()
@@ -767,7 +768,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return tuple(batch)
 
     def untrained_model(self):
-        return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
+        return self.__class__(**self.model_params)
 
     @property
     def first_prediction_index(self) -> int:
@@ -1044,7 +1045,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
 
 class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
-    def __init__(self, likelihood: Optional[Likelihood] = None, **kwargs):
+    def __init__(self, local_parameters: Dict, likelihood: Optional[Likelihood] = None, **kwargs):
         """ Pytorch Parametric Probabilistic Forecasting Model.
 
         This is a base class for pytroch parametric probabilistic models. "Parametric"
@@ -1058,7 +1059,7 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
         likelihood
             The likelihood model to be used for probabilistic forecasts.
         """
-        super().__init__(**kwargs)
+        super().__init__(local_parameters, **kwargs)
         self.likelihood = likelihood
 
     def _is_probabilistic(self):

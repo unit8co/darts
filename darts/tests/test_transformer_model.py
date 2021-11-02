@@ -40,7 +40,8 @@ if TORCH_AVAILABLE:
         def test_fit(self):
             # Test fit-save-load cycle
             model2 = TransformerModel(input_chunk_length=1, output_chunk_length=1,
-                                      n_epochs=2, model_name='unittest-model-transformer')
+                                      n_epochs=2, model_name='unittest-model-transformer',
+                                      save_checkpoints=True)
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-transformer', best=False)
             pred1 = model2.predict(n=6)

@@ -46,7 +46,7 @@ class ARIMA(DualCovariatesForecastingModel):
             ‘c’ a constant term, ‘t’ linear trend in time, and ‘ct’ includes both.
              Default is ‘c’ for models without integration, and no trend for models with integration.
         """
-        super().__init__()
+        super().__init__(local_parameters=locals())
         self.order = p, d, q
         self.seasonal_order = seasonal_order
         self.trend = trend

@@ -60,7 +60,7 @@ class ExponentialSmoothing(ForecastingModel):
             See `the documentation
             <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
         """
-        super().__init__()
+        super().__init__(local_parameters=locals())
         self.trend = trend
         self.damped = damped
         self.seasonal = seasonal

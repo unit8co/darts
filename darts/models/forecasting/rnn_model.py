@@ -203,7 +203,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = 1
-        super().__init__(likelihood=likelihood, **kwargs)
+        super().__init__(local_parameters=locals(), likelihood=likelihood, **kwargs)
 
         # check we got right model type specified:
         if model not in ['RNN', 'LSTM', 'GRU']:
