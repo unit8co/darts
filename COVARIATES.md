@@ -203,14 +203,15 @@ Model | Standard <br /> Forecasting Model | Torch <br /> Forecasting Model | `Pa
 `NBEATSModel` |  | 🟢 | ✅ |  |  |  |  |
 `TCNModel` |  | 🟢 | ✅ |  |  |  |  |
 `TransformerModel` |  | 🟢 | ✅ |  |  |  |  |
-`TFT` |  | 🟢 |  |  |  | ✅ |  |
+`TFT` (WIP) |  | 🟢 |  |  |  | ✅ |  |
 
 **Table 2: Darts' forecasting models and their `{X}CovariatesModel`**
 
 `*` models that do not support covariates
 
 `**` `RegressionModel` including `RandomForest`, `LinearRegressionModel` and `LightGBMModel`. `RegressionModel` is a
-special kind of model which uses lags on covariates and past targets to do predictions.
+special kind of model which can use arbitrary lags on covariates (past and/or future) 
+and past targets to do predictions.
 
 `***` `RNNModel` including `LSTM` and `GRU`; equivalent to DeepAR in its probabilistic version
 
@@ -218,38 +219,45 @@ special kind of model which uses lags on covariates and past targets to do predi
 
 ## 2.1. Differences between Standard and Torch Forecasting Models regarding covariates
 
-There are differences in how Darts' Standard and Torch Forecasting Models perform training and prediction. Specifically,
+There are differences in how Darts' "Local" and "Global" Forecasting Models perform training and prediction. Specifically,
 how they extract/work with the data supplied during `fit()` and `predict()`.
 
 Below is a brief overview of how the models work.
 
-### Standard forecasting models (SFMs):
+### "Local" forecasting models (LFMs):
 
 - **training**
-    - SFMs usually train on the entire data you supplied when calling `model.fit()` at once.
+    - LFMs accept only one time series, and usually train on the entire series you 
+      supplied when calling `model.fit()` at once.
 - **prediction**
-    - SFMs can predict in one go for any number of predictions `n`
+    - LFMs can predict in one go for any number of predictions `n` after the end
+      of the training series.
 
 ![figure2](./static/images/covariates/sfm.png)
 
-#### Figure 2: Standard Forecasting Model with past and future relative to the prediction point
+**Figure 2: Local Forecasting Model with past and future relative to the prediction point**
 
-### Torch forecasting models (TFMs):
+### Global forecasting models (GFMs):
+
+Global forecasting models are broadly speaking "machine learning based" models, which 
+denote PyTorch-based (deep learning) models as well as `RegressionModel`s. Global models can all 
+be trained on multiple time series.
 
 - **training**
-    - TFMs extract (sample) sub-sequences from the data you supplied when calling `model.fit()`. The models are trained
-      on these sequences.
-    - each sequence has its own prediction point that separates past (lookback window, **input chunk**) from future (
-      forecast horizon, **output chunk**)
-    - each sequence has the same number of time steps (length): the input chunk length and output chunk length are the
-      same for all sequences
-        - the input and output chunk lengths are specified at model creation by mandatory
-          parameters `input_chunk_length` and `output_chunk_length`
+    - GFMs extract (sample) sub-sequences from the data you supplied when calling `model.fit()` in order to build
+      training samples.
+    - Each training sample has its own prediction point that separates past (lookback window, `input_chunk_length`) 
+      from future (`output_chunk_length`).
+    - Each training sample has the same number of time steps (length): 
+      the `input_chunk_length` and `output_chunk_length` are the same for all sequences
+        - The input and output chunk lengths are specified at model creation by mandatory
+          parameters `input_chunk_length` and `output_chunk_length`.
 - **prediction**
-    - the prediction works similar to training on sequences. Depending on the length of your prediction `n`, the model
-      can either do the prediction in one go, or through prediction on multiple chronologically shifted sequences
-        - for `n <= output_chunk_length`: prediction on a single sequence
-        - for `n > output_chunk_length`: prediction through multiple suquences
+    - The prediction works similar to training on sequences. Depending on the length of your prediction `n`, the model
+      can either do the prediction in one go, or auto-regressively, by repeateadly predicting on multiple 
+      chronologically shifted sequences
+        - for `n <= output_chunk_length`: in one go
+        - for `n > output_chunk_length`: auto-regressive
 
 If you want to know more about how covariates are used in Darts' Torch Forecasting
 Models, [section 3](#3-in-depth-look-at-how-past-and-future-covariates-are-used-in-a-sequential-torch-forecasting-model)
@@ -258,49 +266,62 @@ covariates.
 
 ![figure3](./static/images/covariates/tfm.png)
 
-#### Figure 3: Torch Forecasting Model with input (past) and output chunks (future) relative to the prediction point of a single sequence
+**Figure 3: Global Forecasting Model with input (past) and output chunks (future) relative to the 
+prediction point of a single sequence**
 
-## 2.1.1. Required past and future covariates lengths for training and prediction with Standard and Torch Forecasting Models
+## 2.1.1. Required time spans past and future covariates for training and prediction with Local and Global Forecasting Models
 
-Because of the differences in how SFMs and TFMs work with input data, the lengths (number of time steps) of our
-covariates have must meet case specific requirements.
+Because of the differences in how LFMs and GFMs work with input data, the time spans (i.e., the periods of time
+covered by the series, defined by their time axes) of our covariates have must meet case specific requirements.
 
-Table 3 summarizes the length requirements for past and future covariates when using `fit()` or `predict()` with SFMs or
-TFMs. Depending on how many steps `n` into the future we want to predict, TFMs have different length requirements for
+Note that as long as the time spans are sufficient, Darts takes care of slicing the
+covariates series automatically, based on their respective time axes (and the one
+of the target). So the covariates can extend further than necessary 
+(either in the past or in the future) without impact. This is convenient because
+in practice it means you don't have to worry about slicing the covariates before
+using them. 
+
+Table 3 summarizes the length requirements for past and future covariates when using `fit()` or `predict()` with LFMs or
+GFMs. Depending on how many steps `n` into the future we want to predict, GFMs have different length requirements for
 covariates.
 
-With `model.fit()`, the length stands for the number of time steps before the prediction point (past).
-With `model.predict()`, the length stands for the number of time steps after the prediction point (future).
+For `fit()`, the indicated length stands for the number of time steps before the prediction point (past).
+For `predict()`, the indicated length stands for the number of time steps after the prediction point (future).
 
 Abbreviations:
 
-- `n`: prediction length
+- `n`: prediction length (forecast horizon)
 - `ptl` : past target length
-- `ocl` : sequence output chunk length (specified at torch model creation)
-- `NS` : not supported
+- `ocl` : output chunk length ("inner" horizon of the model - specified at model creation)
+- `icl`: input chunk length (lookback window of the model - specified at model creation)
+- `N/A` : not applicable
 - `-` : does not have to be supplied
 
-forecast with | `fit()` | past covariates | future covariates | `predict()` | past covariates | future covariates
---- | --- | --- | --- | --- | --- | ---
-`Standard Forecasting Model` <br /> and for all `n` |  | NS | `ptl` |  | NS | `n` |
-`Torch Forecasting Model` <br /> and `n <= ocl` | | `ptl` | `ptl` |  | - | `ocl` |
-`Torch Forecasting Model` <br /> and `n > ocl` |  | `ptl` | `ptl` |  | `n - ocl` | `n` |
+forecast with | `fit()` with past covariates | `fit()` with future covariates | `predict()` with past covariates | `predict()` with future covariates
+--- | --- | --- | --- | ---
+`Local Forecasting Model` <br /> and for all `n` | N/A | `ptl` | N/A | `n` |
+`Global Forecasting Model` <br /> and `n <= ocl` | `ptl` | `ptl` | - | `ocl` |
+`Global Forecasting Model` <br /> and `n > ocl` | `ptl` | `ptl` | `n - ocl` | `n` |
 
-#### Table 3: Required past and future covariates lengths for training and prediction with different models and prediction lengths
+**Table 3: Required past and future covariates lengths for training and prediction with different models and 
+prediction lengths**
 
-## 3. In-depth look at how past and future covariates are used in a sequential Torch Forecasting Model
+## 3. In-depth look at how past and future covariates are used in a Global Forecasting Model
 
 ## 3.1. Training
 
-For simplicity, we consider the same ice-cream sales forecasting example from before:
+For simplicity, we consider the same ice-cream sales forecasting example from before,
+with the exception that we now replace past measured rainfalls with some past measured
+temperature:
 
 - past target: actual past ice-cream sales `past_ice_cream_sales`
 - future target: predict the ice-cream sales for the next day
 - past covariates: measured average daily temperatures in the past `measured_past_temperature`
 - future covariates: estimated average temperature for the next day `estimated_future_temperature`
 
-Checking Table 1, this is a `SplitCovariatesModel`. (Just as an example: if we wanted to use historic **estimated**
-temperatures as well, we would need a `MixedCovariatesModel`.)
+Checking Table 1, a model that would accomodate this kind of covariates would be a
+`SplitCovariatesModel` (if we don't use historic values of future covariates), or
+`MixedCovariatesModel` (if we do).
 
 Let's assume we have one year (365 days) of daily ice-cream sales and measured/estimated daily average temperature data
 available for training.
@@ -308,14 +329,22 @@ available for training.
 We can create a model and train it with:
 
 ```
-model = SomeDartsSequentialTorchModel(input_chunk_length=7, output_chunk_length=1)
+model = SomeDartsGlobalModel(input_chunk_length=7, output_chunk_length=1)
 model.fit(series=past_ice_cream_sales,
           past_covariates=measured_past_temperature, 
           future_covariates=estimated_future_temperature)
 ```
 
-During training, the sequential torch models will go through your training data in sequences with **input chucks** of
-length `input_chunk_length` and **output chunks** of length `output_chunk_length` (see Figure 4 below).
+When calling `fit()`, the models will build an appropriate `darts.utils.data.TrainingDataset`,
+which specifies how to slice the data to obtain training samples. If you want to control this slicing
+yourself, you can instantiate your own `TrainingDataset` and call `model.fit_from_dataset()` instead
+of `fit()`. By default, most models (though not all) will build *sequential* datasets, which basically
+means that all sub-slices of length `input_chunk_length + output_chunk_length` in the provided series
+will be used for training. 
+
+So during training, the torch models will go through the training data in sequences 
+with **input chucks** of length `input_chunk_length` and **output chunks** of 
+length `output_chunk_length` (see Figure 4 below).
 
 For this example we used:
 
@@ -333,52 +362,42 @@ Mon1 - Sun1 stand for the first 7 days from our training dataset (week 1 of the 
 
 Note that historic future covariates and future past covariates are greyed out in Figure 4. Historic future covariates
 are not supported by `SplitCovariatesModel`. The future past covariates in the training process are automatically
-extracted from the past covariates (`measured_past_temperature`) you supplied to `model.fit()`. They are internally used
+extracted from the past covariates (`measured_past_temperature`) supplied to `model.fit()`. They are internally used
 to load the next past covariates for coming sequences.
 
 ![figure4](./static/images/covariates/seq_covs_single.png)
-
-#### Figure 4: Overview of a single sequence from our ice-cream sales example
+**Figure 4: Overview of a single sequence from our ice-cream sales example**
 
 Using information from the **input chunk** (past target and past covariates) and **output chunk**
 (future covariates), the model predicts the future target on the output chunk (see Figure 5 below).
 
 The loss is evaluated between the predicted future target and the actual target value on the output chunk. The model
-trains itself (the weights) by minimizing the loss over all sequences.
+trains itself by minimizing the loss over all sequences.
 
 ![figure5](./static/images/covariates/seq_covs_1.png)
+**Figure 5: Prediction and loss evaluation in a single sequence**
 
-#### Figure 5: Prediction and loss evaluation in a single sequence
-
-After having completed computations on the first sequence, the model moves to the next sequence which
-starts `output_chunk_length` (here 1 day) steps after the first sequence (see Figure 6 below).
-
-New data points are loaded for the past target, past covariates and future covariates from the remaining unused data (
-the 365 days train dataset).
-
-The model predicts the new future target and evaluates the loss.
-
-This is repeated for all coming sequences until the 365 days are covered.
+After having completed computations on the first sequence, the model moves to the next sequence, which, in the
+case of sequential models, starts one time step later than the previous sequence. The process is repeated for 
+all coming sequences until the 365 days are covered.
 
 ![figure6](./static/images/covariates/sequential_training.png)
-
-#### Figure 6: Move to next sequence and repeat
+**Figure 6: Move to next sequence and repeat**
 
 ### 3.1.1. Requirements for training with past and future covariates
 
 Training only works if at least one sequence with an input and output chunk can be extracted from the data you passed
-to `fit()`.
+to `fit()`. In terms of minimum lengths, this means:
 
 - past target of minimum length `input_chunk_length + output_chunk_length`
-    - 8 days: first 7 days for the input chunk 8th day for the output chunk
-- past covariates of minimum length `max(input_chunk_length, past_target_length - output_chunk_length)`
-    - 7 days: first 7 days for the input chunk
-- future covariates (in our example) of minimum
-  length: `max(output_chunk_length, past_target_length - input_chunk_length)`
-    - 1 day: 8th day for the output chunk
+    - in our example that is a minimum of 8 days: first 7 days for the input chunk 8th day for the output chunk
+- past covariates of minimum length `past_target_length - output_chunk_length`
+- future covariates (in our example) of minimum length: `past_target_length` (for `Dual` and `Mixed` models) or
+  `past_target_length - input_chunk_length`.
 
 A good thing in Darts is that you can supply covariates of any length larger than the minimum requirement. Meaning that
-the relevant covariate time sections will be extracted automatically by the forecasting models.
+the relevant covariate time sections will be extracted automatically by the datasets, based on the time axes of the
+series.
 
 ### 3.1.2. Training with a validation dataset
 
@@ -401,8 +420,11 @@ You have to define a `training_cutoff` (a date or fraction at which to split the
 validation datasets satisfy the minimum length requirements
 from [section 3.1.1.](#311-requirements-for-training-with-past-and-future-covariates)
 
-The model trains itself the same way as before but additonally evaluates the loss on the validation dataset and keeps
-track of the best performing model.
+Instead of splitting by time, you can also reserver another subset of time series as validation set.
+
+The model trains itself the same way as before but additionally evaluates the loss on the validation dataset and keeps
+track of the best performing model using this validation loss.
+
 
 ## 3.2. Forecast/Prediction
 
@@ -410,105 +432,49 @@ After having trained the model, we want to predict the future ice-cream sales fo
 training data.
 
 The actual prediction works very similar to how we trained the data on sequences. Depending on the number of days we
-want to predict, `n`, we distinguish between two cases:
+want to predict - the forecast horizon `n` - we distinguish between two cases:
 
-- (1) if `n <= output_chunk_length`: we can predict `n` with a single sequence
+- If `n <= output_chunk_length`: we can predict `n` in one go (using one "internal model call")
     - example: we only want to predict the next day's ice-cream sales (`n = 1`)
-- (2) if `n > output_chunk_length`: we must predict `n` by going through multiple sequences. Each sequence
-  outputs `output_chunk_length` prediction points. We go through as many sequences, until we get to the final `n`
-  prediction points.
+- If `n > output_chunk_length`: we must predict `n` by calling the internal model multiple times. Each call
+  outputs `output_chunk_length` prediction points. We go through as many calls as needed until we get to the final `n`
+  prediction points, in an auto-regressive fashion.
     - example: we want to predict ice-cream sales for the next 3 days at once (`n = 3`)
 
 A few notes on which data must be supplied to do predictions:
 
-- we do not have to supply past targets, as they were saved during training
-- whenever we used past covariates during training, we must **only** supply additional past covariates for prediction
-  case (2) (from above)
-- whenever we used future covariates during training, we must **always** supply future covariates for predictions
-
-### (1) Forecast with `n <= output_chunk_length`:
-
-We set our forecast horizon `n` to `1` which is equal to the `output_chunk_length` used before.
-
-Using information from the input chunk (past target and past covariates) and output chunk (future covariates), the model
-predicts the future target on the output chunk (see Figure 7 below).
-
-Mon52 - Sun52 stand for the last `input_chunk_length` days (7 days) of our one-year training dataset (week 52).
-
-As we used an `output_chunk_length` of `1`, `Mon53` is the first day/monday of the next year that we want to predict
-ice-cream sales for (week 53, or the first week in the next year).
-
-Do we have to supply additional data to `predict()`?
-
-- As you can see, for this prediction case (1), past targets and past covariates come from our training data and we **do
-  not have to supply** them again.
-- For the future covariates, we **must supply additional data** for `output_chunk_length` days from our actual forecast
-  horizon! In this example, the estimated average temperature for `Mon53`
-
-So we can predict with:
-
-```
-ice_cream_sales_tomorrow = model.predict(n=1, future_covariates=estimated_temperature_mon53)
-```
+- `series` is the `TimeSeries` (or `Sequence` of `TimeSeries`) to forecast. When models are trained on a single series,
+  omitting the `series` parameter will produce forecasts for the (single) training series.
+- `past_covariates` with sufficient time span (see Sect. 2.1.1)
+- `future_covariates` with sufficient time span (see Sect. 2.1.1)
 
 ![figure7](./static/images/covariates/prediction_once.png)
 
-#### Figure 7: forecast with a single sequence for n <= `output_chunk_length`
+**Figure 7: forecast with a single sequence for n <= `output_chunk_length`**
 
-### (2) Forecast with `n > output_chunk_length`:
 
-We set our forecast horizon `n` to `3` which is larger than the `output_chunk_length`.
-
-In this case (2), the prediction for the next 3 days is obtained by predicting on several sequences similar to training
-on multiple sequences from before (see Figure 8 below).
-
-For every sequence, we predict `output_chunk_length` number of points, then go to the next sequence which is shifted
-by `output_chunk_length` points into the future and perform prediction again. This process is repeated until we get the
-desired `n` predictions.
-
-In our example, prediction is performed on 3 sequences (each of `output_chunk_length = 1`) to obtain the forecast for
-the next `n = 3` days.
-
-In Figure 8, you can see that from Sequence 2 on, our input chunk contains data from the forecast horizon (the last
-input chunk elements after the dashed vertical line).
-
-Do we have to supply additional data to `predict()`?
-
-- past targets: **do not have to be supplied** as our predictions from previous sequences are automatically appended to
-  the past target.
-- future covariates: we **must supply** the next `n` future covariate data points from out forecast horizon (Mon53 -
-  Wed53)
-    - in our example: the **estimated** average temperature for the next 3 days (Mon53 - Wed53)
-- past covariates: we **must supply** the next `n - output_chunk_length` past covariate data points from our forecast
-  horizon to obtain `n` predictions.
-    - in our example: we would need to supply the **measured** average daily temperature for the next `3 - 1 = 2` days (
-      Mon53, Tue53)
-    - these additional past covariates are internally called **future** past cast covariates (see the yellow box with
-      dashed borders)
-
-We can predict ice-cream sales for the next 3 days with:
-
+As an example, we could try to predict ice-cream sales for the next 3 days with:
 ```
-ice_cream_sales_next_days = model.predict(n=1,
-                                          past_covariates=measured_tempereature_next_two_days,
+ice_cream_sales_next_days = model.predict(n=3,
+                                          past_covariates=measured_tempereature_including_for_next_two_days,
                                           future_covariates=estimated_temperature_next_three_days)
 ```
 
-But it is impossible to have **measured** data from the future! True, and that is the reason why this particular
-forecast case (2) cannot work with the given `n`, `output_chunk_length` and past covariates.
+But it is impossible to have *measured* data from the future! True, and that is the reason why this particular
+forecast case cannot work with the given `n`, `output_chunk_length` and past covariates.
 
 Fortunately, there is a way how you could still get forecasts for `n = 3`:
 
 - set `output_chunk_length` at model creation to be larger than or equal to `n`, so that we do not have to supply **
   measured future** past covariates.
-- keep in mind that all minimum length requirements
+- keep in mind that all minimum time-span requirements
   from [section 3.1.1.](#311-requirements-for-training-with-past-and-future-covariates)
   and [section 3.2.1.](#321-requirements-for-prediction-with-past-and-future-covariates) are satifisfied for the
   new `output_chunk_length`
 
 ![figure8](./static/images/covariates/prediction_multi.png)
 
-#### Figure 8: forecast with multiple sequences and `n > output_chunk_length`
+**Figure 8: forecast with multiple sequences and `n > output_chunk_length`**
 
 ### When can we predict with `n > output_chunk_length`?
 
@@ -519,24 +485,3 @@ conditions are met:
 - if past covariates are used:
     - past covariates must be known in the future (e.g. day of the week, hour of the day, week of the year, year, ...)
     - must be supplied for `n - output_chunk_length` points in the future
-
-### 3.2.1. Requirements for prediction with past and future covariates
-
-To summarize the requirements for the two cases:
-
-#### Case (1) with `n <= output_chunk_length`
-
-Prediction only works if at least one sequence with an input and output chunk can be extracted from the data you passed
-to `predict()`:
-
-- nothing required for past targets and past covariates on input chunk; the data comes from training process
-- supply future covariates of minimum length `output_chunk_length` from future
-
-#### Case (2) with `n > output_chunk_length`
-
-Prediction only works by supplying the following data to `predict()`:
-
-- nothing required for past targets
-- past covariates of minimum length `n - output_chunk_length` from future
-    - requires past covariates to be known in future
-- future covariates of minimum length `n` from future horizon
