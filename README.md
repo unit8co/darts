@@ -199,11 +199,9 @@ As some models have relatively heavy (or non-Python) dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
 * Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
-* Install core + neural networks (PyTorch): `pip install u8darts[torch]`
-* Install core + Facebook Prophet: `pip install u8darts[prophet]`
-* Install core + AutoARIMA: `pip install u8darts[pmdarima]`
-
-If you experience "no matches found" errors (e.g. with zsh), try adding quotes around the package name; e.g. `pip install 'u8darts[torch]'`.
+* Install core + neural networks (PyTorch): `pip install "u8darts[torch]"`
+* Install core + Facebook Prophet: `pip install "u8darts[prophet]"`
+* Install core + AutoARIMA: `pip install "u8darts[pmdarima]"`
 
 #### Enabling Support for LightGBM
 
