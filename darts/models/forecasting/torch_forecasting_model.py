@@ -61,17 +61,12 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 DEFAULT_DARTS_FOLDER = '.darts'
 CHECKPOINTS_FOLDER = 'checkpoints'
 RUNS_FOLDER = 'runs'
-UNTRAINED_MODELS_FOLDER = 'untrained_models'
 
 logger = get_logger(__name__)
 
 
 def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, CHECKPOINTS_FOLDER, model_name)
-
-
-def _get_untrained_models_folder(work_dir, model_name):
-    return os.path.join(work_dir, UNTRAINED_MODELS_FOLDER, model_name)
 
 
 def _get_runs_folder(work_dir, model_name):
@@ -238,7 +233,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
         shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
-        shutil.rmtree(_get_untrained_models_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         self.checkpoint_exists = False
         self.total_epochs = 0
@@ -288,9 +282,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.lr_scheduler = _create_from_cls_and_kwargs(self.lr_scheduler_cls, lr_sched_kws)
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
-
-        if self.save_checkpoints:
-            self._save_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
     @abstractmethod
     def _create_model(self, train_sample: Tuple[Tensor]) -> torch.nn.Module:
@@ -767,9 +758,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch = [elem.to(self.device) if isinstance(elem, torch.Tensor) else elem for elem in batch]
         return tuple(batch)
 
-    def untrained_model(self):
-        return self.__class__(**self.model_params)
-
     @property
     def first_prediction_index(self) -> int:
         """
@@ -931,14 +919,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def _save_untrained_model(self, folder: str) -> None:
-        """saves the untrained model under '{folder}/model.pth.tar'."""
-
-        os.makedirs(folder, exist_ok=True)
-        file_path = os.path.join(folder, 'model.pth.tar')
-
-        self.save_model(file_path)
-
     @staticmethod
     def load_model(path: str) -> 'TorchForecastingModel':
         """loads a model from a given file path. The file name should end with '.pth.tar'
@@ -956,13 +936,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         with open(path, 'rb') as fin:
             model = torch.load(fin)
         return model
-
-    @staticmethod
-    def _load_untrained_model(folder: str) -> 'TorchForecastingModel':
-        """loads the untrained model from path '{folder}/model.pth.tar'."""
-
-        file_path = os.path.join(folder, 'model.pth.tar')
-        return TorchForecastingModel.load_model(file_path)
 
     def _prepare_tensorboard_writer(self):
         runs_folder = _get_runs_folder(self.work_dir, self.model_name)

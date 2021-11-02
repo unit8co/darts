@@ -732,6 +732,9 @@ class ForecastingModel(ABC):
                          "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.")
             return sample(params, int(n_random_samples * len(params)))
 
+    def untrained_model(self):
+        return self.__class__(**self.model_params)
+
 
 class GlobalForecastingModel(ForecastingModel, ABC):
     """ The base class for "global" forecasting models, handling several time series and optional covariates.
