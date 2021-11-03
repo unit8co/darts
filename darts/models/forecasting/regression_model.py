@@ -27,6 +27,7 @@ import numpy as np
 
 from darts.timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
+from sklearn.multioutput import MultiOutputRegressor
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.logging import raise_if, raise_if_not, get_logger, raise_log
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
@@ -40,7 +41,7 @@ def _shift_matrices(past_matrix: Optional[np.ndarray],
                     future_matrix: np.ndarray) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Given two matrices, consumes the first column of the past_matrix (if available), and moves the first column of
-    the future_matrix to the end of the future_matrix. This can be seen as a time shift, sending the new past value
+    the future_matrix to the end of the past_matrix. This can be seen as a time shift, sending the new past value
     to the past_matrix. `None` will be returned in case a matrix is empty after performing the operation.
     """
     raise_if(future_matrix is None,
@@ -48,11 +49,9 @@ def _shift_matrices(past_matrix: Optional[np.ndarray],
 
     new_past_matrix = []
 
-    if past_matrix is not None:
-        past_matrix = past_matrix[:, 1:, :] if past_matrix.shape[1] > 1 else None
-
-    if past_matrix is not None:
-        new_past_matrix = [past_matrix]
+    # if more than one timestep in past_matrix add all except for the oldest timestep to new_past_matrix
+    if past_matrix.shape[1] > 1:
+        new_past_matrix.append(past_matrix[:, 1:, :])
 
     first_future = future_matrix[:, 0, :]
     first_future = first_future.reshape(first_future.shape[0], 1, first_future.shape[1])
@@ -99,7 +98,9 @@ class RegressionModel(GlobalForecastingModel):
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
         model
-            Scikit-learn-like model with `fit()` and `predict()` methods.
+            Scikit-learn-like model with `fit()` and `predict()` methods. Also possible to use model that doesn't
+            support multi-output regression for multivariate timeseries, in which case one regressor
+            will be used per component in the multivariate series.
             If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1)`
         """
 
@@ -250,7 +251,7 @@ class RegressionModel(GlobalForecastingModel):
         for past_target, past_covariate, historic_future_covariate, future_covariate, future_target in training_dataset:
             row = []
             if self.lags is not None:
-                row.append(past_target[self.lags].T)
+                row.append(past_target[self.lags].reshape(1, -1))
             covariates = [
                 (past_covariate, self.lags_past_covariates),
                 (historic_future_covariate, self.lags_historical_covariates),
@@ -261,10 +262,10 @@ class RegressionModel(GlobalForecastingModel):
                     row.append(covariate[lags].reshape(1, -1))
 
             training_samples.append(np.concatenate(row, axis=1))
-            training_labels.append(future_target[0])
+            training_labels.append(future_target[0].reshape(1, -1))
 
         training_samples = np.concatenate(training_samples, axis=0)
-        training_labels = np.concatenate(training_labels, axis=0).ravel()
+        training_labels = np.concatenate(training_labels, axis=0)
         return training_samples, training_labels
 
     def _create_lagged_data(self, target_series, past_covariates, future_covariates, max_samples_per_ts):
@@ -296,6 +297,9 @@ class RegressionModel(GlobalForecastingModel):
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts)
 
+        # if training_labels is of shape (n_samples, 1) we flatten it to have shape (n_samples,)
+        if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
+            training_labels = training_labels.ravel()
         self.model.fit(training_samples, training_labels, **kwargs)
 
     def fit(
@@ -311,19 +315,21 @@ class RegressionModel(GlobalForecastingModel):
 
         Parameters
         ----------
-        series
+        series : TimeSeries or list of TimeSeries
             TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates
+        past_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates
+        future_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, a series or sequence of series specifying future-known covariates
-        max_samples_per_ts
+        max_samples_per_ts : int, optional
             This is an integer upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
             ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to the `fit` method of the model.
         """
         super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
 
@@ -360,6 +366,10 @@ class RegressionModel(GlobalForecastingModel):
 
         self.input_dim = series_dim + covariates_dim
 
+        # if series is multivariate wrap model with MultiOutputRegressor
+        if not series[0].is_univariate:
+            self.model = MultiOutputRegressor(self.model, n_jobs=1)
+
         self._fit_model(series, past_covariates, future_covariates, max_samples_per_ts, **kwargs)
 
     def _get_prediction_data(
@@ -379,8 +389,7 @@ class RegressionModel(GlobalForecastingModel):
         for (past_target, past_covariates, historic_future_covariates, future_covariates,
              future_past_covariates, _) in prediction_dataset:
 
-            # past target will have ndim = 2 (time, dim), we remove dim since we have the univariate assumption
-            target_matrix.append(past_target.ravel())
+            target_matrix.append(past_target)
 
             if past_covariates is not None:
                 past_covariates_matrix.append(past_covariates)
@@ -420,20 +429,21 @@ class RegressionModel(GlobalForecastingModel):
         ----------
         n : int
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
-        series
+        series : TimeSeries or list of TimeSeries, optional
             Optionally, one or several input `TimeSeries`, representing the history of the target series whose future
             is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
             returns the forecast of the (single) training series.
-        past_covariates
+        past_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, the past-observed covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
-        future_covariates
+        future_covariates : TimeSeries or list of TimeSeries, optional
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
-        num_samples
+        num_samples : int, default: 1
             Currently this parameter is ignored for regression models.
-        **kwargs
-            Additional keyword arguments passed to the `predict` method of the model.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to the `predict` method of the model. Only works with
+            univariate target series.
         """
         super().predict(n, series, past_covariates, future_covariates, num_samples)
         if series is None:
@@ -495,7 +505,7 @@ class RegressionModel(GlobalForecastingModel):
             output_chunk_length=1
         )
 
-        # ------------------
+        # all matrices have dimensions (n_series, time, n_components)
         (
             target_matrix,
             past_covariates_matrix,
@@ -507,17 +517,18 @@ class RegressionModel(GlobalForecastingModel):
         predictions = []
 
         """
-        The columns of the prediction matrix has to have the same column order as during the training step, which is
+        The columns of the prediction matrix need to have the same column order as during the training step, which is
         as follows: lags | lag_cov_0 | lag_cov_1 | .. where each lag_cov_X is a shortcut for
         lag_cov_X_dim_0 | lag_cov_X_dim_1 | .., that means, the lag X value of all the dimension of the covariate
         series (when multivariate).
         """
         for i in range(n):
-            # building training matrix
+            # building prediction matrix
             X = []
             if self.lags is not None:
                 target_series = target_matrix[:, self.lags]
-                X.append(target_series)
+
+                X.append(target_series.reshape(len(series), -1))
 
             covariates_matrices = [
                 (past_covariates_matrix, self.lags_past_covariates),
@@ -528,11 +539,12 @@ class RegressionModel(GlobalForecastingModel):
             for covariate_matrix, lags in covariates_matrices:
                 if lags is not None:
                     covariates = covariate_matrix[:, lags]
-                    X.append(covariates.reshape(covariates.shape[0], -1))
+                    X.append(covariates.reshape(len(series), -1))
 
             X = np.concatenate(X, axis=1)
             prediction = self.model.predict(X, **kwargs)
-            prediction = prediction.reshape(-1, 1)
+            # reshape to (n_series, time (always 1), n_components)
+            prediction = prediction.reshape(len(series), 1, -1)
             # appending prediction to final predictions
             predictions.append(prediction)
 

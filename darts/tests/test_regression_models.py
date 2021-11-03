@@ -61,6 +61,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     ts_cov2 = ts_sum1.stack(ts_random_walk)
     ts_sum2 = ts_sum1 + ts_random_walk
 
+    ts_multivariate1 = ts_sum1.stack(ts_sum2)
+
     # default regression models
     models = [
         RandomForest,
@@ -179,8 +181,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         training_samples, training_labels = model_instance._get_training_data(training_dataset=training_dataset)
 
         # checking number of dimensions
-        self.assertEqual(len(training_samples.shape), 2)
-        self.assertEqual(len(training_labels.shape), 1)
+        self.assertEqual(len(training_samples.shape), 2)  # samples, features
+        self.assertEqual(len(training_labels.shape), 2)  # samples, components (multivariate)
         self.assertEqual(training_samples.shape[0], training_labels.shape[0])
         self.assertEqual(training_samples.shape[1],
                          len(self.lags_1) + len(self.lags_past_covariates_1) * 2 + len(self.lags_future_covariates_1))
@@ -223,7 +225,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(matrix.shape[0], 1)  # we are training on a single ts
 
         # checking matrices dimensions
-        self.assertEqual(target_matrix.ndim, 2)  # samples, time (univariate)
+        self.assertEqual(target_matrix.ndim, 3)  # samples, time, dim (multivariate)
         self.assertEqual(past_covariates_matrix.ndim, 3)  # samples, time, dim (could be multivariate)
         self.assertEqual(historic_future_covariates_matrix.ndim, 3)  # same
         self.assertEqual(future_covariates_matrix.ndim, 3)  # same
@@ -304,31 +306,33 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_fit(self):
         for model in self.models:
-            with self.assertRaises(ValueError):
-                model_instance = model(lags=4, lags_past_covariates=4)
-                model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
-                model_instance.predict(n=10)
+            # test fitting both on univariate and multivariate timeseries
+            for series in [self.ts_sum1, self.ts_multivariate1]:
+                with self.assertRaises(ValueError):
+                    model_instance = model(lags=4, lags_past_covariates=4)
+                    model_instance.fit(series=series, past_covariates=self.ts_cov1)
+                    model_instance.predict(n=10)
 
-            model_instance = model(lags=12)
-            model_instance.fit(series=self.ts_sum1)
-            self.assertEqual(model_instance.lags_past_covariates, None)
+                model_instance = model(lags=12)
+                model_instance.fit(series=series)
+                self.assertEqual(model_instance.lags_past_covariates, None)
 
-            model_instance = model(lags=12, lags_past_covariates=12)
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_past_covariates), 12)
+                model_instance = model(lags=12, lags_past_covariates=12)
+                model_instance.fit(series=series, past_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_past_covariates), 12)
 
-            model_instance = model(lags=12, lags_future_covariates=(0, 1))
-            model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_future_covariates), 1)
-            self.assertIsNone(model_instance.lags_historical_covariates)
+                model_instance = model(lags=12, lags_future_covariates=(0, 1))
+                model_instance.fit(series=series, future_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_future_covariates), 1)
+                self.assertIsNone(model_instance.lags_historical_covariates)
 
-            model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6])
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_past_covariates), 3)
+                model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6])
+                model_instance.fit(series=series, past_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
-            model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6], lags_future_covariates=[-2, 0])
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1, future_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_past_covariates), 3)
+                model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6], lags_future_covariates=[-2, 0])
+                model_instance.fit(series=series, past_covariates=self.ts_cov1, future_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
     def helper_test_models_accuracy(self, series, past_covariates, min_rmse):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
