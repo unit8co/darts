@@ -17,6 +17,7 @@ from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
 from abc import ABC, abstractmethod
 from inspect import signature
+from random import sample
 import numpy as np
 import pandas as pd
 import xarray as xr
@@ -473,7 +474,8 @@ class ForecastingModel(ABC):
                    metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                    reduction: Callable[[np.ndarray], float] = np.mean,
                    verbose=False,
-                   n_jobs: int = 1) -> Tuple['ForecastingModel', Dict]:
+                   n_jobs: int = 1,
+                   n_random_samples: Optional[Union[int, float]] = None) -> Tuple['ForecastingModel', Dict]:
         """
         A function for finding the best hyper-parameters among a given set.
         This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
@@ -552,6 +554,14 @@ class ForecastingModel(ABC):
             The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
             combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
+        n_random_samples
+            The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform 
+            a random search instead of using the full grid. 
+            If an integer, `n_random_samples` is the number of parameter combinations selected from the full grid and must
+            be between `0` and the total number of parameter combinations.
+            If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must be
+            between `0` and `1`.
+            Defaults to `None` for which random selection will be ignored.
 
         Returns
         -------
@@ -578,8 +588,14 @@ class ForecastingModel(ABC):
         #     raise_if_not(series.has_same_time_as(covariates), 'The provided series and covariates must have the '
         #                                                       'same time axes.')
 
+
         # compute all hyperparameter combinations from selection
         params_cross_product = list(product(*parameters.values()))
+
+        #If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with
+        if n_random_samples is not None:
+            params_cross_product = model_class._sample_params(params_cross_product, n_random_samples)
+            
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
@@ -669,6 +685,21 @@ class ForecastingModel(ABC):
         residuals = series_trimmed - (p.quantile_timeseries(quantile=0.5) if p.is_stochastic else p)
 
         return residuals
+
+    @classmethod
+    def _sample_params(model_class, params, n_random_samples):
+        """Select the absolute number of samples randomly if an integer has been supplied. If a float has been
+        supplied, select a fraction"""
+
+        if isinstance(n_random_samples, int):
+            raise_if_not((n_random_samples > 0) and (n_random_samples <= len(params)),
+                         "If supplied as an integer, n_random_samples must be greater than 0 and less than or equal to the size of the cartesian product of the hyperparameters.")
+            return sample(params, n_random_samples)
+
+        if isinstance(n_random_samples, float):
+            raise_if_not((n_random_samples > 0.0) and (n_random_samples <= 1.0),
+                         "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.")
+            return sample(params, int(n_random_samples * len(params)))
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):

@@ -1,6 +1,25 @@
 """
-Implementation of ``nn.Modules`` for temporal fusion transformer.
+Implementation of ``nn.Modules`` for Temporal Fusion Transformer from PyTorch-Forecasting:
+https://github.com/jdb78/pytorch-forecasting
+
+PyTorch Forecasting v0.9.1 License from https://github.com/jdb78/pytorch-forecasting/blob/master/LICENSE, accessed
+on Wed, November 3, 2021:
+'THE MIT License
+
+Copyright 2020 Jan Beitner
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+'
 """
+
 from abc import ABC, abstractmethod
 from typing import Dict, Tuple, List, Union, Optional
 
@@ -15,68 +34,6 @@ logger = get_logger(__name__)
 
 HiddenState = Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]
 
-USE_ADAPTION_GLU = False  # seems to work better without
-USE_ADAPTION_RESAMPLE = False  # seems to work better without
-USE_ADAPTION_VSN = False  # seems to work better without
-
-
-class QuantileLoss(nn.Module):
-    """Quantile Loss Metric for custom quantiles centered around q=0.5
-
-    From: https://medium.com/the-artificial-impostor/quantile-regression-part-2-6fdbc26b2629"""
-
-    def __init__(self, quantiles: Optional[List[float]] = None):
-        """
-        Arguments:
-            quantiles: list of quantiles
-        """
-
-        super().__init__()
-        self.quantiles = [0.02, 0.1, 0.25, 0.5, 0.75, 0.9, 0.98] if quantiles is None else quantiles
-        self._check_quantiles(self.quantiles)
-        self.first = True
-
-    def forward(self, y_pred, y_true):
-        """
-        Parameters
-        ----------
-        y_pred
-            must be of shape (n_samples, n_timesteps, n_target_variables, n_quantiles)
-        y_true
-            must be of shape (n_samples, n_timesteps, n_target_variables)
-        """
-
-        dim_q = 3
-
-        if self.first:  # test if torch model forward produces correct output
-            raise_if_not(len(y_pred.shape) == 4 or len(y_true.shape) == 3 or y_pred.shape[:2] != y_true.shape[:2],
-                         'mismatch between predicted and target shape',
-                         logger)
-            raise_if_not(y_pred.shape[dim_q] == len(self.quantiles),
-                         'mismatch between number of predicted quantiles and target quantiles',
-                         logger)
-            self.first = False
-
-        losses = []
-        for i, q in enumerate(self.quantiles):
-            errors = y_true - y_pred[..., i]
-            losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(dim_q))
-        losses = torch.cat(losses, dim=dim_q)
-        return losses.sum(dim=dim_q).mean()
-
-    @staticmethod
-    def _check_quantiles(quantiles):
-        median_q = 0.5
-        raise_if_not(median_q in quantiles,
-                     'median quantile `q=0.5` must be in `quantiles`',
-                     logger)
-        is_centered = [(median_q - left_q) == -(median_q - right_q)
-                       for left_q, right_q in zip(quantiles, quantiles[::-1])]
-        raise_if_not(all(is_centered),
-                     'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
-                     'higher than `q=0.5`',
-                     logger)
-
 
 class _RNN(ABC, nn.RNNBase):
     """
@@ -86,78 +43,92 @@ class _RNN(ABC, nn.RNNBase):
     """
 
     @abstractmethod
-    def handle_no_encoding(self,
-                           hidden_state: HiddenState,
-                           no_encoding: torch.BoolTensor,
-                           initial_hidden_state: HiddenState) -> HiddenState:
+    def handle_no_encoding(
+        self, hidden_state: HiddenState, no_encoding: torch.BoolTensor, initial_hidden_state: HiddenState
+    ) -> HiddenState:
         """
         Mask the hidden_state where there is no encoding.
 
-        Args:
-            hidden_state (HiddenState): hidden state where some entries need replacement
-            no_encoding (torch.BoolTensor): positions that need replacement
-            initial_hidden_state (HiddenState): hidden state to use for replacement
+        Parameters
+        ----------
+        hidden_state
+            hidden state where some entries need replacement
+        no_encoding
+            positions that need replacement
+        initial_hidden_state
+            hidden state to use for replacement
 
-        Returns:
-            HiddenState: hidden state with propagated initial hidden state where appropriate
+        Returns
+        -------
+        HiddenState
+            hidden state with propagated initial hidden state where appropriate
         """
-
         pass
 
     @abstractmethod
-    def init_hidden_state(self,
-                          x: torch.Tensor) -> HiddenState:
+    def init_hidden_state(self, x: torch.Tensor) -> HiddenState:
         """
         Initialise a hidden_state.
 
-        Args:
-            x (torch.Tensor): network input
+        Parameters
+        ----------
+        x
+            network input
 
-        Returns:
-            HiddenState: default (zero-like) hidden state
+        Returns
+        -------
+        HiddenState
+            default (zero-like) hidden state
         """
-
         pass
 
     @abstractmethod
-    def repeat_interleave(self,
-                          hidden_state: HiddenState,
-                          n_samples: int) -> HiddenState:
+    def repeat_interleave(self, hidden_state: HiddenState, n_samples: int) -> HiddenState:
         """
         Duplicate the hidden_state n_samples times.
 
-        Args:
-            hidden_state (HiddenState): hidden state to repeat
-            n_samples (int): number of repetitions
+        Parameters
+        ----------
+        hidden_state
+            hidden state to repeat
+        n_samples
+            number of repetitions
 
-        Returns:
-            HiddenState: repeated hidden state
+        Returns
+        -------
+        HiddenState
+            repeated hidden state
         """
-
         pass
 
-    def forward(self,
-                x: Union[rnn.PackedSequence, torch.Tensor],
-                hx: HiddenState = None,
-                lengths: torch.LongTensor = None,
-                enforce_sorted: bool = True) -> Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]:
+    def forward(
+        self,
+        x: Union[rnn.PackedSequence, torch.Tensor],
+        hx: HiddenState = None,
+        lengths: torch.LongTensor = None,
+        enforce_sorted: bool = True,
+    ) -> Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]:
         """
         Forward function of rnn that allows zero-length sequences.
 
         Functions as normal for RNN. Only changes output if lengths are defined.
 
-        Args:
-            x (Union[rnn.PackedSequence, torch.Tensor]): input to RNN. either packed sequence or tensor of
-                padded sequences
-            hx (HiddenState, optional): hidden state. Defaults to None.
-            lengths (torch.LongTensor, optional): lengths of sequences. If not None, used to determine correct returned
-                hidden state. Can contain zeros. Defaults to None.
-            enforce_sorted (bool, optional): if lengths are passed, determines if RNN expects them to be sorted.
-                Defaults to True.
+        Parameters
+        ----------
+        x
+            input to RNN. either packed sequence or tensor of padded sequences
+        hx
+            hidden state. Defaults to None.
+        lengths
+            lengths of sequences. If not None, used to determine correct returned hidden state. Can contain zeros.
+            Defaults to None.
+        enforce_sorted
+            if lengths are passed, determines if RNN expects them to be sorted. Defaults to True.
 
-        Returns:
-            Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]: output and hidden state.
-                Output is packed sequence if input has been a packed sequence.
+        Returns
+        -------
+        Tuple[Union[rnn.PackedSequence, torch.Tensor], HiddenState]
+            output and hidden state. Output is packed sequence if input has been a packed sequence.
         """
 
         if isinstance(x, rnn.PackedSequence) or lengths is None:
@@ -171,9 +142,9 @@ class _RNN(ABC, nn.RNNBase):
             if max_length == 0:
                 hidden_state = self.init_hidden_state(x)
                 if self.batch_first:
-                    out = torch.zeros(lengths.shape[0], x.shape[1], self.hidden_size, dtype=x.dtype, device=x.device)
+                    out = torch.zeros(lengths.size(0), x.size(1), self.hidden_size, dtype=x.dtype, device=x.device)
                 else:
-                    out = torch.zeros(x.shape[0], lengths.shape[0], self.hidden_size, dtype=x.dtype, device=x.device)
+                    out = torch.zeros(x.size(0), lengths.size(0), self.hidden_size, dtype=x.dtype, device=x.device)
                 return out, hidden_state
             else:
                 pack_lengths = lengths.where(lengths > 0, torch.ones_like(lengths))
@@ -203,24 +174,20 @@ class _RNN(ABC, nn.RNNBase):
 class _LSTM(_RNN, nn.LSTM):
     """LSTM that can handle zero-length sequences"""
 
-    def handle_no_encoding(self,
-                           hidden_state: HiddenState,
-                           no_encoding: torch.BoolTensor,
-                           initial_hidden_state: HiddenState) -> HiddenState:
-
+    def handle_no_encoding(
+        self, hidden_state: HiddenState, no_encoding: torch.BoolTensor, initial_hidden_state: HiddenState
+    ) -> HiddenState:
         hidden, cell = hidden_state
         hidden = hidden.masked_scatter(no_encoding, initial_hidden_state[0])
         cell = cell.masked_scatter(no_encoding, initial_hidden_state[0])
         return hidden, cell
 
-    def init_hidden_state(self,
-                          x: torch.Tensor) -> HiddenState:
-
+    def init_hidden_state(self, x: torch.Tensor) -> HiddenState:
         num_directions = 2 if self.bidirectional else 1
         if self.batch_first:
-            batch_size = x.shape[0]
+            batch_size = x.size(0)
         else:
-            batch_size = x.shape[1]
+            batch_size = x.size(1)
         hidden = torch.zeros(
             (self.num_layers * num_directions, batch_size, self.hidden_size),
             device=x.device,
@@ -233,10 +200,7 @@ class _LSTM(_RNN, nn.LSTM):
         )
         return hidden, cell
 
-    def repeat_interleave(self,
-                          hidden_state: HiddenState,
-                          n_samples: int) -> HiddenState:
-
+    def repeat_interleave(self, hidden_state: HiddenState, n_samples: int) -> HiddenState:
         hidden, cell = hidden_state
         hidden = hidden.repeat_interleave(n_samples, 1)
         cell = cell.repeat_interleave(n_samples, 1)
@@ -244,63 +208,57 @@ class _LSTM(_RNN, nn.LSTM):
 
 
 class _TimeDistributedEmbeddingBag(nn.EmbeddingBag):
-    """Used for categorical embedding"""
-
-    def __init__(self,
-                 *args,
-                 batch_first: bool = False,
-                 **kwargs):
-
+    def __init__(self, *args, batch_first: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
         self.batch_first = batch_first
 
     def forward(self, x):
 
         if len(x.size()) <= 2:
-            return self.forward(x)
+            return super().forward(x)
 
         # Squash samples and timesteps into a single axis
-        x_reshape = x.contiguous().view(-1, x.shape[-1])  # (samples * timesteps, input_size)
+        x_reshape = x.contiguous().view(-1, x.size(-1))  # (samples * timesteps, input_size)
 
         y = super().forward(x_reshape)
 
         # We have to reshape Y
         if self.batch_first:
-            y = y.contiguous().view(x.shape[0], -1, y.shape[-1])  # (samples, timesteps, output_size)
+            y = y.contiguous().view(x.size(0), -1, y.size(-1))  # (samples, timesteps, output_size)
         else:
-            y = y.view(-1, x.shape[1], y.shape[-1])  # (timesteps, samples, output_size)
+            y = y.view(-1, x.size(1), y.size(-1))  # (timesteps, samples, output_size)
         return y
 
 
 class _MultiEmbedding(nn.Module):
-    """Can be used to do multi-embed categorical variables"""
-
-    def __init__(self,
-                 embedding_sizes: Dict[str, Tuple[int, int]],
-                 categorical_groups: Dict[str, List[str]],
-                 embedding_paddings: List[str],
-                 x_categoricals: List[str],
-                 max_embedding_size: Optional[int] = None):
-
+    def __init__(
+        self,
+        embedding_sizes: Dict[str, Tuple[int, int]],
+        categorical_groups: Dict[str, List[str]],
+        embedding_paddings: List[str],
+        x_categoricals: List[str],
+        max_embedding_size: int = None,
+    ):
         super().__init__()
-        self.embedding_sizes = {key: list(size_tuple) for key, size_tuple in embedding_sizes.items()}
+        self.embedding_sizes = embedding_sizes
         self.categorical_groups = categorical_groups
         self.embedding_paddings = embedding_paddings
         self.max_embedding_size = max_embedding_size
         self.x_categoricals = x_categoricals
 
-        self.embeddings = self.init_embeddings()
+        self.init_embeddings()
 
     def init_embeddings(self):
-        embeddings = nn.ModuleDict()
-        for name in self.embedding_sizes:
+        self.embeddings = nn.ModuleDict()
+        for name in self.embedding_sizes.keys():
             embedding_size = self.embedding_sizes[name][1]
             if self.max_embedding_size is not None:
                 embedding_size = min(embedding_size, self.max_embedding_size)
+            # convert to list to become mutable
+            self.embedding_sizes[name] = list(self.embedding_sizes[name])
             self.embedding_sizes[name][1] = embedding_size
-
             if name in self.categorical_groups:  # embedding bag if related embeddings
-                embeddings[name] = _TimeDistributedEmbeddingBag(
+                self.embeddings[name] = _TimeDistributedEmbeddingBag(
                     self.embedding_sizes[name][0], embedding_size, mode="sum", batch_first=True
                 )
             else:
@@ -308,12 +266,11 @@ class _MultiEmbedding(nn.Module):
                     padding_idx = 0
                 else:
                     padding_idx = None
-                embeddings[name] = nn.Embedding(
+                self.embeddings[name] = nn.Embedding(
                     self.embedding_sizes[name][0],
                     embedding_size,
                     padding_idx=padding_idx,
                 )
-        return embeddings
 
     def names(self):
         return list(self.keys())
@@ -335,7 +292,10 @@ class _MultiEmbedding(nn.Module):
         for name, emb in self.embeddings.items():
             if name in self.categorical_groups:
                 input_vectors[name] = emb(
-                    x[..., [self.x_categoricals.index(cat_name) for cat_name in self.categorical_groups[name]],]
+                    x[
+                        ...,
+                        [self.x_categoricals.index(cat_name) for cat_name in self.categorical_groups[name]],
+                    ]
                 )
             else:
                 input_vectors[name] = emb(x[..., self.x_categoricals.index(name)])
@@ -343,17 +303,19 @@ class _MultiEmbedding(nn.Module):
 
 
 class _TimeDistributedInterpolation(nn.Module):
-    """interpolates input size to output size."""
-
-    def __init__(self,
-                 output_size: int,
-                 batch_first: bool = False):
+    def __init__(self, output_size: int, batch_first: bool = False, trainable: bool = False):
         super().__init__()
         self.output_size = output_size
         self.batch_first = batch_first
+        self.trainable = trainable
+        if self.trainable:
+            self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float32))
+            self.gate = nn.Sigmoid()
 
     def interpolate(self, x):
         upsampled = F.interpolate(x.unsqueeze(1), self.output_size, mode="linear", align_corners=True).squeeze(1)
+        if self.trainable:
+            upsampled = upsampled * self.gate(self.mask.unsqueeze(0)) * 2.0
         return upsampled
 
     def forward(self, x):
@@ -362,50 +324,31 @@ class _TimeDistributedInterpolation(nn.Module):
             return self.interpolate(x)
 
         # Squash samples and timesteps into a single axis
-        x_reshape = x.contiguous().view(-1, x.shape[-1])  # (samples * timesteps, input_size)
+        x_reshape = x.contiguous().view(-1, x.size(-1))  # (samples * timesteps, input_size)
 
         y = self.interpolate(x_reshape)
 
         # We have to reshape Y
         if self.batch_first:
-            y = y.contiguous().view(x.shape[0], -1, y.shape[-1])  # (samples, timesteps, output_size)
+            y = y.contiguous().view(x.size(0), -1, y.size(-1))  # (samples, timesteps, output_size)
         else:
-            y = y.view(-1, x.shape[1], y.shape[-1])  # (timesteps, samples, output_size)
+            y = y.view(-1, x.size(1), y.size(-1))  # (timesteps, samples, output_size)
 
         return y
 
 
 class _GatedLinearUnit(nn.Module):
-    def __init__(self,
-                 input_size: int,
-                 hidden_size: int = None,
-                 dropout: float = None):
+    """Gated Linear Unit"""
 
-        """Applies a Gated Linear Unit (GLU) to an input, see equation (5).
-
-        Parameters
-        ----------
-        input_size
-            input size of x
-        hidden_size
-            Dimension of GLU
-        dropout
-            Dropout rate to apply if any
-        """
-
+    def __init__(self, input_size: int, hidden_size: int = None, dropout: float = None):
         super().__init__()
-        self.input_size = input_size
+
+        if dropout is not None:
+            self.dropout = nn.Dropout(dropout)
+        else:
+            self.dropout = dropout
         self.hidden_size = hidden_size or input_size
-
-        self.dropout = nn.Dropout(dropout) if dropout is not None else dropout
-
-        if not USE_ADAPTION_GLU:
-            # from pytorch-forecasting: built-in glu() splits input half along given dimension
-            self.fc = nn.Linear(self.input_size, self.hidden_size * 2)
-        else:  # according to paper this would be the correct way
-            self.fc1 = nn.Linear(self.input_size, self.hidden_size)
-            self.fc2 = nn.Linear(self.input_size, self.hidden_size)
-            self.sigmoid = nn.Sigmoid()
+        self.fc = nn.Linear(input_size, self.hidden_size * 2)
 
         self.init_weights()
 
@@ -413,88 +356,80 @@ class _GatedLinearUnit(nn.Module):
         for n, p in self.named_parameters():
             if "bias" in n:
                 torch.nn.init.zeros_(p)
-            elif "weight" in n:
+            elif "fc" in n:
                 torch.nn.init.xavier_uniform_(p)
 
     def forward(self, x):
         if self.dropout is not None:
             x = self.dropout(x)
-
-        if not USE_ADAPTION_GLU:
-            x = self.fc(x)
-            x = F.glu(x, dim=-1)
-        else:  # I actually think this is better, see https://leimao.github.io/blog/Gated-Linear-Units/
-            x_sig = self.sigmoid(self.fc1(x))
-            x = self.fc2(x)
-            x = torch.mul(x_sig, x)
+        x = self.fc(x)
+        x = F.glu(x, dim=-1)
         return x
 
 
 class _ResampleNorm(nn.Module):
-    """Resamples an input to an output size"""
-
-    def __init__(self,
-                 input_size: int,
-                 output_size: int = None):
-
+    def __init__(self, input_size: int, output_size: int = None, trainable_add: bool = True):
         super().__init__()
 
         self.input_size = input_size
+        self.trainable_add = trainable_add
         self.output_size = output_size or input_size
 
         if self.input_size != self.output_size:
-            self.resample = _TimeDistributedInterpolation(self.output_size, batch_first=True)
+            self.resample = _TimeDistributedInterpolation(self.output_size, batch_first=True, trainable=False)
 
-        self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
-        self.gate = nn.Sigmoid()
+        if self.trainable_add:
+            self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
+            self.gate = nn.Sigmoid()
         self.norm = nn.LayerNorm(self.output_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.input_size != self.output_size:
             x = self.resample(x)
 
-        x = x * self.gate(self.mask) * 2.0
+        if self.trainable_add:
+            x = x * self.gate(self.mask) * 2.0
 
         output = self.norm(x)
         return output
 
 
 class _AddNorm(nn.Module):
-    """Applies skip connection followed by layer normalisation."""
-
-    def __init__(self,
-                 input_size: int,
-                 skip_size: int = None):
-
+    def __init__(self, input_size: int, skip_size: int = None, trainable_add: bool = True):
         super().__init__()
 
         self.input_size = input_size
+        self.trainable_add = trainable_add
         self.skip_size = skip_size or input_size
 
         if self.input_size != self.skip_size:
-            self.resample = _TimeDistributedInterpolation(self.input_size, batch_first=True)
+            self.resample = _TimeDistributedInterpolation(self.input_size, batch_first=True, trainable=False)
 
+        if self.trainable_add:
+            self.mask = nn.Parameter(torch.zeros(self.input_size, dtype=torch.float))
+            self.gate = nn.Sigmoid()
         self.norm = nn.LayerNorm(self.input_size)
 
     def forward(self, x: torch.Tensor, skip: torch.Tensor):
-        """Norm(Add)"""
-
         if self.input_size != self.skip_size:
             skip = self.resample(skip)
+
+        if self.trainable_add:
+            skip = skip * self.gate(self.mask) * 2.0
 
         output = self.norm(x + skip)
         return output
 
 
 class _GateAddNorm(nn.Module):
-    """Equation (2)"""
-
-    def __init__(self,
-                 input_size: int,
-                 hidden_size: int = None,
-                 skip_size: int = None,
-                 dropout: float = None):
-
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int = None,
+        skip_size: int = None,
+        trainable_add: bool = False,
+        dropout: float = None,
+    ):
         super().__init__()
 
         self.input_size = input_size
@@ -503,155 +438,138 @@ class _GateAddNorm(nn.Module):
         self.dropout = dropout
 
         self.glu = _GatedLinearUnit(self.input_size, hidden_size=self.hidden_size, dropout=self.dropout)
-        self.add_norm = _AddNorm(self.hidden_size, skip_size=self.skip_size)
+        self.add_norm = _AddNorm(self.hidden_size, skip_size=self.skip_size, trainable_add=trainable_add)
 
     def forward(self, x, skip):
-        # skip is the same as residual
         output = self.glu(x)
         output = self.add_norm(output, skip)
         return output
 
 
 class _GatedResidualNetwork(nn.Module):
-    """Top right graph in Figure 2 and formulas (2) -- (5)"""
-
-    def __init__(self,
-                 input_size: int,
-                 hidden_size: int,
-                 output_size: int,
-                 dropout: float = 0.1,
-                 context_size: Optional[int] = None):
-        """Applies the gated residual network (GRN) as defined in paper.
-
-        Parameters
-        ----------
-        hidden_size
-            Internal state size
-        output_size
-            Size of output layer
-        dropout
-            Dropout rate if dropout is applied
-        context_size
-            size of optional context vector
-        """
-
+    def __init__(
+        self,
+        input_size: int,
+        hidden_size: int,
+        output_size: int,
+        dropout: float = 0.1,
+        context_size: int = None,
+        residual: bool = False,
+    ):
         super().__init__()
         self.input_size = input_size
         self.output_size = output_size
         self.context_size = context_size
         self.hidden_size = hidden_size
         self.dropout = dropout
+        self.residual = residual
 
-        # convert raw input into output size for residuals
-        if self.input_size != self.output_size:
-            if not USE_ADAPTION_RESAMPLE:
-                self.resample_norm = _ResampleNorm(self.input_size, self.output_size)
-            else:
-                self.resample_norm = _TimeDistributedInterpolation(self.output_size, batch_first=True)
+        if self.input_size != self.output_size and not self.residual:
+            residual_size = self.input_size
+        else:
+            residual_size = self.output_size
+
+        if self.output_size != residual_size:
+            self.resample_norm = _ResampleNorm(residual_size, self.output_size)
 
         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
-        if self.context_size is not None:
-            # according to equation (4), no context bias
-            self.context = nn.Linear(self.context_size, self.hidden_size, bias=False)
         self.elu = nn.ELU()
 
-        self.fc2 = nn.Linear(self.hidden_size, self.hidden_size)
+        if self.context_size is not None:
+            self.context = nn.Linear(self.context_size, self.hidden_size, bias=False)
 
+        self.fc2 = nn.Linear(self.hidden_size, self.hidden_size)
         self.init_weights()
 
-        self.gate_add_norm = _GateAddNorm(
+        self.gate_norm = _GateAddNorm(
             input_size=self.hidden_size,
             skip_size=self.output_size,
             hidden_size=self.output_size,
             dropout=self.dropout,
+            trainable_add=False,
         )
 
     def init_weights(self):
-        # p contains the parameter values
         for name, p in self.named_parameters():
             if "bias" in name:
                 torch.nn.init.zeros_(p)
-            elif "fc" in name:  # fc weights
+            elif "fc1" in name or "fc2" in name:
                 torch.nn.init.kaiming_normal_(p, a=0, mode="fan_in", nonlinearity="leaky_relu")
-            elif "context" in name:  # context weights
+            elif "context" in name:
                 torch.nn.init.xavier_uniform_(p)
 
-    def forward(self, x, context=None):
-        # residual connection, also called `skip` basically bypasses until add_norm
-        if self.input_size != self.output_size:
-            residual = self.resample_norm(x)
-        else:
+    def forward(self, x, context=None, residual=None):
+        if residual is None:
             residual = x
+
+        if self.input_size != self.output_size and not self.residual:
+            residual = self.resample_norm(residual)
+
         x = self.fc1(x)
         if context is not None:
             context = self.context(context)
             x = x + context
         x = self.elu(x)
         x = self.fc2(x)
-        x = self.gate_add_norm(x, residual)
+        x = self.gate_norm(x, residual)
         return x
 
 
 class _VariableSelectionNetwork(nn.Module):
-    def __init__(self,
-                 input_sizes: Dict[str, int],
-                 hidden_size: int,
-                 input_embedding_flags: Optional[Dict[str, bool]] = None,
-                 dropout: float = 0.1,
-                 context_size: Optional[int] = None,
-                 single_variable_grns: Optional[Dict[str, _GatedResidualNetwork]] = None,
-                 prescalers: Optional[torch.nn.ModuleDict] = None):
+    def __init__(
+        self,
+        input_sizes: Dict[str, int],
+        hidden_size: int,
+        input_embedding_flags: Dict[str, bool] = {},
+        dropout: float = 0.1,
+        context_size: int = None,
+        single_variable_grns: Dict[str, _GatedResidualNetwork] = {},
+        prescalers: Dict[str, nn.Linear] = {},
+    ):
         """
-        From paper https://arxiv.org/pdf/1912.09363.pdf:
-        TFT is designed to provide instance-wise variable selection through the use of variable selection networks
-        applied to both static covariates and time-dependent covariates. Beyond provid- ing insights into which
-        variables are most significant for the prediction problem, variable selection also allows TFT to remove any
-        unnecessary noisy inputs which could negatively impact performance.
+        Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
         """
-
         super().__init__()
 
-        self.input_sizes = input_sizes
         self.hidden_size = hidden_size
-        self.input_embedding_flags = {} if input_embedding_flags is None else input_embedding_flags
+        self.input_sizes = input_sizes
+        self.input_embedding_flags = input_embedding_flags
         self.dropout = dropout
         self.context_size = context_size
-        single_variable_grns = {} if single_variable_grns is None else single_variable_grns
-        prescalers = {} if prescalers is None else prescalers
 
-        self.num_inputs = len(self.input_sizes)
-        self.input_sizes_total = sum(self.input_sizes.values())
+        if self.num_inputs > 1:
+            if self.context_size is not None:
+                self.flattened_grn = _GatedResidualNetwork(
+                    self.input_size_total,
+                    min(self.hidden_size, self.num_inputs),
+                    self.num_inputs,
+                    self.dropout,
+                    self.context_size,
+                    residual=False,
+                )
+            else:
+                self.flattened_grn = _GatedResidualNetwork(
+                    self.input_size_total,
+                    min(self.hidden_size, self.num_inputs),
+                    self.num_inputs,
+                    self.dropout,
+                    residual=False,
+                )
 
-        if self.num_inputs >= 1:
-            # right side of figure 2 bottom right graph
-            self.vars_flattened_grn = _GatedResidualNetwork(
-                input_size=self.input_sizes_total,
-                hidden_size=min(self.hidden_size, self.num_inputs) if not USE_ADAPTION_VSN else self.hidden_size,
-                output_size=self.num_inputs,
-                dropout=self.dropout,
-                context_size=self.context_size
-            )
-
-        # TODO: (dbader) this can be cleaner, also think about moving prescalers out of _VariableSelectionNetwork
-        # left side of figure 2 bottom right graph
-        self.vars_single_grns = nn.ModuleDict()
+        self.single_variable_grns = nn.ModuleDict()
         self.prescalers = nn.ModuleDict()
         for name, input_size in self.input_sizes.items():
             if name in single_variable_grns:
-                self.vars_single_grns[name] = single_variable_grns[name]
+                self.single_variable_grns[name] = single_variable_grns[name]
             elif self.input_embedding_flags.get(name, False):
-                if not USE_ADAPTION_RESAMPLE:
-                    self.vars_single_grns[name] = _ResampleNorm(input_size, self.hidden_size)
-                else:
-                    self.vars_single_grns[name] = _TimeDistributedInterpolation(self.hidden_size, batch_first=True)
+                self.single_variable_grns[name] = _ResampleNorm(input_size, self.hidden_size)
             else:
-                self.vars_single_grns[name] = _GatedResidualNetwork(
-                    input_size=input_size,
-                    hidden_size=min(input_size, self.hidden_size) if not USE_ADAPTION_VSN else self.hidden_size,
+                self.single_variable_grns[name] = _GatedResidualNetwork(
+                    input_size,
+                    min(input_size, self.hidden_size),
                     output_size=self.hidden_size,
-                    dropout=self.dropout
+                    dropout=self.dropout,
                 )
-
             if name in prescalers:  # reals need to be first scaled up
                 self.prescalers[name] = prescalers[name]
             elif not self.input_embedding_flags.get(name, False):
@@ -659,104 +577,87 @@ class _VariableSelectionNetwork(nn.Module):
 
         self.softmax = nn.Softmax(dim=-1)
 
+    @property
+    def input_size_total(self):
+        return sum(size if name in self.input_embedding_flags else size for name, size in self.input_sizes.items())
+
+    @property
+    def num_inputs(self):
+        return len(self.input_sizes)
+
     def forward(self, x: Dict[str, torch.Tensor], context: torch.Tensor = None):
-        # transform variables and GRN for transformed variables (left side of figure 2 bottom right graph)
-        vars_out = []
-        transformed = []
-        for var_name in self.input_sizes.keys():
-            # select embedding belonging to a single input variable
-            var_transformed = x[var_name]
-            if var_name in self.prescalers:
-                var_transformed = self.prescalers[var_name](var_transformed)
-            vars_out.append(self.vars_single_grns[var_name](var_transformed))
-            transformed.append(var_transformed)
+        if self.num_inputs > 1:
+            # transform single variables
+            var_outputs = []
+            weight_inputs = []
+            for name in self.input_sizes.keys():
+                # select embedding belonging to a single input
+                variable_embedding = x[name]
+                if name in self.prescalers:
+                    variable_embedding = self.prescalers[name](variable_embedding)
+                weight_inputs.append(variable_embedding)
+                var_outputs.append(self.single_variable_grns[name](variable_embedding))
+            var_outputs = torch.stack(var_outputs, dim=-1)
 
-        vars_out = torch.stack(vars_out, dim=-1)
+            # calculate variable weights
+            flat_embedding = torch.cat(weight_inputs, dim=-1)
+            sparse_weights = self.flattened_grn(flat_embedding, context)
+            sparse_weights = self.softmax(sparse_weights).unsqueeze(-2)
 
-        # calculate variable weights with flattened variables (right side of figure 2 bottom right graph)
-        flattened = torch.cat(transformed, dim=-1)
-
-        selection_weights = self.vars_flattened_grn(flattened, context)
-        selection_weights = self.softmax(selection_weights).unsqueeze(-2)
-
-        # join single variable with variable selection weigths (top of figure 2 bottom right graph)
-        outputs = vars_out * selection_weights
-        outputs = outputs.sum(dim=-1)
-        return outputs, selection_weights
+            outputs = var_outputs * sparse_weights
+            outputs = outputs.sum(dim=-1)
+        else:  # for one input, do not perform variable selection but just encoding
+            name = next(iter(self.single_variable_grns.keys()))
+            variable_embedding = x[name]
+            if name in self.prescalers:
+                variable_embedding = self.prescalers[name](variable_embedding)
+            outputs = self.single_variable_grns[name](variable_embedding)  # fast forward if only one variable
+            if outputs.ndim == 3:  # -> batch size, time, hidden size, n_variables
+                sparse_weights = torch.ones(outputs.size(0), outputs.size(1), 1, 1, device=outputs.device)  #
+            else:  # ndim == 2 -> batch size, hidden size, n_variables
+                sparse_weights = torch.ones(outputs.size(0), 1, 1, device=outputs.device)
+        return outputs, sparse_weights
 
 
 class _ScaledDotProductAttention(nn.Module):
-    """_ScaledDotProductAttention is a self-attention mechanism to learn long-term
-    relationships across different time steps. It scales values V based on relationship
-    between Keys K and queries Q.
-
-    From equations (9) -- (10)"""
-
-    def __init__(self):
-
+    def __init__(self, dropout: float = None, scale: bool = True):
         super(_ScaledDotProductAttention, self).__init__()
-
+        if dropout is not None:
+            self.dropout = nn.Dropout(p=dropout)
+        else:
+            self.dropout = dropout
         self.softmax = nn.Softmax(dim=2)
+        self.scale = scale
 
     def forward(self, q, k, v, mask=None):
-        """
-        Parameters
-        ----------
-        q
-            Queries matrix of dimension (N x d_attention)
-        k
-            Keys matrix of dimension (N x d_attention)
-        v
-            Values matrix of dimension (N x d_Values)
-        mask
-            masking if required -- sets softmax to very large value
-        """
+        attn = torch.bmm(q, k.permute(0, 2, 1))  # query-key overlap
 
-        attn = torch.bmm(q, k.transpose(1, 2))
-
-        dimension = torch.sqrt(torch.tensor(k.shape[-1]).to(torch.float32))
-        attn = attn / dimension
+        if self.scale:
+            dimension = torch.sqrt(torch.tensor(k.shape[-1]).to(torch.float32))
+            attn = attn / dimension
 
         if mask is not None:
-            attn = attn.masked_fill(mask, float('-inf'))
+            attn = attn.masked_fill(mask, -1e9)
         attn = self.softmax(attn)
 
+        if self.dropout is not None:
+            attn = self.dropout(attn)
         output = torch.bmm(attn, v)
         return output, attn
 
 
 class _InterpretableMultiHeadAttention(nn.Module):
-    """Equations (13) -- (16)"""
-
-    def __init__(self,
-                 n_head: int,
-                 d_model: int,
-                 dropout: Optional[float] = None):
-        """
-        Description of parameters
-            n_head: number of heads
-            d_model: TFT state dimensionality
-            d_k: Key/query dimensionality per head
-            d_v: value dimensionality
-            q_layers: list of queries across heads
-            k_layers: list of keys across heads
-            v_layers: list of values across heads
-            attention: scaled dot product attention layer
-            w_h: output head weight matrix to project internal state to the original TFT state size
-        """
-
+    def __init__(self, n_head: int, d_model: int, dropout: float = 0.0):
         super(_InterpretableMultiHeadAttention, self).__init__()
 
         self.n_head = n_head
         self.d_model = d_model
         self.d_k = self.d_q = self.d_v = d_model // n_head
-        self.dropout = nn.Dropout(p=dropout) if dropout is not None else dropout
+        self.dropout = nn.Dropout(p=dropout)
 
-        # use same value layer to facilitate interpretation
         self.v_layer = nn.Linear(self.d_model, self.d_v)
         self.q_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_q) for _ in range(self.n_head)])
         self.k_layers = nn.ModuleList([nn.Linear(self.d_model, self.d_k) for _ in range(self.n_head)])
-
         self.attention = _ScaledDotProductAttention()
         self.w_h = nn.Linear(self.d_v, self.d_model, bias=False)
 
@@ -764,9 +665,9 @@ class _InterpretableMultiHeadAttention(nn.Module):
 
     def init_weights(self):
         for name, p in self.named_parameters():
-            if 'weight' in name:
+            if "bias" not in name:
                 torch.nn.init.xavier_uniform_(p)
-            elif 'bias' in name:
+            else:
                 torch.nn.init.zeros_(p)
 
     def forward(self, q, k, v, mask=None) -> Tuple[torch.Tensor, torch.Tensor]:
@@ -777,18 +678,15 @@ class _InterpretableMultiHeadAttention(nn.Module):
             qs = self.q_layers[i](q)
             ks = self.k_layers[i](k)
             head, attn = self.attention(qs, ks, vs, mask)
-            if self.dropout is not None:
-                head = self.dropout(head)
-            heads.append(head)
+            head_dropout = self.dropout(head)
+            heads.append(head_dropout)
             attns.append(attn)
 
         head = torch.stack(heads, dim=2) if self.n_head > 1 else heads[0]
         attn = torch.stack(attns, dim=2)
 
         outputs = torch.mean(head, dim=2) if self.n_head > 1 else head
-
         outputs = self.w_h(outputs)
-        if self.dropout is not None:
-            outputs = self.dropout(outputs)
+        outputs = self.dropout(outputs)
 
         return outputs, attn
