@@ -13,7 +13,7 @@ from torch import nn
 from darts import TimeSeries
 from darts.utils.torch import random_method
 from darts.logging import get_logger, raise_if_not, raise_if
-from darts.utils.likelihood_models import Likelihood
+from darts.utils.likelihood_models import QuantileRegression, Likelihood
 from darts.utils.data import (
     TrainingDataset,
     MixedCovariatesSequentialDataset,
@@ -29,7 +29,6 @@ from darts.models.forecasting.tft_submodels import (
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
     _LSTM,
-    QuantileLoss
 )
 
 logger = get_logger(__name__)
@@ -49,8 +48,7 @@ class _TFTModule(nn.Module):
                  num_attention_heads: int = 4,
                  hidden_continuous_size: int = 8,
                  dropout: float = 0.1,
-                 loss_fn: nn.Module = QuantileLoss(),
-                 likelihood: Optional[Likelihood] = None):
+                 likelihood: Optional[Likelihood] = QuantileRegression()):
 
         """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
         The implementation is built upon `pytorch-forecasting's TemporalFusionTransformer
@@ -76,11 +74,6 @@ class _TFTModule(nn.Module):
             default for hidden size for processing continuous variables
         dropout : float
             Fraction of neurons afected by Dropout.
-        loss_fn : nn.Module
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Per default the TFT uses quantile loss as defined in the original paper.
-            Default: `darts.models.forecasting.tft_submodels.QuantileLoss()`.
         """
 
         super(_TFTModule, self).__init__()
@@ -94,7 +87,6 @@ class _TFTModule(nn.Module):
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
         self.dropout = dropout
-        self.loss_fn = loss_fn
         self.likelihood = likelihood
 
         # general information on variable name endings:
@@ -491,7 +483,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  lstm_layers: int = 1,
                  num_attention_heads: int = 4,
                  dropout: float = 0.1,
-                 loss_fn: Optional[nn.Module] = QuantileLoss(),
+                 loss_fn: Optional[nn.Module] = None,
                  hidden_continuous_size: int = 8,
                  likelihood: Optional[Likelihood] = None,
                  max_samples_per_ts: Optional[int] = None,
@@ -503,9 +495,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         This is an implementation of the TFT architecture, as outlined in this paper:
         https://arxiv.org/pdf/1912.09363.pdf.
 
-        The internal TFT architecture uses a majority of `pytorch-forecasting's TemporalFusionTransformer
-        <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
-
         This model supports mixed covariates (includes past covariates known for `input_chunk_length`
         points before prediction time and future covariates known for `output_chunk_length` after prediction time).
 
@@ -513,6 +502,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         much worse. Consider supplying a cyclic encoding of the time index as future_covariates to the `fit()` and
         `predict()` methods. See :meth:`darts.utils.timeseries_generation.datetime_attribute_timeseries()
         <darts.utils.timeseries_generation.datetime_attribute_timeseries>`.
+
+        By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
+        probabilistic; it is recommended to call ``predict()`` with ``num_samples >> 1`` to get meaningful results.
 
         Parameters
         ----------
@@ -529,18 +521,22 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         dropout : float
             Fraction of neurons afected by Dropout.
         loss_fn : nn.Module
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Per default the TFT uses quantile loss as defined in the original paper.
-            Default: :meth:`darts.models.forecasting.tft_submodels.QuantileLoss()
-            <darts.models.forecasting.tft_submodels.QuantileLoss>`
+            PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
+            instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None
+            and give a ``loss_fn`` argument.
         hidden_continuous_size : int
             default for hidden size for processing continuous variables
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts. By default the TFT uses
+            a ``QuantileRegression`` likelihood.
+        max_samples_per_ts
+            Optionally, a maximum number of training sample to generate per time series.
         **kwargs
             Optional arguments to initialize the torch.Module
+
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -556,10 +552,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             to using a constant learning rate.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer.
-        loss_fn
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: `torch.nn.MSELoss()`.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
@@ -581,15 +573,16 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         force_reset
             If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).
-        likelihood
-            Optionally, the likelihood model to be used for probabilistic forecasts.
-            If no likelihood model is provided, forecasts will be deterministic.
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
             If set to `False`, the model can still be manually saved using :meth:`save_model()
             <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
             <TorchForeCastingModel.load_model()>`.
         """
+        if likelihood is None and loss_fn is None:
+            # This is the default if no loss information is provided
+            likelihood = QuantileRegression()
+
         kwargs['loss_fn'] = loss_fn
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
@@ -601,13 +594,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.lstm_layers = lstm_layers
         self.dropout = dropout
         self.loss_fn = loss_fn
-        # QuantileLoss requires one output per quantile, MSELoss requires 1
-        self.loss_size = 1 if not isinstance(loss_fn, QuantileLoss) else len(loss_fn.quantiles)
         self.num_attention_heads = num_attention_heads
         self.hidden_continuous_size = hidden_continuous_size
         self.likelihood = likelihood
         self.max_sample_per_ts = max_samples_per_ts
-        self.output_dim: Tuple[int, int] = None
+        self.output_dim: Optional[Tuple[int, int]] = None
 
     def _create_model(self,
                       train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
@@ -642,7 +633,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
         static_covariates = None  # placeholder for future
 
-        self.output_dim = (future_target.shape[1], self.loss_size) if self.likelihood is None else \
+        self.output_dim = (future_target.shape[1], 1) if self.likelihood is None else \
             (future_target.shape[1], self.likelihood.num_parameters)
 
         tensors = [
@@ -734,14 +725,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
     @random_method
     def _produce_predict_output(self, x):
-        out = self.model(x)
-        if self.likelihood is not None:
-            return self.likelihood.sample(out)
-        elif isinstance(self.loss_fn, QuantileLoss):
-            p50_index = self.loss_fn.quantiles.index(0.5)
-            return out[..., p50_index]
+        if self.likelihood:
+            output = self.model(x)
+            return self.likelihood.sample(output)
         else:
-            return out
+            return self.model(x)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
