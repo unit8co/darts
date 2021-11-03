@@ -449,16 +449,16 @@ class _TFTModule(nn.Module):
         out = [output_layer(out) for output_layer in self.output_layer]
 
         # stack output
-        if self.likelihood is not None or self.loss_size == 1 and self.n_targets > 1:
-            # returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)
-            out = torch.cat(out, dim=dim_variable)
-        elif self.loss_size == 1 and self.n_targets == 1:
-            # returns shape (n_samples, n_timesteps, 1) for univariate
-            out = out[0]
-        else:
+        if isinstance(self.likelihood, QuantileRegression):
             # loss_size > 1 for losses such as QuantileLoss
             # returns shape (n_samples, n_timesteps, n_targets, n_losses)
             out = torch.cat([out_i.unsqueeze(dim_variable) for out_i in out], dim=dim_variable)
+        elif self.likelihood is not None or self.loss_size == 1 and self.n_targets > 1:
+            # returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)
+            out = torch.cat(out, dim=dim_variable)
+        else:  # self.loss_size == 1 and self.n_targets == 1
+            # returns shape (n_samples, n_timesteps, 1) for univariate
+            out = out[0]
 
         # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
@@ -495,13 +495,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         This is an implementation of the TFT architecture, as outlined in this paper:
         https://arxiv.org/pdf/1912.09363.pdf.
 
+        The internal sub models were adopted from `pytorch-forecasting's TemporalFusionTransformer
+        <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
+
         This model supports mixed covariates (includes past covariates known for `input_chunk_length`
         points before prediction time and future covariates known for `output_chunk_length` after prediction time).
 
-        The TFT applies multi-head attention queries on future inputs. Without future covariates, the model performs
-        much worse. Consider supplying a cyclic encoding of the time index as future_covariates to the `fit()` and
-        `predict()` methods. See :meth:`darts.utils.timeseries_generation.datetime_attribute_timeseries()
-        <darts.utils.timeseries_generation.datetime_attribute_timeseries>`.
+        The TFT applies multi-head attention queries on future inputs. Currently, future covariates must be supplied
+        to `fit()` and `predict()`.
 
         By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
         probabilistic; it is recommended to call ``predict()`` with ``num_samples >> 1`` to get meaningful results.
@@ -624,10 +625,10 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         # TODO: we might want to include cyclic encoding variable here (which will need to be added to
         #  train and predict datasets)? For now we raise an Error when future covariates are not defined.
         raise_if(future_covariate is None,
-                 'TFTModel requires future covariates. The model applies multi-head attention queries on future inputs. '
-                 'Without future covariates, the model performs much worse. Consider supplying a cyclic encoding of '
-                 'the time index as future_covariates to the `fit()` and `predict()` methods. See '
-                 'https://unit8co.github.io/darts/generated_api/darts.utils.timeseries_generation.html#'
+                 'TFTModel requires future covariates. The model applies multi-head attention queries on future '
+                 'inputs. Without future covariates, the model performs much worse. Consider supplying a cyclic '
+                 'encoding of the time index as future_covariates to the `fit()` and `predict()` methods. '
+                 'See https://unit8co.github.io/darts/generated_api/darts.utils.timeseries_generation.html#'
                  'darts.utils.timeseries_generation.datetime_attribute_timeseries',
                  logger)
 

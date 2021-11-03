@@ -1023,8 +1023,8 @@ class QuantileRegression(Likelihood):
         model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
 
         if self.first:  # test if torch model forward produces correct output
-            raise_if_not(len(model_output.shape) == 4 or len(target.shape) == 3 or
-                         model_output.shape[:2] != target.shape[:2],
+            raise_if_not(len(model_output.shape) == 4 and len(target.shape) == 3 and
+                         model_output.shape[:2] == target.shape[:2],
                          'mismatch between predicted and target shape')
             raise_if_not(model_output.shape[dim_q] == len(self.quantiles),
                          'mismatch between number of predicted quantiles and target quantiles')

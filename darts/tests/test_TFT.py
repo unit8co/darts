@@ -34,6 +34,18 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
                 QuantileRegression(q_non_symmetric)
 
+        def test_no_future_covariates(self):
+            season_length = 1
+            n_repeat = 20
+
+            # data comes as multivariate
+            ts, ts_train, ts_val, covariates = self.helper_generate_multivariate_case_data(season_length, n_repeat)
+            model = TFTModel()
+
+            # model requires future covariates
+            with self.assertRaises(ValueError):
+                model.fit(ts_train, verbose=False)
+
         def test_prediction_shape(self):
             """checks whether prediction has same number of variable as input series and
             whether prediction has correct length.
@@ -42,11 +54,11 @@ if TORCH_AVAILABLE:
                 -   multivariate
                 -   multi-TS
             """
-            season_length = 24
-            n_repeat = 30
+            season_length = 1
+            n_repeat = 20
 
             # data comes as multivariate
-            ts, ts_train, ts_val, _ = self.helper_generate_multivariate_case_data(season_length, n_repeat)
+            ts, ts_train, ts_val, covariates = self.helper_generate_multivariate_case_data(season_length, n_repeat)
 
             kwargs_TFT_quick_test = {
                 'input_chunk_length': 1,
@@ -61,29 +73,25 @@ if TORCH_AVAILABLE:
             # univariate
             first_var = ts.columns[0]
             self.helper_test_prediction_shape(season_length, ts[first_var], ts_train[first_var], ts_val[first_var],
-                                                kwargs_tft=kwargs_TFT_quick_test)
+                                              covariates, kwargs_tft=kwargs_TFT_quick_test)
             # univariate and short prediction length
             self.helper_test_prediction_shape(2, ts[first_var], ts_train[first_var], ts_val[first_var],
-                                                kwargs_tft=kwargs_TFT_quick_test)
+                                              covariates, kwargs_tft=kwargs_TFT_quick_test)
             # multivariate
             self.helper_test_prediction_shape(season_length, ts, ts_train, ts_val,
-                                                kwargs_tft=kwargs_TFT_quick_test)
+                                              covariates, kwargs_tft=kwargs_TFT_quick_test)
             # multi-TS
             second_var = ts.columns[-1]
             self.helper_test_prediction_shape(season_length,
-                                                [ts[first_var], ts[second_var]],
-                                                [ts_train[first_var], ts_train[second_var]],
-                                                [ts_val[first_var], ts_val[second_var]],
-                                                kwargs_tft=kwargs_TFT_quick_test)
+                                              [ts[first_var], ts[second_var]],
+                                              [ts_train[first_var], ts_train[second_var]],
+                                              [ts_val[first_var], ts_val[second_var]],
+                                              [covariates, covariates],
+                                              kwargs_tft=kwargs_TFT_quick_test)
 
         def test_mixed_covariates_and_accuracy(self):
-            """Performs tests using a mix of covariates for a multivariate prediction of a
+            """Performs tests usingpast and future covariates for a multivariate prediction of a
             sine wave together with a repeating linear curve. Both curves have the seasonal length.
-            Test cases:
-                -   no covariates
-                -   past covariates only
-                -   future covariates only
-                -   past and future covariates
             """
             season_length = 24
             n_repeat = 30
@@ -100,19 +108,6 @@ if TORCH_AVAILABLE:
                 'random_state': 42
             }
 
-            # perform test cases
-            self.helper_test_prediction_accuracy(season_length, ts, ts_train, ts_val,
-                                                 past_covariates=None,
-                                                 future_covariates=None,
-                                                 kwargs_tft=kwargs_TFT_full_coverage)
-            self.helper_test_prediction_accuracy(season_length, ts, ts_train, ts_val,
-                                                 past_covariates=covariates,
-                                                 future_covariates=None,
-                                                 kwargs_tft=kwargs_TFT_full_coverage)
-            self.helper_test_prediction_accuracy(season_length, ts, ts_train, ts_val,
-                                                 past_covariates=None,
-                                                 future_covariates=covariates,
-                                                 kwargs_tft=kwargs_TFT_full_coverage)
             self.helper_test_prediction_accuracy(season_length, ts, ts_train, ts_val,
                                                  past_covariates=covariates,
                                                  future_covariates=covariates,
@@ -155,10 +150,10 @@ if TORCH_AVAILABLE:
             covariates_scaled = scaler_covs.fit_transform(covariates)
             return ts_scaled, ts_train_scaled, ts_val_scaled, covariates_scaled
 
-        def helper_test_prediction_shape(self, predict_n, ts, ts_train, ts_val, kwargs_tft):
+        def helper_test_prediction_shape(self, predict_n, ts, ts_train, ts_val, future_covariates, kwargs_tft):
             """checks whether prediction has same number of variable as input series and
             whether prediction has correct length"""
-            y_hat = self.helper_fit_predict(predict_n, ts_train, ts_val, None, None, kwargs_tft)
+            y_hat = self.helper_fit_predict(predict_n, ts_train, ts_val, None, future_covariates, kwargs_tft)
 
             y_hat_list = [y_hat] if isinstance(y_hat, TimeSeries) else y_hat
             ts_list = [ts] if isinstance(ts, TimeSeries) else ts
