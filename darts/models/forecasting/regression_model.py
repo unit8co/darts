@@ -100,7 +100,8 @@ class RegressionModel(GlobalForecastingModel):
             of integers with lags is required.
         model
             Scikit-learn-like model with `fit()` and `predict()` methods. Also possible to use model that doesn't
-            support multi-output regression for multivariate timeseries.
+            support multi-output regression for multivariate timeseries, in which case one regressor
+            will be used per component in the multivariate series.
             If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1)`
         """
 
