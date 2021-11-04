@@ -357,10 +357,10 @@ def autoregressive_timeseries(coef: Sequence[float],
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
 
-    values = np.empty(len(coef) + length)
+    values = np.empty(len(coef) + len(index))
     values[:len(coef)] = start_values
 
-    for i in range(len(coef), len(coef) + length):
+    for i in range(len(coef), len(coef) + len(index)):
         # calculate next time step as dot product of coefs with previous len(coef) time steps
         values[i] = np.dot(values[i - len(coef):i], coef)
 
