@@ -38,7 +38,7 @@ except ModuleNotFoundError:
     logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")
 
 # Regression
-from darts.models.forecasting.lgbm_model import LinearRegressionModel
+from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.random_forest import RandomForest
 from darts.models.forecasting.regression_model import RegressionModel
 

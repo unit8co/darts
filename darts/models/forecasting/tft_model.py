@@ -13,11 +13,13 @@ from torch import nn
 from darts import TimeSeries
 from darts.utils.torch import random_method
 from darts.logging import get_logger, raise_if_not, raise_if
-from darts.utils.likelihood_models import Likelihood
+from darts.utils.likelihood_models import QuantileRegression, Likelihood
+from darts.utils.timeseries_generation import datetime_attribute_timeseries, _generate_index
 from darts.utils.data import (
     TrainingDataset,
     MixedCovariatesSequentialDataset,
-    MixedCovariatesTrainingDataset
+    MixedCovariatesTrainingDataset,
+    MixedCovariatesInferenceDataset
 )
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
@@ -28,8 +30,7 @@ from darts.models.forecasting.tft_submodels import (
     _GatedResidualNetwork,
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
-    _LSTM,
-    QuantileLoss
+    _LSTM
 )
 
 logger = get_logger(__name__)
@@ -49,7 +50,6 @@ class _TFTModule(nn.Module):
                  num_attention_heads: int = 4,
                  hidden_continuous_size: int = 8,
                  dropout: float = 0.1,
-                 loss_fn: nn.Module = QuantileLoss(),
                  likelihood: Optional[Likelihood] = None):
 
         """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -76,11 +76,6 @@ class _TFTModule(nn.Module):
             default for hidden size for processing continuous variables
         dropout : float
             Fraction of neurons afected by Dropout.
-        loss_fn : nn.Module
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Per default the TFT uses quantile loss as defined in the original paper.
-            Default: `darts.models.forecasting.tft_submodels.QuantileLoss()`.
         """
 
         super(_TFTModule, self).__init__()
@@ -94,7 +89,6 @@ class _TFTModule(nn.Module):
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
         self.dropout = dropout
-        self.loss_fn = loss_fn
         self.likelihood = likelihood
 
         # general information on variable name endings:
@@ -457,16 +451,16 @@ class _TFTModule(nn.Module):
         out = [output_layer(out) for output_layer in self.output_layer]
 
         # stack output
-        if self.likelihood is not None or self.loss_size == 1 and self.n_targets > 1:
-            # returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)
-            out = torch.cat(out, dim=dim_variable)
-        elif self.loss_size == 1 and self.n_targets == 1:
-            # returns shape (n_samples, n_timesteps, 1) for univariate
-            out = out[0]
-        else:
+        if isinstance(self.likelihood, QuantileRegression):
             # loss_size > 1 for losses such as QuantileLoss
             # returns shape (n_samples, n_timesteps, n_targets, n_losses)
             out = torch.cat([out_i.unsqueeze(dim_variable) for out_i in out], dim=dim_variable)
+        elif self.likelihood is not None or self.loss_size == 1 and self.n_targets > 1:
+            # returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)
+            out = torch.cat(out, dim=dim_variable)
+        else:  # self.loss_size == 1 and self.n_targets == 1
+            # returns shape (n_samples, n_timesteps, 1) for univariate
+            out = out[0]
 
         # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
@@ -491,8 +485,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  lstm_layers: int = 1,
                  num_attention_heads: int = 4,
                  dropout: float = 0.1,
-                 loss_fn: Optional[nn.Module] = QuantileLoss(),
                  hidden_continuous_size: int = 8,
+                 add_cyclic_encoder: Optional[str] = None,
+                 loss_fn: Optional[nn.Module] = None,
                  likelihood: Optional[Likelihood] = None,
                  max_samples_per_ts: Optional[int] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
@@ -503,16 +498,18 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         This is an implementation of the TFT architecture, as outlined in this paper:
         https://arxiv.org/pdf/1912.09363.pdf.
 
-        The internal TFT architecture uses a majority of `pytorch-forecasting's TemporalFusionTransformer
+        The internal sub models were adopted from `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
 
         This model supports mixed covariates (includes past covariates known for `input_chunk_length`
         points before prediction time and future covariates known for `output_chunk_length` after prediction time).
 
-        The TFT applies multi-head attention queries on future inputs. Without future covariates, the model performs
-        much worse. Consider supplying a cyclic encoding of the time index as future_covariates to the `fit()` and
-        `predict()` methods. See :meth:`darts.utils.timeseries_generation.datetime_attribute_timeseries()
-        <darts.utils.timeseries_generation.datetime_attribute_timeseries>`.
+        The TFT applies multi-head attention queries on future inputs from mandatory `future_covariates`.
+        Specifying `add_cyclic_encoder` (read below) adds cyclic temporal encoding to the model and allows to use
+        the model without having to specify additional `future_covariates` for training and prediction.
+
+        By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
+        probabilistic; it is recommended to call ``predict()`` with ``num_samples >> 1`` to get meaningful results.
 
         Parameters
         ----------
@@ -528,19 +525,32 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             number of attention heads (4 is a good default)
         dropout : float
             Fraction of neurons afected by Dropout.
-        loss_fn : nn.Module
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Per default the TFT uses quantile loss as defined in the original paper.
-            Default: :meth:`darts.models.forecasting.tft_submodels.QuantileLoss()
-            <darts.models.forecasting.tft_submodels.QuantileLoss>`
         hidden_continuous_size : int
             default for hidden size for processing continuous variables
+        add_cyclic_encoder : optional str
+            If other than None, apply cycling encoding to an attribute of the time index and add it to the
+            `future_covariates`.
+            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`
+            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
+            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+            For more information, check out :meth:`datetime_attribute_timeseries()
+            <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        loss_fn : nn.Module
+            PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
+            instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None
+            and give a ``loss_fn`` argument.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts. By default the TFT uses
+            a ``QuantileRegression`` likelihood.
+        max_samples_per_ts
+            Optionally, a maximum number of training sample to generate per time series.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
         **kwargs
             Optional arguments to initialize the torch.Module
+
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -556,10 +566,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             to using a constant learning rate.
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer.
-        loss_fn
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: `torch.nn.MSELoss()`.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
@@ -581,15 +587,16 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         force_reset
             If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).
-        likelihood
-            Optionally, the likelihood model to be used for probabilistic forecasts.
-            If no likelihood model is provided, forecasts will be deterministic.
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
             If set to `False`, the model can still be manually saved using :meth:`save_model()
             <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
             <TorchForeCastingModel.load_model()>`.
         """
+        if likelihood is None and loss_fn is None:
+            # This is the default if no loss information is provided
+            likelihood = QuantileRegression()
+
         kwargs['loss_fn'] = loss_fn
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
@@ -599,15 +606,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.output_chunk_length = output_chunk_length
         self.hidden_size = hidden_size
         self.lstm_layers = lstm_layers
-        self.dropout = dropout
-        self.loss_fn = loss_fn
-        # QuantileLoss requires one output per quantile, MSELoss requires 1
-        self.loss_size = 1 if not isinstance(loss_fn, QuantileLoss) else len(loss_fn.quantiles)
         self.num_attention_heads = num_attention_heads
+        self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
+        self.add_cyclic_encoder = add_cyclic_encoder
+        self.loss_fn = loss_fn
         self.likelihood = likelihood
         self.max_sample_per_ts = max_samples_per_ts
-        self.output_dim: Tuple[int, int] = None
+        self.output_dim: Optional[Tuple[int, int]] = None
 
     def _create_model(self,
                       train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
@@ -630,19 +636,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         """
         past_target, past_covariate, historic_future_covariate, future_covariate, future_target = train_sample
 
-        # TODO: we might want to include cyclic encoding variable here (which will need to be added to
-        #  train and predict datasets)? For now we raise an Error when future covariates are not defined.
-        raise_if(future_covariate is None,
-                 'TFTModel requires future covariates. The model applies multi-head attention queries on future inputs. '
-                 'Without future covariates, the model performs much worse. Consider supplying a cyclic encoding of '
-                 'the time index as future_covariates to the `fit()` and `predict()` methods. See '
-                 'https://unit8co.github.io/darts/generated_api/darts.utils.timeseries_generation.html#'
-                 'darts.utils.timeseries_generation.datetime_attribute_timeseries',
-                 logger)
-
         static_covariates = None  # placeholder for future
 
-        self.output_dim = (future_target.shape[1], self.loss_size) if self.likelihood is None else \
+        self.output_dim = (future_target.shape[1], 1) if self.likelihood is None else \
             (future_target.shape[1], self.likelihood.num_parameters)
 
         tensors = [
@@ -707,6 +703,15 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
 
+        raise_if(future_covariates is None and self.add_cyclic_encoder is None,
+                 'TFTModel requires future covariates. The model applies multi-head attention queries on future '
+                 'inputs. Consider specifying `add_cyclic_encoder` (in TFT model docs) at model creation which '
+                 'automatically adds cyclic encoding of the time index to `future_covariates`.',
+                 logger)
+
+        if self.add_cyclic_encoder is not None:
+            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates)
+
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
@@ -714,9 +719,75 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 output_chunk_length=self.output_chunk_length,
                                                 max_samples_per_ts=self.max_sample_per_ts)
 
+    def _add_cyclic_encoder(self,
+                             target: Sequence[TimeSeries],
+                             future_covariates: Optional[Sequence[TimeSeries]] = None,
+                             n: Optional[int] = None) -> Sequence[TimeSeries]:
+        """adds cyclic encoding of time index to future covariates.
+        For training (when `n` is `None`) we can simply use the future covariates (when available) or target as
+        reference to extract the time index.
+        For prediction (when `n` is given) we have to distinguish between two cases:
+            1)
+                when future covariates are given, we can use them as reference
+            2)
+                when future covariates are missing, we need to generate a time index that starts `input_chunk_length`
+                before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
+
+        Parameters
+        ----------
+        target
+            past target TimeSeries
+        future_covariates
+            future covariates TimeSeries
+        n
+            prediciton length (only given for predictions)
+
+        Returns
+        -------
+        Sequence[TimeSeries]
+            future covariates including cyclic encoded time index
+        """
+
+        if n is None:  # training
+            encode_ts = future_covariates if future_covariates is not None else target
+        else:  # prediction
+            if future_covariates is not None:
+                encode_ts = future_covariates
+            else:
+                encode_ts = [_generate_index(start=ts.end_time() - ts.freq * (self.input_chunk_length - 1),
+                                             length=self.input_chunk_length + max(n, self.output_chunk_length),
+                                             freq=ts.freq) for ts in target]
+
+        encoded_times = [
+            datetime_attribute_timeseries(ts, attribute=self.add_cyclic_encoder, cyclic=True) for ts in encode_ts
+        ]
+
+        if future_covariates is None:
+            future_covariates = encoded_times
+        else:
+            future_covariates = [fc.stack(et) for fc, et in zip(future_covariates, encoded_times)]
+
+        return future_covariates
+
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(isinstance(train_dataset, MixedCovariatesTrainingDataset),
                      'TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.')
+
+    def _build_inference_dataset(self,
+                                 target: Sequence[TimeSeries],
+                                 n: int,
+                                 past_covariates: Optional[Sequence[TimeSeries]],
+                                 future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
+
+        if self.add_cyclic_encoder is not None:
+            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=n)
+
+        return MixedCovariatesInferenceDataset(target_series=target,
+                                               past_covariates=past_covariates,
+                                               future_covariates=future_covariates,
+                                               n=n,
+                                               input_chunk_length=self.input_chunk_length,
+                                               output_chunk_length=self.output_chunk_length)
 
     def _produce_train_output(self, input_batch: Tuple):
         return self.model(input_batch)
@@ -734,14 +805,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
     @random_method
     def _produce_predict_output(self, x):
-        out = self.model(x)
-        if self.likelihood is not None:
-            return self.likelihood.sample(out)
-        elif isinstance(self.loss_fn, QuantileLoss):
-            p50_index = self.loss_fn.quantiles.index(0.5)
-            return out[..., p50_index]
+        if self.likelihood:
+            output = self.model(x)
+            return self.likelihood.sample(output)
         else:
-            return out
+            return self.model(x)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """

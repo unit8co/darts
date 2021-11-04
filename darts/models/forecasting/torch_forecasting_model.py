@@ -250,8 +250,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger.info('Time series values are 32-bits; casting model to float32.')
             self.model = model.float()
         elif np.issubdtype(self.train_sample[0].dtype, np.float64):
-            logger.info('Time series values are 64-bits; casting model to float64. If training is too slow you '
-                        'can try casting your data to 32-bits.')
+            logger.info('Time series values are 64-bits; casting model to float64.')
             self.model = model.double()
 
         self.model = self.model.to(self.device)

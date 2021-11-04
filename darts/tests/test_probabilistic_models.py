@@ -28,7 +28,8 @@ try:
                                                ContinuousBernoulliLikelihood,
                                                HalfNormalLikelihood,
                                                LogNormalLikelihood,
-                                               WeibullLikelihood)
+                                               WeibullLikelihood,
+                                               QuantileRegression)
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. TCN tests will be skipped.')
@@ -144,7 +145,8 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                       (ContinuousBernoulliLikelihood(), bounded_series, 0.1, 0.1),
                       (HalfNormalLikelihood(), real_pos_series, 0.3, 8),
                       (LogNormalLikelihood(), real_pos_series, 0.3, 1),
-                      (WeibullLikelihood(), real_pos_series, 0.2, 2))
+                      (WeibullLikelihood(), real_pos_series, 0.2, 2),
+                      (QuantileRegression(), real_series, 0.2, 1))
 
         def test_likelihoods_and_resulting_mean_forecasts(self):
             def _get_avgs(series):
