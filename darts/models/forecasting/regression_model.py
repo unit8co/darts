@@ -78,8 +78,7 @@ class RegressionModel(GlobalForecastingModel):
                  lags: Union[int, list] = None,
                  lags_past_covariates: Union[int, List[int]] = None,
                  lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-                 model=None,
-                 local_parameters: Optional[Dict] = None):
+                 model=None):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
 
@@ -104,8 +103,7 @@ class RegressionModel(GlobalForecastingModel):
             If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1)`
         """
 
-        local_parameters = local_parameters if local_parameters is not None else locals()
-        super().__init__(local_parameters=local_parameters)
+        super().__init__()
 
         self.model = model
         self.lags = None

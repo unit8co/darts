@@ -70,7 +70,7 @@ class Prophet(DualCovariatesForecastingModel):
             `The Prophet source code <https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py>`_.
         """
 
-        super().__init__(local_parameters=locals())
+        super().__init__()
 
         self._auto_seasonalities = self._extract_auto_seasonality(prophet_kwargs)
 

@@ -11,11 +11,10 @@ The main functions are `fit()` and `predict()`. `fit()` learns the function `f()
 one or several time series. The function `predict()` applies `f()` on one or several time series in order
 to obtain forecasts for a desired number of time stamps into the future.
 """
-
-
+import copy
 from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
-from abc import ABC, abstractmethod
+from abc import ABC, ABCMeta, abstractmethod
 from inspect import signature
 from random import sample
 import numpy as np
@@ -38,23 +37,20 @@ from darts import metrics
 logger = get_logger(__name__)
 
 
-class ForecastingModel(ABC):
+class ModelMeta(ABCMeta):
+    def __call__(cls, *args, **kwargs):
+        cls.model_call = (args, kwargs)
+        return super(ModelMeta, cls).__call__(*args, **kwargs)
+
+
+class ForecastingModel(ABC, metaclass=ModelMeta):
     """ The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to
         support. The signatures in this base class are for "local" models handling only one univariate series and no
         covariates. Sub-classes can handle more complex cases.
     """
 
     @abstractmethod
-    def __init__(self, local_parameters: Dict):
-        """
-        Parameters
-        ----------
-        local_parameters
-            Local parameters are used to save model parameters.
-            All top-level models except EnsembleModels must pass local parameters down to the base ForecastingModel with
-            super().__init__(local_parameters=locals(), ...)
-        """
-
+    def __init__(self, *args, **kwargs):
         # The series used for training the model through the `fit()` function.
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
@@ -62,7 +58,8 @@ class ForecastingModel(ABC):
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
 
-        self.model_params = self._get_model_parameters(local_parameters)
+        # extract and store sub class model creation parameters
+        self._model_params = self._extract_model_creation_params()
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> None:
@@ -163,27 +160,6 @@ class ForecastingModel(ABC):
         This function/property should be overridden if a value higher than 3 is required.
         """
         return 3
-
-    def _get_model_parameters(self, local_params: Dict) -> Dict:
-        """ Extracts and returns relevant model parameters from `local_params`
-
-        Parameters
-        ----------
-        local params
-            All top-level models except EnsembleModels must pass local parameters down to the base ForecastingModel with
-            super().__init__(local_parameters=locals(), ...)
-        """
-        model_parameters = dict()
-        for param, param_value in local_params.items():
-            # apart from `kwargs` there are some special cases such as `prophet_kwargs`
-            if 'kwargs' in param:
-                for kwarg, kwarg_value in local_params[param].items():
-                    model_parameters[kwarg] = kwarg_value
-            elif not param == 'self' and not param.startswith('_'):
-                model_parameters[param] = param_value
-            else:
-                continue
-        return model_parameters
 
     def _generate_new_dates(self,
                             n: int,
@@ -733,8 +709,15 @@ class ForecastingModel(ABC):
                          "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.")
             return sample(params, int(n_random_samples * len(params)))
 
+    def _extract_model_creation_params(self):
+        """extracts immutable model creation parameters from `ModelMeta` and deletes reference."""
+        model_params = copy.deepcopy(self.model_call)
+        del self.__class__.model_call
+        return model_params
+
     def untrained_model(self):
-        return self.__class__(**self.model_params)
+        args, kwargs = self._model_params
+        return self.__class__(*args, **kwargs)
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):

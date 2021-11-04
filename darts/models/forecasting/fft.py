@@ -224,7 +224,7 @@ class FFT(ForecastingModel):
         trend_poly_degree
             The degree of the polynomial that will be used for detrending, if `trend=`poly``.
         """
-        super().__init__(local_parameters=locals())
+        super().__init__()
         self.nr_freqs_to_keep = nr_freqs_to_keep
         self.required_matches = required_matches
         self.trend = trend

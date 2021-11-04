@@ -74,6 +74,12 @@ if TORCH_AVAILABLE:
         target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
         target_past, target_future = target.split_after(split_ratio)
 
+        def test_save_model_parameters(self):
+            # model creation parameters were saved before. check if re-created model has same params as original
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                self.assertTrue(model._model_params, model.untrained_model()._model_params)
+
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, random_state=0, **kwargs)

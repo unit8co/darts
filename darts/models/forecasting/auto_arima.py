@@ -34,7 +34,7 @@ class AutoARIMA(DualCovariatesForecastingModel):
         autoarima_kwargs
             Keyword arguments for the pmdarima.txt AutoARIMA model
         """
-        super().__init__(local_parameters=locals())
+        super().__init__()
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
         self.trend = self.model.trend
 

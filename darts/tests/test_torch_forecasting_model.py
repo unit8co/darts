@@ -27,6 +27,11 @@ if TORCH_AVAILABLE:
         def tearDown(self):
             shutil.rmtree(self.temp_work_dir)
 
+        def test_save_model_parameters(self):
+            # check if re-created model has same params as original
+            model = RNNModel('RNN', 10, 10)
+            self.assertTrue(model._model_params, model.untrained_model()._model_params)
+
         @patch('darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save_model')
         def test_suppress_automatic_save(self, patch_save_model):
             model_name = 'test_model'

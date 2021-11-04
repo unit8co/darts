@@ -23,7 +23,7 @@ class NaiveMean(ForecastingModel):
             This model has no parameter, and always predicts the
             mean value of the training series.
         """
-        super().__init__(local_parameters=locals())
+        super().__init__()
         self.mean_val = None
 
     def __str__(self):
@@ -54,7 +54,7 @@ class NaiveSeasonal(ForecastingModel):
         K
             the number of last time steps of the training set to repeat
         """
-        super().__init__(local_parameters=locals())
+        super().__init__()
         self.last_k_vals = None
         self.K = K
 
@@ -87,7 +87,7 @@ class NaiveDrift(ForecastingModel):
 
             .. math:: \\hat{y}_{T+h} = y_T + h\\left( \\frac{y_T - y_1}{T - 1} \\right)
         """
-        super().__init__(local_parameters=locals())
+        super().__init__()
 
     def __str__(self):
         return 'Naive drift model'
