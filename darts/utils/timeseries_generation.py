@@ -331,16 +331,16 @@ def autoregressive_timeseries(coef: Sequence[float],
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
         either `length` or `end`.
-    end : pd.Timestamp or int, optional
+    end : pd.Timestamp or int, default: pd.Timestamp('2000-01-01')
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
         set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
     length : int, optional
         Optionally, the length of the returned index. Works only with either `start` or `end`.
-    freq : str
+    freq : str, default: 'D'
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-    column_name : str, optional
+    column_name : str, default: 'autoregressive'
         Optionally, the name of the value column for the returned TimeSeries
 
     Returns
