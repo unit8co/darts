@@ -327,11 +327,11 @@ def autoregressive_timeseries(coef: Sequence[float],
     start_values : list of float, default: np.ones(len(coef))
         The starting values used for calculating the first few values for which no lags exist yet.
         series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + ... + coef[0] * starting_values[0]
-    start : pd.Timestamp or int, optional
+    start : pd.Timestamp or int, default: pd.Timestamp('2000-01-01')
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
         either `length` or `end`.
-    end : pd.Timestamp or int, default: pd.Timestamp('2000-01-01')
+    end : pd.Timestamp or int, optional
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
         set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
     length : int, optional
