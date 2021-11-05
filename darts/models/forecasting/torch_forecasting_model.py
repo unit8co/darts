@@ -1001,7 +1001,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             file_name = os.path.basename(file_name)
 
         file_path = os.path.join(checkpoint_dir, file_name)
-        print('loading {}'.format(file_name))
+        logger.info('loading {}'.format(file_name))
         return TorchForecastingModel.load_model(file_path)
 
     def _get_best_torch_device(self):
