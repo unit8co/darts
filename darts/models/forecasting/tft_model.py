@@ -30,8 +30,8 @@ from darts.models.forecasting.tft_submodels import (
     _GatedResidualNetwork,
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
-    _LSTM
 )
+from torch.nn import LSTM as _LSTM
 
 logger = get_logger(__name__)
 
@@ -91,6 +91,10 @@ class _TFTModule(nn.Module):
         self.dropout = dropout
         self.likelihood = likelihood
 
+        # initialize last batch size to check if new mask needs to be generated
+        self.batch_size_last = -1
+        self.attention_mask = None
+
         # general information on variable name endings:
         # _vsn: VariableSelectionNetwork
         # _grn: GatedResidualNetwork
@@ -149,7 +153,7 @@ class _TFTModule(nn.Module):
         )
 
         # for hidden state of the lstm
-        self.static_context_initial_hidden_lstm = _GatedResidualNetwork(
+        self.static_context_hidden_encoder_grn = _GatedResidualNetwork(
             input_size=self.hidden_size,
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
@@ -157,7 +161,7 @@ class _TFTModule(nn.Module):
         )
 
         # for cell state of the lstm
-        self.static_context_initial_cell_lstm = _GatedResidualNetwork(
+        self.static_context_cell_encoder_grn = _GatedResidualNetwork(
             input_size=self.hidden_size,
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
@@ -259,9 +263,10 @@ class _TFTModule(nn.Module):
         """
         return context[:, None].expand(-1, timesteps, -1)
 
-    def get_attention_mask(self,
-                           encoder_lengths: torch.Tensor,
+    @staticmethod
+    def get_attention_mask(encoder_length: int,
                            decoder_length: int,
+                           batch_size: int,
                            device: str):
         """
         Returns causal mask to apply for self-attention layer that acts on future input only.
@@ -272,37 +277,18 @@ class _TFTModule(nn.Module):
         predict_step = torch.arange(0, decoder_length, device=device)[:, None]
         # do not attend to steps to self or after prediction
         decoder_mask = attend_step >= predict_step
-        # do not attend to steps where data is padded
-        encoder_mask = self.create_mask(encoder_lengths.max(), encoder_lengths)
+        # do not attend to past input
+        encoder_mask = torch.zeros(batch_size, encoder_length, dtype=torch.bool, device=device)
         # combine masks along attended time - first encoder and then decoder
 
         mask = torch.cat(
             (
                 encoder_mask.unsqueeze(1).expand(-1, decoder_length, -1),
-                decoder_mask.unsqueeze(0).expand(encoder_lengths.shape[0], -1, -1),
+                decoder_mask.unsqueeze(0).expand(batch_size, -1, -1),
             ),
             dim=2,
         )
         return mask
-
-    @staticmethod
-    def create_mask(size: int, lengths: torch.Tensor, inverse: bool = False) -> torch.Tensor:
-        """
-        Create boolean masks of shape len(lenghts) x size.
-
-        An entry at (i, j) is True if lengths[i] > j.
-
-        Args:
-            size (int): size of second dimension
-            lengths (torch.LongTensor): tensor of lengths
-            inverse (bool, optional): If true, boolean mask is inverted. Defaults to False.
-
-        Returns:
-            torch.Tensor: mask
-        """
-        steps = torch.arange(size, device=lengths.device).unsqueeze(0)
-        geq_steps = torch.ge(steps, lengths.unsqueeze(-1))
-        return geq_steps if not inverse else ~geq_steps
 
     def forward(self, x) -> Dict[str, torch.Tensor]:
         """
@@ -311,6 +297,11 @@ class _TFTModule(nn.Module):
 
         dim_samples, dim_time, dim_variable, dim_loss = (0, 1, 2, 3)
         past_target, past_covariates, historic_future_covariates, future_covariates = x
+
+        batch_size = past_target.shape[dim_samples]
+        encoder_length = self.input_chunk_length
+        decoder_length = self.output_chunk_length
+        timesteps = encoder_length + decoder_length
 
         # TODO: impelement static covariates
         static_covariates = None
@@ -328,20 +319,6 @@ class _TFTModule(nn.Module):
                                    static_covariates] if tensor is not None], dim=dim_variable
         )
 
-        # batch_size = x.shape[0]
-        encoder_lengths = torch.tensor(
-            [self.input_chunk_length] * x_cont_past.shape[dim_samples], 
-            dtype=past_target.dtype,
-            device=past_target.device
-        )
-        decoder_lengths = torch.tensor(
-            [self.output_chunk_length] * x_cont_future.shape[dim_samples], 
-            dtype=past_target.dtype,
-            device=past_target.device
-        )
-
-        timesteps = self.input_chunk_length + self.output_chunk_length
-        encoder_length = self.input_chunk_length
         input_vectors_past = {
             name: x_cont_past[..., idx].unsqueeze(-1)
             for idx, name in enumerate(self.encoder_variables)
@@ -390,28 +367,18 @@ class _TFTModule(nn.Module):
 
         # LSTM
         # calculate initial state
-        input_hidden = self.static_context_initial_hidden_lstm(static_embedding).expand(
+        input_hidden = self.static_context_hidden_encoder_grn(static_embedding).expand(
             self.lstm_layers, -1, -1
         )
-        input_cell = self.static_context_initial_cell_lstm(static_embedding).expand(
+        input_cell = self.static_context_cell_encoder_grn(static_embedding).expand(
             self.lstm_layers, -1, -1
         )
 
         # run local lstm encoder
-        encoder_out, (hidden, cell) = self.lstm_encoder(
-            x=embeddings_varying_encoder,
-            hx=(input_hidden, input_cell),
-            lengths=encoder_lengths,
-            enforce_sorted=False
-        )
+        encoder_out, (hidden, cell) = self.lstm_encoder(input=embeddings_varying_encoder, hx=(input_hidden, input_cell))
 
         # run local lstm decoder
-        decoder_out, _ = self.lstm_decoder(
-            x=embeddings_varying_decoder,
-            hx=(hidden, cell),
-            lengths=decoder_lengths,
-            enforce_sorted=False,
-        )
+        decoder_out, _ = self.lstm_decoder(input=embeddings_varying_decoder, hx=(hidden, cell))
 
         # post lstm GateAddNorm
         lstm_out_encoder = self.post_lstm_encoder_gan(x=encoder_out, skip=embeddings_varying_encoder)
@@ -426,16 +393,20 @@ class _TFTModule(nn.Module):
             context=self.expand_static_context(context=static_context_enriched, timesteps=timesteps)
         )
 
+        # avoid unnecessary regeneration of attention mask
+        if batch_size != self.batch_size_last:
+            self.attention_mask = self.get_attention_mask(encoder_length=encoder_length,
+                                                          decoder_length=decoder_length,
+                                                          batch_size=batch_size,
+                                                          device=past_target.device)
+            self.batch_size_last = batch_size
+
         # multi-head attention
         attn_out, attn_out_weights = self.multihead_attn(
             q=attn_input[:, encoder_length:],  # query only for predictions
             k=attn_input,
             v=attn_input,
-            mask=self.get_attention_mask(
-                encoder_lengths=encoder_lengths,
-                decoder_length=timesteps - encoder_length,
-                device=past_target.device
-            ),
+            mask=self.attention_mask
         )
 
         # skip connection over attention
@@ -498,7 +469,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         This is an implementation of the TFT architecture, as outlined in this paper:
         https://arxiv.org/pdf/1912.09363.pdf.
 
-        The internal sub models were adopted from `pytorch-forecasting's TemporalFusionTransformer
+        The internal sub models are adopted from `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
 
         This model supports mixed covariates (includes past covariates known for `input_chunk_length`
@@ -705,12 +676,12 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
         raise_if(future_covariates is None and self.add_cyclic_encoder is None,
                  'TFTModel requires future covariates. The model applies multi-head attention queries on future '
-                 'inputs. Consider specifying `add_cyclic_encoder` (in TFT model docs) at model creation which '
+                 'inputs. Consider specifying `add_cyclic_encoder` (read TFT model docs) at model creation which '
                  'automatically adds cyclic encoding of the time index to `future_covariates`.',
                  logger)
 
         if self.add_cyclic_encoder is not None:
-            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates)
+            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=None)
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
@@ -724,13 +695,13 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                              future_covariates: Optional[Sequence[TimeSeries]] = None,
                              n: Optional[int] = None) -> Sequence[TimeSeries]:
         """adds cyclic encoding of time index to future covariates.
-        For training (when `n` is `None`) we can simply use the future covariates (when available) or target as
+        For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
         reference to extract the time index.
-        For prediction (when `n` is given) we have to distinguish between two cases:
+        For prediction (`n` is given) we have to distinguish between two cases:
             1)
-                when future covariates are given, we can use them as reference
+                if future covariates are given, we can use them as reference
             2)
-                when future covariates are missing, we need to generate a time index that starts `input_chunk_length`
+                if future covariates are missing, we need to generate a time index that starts `input_chunk_length`
                 before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
 
         Parameters
@@ -818,8 +789,13 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
         Parameters:
         ----------
+        n
+            prediction length
         input_batch
             (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
+        roll_size
+            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to
+            `self.output_chunk_length`
         """
         dim_component = 2
         past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates \

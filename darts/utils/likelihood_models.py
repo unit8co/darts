@@ -974,6 +974,7 @@ class QuantileRegression(Likelihood):
         self._check_quantiles(self.quantiles)
         self._median_idx = self.quantiles.index(0.5)
         self.first = True
+        self.quantiles_tensor = None
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
@@ -1021,20 +1022,21 @@ class QuantileRegression(Likelihood):
 
         batch_size, length = model_output.shape[:2]
         model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
+        device = model_output.device
 
-        if self.first:  # test if torch model forward produces correct output
+        # test if torch model forward produces correct output and store quantiles tensor
+        if self.first:
             raise_if_not(len(model_output.shape) == 4 and len(target.shape) == 3 and
                          model_output.shape[:2] == target.shape[:2],
                          'mismatch between predicted and target shape')
             raise_if_not(model_output.shape[dim_q] == len(self.quantiles),
                          'mismatch between number of predicted quantiles and target quantiles')
+            self.quantiles_tensor = torch.tensor(self.quantiles).to(device)
             self.first = False
 
-        losses = []
-        for i, q in enumerate(self.quantiles):
-            errors = target - model_output[..., i]
-            losses.append(torch.max((q - 1) * errors, q * errors).unsqueeze(dim_q))
-        losses = torch.cat(losses, dim=dim_q)
+        errors = target.unsqueeze(-1) - model_output
+        losses = torch.max((self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors)
+
         return losses.sum(dim=dim_q).mean()
 
     @staticmethod
@@ -1053,11 +1055,11 @@ class QuantileRegression(Likelihood):
                      'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
                      'higher than `q=0.5`')
 
-    def _distr_from_params(self, params: Tuple) -> torch.distributions.Distribution:
+    def _distr_from_params(self, params: Tuple) -> None:
         # This should not be called in this class (we are abusing Likelihood)
         return None
 
-    def _params_from_output(self, model_output: torch.Tensor):
+    def _params_from_output(self, model_output: torch.Tensor) -> None:
         # This should not be called in this class (we are abusing Likelihood)
         return None
 

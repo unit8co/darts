@@ -131,7 +131,7 @@ if TORCH_AVAILABLE:
                 new_ts = tg.linear_timeseries(0, 1, length=season_length, start=start)
                 ts_linear = ts_linear.append(new_ts)
             ts_linear = TimeSeries.from_times_and_values(times=ts_sine.time_index,
-                                                         values=ts_linear.pd_dataframe().values)
+                                                         values=ts_linear.values())
 
             # create multivariate TimeSeries by stacking sine and linear curves
             ts = ts_sine.stack(ts_linear)
