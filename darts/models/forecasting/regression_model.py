@@ -22,7 +22,7 @@ The lags can be specified either using an integer - in which case it represents 
 to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
 denoting past lags and positive values including 0 denoting future lags).
 """
-from typing import Union, Sequence, Optional, Tuple, List
+from typing import Union, Sequence, Optional, Tuple, List, Dict
 import numpy as np
 
 from darts.timeseries import TimeSeries
@@ -74,13 +74,11 @@ def _update_min_max(current_min: Union[int, None], current_max: Union[int, None]
 
 
 class RegressionModel(GlobalForecastingModel):
-    def __init__(
-        self,
-        lags: Union[int, list] = None,
-        lags_past_covariates: Union[int, List[int]] = None,
-        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-        model=None,
-    ):
+    def __init__(self,
+                 lags: Union[int, list] = None,
+                 lags_past_covariates: Union[int, List[int]] = None,
+                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+                 model=None):
         """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
 
