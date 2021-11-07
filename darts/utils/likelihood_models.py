@@ -34,7 +34,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 from darts.utils.utils import raise_if_not
 
 from abc import ABC, abstractmethod
-from typing import Optional, Tuple
+from typing import Optional, Tuple, List
 import collections
 
 import numpy as np
@@ -61,6 +61,7 @@ from torch.distributions import (Normal as _Normal,
                                  )
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
+
 
 # Some utils for checking parameters' domains
 def _check(param, predicate, param_name, condition_str):
@@ -948,6 +949,119 @@ class WeibullLikelihood(Likelihood):
         k = self.softplus(model_output[:, :, output_size // 2:])
         return lmbda, k
 
+
+class QuantileRegression(Likelihood):
+    def __init__(self, quantiles: Optional[List[float]] = None):
+        """
+        The "likelihood" corresponding to quantile regression.
+        It uses the Quantile Loss Metric for custom quantiles centered around q=0.5.
+
+        This class can be used as any other Likelihood objects even though it is not
+        representing the likelihood of a well defined distribution.
+
+        Parameters:
+        -----------
+        quantiles
+            list of quantiles
+        """
+
+        super().__init__()
+        if quantiles is None:
+            self.quantiles = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5,
+                              0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99]
+        else:
+            self.quantiles = sorted(quantiles)
+        self._check_quantiles(self.quantiles)
+        self._median_idx = self.quantiles.index(0.5)
+        self.first = True
+        self.quantiles_tensor = None
+
+    def sample(self, model_output: torch.Tensor) -> torch.Tensor:
+        """
+        Select a quantile (for each batch example) and return this quantile (over time and components).
+
+        model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
+        """
+        batch_size, length = model_output.shape[:2]
+        model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
+
+        device = model_output.device
+
+        quantiles = torch.tile(torch.tensor(self.quantiles), (batch_size, 1)).to(device)
+        probas = torch.tile(torch.rand(size=(batch_size,)), (len(self.quantiles), 1)).to(device)
+
+        quantile_idxs = torch.sum(probas.T > quantiles, axis=1)
+
+        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
+        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
+        # too often as it would capture the "probability buckets" preceding and following it.
+        #
+        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
+        quantile_idxs = torch.where(quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1)
+
+        batch_idx = torch.tensor(range(batch_size)).to(device)
+        return model_output[batch_idx, :, :, quantile_idxs]
+
+    @property
+    def num_parameters(self) -> int:
+        return len(self.quantiles)
+
+    def compute_loss(self, model_output: torch.Tensor, target: torch.Tensor):
+        """
+        We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood
+
+        Parameters
+        ----------
+        model_output
+            must be of shape (batch_size, n_timesteps, n_target_variables, n_quantiles)
+        target
+            must be of shape (n_samples, n_timesteps, n_target_variables)
+        """
+
+        dim_q = 3
+
+        batch_size, length = model_output.shape[:2]
+        model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
+        device = model_output.device
+
+        # test if torch model forward produces correct output and store quantiles tensor
+        if self.first:
+            raise_if_not(len(model_output.shape) == 4 and len(target.shape) == 3 and
+                         model_output.shape[:2] == target.shape[:2],
+                         'mismatch between predicted and target shape')
+            raise_if_not(model_output.shape[dim_q] == len(self.quantiles),
+                         'mismatch between number of predicted quantiles and target quantiles')
+            self.quantiles_tensor = torch.tensor(self.quantiles).to(device)
+            self.first = False
+
+        errors = target.unsqueeze(-1) - model_output
+        losses = torch.max((self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors)
+
+        return losses.sum(dim=dim_q).mean()
+
+    @staticmethod
+    def _check_quantiles(quantiles):
+        raise_if_not(all([0 < q < 1 for q in quantiles]),
+                     'All provided quantiles must be between 0 and 1.')
+
+        # we require the median to be present and the quantiles to be symmetric around it,
+        # for correctness of sampling.
+        median_q = 0.5
+        raise_if_not(median_q in quantiles,
+                     'median quantile `q=0.5` must be in `quantiles`')
+        is_centered = [-1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
+                       for left_q, right_q in zip(quantiles, quantiles[::-1])]
+        raise_if_not(all(is_centered),
+                     'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
+                     'higher than `q=0.5`')
+
+    def _distr_from_params(self, params: Tuple) -> None:
+        # This should not be called in this class (we are abusing Likelihood)
+        return None
+
+    def _params_from_output(self, model_output: torch.Tensor) -> None:
+        # This should not be called in this class (we are abusing Likelihood)
+        return None
 
 if False:
     """ TODO
