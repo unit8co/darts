@@ -61,17 +61,12 @@ from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 DEFAULT_DARTS_FOLDER = '.darts'
 CHECKPOINTS_FOLDER = 'checkpoints'
 RUNS_FOLDER = 'runs'
-UNTRAINED_MODELS_FOLDER = 'untrained_models'
 
 logger = get_logger(__name__)
 
 
 def _get_checkpoint_folder(work_dir, model_name):
     return os.path.join(work_dir, CHECKPOINTS_FOLDER, model_name)
-
-
-def _get_untrained_models_folder(work_dir, model_name):
-    return os.path.join(work_dir, UNTRAINED_MODELS_FOLDER, model_name)
 
 
 def _get_runs_folder(work_dir, model_name):
@@ -95,7 +90,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None,
-                 force_reset=False):
+                 force_reset=False,
+                 save_checkpoints=False):
 
         """ Pytorch-based Forecasting Model.
 
@@ -149,6 +145,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         force_reset
             If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).
+        save_checkpoints
+            Whether or not to automatically save the untrained model and checkpoints from training.
+            If set to `False`, the model can still be manually saved using :meth:`save_model()
+            <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
+            <TorchForeCastingModel.load_model()>`.
         """
         super().__init__()
 
@@ -194,11 +195,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.likelihood = None
 
         self.force_reset = force_reset
+        self.save_checkpoints = save_checkpoints
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         self.checkpoint_exists = \
             os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "checkpoint_*"))) > 0
 
-        if self.checkpoint_exists:
+        if self.checkpoint_exists and self.save_checkpoints:
             if self.force_reset:
                 self.reset_model()
             else:
@@ -230,7 +232,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
         shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
-        shutil.rmtree(_get_untrained_models_folder(self.work_dir, self.model_name), ignore_errors=True)
 
         self.checkpoint_exists = False
         self.total_epochs = 0
@@ -280,8 +281,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.lr_scheduler = _create_from_cls_and_kwargs(self.lr_scheduler_cls, lr_sched_kws)
         else:
             self.lr_scheduler = None  # We won't use a LR scheduler
-
-        self._save_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
 
     @abstractmethod
     def _create_model(self, train_sample: Tuple[Tensor]) -> torch.nn.Module:
@@ -758,9 +757,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch = [elem.to(self.device) if isinstance(elem, torch.Tensor) else elem for elem in batch]
         return tuple(batch)
 
-    def untrained_model(self):
-        return self._load_untrained_model(_get_untrained_models_folder(self.work_dir, self.model_name))
-
     @property
     def first_prediction_index(self) -> int:
         """
@@ -817,7 +813,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
 
             self.total_epochs = epoch + 1
-            self._save_model(False, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
+
+            if self.save_checkpoints:
+                self._save_model_from_fit(is_best=False,
+                                          folder=_get_checkpoint_folder(self.work_dir, self.model_name),
+                                          epoch=epoch)
 
             if epoch % self.nr_epochs_val_period == 0:
                 training_loss = total_loss / len(train_loader)
@@ -828,7 +828,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                     if validation_loss < best_loss:
                         best_loss = validation_loss
-                        self._save_model(True, _get_checkpoint_folder(self.work_dir, self.model_name), epoch)
+                        if self.save_checkpoints:
+                            self._save_model_from_fit(is_best=True,
+                                                      folder=_get_checkpoint_folder(self.work_dir, self.model_name),
+                                                      epoch=epoch)
 
                     if verbose:
                         print("Training loss: {:.4f}, validation loss: {:.4f}, best val loss: {:.4f}".
@@ -855,36 +858,59 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         validation_loss = total_loss / (batch_idx + 1)
         return validation_loss
+    
+    def save_model(self, path: str) -> None:
+        """Saves the model under a given path. The path should end with '.pth.tar'
 
-    def _save_model(self,
-                    is_best: bool,
-                    folder: str,
-                    epoch: int):
+        Parameters
+        ----------
+        path
+            Path under which to save the model at its current state.
         """
-        Saves the whole torch model object to a file
 
-        :param is_best: whether the model we're currently saving is the best (on validation set)
-        :param folder:
-        :param epoch:
-        :return:
+        raise_if_not(path.endswith('.pth.tar'),
+                     "The given path should end with '.pth.tar'.",
+                     logger)
+
+        with open(path, 'wb') as f_out:
+            torch.save(self, f_out)
+
+    def _save_model_from_fit(self,
+                             is_best: bool,
+                             folder: str,
+                             epoch: int) -> None:
+        """
+        Saves the torch model during training at a given epoch to the model's checkpoint folder.
+        Only the latest five save files are kept at most plus an additional save file for the model's best performing
+        state (on validation set).
+        Older save files will be removed.
+
+        Parameters
+        ----------
+        is_best
+            whether the model we're currently saving is the best (on validation set).
+        folder
+            path to the model's checkpoints folder. The folder is usually in the working directory under
+            './.darts/checkpoints/{model_name}'
+        epoch
+            current epoch number
         """
 
         checklist = glob(os.path.join(folder, "checkpoint_*"))
         checklist = sorted(checklist, key=lambda x: float(re.findall(r'(\d+)', x)[-1]))
-        filename = 'checkpoint_{0}.pth.tar'.format(epoch)
+        file_name = 'checkpoint_{0}.pth.tar'.format(epoch)
         os.makedirs(folder, exist_ok=True)
-        filename = os.path.join(folder, filename)
+        file_path = os.path.join(folder, file_name)
 
-        with open(filename, 'wb') as f:
-            torch.save(self, f)
+        self.save_model(file_path)
 
         if len(checklist) >= 5:
             # remove older files
             for chkpt in checklist[:-4]:
                 os.remove(chkpt)
         if is_best:
-            best_name = os.path.join(folder, 'model_best_{0}.pth.tar'.format(epoch))
-            shutil.copyfile(filename, best_name)
+            best_path = os.path.join(folder, 'model_best_{0}.pth.tar'.format(epoch))
+            shutil.copyfile(file_path, best_path)
             checklist = glob(os.path.join(folder, "model_best_*"))
             checklist = sorted(checklist, key=lambda x: float(re.findall(r'(\d+)', x)[-1]))
             if len(checklist) >= 2:
@@ -892,18 +918,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 for chkpt in checklist[:-1]:
                     os.remove(chkpt)
 
-    def _save_untrained_model(self, folder):
-        os.makedirs(folder, exist_ok=True)
-        filename = os.path.join(folder, 'model.pth.tar')
+    @staticmethod
+    def load_model(path: str) -> 'TorchForecastingModel':
+        """loads a model from a given file path. The file name should end with '.pth.tar'
 
-        with open(filename, 'wb') as f:
-            torch.save(self, f)
+        Parameters
+        ----------
+        path
+            Path under which to save the model at its current state. The path should end with '.pth.tar'
+        """
 
-    def _load_untrained_model(self, folder):
-        filename = os.path.join(folder, 'model.pth.tar')
+        raise_if_not(path.endswith('.pth.tar'),
+                     "The given path should end with '.pth.tar'.",
+                     logger)
 
-        with open(filename, 'rb') as f:
-            model = torch.load(f)
+        with open(path, 'rb') as fin:
+            model = torch.load(fin)
         return model
 
     def _prepare_tensorboard_writer(self):
@@ -924,11 +954,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @staticmethod
     def load_from_checkpoint(model_name: str,
                              work_dir: str = None,
-                             filename: str = None,
+                             file_name: str = None,
                              best: bool = True) -> 'TorchForecastingModel':
         """
-        Load the model from the given checkpoint.
-        if file is not given, will try to restore the most recent checkpoint.
+        Load the model from automatically saved checkpoints under '{work_dir}/checkpoints/{model_name}/'.
+        This method is used for models that were created with `save_checkpoints=True`.
+        If you manually saved your model, consider using :meth:`load_model() <TorchForeCastingModel.load_model()>` .
+
+        If `file_name` is given, returns the model saved under '{work_dir}/checkpoints/{model_name}/{file_name}'
+        
+        If `file_name` is not given, will try to restore the best checkpoint (if `best` is `True`) or the most
+        recent checkpoint (if `best` is `False`cfrom '{work_dir}/checkpoints/{model_name}'.
 
         Parameters
         ----------
@@ -936,10 +972,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             The name of the model (used to retrieve the checkpoints folder's name).
         work_dir
             Working directory (containing the checkpoints folder). Defaults to current working directory.
-        filename
+        file_name
             The name of the checkpoint file. If not specified, use the most recent one.
         best
-            If set, will retrieve the best model (according to validation loss) instead of the most recent one.
+            If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
+            is ignored when `file_name` is given.
 
         Returns
         -------
@@ -952,22 +989,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         checkpoint_dir = _get_checkpoint_folder(work_dir, model_name)
 
-        # if filename is none, find most recent file in savepath that is a checkpoint
-        if filename is None:
+        # if file_name is none, find most recent file in savepath that is a checkpoint
+        if file_name is None:
             path = os.path.join(checkpoint_dir, "model_best_*" if best else "checkpoint_*")
             checklist = glob(path)
             if len(checklist) == 0:
                 raise_log(FileNotFoundError('There is no file matching prefix {} in {}'.format(
                           "model_best_*" if best else "checkpoint_*", checkpoint_dir)),
                           logger)
-            filename = max(checklist, key=os.path.getctime)  # latest file TODO: check case where no files match
-            filename = os.path.basename(filename)
+            file_name = max(checklist, key=os.path.getctime)  # latest file TODO: check case where no files match
+            file_name = os.path.basename(file_name)
 
-        full_fname = os.path.join(checkpoint_dir, filename)
-        print('loading {}'.format(filename))
-        with open(full_fname, 'rb') as f:
-            model = torch.load(f)
-        return model
+        file_path = os.path.join(checkpoint_dir, file_name)
+        logger.info('loading {}'.format(file_name))
+        return TorchForecastingModel.load_model(file_path)
 
     def _get_best_torch_device(self):
         is_cuda = torch.cuda.is_available()

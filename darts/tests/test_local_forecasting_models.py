@@ -93,6 +93,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
 
+    def test_save_model_parameters(self):
+        # model creation parameters were saved before. check if re-created model has same params as original
+        for model, _ in models:
+            self.assertTrue(model._model_params, model.untrained_model()._model_params)
+
     def test_models_runnability(self):
         for model, _ in models:
             model.fit(self.ts_gaussian)

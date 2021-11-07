@@ -455,6 +455,11 @@ class NBEATSModel(PastCovariatesTorchModel):
         force_reset
             If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).
+        save_checkpoints
+            Whether or not to automatically save the untrained model and checkpoints from training.
+            If set to `False`, the model can still be manually saved using :meth:`save_model()
+            <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
+            <TorchForeCastingModel.load_model()>`.
         """
 
         kwargs['input_chunk_length'] = input_chunk_length
