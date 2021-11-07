@@ -113,9 +113,9 @@ class TimeSeries:
     Factory Methods
     ===============
     """
-
-    @staticmethod
-    def from_xarray(xa: xr.DataArray,
+    @classmethod
+    def from_xarray(cls,
+                    xa: xr.DataArray,
                     fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
@@ -157,10 +157,10 @@ class TimeSeries:
         has_frequency = has_datetime_index and xa_index.freq is not None
         # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a Int64Index)
         if fill_missing_dates and has_datetime_index:
-            xa_ = TimeSeries._fill_missing_dates(xa, freq=freq)
+            xa_ = cls._fill_missing_dates(xa, freq=freq)
         # The provided index does not have a freq; using the provided freq
         elif has_datetime_index and freq is not None and not has_frequency:
-            xa_ = TimeSeries._restore_xarray_from_frequency(xa, freq=freq)
+            xa_ = cls._restore_xarray_from_frequency(xa, freq=freq)
         else:
             xa_ = xa
         if fillna_value is not None:
@@ -205,12 +205,13 @@ class TimeSeries:
 
         # We cast the array to float
         if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(xa_.values.dtype, np.float64):
-            return TimeSeries(xa_)
+            return cls(xa_)
         else:
-            return TimeSeries(xa_.astype(np.float64))
+            return cls(xa_.astype(np.float64))
 
-    @staticmethod
-    def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
+    @classmethod
+    def from_csv(cls,
+                 filepath_or_buffer: pd._typing.FilePathOrBuffer,
                  time_col: Optional[str] = None,
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
@@ -251,15 +252,16 @@ class TimeSeries:
         """
 
         df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
-        return TimeSeries.from_dataframe(df=df,
-                                         time_col=time_col,
-                                         value_cols=value_cols,
-                                         fill_missing_dates=fill_missing_dates,
-                                         freq=freq,
-                                         fillna_value=fillna_value)
+        return cls.from_dataframe(df=df,
+                                  time_col=time_col,
+                                  value_cols=value_cols,
+                                  fill_missing_dates=fill_missing_dates,
+                                  freq=freq,
+                                  fillna_value=fillna_value)
 
-    @staticmethod
-    def from_dataframe(df: pd.DataFrame,
+    @classmethod
+    def from_dataframe(cls,
+                       df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
@@ -341,10 +343,11 @@ class TimeSeries:
                           dims=(time_index.name,) + DIMS[-2:],
                           coords={time_index.name: time_index, DIMS[1]: series_df.columns})
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
+        return cls.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
 
-    @staticmethod
-    def from_series(pd_series: pd.Series,
+    @classmethod
+    def from_series(cls,
+                    pd_series: pd.Series,
                     fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
@@ -377,15 +380,16 @@ class TimeSeries:
         """
 
         df = pd.DataFrame(pd_series)
-        return TimeSeries.from_dataframe(df,
-                                         time_col=None,
-                                         value_cols=None,
-                                         fill_missing_dates=fill_missing_dates,
-                                         freq=freq,
-                                         fillna_value=fillna_value)
+        return cls.from_dataframe(df,
+                                  time_col=None,
+                                  value_cols=None,
+                                  fill_missing_dates=fill_missing_dates,
+                                  freq=freq,
+                                  fillna_value=fillna_value)
 
-    @staticmethod
-    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.Int64Index],
+    @classmethod
+    def from_times_and_values(cls,
+                              times: Union[pd.DatetimeIndex, pd.Int64Index],
                               values: np.ndarray,
                               fill_missing_dates: Optional[bool] = False,
                               freq: Optional[str] = None,
@@ -444,10 +448,11 @@ class TimeSeries:
                           dims=(times_name,) + DIMS[-2:],
                           coords=coords)
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
+        return cls.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
 
-    @staticmethod
-    def from_values(values: np.ndarray,
+    @classmethod
+    def from_values(cls,
+                    values: np.ndarray,
                     columns: Optional[pd._typing.Axes] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
         """
@@ -473,15 +478,15 @@ class TimeSeries:
         time_index = pd.RangeIndex(0, len(values), 1)
         values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
 
-        return TimeSeries.from_times_and_values(times=time_index,
-                                                values=values_,
-                                                fill_missing_dates=False,
-                                                freq=None,
-                                                columns=columns,
-                                                fillna_value=fillna_value)
+        return cls.from_times_and_values(times=time_index,
+                                         values=values_,
+                                         fill_missing_dates=False,
+                                         freq=None,
+                                         columns=columns,
+                                         fillna_value=fillna_value)
 
-    @staticmethod
-    def from_json(json_str: str) -> 'TimeSeries':
+    @classmethod
+    def from_json(cls, json_str: str) -> 'TimeSeries':
         """
         Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
         into a `TimeSeries` object
@@ -499,10 +504,10 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient='split')
-        return TimeSeries.from_dataframe(df)
+        return cls.from_dataframe(df)
 
-    @staticmethod
-    def from_pickle(path: str) -> 'TimeSeries':
+    @classmethod
+    def from_pickle(cls, path: str) -> 'TimeSeries':
         """
         Reads Timeseries object that was pickled.
 
