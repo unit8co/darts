@@ -1,0 +1,5 @@
+
+.. automodule:: darts.models.forecasting.tft_submodels
+   :members:
+   :undoc-members:
+   :show-inheritance:

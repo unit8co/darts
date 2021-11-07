@@ -1,0 +1,911 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Facebook Prophet &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Random Forest" href="darts.models.forecasting.random_forest.html" />
+    <link rel="prev" title="N-BEATS" href="darts.models.forecasting.nbeats.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Base Data Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mappers
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+    <label for="toctree-checkbox-6">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       Auto-ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.gradient_boosted_model.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+  <label for="toctree-checkbox-8">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Utils for time series statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+
+<nav id="bd-toc-nav">
+    
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.models.forecasting.prophet_model"></span><section id="facebook-prophet">
+<h1>Facebook Prophet<a class="headerlink" href="#facebook-prophet" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.prophet_model.</span></span><span class="sig-name descname"><span class="pre">Prophet</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/prophet_model.html#Prophet"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.DualCovariatesForecastingModel</span></code></p>
+<p>Facebook Prophet</p>
+<p>This class provides a basic wrapper around <a class="reference external" href="https://github.com/facebook/prophet">Facebook Prophet</a>.
+It supports adding country holidays as well as custom seasonalities and adds support for stochastic
+forecasting and future covariates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>add_seasonalities</strong> – <p>Optionally, a dict or list of dicts with custom seasonality/ies to add to the model.
+Each dict takes the following mandatory and optional data:</p>
+<dl>
+<dt>dict({</dt><dd><p><cite>‘name’: str</cite> (name of the seasonality component),</p>
+<p><cite>’seasonal_periods’: int</cite> (number of timesteps after which the seasonal cycle repeats),</p>
+<p><cite>’fourier_order’: int</cite> (number of Fourier components to use),</p>
+<p><cite>’prior_scale’: Optional[float]</cite> (optionally, a prior scale for this component),</p>
+<p><cite>’mode’: Optional[str]</cite> (optionally, ‘additive’ or ‘multiplicative’)
+})</p>
+</dd>
+</dl>
+<p>An example for <cite>seasonal_periods</cite>: If you have hourly data (frequency=’H’) and your seasonal cycle repeats
+after 48 hours then set <cite>seasonal_periods=48</cite>.</p>
+<p>Apart from <cite>seasonal_periods</cite>, this is very similar to how you would call Facebook Prophet’s
+<cite>add_seasonality()</cite> method.
+Alternatively, you can add seasonalities after model creation and before fitting with
+<a class="reference internal" href="#darts.models.forecasting.prophet_model.Prophet.add_seasonality" title="darts.models.forecasting.prophet_model.Prophet.add_seasonality"><code class="xref py py-meth docutils literal notranslate"><span class="pre">add_seasonality()</span></code></a>.</p>
+</p></li>
+<li><p><strong>country_holidays</strong> – <p>An optional country code, for which holidays can be taken into account by Prophet.</p>
+<p>See: <a class="reference external" href="https://github.com/dr-prodigy/python-holidays">https://github.com/dr-prodigy/python-holidays</a></p>
+<p>In addition to those countries, Prophet includes holidays for these
+countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
+Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
+Egypt (EG), China (CN), and Russia (RU).</p>
+</p></li>
+<li><p><strong>prophet_kwargs</strong> – Some optional keyword arguments for Prophet.
+For information about the parameters see:
+<a class="reference external" href="https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py">The Prophet source code</a>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.add_seasonality">
+<span class="sig-name descname"><span class="pre">add_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal_periods</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fourier_order</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_scale</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/models/forecasting/prophet_model.html#Prophet.add_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.add_seasonality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Adds a custom seasonality to the model that reapeats after every n <cite>seasonal_periods</cite> timesteps.
+An example for <cite>seasonal_periods</cite>: If you have hourly data (frequency=’H’) and your seasonal cycle repeats
+after 48 hours -&gt; <cite>seasonal_periods=48</cite>.</p>
+<p>Apart from <cite>seasonal_periods</cite>, this is very similar to how you would call Facebook Prophet’s
+<cite>add_seasonality()</cite> method. For information about the parameters see:
+<a class="reference external" href="https://github.com/facebook/prophet/blob/master/python/prophet/forecaster.py">The Prophet source code</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> – name of the seasonality component</p></li>
+<li><p><strong>seasonal_periods</strong> – number of timesteps after which the seasonal cycle repeats</p></li>
+<li><p><strong>fourier_order</strong> – number of Fourier components to use</p></li>
+<li><p><strong>prior_scale</strong> – optionally, a prior scale for this component</p></li>
+<li><p><strong>mode</strong> – optionally, ‘additive’ or ‘multiplicative’</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.backtest">
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">series:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">past_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">future_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">num_samples:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">start:</span> <span class="pre">Union[pandas._libs.tslibs.timestamps.Timestamp,</span> <span class="pre">float,</span> <span class="pre">int]</span> <span class="pre">=</span> <span class="pre">0.5,</span> <span class="pre">forecast_horizon:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">stride:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">retrain:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">overlap_end:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">last_points_only:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">metric:</span> <span class="pre">Callable[[darts.timeseries.TimeSeries,</span> <span class="pre">darts.timeseries.TimeSeries],</span> <span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mape&gt;,</span> <span class="pre">reduction:</span> <span class="pre">Optional[Callable[[numpy.ndarray],</span> <span class="pre">float]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mean&gt;,</span> <span class="pre">verbose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.backtest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes error scores between the historical forecasts the model would have produced
+with an expanding training window over <cite>series</cite> and the actual values.
+To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
+the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
+training set forward by <cite>stride</cite> time steps. A metric (given by the <cite>metric</cite> function) is then evaluated
+on the forecast and the actual values. Finally, the method returns a <cite>reduction</cite> (the mean by default)
+of all these metric scores.</p>
+<p>By default, this method will use each historical forecast (whole) to compute error scores.
+If <cite>last_points_only</cite> is set to True, it will use only the last point of each historical
+forecast. In this case, no reduction is used.</p>
+<p>By default, this method always re-trains the models on the entire available history,
+corresponding to an expanding window strategy.
+If <cite>retrain</cite> is set to False (useful for models for which training might be time-consuming, such as
+deep learning models), the model will only be trained on the initial training window
+(up to <cite>start</cite> time stamp), and only if it has not been trained before. Then, at every iteration, the
+newly expanded input sequence will be fed to the model to produce the new output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
+<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+for deterministic models.</p></li>
+<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time.
+This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
+In the case of <cite>float</cite>, the parameter will be treated as the proportion of the time series
+that should lie before the first prediction point.
+In the case of <cite>int</cite>, the parameter will be treated as an integer index to the time index of
+<cite>training_series</cite> that will be used as first prediction time.
+In case of <cite>pandas.Timestamp</cite>, this time stamp will be used to determine the first prediction time
+directly.</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecast horizon for the point prediction</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
+<li><p><strong>retrain</strong> – Whether to retrain the model for every prediction or not. Currently only <cite>TorchForecastingModel</cite>
+instances such as <cite>BlockRNNModel</cite>, <cite>RNNModel</cite>, <cite>TCNModel</cite>, <cite>NBEATSModel</cite> and <cite>TransformerModel</cite> support
+setting <cite>retrain</cite> to <cite>False</cite>.</p></li>
+<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> – Whether to use the whole historical forecasts or only the last point of each forecast to compute the error</p></li>
+<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>reduction</strong> – A function used to combine the individual error scores obtained when <cite>last_points_only</cite> is set to False.
+If explicitely set to <cite>None</cite>, the method will return a list of the individual error scores instead.
+Set to np.mean by default.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The error score, or the list of individual error scores if <cite>reduction</cite> is <cite>None</cite></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float or List[float]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/models/forecasting/prophet_model.html#Prophet.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the model on the provided series</p>
+<p>Defines behavior that should happen when calling the <cite>fit()</cite> method for the forecasting models handling
+optional future covariates (exogenous variables).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The model will be trained to forecast this time series. Can be multivariate if the model supports it.</p></li>
+<li><p><strong>future_covariates</strong> – A time series of future-known covariates. This time series will not be forecasted, but can be used by
+some models as an input.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.gridsearch">
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">parameters:</span> <span class="pre">dict,</span> <span class="pre">series:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">past_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">future_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">forecast_horizon:</span> <span class="pre">Optional[int]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">stride:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">start:</span> <span class="pre">Union[pandas._libs.tslibs.timestamps.Timestamp,</span> <span class="pre">float,</span> <span class="pre">int]</span> <span class="pre">=</span> <span class="pre">0.5,</span> <span class="pre">last_points_only:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">val_series:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">use_fitted_values:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">metric:</span> <span class="pre">Callable[[darts.timeseries.TimeSeries,</span> <span class="pre">darts.timeseries.TimeSeries],</span> <span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mape&gt;,</span> <span class="pre">reduction:</span> <span class="pre">Callable[[numpy.ndarray],</span> <span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mean&gt;,</span> <span class="pre">verbose=False,</span> <span class="pre">n_jobs:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">n_random_samples:</span> <span class="pre">Optional[Union[float,</span> <span class="pre">int]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">darts.models.forecasting.forecasting_model.ForecastingModel</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for finding the best hyper-parameters among a given set.
+This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
+The three modes of operation evaluate every possible combination of hyper-parameter values
+provided in the <cite>parameters</cite> dictionary by instantiating the <cite>model_class</cite> subclass
+of ForecastingModel with each combination, and returning the best-performing model with regards
+to the <cite>metric</cite> function. The <cite>metric</cite> function is expected to return an error value,
+thus the model resulting in the smallest <cite>metric</cite> output will be chosen.</p>
+<p>The relationship of the training data and test data depends on the mode of operation.</p>
+<p>Expanding window mode (activated when <cite>forecast_horizon</cite> is passed):
+For every hyperparameter combination, the model is repeatedly trained and evaluated on different
+splits of <cite>training_series</cite> and <cite>target_series</cite>. This process is accomplished by using
+the <cite>backtest</cite> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
+that are compared against the ground truth values of <cite>training_series</cite> or <cite>target_series</cite>, if
+specified. Note that the model is retrained for every single prediction, thus this mode is slower.</p>
+<p>Split window mode (activated when <cite>val_series</cite> is passed):
+This mode will be used when the <cite>val_series</cite> argument is passed.
+For every hyper-parameter combination, the model is trained on <cite>series</cite> and
+evaluated on <cite>val_series</cite>.</p>
+<p>Fitted value mode (activated when <cite>use_fitted_values</cite> is set to <cite>True</cite>):
+For every hyper-parameter combination, the model is trained on <cite>series</cite>
+and evaluated on the resulting fitted values.
+Not all models have fitted values, and this method raises an error if the model doesn’t have a <cite>fitted_values</cite>
+member. The fitted values are the result of the fit of the model on <cite>series</cite>. Comparing with the
+fitted values can be a quick way to assess the model, but one cannot see if the model is overfitting the series.</p>
+<p>Derived classes must ensure that a single instance of a model will not share parameters with the other
+instances, e.g., saving models in the same path. Otherwise, an unexpected behavior can arise while running
+several models in parallel (when <cite>n_jobs != 1</cite>). If this cannot be avoided, then gridsearch should be redefined,
+forcing <cite>n_jobs = 1</cite>.</p>
+<p>Currently this method only supports deterministic predictions (i.e. <cite>num_samples == 1</cite>).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>model_class</strong> – The ForecastingModel subclass to be tuned for ‘series’.</p></li>
+<li><p><strong>parameters</strong> – A dictionary containing as keys hyperparameter names, and as values lists of values for the
+respective hyperparameter.</p></li>
+<li><p><strong>series</strong> – The TimeSeries instance used as input and target for training.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
+<li><p><strong>forecast_horizon</strong> – The integer value of the forecasting horizon used in expanding window mode.</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions. Only used in expanding window mode.</p></li>
+<li><p><strong>start</strong> – The <cite>int</cite>, <cite>float</cite> or <cite>pandas.Timestamp</cite> that represents the starting point in the time index
+of <cite>training_series</cite> from which predictions will be made to evaluate the model.
+For a detailed description of how the different data types are interpreted, please see the documentation
+for <cite>ForecastingModel.backtest</cite>.</p></li>
+<li><p><strong>last_points_only</strong> – Whether to use the whole forecasts or only the last point of each forecast to compute the error</p></li>
+<li><p><strong>val_series</strong> – The TimeSeries instance used for validation in split mode. If provided, this series must start right after
+the end of <cite>series</cite>; so that a proper comparison of the forecast can be made.</p></li>
+<li><p><strong>use_fitted_values</strong> – If <cite>True</cite>, uses the comparison with the fitted values.
+Raises an error if <cite>fitted_values</cite> is not an attribute of <cite>model_class</cite>.</p></li>
+<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>reduction</strong> – A reduction function (mapping array to float) describing how to aggregate the errors obtained
+on the different validation series when backtesting. By default it’ll compute the mean of errors.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
+combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
+Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite> means using all the available cores.</p></li>
+<li><p><strong>n_random_samples</strong> – The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform
+a random search instead of using the full grid.
+If an integer, <cite>n_random_samples</cite> is the number of parameter combinations selected from the full grid and must
+be between <cite>0</cite> and the total number of parameter combinations.
+If a float, <cite>n_random_samples</cite> is the ratio of parameter combinations selected from the full grid and must be
+between <cite>0</cite> and <cite>1</cite>.
+Defaults to <cite>None</cite> for which random selection will be ignored.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A tuple containing an untrained ‘model_class’ instance created from the best-performing hyper-parameters,
+along with a dictionary containing these best hyper-parameters.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ForecastingModel, Dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.historical_forecasts">
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas._libs.tslibs.timestamps.Timestamp</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Computes the historical forecasts the model would have produced with an expanding training window
+and (by default) returns a time series created from the last point of each of these individual forecasts.
+To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
+current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
+the end of the training set forward by <cite>stride</cite> time steps.</p>
+<p>By default, this method will return a single time series made up of the last point of each
+historical forecast. This time series will thus have a frequency of <cite>series.freq * stride</cite>.
+If <cite>last_points_only</cite> is set to False, it will instead return a list of the historical forecasts.</p>
+<p>By default, this method always re-trains the models on the entire available history,
+corresponding to an expanding window strategy.
+If <cite>retrain</cite> is set to False (useful for models for which training might be time-consuming, such as
+deep learning models), the model will only be trained on the initial training window
+(up to <cite>start</cite> time stamp), and only if it has not been trained before. Then, at every iteration, the
+newly expanded input sequence will be fed to the model to produce the new output.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts.</p></li>
+<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
+<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+for deterministic models.</p></li>
+<li><p><strong>start</strong> – The first point of time at which a prediction is computed for a future time.
+This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
+In the case of <cite>float</cite>, the parameter will be treated as the proportion of the time series
+that should lie before the first prediction point.
+In the case of <cite>int</cite>, the parameter will be treated as an integer index to the time index of
+<cite>series</cite> that will be used as first prediction time.
+In case of <cite>pandas.Timestamp</cite>, this time stamp will be used to determine the first prediction time
+directly.</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecast horizon for the predictions</p></li>
+<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
+<li><p><strong>retrain</strong> – Whether to retrain the model for every prediction or not. Currently only <cite>TorchForecastingModel</cite>
+instances such as <cite>BlockRNNModel</cite>, <cite>RNNModel</cite>, <cite>TCNModel</cite>, <cite>NBEATSModel</cite> and <cite>TransformerModel</cite> support
+setting <cite>retrain</cite> to <cite>False</cite>.</p></li>
+<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> – Whether to retain only the last point of each historical forecast.
+If set to True, the method returns a single <cite>TimeSeries</cite> containing the successive point forecasts.
+Otherwise returns a list of historical <cite>TimeSeries</cite> forecasts.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>By default, a single TimeSeries instance created from the last point of each individual forecast.
+If <cite>last_points_only</cite> is set to False, a list of the historical forecasts.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a> or List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.min_train_series_length">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">min_train_series_length</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.min_train_series_length" title="Permalink to this definition">¶</a></dt>
+<dd><p>Class property defining the minimum required length for the training series.
+This function/property should be overridden if a value higher than 3 is required.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/models/forecasting/prophet_model.html#Prophet.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Forecasts values for a certain number of time steps after the end of the series.</p>
+<p>If some future covariates were specified during the training, they must also be specified here.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
+<li><p><strong>future_covariates</strong> – The time series of future-known covariates which can be fed as input to the model. It must correspond to the
+covariate time series that has been used with the <cite>fit()</cite> method for training, and it must be of length <cite>n</cite>.</p></li>
+<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+for deterministic models.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>TimeSeries, a single time series containing the <cite>n</cite> next points after then end of the training series.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.predict_raw">
+<span class="sig-name descname"><span class="pre">predict_raw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">pandas.core.frame.DataFrame</span></span></span><a class="reference internal" href="../_modules/darts/models/forecasting/prophet_model.html#Prophet.predict_raw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.predict_raw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the output of the base Facebook Prophet model in form of a pandas DataFrame. Note however,
+that the output of this method is not supported for further processing with the Darts API.</p>
+<p>Methods of the base Prophet model can be accessed with self.model.method() (i.e. self.model.plot_components())</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.residuals">
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>A function for computing the residuals produced by the current model on a univariate time series.</p>
+<p>This function computes the difference between the actual observations from <cite>series</cite>
+and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
+For every index <cite>i</cite> in <cite>series</cite>, <cite>p[i]</cite> is computed by training the model on
+<cite>series[:(i - forecast_horizon)]</cite> and forecasting <cite>forecast_horizon</cite> into the future.
+(<cite>p[i]</cite> will be set to the last value of the predicted series.)
+The vector of residuals will be shorter than <cite>series</cite> due to the minimum
+training series length required by the model and the gap introduced by <cite>forecast_horizon</cite>.
+Most commonly, unless otherwise specified, the term “residuals” implies a value for <cite>forecast_horizon</cite> of 1.</p>
+<p>This method works only on univariate series and does not currently support covariates. It uses the median
+prediction (when dealing with stochastic forecasts having num_samples &gt; 1).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> – The univariate TimeSeries instance which the residuals will be computed for.</p></li>
+<li><p><strong>forecast_horizon</strong> – The forecasting horizon used to predict each fitted value.</p></li>
+<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The vector of residuals.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.untrained_model">
+<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.untrained_model" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.uses_future_covariates">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.prophet_model.Prophet.uses_past_covariates">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.prophet_model.Prophet.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.models.forecasting.nbeats.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">N-BEATS</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.models.forecasting.random_forest.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Random Forest</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Unit8 SA.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

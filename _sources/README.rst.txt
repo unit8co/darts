@@ -199,39 +199,39 @@ on bringing more models and features.
      - Future-known covariates support
      - Reference
    * - ``ARIMA``
-     - x
+     - ✅
      - 
-     - x
+     - ✅
      - 
      - 
-     - 
+     - ✅
      - 
    * - ``VARIMA``
-     - x
-     - x
+     - ✅
+     - ✅
      - 
      - 
      - 
-     - 
+     - ✅
      - 
    * - ``AutoARIMA``
-     - x
+     - ✅
      - 
      - 
      - 
      - 
-     - 
+     - ✅
      - 
    * - ``ExponentialSmoothing``
-     - x
+     - ✅
      - 
-     - x
+     - ✅
      - 
      - 
      - 
      - 
    * - ``Theta`` and ``FourTheta``
-     - x
+     - ✅
      - 
      - 
      - 
@@ -239,15 +239,15 @@ on bringing more models and features.
      - 
      - `Theta <https://robjhyndman.com/papers/Theta.pdf>`_ & `4 Theta <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_
    * - ``Prophet``
-     - x
+     - ✅
+     - 
+     - ✅
      - 
      - 
-     - 
-     - 
-     - 
+     - ✅
      - `Prophet repo <https://github.com/facebook/prophet>`_
    * - ``FFT`` (Fast Fourier Transform)
-     - x
+     - ✅
      - 
      - 
      - 
@@ -255,55 +255,63 @@ on bringing more models and features.
      - 
      - 
    * - ``RegressionModel`` (incl ``RandomForest``\ , ``LinearRegressionModel`` and ``LightGBMModel``\ )
-     - x
-     - x
+     - ✅
+     - ✅
      - 
-     - x
-     - x
-     - x
+     - ✅
+     - ✅
+     - ✅
      - 
    * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
-     - x
-     - x
-     - x
-     - x
+     - ✅
+     - ✅
+     - ✅
+     - ✅
      - 
-     - x
+     - ✅
      - `DeepAR paper <https://arxiv.org/abs/1704.04110>`_
    * - ``BlockRNNModel`` (incl. LSTM and GRU)
-     - x
-     - x
-     - 
-     - x
-     - x
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
      - 
      - 
    * - ``NBEATSModel``
-     - x
-     - x
+     - ✅
+     - ✅
      - 
-     - x
-     - x
+     - ✅
+     - ✅
      - 
      - `N-BEATS paper <https://arxiv.org/abs/1905.10437>`_
    * - ``TCNModel``
-     - x
-     - x
-     - x
-     - x
-     - x
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
      - 
      - `TCN paper <https://arxiv.org/abs/1803.01271>`_\ , `DeepTCN paper <https://arxiv.org/abs/1906.04397>`_\ , `blog post <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
    * - ``TransformerModel``
-     - x
-     - x
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
      - 
-     - x
-     - x
      - 
-     - 
+   * - ``TFTModel`` (Temporal Fusion Transformer)
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - `TFT paper <https://arxiv.org/pdf/1912.09363.pdf>`_\ , `PyTorch Forecasting <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_
    * - Naive Baselines
-     - x
+     - ✅
      - 
      - 
      - 
@@ -342,7 +350,7 @@ A Conda environment is thus recommended because it will handle all of those in o
 From conda-forge
 ^^^^^^^^^^^^^^^^
 
-Currently only the x86_64 architecture with Python 3.7 or 3.8 
+Currently only the x86_64 architecture with Python 3.7-3.9
 is fully supported with conda; consider using PyPI if you are running into troubles.
 
 To create a conda environment for Python 3.7
@@ -383,9 +391,9 @@ we also maintain the ``u8darts`` package, which provides the following alternate
 
 
 * Install core only (without neural networks, Prophet or AutoARIMA): ``pip install u8darts``
-* Install core + neural networks (PyTorch): ``pip install 'u8darts[torch]'``
-* Install core + Facebook Prophet: ``pip install 'u8darts[prophet]'``
-* Install core + AutoARIMA: ``pip install 'u8darts[pmdarima]'``
+* Install core + neural networks (PyTorch): ``pip install "u8darts[torch]"``
+* Install core + Facebook Prophet: ``pip install "u8darts[prophet]"``
+* Install core + AutoARIMA: ``pip install "u8darts[pmdarima]"``
 
 Enabling Support for LightGBM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -456,3 +464,23 @@ To build documentation locally just run
    ./gradlew buildDocs
 
 After that docs will be available in ``./docs/build/html`` directory. You can just open ``./docs/build/html/index.html`` using your favourite browser.
+
+Citation
+--------
+
+If you are using Darts in your scientific work, we would appreciate citations to the following paper.
+
+`Darts: User-Friendly Modern Machine Learning for Time Series <https://arxiv.org/abs/2110.03224>`_
+
+Bibtex entry:
+
+.. code-block::
+
+   @misc{herzen2021darts,
+         title={Darts: User-Friendly Modern Machine Learning for Time Series}, 
+         author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
+         year={2021},
+         eprint={2110.03224},
+         archivePrefix={arXiv},
+         primaryClass={cs.LG}
+   }

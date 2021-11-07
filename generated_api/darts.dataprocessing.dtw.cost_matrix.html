@@ -8,7 +8,8 @@
 
     <title>&lt;no title&gt; &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
 
     
   <link rel="stylesheet"
@@ -20,88 +21,102 @@
 
     
       
-  <link rel="stylesheet"
-    href="../_static/vendor/open-sans_all/1.44.1/index.css">
-  <link rel="stylesheet"
-    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
 
     
-    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
-<div class="container-xl">
+    <div class="container-fluid" id="banner"></div>
 
-    <a class="navbar-brand" href="../index.html">
     
-      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
     
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+    
 
-    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
-      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
-        
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="darts.html">API Reference</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../examples.html">Examples</a>
-        </li>
-        
-        
-      </ul>
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
 
 
-      <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form>
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
       
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
 
-      <ul class="navbar-nav">
-        
-          <li class="nav-item">
-            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
-              <span><i class="fab fa-github-square"></i></span>
-            </a>
-          </li>
-        
-        
-          <li class="nav-item">
-            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
-              <span><i class="fab fa-twitter-square"></i></span>
-            </a>
-          </li>
-        
-      </ul>
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
     </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
 </div>
     </nav>
     
@@ -109,70 +124,78 @@
     <div class="container-xl">
       <div class="row">
           
-          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-
-    <div class="bd-toc-item active">
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
     
-  
-    <ul class="nav bd-sidenav">
-        
-        
-        
-        
-        
-        
-        
-      </ul>
-  
-  </nav>
-          </div>
+  </div>
+</nav>
+            </div>
+            
           
 
           
           <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
               
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
 
 <nav id="bd-toc-nav">
-    <ul class="nav section-nav flex-column">
-    
-    </ul>
+    <ul class="simple visible nav section-nav flex-column">
+</ul>
+
 </nav>
-
-
+              </div>
               
+              <div class="toc-item">
+                
+              </div>
+              
+            
           </div>
           
 
+          
+          
+            
           
           <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
               
               <div>
                 
   <span class="target" id="module-darts.dataprocessing.dtw.cost_matrix"></span><dl class="py class">
-<dt id="darts.dataprocessing.dtw.cost_matrix.CostMatrix">
-<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.dtw.cost_matrix.</code><code class="sig-name descname">CostMatrix</code><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.CostMatrix">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.cost_matrix.</span></span><span class="sig-name descname"><span class="pre">CostMatrix</span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>(n+1) x (m+1) Matrix
 Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1, j-1) in series1 and series2.</p>
 <p>Row 0 and column 0, are typically set to infinity, to prevent matching before the first element</p>
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.fill">
-<em class="property">abstract </em><code class="sig-name descname">fill</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span><span class="p">:</span> <span class="n">float</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix.fill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.fill" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.fill">
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">fill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix.fill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.fill" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.m">
-<code class="sig-name descname">m</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.m" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.m">
+<span class="sig-name descname"><span class="pre">m</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.m" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.n">
-<code class="sig-name descname">n</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.n" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.n">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense">
-<em class="property">abstract </em><code class="sig-name descname">to_dense</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix.to_dense"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense">
+<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">to_dense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#CostMatrix.to_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p></p>
@@ -186,12 +209,12 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 </dd></dl>
 
 <dl class="py class">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix">
-<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.dtw.cost_matrix.</code><code class="sig-name descname">DenseCostMatrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">n</span></em>, <em class="sig-param"><span class="n">m</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#DenseCostMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.cost_matrix.</span></span><span class="sig-name descname"><span class="pre">DenseCostMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#DenseCostMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">numpy.ndarray</span></code>, <a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.cost_matrix.CostMatrix</span></code></a></p>
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.T">
-<code class="sig-name descname">T</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.T" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.T">
+<span class="sig-name descname"><span class="pre">T</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.T" title="Permalink to this definition">¶</a></dt>
 <dd><p>The transposed array.</p>
 <p>Same as <code class="docutils literal notranslate"><span class="pre">self.transpose()</span></code>.</p>
 <p class="rubric">Examples</p>
@@ -216,64 +239,64 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.all">
-<code class="sig-name descname">all</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">where</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.all" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.all">
+<span class="sig-name descname"><span class="pre">all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.all" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if all elements evaluate to True.</p>
 <p>Refer to <cite>numpy.all</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.all()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.all</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.any">
-<code class="sig-name descname">any</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">where</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.any" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.any">
+<span class="sig-name descname"><span class="pre">any</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.any" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns True if any of the elements of <cite>a</cite> evaluate to True.</p>
 <p>Refer to <cite>numpy.any</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.any()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.any</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmax">
-<code class="sig-name descname">argmax</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmax" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmax">
+<span class="sig-name descname"><span class="pre">argmax</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmax" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return indices of the maximum values along the given axis.</p>
 <p>Refer to <cite>numpy.argmax</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.argmax()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.argmax</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmin">
-<code class="sig-name descname">argmin</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmin" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmin">
+<span class="sig-name descname"><span class="pre">argmin</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argmin" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return indices of the minimum values along the given axis.</p>
 <p>Refer to <cite>numpy.argmin</cite> for detailed documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.argmin()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.argmin</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition">
-<code class="sig-name descname">argpartition</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">kth</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">kind</span><span class="o">=</span><span class="default_value">'introselect'</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition">
+<span class="sig-name descname"><span class="pre">argpartition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'introselect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the indices that would partition this array.</p>
 <p>Refer to <cite>numpy.argpartition</cite> for full documentation.</p>
 <div class="versionadded">
@@ -282,29 +305,29 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.argpartition()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.argpartition</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argsort">
-<code class="sig-name descname">argsort</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">kind</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argsort" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argsort">
+<span class="sig-name descname"><span class="pre">argsort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argsort" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the indices that would sort this array.</p>
 <p>Refer to <cite>numpy.argsort</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.argsort()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.argsort</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.astype">
-<code class="sig-name descname">astype</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dtype</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'K'</span></em>, <em class="sig-param"><span class="n">casting</span><span class="o">=</span><span class="default_value">'unsafe'</span></em>, <em class="sig-param"><span class="n">subok</span><span class="o">=</span><span class="default_value">True</span></em>, <em class="sig-param"><span class="n">copy</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.astype" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.astype">
+<span class="sig-name descname"><span class="pre">astype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'K'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">casting</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'unsafe'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">subok</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">copy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.astype" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copy of the array, cast to a specified type.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -377,8 +400,8 @@ integer/float value converted.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.base">
-<code class="sig-name descname">base</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.base" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.base">
+<span class="sig-name descname"><span class="pre">base</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.base" title="Permalink to this definition">¶</a></dt>
 <dd><p>Base object if memory is from some other object.</p>
 <p class="rubric">Examples</p>
 <p>The base of an array that owns its memory is None:</p>
@@ -396,8 +419,8 @@ integer/float value converted.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.byteswap">
-<code class="sig-name descname">byteswap</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">inplace</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.byteswap" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.byteswap">
+<span class="sig-name descname"><span class="pre">byteswap</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">inplace</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.byteswap" title="Permalink to this definition">¶</a></dt>
 <dd><p>Swap the bytes of the array elements</p>
 <p>Toggle between low-endian and big-endian data representation by
 returning a byteswapped array, optionally swapped in-place.
@@ -449,79 +472,79 @@ a view to self.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.choose">
-<code class="sig-name descname">choose</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">choices</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'raise'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.choose" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.choose">
+<span class="sig-name descname"><span class="pre">choose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">choices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raise'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.choose" title="Permalink to this definition">¶</a></dt>
 <dd><p>Use an index array to construct a new array from a set of choices.</p>
 <p>Refer to <cite>numpy.choose</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.choose()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.choose</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.clip">
-<code class="sig-name descname">clip</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">min</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">max</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="o">**</span><span class="n">kwargs</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.clip" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.clip">
+<span class="sig-name descname"><span class="pre">clip</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">min</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.clip" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return an array whose values are limited to <code class="docutils literal notranslate"><span class="pre">[min,</span> <span class="pre">max]</span></code>.
 One of max or min must be given.</p>
 <p>Refer to <cite>numpy.clip</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.clip()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.clip</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.compress">
-<code class="sig-name descname">compress</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">condition</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.compress" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.compress">
+<span class="sig-name descname"><span class="pre">compress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">condition</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.compress" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return selected slices of this array along given axis.</p>
 <p>Refer to <cite>numpy.compress</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.compress()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.compress</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conj">
-<code class="sig-name descname">conj</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conj" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conj">
+<span class="sig-name descname"><span class="pre">conj</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conj" title="Permalink to this definition">¶</a></dt>
 <dd><p>Complex-conjugate all elements.</p>
 <p>Refer to <cite>numpy.conjugate</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.conjugate()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.conjugate</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conjugate">
-<code class="sig-name descname">conjugate</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conjugate" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conjugate">
+<span class="sig-name descname"><span class="pre">conjugate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.conjugate" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the complex conjugate, element-wise.</p>
 <p>Refer to <cite>numpy.conjugate</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.conjugate()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.conjugate</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.copy">
-<code class="sig-name descname">copy</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'C'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.copy" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.copy">
+<span class="sig-name descname"><span class="pre">copy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.copy" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a copy of the array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -536,10 +559,10 @@ arguments, and this function always passes sub-classes through.)</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.copy()</span></code></dt><dd><p>Similar function with different default behavior</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.copy</span></code></dt><dd><p>Similar function with different default behavior</p>
 </dd>
 </dl>
-<p><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.copyto()</span></code></p>
+<p><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.copyto</span></code></p>
 </div>
 <p class="rubric">Notes</p>
 <p>This function is the preferred method for creating an array copy.  The
@@ -572,8 +595,8 @@ and will not pass sub-classes through by default.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ctypes">
-<code class="sig-name descname">ctypes</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ctypes" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ctypes">
+<span class="sig-name descname"><span class="pre">ctypes</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ctypes" title="Permalink to this definition">¶</a></dt>
 <dd><p>An object to simplify the interaction of the array with the ctypes
 module.</p>
 <p>This attribute creates an object that makes it easier to use arrays
@@ -601,8 +624,8 @@ as arguments to a shared library.</p>
 in “Guide to NumPy” (we have omitted undocumented public attributes,
 as well as documented private attributes):</p>
 <dl class="py attribute">
-<dt>
-<code class="sig-prename descclassname">_ctypes.</code><code class="sig-name descname">data</code></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">data</span></span></dt>
 <dd><p>A pointer to the memory area of the array as a Python integer.
 This memory area may contain data that is not aligned, or not in correct
 byte-order. The memory area may not even be writeable. The array
@@ -617,8 +640,8 @@ pointer to a deallocated array, and should be spelt
 </dd></dl>
 
 <dl class="py attribute">
-<dt>
-<code class="sig-prename descclassname">_ctypes.</code><code class="sig-name descname">shape</code></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">shape</span></span></dt>
 <dd><p>A ctypes array of length self.ndim where
 the basetype is the C-integer corresponding to <code class="docutils literal notranslate"><span class="pre">dtype('p')</span></code> on this
 platform. This base-type could be <cite>ctypes.c_int</cite>, <cite>ctypes.c_long</cite>, or
@@ -633,8 +656,8 @@ The ctypes array contains the shape of the underlying array.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt>
-<code class="sig-prename descclassname">_ctypes.</code><code class="sig-name descname">strides</code></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">strides</span></span></dt>
 <dd><p>A ctypes array of length self.ndim where
 the basetype is the same as for the shape attribute. This ctypes array
 contains the strides information from the underlying array. This strides
@@ -648,8 +671,8 @@ get to the next element in the array.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt>
-<code class="sig-prename descclassname">_ctypes.</code><code class="sig-name descname">data_as</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">data_as</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Return the data pointer cast to a particular c-types object.
 For example, calling <code class="docutils literal notranslate"><span class="pre">self._as_parameter_</span></code> is equivalent to
 <code class="docutils literal notranslate"><span class="pre">self.data_as(ctypes.c_void_p)</span></code>. Perhaps you want to use the data as a
@@ -659,15 +682,15 @@ pointer to a ctypes array of floating-point data:
 </dd></dl>
 
 <dl class="py method">
-<dt>
-<code class="sig-prename descclassname">_ctypes.</code><code class="sig-name descname">shape_as</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">shape_as</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Return the shape tuple as an array of some other c-types
 type. For example: <code class="docutils literal notranslate"><span class="pre">self.shape_as(ctypes.c_short)</span></code>.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt>
-<code class="sig-prename descclassname">_ctypes.</code><code class="sig-name descname">strides_as</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">obj</span></em><span class="sig-paren">)</span></dt>
+<dt class="sig sig-object py">
+<span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">strides_as</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">obj</span></span></em><span class="sig-paren">)</span></dt>
 <dd><p>Return the strides tuple as an array of some other
 c-types type. For example: <code class="docutils literal notranslate"><span class="pre">self.strides_as(ctypes.c_longlong)</span></code>.</p>
 </dd></dl>
@@ -700,42 +723,42 @@ return an integer equal to the data attribute.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumprod">
-<code class="sig-name descname">cumprod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumprod" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumprod">
+<span class="sig-name descname"><span class="pre">cumprod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumprod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the cumulative product of the elements along the given axis.</p>
 <p>Refer to <cite>numpy.cumprod</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.cumprod()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.cumprod</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumsum">
-<code class="sig-name descname">cumsum</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumsum" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumsum">
+<span class="sig-name descname"><span class="pre">cumsum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.cumsum" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the cumulative sum of the elements along the given axis.</p>
 <p>Refer to <cite>numpy.cumsum</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.cumsum()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.cumsum</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.data">
-<code class="sig-name descname">data</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.data" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.data">
+<span class="sig-name descname"><span class="pre">data</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.data" title="Permalink to this definition">¶</a></dt>
 <dd><p>Python buffer object pointing to the start of the array’s data.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal">
-<code class="sig-name descname">diagonal</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">axis1</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">axis2</span><span class="o">=</span><span class="default_value">1</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal">
+<span class="sig-name descname"><span class="pre">diagonal</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return specified diagonals. In NumPy 1.9 the returned array is a
 read-only view instead of a copy as in previous NumPy versions.  In
 a future version the read-only restriction will be removed.</p>
@@ -743,21 +766,21 @@ a future version the read-only restriction will be removed.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.diagonal()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.diagonal</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot">
-<code class="sig-name descname">dot</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">b</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot">
+<span class="sig-name descname"><span class="pre">dot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dot product of two arrays.</p>
 <p>Refer to <cite>numpy.dot</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.dot()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.dot</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
@@ -778,8 +801,8 @@ a future version the read-only restriction will be removed.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dtype">
-<code class="sig-name descname">dtype</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dtype" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dtype">
+<span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dtype" title="Permalink to this definition">¶</a></dt>
 <dd><p>Data-type of the array’s elements.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -809,8 +832,8 @@ a future version the read-only restriction will be removed.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump">
-<code class="sig-name descname">dump</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">file</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump">
+<span class="sig-name descname"><span class="pre">dump</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump" title="Permalink to this definition">¶</a></dt>
 <dd><p>Dump a pickle of the array to the specified file.
 The array can be read back with pickle.load or numpy.load.</p>
 <dl class="field-list simple">
@@ -825,8 +848,8 @@ The array can be read back with pickle.load or numpy.load.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps">
-<code class="sig-name descname">dumps</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps">
+<span class="sig-name descname"><span class="pre">dumps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the pickle of the array as a string.
 pickle.loads or numpy.loads will convert the string back to an array.</p>
 <dl class="field-list simple">
@@ -837,8 +860,8 @@ pickle.loads or numpy.loads will convert the string back to an array.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill">
-<code class="sig-name descname">fill</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill">
+<span class="sig-name descname"><span class="pre">fill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fill the array with a scalar value.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -859,30 +882,30 @@ pickle.loads or numpy.loads will convert the string back to an array.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flags">
-<code class="sig-name descname">flags</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flags" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flags">
+<span class="sig-name descname"><span class="pre">flags</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flags" title="Permalink to this definition">¶</a></dt>
 <dd><p>Information about the memory layout of the array.</p>
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.C_CONTIGUOUS">
-<code class="sig-name descname">C_CONTIGUOUS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">C</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.C_CONTIGUOUS" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.C_CONTIGUOUS">
+<span class="sig-name descname"><span class="pre">C_CONTIGUOUS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">C</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.C_CONTIGUOUS" title="Permalink to this definition">¶</a></dt>
 <dd><p>The data is in a single, C-style contiguous segment.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.F_CONTIGUOUS">
-<code class="sig-name descname">F_CONTIGUOUS</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">F</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.F_CONTIGUOUS" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.F_CONTIGUOUS">
+<span class="sig-name descname"><span class="pre">F_CONTIGUOUS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">F</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.F_CONTIGUOUS" title="Permalink to this definition">¶</a></dt>
 <dd><p>The data is in a single, Fortran-style contiguous segment.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.OWNDATA">
-<code class="sig-name descname">OWNDATA</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">O</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.OWNDATA" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.OWNDATA">
+<span class="sig-name descname"><span class="pre">OWNDATA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">O</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.OWNDATA" title="Permalink to this definition">¶</a></dt>
 <dd><p>The array owns the memory it uses or borrows it from another object.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEABLE">
-<code class="sig-name descname">WRITEABLE</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">W</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEABLE" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEABLE">
+<span class="sig-name descname"><span class="pre">WRITEABLE</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">W</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEABLE" title="Permalink to this definition">¶</a></dt>
 <dd><p>The data area can be written to.  Setting this to False locks
 the data, making it read-only.  A view (slice, etc.) inherits WRITEABLE
 from its base array at creation time, but a view of a writeable
@@ -896,22 +919,22 @@ array raises a RuntimeError exception.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ALIGNED">
-<code class="sig-name descname">ALIGNED</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">A</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ALIGNED" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ALIGNED">
+<span class="sig-name descname"><span class="pre">ALIGNED</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ALIGNED" title="Permalink to this definition">¶</a></dt>
 <dd><p>The data and all elements are aligned appropriately for the hardware.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEBACKIFCOPY">
-<code class="sig-name descname">WRITEBACKIFCOPY</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">X</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEBACKIFCOPY" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEBACKIFCOPY">
+<span class="sig-name descname"><span class="pre">WRITEBACKIFCOPY</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">X</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.WRITEBACKIFCOPY" title="Permalink to this definition">¶</a></dt>
 <dd><p>This array is a copy of some other array. The C-API function
 PyArray_ResolveWritebackIfCopy must be called before deallocating
 to the base array will be updated with the contents of this array.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.UPDATEIFCOPY">
-<code class="sig-name descname">UPDATEIFCOPY</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">U</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.UPDATEIFCOPY" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.UPDATEIFCOPY">
+<span class="sig-name descname"><span class="pre">UPDATEIFCOPY</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">U</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.UPDATEIFCOPY" title="Permalink to this definition">¶</a></dt>
 <dd><p>(Deprecated, use WRITEBACKIFCOPY) This array is a copy of some other array.
 When this array is
 deallocated, the base array will be updated with the contents of
@@ -919,32 +942,32 @@ this array.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FNC">
-<code class="sig-name descname">FNC</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FNC" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FNC">
+<span class="sig-name descname"><span class="pre">FNC</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FNC" title="Permalink to this definition">¶</a></dt>
 <dd><p>F_CONTIGUOUS and not C_CONTIGUOUS.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FORC">
-<code class="sig-name descname">FORC</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FORC" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FORC">
+<span class="sig-name descname"><span class="pre">FORC</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FORC" title="Permalink to this definition">¶</a></dt>
 <dd><p>F_CONTIGUOUS or C_CONTIGUOUS (one-segment test).</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.BEHAVED">
-<code class="sig-name descname">BEHAVED</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">B</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.BEHAVED" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.BEHAVED">
+<span class="sig-name descname"><span class="pre">BEHAVED</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">B</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.BEHAVED" title="Permalink to this definition">¶</a></dt>
 <dd><p>ALIGNED and WRITEABLE.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.CARRAY">
-<code class="sig-name descname">CARRAY</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">CA</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.CARRAY" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.CARRAY">
+<span class="sig-name descname"><span class="pre">CARRAY</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">CA</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.CARRAY" title="Permalink to this definition">¶</a></dt>
 <dd><p>BEHAVED and C_CONTIGUOUS.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FARRAY">
-<code class="sig-name descname">FARRAY</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">FA</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FARRAY" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FARRAY">
+<span class="sig-name descname"><span class="pre">FARRAY</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">FA</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.FARRAY" title="Permalink to this definition">¶</a></dt>
 <dd><p>BEHAVED and F_CONTIGUOUS and not C_CONTIGUOUS.</p>
 </dd></dl>
 
@@ -976,8 +999,8 @@ Fortran-style contiguous arrays is true.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat">
-<code class="sig-name descname">flat</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat">
+<span class="sig-name descname"><span class="pre">flat</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat" title="Permalink to this definition">¶</a></dt>
 <dd><p>A 1-D iterator over the array.</p>
 <p>This is a <cite>numpy.flatiter</cite> instance, which acts similarly to, but is not
 a subclass of, Python’s built-in iterator object.</p>
@@ -1018,8 +1041,8 @@ a subclass of, Python’s built-in iterator object.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten">
-<code class="sig-name descname">flatten</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'C'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten">
+<span class="sig-name descname"><span class="pre">flatten</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a copy of the array collapsed into one dimension.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1041,9 +1064,9 @@ The default is ‘C’.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel"><code class="xref py py-meth docutils literal notranslate"><span class="pre">ravel()</span></code></a></dt><dd><p>Return a flattened array.</p>
+<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ravel</span></code></a></dt><dd><p>Return a flattened array.</p>
 </dd>
-<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat"><code class="xref py py-meth docutils literal notranslate"><span class="pre">flat()</span></code></a></dt><dd><p>A 1-D flat iterator over the array.</p>
+<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flat</span></code></a></dt><dd><p>A 1-D flat iterator over the array.</p>
 </dd>
 </dl>
 </div>
@@ -1058,8 +1081,8 @@ The default is ‘C’.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield">
-<code class="sig-name descname">getfield</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">dtype</span></em>, <em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield">
+<span class="sig-name descname"><span class="pre">getfield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a field of the given array as a certain type.</p>
 <p>A field is a view of the array data with a given data-type. The values in
 the view are determined by the given type and the offset into the current
@@ -1097,8 +1120,8 @@ array for our view:</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.imag">
-<code class="sig-name descname">imag</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.imag" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.imag">
+<span class="sig-name descname"><span class="pre">imag</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.imag" title="Permalink to this definition">¶</a></dt>
 <dd><p>The imaginary part of the array.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">([</span><span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">1</span><span class="n">j</span><span class="p">])</span>
@@ -1111,8 +1134,8 @@ array for our view:</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item">
-<code class="sig-name descname">item</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item">
+<span class="sig-name descname"><span class="pre">item</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item" title="Permalink to this definition">¶</a></dt>
 <dd><p>Copy an element of an array to a standard Python scalar and return it.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1165,8 +1188,8 @@ array using Python’s optimized math.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset">
-<code class="sig-name descname">itemset</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">args</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset">
+<span class="sig-name descname"><span class="pre">itemset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Insert scalar into an array (scalar is cast to array’s dtype, if possible)</p>
 <p>There must be at least 1 argument, and define the last argument
 as <em>item</em>.  Then, <code class="docutils literal notranslate"><span class="pre">a.itemset(*args)</span></code> is equivalent to but faster
@@ -1206,8 +1229,8 @@ look-up at each loop iteration.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize">
-<code class="sig-name descname">itemsize</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize">
+<span class="sig-name descname"><span class="pre">itemsize</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemsize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Length of one array element in bytes.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">],</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
@@ -1221,60 +1244,60 @@ look-up at each loop iteration.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.m">
-<code class="sig-name descname">m</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.m" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.m">
+<span class="sig-name descname"><span class="pre">m</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.m" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max">
-<code class="sig-name descname">max</code><span class="sig-paren">(</span><em class="sig-param">axis=None</em>, <em class="sig-param">out=None</em>, <em class="sig-param">keepdims=False</em>, <em class="sig-param">initial=&lt;no value&gt;</em>, <em class="sig-param">where=True</em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max">
+<span class="sig-name descname"><span class="pre">max</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">axis=None</span></em>, <em class="sig-param"><span class="pre">out=None</span></em>, <em class="sig-param"><span class="pre">keepdims=False</span></em>, <em class="sig-param"><span class="pre">initial=&lt;no</span> <span class="pre">value&gt;</span></em>, <em class="sig-param"><span class="pre">where=True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the maximum along a given axis.</p>
 <p>Refer to <cite>numpy.amax</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.amax()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.amax</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean">
-<code class="sig-name descname">mean</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">where</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean">
+<span class="sig-name descname"><span class="pre">mean</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the average of the array elements along given axis.</p>
 <p>Refer to <cite>numpy.mean</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.mean()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.mean</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min">
-<code class="sig-name descname">min</code><span class="sig-paren">(</span><em class="sig-param">axis=None</em>, <em class="sig-param">out=None</em>, <em class="sig-param">keepdims=False</em>, <em class="sig-param">initial=&lt;no value&gt;</em>, <em class="sig-param">where=True</em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min">
+<span class="sig-name descname"><span class="pre">min</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">axis=None</span></em>, <em class="sig-param"><span class="pre">out=None</span></em>, <em class="sig-param"><span class="pre">keepdims=False</span></em>, <em class="sig-param"><span class="pre">initial=&lt;no</span> <span class="pre">value&gt;</span></em>, <em class="sig-param"><span class="pre">where=True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the minimum along a given axis.</p>
 <p>Refer to <cite>numpy.amin</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.amin()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.amin</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.n">
-<code class="sig-name descname">n</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.n" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.n">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes">
-<code class="sig-name descname">nbytes</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes">
+<span class="sig-name descname"><span class="pre">nbytes</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nbytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Total bytes consumed by the elements of the array.</p>
 <p class="rubric">Notes</p>
 <p>Does not include memory consumed by non-element attributes of the
@@ -1290,8 +1313,8 @@ array object.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim">
-<code class="sig-name descname">ndim</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim">
+<span class="sig-name descname"><span class="pre">ndim</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ndim" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of array dimensions.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
@@ -1305,8 +1328,8 @@ array object.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder">
-<code class="sig-name descname">newbyteorder</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_order</span><span class="o">=</span><span class="default_value">'S'</span></em>, <em class="sig-param"><span class="o">/</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder">
+<span class="sig-name descname"><span class="pre">newbyteorder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'S'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">/</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the array with the same data viewed with a different byte order.</p>
 <p>Equivalent to:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">arr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">newbytorder</span><span class="p">(</span><span class="n">new_order</span><span class="p">))</span>
@@ -1340,22 +1363,22 @@ byte order.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero">
-<code class="sig-name descname">nonzero</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero">
+<span class="sig-name descname"><span class="pre">nonzero</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the indices of the elements that are non-zero.</p>
 <p>Refer to <cite>numpy.nonzero</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.nonzero()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.nonzero</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition">
-<code class="sig-name descname">partition</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">kth</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">kind</span><span class="o">=</span><span class="default_value">'introselect'</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition">
+<span class="sig-name descname"><span class="pre">partition</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kth</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'introselect'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition" title="Permalink to this definition">¶</a></dt>
 <dd><p>Rearranges the elements in the array in such a way that the value of the
 element in kth position is in the position it would be in a sorted array.
 All elements smaller than the kth element are moved before this element and
@@ -1387,11 +1410,11 @@ they come up in the dtype, to break ties.</p></li>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.partition()</span></code></dt><dd><p>Return a parititioned copy of an array.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.partition</span></code></dt><dd><p>Return a parititioned copy of an array.</p>
 </dd>
-<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition"><code class="xref py py-meth docutils literal notranslate"><span class="pre">argpartition()</span></code></a></dt><dd><p>Indirect partition.</p>
+<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.argpartition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">argpartition</span></code></a></dt><dd><p>Indirect partition.</p>
 </dd>
-<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort"><code class="xref py py-meth docutils literal notranslate"><span class="pre">sort()</span></code></a></dt><dd><p>Full sort.</p>
+<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code></a></dt><dd><p>Full sort.</p>
 </dd>
 </dl>
 </div>
@@ -1412,66 +1435,66 @@ they come up in the dtype, to break ties.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod">
-<code class="sig-name descname">prod</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">initial</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">where</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod">
+<span class="sig-name descname"><span class="pre">prod</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the product of the array elements over the given axis</p>
 <p>Refer to <cite>numpy.prod</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.prod()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.prod</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp">
-<code class="sig-name descname">ptp</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp">
+<span class="sig-name descname"><span class="pre">ptp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp" title="Permalink to this definition">¶</a></dt>
 <dd><p>Peak to peak (maximum - minimum) value along a given axis.</p>
 <p>Refer to <cite>numpy.ptp</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.ptp()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ptp</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put">
-<code class="sig-name descname">put</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">indices</span></em>, <em class="sig-param"><span class="n">values</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'raise'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put">
+<span class="sig-name descname"><span class="pre">put</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raise'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set <code class="docutils literal notranslate"><span class="pre">a.flat[n]</span> <span class="pre">=</span> <span class="pre">values[n]</span></code> for all <cite>n</cite> in indices.</p>
 <p>Refer to <cite>numpy.put</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.put()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.put</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel">
-<code class="sig-name descname">ravel</code><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param">order</em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel">
+<span class="sig-name descname"><span class="pre">ravel</span></span><span class="sig-paren">(</span><span class="optional">[</span><em class="sig-param"><span class="pre">order</span></em><span class="optional">]</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a flattened array.</p>
 <p>Refer to <cite>numpy.ravel</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.ravel()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.ravel</span></code></dt><dd><p>equivalent function</p>
 </dd>
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">ndarray.flat()</span></code></dt><dd><p>a flat iterator on the array.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.flat</span></code></dt><dd><p>a flat iterator on the array.</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real">
-<code class="sig-name descname">real</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real">
+<span class="sig-name descname"><span class="pre">real</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.real" title="Permalink to this definition">¶</a></dt>
 <dd><p>The real part of the array.</p>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">([</span><span class="mi">1</span><span class="o">+</span><span class="mi">0</span><span class="n">j</span><span class="p">,</span> <span class="mi">0</span><span class="o">+</span><span class="mi">1</span><span class="n">j</span><span class="p">])</span>
@@ -1491,28 +1514,28 @@ they come up in the dtype, to break ties.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat">
-<code class="sig-name descname">repeat</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">repeats</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat">
+<span class="sig-name descname"><span class="pre">repeat</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">repeats</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat" title="Permalink to this definition">¶</a></dt>
 <dd><p>Repeat elements of an array.</p>
 <p>Refer to <cite>numpy.repeat</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.repeat()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.repeat</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape">
-<code class="sig-name descname">reshape</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">shape</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'C'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape">
+<span class="sig-name descname"><span class="pre">reshape</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an array containing the same data with a new shape.</p>
 <p>Refer to <cite>numpy.reshape</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.reshape()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.reshape</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
@@ -1524,8 +1547,8 @@ For example, <code class="docutils literal notranslate"><span class="pre">a.resh
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize">
-<code class="sig-name descname">resize</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">new_shape</span></em>, <em class="sig-param"><span class="n">refcheck</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize">
+<span class="sig-name descname"><span class="pre">resize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">new_shape</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">refcheck</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="Permalink to this definition">¶</a></dt>
 <dd><p>Change shape and size of array in-place.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1555,7 +1578,7 @@ For example, <code class="docutils literal notranslate"><span class="pre">a.resh
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize"><code class="xref py py-meth docutils literal notranslate"><span class="pre">resize()</span></code></a></dt><dd><p>Return a new array with the specified shape.</p>
+<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resize</span></code></a></dt><dd><p>Return a new array with the specified shape.</p>
 </dd>
 </dl>
 </div>
@@ -1613,36 +1636,36 @@ stored in memory), resized, and reshaped:</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round">
-<code class="sig-name descname">round</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">decimals</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round">
+<span class="sig-name descname"><span class="pre">round</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">decimals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return <cite>a</cite> with each element rounded to the given number of decimals.</p>
 <p>Refer to <cite>numpy.around</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.around()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.around</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted">
-<code class="sig-name descname">searchsorted</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">v</span></em>, <em class="sig-param"><span class="n">side</span><span class="o">=</span><span class="default_value">'left'</span></em>, <em class="sig-param"><span class="n">sorter</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted">
+<span class="sig-name descname"><span class="pre">searchsorted</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">v</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">side</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'left'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sorter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find indices where elements of v should be inserted in a to maintain order.</p>
 <p>For full documentation, see <cite>numpy.searchsorted</cite></p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.searchsorted()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.searchsorted</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield">
-<code class="sig-name descname">setfield</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">val</span></em>, <em class="sig-param"><span class="n">dtype</span></em>, <em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield">
+<span class="sig-name descname"><span class="pre">setfield</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">val</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield" title="Permalink to this definition">¶</a></dt>
 <dd><p>Put a value into a specified place in a field defined by a data-type.</p>
 <p>Place <cite>val</cite> into <cite>a</cite>’s field defined by <cite>dtype</cite> and beginning <cite>offset</cite>
 bytes into the field.</p>
@@ -1663,7 +1686,7 @@ bytes into the field.</p>
 </dl>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
-<p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield"><code class="xref py py-meth docutils literal notranslate"><span class="pre">getfield()</span></code></a></p>
+<p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getfield</span></code></a></p>
 </div>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
@@ -1690,8 +1713,8 @@ bytes into the field.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags">
-<code class="sig-name descname">setflags</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">write</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">align</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">uic</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags">
+<span class="sig-name descname"><span class="pre">setflags</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">write</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">align</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uic</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags" title="Permalink to this definition">¶</a></dt>
 <dd><p>Set array flags WRITEABLE, ALIGNED, (WRITEBACKIFCOPY and UPDATEIFCOPY),
 respectively.</p>
 <p>These Boolean-valued flags affect how numpy interprets the memory
@@ -1759,8 +1782,8 @@ as the full name.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape">
-<code class="sig-name descname">shape</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape">
+<span class="sig-name descname"><span class="pre">shape</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.shape" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of array dimensions.</p>
 <p>The shape property is usually used to get the current shape of an array,
 but may also be used to reshape the array in-place by assigning a tuple of
@@ -1803,8 +1826,8 @@ fail if a copy is required.</p>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size">
-<code class="sig-name descname">size</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size">
+<span class="sig-name descname"><span class="pre">size</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.size" title="Permalink to this definition">¶</a></dt>
 <dd><p>Number of elements in the array.</p>
 <p>Equal to <code class="docutils literal notranslate"><span class="pre">np.prod(a.shape)</span></code>, i.e., the product of the array’s
 dimensions.</p>
@@ -1825,8 +1848,8 @@ calculations that may overflow a fixed size integer type.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort">
-<code class="sig-name descname">sort</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">- 1</span></em>, <em class="sig-param"><span class="n">kind</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort">
+<span class="sig-name descname"><span class="pre">sort</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">-</span> <span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sort an array in-place. Refer to <cite>numpy.sort</cite> for full documentation.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1852,15 +1875,15 @@ they come up in the dtype, to break ties.</p></li>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.sort()</span></code></dt><dd><p>Return a sorted copy of an array.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.sort</span></code></dt><dd><p>Return a sorted copy of an array.</p>
 </dd>
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.argsort()</span></code></dt><dd><p>Indirect sort.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.argsort</span></code></dt><dd><p>Indirect sort.</p>
 </dd>
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.lexsort()</span></code></dt><dd><p>Indirect stable sort on multiple keys.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.lexsort</span></code></dt><dd><p>Indirect stable sort on multiple keys.</p>
 </dd>
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.searchsorted()</span></code></dt><dd><p>Find elements in sorted array.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.searchsorted</span></code></dt><dd><p>Find elements in sorted array.</p>
 </dd>
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.partition()</span></code></dt><dd><p>Partial sort.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.partition</span></code></dt><dd><p>Partial sort.</p>
 </dd>
 </dl>
 </div>
@@ -1890,36 +1913,36 @@ structured array:</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze">
-<code class="sig-name descname">squeeze</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze">
+<span class="sig-name descname"><span class="pre">squeeze</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze" title="Permalink to this definition">¶</a></dt>
 <dd><p>Remove axes of length one from <cite>a</cite>.</p>
 <p>Refer to <cite>numpy.squeeze</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.squeeze()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.squeeze</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std">
-<code class="sig-name descname">std</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ddof</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">where</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std">
+<span class="sig-name descname"><span class="pre">std</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ddof</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the standard deviation of the array elements along given axis.</p>
 <p>Refer to <cite>numpy.std</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.std()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.std</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides">
-<code class="sig-name descname">strides</code><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides">
+<span class="sig-name descname"><span class="pre">strides</span></span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.strides" title="Permalink to this definition">¶</a></dt>
 <dd><p>Tuple of bytes to step in each dimension when traversing an array.</p>
 <p>The byte offset of element <code class="docutils literal notranslate"><span class="pre">(i[0],</span> <span class="pre">i[1],</span> <span class="pre">...,</span> <span class="pre">i[n])</span></code> in an array <cite>a</cite>
 is:</p>
@@ -1977,50 +2000,50 @@ position in the next row.  As such, the strides for the array <cite>x</cite> wil
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum">
-<code class="sig-name descname">sum</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="n">initial</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">where</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum">
+<span class="sig-name descname"><span class="pre">sum</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">initial</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the sum of the array elements over the given axis.</p>
 <p>Refer to <cite>numpy.sum</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.sum()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.sum</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes">
-<code class="sig-name descname">swapaxes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis1</span></em>, <em class="sig-param"><span class="n">axis2</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes">
+<span class="sig-name descname"><span class="pre">swapaxes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis2</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return a view of the array with <cite>axis1</cite> and <cite>axis2</cite> interchanged.</p>
 <p>Refer to <cite>numpy.swapaxes</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.swapaxes()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.swapaxes</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take">
-<code class="sig-name descname">take</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">indices</span></em>, <em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">mode</span><span class="o">=</span><span class="default_value">'raise'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take">
+<span class="sig-name descname"><span class="pre">take</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">indices</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'raise'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return an array formed from the elements of <cite>a</cite> at the given indices.</p>
 <p>Refer to <cite>numpy.take</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.take()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.take</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense">
-<code class="sig-name descname">to_dense</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#DenseCostMatrix.to_dense"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense">
+<span class="sig-name descname"><span class="pre">to_dense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#DenseCostMatrix.to_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p></p>
@@ -2032,8 +2055,8 @@ position in the next row.  As such, the strides for the array <cite>x</cite> wil
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes">
-<code class="sig-name descname">tobytes</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'C'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes">
+<span class="sig-name descname"><span class="pre">tobytes</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes" title="Permalink to this definition">¶</a></dt>
 <dd><p>Construct Python bytes containing the raw data bytes in the array.</p>
 <p>Constructs Python bytes showing a copy of the raw contents of
 data memory. The bytes object is produced in C-order by default.
@@ -2067,8 +2090,8 @@ Fortran contiguous, ‘C’ otherwise. Default is ‘C’.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile">
-<code class="sig-name descname">tofile</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">fid</span></em>, <em class="sig-param"><span class="n">sep</span><span class="o">=</span><span class="default_value">''</span></em>, <em class="sig-param"><span class="n">format</span><span class="o">=</span><span class="default_value">'%s'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile">
+<span class="sig-name descname"><span class="pre">tofile</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fid</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sep</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">''</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'%s'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile" title="Permalink to this definition">¶</a></dt>
 <dd><p>Write array to a file as text or binary (default).</p>
 <p>Data is always written in ‘C’ order, independent of the order of <cite>a</cite>.
 The data produced by this method can be recovered using the function
@@ -2104,8 +2127,8 @@ or file-like objects that do not support <code class="docutils literal notransla
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist">
-<code class="sig-name descname">tolist</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist">
+<span class="sig-name descname"><span class="pre">tolist</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the array as an <code class="docutils literal notranslate"><span class="pre">a.ndim</span></code>-levels deep nested list of Python scalars.</p>
 <p>Return a copy of the array data as a (nested) Python list.
 Data items are converted to the nearest compatible builtin Python type, via
@@ -2120,7 +2143,7 @@ not be a list at all, but a simple Python scalar.</p>
 <dd class="field-even"><p><strong>y</strong> – The possibly nested list of array elements.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>object, or list of object, or list of list of object, or ..</p>
+<dd class="field-odd"><p>object, or list of object, or list of list of object, or …</p>
 </dd>
 </dl>
 <p class="rubric">Notes</p>
@@ -2163,8 +2186,8 @@ except that <code class="docutils literal notranslate"><span class="pre">tolist<
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring">
-<code class="sig-name descname">tostring</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">order</span><span class="o">=</span><span class="default_value">'C'</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring">
+<span class="sig-name descname"><span class="pre">tostring</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">order</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'C'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring" title="Permalink to this definition">¶</a></dt>
 <dd><p>A compatibility alias for <cite>tobytes</cite>, with exactly the same behavior.</p>
 <p>Despite its name, it returns <cite>bytes</cite> not <cite>str</cite>s.</p>
 <div class="deprecated">
@@ -2173,22 +2196,22 @@ except that <code class="docutils literal notranslate"><span class="pre">tolist<
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace">
-<code class="sig-name descname">trace</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">offset</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">axis1</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">axis2</span><span class="o">=</span><span class="default_value">1</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace">
+<span class="sig-name descname"><span class="pre">trace</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">offset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis1</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis2</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace" title="Permalink to this definition">¶</a></dt>
 <dd><p>Return the sum along diagonals of the array.</p>
 <p>Refer to <cite>numpy.trace</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.trace()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.trace</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose">
-<code class="sig-name descname">transpose</code><span class="sig-paren">(</span><em class="sig-param"><span class="o">*</span><span class="n">axes</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose">
+<span class="sig-name descname"><span class="pre">transpose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">axes</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns a view of the array with axes transposed.</p>
 <p>For a 1-D array this has no effect, as a transposed vector is simply the
 same vector. To convert a 1-D array into a 2D column vector, an additional
@@ -2220,11 +2243,11 @@ intended simply as a “convenience” alternative to the tuple form)</p></li>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose"><code class="xref py py-meth docutils literal notranslate"><span class="pre">transpose()</span></code></a></dt><dd><p>Equivalent function</p>
+<dt><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a></dt><dd><p>Equivalent function</p>
 </dd>
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">ndarray.T()</span></code></dt><dd><p>Array property returning the array transposed.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.T</span></code></dt><dd><p>Array property returning the array transposed.</p>
 </dd>
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">ndarray.reshape()</span></code></dt><dd><p>Give a new shape to an array without changing its data.</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">ndarray.reshape</span></code></dt><dd><p>Give a new shape to an array without changing its data.</p>
 </dd>
 </dl>
 </div>
@@ -2247,22 +2270,22 @@ intended simply as a “convenience” alternative to the tuple form)</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var">
-<code class="sig-name descname">var</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">axis</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">dtype</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">out</span><span class="o">=</span><span class="default_value">None</span></em>, <em class="sig-param"><span class="n">ddof</span><span class="o">=</span><span class="default_value">0</span></em>, <em class="sig-param"><span class="n">keepdims</span><span class="o">=</span><span class="default_value">False</span></em>, <em class="sig-param"><span class="o">*</span></em>, <em class="sig-param"><span class="n">where</span><span class="o">=</span><span class="default_value">True</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var">
+<span class="sig-name descname"><span class="pre">var</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ddof</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">keepdims</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">where</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the variance of the array elements, along given axis.</p>
 <p>Refer to <cite>numpy.var</cite> for full documentation.</p>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <dl class="simple">
-<dt><code class="xref py py-meth docutils literal notranslate"><span class="pre">numpy.var()</span></code></dt><dd><p>equivalent function</p>
+<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.var</span></code></dt><dd><p>equivalent function</p>
 </dd>
 </dl>
 </div>
 </dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view">
-<code class="sig-name descname">view</code><span class="sig-paren">(</span><em class="sig-param">[dtype][, type]</em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view">
+<span class="sig-name descname"><span class="pre">view</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">[dtype][,</span> <span class="pre">type]</span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view" title="Permalink to this definition">¶</a></dt>
 <dd><p>New view of array with the same data.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2362,27 +2385,27 @@ avoided on arrays defined by slices, transposes, fortran-ordering, etc.:</p>
 </dd></dl>
 
 <dl class="py class">
-<dt id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix">
-<em class="property">class </em><code class="sig-prename descclassname">darts.dataprocessing.dtw.cost_matrix.</code><code class="sig-name descname">SparseCostMatrix</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">window</span><span class="p">:</span> <span class="n"><a class="reference internal" href="darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow" title="darts.dataprocessing.dtw.window.CRWindow">darts.dataprocessing.dtw.window.CRWindow</a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.cost_matrix.</span></span><span class="sig-name descname"><span class="pre">SparseCostMatrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">window</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.dataprocessing.dtw.window.html#darts.dataprocessing.dtw.window.CRWindow" title="darts.dataprocessing.dtw.window.CRWindow"><span class="pre">darts.dataprocessing.dtw.window.CRWindow</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.CostMatrix" title="darts.dataprocessing.dtw.cost_matrix.CostMatrix"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.dtw.cost_matrix.CostMatrix</span></code></a></p>
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.fill">
-<code class="sig-name descname">fill</code><span class="sig-paren">(</span><em class="sig-param"><span class="n">value</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix.fill"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.fill" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.fill">
+<span class="sig-name descname"><span class="pre">fill</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix.fill"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.fill" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.m">
-<code class="sig-name descname">m</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.m" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.m">
+<span class="sig-name descname"><span class="pre">m</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.m" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
-<dt id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.n">
-<code class="sig-name descname">n</code><em class="property">: int</em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.n" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.n">
+<span class="sig-name descname"><span class="pre">n</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.n" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py method">
-<dt id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense">
-<code class="sig-name descname">to_dense</code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; numpy.ndarray<a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix.to_dense"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense">
+<span class="sig-name descname"><span class="pre">to_dense</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/cost_matrix.html#SparseCostMatrix.to_dense"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.SparseCostMatrix.to_dense" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p></p>
@@ -2400,27 +2423,32 @@ avoided on arrays defined by slices, transposes, fortran-ordering, etc.:</p>
               </div>
               
               
-              <div class='prev-next-bottom'>
-                
-
-              </div>
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
               
           </main>
           
 
       </div>
     </div>
-
-    
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
-
-
-    <footer class="footer mt-5 mt-md-0">
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
   <div class="container">
-    <p>
-          &copy; Copyright 2021, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
-    </p>
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Unit8 SA.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
   </div>
 </footer>
   </body>

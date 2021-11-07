@@ -1,5 +1,0 @@
-
-.. automodule:: darts.models.forecasting.lgbm_model
-   :members:
-   :undoc-members:
-   :show-inheritance:

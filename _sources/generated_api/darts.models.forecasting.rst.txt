@@ -18,14 +18,16 @@
         darts.models.forecasting.fft
         darts.models.forecasting.forecasting_model
         darts.models.forecasting.gradient_boosted_model
-        darts.models.forecasting.lgbm_model
+        darts.models.forecasting.linear_regression_model
         darts.models.forecasting.nbeats
-        darts.models.forecasting.prophet
+        darts.models.forecasting.prophet_model
         darts.models.forecasting.random_forest
         darts.models.forecasting.regression_ensemble_model
         darts.models.forecasting.regression_model
         darts.models.forecasting.rnn_model
         darts.models.forecasting.tcn_model
+        darts.models.forecasting.tft_model
+        darts.models.forecasting.tft_submodels
         darts.models.forecasting.theta
         darts.models.forecasting.torch_forecasting_model
         darts.models.forecasting.transformer_model

@@ -1,5 +1,5 @@
 
-.. automodule:: darts.models.forecasting.prophet
+.. automodule:: darts.models.forecasting.tft_model
    :members:
    :undoc-members:
    :show-inheritance:

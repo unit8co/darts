@@ -7,7 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>darts.models.forecasting.forecasting_model &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../../../../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
 
     
   <link rel="stylesheet"
@@ -19,88 +20,102 @@
 
     
       
-  <link rel="stylesheet"
-    href="../../../../_static/vendor/open-sans_all/1.44.1/index.css">
-  <link rel="stylesheet"
-    href="../../../../_static/vendor/lato_latin-ext/1.44.1/index.css">
 
     
-    <link rel="stylesheet" href="../../../../_static/basic.css" type="text/css" />
-    <link rel="stylesheet" href="../../../../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../../../../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
-    <script id="documentation_options" data-url_root="../../../../" src="../../../../_static/documentation_options.js"></script>
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
     <script src="../../../../_static/jquery.js"></script>
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/doctools.js"></script>
-    <script src="../../../../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
-<div class="container-xl">
+    <div class="container-fluid" id="banner"></div>
 
-    <a class="navbar-brand" href="../../../../index.html">
     
-      <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
     
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+    
 
-    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
-      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
-        
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../../../../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../../../../generated_api/darts.html">API Reference</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../../../../examples.html">Examples</a>
-        </li>
-        
-        
-      </ul>
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
 
 
-      <form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form>
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
       
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../README.html">
+  Home
+ </a>
+</li>
 
-      <ul class="navbar-nav">
-        
-          <li class="nav-item">
-            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
-              <span><i class="fab fa-github-square"></i></span>
-            </a>
-          </li>
-        
-        
-          <li class="nav-item">
-            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
-              <span><i class="fab fa-twitter-square"></i></span>
-            </a>
-          </li>
-        
-      </ul>
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
     </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
 </div>
     </nav>
     
@@ -108,40 +123,29 @@
     <div class="container-xl">
       <div class="row">
           
-          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
-
-    <div class="bd-toc-item active">
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
     
-  
-    <ul class="nav bd-sidenav">
-        
-        
-        
-        
-        
-        
-        
-      </ul>
-  
-  </nav>
-          </div>
+  </div>
+</nav>
+            </div>
+            
           
 
           
           <div class="d-none d-xl-block col-xl-2 bd-toc">
-              
-
-<nav id="bd-toc-nav">
-    <ul class="nav section-nav flex-column">
-    
-    </ul>
-</nav>
-
-
-              
+            
           </div>
           
 
+          
+          
+            
           
           <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
               
@@ -161,12 +165,12 @@
 <span class="sd">one or several time series. The function `predict()` applies `f()` on one or several time series in order</span>
 <span class="sd">to obtain forecasts for a desired number of time stamps into the future.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-
-
+<span class="kn">import</span> <span class="nn">copy</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span>
 <span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">ABCMeta</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">from</span> <span class="nn">random</span> <span class="kn">import</span> <span class="n">sample</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
@@ -179,6 +183,7 @@
     <span class="n">_historical_forecasts_general_checks</span><span class="p">,</span>
     <span class="n">_parallel_apply</span>
 <span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">_generate_index</span>
 <span class="kn">import</span> <span class="nn">inspect</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">metrics</span>
@@ -186,20 +191,29 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">ForecastingModel</span><span class="p">(</span><span class="n">ABC</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot; The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to support.</span>
-<span class="sd">        The signatures in this base class are for &quot;local&quot; models handling only one univariate series and no covariates.</span>
-<span class="sd">        Sub-classes can handle more complex cases.</span>
+<div class="viewcode-block" id="ModelMeta"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.forecasting_model.ModelMeta">[docs]</a><span class="k">class</span> <span class="nc">ModelMeta</span><span class="p">(</span><span class="n">ABCMeta</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__call__</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="bp">cls</span><span class="o">.</span><span class="n">model_call</span> <span class="o">=</span> <span class="p">(</span><span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">ModelMeta</span><span class="p">,</span> <span class="bp">cls</span><span class="p">)</span><span class="o">.</span><span class="fm">__call__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div>
+
+
+<span class="k">class</span> <span class="nc">ForecastingModel</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">metaclass</span><span class="o">=</span><span class="n">ModelMeta</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot; The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to</span>
+<span class="sd">        support. The signatures in this base class are for &quot;local&quot; models handling only one univariate series and no</span>
+<span class="sd">        covariates. Sub-classes can handle more complex cases.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="c1"># The series used for training the model through the `fit()` function.</span>
         <span class="c1"># This is only used if the model has been fit on one time series.</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="c1"># state; whether the model has been fit (on a single time series)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># extract and store sub class model creation parameters</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_model_creation_params</span><span class="p">()</span>
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -237,6 +251,15 @@
 <span class="sd">        probabilistic predictions.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_supports_non_retrainable_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Checks if the forecasting model supports historical forecasts without retraining</span>
+<span class="sd">        the model. By default, returns False. Needs to be overwritten by models that do</span>
+<span class="sd">        support historical forecasts without retraining.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">uses_past_covariates</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -300,18 +323,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">input_series</span> <span class="o">=</span> <span class="n">input_series</span> <span class="k">if</span> <span class="n">input_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
 
-        <span class="k">if</span> <span class="n">input_series</span><span class="o">.</span><span class="n">has_datetime_index</span><span class="p">:</span>
-            <span class="c1"># time_index = input_series.time_index</span>
-            <span class="c1"># new_dates = [</span>
-            <span class="c1">#     (time_index[-1] + (i * input_series.freq)) for i in range(1, n + 1)</span>
-            <span class="c1"># ]</span>
-            <span class="c1"># return pd.DatetimeIndex(new_dates, freq=input_series.freq_str)</span>
-            <span class="n">start_time</span> <span class="o">=</span> <span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">input_series</span><span class="o">.</span><span class="n">freq</span>
-            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start_time</span><span class="p">,</span>
-                                 <span class="n">end</span><span class="o">=</span><span class="n">start_time</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
-                                 <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">n</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">last</span> <span class="o">=</span> <span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
+        <span class="n">start</span> <span class="o">=</span> <span class="n">last</span> <span class="o">+</span> <span class="n">input_series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">input_series</span><span class="o">.</span><span class="n">has_datetime_index</span> <span class="k">else</span> <span class="n">last</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">_generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_build_forecast_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                                <span class="n">points_preds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
@@ -440,6 +454,14 @@
         <span class="c1"># if covariates:</span>
         <span class="c1">#     raise_if_not(series.end_time() &lt;= covariates.end_time() and covariates.start_time() &lt;= series.start_time(),</span>
         <span class="c1">#                  &#39;The provided covariates must be at least as long as the target series.&#39;)</span>
+
+        <span class="c1"># only GlobalForecastingModels support historical forecastings without retraining the model</span>
+        <span class="n">base_class_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">__base__</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="ow">not</span> <span class="n">retrain</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_supports_non_retrainable_historical_forecasts</span><span class="p">(),</span>
+                 <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">base_class_name</span><span class="si">}</span><span class="s1"> does not support historical forecastings with `retrain` set to `False`. &#39;</span>
+                 <span class="sa">f</span><span class="s1">&#39;For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. &#39;</span>
+                 <span class="sa">f</span><span class="s1">&#39;Fore more information, read the documentation for `retrain` in `historical_forecastings()`&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
 
         <span class="c1"># prepare the start parameter -&gt; pd.Timestamp</span>
         <span class="n">start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
@@ -614,7 +636,8 @@
                    <span class="n">metric</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">metrics</span><span class="o">.</span><span class="n">mape</span><span class="p">,</span>
                    <span class="n">reduction</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">,</span>
                    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                   <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;ForecastingModel&#39;</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+                   <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                   <span class="n">n_random_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s1">&#39;ForecastingModel&#39;</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A function for finding the best hyper-parameters among a given set.</span>
 <span class="sd">        This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.</span>
@@ -693,6 +716,14 @@
 <span class="sd">            The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters</span>
 <span class="sd">            combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.</span>
 <span class="sd">            Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.</span>
+<span class="sd">        n_random_samples</span>
+<span class="sd">            The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform </span>
+<span class="sd">            a random search instead of using the full grid. </span>
+<span class="sd">            If an integer, `n_random_samples` is the number of parameter combinations selected from the full grid and must</span>
+<span class="sd">            be between `0` and the total number of parameter combinations.</span>
+<span class="sd">            If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must be</span>
+<span class="sd">            between `0` and `1`.</span>
+<span class="sd">            Defaults to `None` for which random selection will be ignored.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -719,8 +750,14 @@
         <span class="c1">#     raise_if_not(series.has_same_time_as(covariates), &#39;The provided series and covariates must have the &#39;</span>
         <span class="c1">#                                                       &#39;same time axes.&#39;)</span>
 
+
         <span class="c1"># compute all hyperparameter combinations from selection</span>
         <span class="n">params_cross_product</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="o">*</span><span class="n">parameters</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+
+        <span class="c1">#If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with</span>
+        <span class="k">if</span> <span class="n">n_random_samples</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">params_cross_product</span> <span class="o">=</span> <span class="n">model_class</span><span class="o">.</span><span class="n">_sample_params</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">,</span> <span class="n">n_random_samples</span><span class="p">)</span>
+            
 
         <span class="c1"># iterate through all combinations of the provided parameters and choose the best one</span>
         <span class="n">iterator</span> <span class="o">=</span> <span class="n">_build_tqdm_iterator</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">),</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">))</span>
@@ -811,8 +848,33 @@
 
         <span class="k">return</span> <span class="n">residuals</span>
 
+    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">_sample_params</span><span class="p">(</span><span class="n">model_class</span><span class="p">,</span> <span class="n">params</span><span class="p">,</span> <span class="n">n_random_samples</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Select the absolute number of samples randomly if an integer has been supplied. If a float has been</span>
+<span class="sd">        supplied, select a fraction&quot;&quot;&quot;</span>
 
-<div class="viewcode-block" id="GlobalForecastingModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.arima.GlobalForecastingModel">[docs]</a><span class="k">class</span> <span class="nc">GlobalForecastingModel</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_random_samples</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">((</span><span class="n">n_random_samples</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_random_samples</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)),</span>
+                         <span class="s2">&quot;If supplied as an integer, n_random_samples must be greater than 0 and less than or equal to the size of the cartesian product of the hyperparameters.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">sample</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">n_random_samples</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n_random_samples</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">((</span><span class="n">n_random_samples</span> <span class="o">&gt;</span> <span class="mf">0.0</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">n_random_samples</span> <span class="o">&lt;=</span> <span class="mf">1.0</span><span class="p">),</span>
+                         <span class="s2">&quot;If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">sample</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="nb">int</span><span class="p">(</span><span class="n">n_random_samples</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">params</span><span class="p">)))</span>
+
+    <span class="k">def</span> <span class="nf">_extract_model_creation_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;extracts immutable model creation parameters from `ModelMeta` and deletes reference.&quot;&quot;&quot;</span>
+        <span class="n">model_params</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model_call</span><span class="p">)</span>
+        <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">model_call</span>
+        <span class="k">return</span> <span class="n">model_params</span>
+
+    <span class="k">def</span> <span class="nf">untrained_model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">args</span><span class="p">,</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_params</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="GlobalForecastingModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.forecasting_model.GlobalForecastingModel">[docs]</a><span class="k">class</span> <span class="nc">GlobalForecastingModel</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; The base class for &quot;global&quot; forecasting models, handling several time series and optional covariates.</span>
 
 <span class="sd">    Global forecasting models expand upon the functionality of `ForecastingModel` in 4 ways:</span>
@@ -836,7 +898,7 @@
     <span class="n">_expect_past_covariates</span><span class="p">,</span> <span class="n">_expect_future_covariates</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span>
     <span class="n">past_covariate_series</span><span class="p">,</span> <span class="n">future_covariate_series</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
 
-<div class="viewcode-block" id="GlobalForecastingModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.arima.GlobalForecastingModel.fit">[docs]</a>    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="GlobalForecastingModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.forecasting_model.GlobalForecastingModel.fit">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
             <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
             <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -878,7 +940,7 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">_expect_future_covariates</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span> <span class="o">=</span> <span class="kc">True</span></div>
 
-<div class="viewcode-block" id="GlobalForecastingModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.arima.GlobalForecastingModel.predict">[docs]</a>    <span class="nd">@abstractmethod</span>
+<div class="viewcode-block" id="GlobalForecastingModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.forecasting_model.html#darts.models.forecasting.forecasting_model.GlobalForecastingModel.predict">[docs]</a>    <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                 <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                 <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
@@ -948,7 +1010,12 @@
             <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_past_covariates</span> <span class="k">else</span> <span class="kc">None</span><span class="p">,</span>
             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">uses_future_covariates</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_supports_non_retrainable_historical_forecasts</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;GlobalForecastingModel supports historical forecasts without retraining the model&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
 
 <span class="k">class</span> <span class="nc">DualCovariatesForecastingModel</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; The base class for the forecasting models that are not global, but support future covariates.</span>
@@ -1043,27 +1110,32 @@
               </div>
               
               
-              <div class='prev-next-bottom'>
-                
-
-              </div>
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
               
           </main>
           
 
       </div>
     </div>
-
-    
-  <script src="../../../../_static/js/index.3da636dd464baa7582d2.js"></script>
-
-
-    <footer class="footer mt-5 mt-md-0">
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
   <div class="container">
-    <p>
-          &copy; Copyright 2021, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
-    </p>
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Unit8 SA.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
   </div>
 </footer>
   </body>

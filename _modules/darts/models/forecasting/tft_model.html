@@ -1,0 +1,1080 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.forecasting.tft_model &#8212; darts  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.models.forecasting.tft_model</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Temporal Fusion Transformer (TFT)</span>
+<span class="sd">-------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Sequence</span>
+
+<span class="kn">from</span> <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">RandomState</span>
+
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span><span class="p">,</span> <span class="n">Likelihood</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span><span class="p">,</span> <span class="n">_generate_index</span>
+<span class="kn">from</span> <span class="nn">darts.utils.data</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">TrainingDataset</span><span class="p">,</span>
+    <span class="n">MixedCovariatesSequentialDataset</span><span class="p">,</span>
+    <span class="n">MixedCovariatesTrainingDataset</span><span class="p">,</span>
+    <span class="n">MixedCovariatesInferenceDataset</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">MixedCovariatesTorchModel</span><span class="p">,</span>
+    <span class="n">TorchParametricProbabilisticForecastingModel</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.tft_submodels</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">_GateAddNorm</span><span class="p">,</span>
+    <span class="n">_GatedResidualNetwork</span><span class="p">,</span>
+    <span class="n">_InterpretableMultiHeadAttention</span><span class="p">,</span>
+    <span class="n">_VariableSelectionNetwork</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">torch.nn</span> <span class="kn">import</span> <span class="n">LSTM</span> <span class="k">as</span> <span class="n">_LSTM</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">MixedCovariatesTrainTensorType</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]</span>
+
+
+<span class="k">class</span> <span class="nc">_TFTModule</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">output_dim</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">variables_meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span>
+                 <span class="n">hidden_size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
+                 <span class="n">lstm_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+                 <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+                 <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Likelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+
+        <span class="sd">&quot;&quot;&quot; PyTorch module implementing the TFT architecture from `this paper &lt;https://arxiv.org/pdf/1912.09363.pdf&gt;`_</span>
+<span class="sd">        The implementation is built upon `pytorch-forecasting&#39;s TemporalFusionTransformer</span>
+<span class="sd">        &lt;https://pytorch-forecasting.readthedocs.io/en/latest/models.html&gt;`_.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        output_dim : Tuple[int, int]</span>
+<span class="sd">            shape of output given by (n_targets, loss_size).</span>
+<span class="sd">        input_chunk_length : int</span>
+<span class="sd">            encoder length; number of past time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">        output_chunk_length : int</span>
+<span class="sd">            decoder length; number of future time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">        variables_meta : Dict[str, Dict[str, List[str]]]</span>
+<span class="sd">            dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`</span>
+<span class="sd">        hidden_size : int</span>
+<span class="sd">            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT architecture.</span>
+<span class="sd">        lstm_layers : int</span>
+<span class="sd">            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (2 is a good default).</span>
+<span class="sd">        num_attention_heads : int</span>
+<span class="sd">            number of attention heads (4 is a good default)</span>
+<span class="sd">        hidden_continuous_size : int</span>
+<span class="sd">            default for hidden size for processing continuous variables</span>
+<span class="sd">        dropout : float</span>
+<span class="sd">            Fraction of neurons afected by Dropout.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">_TFTModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_size</span> <span class="o">=</span> <span class="n">output_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span> <span class="o">=</span> <span class="n">variables_meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="o">=</span> <span class="n">hidden_continuous_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span> <span class="o">=</span> <span class="n">lstm_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">=</span> <span class="n">num_attention_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
+
+        <span class="c1"># initialize last batch size to check if new mask needs to be generated</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_size_last</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># general information on variable name endings:</span>
+        <span class="c1"># _vsn: VariableSelectionNetwork</span>
+        <span class="c1"># _grn: GatedResidualNetwork</span>
+        <span class="c1"># _glu: GatedLinearUnit</span>
+        <span class="c1"># _gan: GateAddNorm</span>
+        <span class="c1"># _attn: Attention</span>
+
+        <span class="c1"># # processing inputs</span>
+        <span class="c1"># continuous variable processing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reals</span><span class="p">}</span>
+
+        <span class="n">static_input_sizes</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates_vsn</span> <span class="o">=</span> <span class="n">_VariableSelectionNetwork</span><span class="p">(</span>
+            <span class="n">input_sizes</span><span class="o">=</span><span class="n">static_input_sizes</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for categorical inputs</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">prescalers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span><span class="p">,</span>
+            <span class="n">single_variable_grns</span><span class="o">=</span><span class="p">{},</span>
+            <span class="n">context_size</span><span class="o">=</span><span class="kc">None</span>  <span class="c1"># no context for static variables</span>
+        <span class="p">)</span>
+
+        <span class="c1"># variable selection for encoder and decoder</span>
+        <span class="n">encoder_input_sizes</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder_variables</span><span class="p">}</span>
+
+        <span class="n">decoder_input_sizes</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder_variables</span><span class="p">}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoder_vsn</span> <span class="o">=</span> <span class="n">_VariableSelectionNetwork</span><span class="p">(</span>
+            <span class="n">input_sizes</span><span class="o">=</span><span class="n">encoder_input_sizes</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for categorical inputs</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">context_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">prescalers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span><span class="p">,</span>
+            <span class="n">single_variable_grns</span><span class="o">=</span><span class="p">{}</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">decoder_vsn</span> <span class="o">=</span> <span class="n">_VariableSelectionNetwork</span><span class="p">(</span>
+            <span class="n">input_sizes</span><span class="o">=</span><span class="n">decoder_input_sizes</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">input_embedding_flags</span><span class="o">=</span><span class="p">{},</span>  <span class="c1"># this would be required for categorical inputs</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">context_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">prescalers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span><span class="p">,</span>
+            <span class="n">single_variable_grns</span><span class="o">=</span><span class="p">{}</span>
+        <span class="p">)</span>
+
+        <span class="c1"># static encoders</span>
+        <span class="c1"># for variable selection</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_context_grn</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">output_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># for hidden state of the lstm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_context_hidden_encoder_grn</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">output_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># for cell state of the lstm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_context_cell_encoder_grn</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">output_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># for post lstm static enrichment</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_context_enrichment</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">output_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span>
+        <span class="p">)</span>
+
+        <span class="c1"># lstm encoder (history) and decoder (future) for local processing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_encoder</span> <span class="o">=</span> <span class="n">_LSTM</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_decoder</span> <span class="o">=</span> <span class="n">_LSTM</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span> <span class="o">&gt;</span> <span class="mi">1</span> <span class="k">else</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="n">batch_first</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># post lstm GateAddNorm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_lstm_encoder_gan</span> <span class="o">=</span> <span class="n">_GateAddNorm</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_lstm_decoder_gan</span> <span class="o">=</span> <span class="n">_GateAddNorm</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span>
+        <span class="p">)</span>
+
+        <span class="c1"># static enrichment and processing past LSTM</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">static_enrichment_grn</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
+            <span class="n">input_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">output_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">context_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># attention for long-range processing</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">multihead_attn</span> <span class="o">=</span> <span class="n">_InterpretableMultiHeadAttention</span><span class="p">(</span>
+            <span class="n">d_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">n_head</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">post_attn_gan</span> <span class="o">=</span> <span class="n">_GateAddNorm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">positionwise_feedforward_grn</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span>
+        <span class="p">)</span>
+
+        <span class="c1"># output processing -&gt; no dropout at this late stage</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pre_output_gan</span> <span class="o">=</span> <span class="n">_GateAddNorm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span> <span class="o">=</span> \
+            <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">([</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_size</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">)])</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">reals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List of all continuous variables in model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;reals_input&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">static_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List of all static variables in model</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: (Darts: dbader) we might want to include static variables in the future?</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;static_input&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">encoder_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List of all encoder variables in model (excluding static variables)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;time_varying_encoder_input&#39;</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">decoder_variables</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        List of all decoder variables in model (excluding static variables)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;time_varying_decoder_input&#39;</span><span class="p">]</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">expand_static_context</span><span class="p">(</span><span class="n">context</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">timesteps</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        add time dimension to static context</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">context</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">timesteps</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_attention_mask</span><span class="p">(</span><span class="n">encoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                           <span class="n">decoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                           <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                           <span class="n">device</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns causal mask to apply for self-attention layer that acts on future input only.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># indices to which is attended</span>
+        <span class="n">attend_step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">decoder_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># indices for which is predicted</span>
+        <span class="n">predict_step</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">decoder_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)[:,</span> <span class="kc">None</span><span class="p">]</span>
+        <span class="c1"># do not attend to steps to self or after prediction</span>
+        <span class="n">decoder_mask</span> <span class="o">=</span> <span class="n">attend_step</span> <span class="o">&gt;=</span> <span class="n">predict_step</span>
+        <span class="c1"># do not attend to past input</span>
+        <span class="n">encoder_mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">encoder_length</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="o">.</span><span class="n">bool</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># combine masks along attended time - first encoder and then decoder</span>
+
+        <span class="n">mask</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+            <span class="p">(</span>
+                <span class="n">encoder_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">decoder_length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+                <span class="n">decoder_mask</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span>
+            <span class="p">),</span>
+            <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">return</span> <span class="n">mask</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        input dimensions: (n_samples, n_time_steps, n_variables)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">dim_samples</span><span class="p">,</span> <span class="n">dim_time</span><span class="p">,</span> <span class="n">dim_variable</span><span class="p">,</span> <span class="n">dim_loss</span> <span class="o">=</span> <span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_samples</span><span class="p">]</span>
+        <span class="n">encoder_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
+        <span class="n">decoder_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+        <span class="n">timesteps</span> <span class="o">=</span> <span class="n">encoder_length</span> <span class="o">+</span> <span class="n">decoder_length</span>
+
+        <span class="c1"># TODO: impelement static covariates</span>
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># data is of size (batch_size, input_length, input_size)</span>
+        <span class="n">x_cont_past</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">tensor</span> <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="p">[</span><span class="n">past_target</span><span class="p">,</span>
+                                   <span class="n">past_covariates</span><span class="p">,</span>
+                                   <span class="n">historic_future_covariates</span><span class="p">,</span>
+                                   <span class="n">static_covariates</span><span class="p">]</span> <span class="k">if</span> <span class="n">tensor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim_variable</span>
+        <span class="p">)</span>
+
+        <span class="n">x_cont_future</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">tensor</span> <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="p">[</span><span class="n">future_covariates</span><span class="p">,</span>
+                                   <span class="n">static_covariates</span><span class="p">]</span> <span class="k">if</span> <span class="n">tensor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim_variable</span>
+        <span class="p">)</span>
+
+        <span class="n">input_vectors_past</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">x_cont_past</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder_variables</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="n">input_vectors_future</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">x_cont_future</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">idx</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">decoder_variables</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="c1"># Embedding and variable selection</span>
+        <span class="k">if</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># TODO: impelement static covariates</span>
+            <span class="c1"># # static embeddings will be constant over entire batch</span>
+            <span class="c1"># static_embedding = {name: input_vectors[name][:, 0] for name in self.static_variables}</span>
+            <span class="c1"># static_embedding, static_covariate_var = self.static_covariates_vsn(static_embedding)</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;Static covariates have yet to be defined&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">static_embedding</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span>
+                                           <span class="n">dtype</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                           <span class="n">device</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+            <span class="c1"># this is only to interpret the output</span>
+            <span class="n">static_covariate_var</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">),</span>
+                                               <span class="n">dtype</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                                               <span class="n">device</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s1">&#39;make zero tensor if future covariates is None&#39;</span><span class="p">)</span>
+
+        <span class="n">static_context_expanded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expand_static_context</span><span class="p">(</span>
+            <span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_context_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">),</span>
+            <span class="n">timesteps</span><span class="o">=</span><span class="n">timesteps</span>
+        <span class="p">)</span>
+
+        <span class="n">embeddings_varying_encoder</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">input_vectors_past</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder_variables</span><span class="p">}</span>
+        <span class="n">embeddings_varying_encoder</span><span class="p">,</span> <span class="n">encoder_sparse_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoder_vsn</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">embeddings_varying_encoder</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="n">static_context_expanded</span><span class="p">[:,</span> <span class="p">:</span><span class="n">encoder_length</span><span class="p">],</span>
+        <span class="p">)</span>
+
+        <span class="n">embeddings_varying_decoder</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="n">input_vectors_future</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder_variables</span><span class="p">}</span>
+        <span class="n">embeddings_varying_decoder</span><span class="p">,</span> <span class="n">decoder_sparse_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">decoder_vsn</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">embeddings_varying_decoder</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="n">static_context_expanded</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
+        <span class="p">)</span>
+
+        <span class="c1"># LSTM</span>
+        <span class="c1"># calculate initial state</span>
+        <span class="n">input_hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_context_hidden_encoder_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="p">)</span>
+        <span class="n">input_cell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_context_cell_encoder_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="p">)</span>
+
+        <span class="c1"># run local lstm encoder</span>
+        <span class="n">encoder_out</span><span class="p">,</span> <span class="p">(</span><span class="n">hidden</span><span class="p">,</span> <span class="n">cell</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_encoder</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">embeddings_varying_encoder</span><span class="p">,</span> <span class="n">hx</span><span class="o">=</span><span class="p">(</span><span class="n">input_hidden</span><span class="p">,</span> <span class="n">input_cell</span><span class="p">))</span>
+
+        <span class="c1"># run local lstm decoder</span>
+        <span class="n">decoder_out</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lstm_decoder</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">embeddings_varying_decoder</span><span class="p">,</span> <span class="n">hx</span><span class="o">=</span><span class="p">(</span><span class="n">hidden</span><span class="p">,</span> <span class="n">cell</span><span class="p">))</span>
+
+        <span class="c1"># post lstm GateAddNorm</span>
+        <span class="n">lstm_out_encoder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_lstm_encoder_gan</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">encoder_out</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="n">embeddings_varying_encoder</span><span class="p">)</span>
+        <span class="n">lstm_out_decoder</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_lstm_encoder_gan</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">decoder_out</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="n">embeddings_varying_decoder</span><span class="p">)</span>
+
+        <span class="n">lstm_out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">lstm_out_encoder</span><span class="p">,</span> <span class="n">lstm_out_decoder</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># static enrichment</span>
+        <span class="n">static_context_enriched</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_context_enrichment</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">)</span>
+        <span class="n">attn_input</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_enrichment_grn</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">lstm_out</span><span class="p">,</span>
+            <span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expand_static_context</span><span class="p">(</span><span class="n">context</span><span class="o">=</span><span class="n">static_context_enriched</span><span class="p">,</span> <span class="n">timesteps</span><span class="o">=</span><span class="n">timesteps</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="c1"># avoid unnecessary regeneration of attention mask</span>
+        <span class="k">if</span> <span class="n">batch_size</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_size_last</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_attention_mask</span><span class="p">(</span><span class="n">encoder_length</span><span class="o">=</span><span class="n">encoder_length</span><span class="p">,</span>
+                                                          <span class="n">decoder_length</span><span class="o">=</span><span class="n">decoder_length</span><span class="p">,</span>
+                                                          <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+                                                          <span class="n">device</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">batch_size_last</span> <span class="o">=</span> <span class="n">batch_size</span>
+
+        <span class="c1"># multi-head attention</span>
+        <span class="n">attn_out</span><span class="p">,</span> <span class="n">attn_out_weights</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">multihead_attn</span><span class="p">(</span>
+            <span class="n">q</span><span class="o">=</span><span class="n">attn_input</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>  <span class="c1"># query only for predictions</span>
+            <span class="n">k</span><span class="o">=</span><span class="n">attn_input</span><span class="p">,</span>
+            <span class="n">v</span><span class="o">=</span><span class="n">attn_input</span><span class="p">,</span>
+            <span class="n">mask</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attention_mask</span>
+        <span class="p">)</span>
+
+        <span class="c1"># skip connection over attention</span>
+        <span class="n">attn_out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">post_attn_gan</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">attn_out</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="n">attn_input</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:])</span>
+
+        <span class="c1"># position-wise feed-forward</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positionwise_feedforward_grn</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">attn_out</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="c1"># skip connection over temporal fusion decoder from LSTM post _GateAddNorm</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_output_gan</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">out</span><span class="p">,</span> <span class="n">skip</span><span class="o">=</span><span class="n">lstm_out</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:])</span>
+
+        <span class="c1"># generate output for n_targets and loss_size elements for loss evaluation</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="p">[</span><span class="n">output_layer</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="k">for</span> <span class="n">output_layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_layer</span><span class="p">]</span>
+
+        <span class="c1"># stack output</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">QuantileRegression</span><span class="p">):</span>
+            <span class="c1"># loss_size &gt; 1 for losses such as QuantileLoss</span>
+            <span class="c1"># returns shape (n_samples, n_timesteps, n_targets, n_losses)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">out_i</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="n">dim_variable</span><span class="p">)</span> <span class="k">for</span> <span class="n">out_i</span> <span class="ow">in</span> <span class="n">out</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim_variable</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_size</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="n">dim_variable</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># self.loss_size == 1 and self.n_targets == 1</span>
+            <span class="c1"># returns shape (n_samples, n_timesteps, 1) for univariate</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># TODO: (Darts) remember this in case we want to output interpretation</span>
+        <span class="c1"># return self.to_network_output(</span>
+        <span class="c1">#     prediction=self.transform_output(out, target_scale=x[&quot;target_scale&quot;]),</span>
+        <span class="c1">#     attention=attn_out_weights,</span>
+        <span class="c1">#     static_variables=static_covariate_var,</span>
+        <span class="c1">#     encoder_variables=encoder_sparse_weights,</span>
+        <span class="c1">#     decoder_variables=decoder_sparse_weights,</span>
+        <span class="c1">#     decoder_lengths=decoder_lengths,</span>
+        <span class="c1">#     encoder_lengths=encoder_lengths,</span>
+        <span class="c1"># )</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+
+
+<div class="viewcode-block" id="TFTModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel">[docs]</a><span class="k">class</span> <span class="nc">TFTModel</span><span class="p">(</span><span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">MixedCovariatesTorchModel</span><span class="p">):</span>
+    <span class="nd">@random_method</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">hidden_size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
+                 <span class="n">lstm_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+                 <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+                 <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+                 <span class="n">add_cyclic_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Likelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="o">**</span><span class="n">kwargs</span>
+                 <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.</span>
+
+<span class="sd">        This is an implementation of the TFT architecture, as outlined in this paper:</span>
+<span class="sd">        https://arxiv.org/pdf/1912.09363.pdf.</span>
+
+<span class="sd">        The internal sub models are adopted from `pytorch-forecasting&#39;s TemporalFusionTransformer</span>
+<span class="sd">        &lt;https://pytorch-forecasting.readthedocs.io/en/latest/models.html&gt;`_ implementation.</span>
+
+<span class="sd">        This model supports mixed covariates (includes past covariates known for `input_chunk_length`</span>
+<span class="sd">        points before prediction time and future covariates known for `output_chunk_length` after prediction time).</span>
+
+<span class="sd">        The TFT applies multi-head attention queries on future inputs from mandatory `future_covariates`.</span>
+<span class="sd">        Specifying `add_cyclic_encoder` (read below) adds cyclic temporal encoding to the model and allows to use</span>
+<span class="sd">        the model without having to specify additional `future_covariates` for training and prediction.</span>
+
+<span class="sd">        By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are</span>
+<span class="sd">        probabilistic; it is recommended to call ``predict()`` with ``num_samples &gt;&gt; 1`` to get meaningful results.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length : int</span>
+<span class="sd">            encoder length; number of past time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">        output_chunk_length : int</span>
+<span class="sd">            decoder length; number of future time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">        hidden_size : int</span>
+<span class="sd">            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT architecture.</span>
+<span class="sd">        lstm_layers : int</span>
+<span class="sd">            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (2 is a good default).</span>
+<span class="sd">        num_attention_heads : int</span>
+<span class="sd">            number of attention heads (4 is a good default)</span>
+<span class="sd">        dropout : float</span>
+<span class="sd">            Fraction of neurons afected by Dropout.</span>
+<span class="sd">        hidden_continuous_size : int</span>
+<span class="sd">            default for hidden size for processing continuous variables</span>
+<span class="sd">        add_cyclic_encoder : optional str</span>
+<span class="sd">            If other than None, apply cycling encoding to an attribute of the time index and add it to the</span>
+<span class="sd">            `future_covariates`.</span>
+<span class="sd">            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`</span>
+<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
+<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
+<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        loss_fn : nn.Module</span>
+<span class="sd">            PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``</span>
+<span class="sd">            instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None</span>
+<span class="sd">            and give a ``loss_fn`` argument.</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            The likelihood model to be used for probabilistic forecasts. By default the TFT uses</span>
+<span class="sd">            a ``QuantileRegression`` likelihood.</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            Optionally, a maximum number of training sample to generate per time series.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of the weights initialization. Check this</span>
+<span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random-state&gt;`_ for more details.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Optional arguments to initialize the torch.Module</span>
+
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{&#39;lr&#39;: 1e-3}`</span>
+<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`</span>
+<span class="sd">            will be used.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds</span>
+<span class="sd">            to using a constant learning rate.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string &quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;, where the initial part of the</span>
+<span class="sd">            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at</span>
+<span class="sd">            the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            2021-06-14_09:53:32_torch_model_run_44607.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            (default: current working directory).</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            `[work_dir]/.darts/runs/`.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            `TimeSeries` is passed to the `fit()` method).</span>
+<span class="sd">        torch_device_str</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
+<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded).</span>
+<span class="sd">        save_checkpoints</span>
+<span class="sd">            Whether or not to automatically save the untrained model and checkpoints from training.</span>
+<span class="sd">            If set to `False`, the model can still be manually saved using :meth:`save_model()</span>
+<span class="sd">            &lt;TorchForeCastingModel.save_model()&gt;` and loaded using :meth:`load_model()</span>
+<span class="sd">            &lt;TorchForeCastingModel.load_model()&gt;`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">loss_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># This is the default if no loss information is provided</span>
+            <span class="n">likelihood</span> <span class="o">=</span> <span class="n">QuantileRegression</span><span class="p">()</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;loss_fn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">loss_fn</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;input_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;output_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span> <span class="o">=</span> <span class="n">lstm_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">=</span> <span class="n">num_attention_heads</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="o">=</span> <span class="n">hidden_continuous_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="o">=</span> <span class="n">add_cyclic_encoder</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss_fn</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_sample_per_ts</span> <span class="o">=</span> <span class="n">max_samples_per_ts</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                      <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        `train_sample` contains the following tensors:</span>
+<span class="sd">            (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)</span>
+<span class="sd">            </span>
+<span class="sd">            each tensor has shape (n_timesteps, n_variables)</span>
+<span class="sd">            - past/historic tensors have shape (input_chunk_length, n_variables)</span>
+<span class="sd">            - future tensors have shape (output_chunk_length, n_variables)</span>
+<span class="sd">        </span>
+<span class="sd">        Darts Interpretation of pytorch-forecasting&#39;s TimeSeriesDataSet:</span>
+<span class="sd">            time_varying_knowns : future_covariates (including historic_future_covariates)</span>
+<span class="sd">            time_varying_unknowns : past_targets, past_covariates</span>
+
+<span class="sd">            time_varying_encoders : [past_targets, past_covariates, historic_future_covariates, future_covariates]</span>
+<span class="sd">            time_varying_decoders : [historic_future_covariates, future_covariates]</span>
+
+<span class="sd">        `variable_meta` is used in TFT to access specific variables</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="n">train_sample</span>
+
+        <span class="n">static_covariates</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># placeholder for future</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="p">(</span><span class="n">future_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> \
+            <span class="p">(</span><span class="n">future_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span><span class="p">)</span>
+
+        <span class="n">tensors</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span>  <span class="c1"># for time varying encoders</span>
+            <span class="n">future_covariate</span><span class="p">,</span> <span class="n">future_target</span><span class="p">,</span>  <span class="c1"># for time varying decoders</span>
+            <span class="n">static_covariates</span>  <span class="c1"># for static encoder</span>
+        <span class="p">]</span>
+        <span class="n">type_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;past_target&#39;</span><span class="p">,</span> <span class="s1">&#39;past_covariate&#39;</span><span class="p">,</span> <span class="s1">&#39;historic_future_covariate&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;future_covariate&#39;</span><span class="p">,</span> <span class="s1">&#39;future_target&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;static_covariate&#39;</span>
+        <span class="p">]</span>
+        <span class="n">variable_names</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="s1">&#39;target&#39;</span><span class="p">,</span> <span class="s1">&#39;past_covariate&#39;</span><span class="p">,</span> <span class="s1">&#39;future_covariate&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;future_covariate&#39;</span><span class="p">,</span> <span class="s1">&#39;target&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;static_covariate&#39;</span><span class="p">,</span>
+        <span class="p">]</span>
+
+        <span class="n">variables_meta</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;input&#39;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="n">type_name</span><span class="p">:</span> <span class="p">[</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">var_name</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">])]</span>
+                <span class="k">for</span> <span class="n">type_name</span><span class="p">,</span> <span class="n">var_name</span><span class="p">,</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">type_names</span><span class="p">,</span> <span class="n">variable_names</span><span class="p">,</span> <span class="n">tensors</span><span class="p">)</span> <span class="k">if</span> <span class="n">tensor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">},</span>
+            <span class="s1">&#39;model_config&#39;</span><span class="p">:</span> <span class="p">{}</span>
+        <span class="p">}</span>
+
+        <span class="n">reals_input</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">time_varying_encoder_input</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">time_varying_decoder_input</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">static_input</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="n">type_names</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">]:</span>
+                <span class="nb">vars</span> <span class="o">=</span> <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="n">input_var</span><span class="p">]</span>
+                <span class="n">reals_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+                <span class="k">if</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;past_target&#39;</span><span class="p">,</span> <span class="s1">&#39;past_covariate&#39;</span><span class="p">,</span> <span class="s1">&#39;historic_future_covariate&#39;</span><span class="p">]:</span>
+                    <span class="n">time_varying_encoder_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+                <span class="k">elif</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;future_covariate&#39;</span><span class="p">]:</span>
+                    <span class="n">time_varying_decoder_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+                <span class="k">elif</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;static_covariate&#39;</span><span class="p">]:</span>
+                    <span class="n">static_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+
+        <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;reals_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">reals_input</span><span class="p">))</span>
+        <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;time_varying_encoder_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">time_varying_encoder_input</span><span class="p">))</span>
+        <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;time_varying_decoder_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">time_varying_decoder_input</span><span class="p">))</span>
+        <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;static_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">static_input</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">_TFTModule</span><span class="p">(</span>
+            <span class="n">variables_meta</span><span class="o">=</span><span class="n">variables_meta</span><span class="p">,</span>
+            <span class="n">output_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span>
+            <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+            <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+            <span class="n">lstm_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">num_attention_heads</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span><span class="p">,</span>
+            <span class="n">hidden_continuous_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span><span class="p">,</span>
+            <span class="n">likelihood</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                             <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                             <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">MixedCovariatesSequentialDataset</span><span class="p">:</span>
+
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="s1">&#39;TFTModel requires future covariates. The model applies multi-head attention queries on future &#39;</span>
+                 <span class="s1">&#39;inputs. Consider specifying `add_cyclic_encoder` (read TFT model docs) at model creation which &#39;</span>
+                 <span class="s1">&#39;automatically adds cyclic encoding of the time index to `future_covariates`.&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_cyclic_encoder</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">MixedCovariatesSequentialDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                                <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_sample_per_ts</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_add_cyclic_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                             <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                             <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                             <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;adds cyclic encoding of time index to future covariates.</span>
+<span class="sd">        For training (when `n` is `None`) we can simply use the future covariates (if available) or target as</span>
+<span class="sd">        reference to extract the time index.</span>
+<span class="sd">        For prediction (`n` is given) we have to distinguish between two cases:</span>
+<span class="sd">            1)</span>
+<span class="sd">                if future covariates are given, we can use them as reference</span>
+<span class="sd">            2)</span>
+<span class="sd">                if future covariates are missing, we need to generate a time index that starts `input_chunk_length`</span>
+<span class="sd">                before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target</span>
+<span class="sd">            past target TimeSeries</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            future covariates TimeSeries</span>
+<span class="sd">        n</span>
+<span class="sd">            prediciton length (only given for predictions)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Sequence[TimeSeries]</span>
+<span class="sd">            future covariates including cyclic encoded time index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># training</span>
+            <span class="n">encode_ts</span> <span class="o">=</span> <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">target</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># prediction</span>
+            <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">encode_ts</span> <span class="o">=</span> <span class="n">future_covariates</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">encode_ts</span> <span class="o">=</span> <span class="p">[</span><span class="n">_generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">ts</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
+                                             <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">),</span>
+                                             <span class="n">freq</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">target</span><span class="p">]</span>
+
+        <span class="n">encoded_times</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">encode_ts</span>
+        <span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">encoded_times</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">future_covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">fc</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">et</span><span class="p">)</span> <span class="k">for</span> <span class="n">fc</span><span class="p">,</span> <span class="n">et</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">encoded_times</span><span class="p">)]</span>
+
+        <span class="k">return</span> <span class="n">future_covariates</span>
+
+    <span class="k">def</span> <span class="nf">_verify_train_dataset_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">):</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">MixedCovariatesTrainingDataset</span><span class="p">),</span>
+                     <span class="s1">&#39;TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_build_inference_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                                 <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                                 <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                                 <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                                 <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">MixedCovariatesInferenceDataset</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_cyclic_encoder</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">MixedCovariatesInferenceDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                               <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                                               <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                                               <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                                               <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                               <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_produce_train_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">input_batch</span><span class="p">)</span>
+
+<div class="viewcode-block" id="TFTModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        since we have future covariates, the inference dataset for future input must be at least of length</span>
+<span class="sd">        `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than</span>
+<span class="sd">        `input_chunk_length`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)[:</span><span class="n">n</span><span class="p">]</span></div>
+
+    <span class="nd">@random_method</span>
+    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_get_batch_prediction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">input_batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">roll_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to farecast</span>
+<span class="sd">        the next `n` target values per target variable.</span>
+
+<span class="sd">        Parameters:</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            prediction length</span>
+<span class="sd">        input_batch</span>
+<span class="sd">            (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)</span>
+<span class="sd">        roll_size</span>
+<span class="sd">            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to</span>
+<span class="sd">            `self.output_chunk_length`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">dim_component</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">future_past_covariates</span> \
+            <span class="o">=</span> <span class="n">input_batch</span>
+
+        <span class="n">n_targets</span> <span class="o">=</span> <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span>
+        <span class="n">n_past_covs</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">n_future_covs</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+
+        <span class="n">input_past</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">ds</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="p">[</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">]</span> <span class="k">if</span> <span class="n">ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span>
+            <span class="n">dim</span><span class="o">=</span><span class="n">dim_component</span>
+        <span class="p">)</span>
+
+        <span class="n">input_future</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">input_future</span><span class="p">)</span>
+        <span class="p">)[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span><span class="p">:,</span> <span class="p">:]</span>
+
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="p">[</span><span class="n">out</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]]</span>
+        <span class="n">prediction_length</span> <span class="o">=</span> <span class="n">roll_size</span>
+
+        <span class="k">while</span> <span class="n">prediction_length</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+            <span class="c1"># we want the last prediction to end exactly at `n` into the future.</span>
+            <span class="c1"># this means we may have to truncate the previous prediction and step</span>
+            <span class="c1"># back the roll size for the last chunk</span>
+            <span class="k">if</span> <span class="n">prediction_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">&gt;</span> <span class="n">n</span><span class="p">:</span>
+                <span class="n">spillover_prediction_length</span> <span class="o">=</span> <span class="n">prediction_length</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">-</span> <span class="n">n</span>
+                <span class="n">roll_size</span> <span class="o">-=</span> <span class="n">spillover_prediction_length</span>
+                <span class="n">prediction_length</span> <span class="o">-=</span> <span class="n">spillover_prediction_length</span>
+                <span class="n">batch_prediction</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">batch_prediction</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
+
+            <span class="c1"># ==========&gt; PAST INPUT &lt;==========</span>
+            <span class="c1"># roll over input series to contain latest target and covariate</span>
+            <span class="n">input_past</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">roll</span><span class="p">(</span><span class="n">input_past</span><span class="p">,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># update target input to include next `roll_size` predictions</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">&gt;=</span> <span class="n">roll_size</span><span class="p">:</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="p">:</span><span class="n">n_targets</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="p">:</span><span class="n">roll_size</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">n_targets</span><span class="p">]</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:,</span> <span class="p">:]</span>
+
+            <span class="c1"># set left and right boundaries for extracting future elements</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">&gt;=</span> <span class="n">roll_size</span><span class="p">:</span>
+                <span class="n">left_past</span><span class="p">,</span> <span class="n">right_past</span> <span class="o">=</span> <span class="n">prediction_length</span> <span class="o">-</span> <span class="n">roll_size</span><span class="p">,</span> <span class="n">prediction_length</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">left_past</span><span class="p">,</span> <span class="n">right_past</span> <span class="o">=</span> <span class="n">prediction_length</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">prediction_length</span>
+
+            <span class="c1"># update past covariates to include next `roll_size` future past covariates elements</span>
+            <span class="k">if</span> <span class="n">n_past_covs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">&gt;=</span> <span class="n">roll_size</span><span class="p">:</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span><span class="p">:</span><span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">n_past_covs</span><span class="p">:</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">n_targets</span><span class="p">:</span><span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_past_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
+
+            <span class="c1"># update historic future covariates to include next `roll_size` future covariates elements</span>
+            <span class="k">if</span> <span class="n">n_future_covs</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">&gt;=</span> <span class="n">roll_size</span><span class="p">:</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="o">-</span><span class="n">roll_size</span><span class="p">:,</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">n_future_covs</span><span class="p">:</span>
+                <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">:]</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">future_covariates</span><span class="p">[:,</span> <span class="n">left_past</span><span class="p">:</span><span class="n">right_past</span><span class="p">,</span> <span class="p">:]</span>
+                <span class="p">)</span>
+
+            <span class="c1"># ==========&gt; FUTURE INPUT &lt;==========</span>
+            <span class="n">left_future</span><span class="p">,</span> <span class="n">right_future</span> <span class="o">=</span> <span class="n">right_past</span><span class="p">,</span> <span class="n">right_past</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+            <span class="c1"># update future covariates to include next `roll_size` future covariates elements</span>
+            <span class="k">if</span> <span class="n">n_future_covs</span><span class="p">:</span>
+                <span class="n">input_future</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="p">[:,</span> <span class="n">left_future</span><span class="p">:</span><span class="n">right_future</span><span class="p">,</span> <span class="p">:]</span>
+
+            <span class="c1"># convert back into separate datasets</span>
+            <span class="n">input_past_target</span> <span class="o">=</span> <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">n_targets</span><span class="p">]</span>
+            <span class="n">input_past_covs</span> <span class="o">=</span> <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">n_targets</span><span class="p">:</span><span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">]</span> <span class="k">if</span> <span class="n">n_past_covs</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">input_historic_future_covs</span> <span class="o">=</span> <span class="n">input_past</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">n_targets</span> <span class="o">+</span> <span class="n">n_past_covs</span><span class="p">:]</span> <span class="k">if</span> <span class="n">n_future_covs</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">input_future_covs</span> <span class="o">=</span> <span class="n">input_future</span> <span class="k">if</span> <span class="n">n_future_covs</span> <span class="k">else</span> <span class="kc">None</span>
+
+            <span class="c1"># take only last part of the output sequence where needed</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span>
+                <span class="n">x</span><span class="o">=</span><span class="p">(</span><span class="n">input_past_target</span><span class="p">,</span> <span class="n">input_past_covs</span><span class="p">,</span> <span class="n">input_historic_future_covs</span><span class="p">,</span> <span class="n">input_future_covs</span><span class="p">)</span>
+            <span class="p">)[:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">first_prediction_index</span><span class="p">:,</span> <span class="p">:]</span>
+
+            <span class="n">batch_prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">)</span>
+            <span class="n">prediction_length</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+
+        <span class="c1"># bring predictions into desired format and drop unnecessary values</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span><span class="n">batch_prediction</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">batch_prediction</span> <span class="o">=</span> <span class="n">batch_prediction</span><span class="p">[:,</span> <span class="p">:</span><span class="n">n</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="k">return</span> <span class="n">batch_prediction</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Unit8 SA.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

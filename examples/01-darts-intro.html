@@ -8,7 +8,8 @@
 
     <title>Introduction to darts &#8212; darts  documentation</title>
     
-  <link rel="stylesheet" href="../_static/css/index.73d71520a4ca3b99cfee5594769eaaae.css">
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
 
     
   <link rel="stylesheet"
@@ -20,90 +21,106 @@
 
     
       
-  <link rel="stylesheet"
-    href="../_static/vendor/open-sans_all/1.44.1/index.css">
-  <link rel="stylesheet"
-    href="../_static/vendor/lato_latin-ext/1.44.1/index.css">
 
     
-    <link rel="stylesheet" href="../_static/basic.css" type="text/css" />
-    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
     <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.3da636dd464baa7582d2.js">
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
 
-    <script id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
-    <script src="../_static/language_data.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS-MML_HTMLorMML"></script>
-    <script type="text/x-mathjax-config">MathJax.Hub.Config({"tex2jax": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true, "ignoreClass": "document", "processClass": "math|output_area"}})</script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Multiple Time Series, Pre-trained Models and Covariates" href="02-multi-time-series-and-covariates.html" />
     <link rel="prev" title="Examples" href="../examples.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="docsearch:language" content="en" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
   </head>
   <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
     
-    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main">
-<div class="container-xl">
+    <div class="container-fluid" id="banner"></div>
 
-    <a class="navbar-brand" href="../index.html">
     
-      <img src="../_static/darts-logo-trim.png" class="logo" alt="logo" />
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
     
-    </a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-menu" aria-controls="navbar-menu" aria-expanded="false" aria-label="Toggle navigation">
-        <span class="navbar-toggler-icon"></span>
-    </button>
+    
 
-    <div id="navbar-menu" class="col-lg-9 collapse navbar-collapse">
-      <ul id="navbar-main-elements" class="navbar-nav mr-auto">
-        
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../README.html">Home</a>
-        </li>
-        
-        <li class="nav-item ">
-            <a class="nav-link" href="../generated_api/darts.html">API Reference</a>
-        </li>
-        
-        <li class="nav-item active">
-            <a class="nav-link" href="../examples.html">Examples</a>
-        </li>
-        
-        
-      </ul>
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
 
 
-      <form class="bd-search d-flex align-items-center" action="../search.html" method="get">
-  <i class="icon fas fa-search"></i>
-  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
-</form>
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
       
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
 
-      <ul class="navbar-nav">
-        
-          <li class="nav-item">
-            <a class="nav-link" href="https://github.com/unit8co/darts" target="_blank" rel="noopener">
-              <span><i class="fab fa-github-square"></i></span>
-            </a>
-          </li>
-        
-        
-          <li class="nav-item">
-            <a class="nav-link" href="https://twitter.com/unit8co" target="_blank" rel="noopener">
-              <span><i class="fab fa-twitter-square"></i></span>
-            </a>
-          </li>
-        
-      </ul>
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
     </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
 </div>
     </nav>
     
@@ -111,105 +128,237 @@
     <div class="container-xl">
       <div class="row">
           
-          <div class="col-12 col-md-3 bd-sidebar"><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Introduction to
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     darts
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="02-multi-time-series-and-covariates.html">
+   Multiple Time Series, Pre-trained Models and Covariates
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="03-data-processing.html">
+   Data (pre) processing using
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     DataTransformer
+    </span>
+   </code>
+   and
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     Pipeline
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="04-FFT-examples.html">
+   Fast Fourier Transform Forecasting Model (FFT)
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="05-RNN-examples.html">
+   Recurrent Neural Networks Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="06-TCN-examples.html">
+   Temporal Convolutional Network
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="07-Transformer-examples.html">
+   Transformer Model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="08-NBEATS-examples.html">
+   N-BEATS
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="09-DeepAR-examples.html">
+   Probabilistic RNN
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="10-DeepTCN-examples.html">
+   DeepTCN model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="11-Kalman-filter-examples.html">
+   Filtering and predicting using the darts filters
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="12-GP-filter-examples.html">
+   Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
 
-    <div class="bd-toc-item active">
-    
-  
-    <ul class="nav bd-sidenav">
-        
-        
-        
-        
-        
-        
-          
-        
-        
-      </ul>
-  
-  </nav>
-          </div>
+  </div>
+</nav>
+            </div>
+            
           
 
           
           <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
               
+              <div class="toc-item">
+                
 <div class="tocsection onthispage pt-5 pb-3">
     <i class="fas fa-list"></i> On this page
 </div>
 
 <nav id="bd-toc-nav">
-    <ul class="nav section-nav flex-column">
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#Read-data-and-build-a-TimeSeries" class="nav-link">Read data and build a TimeSeries</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#Creating-a-training-and-validation-series" class="nav-link">Creating a training and validation series</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#Playing-with-toy-models" class="nav-link">Playing with toy models</a><ul class="nav section-nav flex-column">
-                
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#Inspect-Seasonality" class="nav-link">Inspect Seasonality</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#A-less-naive-model" class="nav-link">A less naive model</a>
-        </li>
-    
-            </ul>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#Quickly-try-a-few-more-models" class="nav-link">Quickly try a few more models</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#The-Theta-method" class="nav-link">The Theta method</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#Backtesting:-simulate-historical-forecasting" class="nav-link">Backtesting: simulate historical forecasting</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#Probabilistic-Forecasts" class="nav-link">Probabilistic Forecasts</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#Ensembling-several-predictions" class="nav-link">Ensembling several predictions</a><ul class="nav section-nav flex-column">
-                
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#RegressionModel-approach" class="nav-link">RegressionModel approach</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h3">
-            <a href="#RegressionEnsembleModel-approach" class="nav-link">RegressionEnsembleModel approach</a>
-        </li>
-    
-            </ul>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#FFT-and-RNNs" class="nav-link">FFT and RNNs</a>
-        </li>
-    
-        <li class="nav-item toc-entry toc-h2">
-            <a href="#A-final-word-of-caution" class="nav-link">A final word of caution</a>
-        </li>
-    
-    </ul>
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Read-data-and-build-a-TimeSeries">
+   Read data and build a
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     TimeSeries
+    </span>
+   </code>
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Creating-a-training-and-validation-series">
+   Creating a training and validation series
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Playing-with-toy-models">
+   Playing with toy models
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Inspect-Seasonality">
+     Inspect Seasonality
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#A-less-naive-model">
+     A less naive model
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Quickly-try-a-few-more-models">
+   Quickly try a few more models
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#The-Theta-method">
+   The Theta method
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Backtesting:-simulate-historical-forecasting">
+   Backtesting: simulate historical forecasting
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Probabilistic-Forecasts">
+   Probabilistic Forecasts
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Ensembling-several-predictions">
+   Ensembling several predictions
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#RegressionModel-approach">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       RegressionModel
+      </span>
+     </code>
+     approach
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#RegressionEnsembleModel-approach">
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       RegressionEnsembleModel
+      </span>
+     </code>
+     approach
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#FFT-and-RNNs">
+   FFT and RNNs
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#A-final-word-of-caution">
+   A final word of caution
+  </a>
+ </li>
+</ul>
+
 </nav>
-
-
+              </div>
               
+              <div class="toc-item">
+                
+              </div>
+              
+            
           </div>
           
 
+          
+          
+            
           
           <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
               
@@ -468,7 +617,7 @@ div.rendered_html tbody tr:hover {
 <p>In this notebook, we will go over the main functionalities of the library: how to build and manipulate time series, train forecasting models, make predictions, evaluate metrics, backtest models and ensemble several models.</p>
 <p>As a toy example, we will use the well known <a class="reference external" href="https://github.com/jbrownlee/Datasets/blob/master/monthly-airline-passengers.csv">monthly airline passengers dataset</a>.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[55]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -478,8 +627,8 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[56]:
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -520,15 +669,6 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-The autoreload extension is already loaded. To reload it, use:
-  %reload_ext autoreload
-</pre></div></div>
-</div>
 <section id="Read-data-and-build-a-TimeSeries">
 <h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this headline">¶</a></h2>
 <p>A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> represents a univariate or multivariate time series, with a proper time index. The time index can either be of type <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> (containing datetimes), or of type <code class="docutils literal notranslate"><span class="pre">pandas.Int64Index</span></code> (containing integers; useful for representing sequential data without specific timestamps). In some cases, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can even represent <em>probabilistic</em> series, in order for instance to obtain confidence intervals.</p>
@@ -543,7 +683,7 @@ The autoreload extension is already loaded. To reload it, use:
 </ul>
 <p>Here, we directly load the air passanger series from a Darts dataset:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[57]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -565,7 +705,7 @@ The autoreload extension is already loaded. To reload it, use:
 <p>First, let’s split our <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> into a training and a validation series. Note: in general, it is also a good practice to keep a test series aside and never touch it until the end of the process. Here, we just build a training and a test series for simplicity.</p>
 <p>The training series will be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing values until January 1958 (excluded), and the validation series a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the rest:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[58]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -589,7 +729,7 @@ The autoreload extension is already loaded. To reload it, use:
 <p>There is a collection of “naive” baseline models in <code class="docutils literal notranslate"><span class="pre">darts</span></code>, which can be very useful to get an idea of the bare minimum accuracy that one could expect. For example, the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal(K)</span></code> model always “repeats” the value that occured <code class="docutils literal notranslate"><span class="pre">K</span></code> time steps ago.</p>
 <p>In its most naive form, when <code class="docutils literal notranslate"><span class="pre">K=1</span></code>, this model simply always repeats the last value of the training series:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[59]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -615,7 +755,7 @@ The autoreload extension is already loaded. To reload it, use:
 <h3>Inspect Seasonality<a class="headerlink" href="#Inspect-Seasonality" title="Permalink to this headline">¶</a></h3>
 <p>Our model above is perhaps a bit too naive. We can already improve by exploiting the seasonality in the data. It seems quite obvious that the data has a yearly seasonality, which we can confirm by looking at the auto-correlation function (ACF), and highlighting the lag <code class="docutils literal notranslate"><span class="pre">m=12</span></code>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[60]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -632,7 +772,7 @@ The autoreload extension is already loaded. To reload it, use:
 </div>
 <p>The ACF presents a spike at x = 12, which suggests a yearly seasonality trend (highlighted in red). The blue zone determines the significance of the statistics for a confidence level of alpha = 5%. In cases where we are unsure, we can also run a statistical check of seasonality for each candidate period <code class="docutils literal notranslate"><span class="pre">m</span></code>:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[61]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -656,7 +796,7 @@ There is seasonality of order 12.
 <h3>A less naive model<a class="headerlink" href="#A-less-naive-model" title="Permalink to this headline">¶</a></h3>
 <p>Let’s try the <code class="docutils literal notranslate"><span class="pre">NaiveSeasonal</span></code> model again with a seasonality of 12:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[62]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -679,7 +819,7 @@ There is seasonality of order 12.
 </div>
 <p>This is better, but we are still missing the trend. Fortunately, there is also another naive baseline model capturing the trend, which is called <code class="docutils literal notranslate"><span class="pre">NaiveDrift</span></code>. This model will simply produce linear predictions, with a slope that is determined by the first and last values of the training set:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[63]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -706,7 +846,7 @@ There is seasonality of order 12.
 <p>What happened in the last cell? We simply fit a naive drift model, and add its forecast to the seasonal forecast we had previously. We also substract the last value of the training set to the result, so that the resulting combined forecast starts off with the right offset.</p>
 <p>This looks already like a fairly decent forecast, and we did not use any non-naive model yet! In fact - any model should be able to beat this. But hey, what’s the error we are getting here? Let’s see what we’ll have to beat:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[64]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -729,7 +869,7 @@ Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 <h2>Quickly try a few more models<a class="headerlink" href="#Quickly-try-a-few-more-models" title="Permalink to this headline">¶</a></h2>
 <p><code class="docutils literal notranslate"><span class="pre">darts</span></code> is built to make it easy to train and validate several models in a unified way. Let’s train a few more and compute their respective MAPE on the validation set:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[65]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -763,7 +903,7 @@ model Theta(2) obtains MAPE: 8.15%
 <p>The model <code class="docutils literal notranslate"><span class="pre">Theta</span></code> contains an implementation of Assimakopoulos and Nikolopoulos’ Theta method. This method has known great success, particularly in the M3-competition.</p>
 <p>Though the value of the Theta parameter is often set to 0 in applications, our implementation supports a variable value for parameter tuning purposes. Let’s try to find a good value for Theta:</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[66]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -786,7 +926,7 @@ model Theta(2) obtains MAPE: 8.15%
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[67]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -807,7 +947,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[68]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -834,7 +974,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <p>Such simulated forecasts are always defined with respect to a <em>forecast horizon</em>, which is the number of time steps that separate the prediction time from the forecast time. In the example below, we simulate forecasts done for 3 months in the future (compared to prediction time).</p>
 <p>Using the <code class="docutils literal notranslate"><span class="pre">backtest()</span></code> method, you can either look at the performance of the model evaluated over the whole forecasts it produces (each point in each forecast is used to compute an error score) or only the last point of each historical forecast. In the latter case, you can get a time series representation of those points by calling <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> with the default setting (<code class="docutils literal notranslate"><span class="pre">last_points_only=True</span></code>)</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[69]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -856,13 +996,13 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "8d5b0ae89c044fa1a5c532f2695866cb"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "34b0ec26d34d437ba409d42257892964", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "69fc0a50ef11434dba1c07e9d8d87c4e"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "deec387ed80e4d9b945189d6f1e31b36", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -877,13 +1017,13 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "c0fd001b513e4481b989ccea850209ff"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "229eed39fb74499ba6737b5cabcdbd61", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "5f340e2c8caf41019bdf7db29072fc3e"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2be34c3861324aca932957f6fd11389f", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -894,7 +1034,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 </div>
 <p>Let’s see what this backtest forecast looks like. You can see it produces more accurate predictions at a 3 months horizon than the one-off prediction done above, because here the model is re-fit every month.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[70]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -914,7 +1054,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 </div>
 <p>Let’s look at the fitted value residuals of our current <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model, i.e. the difference between the 1-step forecasts at every point in time obtained by fitting the model on all previous points, and the actual observed values.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[71]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -932,7 +1072,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <p>We can see that the distribution has a mean that is slightly larger than 0. This means that our <code class="docutils literal notranslate"><span class="pre">Theta</span></code> model is biased. We can also make out a large ACF value at lag equal to 12, which indicates that the residuals contain information that was not used by the model.</p>
 <p>Could we maybe do better with a simple <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code> model?</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[72]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -951,7 +1091,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "3e8d1c18ff3d48ad9f6178510ffe1b6f"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a790d1fe005a4fd1af06844d73b597eb", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -962,7 +1102,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 </div>
 <p>This much better! We get a mean absolute percentage error of about 4-5% when backtesting with a 3-months forecast horizon in this case.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[73]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -984,7 +1124,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <p>Some models can produce probabilistic forecasts. At the time of writing, this is the case for <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>. For <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> and <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code> (as well as other neural network based models), one has to specify a <code class="docutils literal notranslate"><span class="pre">Likelihood</span></code> (e.g. <code class="docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.GaussianLikelihood</span></code> for Gaussian likelihood) - we refer the readers to notebooks 09 and 10 for examples.</p>
 <p>For <code class="docutils literal notranslate"><span class="pre">ARIMA</span></code> and <code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code>, one can simply specify a <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> parameter to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. The returned <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> will then be composed of <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> samples describing the distribution of the time series’ values, which can for instance be used to obtain quantiles:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[74]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1008,7 +1148,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 </div>
 <p>By default <code class="docutils literal notranslate"><span class="pre">TimeSeries.plot()</span></code> shows the median as well as the 5th and 95th percentiles (of the marginal distributions, if the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is multivariate). It is possible to control this:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[75]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1035,7 +1175,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <p>A regression model is a model that predicts the target time series using some lags of this series (and possibly other series). It is also possible to use this approach to combine the forecasts of several models into one final forecast.</p>
 <p>Here, we will first compute the historical predictions from two naive seasonal models (with 6 and 12 months seasonality), and naive drift model. To compute the historical forecasts, we can simply reuse the <code class="docutils literal notranslate"><span class="pre">historical_forecasts()</span></code> method:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[76]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1057,22 +1197,22 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "3b347f2669504399b0ddea650e576a61"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6c0db6c436ee4c868e578944d46e3f89", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "3437b7102d1b462d9b594997a0ef76da"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bde92a3963cf471b8fafee008da75e16", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "f38eb48a9dd04486a7cafbfa4476a0e7"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9fe13869caca44a2911473a76e02f1d7", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[77]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1085,7 +1225,7 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <p>Now that we have the historical forecasts <em>that we would have obtained</em> from a couple of models, we can train a <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>, in order to learn in a supervised way how to best combine the features time series (our 3 forecasts) into the target series that we are trying to predict.</p>
 <p>By default the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> will fit a linear regression for predicting the target series from some features series. If you want something different than linear regression, <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> can wrap around any scikit-learn regression model.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[78]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1111,11 +1251,11 @@ Median error (MAPE) over all historical forecasts: 4.205414890336164
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "1789df3923d9469089af2b0b5bc2060c"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "13289a5cffbc4161a81b2a65f3f0496a", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Finally, let’s see how good the regression performs, compared to the original forecasts:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[79]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1165,15 +1305,18 @@ Learned coefficient for Naive drift model: 0.10
 </div>
 </div>
 <p>That’s quite nice: by just combining 3 naive models (two seasonal repetitions and a linear trend) using a linear regression, we get a decent-looking ensemble model, which is better than any of the sub-model, with a MAPE of 6.03%.</p>
-<p>A couple of interesting things to observe: * Note how the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> and the naive drift model have an incorrect phase compared to the original signal (due to the original signal having a true seasonality of 12). Despite this, the ensembling is able to learn to ignore the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> (by assigning a coefficient of 0), and learns a coefficient of only 0.09 for the drift model. * Note how the regression (ensemble) forecast starts off 12 months after the
-individual models forecasts – that is because the regression model needs 12 data points to fit the weights coefficients of the linear regression.</p>
+<p>A couple of interesting things to observe:</p>
+<ul class="simple">
+<li><p>Note how the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> and the naive drift model have an incorrect phase compared to the original signal (due to the original signal having a true seasonality of 12). Despite this, the ensembling is able to learn to ignore the seasonal model with <code class="docutils literal notranslate"><span class="pre">K=6</span></code> (by assigning a coefficient of 0), and learns a coefficient of only 0.09 for the drift model.</p></li>
+<li><p>Note how the regression (ensemble) forecast starts off 12 months after the individual models forecasts – that is because the regression model needs 12 data points to fit the weights coefficients of the linear regression.</p></li>
+</ul>
 </section>
 <section id="RegressionEnsembleModel-approach">
 <h3><code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code> approach<a class="headerlink" href="#RegressionEnsembleModel-approach" title="Permalink to this headline">¶</a></h3>
 <p>Wouldn’t it be great if there would be a way to get an ensemble prediction in fewer lines of code?</p>
 <p>Actually, there is: using the <code class="docutils literal notranslate"><span class="pre">RegressionEnsembleModel</span></code>. It is as simple as instantiating the ensemble model, calling the method <code class="docutils literal notranslate"><span class="pre">fit</span></code> on the training set, and then, calling the method <code class="docutils literal notranslate"><span class="pre">predict</span></code> with the number of time steps to forecast:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[80]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1201,7 +1344,7 @@ individual models forecasts – that is because the regression model needs 12 da
 <p>Quite easy, isn’t it?</p>
 <p>Now, to get a result similar to the one obtained with the <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> approach, just use the <code class="docutils literal notranslate"><span class="pre">historical_forecasts</span></code> method of your ensemble model:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[81]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -1220,7 +1363,7 @@ individual models forecasts – that is because the regression model needs 12 da
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"version_major": 2, "version_minor": 0, "model_id": "4dbe73d5c73f4912a09be3d911872911"}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "3d32c02ee3d548d6a86fccbdc47ae48e", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1247,29 +1390,46 @@ results with a grain of salt (especially on small datasets), and apply the scien
               </div>
               
               
-              <div class='prev-next-bottom'>
-                
-    <a class='left-prev' id="prev-link" href="../examples.html" title="previous page">Examples</a>
-    <a class='right-next' id="next-link" href="02-multi-time-series-and-covariates.html" title="next page">Multiple Time Series, Pre-trained Models and Covariates</a>
-
-              </div>
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="../examples.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Examples</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="02-multi-time-series-and-covariates.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Multiple Time Series, Pre-trained Models and Covariates</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
               
           </main>
           
 
       </div>
     </div>
-
-    
-  <script src="../_static/js/index.3da636dd464baa7582d2.js"></script>
-
-
-    <footer class="footer mt-5 mt-md-0">
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
   <div class="container">
-    <p>
-          &copy; Copyright 2021, Unit8 SA.<br/>
-        Created using <a href="http://sphinx-doc.org/">Sphinx</a> 3.2.1.<br/>
-    </p>
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Unit8 SA.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
   </div>
 </footer>
   </body>
