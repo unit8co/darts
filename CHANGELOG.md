@@ -9,6 +9,10 @@ Darts is still in an early development phase and we cannot always guarantee back
 ## [0.13.1](https://github.com/unit8co/darts/tree/0.13.1) (2021-11-08)
 ### For users of the library:
 
+**Added**:
+* Factory methods in `TimeSeries` are now `classmethods`, which makes inheritance of
+  `TimeSeries` more convenient.
+
 **Fixed**:
 * An issue which was causing some of the flavours installations not to work
 
