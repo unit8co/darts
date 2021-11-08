@@ -24,6 +24,8 @@ logger = get_logger(__name__)
 # the "time" one can be different, if it has a name in the underlying Series/DataFrame.
 DIMS = ('time', 'component', 'sample')
 
+VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex, pd.Int64Index)
+
 
 class TimeSeries:
     def __init__(self, xa: xr.DataArray):
@@ -71,7 +73,7 @@ class TimeSeries:
 
         self._time_index = self._xa.get_index(self._time_dim)
 
-        if not isinstance(self._time_index, pd.DatetimeIndex) and not isinstance(self._time_index, pd.Int64Index):
+        if not isinstance(self._time_index, VALID_INDEX_TYPES):
             raise_log(ValueError('The time dimension of the DataArray must be indexed either with a DatetimeIndex,'
                                  'or with an Int64Index (this can include a RangeIndex).'), logger)
 
@@ -331,7 +333,7 @@ class TimeSeries:
             else:
                 raise_log(AttributeError('time_col=\'{}\' is not present.'.format(time_col)))
         else:
-            raise_if_not(isinstance(df.index, pd.Int64Index) or isinstance(df.index, pd.DatetimeIndex),
+            raise_if_not(isinstance(df.index, VALID_INDEX_TYPES),
                          'If time_col is not specified, the DataFrame must be indexed either with'
                          'a DatetimeIndex, or with a Int64Index (incl. RangeIndex).', logger)
             time_index = df.index
@@ -426,7 +428,7 @@ class TimeSeries:
         TimeSeries
             A TimeSeries constructed from the inputs.
         """
-        raise_if_not(isinstance(times, pd.Int64Index) or isinstance(times, pd.DatetimeIndex),
+        raise_if_not(isinstance(times, VALID_INDEX_TYPES),
                      'the `times` argument must be a Int64Index (or RangeIndex), or a DateTimeIndex. Use '
                      'TimeSeries.from_values() if you want to use an automatic RangeIndex.')
 
@@ -712,9 +714,9 @@ class TimeSeries:
         self._assert_univariate()
         self._assert_deterministic()
         if copy:
-            return pd.Series(self._xa[:, 0, 0].copy(), index=self._time_index.copy())
+            return pd.Series(self._xa[:, 0, 0].values.copy(), index=self._time_index.copy())
         else:
-            return pd.Series(self._xa[:, 0, 0], index=self._time_index)
+            return pd.Series(self._xa[:, 0, 0].values, index=self._time_index)
 
     def pd_dataframe(self, copy=True) -> pd.DataFrame:
         """
@@ -2400,7 +2402,7 @@ class TimeSeries:
             _set_freq_in_xa(xa_)
 
             return TimeSeries(xa_)
-        elif isinstance(key, pd.Int64Index):
+        elif isinstance(key, (pd.Int64Index, pd.RangeIndex)):
             _check_range()
 
             return TimeSeries(self._xa.sel({self._time_dim: key}))

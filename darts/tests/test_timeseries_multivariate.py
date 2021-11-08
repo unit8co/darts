@@ -149,7 +149,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         values_cos = seriesF.values()[:, 2]
 
         self.assertTrue(np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1))
-        start_of_month = [pd.Timestamp(year=start.year, month=m, day=1, freq='d') - start for m in range(start.month, end.month)]
+        start_of_month = [pd.Timestamp(year=start.year, month=m, day=1) - start for m in range(start.month, end.month)]
         start_of_month_idx = [stamp.days for stamp in start_of_month]
 
         self.assertTrue(np.allclose(values_sin[start_of_month_idx], 0))

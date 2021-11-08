@@ -1,12 +1,21 @@
 import numpy as np
 import pandas as pd
+import unittest
 
 from .base_test_class import DartsBaseTestClass
 from .. import TimeSeries
 from ..utils import timeseries_generation as tg
 from ..models import NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing
 from ..models import NaiveEnsembleModel
-from ..models import RNNModel, TCNModel, NBEATSModel
+from ..logging import get_logger
+logger = get_logger(__name__)
+
+try:
+    from ..models import RNNModel, TCNModel, NBEATSModel
+    TORCH_AVAILABLE = True
+except ImportError:
+    logger.warning("Torch not installed - Some ensemble models tests will be skipped.")
+    TORCH_AVAILABLE = False
 
 
 def _make_ts(start_value=0, n=100):
@@ -50,9 +59,11 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
         self.assertTrue(np.array_equal(forecast_naive_ensemble.values(), forecast_mean.values()))
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
         NaiveEnsembleModel([RNNModel(), TCNModel(10, 2), NBEATSModel(10, 2)])
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_call_predict_global_models_univariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel([RNNModel(n_epochs=1),
                                              TCNModel(10, 2, n_epochs=1),
@@ -63,6 +74,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         naive_ensemble.fit(self.series1)
         naive_ensemble.predict(5)
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_call_predict_global_models_multivariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel([RNNModel(n_epochs=1),
                                              TCNModel(10, 2, n_epochs=1),
@@ -70,6 +82,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         naive_ensemble.fit(self.seq1)
         naive_ensemble.predict(n=5, series=self.seq1)
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_call_predict_global_models_multivariate_input_with_covariates(self):
         naive_ensemble = NaiveEnsembleModel([RNNModel(n_epochs=1),
                                              TCNModel(10, 2, n_epochs=1),
@@ -79,6 +92,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
         predict_covariates = [c[:14] for c in self.cov1]
         naive_ensemble.predict(n=2, series=predict_series, past_covariates=predict_covariates)
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_mixed(self):
         with self.assertRaises(ValueError):
             NaiveEnsembleModel([NaiveDrift(), Theta(), RNNModel()])

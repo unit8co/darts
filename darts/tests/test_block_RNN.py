@@ -39,7 +39,8 @@ if TORCH_AVAILABLE:
 
             # Test fit-save-load cycle
             model2 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1,
-                                   model='LSTM', n_epochs=3, model_name='unittest-model-lstm')
+                                   model='LSTM', n_epochs=3, model_name='unittest-model-lstm',
+                                   save_checkpoints=True)
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-lstm', best=False)
             pred1 = model2.predict(n=6)
