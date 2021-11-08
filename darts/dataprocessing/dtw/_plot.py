@@ -155,7 +155,7 @@ def plot_alignment(self,
 
     x_coords[0::3] = x_coords1
     x_coords[1::3] = x_coords2
-    x_coords[2::3] = np.nan
+    x_coords[2::3] = np.datetime64("NaT")
 
     y_coords[0::3] = y_coords1
     y_coords[1::3] = y_coords2

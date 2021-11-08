@@ -3,10 +3,101 @@
 
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
-## [Unreleased](https://github.com/unit8co/darts/tree/develop)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.10.1...develop)
+## [Unreleased](https://github.com/unit8co/darts/tree/master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.13.0...master)
 
-## [0.10.1](https://github.com/unit8co/darts/tree/0.10.0) (2021-08-19)
+## [0.13.0](https://github.com/unit8co/darts/tree/0.13.0) (2021-11-07)
+### For users of the library:
+
+**Added**:
+- New forecasting model: [Temporal Fusion Transformer](https://arxiv.org/abs/1912.09363) (`TFTModel`). 
+  A new deep learning model supporting both past and future covariates.
+- Improved support for Facebook Prophet model (`Prophet`):
+    - Added support for fit & predict with future covariates. For instance:
+      `model.fit(train, future_covariates=train_covariates)` and
+      `model.predict(n=len(test), num_sample=1, future_covariates=test_covariates)`
+    - Added stochastic forecasting, for instance: `model.predict(n=len(test), num_samples=200)`
+    - Added user-defined seasonalities either at model creation with kwarg 
+      `add_seasonality` (`Prophet(add_seasonality=kwargs_dict)`) or pre-fit with 
+      `model.add_seasonality(kwargs)`. For more information on how to add seasonalities,
+       see the [Prophet docs](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet.html).
+    - Added possibility to predict and return the base model's raw output with `model.predict_raw()`.
+      Note that this returns a pd.DataFrame `pred_df`, which will not be supported for further 
+      processing with the Darts API. But it is possible to access Prophet's methods such as 
+      plots with `model.model.plot_compenents(pred_df)`.
+- New `n_random_samples` in `gridsearch()` method, which allows to specify a number of (random)
+  hyper parameters combinations to be tried, in order mainly to limit the gridsearch time.
+- Improvements in the checkpointing and saving of Torch models.
+    - Now models don't save checkpoints by default anymore. Set `save_checkpoints=True` to enable them.
+    - Models can be manually saved with `YourTorchModel.save_model(file_path)` 
+      (file_path pointing to the .pth.tar file).
+    - Models can be manually loaded with `YourTorchModel.load_model(file_path)` or 
+      the original method `YourTorchModel.load_from_checkpoint()`.
+- New `QuantileRegression` Likelihood class in `darts.utils.likelihood_models`.
+  Allows to apply quantile regression loss, and get probabilistic forecasts on all deep 
+  learning models supporting likelihoods.
+  Used by default in the Temporal Fusion Transformer.
+
+**Fixed:**
+- Some issues with `darts.concatenate()`.
+- Fixed some bugs with `RegressionModel`s applied on multivariate series.
+- An issue with the confidence bounds computation in ACF plot.
+- Added a check for some models that do not support `retrain=False` for `historical_forecasts()`.
+- Small fixes in install instructions.
+- Some rendering issues with bullet points lists in examples.
+
+## [0.12.0](https://github.com/unit8co/darts/tree/0.12.0) (2021-09-25)
+### For users of the library:
+
+**Added**:
+- Improved probabilistic forecasting with neural networks
+  - Now all neural networks based forecasting models (except `NBEATSModel`) support probabilistic forecasting,
+    by providing the `likelihood` parameter to the model's constructor method.
+  - `darts.utils.likelihood_models` now contains many more distributions. The complete list of likelihoods
+    available to train neural networks based models is 
+    available here: https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html
+  - Many of the available likelihood models now offer the possibility to specify "priors" on the distribution's
+    parameters. Specifying such priors will regularize the training loss to make the output distribution
+    more like the one specified by the prior parameters values.  
+- Performance improvements on `TimeSeries` creation. creating `TimeSeries` is now be significantly faster,
+  especially for large series, and filling missing dates has also been significantly sped up.
+- New rho-risk metric for probabilistic forecasts.
+- New method `darts.utils.statistics.plot_hist()` to plot histograms of time series data (e.g. backtest errors).
+- New argument `fillna_value` to `TimeSeries` factory methods, allowing to specify a value to fill missing dates
+(instead of `np.nan`).
+- Synthetic `TimeSeries` generated with `darts.utils.timeseries_generation` methods can now be integer-index
+(just pass an integer instead of a timestamp for the `start` argument).
+- Removed some deprecation warnings
+- Updated conda installation instructions
+
+**Fixed:**
+- Removed [extra 1x1 convolutions](https://github.com/unit8co/darts/issues/470) in TCN Model.
+- Fixed an issue with linewidth parameter when plotting `TimeSeries`.
+- Fixed a column name issue in datetime attribute time series.
+
+### For developers of the library:
+- We have removed the `develop` branch.
+- We force sklearn<1.0 has we have observed issues with pmdarima and sklearn==1.0
+
+## [0.11.0](https://github.com/unit8co/darts/tree/0.11.0) (2021-09-04)
+### For users of the library:
+
+**Added:**
+- New model: `LightGBMModel` is a new regression model. Regression models allow to predict future values
+of the target, given arbitrary lags of the target as well as past and/or future covariates. `RegressionModel`
+already works with any scikit-learn regression model, and now `LightGBMModel` does the same with LightGBM.
+If you want to activate LightGBM support in Darts, please read the detailed install notes on 
+the [README](https://github.com/unit8co/darts/blob/master/README.md) carefully.
+- Added stride support to gridsearch
+
+**Fixed:**
+- A bug which was causing issues when training on a GPU with a validation set
+- Some issues with custom-provided RNN modules in `RNNModel`.
+- Properly handle `kwargs` in the `fit` function of `RegressionModel`s.
+- Fixed an issue which was causing problems with latest versions of Matplotlib.
+- An issue causing errors in the FFT notebook
+
+## [0.10.1](https://github.com/unit8co/darts/tree/0.10.1) (2021-08-19)
 ### For users of the library:
 
 **Fixed:**
@@ -163,7 +254,7 @@ more closely.
 
 ### For developers of the library:
 **Added:**
-- We have added some [contribution guidelines](https://github.com/unit8co/darts/blob/develop/CONTRIBUTE.md).
+- We have added some [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTE.md).
 
 ## [0.7.0](https://github.com/unit8co/darts/tree/0.7.0) (2021-04-14)
 
@@ -316,7 +407,7 @@ All implementations of `GlobalForecastingModel`s support multivariate time serie
 ### For developers of the library
 **Changed:**
 - GitHub release workflow is now triggered manually from the GitHub "Actions" tab in the repository, providing a `#major`, `#minor`, or `#patch` argument. [\#211](https://github.com/unit8co/darts/pull/211)
-- (A limited number of) notebook examples are now run as part of the GitHub develop workflow.
+- (A limited number of) notebook examples are now run as part of the GitHub PR workflow.
 
 ## [0.3.0](https://github.com/unit8co/darts/tree/0.3.0) (2020-10-05)
 

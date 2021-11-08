@@ -4,16 +4,17 @@ Utils for time series statistics
 """
 
 import math
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional, List, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats import norm
 from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import acf
+from statsmodels.tsa.stattools import acf, pacf
 
-from ..logging import raise_log, get_logger, raise_if_not
+from warnings import warn
+from ..logging import raise_log, get_logger, raise_if_not, raise_if
 from ..timeseries import TimeSeries
 from .missing_values import fill_missing_values
 from .utils import SeasonalityMode, ModelMode
@@ -258,37 +259,45 @@ def plot_acf(ts: TimeSeries,
              m: Optional[int] = None,
              max_lag: int = 24,
              alpha: float = 0.05,
+             bartlett_confint: bool = True,
              fig_size: Tuple[int, int] = (10, 5),
              axis: Optional[plt.axis] = None) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
+    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
 
     Parameters
     ----------
-    ts
+    ts : TimeSeries
         The TimeSeries whose ACF should be plotted.
-    m
+    m : int, optional
         Optionally, a time lag to highlight on the plot.
-    max_lag
+    max_lag : int, default: 24
         The maximal lag order to consider.
-    alpha
+    alpha : float, default: 0.05
         The confidence interval to display.
-    fig_size
+    bartlett_confint : bool, default: True
+        The boolean value indicating whether the confidence interval should be
+        calculated using Bartlett's formula. If set to True, the confidence interval
+        can be used in the model identification stage for fitting ARIMA models.
+        If set to False, the confidence interval can be used to test for randomness
+        (i.e. there is no time dependence in the data) of the data.
+    fig_size : tuple of int, default: (10, 5)
         The size of the figure to be displayed.
-    axis
+    axis : plt.axis, optional
         Optionally, an axis object to plot the ACF on.
     """
 
     ts._assert_univariate()
+    raise_if(max_lag is None or not (1 <= max_lag < len(ts)),
+             'max_lag must be greater than or equal to 1 and less than len(ts).')
+    raise_if(m is not None and not (0 <= m <= max_lag),
+             'm must be greater than or equal to 0 and less than or equal to max_lag.')
+    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
 
-    r = acf(ts.values(), nlags=max_lag, fft=False)  # , alpha=alpha) and confint as output too
+    r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=bartlett_confint)
 
-    # Computes the confidence interval at level alpha for all lags.
-    stats = []
-    for i in range(1, max_lag + 1):
-        stats.append(_bartlett_formula(r[1:], i, len(ts)))
-
-    if (axis is None):
+    if axis is None:
         plt.figure(figsize=fig_size)
         axis = plt
 
@@ -298,16 +307,155 @@ def plot_acf(ts: TimeSeries,
                   color=('#b512b8' if m is not None and i == m else 'black'),
                   lw=(1 if m is not None and i == m else .5))
 
-    upp_band = r[1:].mean() + norm.ppf(1 - alpha / 2) * r[1:].var()
-    acf_band = [upp_band * stat for stat in stats]
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
+    upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
-    axis.fill_between(np.arange(1, max_lag + 1), acf_band, [-x for x in acf_band], color='#003DFD', alpha=.25)
+    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
     axis.plot((0, max_lag + 1), (0, 0), color='black')
+
+
+def plot_pacf(ts: TimeSeries,
+              m: Optional[int] = None,
+              max_lag: int = 24,
+              method: str = "ywadjusted",
+              alpha: float = 0.05,
+              fig_size: Tuple[int, int] = (10, 5),
+              axis: Optional[plt.axis] = None) -> None:
+    """
+    Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
+    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+
+    Parameters
+    ----------
+    ts : TimeSeries
+        The TimeSeries whose ACF should be plotted.
+    m : int, optional
+        Optionally, a time lag to highlight on the plot.
+    max_lag : int, default: 24
+        The maximal lag order to consider.
+    method : str, default: "ywadjusted"
+        The method to be used for the PACF calculation.
+        - "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
+          denominator for acovf. Default.
+        - "ywm" or "ywmle" : Yule-Walker without adjustment.
+        - "ols" : regression of time series on lags of it and on constant.
+        - "ols-inefficient" : regression of time series on lags using a single
+          common sample to estimate all pacf coefficients.
+        - "ols-adjusted" : regression of time series on lags with a bias
+          adjustment.
+        - "ld" or "ldadjusted" : Levinson-Durbin recursion with bias
+          correction.
+        - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
+          correction.
+    alpha : float, default: 0.05
+        The confidence interval to display.
+    fig_size : tuple of int, default: (10, 5)
+        The size of the figure to be displayed.
+    axis : plt.axis, optional
+        Optionally, an axis object to plot the ACF on.
+    """
+
+    ts._assert_univariate()
+    raise_if(max_lag is None or not (1 <= max_lag < len(ts)//2),
+             'max_lag must be greater than or equal to 1 and less than len(ts)//2.')
+    raise_if(m is not None and not (0 <= m <= max_lag),
+             'm must be greater than or equal to 0 and less than or equal to max_lag.')
+    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
+
+    r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
+
+    if axis is None:
+        plt.figure(figsize=fig_size)
+        axis = plt
+
+    for i in range(len(r)):
+        axis.plot((i, i),
+                  (0, r[i]),
+                  color=('#b512b8' if m is not None and i == m else 'black'),
+                  lw=(1 if m is not None and i == m else .5))
+
+    # Adjusts the upper band of the confidence interval to center it on the x axis.
+    upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
+
+    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
+    axis.plot((0, max_lag + 1), (0, 0), color='black')
+
+
+def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
+              bins: Optional[Union[int, np.ndarray, List[float]]] = None,
+              density: bool = False,
+              title: Optional[str] = None,
+              fig_size: Optional[Tuple[int, int]] = None,
+              ax: Optional[plt.axis] = None) -> None:
+    """ This function plots the histogram of values in a TimeSeries instance or an array-like.
+
+    All types of TimeSeries are supported (uni-, multivariate, deterministic, stochastic).
+    Depending on the number of components in `data`, up to four histograms can be plotted on one figure.
+    All stochastic samples will be displayed with the corresponding component.
+
+    If `data` is an array-like, ALL values will be displayed in the same histogram.
+
+    Parameters
+    ----------
+    data
+        TimeSeries instance or an array-like from which to plot the histogram.
+    bins
+        Optionally, either an integer value for the number of bins to be displayed
+        or an array-like of floats determining the position of bins.
+    density
+        bool, if `density` is set to True, the bin counts will be converted to probability density
+    title
+        The title of the figure to be displayed
+    fig_size
+        The size of the figure to be displayed.
+    ax
+        Optionally, an axis object to plot the histogram on.
+    """
+
+    n_plots_max = 4
+
+    if isinstance(data, TimeSeries):
+        if len(data.components) > n_plots_max:
+            logger.warning("TimeSeries contains more than 4 components. Only the first 4 components will be displayed.")
+
+        components = list(data.components[:n_plots_max])
+        values = data[components].all_values(copy=False).flatten(order='F')
+    else:
+        values = data if isinstance(data, np.ndarray) else np.array(data)
+        if len(values.shape) > 1:
+            logger.warning("Input array-like data with `dim>1d` will be flattened and displayed in one histogram.")
+
+        components = ['Data']
+        values = values.flatten(order='F')
+
+    # compute the number of columns and rows for subplots depending on shape of input data
+    n_components = len(components)
+    n_cols = 1 if n_components == 1 else 2
+    n_rows = math.ceil(n_components / n_cols)
+
+    title = 'Histogram' if title is None else title
+    if ax is None:
+        fig = plt.figure(constrained_layout=True, figsize=fig_size)
+        gs = fig.add_gridspec(n_rows, n_cols)
+        fig.suptitle(title)
+        ax_all = [fig.add_subplot(gs[i]) for i in range(n_components)]
+    else:
+        if n_components > 1:
+            logger.warning("Only the first component is plotted when calling plot_hist() with a given `ax`")
+        ax.set_title(title)
+        ax_all = [ax]
+
+    n_entries = len(values) // n_components
+    for i, label, ax_i in zip(range(n_components), components, ax_all):
+        ax_i.hist(values[i * n_entries:(i + 1) * n_entries], bins=bins, density=density, label=label)
+        ax_i.set_xlabel('value')
+        ax_i.set_ylabel('count' if not density else 'probability density')
+        ax_i.legend()
 
 
 def plot_residuals_analysis(residuals: TimeSeries,
                             num_bins: int = 20,
-                            fill_nan: bool = True):
+                            fill_nan: bool = True) -> None:
     """ Plots data relevant to residuals.
 
     This function takes a univariate TimeSeries instance of residuals and plots their values,
@@ -340,12 +488,12 @@ def plot_residuals_analysis(residuals: TimeSeries,
     ax1.set_ylabel('value')
     ax1.set_title('Residual values')
 
-    # plot distribution
+    # plot histogram and distribution
     res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
     res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
-    ax2.hist(residuals.univariate_values(), bins=num_bins)
+    plot_hist(residuals, bins=num_bins, ax=ax2)
     ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
     ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     ax2.set_title('Distribution')

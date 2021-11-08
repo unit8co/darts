@@ -17,25 +17,80 @@ from ..logging import raise_if_not, get_logger, raise_log, raise_if
 logger = get_logger(__name__)
 
 
+def _generate_index(start: Optional[Union[pd.Timestamp, int]] = None,
+                    end: Optional[Union[pd.Timestamp, int]] = None,
+                    length: Optional[int] = None,
+                    freq: str = 'D') -> Union[pd.DatetimeIndex, pd.Int64Index]:
+    """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
+    or a pandas Int64Index. The index starts at
+
+    Parameters
+    ----------
+    start
+        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
+        DatetimeIndex. If an integer is passed, the index will be a pandas Int64Index index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
+    length
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
+    freq
+        The time difference between two adjacent entries in the returned index. Only effective if `start` is a
+        pandas Timestamp. A DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+        The freq is optional for generating an integer index.
+    """
+    constructors = [
+        arg_name for arg, arg_name in zip([start, end, length], ['start', 'end', 'length']) if arg is not None
+    ]
+    raise_if(len(constructors) != 2,
+             'index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. '
+             f'Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting '
+             f'`start` to None.',
+             logger)
+    raise_if(end is not None and start is not None and type(start) != type(end),
+             'index generation with `start` and `end` requires equal object types of `start` and `end`',
+             logger)
+
+    if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
+        index = pd.date_range(start=start, end=end, periods=length, freq=freq)
+    else:  # int
+        index = pd.Int64Index(range(
+            start if start is not None else end - length + 1,
+            end + 1 if end is not None else start + length
+        ))
+    return index
+
+
 def constant_timeseries(value: float = 1,
-                        length: int = 10,
+                        start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
+                        end: Optional[Union[pd.Timestamp, int]] = None,
+                        length: Optional[int] = None,
                         freq: str = 'D',
-                        start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
                         column_name: Optional[str] = 'constant') -> TimeSeries:
     """
-    Creates a constant univariate TimeSeries with the given value, length, start date and frequency.
+    Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.
 
     Parameters
     ----------
     value
         The constant value that the TimeSeries object will assume at every index.
+    start
+        The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
     length
-        The length of the returned TimeSeries.
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected;
-        see `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-    start_ts
-        The time index of the first entry in the returned TimeSeries.
+        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
+        pandas Timestamp. A DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+    column_name
+        Optionally, the name of the value column for the returned TimeSeries
 
     Returns
     -------
@@ -43,17 +98,18 @@ def constant_timeseries(value: float = 1,
         A constant TimeSeries with value 'value'.
     """
 
-    times = pd.date_range(periods=length, freq=freq, start=start_ts)
-    values = np.full(length, value)
+    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    values = np.full(len(index), value)
 
-    return TimeSeries.from_times_and_values(times, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def linear_timeseries(start_value: float = 0,
                       end_value: float = 1,
-                      length: int = 10,
+                      start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
+                      end: Optional[Union[pd.Timestamp, int]] = None,
+                      length: Optional[int] = None,
                       freq: str = 'D',
-                      start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
                       column_name: Optional[str] = 'linear') -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
@@ -67,12 +123,21 @@ def linear_timeseries(start_value: float = 0,
         The value of the first entry in the TimeSeries.
     end_value
         The value of the last entry in the TimeSeries.
+    start
+        The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
     length
-        The length of the returned TimeSeries.
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
-    start_ts
-        The time index of the first entry in the returned TimeSeries.
+        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
+        pandas Timestamp. A DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+    column_name
+        Optionally, the name of the value column for the returned TimeSeries
 
     Returns
     -------
@@ -80,18 +145,19 @@ def linear_timeseries(start_value: float = 0,
         A linear TimeSeries created as indicated above.
     """
 
-    times = pd.date_range(periods=length, freq=freq, start=start_ts)
-    values = np.linspace(start_value, end_value, length)
-    return TimeSeries.from_times_and_values(times, values, freq=freq, columns=pd.Index([column_name]))
+    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    values = np.linspace(start_value, end_value, len(index))
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def sine_timeseries(value_frequency: float = 0.1,
                     value_amplitude: float = 1.,
                     value_phase: float = 0.,
                     value_y_offset: float = 0.,
-                    length: int = 10,
+                    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
+                    end: Optional[Union[pd.Timestamp, int]] = None,
+                    length: Optional[int] = None,
                     freq: str = 'D',
-                    start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
                     column_name: Optional[str] = 'sine') -> TimeSeries:
     """
     Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
@@ -107,12 +173,21 @@ def sine_timeseries(value_frequency: float = 0.1,
         The relative position within one period of the first value of the returned TimeSeries (in radians).
     value_y_offset
         The shift of the sine function along the y axis.
+    start
+        The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
     length
-        The length of the returned TimeSeries.
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
     freq
-        The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
-    start_ts
-        The time index of the first entry in the returned TimeSeries.
+        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
+        pandas Timestamp. A DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+    column_name
+        Optionally, the name of the value column for the returned TimeSeries
 
     Returns
     -------
@@ -120,21 +195,22 @@ def sine_timeseries(value_frequency: float = 0.1,
         A sinusoidal TimeSeries parametrized as indicated above.
     """
 
-    times = pd.date_range(periods=length, freq=freq, start=start_ts)
-    values = np.array(range(length), dtype=float)
+    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    values = np.array(range(len(index)), dtype=float)
     f = np.vectorize(
         lambda x: value_amplitude * math.sin(2 * math.pi * value_frequency * x + value_phase) + value_y_offset
     )
     values = f(values)
 
-    return TimeSeries.from_times_and_values(times, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
-def gaussian_timeseries(length: int = 10,
-                        freq: str = 'D',
-                        mean: Union[float, np.ndarray] = 0.,
+def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
                         std: Union[float, np.ndarray] = 1.,
-                        start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
+                        start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
+                        end: Optional[Union[pd.Timestamp, int]] = None,
+                        length: Optional[int] = None,
+                        freq: str = 'D',
                         column_name: Optional[str] = 'gaussian') -> TimeSeries:
     """
     Creates a gaussian univariate TimeSeries by sampling all the series values independently,
@@ -142,10 +218,6 @@ def gaussian_timeseries(length: int = 10,
 
     Parameters
     ----------
-    length
-        The length of the returned TimeSeries.
-    freq
-        The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     mean
         The mean of the gaussian distribution that is sampled at each step.
         If a float value is given, the same mean is used at every step.
@@ -156,8 +228,21 @@ def gaussian_timeseries(length: int = 10,
         If a float value is given, the same standard deviation is used at every step.
         If an array of dimension `(length, length)` is given, it will
         be used as covariance matrix for a multivariate gaussian distribution.
-    start_ts
-        The time index of the first entry in the returned TimeSeries.
+    start
+        The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
+    length
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
+    freq
+        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
+        pandas Timestamp. A DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+    column_name
+        Optionally, the name of the value column for the returned TimeSeries
 
     Returns
     -------
@@ -165,24 +250,25 @@ def gaussian_timeseries(length: int = 10,
         A white noise TimeSeries created as indicated above.
     """
 
-    if (type(mean) == np.ndarray):
+    if type(mean) == np.ndarray:
         raise_if_not(mean.shape == (length,), 'If a vector of means is provided, '
                                               'it requires the same length as the TimeSeries.', logger)
-    if (type(std) == np.ndarray):
+    if type(std) == np.ndarray:
         raise_if_not(std.shape == (length, length), 'If a matrix of standard deviations is provided, '
                                                     'its shape has to match the length of the TimeSeries.', logger)
 
-    times = pd.date_range(periods=length, freq=freq, start=start_ts)
-    values = np.random.normal(mean, std, size=length)
+    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    values = np.random.normal(mean, std, size=len(index))
 
-    return TimeSeries.from_times_and_values(times, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
-def random_walk_timeseries(length: int = 10,
-                           freq: str = 'D',
-                           mean: float = 0.,
+def random_walk_timeseries(mean: float = 0.,
                            std: float = 1.,
-                           start_ts: pd.Timestamp = pd.Timestamp('2000-01-01'),
+                           start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
+                           end: Optional[Union[pd.Timestamp, int]] = None,
+                           length: Optional[int] = None,
+                           freq: str = 'D',
                            column_name: Optional[str] = 'random_walk') -> TimeSeries:
     """
     Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
@@ -190,26 +276,36 @@ def random_walk_timeseries(length: int = 10,
 
     Parameters
     ----------
-    length
-        The length of the returned TimeSeries.
-    freq
-        The time difference between two adjacent entries in the returned TimeSeries. A DateOffset alias is expected.
     mean
         The mean of the gaussian distribution that is sampled at each step.
     std
         The standard deviation of the gaussian distribution that is sampled at each step.
-    start_ts
-        The time index of the first entry in the returned TimeSeries.
+    start
+        The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        either `length` or `end`.
+    end
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
+    length
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
+    freq
+        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
+        pandas Timestamp. A DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+    column_name
+        Optionally, the name of the value column for the returned TimeSeries
+
     Returns
     -------
     TimeSeries
         A random walk TimeSeries created as indicated above.
     """
 
-    times = pd.date_range(periods=length, freq=freq, start=start_ts)
-    values = np.cumsum(np.random.normal(mean, std, size=length))
+    index = _generate_index(start=start, end=end, freq=freq, length=length)
+    values = np.cumsum(np.random.normal(mean, std, size=len(index)))
 
-    return TimeSeries.from_times_and_values(times, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
 def _extend_time_index_until(time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
@@ -288,6 +384,8 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
     add_length
         Extend the time_index by add_length, should match or exceed forecasting window.
         Set only one of until and add_length.
+    column_name
+        Optionally, the name of the value column for the returned TimeSeries
 
     Returns
     -------
@@ -320,7 +418,8 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        An attribute of `pd.DatetimeIndex` - e.g. "month", "weekday", "day", "hour", "minute", "second"
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day", "hour", "minute", "second". 
+        See all available attributes in https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex .
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -346,24 +445,48 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
 
     time_index = _extend_time_index_until(time_index, until, add_length)
 
-    raise_if_not(hasattr(pd.DatetimeIndex, attribute), '"attribute" needs to be an attribute '
-                 'of pd.DatetimeIndex', logger)
+    raise_if_not(
+        hasattr(pd.DatetimeIndex, attribute) or (attribute in ["week", "weekofyear", "week_of_year"]),
+        '"attribute" needs to be an attribute of pd.DatetimeIndex.'
+        'See all available attributes in '
+        'https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex',
+        logger,
+    )
 
     raise_if(one_hot and cyclic, "set only one of one_hot or cyclic to true", logger)
 
     num_values_dict = {
-        'month': 12,
-        'day': 31,
-        'weekday': 7,
-        'hour': 24,
-        'quarter': 4
+        "month": 12,
+        "day": 31,
+        "weekday": 7,
+        "dayofweek":7,
+        "day_of_week":7,
+        "hour": 24,
+        "minute": 60,
+        "second": 60,
+        "microsecond": 1000000,
+        "nanosecond": 1000,
+        "quarter": 4,
+        "dayofyear":365,
+        "day_of_year":365,
+        "week":52,
+        "weekofyear":52,
+        "week_of_year":52,
     }
 
-    values = getattr(time_index, attribute)
-
+    if not attribute in ["week", "weekofyear", "week_of_year"]:
+        values = getattr(time_index, attribute)
+    else:
+        values = time_index.isocalendar().set_index("week").index.astype("int64").rename('time')
+    
     if one_hot or cyclic:
-        raise_if_not(attribute in num_values_dict, "Given datetime attribute not supported"
-                                                   " with one-hot or cyclical encoding.", logger)
+        raise_if_not(
+            attribute in num_values_dict,
+            "Given datetime attribute not supported"
+            " with one-hot or cyclical encoding."
+            f"Supported datetime attribute: {list(num_values_dict.keys())}",
+            logger,
+        )
 
     if one_hot:
         values_df = pd.get_dummies(values)
@@ -372,24 +495,29 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
             if not (i in values_df.columns):
                 values_df[i] = 0
         values_df = values_df[range(1, num_values_dict[attribute] + 1)]
-    elif cyclic:
-        if attribute == "day":
-            periods = [time_index[i].days_in_month for i in time_index.month]
-            freq = 2*np.pi * np.reciprocal(periods)
-        else:
-            period = num_values_dict[attribute]
-            freq = 2*np.pi/period
 
-        values_df = pd.DataFrame({
-            attribute+"_sin": np.sin(freq * values),
-            attribute+"_cos": np.cos(freq * values)
-        })
+        values_df.columns = [
+            attribute + "_" + str(column_name) for column_name in values_df.columns
+        ]
+
     else:
-        values_df = pd.DataFrame(values)
+        if cyclic:
+            if attribute == "day":
+                periods = [time_index[i].days_in_month for i in time_index.month]
+                freq = 2 * np.pi * np.reciprocal(periods)
+            else:
+                period = num_values_dict[attribute]
+                freq = 2 * np.pi / period
+
+            values_df = pd.DataFrame(
+                {
+                    attribute + "_sin": np.sin(freq * values),
+                    attribute + "_cos": np.cos(freq * values),
+                }
+            )
+        else:
+            values_df = pd.DataFrame({attribute: values})
+
     values_df.index = time_index
 
-    if one_hot:
-        values_df.columns = [attribute + '_' + str(column_name) for column_name in values_df.columns]
-
     return TimeSeries.from_dataframe(values_df)
-

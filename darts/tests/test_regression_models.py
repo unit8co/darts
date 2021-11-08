@@ -1,19 +1,22 @@
 import numpy as np
 import pandas as pd
 
-from .. import TimeSeries
-from ..metrics import rmse
-from ..models import RegressionModel, RandomForest, LinearRegressionModel
+import darts
+from darts import TimeSeries
+from darts.metrics import rmse
+from darts.models import RegressionModel, RandomForest, LinearRegressionModel, LightGBMModel
 from .base_test_class import DartsBaseTestClass
-from ..utils import timeseries_generation as tg
+from darts.utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
-from sklearn.experimental import (
-    enable_hist_gradient_boosting,
-)  # enable import of HistGradientBoostingRegressor
+
+# Required to import HistGradientBoostingRegressor in sklearn
+from sklearn.experimental import enable_hist_gradient_boosting
+
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
-from darts.models.regression_model import _shift_matrices, _update_min_max
+from darts.models.forecasting.regression_model import _shift_matrices, _update_min_max
+from unittest.mock import patch
 
 
 def train_test_split(features, target, split_ts):
@@ -58,8 +61,15 @@ class RegressionModelsTestCase(DartsBaseTestClass):
     ts_cov2 = ts_sum1.stack(ts_random_walk)
     ts_sum2 = ts_sum1 + ts_random_walk
 
+    ts_multivariate1 = ts_sum1.stack(ts_sum2)
+
     # default regression models
-    models = [RandomForest, LinearRegressionModel, RegressionModel]
+    models = [
+        RandomForest,
+        LinearRegressionModel,
+        RegressionModel,
+        LightGBMModel
+    ]
 
     target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
     past_covariates = tg.linear_timeseries(start_value=50, end_value=99, length=50).stack(
@@ -171,8 +181,8 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         training_samples, training_labels = model_instance._get_training_data(training_dataset=training_dataset)
 
         # checking number of dimensions
-        self.assertEqual(len(training_samples.shape), 2)
-        self.assertEqual(len(training_labels.shape), 1)
+        self.assertEqual(len(training_samples.shape), 2)  # samples, features
+        self.assertEqual(len(training_labels.shape), 2)  # samples, components (multivariate)
         self.assertEqual(training_samples.shape[0], training_labels.shape[0])
         self.assertEqual(training_samples.shape[1],
                          len(self.lags_1) + len(self.lags_past_covariates_1) * 2 + len(self.lags_future_covariates_1))
@@ -215,7 +225,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
             self.assertEqual(matrix.shape[0], 1)  # we are training on a single ts
 
         # checking matrices dimensions
-        self.assertEqual(target_matrix.ndim, 2)  # samples, time (univariate)
+        self.assertEqual(target_matrix.ndim, 3)  # samples, time, dim (multivariate)
         self.assertEqual(past_covariates_matrix.ndim, 3)  # samples, time, dim (could be multivariate)
         self.assertEqual(historic_future_covariates_matrix.ndim, 3)  # same
         self.assertEqual(future_covariates_matrix.ndim, 3)  # same
@@ -296,31 +306,33 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_fit(self):
         for model in self.models:
-            with self.assertRaises(ValueError):
-                model_instance = model(lags=4, lags_past_covariates=4)
-                model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
-                model_instance.predict(n=10)
+            # test fitting both on univariate and multivariate timeseries
+            for series in [self.ts_sum1, self.ts_multivariate1]:
+                with self.assertRaises(ValueError):
+                    model_instance = model(lags=4, lags_past_covariates=4)
+                    model_instance.fit(series=series, past_covariates=self.ts_cov1)
+                    model_instance.predict(n=10)
 
-            model_instance = model(lags=12)
-            model_instance.fit(series=self.ts_sum1)
-            self.assertEqual(model_instance.lags_past_covariates, None)
+                model_instance = model(lags=12)
+                model_instance.fit(series=series)
+                self.assertEqual(model_instance.lags_past_covariates, None)
 
-            model_instance = model(lags=12, lags_past_covariates=12)
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_past_covariates), 12)
+                model_instance = model(lags=12, lags_past_covariates=12)
+                model_instance.fit(series=series, past_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_past_covariates), 12)
 
-            model_instance = model(lags=12, lags_future_covariates=(0, 1))
-            model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_future_covariates), 1)
-            self.assertIsNone(model_instance.lags_historical_covariates)
+                model_instance = model(lags=12, lags_future_covariates=(0, 1))
+                model_instance.fit(series=series, future_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_future_covariates), 1)
+                self.assertIsNone(model_instance.lags_historical_covariates)
 
-            model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6])
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_past_covariates), 3)
+                model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6])
+                model_instance.fit(series=series, past_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
-            model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6], lags_future_covariates=[-2, 0])
-            model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1, future_covariates=self.ts_cov1)
-            self.assertEqual(len(model_instance.lags_past_covariates), 3)
+                model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6], lags_future_covariates=[-2, 0])
+                model_instance.fit(series=series, past_covariates=self.ts_cov1, future_covariates=self.ts_cov1)
+                self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
     def helper_test_models_accuracy(self, series, past_covariates, min_rmse):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
@@ -344,7 +356,7 @@ class RegressionModelsTestCase(DartsBaseTestClass):
 
     def test_models_denoising_multi_input(self):
         # for every model, test whether it correctly denoises ts_sum_2 using ts_random_multi and ts_sum_2 as inputs
-        self.helper_test_models_accuracy(self.ts_sum2, self.ts_cov2, 19)
+        self.helper_test_models_accuracy(self.ts_sum2, self.ts_cov2, 19.5)
 
     def test_historical_forecast(self):
         model = self.models[0](lags=5)
@@ -517,3 +529,21 @@ class RegressionModelsTestCase(DartsBaseTestClass):
         model.predict(11, series=target_train, past_covariates=covariates)
         with self.assertRaises(ValueError):
             model.predict(12, series=target_train, past_covariates=covariates)
+
+    @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit")
+    # @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
+    def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
+        """test whether these evaluation set parameters are passed to LGBRegressor """
+        model = LightGBMModel(lags=4, lags_past_covariates=2)
+        split_index = 450
+        model.fit(series=self.ts_sum1[:split_index],
+                  past_covariates=self.ts_cov1[:split_index],
+                  val_series=self.ts_sum1[split_index:],
+                  val_past_covariates=self.ts_cov1[split_index:],
+                  early_stopping_rounds=2,
+                  )
+
+        lgb_fit_patch.assert_called_once()
+
+        assert lgb_fit_patch.call_args[1]['eval_set'] is not None
+        assert lgb_fit_patch.call_args[1]['early_stopping_rounds'] == 2
