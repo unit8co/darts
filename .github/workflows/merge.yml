@@ -12,7 +12,7 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest]
         python-version: [3.7, 3.8, 3.9]
-        flavour: ['all']
+        flavour: ['core', 'torch', 'all']
 
     steps:
       - name: "1. Clone repository"
