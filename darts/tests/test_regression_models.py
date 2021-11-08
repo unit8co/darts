@@ -26,32 +26,33 @@ except ImportError:
     logger.warning('Torch not available. Regression models tests will be skipped.')
     TORCH_AVAILABLE = False
 
+
+def train_test_split(features, target, split_ts):
+    """
+    Splits all provided TimeSeries instances into train and test sets according to the provided timestamp.
+
+    Parameters
+    ----------
+    features : TimeSeries
+        Feature TimeSeries instances to be split.
+    target : TimeSeries
+        Target TimeSeries instance to be split.
+    split_ts : TimeStamp
+        Time stamp indicating split point.
+
+    Returns
+    -------
+    TYPE
+        4-tuple of the form (train_features, train_target, test_features, test_target)
+    """
+    train_features, test_features = features.split_after(split_ts)
+    train_target, test_target = target.split_after(split_ts)
+
+    return (train_features, train_target, test_features, test_target)
+
+
 # Regression models rely on torch for the Datasets
 if TORCH_AVAILABLE:
-    def train_test_split(features, target, split_ts):
-        """
-        Splits all provided TimeSeries instances into train and test sets according to the provided timestamp.
-
-        Parameters
-        ----------
-        features : TimeSeries
-            Feature TimeSeries instances to be split.
-        target : TimeSeries
-            Target TimeSeries instance to be split.
-        split_ts : TimeStamp
-            Time stamp indicating split point.
-
-        Returns
-        -------
-        TYPE
-            4-tuple of the form (train_features, train_target, test_features, test_target)
-        """
-        train_features, test_features = features.split_after(split_ts)
-        train_target, test_target = target.split_after(split_ts)
-
-        return (train_features, train_target, test_features, test_target)
-
-
     class RegressionModelsTestCase(DartsBaseTestClass):
 
         np.random.seed(42)
