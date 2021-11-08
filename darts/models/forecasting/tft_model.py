@@ -380,11 +380,14 @@ class _TFTModule(nn.Module):
         # run local lstm decoder
         decoder_out, _ = self.lstm_decoder(input=embeddings_varying_decoder, hx=(hidden, cell))
 
-        # post lstm GateAddNorm
-        lstm_out_encoder = self.post_lstm_encoder_gan(x=encoder_out, skip=embeddings_varying_encoder)
-        lstm_out_decoder = self.post_lstm_encoder_gan(x=decoder_out, skip=embeddings_varying_decoder)
-
-        lstm_out = torch.cat([lstm_out_encoder, lstm_out_decoder], dim=1)
+        lstm_layer = torch.cat([encoder_out, decoder_out], dim=dim_time)
+        input_embedding = torch.cat([embeddings_varying_encoder, embeddings_varying_decoder], dim=dim_time)
+        lstm_out = self.post_lstm_encoder_gan(x=lstm_layer, skip=input_embedding)
+        # # post lstm GateAddNorm
+        # lstm_out_encoder = self.post_lstm_encoder_gan(x=encoder_out, skip=embeddings_varying_encoder)
+        # lstm_out_decoder = self.post_lstm_decoder_gan(x=decoder_out, skip=embeddings_varying_decoder)
+        #
+        # lstm_out = torch.cat([lstm_out_encoder, lstm_out_decoder], dim=1)
 
         # static enrichment
         static_context_enriched = self.static_context_enrichment(static_embedding)
@@ -395,31 +398,37 @@ class _TFTModule(nn.Module):
 
         # avoid unnecessary regeneration of attention mask
         if batch_size != self.batch_size_last:
-            self.attention_mask = self.get_attention_mask(encoder_length=encoder_length,
-                                                          decoder_length=decoder_length,
-                                                          batch_size=batch_size,
-                                                          device=past_target.device)
+            # self.attention_mask = self.get_attention_mask(encoder_length=encoder_length,
+            #                                               decoder_length=decoder_length,
+            #                                               batch_size=batch_size,
+            #                                               device=past_target.device)
+
+            eye = torch.eye(timesteps, dtype=torch.float64, device=torch.device('cpu'))
+            mask = torch.cumsum(eye.unsqueeze(0).repeat(batch_size, 1, 1), dim=1)
+            self.attention_mask = mask < 1
+
             self.batch_size_last = batch_size
 
         # multi-head attention
         attn_out, attn_out_weights = self.multihead_attn(
-            q=attn_input[:, encoder_length:],  # query only for predictions
+            # q=attn_input[:, encoder_length:],  # query only for predictions
+            q=attn_input,  # query only for predictions
             k=attn_input,
             v=attn_input,
             mask=self.attention_mask
         )
 
         # skip connection over attention
-        attn_out = self.post_attn_gan(x=attn_out, skip=attn_input[:, encoder_length:])
+        attn_out = self.post_attn_gan(x=attn_out, skip=attn_input)
 
         # position-wise feed-forward
         out = self.positionwise_feedforward_grn(x=attn_out, context=None)
 
         # skip connection over temporal fusion decoder from LSTM post _GateAddNorm
-        out = self.pre_output_gan(x=out, skip=lstm_out[:, encoder_length:])
+        out = self.pre_output_gan(x=out, skip=lstm_out)
 
         # generate output for n_targets and loss_size elements for loss evaluation
-        out = [output_layer(out) for output_layer in self.output_layer]
+        out = [output_layer(out[:, encoder_length:]) for output_layer in self.output_layer]
 
         # stack output
         if isinstance(self.likelihood, QuantileRegression):
