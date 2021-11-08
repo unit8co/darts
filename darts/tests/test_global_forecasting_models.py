@@ -7,7 +7,6 @@ from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
 from ..datasets import AirPassengersDataset
-from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
@@ -15,6 +14,7 @@ logger = get_logger(__name__)
 try:
     from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
     from darts.utils.likelihood_models import GaussianLikelihood
+    from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:

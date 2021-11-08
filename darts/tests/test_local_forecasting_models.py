@@ -1,28 +1,30 @@
-import shutil
-
 import numpy as np
 import pandas as pd
 
 from .base_test_class import DartsBaseTestClass
-from ..timeseries import TimeSeries
-from ..utils import timeseries_generation as tg
-from ..metrics import mape
-from ..models import (
+from darts.timeseries import TimeSeries
+from darts.utils import timeseries_generation as tg
+from darts.metrics import mape
+from darts.models import (
     NaiveSeasonal,
     ExponentialSmoothing,
     ARIMA,
     Theta,
     FourTheta,
     FFT,
-    VARIMA,
-    RandomForest,
-    LinearRegressionModel,
+    VARIMA
 )
 from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
 from ..logging import get_logger
 from ..datasets import AirPassengersDataset, IceCreamHeaterDataset
-
 logger = get_logger(__name__)
+
+try:
+    from darts.models import RandomForest, LinearRegressionModel
+    TORCH_AVAILABLE = True
+except ImportError:
+    logger.warning('Torch not installed - some local forecasting models tests will be skipped')
+    TORCH_AVAILABLE = False
 
 # (forecasting models, maximum error) tuples
 models = [
@@ -38,10 +40,13 @@ models = [
     (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
     (FFT(trend="poly"), 11.4),
-    (NaiveSeasonal(), 32.4),
-    (LinearRegressionModel(lags=12), 11.0),
-    (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5),
+    (NaiveSeasonal(), 32.4)
 ]
+
+if TORCH_AVAILABLE:
+    models += [(LinearRegressionModel(lags=12), 11.0),
+               (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5)]
+
 # forecasting models with exogenous variables support
 multivariate_models = [
     (VARIMA(1, 0, 0), 55.6),
