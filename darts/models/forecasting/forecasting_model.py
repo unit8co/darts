@@ -15,11 +15,9 @@ import copy
 from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
 from abc import ABC, ABCMeta, abstractmethod
-from inspect import signature
 from random import sample
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_log, raise_if_not, raise_if
