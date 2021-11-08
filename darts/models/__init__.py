@@ -23,8 +23,9 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.prophet_model import Prophet
 except ModuleNotFoundError:
-    logger.warning("Support Facebook Prophet is not available. "
-                   "To enable it, install u8darts[prophet] or u8darts[all].")
+    logger.warning('Support for Facebook Prophet is not available. '
+                   'To enable it, install "darts", "u8darts[prophet]" or "u8darts[all]" (with pip);'
+                   'or "u8darts-all" (with conda).')
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
@@ -35,12 +36,19 @@ try:
     from darts.models.forecasting.tft_model import TFTModel
 
 except ModuleNotFoundError:
-    logger.warning("Support Torch based models not available. To enable it, install u8darts[torch] or u8darts[all].")
+    logger.warning('Support for Torch based models not available. '
+                   'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
+                   'or "u8darts-torch" or "u8darts-all" (with conda).')
 
 # Regression
-from darts.models.forecasting.linear_regression_model import LinearRegressionModel
-from darts.models.forecasting.random_forest import RandomForest
-from darts.models.forecasting.regression_model import RegressionModel
+try:
+    from darts.models.forecasting.linear_regression_model import LinearRegressionModel
+    from darts.models.forecasting.random_forest import RandomForest
+    from darts.models.forecasting.regression_model import RegressionModel
+except ModuleNotFoundError:
+    logger.warning('Support for Regression based models not available, as they depend on PyTorch Datasets. '
+                   'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
+                   'or "u8darts-torch" or "u8darts-all" (with conda).')
 
 try:
     from darts.models.forecasting.gradient_boosted_model import LightGBMModel
