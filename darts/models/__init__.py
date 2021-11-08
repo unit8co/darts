@@ -40,13 +40,15 @@ except ModuleNotFoundError:
                    'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
                    'or "u8darts-torch" or "u8darts-all" (with conda).')
 
-# Regression
+# Regression & RegressionEnsemble:
 try:
     from darts.models.forecasting.linear_regression_model import LinearRegressionModel
     from darts.models.forecasting.random_forest import RandomForest
     from darts.models.forecasting.regression_model import RegressionModel
+    from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
 except ModuleNotFoundError:
-    logger.warning('Support for Regression based models not available, as they depend on PyTorch Datasets. '
+    logger.warning('Support for Regression based models (incl. RegressionEnsembleModel) not available, '
+                   'as they depend on PyTorch Datasets. '
                    'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
                    'or "u8darts-torch" or "u8darts-all" (with conda).')
 
@@ -60,7 +62,6 @@ except:
 # Ensembling
 from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.baselines import NaiveEnsembleModel
-from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
 
 # Filtering
 from darts.models.filtering.moving_average import MovingAverage
