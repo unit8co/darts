@@ -100,8 +100,9 @@ class MetricsTestCase(DartsBaseTestClass):
             s11 = [s1.stack(s1)] * 2
             s22 = [s2.stack(s2)] * 2
             # default intra and inter
-            self.assertAlmostEqual([metric(s1, s2, **kwargs)] * 2,
-                                   metric(s11, s22, **kwargs))
+            np.testing.assert_almost_equal(actual=np.array([metric(s1, s2, **kwargs)] * 2),
+                                           desired=np.array(metric(s11, s22, **kwargs)))
+
             # custom intra and inter
             self.assertAlmostEqual(metric(s1, s2, **kwargs, reduction=np.mean, inter_reduction=np.max),
                                    metric(s11, s22, **kwargs, reduction=np.mean, inter_reduction=np.max))

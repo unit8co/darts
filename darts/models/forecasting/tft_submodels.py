@@ -20,15 +20,13 @@ all copies or substantial portions of the Software.
 '
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, Tuple, List, Union, Optional
+from typing import Dict, Tuple, List, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.nn.utils import rnn
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger
 
 logger = get_logger(__name__)
 

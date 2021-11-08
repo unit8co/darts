@@ -9,7 +9,9 @@ from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
 
 from darts.models.forecasting.forecasting_model import ForecastingModel, GlobalForecastingModel
-from darts.models import EnsembleModel, LinearRegressionModel, RegressionModel
+from darts.models.forecasting.ensemble_model import EnsembleModel
+from darts.models.forecasting.linear_regression_model import LinearRegressionModel
+from darts.models.forecasting.regression_model import RegressionModel
 
 logger = get_logger(__name__)
 
