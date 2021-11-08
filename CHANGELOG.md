@@ -4,7 +4,13 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.13.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.13.1...master)
+
+## [0.13.1](https://github.com/unit8co/darts/tree/0.13.1) (2021-11-08)
+### For users of the library:
+
+**Fixed**:
+* An issue which was causing some of the flavours installations not to work
 
 ## [0.13.0](https://github.com/unit8co/darts/tree/0.13.0) (2021-11-07)
 ### For users of the library:
