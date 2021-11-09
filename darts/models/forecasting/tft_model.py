@@ -5,6 +5,7 @@ Temporal Fusion Transformer (TFT)
 
 from typing import Union, List, Optional, Tuple, Dict, Sequence
 
+import numpy as np
 from numpy.random import RandomState
 
 import torch
@@ -51,6 +52,7 @@ class _TFTModule(nn.Module):
                  full_attention: bool = False,
                  hidden_continuous_size: int = 8,
                  dropout: float = 0.1,
+                 add_relative_time_index: bool = False,
                  likelihood: Optional[Likelihood] = None):
 
         """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -95,10 +97,12 @@ class _TFTModule(nn.Module):
         self.full_attention = full_attention
         self.dropout = dropout
         self.likelihood = likelihood
+        self.add_relative_time_index = add_relative_time_index
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
         self.attention_mask = None
+        self.relative_time_index = None
 
         # general information on variable name endings:
         # _vsn: VariableSelectionNetwork
@@ -265,10 +269,25 @@ class _TFTModule(nn.Module):
         return context[:, None].expand(-1, time_steps, -1)
 
     @staticmethod
+    def get_relative_time_index(encoder_length: int,
+                                decoder_length: int,
+                                batch_size: int,
+                                dtype: torch.dtype,
+                                device: torch.device) -> torch.Tensor:
+        """
+        Returns scaled time index relative to prediction point.
+        """
+        index = torch.arange(encoder_length + decoder_length, dtype=dtype, device=device)
+        prediction_index = encoder_length - 1
+        index[:encoder_length] = index[:encoder_length] / prediction_index
+        index[encoder_length:] = index[encoder_length:] / prediction_index
+        return index.resize(1, len(index), 1).repeat(batch_size, 1, 1)
+
+    @staticmethod
     def get_attention_mask_full(time_steps: int,
                                 batch_size: int,
                                 dtype: torch.dtype,
-                                device: torch.device):
+                                device: torch.device) -> torch.Tensor:
         """
         Returns causal mask to apply for self-attention layer.
         """
@@ -280,7 +299,7 @@ class _TFTModule(nn.Module):
     def get_attention_mask_future(encoder_length: int,
                                   decoder_length: int,
                                   batch_size: int,
-                                  device: str):
+                                  device: str) -> torch.Tensor:
         """
         Returns causal mask to apply for self-attention layer that acts on future input only.
         """
@@ -299,7 +318,7 @@ class _TFTModule(nn.Module):
                 encoder_mask.unsqueeze(1).expand(-1, decoder_length, -1),
                 decoder_mask.unsqueeze(0).expand(batch_size, -1, -1),
             ),
-            dim=2,
+            dim=2
         )
         return mask
 
@@ -316,6 +335,36 @@ class _TFTModule(nn.Module):
         decoder_length = self.output_chunk_length
         time_steps = encoder_length + decoder_length
 
+        # avoid unnecessary regeneration of attention mask
+        if batch_size != self.batch_size_last:
+            if self.full_attention:
+                self.attention_mask = self.get_attention_mask_full(time_steps=time_steps,
+                                                                   batch_size=batch_size,
+                                                                   dtype=past_target.dtype,
+                                                                   device=past_target.device)
+            else:
+                self.attention_mask = self.get_attention_mask_future(encoder_length=encoder_length,
+                                                                     decoder_length=decoder_length,
+                                                                     batch_size=batch_size,
+                                                                     device=past_target.device)
+            if self.add_relative_time_index:
+                self.relative_time_index = self.get_relative_time_index(encoder_length=encoder_length,
+                                                                        decoder_length=decoder_length,
+                                                                        batch_size=batch_size,
+                                                                        device=past_target.device,
+                                                                        dtype=past_target.dtype)
+
+            self.batch_size_last = batch_size
+
+        if self.add_relative_time_index:
+            historic_future_covariates = torch.cat(
+                [historic_future_covariates, self.relative_time_index[:, :encoder_length, :]],
+                dim=dim_variable
+            )
+            future_covariates = torch.cat(
+                [future_covariates, self.relative_time_index[:, encoder_length:, :]],
+                dim=dim_variable
+            )
         # TODO: impelement static covariates
         static_covariates = None
 
@@ -406,21 +455,6 @@ class _TFTModule(nn.Module):
             context=self.expand_static_context(context=static_context_enriched, time_steps=time_steps)
         )
 
-        # avoid unnecessary regeneration of attention mask
-        if batch_size != self.batch_size_last:
-            if self.full_attention:
-                self.attention_mask = self.get_attention_mask_full(time_steps=time_steps,
-                                                                   batch_size=batch_size,
-                                                                   dtype=past_target.dtype,
-                                                                   device=past_target.device)
-            else:
-                self.attention_mask = self.get_attention_mask_future(encoder_length=encoder_length,
-                                                                     decoder_length=decoder_length,
-                                                                     batch_size=batch_size,
-                                                                     device=past_target.device)
-
-            self.batch_size_last = batch_size
-
         # multi-head attention
         attn_out, attn_out_weights = self.multihead_attn(
             q=attn_input if self.full_attention else attn_input[:, encoder_length:],
@@ -483,6 +517,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  dropout: float = 0.1,
                  hidden_continuous_size: int = 8,
                  add_cyclic_encoder: Optional[str] = None,
+                 add_relative_time_index: bool = False,
                  loss_fn: Optional[nn.Module] = None,
                  likelihood: Optional[Likelihood] = None,
                  max_samples_per_ts: Optional[int] = None,
@@ -611,6 +646,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
         self.add_cyclic_encoder = add_cyclic_encoder
+        self.add_relative_time_index = add_relative_time_index
         self.loss_fn = loss_fn
         self.likelihood = likelihood
         self.max_sample_per_ts = max_samples_per_ts
@@ -636,6 +672,22 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         `variable_meta` is used in TFT to access specific variables
         """
         past_target, past_covariate, historic_future_covariate, future_covariate, future_target = train_sample
+
+        # add a covariate placeholder so that relative index will be included
+        if self.add_relative_time_index:
+            prediction_index = self.input_chunk_length
+            time_steps = self.input_chunk_length + self.output_chunk_length
+
+            expand_future_covariate = np.arange(time_steps).reshape((time_steps, 1))
+
+            historic_future_covariate = np.concatenate(
+                [historic_future_covariate, expand_future_covariate[:prediction_index]],
+                axis=1
+            )
+            future_covariate = np.concatenate(
+                [future_covariate, expand_future_covariate[prediction_index:]],
+                axis=1
+            )
 
         static_covariates = None  # placeholder for future
 
@@ -697,7 +749,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             num_attention_heads=self.num_attention_heads,
             full_attention=self.full_attention,
             hidden_continuous_size=self.hidden_continuous_size,
-            likelihood=self.likelihood
+            likelihood=self.likelihood,
+            add_relative_time_index=self.add_relative_time_index
         )
 
     def _build_train_dataset(self,
