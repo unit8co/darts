@@ -7,7 +7,6 @@ from ..metrics import mape
 from ..logging import get_logger
 from ..dataprocessing.transformers import Scaler
 from ..datasets import AirPassengersDataset
-from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
@@ -15,6 +14,7 @@ logger = get_logger(__name__)
 try:
     from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
     from darts.utils.likelihood_models import GaussianLikelihood
+    from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -73,6 +73,12 @@ if TORCH_AVAILABLE:
 
         target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
         target_past, target_future = target.split_after(split_ratio)
+
+        def test_save_model_parameters(self):
+            # model creation parameters were saved before. check if re-created model has same params as original
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+                self.assertTrue(model._model_params, model.untrained_model()._model_params)
 
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:

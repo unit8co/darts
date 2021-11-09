@@ -9,7 +9,9 @@ from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if
 
 from darts.models.forecasting.forecasting_model import ForecastingModel, GlobalForecastingModel
-from darts.models import EnsembleModel, LinearRegressionModel, RegressionModel
+from darts.models.forecasting.ensemble_model import EnsembleModel
+from darts.models.forecasting.linear_regression_model import LinearRegressionModel
+from darts.models.forecasting.regression_model import RegressionModel
 
 logger = get_logger(__name__)
 
@@ -107,13 +109,10 @@ class RegressionEnsembleModel(EnsembleModel):
         # train the regression model on the individual models' predictions
         self.regression_model.fit(series=regression_target, future_covariates=predictions)
 
-        # prepare the forecasting models for further predicting by fitting
-        # them with the entire data
+        # prepare the forecasting models for further predicting by fitting them with the entire data
 
-        # Some models (incl. Neural-Network based models) may need to be 'reset'
-        # to allow being retrained from scratch
-        self.models = [model.untrained_model() if hasattr(model, "untrained_model") else model
-                       for model in self.models]
+        # Some models (incl. Neural-Network based models) may need to be 'reset' to allow being retrained from scratch
+        self.models = [model.untrained_model() for model in self.models]
 
         for model in self.models:
             if self.is_global_ensemble:

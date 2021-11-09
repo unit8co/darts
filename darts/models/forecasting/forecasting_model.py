@@ -11,16 +11,13 @@ The main functions are `fit()` and `predict()`. `fit()` learns the function `f()
 one or several time series. The function `predict()` applies `f()` on one or several time series in order
 to obtain forecasts for a desired number of time stamps into the future.
 """
-
-
+import copy
 from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
-from abc import ABC, abstractmethod
-from inspect import signature
+from abc import ABC, ABCMeta, abstractmethod
 from random import sample
 import numpy as np
 import pandas as pd
-import xarray as xr
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_log, raise_if_not, raise_if
@@ -38,20 +35,29 @@ from darts import metrics
 logger = get_logger(__name__)
 
 
-class ForecastingModel(ABC):
+class ModelMeta(ABCMeta):
+    def __call__(cls, *args, **kwargs):
+        cls.model_call = (args, kwargs)
+        return super(ModelMeta, cls).__call__(*args, **kwargs)
+
+
+class ForecastingModel(ABC, metaclass=ModelMeta):
     """ The base class for forecasting models. It defines the *minimal* behavior that all forecasting models have to
         support. The signatures in this base class are for "local" models handling only one univariate series and no
         covariates. Sub-classes can handle more complex cases.
     """
 
     @abstractmethod
-    def __init__(self):
+    def __init__(self, *args, **kwargs):
         # The series used for training the model through the `fit()` function.
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
 
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
+
+        # extract and store sub class model creation parameters
+        self._model_params = self._extract_model_creation_params()
 
     @abstractmethod
     def fit(self, series: TimeSeries) -> None:
@@ -700,6 +706,16 @@ class ForecastingModel(ABC):
             raise_if_not((n_random_samples > 0.0) and (n_random_samples <= 1.0),
                          "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.")
             return sample(params, int(n_random_samples * len(params)))
+
+    def _extract_model_creation_params(self):
+        """extracts immutable model creation parameters from `ModelMeta` and deletes reference."""
+        model_params = copy.deepcopy(self.model_call)
+        del self.__class__.model_call
+        return model_params
+
+    def untrained_model(self):
+        args, kwargs = self._model_params
+        return self.__class__(*args, **kwargs)
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):

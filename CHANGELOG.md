@@ -4,7 +4,57 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.12.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.13.1...master)
+
+## [0.13.1](https://github.com/unit8co/darts/tree/0.13.1) (2021-11-08)
+### For users of the library:
+
+**Added**:
+* Factory methods in `TimeSeries` are now `classmethods`, which makes inheritance of
+  `TimeSeries` more convenient.
+
+**Fixed**:
+* An issue which was causing some of the flavours installations not to work
+
+## [0.13.0](https://github.com/unit8co/darts/tree/0.13.0) (2021-11-07)
+### For users of the library:
+
+**Added**:
+- New forecasting model: [Temporal Fusion Transformer](https://arxiv.org/abs/1912.09363) (`TFTModel`). 
+  A new deep learning model supporting both past and future covariates.
+- Improved support for Facebook Prophet model (`Prophet`):
+    - Added support for fit & predict with future covariates. For instance:
+      `model.fit(train, future_covariates=train_covariates)` and
+      `model.predict(n=len(test), num_sample=1, future_covariates=test_covariates)`
+    - Added stochastic forecasting, for instance: `model.predict(n=len(test), num_samples=200)`
+    - Added user-defined seasonalities either at model creation with kwarg 
+      `add_seasonality` (`Prophet(add_seasonality=kwargs_dict)`) or pre-fit with 
+      `model.add_seasonality(kwargs)`. For more information on how to add seasonalities,
+       see the [Prophet docs](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet.html).
+    - Added possibility to predict and return the base model's raw output with `model.predict_raw()`.
+      Note that this returns a pd.DataFrame `pred_df`, which will not be supported for further 
+      processing with the Darts API. But it is possible to access Prophet's methods such as 
+      plots with `model.model.plot_compenents(pred_df)`.
+- New `n_random_samples` in `gridsearch()` method, which allows to specify a number of (random)
+  hyper parameters combinations to be tried, in order mainly to limit the gridsearch time.
+- Improvements in the checkpointing and saving of Torch models.
+    - Now models don't save checkpoints by default anymore. Set `save_checkpoints=True` to enable them.
+    - Models can be manually saved with `YourTorchModel.save_model(file_path)` 
+      (file_path pointing to the .pth.tar file).
+    - Models can be manually loaded with `YourTorchModel.load_model(file_path)` or 
+      the original method `YourTorchModel.load_from_checkpoint()`.
+- New `QuantileRegression` Likelihood class in `darts.utils.likelihood_models`.
+  Allows to apply quantile regression loss, and get probabilistic forecasts on all deep 
+  learning models supporting likelihoods.
+  Used by default in the Temporal Fusion Transformer.
+
+**Fixed:**
+- Some issues with `darts.concatenate()`.
+- Fixed some bugs with `RegressionModel`s applied on multivariate series.
+- An issue with the confidence bounds computation in ACF plot.
+- Added a check for some models that do not support `retrain=False` for `historical_forecasts()`.
+- Small fixes in install instructions.
+- Some rendering issues with bullet points lists in examples.
 
 ## [0.12.0](https://github.com/unit8co/darts/tree/0.12.0) (2021-09-25)
 ### For users of the library:
