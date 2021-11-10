@@ -82,6 +82,13 @@ class _TFTModule(nn.Module):
             default for hidden size for processing continuous variables
         dropout : float
             Fraction of neurons afected by Dropout.
+        add_relative_time_index : bool
+            Whether to add positional values to future covariates. Defaults to `False`.
+            This gives a value to the position of each step from input and output chunk relative to the prediction
+            point. The values are normalized with `max(input_chunk_length, output_chunk_length)`.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts. By default the TFT uses
+            a ``QuantileRegression`` likelihood.
         """
 
         super(_TFTModule, self).__init__()
@@ -571,6 +578,10 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        add_relative_time_index : bool
+            Whether to add positional values to future covariates. Defaults to `False`.
+            This gives a value to the position of each step from input and output chunk relative to the prediction
+            point. The values are normalized with `max(input_chunk_length, output_chunk_length)`.
         loss_fn : nn.Module
             PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
             instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None
