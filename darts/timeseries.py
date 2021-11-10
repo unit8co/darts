@@ -576,6 +576,10 @@ class TimeSeries:
         return self._freq_str
 
     @property
+    def dtype(self):
+        return self._xa.values.dtype
+
+    @property
     def components(self):
         """
         The names of the components (equivalent to DataFrame columns) as a Pandas Index
@@ -828,6 +832,22 @@ class TimeSeries:
         """
         # TODO: there might be a slightly more efficient way to do it for several quantiles at once with xarray...
         return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
+
+    def astype(self, dtype: Union[str, np.dtype]) -> 'TimeSeries':
+        """
+        Converts this TimeSeries to a new TimeSeries with desired dtype
+
+        Parameters
+        ----------
+        dtype
+            A NumPy dtype (np.float32 or np.float64)
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries having the desired dtype.
+        """
+        return self.__class__(self._xa.astype(dtype))
 
     def start_time(self) -> Union[pd.Timestamp, int]:
         """

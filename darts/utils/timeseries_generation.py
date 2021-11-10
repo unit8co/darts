@@ -68,7 +68,8 @@ def constant_timeseries(value: float = 1,
                         end: Optional[Union[pd.Timestamp, int]] = None,
                         length: Optional[int] = None,
                         freq: str = 'D',
-                        column_name: Optional[str] = 'constant') -> TimeSeries:
+                        column_name: Optional[str] = 'constant',
+                        dtype: np.dtype = np.float32) -> TimeSeries:
     """
     Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.
 
@@ -91,6 +92,8 @@ def constant_timeseries(value: float = 1,
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -99,7 +102,7 @@ def constant_timeseries(value: float = 1,
     """
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
-    values = np.full(len(index), value)
+    values = np.full(len(index), value, dtype=dtype)
 
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
@@ -110,7 +113,8 @@ def linear_timeseries(start_value: float = 0,
                       end: Optional[Union[pd.Timestamp, int]] = None,
                       length: Optional[int] = None,
                       freq: str = 'D',
-                      column_name: Optional[str] = 'linear') -> TimeSeries:
+                      column_name: Optional[str] = 'linear',
+                      dtype: np.dtype = np.float32) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
     it takes on the value `end_value` at the last entry of the TimeSeries. This means that
@@ -138,6 +142,8 @@ def linear_timeseries(start_value: float = 0,
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -146,7 +152,7 @@ def linear_timeseries(start_value: float = 0,
     """
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
-    values = np.linspace(start_value, end_value, len(index))
+    values = np.linspace(start_value, end_value, len(index), dtype=dtype)
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
 
@@ -158,7 +164,8 @@ def sine_timeseries(value_frequency: float = 0.1,
                     end: Optional[Union[pd.Timestamp, int]] = None,
                     length: Optional[int] = None,
                     freq: str = 'D',
-                    column_name: Optional[str] = 'sine') -> TimeSeries:
+                    column_name: Optional[str] = 'sine',
+                    dtype: np.dtype = np.float32) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
     phase and y offset.
@@ -188,6 +195,8 @@ def sine_timeseries(value_frequency: float = 0.1,
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -196,7 +205,7 @@ def sine_timeseries(value_frequency: float = 0.1,
     """
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
-    values = np.array(range(len(index)), dtype=float)
+    values = np.array(range(len(index)), dtype=dtype)
     f = np.vectorize(
         lambda x: value_amplitude * math.sin(2 * math.pi * value_frequency * x + value_phase) + value_y_offset
     )
@@ -211,7 +220,8 @@ def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
                         end: Optional[Union[pd.Timestamp, int]] = None,
                         length: Optional[int] = None,
                         freq: str = 'D',
-                        column_name: Optional[str] = 'gaussian') -> TimeSeries:
+                        column_name: Optional[str] = 'gaussian',
+                        dtype: np.dtype = np.float32) -> TimeSeries:
     """
     Creates a gaussian univariate TimeSeries by sampling all the series values independently,
     from a gaussian distribution with mean `mean` and standard deviation `std`.
@@ -243,6 +253,8 @@ def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -258,7 +270,7 @@ def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
                                                     'its shape has to match the length of the TimeSeries.', logger)
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
-    values = np.random.normal(mean, std, size=len(index))
+    values = np.random.normal(mean, std, size=len(index)).astype(dtype)
 
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
@@ -269,7 +281,8 @@ def random_walk_timeseries(mean: float = 0.,
                            end: Optional[Union[pd.Timestamp, int]] = None,
                            length: Optional[int] = None,
                            freq: str = 'D',
-                           column_name: Optional[str] = 'random_walk') -> TimeSeries:
+                           column_name: Optional[str] = 'random_walk',
+                           dtype: np.dtype = np.float32) -> TimeSeries:
     """
     Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
     with mean `mean` and standard deviation `std`.
@@ -295,6 +308,8 @@ def random_walk_timeseries(mean: float = 0.,
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -303,7 +318,7 @@ def random_walk_timeseries(mean: float = 0.,
     """
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
-    values = np.cumsum(np.random.normal(mean, std, size=len(index)))
+    values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
 
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
 
@@ -361,7 +376,7 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
                         column_name: Optional[str] = 'holidays',
                         until: Optional[Union[int, str, pd.Timestamp]] = None,
                         add_length: int = 0,
-                        ) -> TimeSeries:
+                        dtype: np.dtype = np.float32) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
     (or equals) a selected country's holiday, and 0 otherwise.
@@ -386,6 +401,8 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
         Set only one of until and add_length.
     column_name
         Optionally, the name of the value column for the returned TimeSeries
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -397,7 +414,7 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
     country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state, years=scope)
     index_series = pd.Series(time_index, index=time_index)
-    values = index_series.apply(lambda x: x in country_holidays).astype(int)
+    values = index_series.apply(lambda x: x in country_holidays).astype(dtype)
     return TimeSeries.from_times_and_values(time_index, values, columns=pd.Index([column_name]))
 
 
@@ -406,7 +423,8 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
                                   one_hot: bool = False,
                                   cyclic: bool = False,
                                   until: Optional[Union[int, str, pd.Timestamp]] = None,
-                                  add_length: int = 0) -> TimeSeries:
+                                  add_length: int = 0,
+                                  dtype=np.float32) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
     (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.
@@ -433,6 +451,8 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     add_length
         Extend the time_index by add_length, should match or exceed forecasting window.
         Set only one of until and add_length.
+    dtype
+        The desired NumPy dtype (np.float32 or np.float64) for the resulting series
 
     Returns
     -------
@@ -520,4 +540,4 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
 
     values_df.index = time_index
 
-    return TimeSeries.from_dataframe(values_df)
+    return TimeSeries.from_dataframe(values_df).astype(dtype)

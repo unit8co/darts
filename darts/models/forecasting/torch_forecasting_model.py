@@ -245,14 +245,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         # the tensors have shape (chunk_length, nr_dimensions)
-        model = self._create_model(self.train_sample)
+        self.model = self._create_model(self.train_sample)
 
         if np.issubdtype(self.train_sample[0].dtype, np.float32):
             logger.info('Time series values are 32-bits; casting model to float32.')
-            self.model = model.float()
+            self.model = self.model.float()
+
         elif np.issubdtype(self.train_sample[0].dtype, np.float64):
             logger.info('Time series values are 64-bits; casting model to float64.')
-            self.model = model.double()
+            self.model = self.model.double()
 
         self.model = self.model.to(self.device)
 

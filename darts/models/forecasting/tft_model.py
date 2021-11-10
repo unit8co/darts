@@ -691,9 +691,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 max_samples_per_ts=self.max_sample_per_ts)
 
     def _add_cyclic_encoder(self,
-                             target: Sequence[TimeSeries],
-                             future_covariates: Optional[Sequence[TimeSeries]] = None,
-                             n: Optional[int] = None) -> Sequence[TimeSeries]:
+                            target: Sequence[TimeSeries],
+                            future_covariates: Optional[Sequence[TimeSeries]] = None,
+                            n: Optional[int] = None) -> Sequence[TimeSeries]:
         """adds cyclic encoding of time index to future covariates.
         For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
         reference to extract the time index.
@@ -730,7 +730,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                              freq=ts.freq) for ts in target]
 
         encoded_times = [
-            datetime_attribute_timeseries(ts, attribute=self.add_cyclic_encoder, cyclic=True) for ts in encode_ts
+            datetime_attribute_timeseries(ts, 
+                                          attribute=self.add_cyclic_encoder, 
+                                          cyclic=True, 
+                                          dtype=target[0].dtype) 
+            for ts in encode_ts
         ]
 
         if future_covariates is None:
