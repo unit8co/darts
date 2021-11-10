@@ -12,7 +12,7 @@ jobs:
       matrix:
         os: [macos-latest, ubuntu-latest]
         python-version: [3.7, 3.8, 3.9]
-        flavour: ['all']
+        flavour: ['core', 'torch', 'all']
 
     steps:
       - name: "1. Clone repository"
@@ -38,20 +38,13 @@ jobs:
 
       - name: "4. Setup pip"
         run: |
-          ./gradlew installPipLatest
+          ./gradlew setupPip
 
       - name: "5. Install libomp (for LightGBM)"
         run: |
           ./.github/scripts/libomp-${{ runner.os }}.sh
 
-      - name: "6. Attach cache for pip"
-        uses: actions/cache@v1
-        id: cache
-        with:
-          path: ~/.cache/pip
-          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
-
-      - name: "7. Tests"
+      - name: "6. Tests"
         run: |
           ./gradlew "test_${{matrix.flavour}}"
 
