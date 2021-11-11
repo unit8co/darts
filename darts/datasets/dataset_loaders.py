@@ -150,5 +150,5 @@ class DatasetLoaderCSV(DatasetLoader):
             df = self._format_time_column(df)
             return TimeSeries.from_dataframe(df=df, 
                                              time_col=metadata.header_time, 
-                                             freq=metadata.freq).astype(np.float32)
-        return TimeSeries.from_dataframe(df).astype(np.float32)
+                                             freq=metadata.freq)
+        return TimeSeries.from_dataframe(df)
