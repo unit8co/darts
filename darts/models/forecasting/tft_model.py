@@ -47,7 +47,7 @@ class _TFTModule(nn.Module):
                  output_chunk_length: int,
                  variables_meta: Dict[str, Dict[str, List[str]]],
                  hidden_size: Union[int, List[int]] = 16,
-                 lstm_layers: int = 2,
+                 lstm_layers: int = 1,
                  num_attention_heads: int = 4,
                  full_attention: bool = False,
                  hidden_continuous_size: int = 8,
@@ -786,9 +786,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 max_samples_per_ts=self.max_sample_per_ts)
 
     def _add_cyclic_encoder(self,
-                             target: Sequence[TimeSeries],
-                             future_covariates: Optional[Sequence[TimeSeries]] = None,
-                             n: Optional[int] = None) -> Sequence[TimeSeries]:
+                            target: Sequence[TimeSeries],
+                            future_covariates: Optional[Sequence[TimeSeries]] = None,
+                            n: Optional[int] = None) -> Sequence[TimeSeries]:
         """adds cyclic encoding of time index to future covariates.
         For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
         reference to extract the time index.
