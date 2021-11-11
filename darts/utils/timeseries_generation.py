@@ -5,7 +5,7 @@ Utils for time series generation
 
 import math
 
-from typing import Union, Optional
+from typing import Union, Optional, Sequence
 
 import numpy as np
 import pandas as pd
@@ -321,6 +321,65 @@ def random_walk_timeseries(mean: float = 0.,
     values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
 
     return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
+
+
+def autoregressive_timeseries(coef: Sequence[float],
+                              start_values: Optional[Sequence[float]] = None,
+                              start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
+                              end: Optional[Union[pd.Timestamp, int]] = None,
+                              length: Optional[int] = None,
+                              freq: str = 'D',
+                              column_name: Optional[str] = 'autoregressive') -> TimeSeries:
+    """
+    Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients `coef` and
+    starting values `start_values`.
+
+    Parameters
+    ----------
+    coef : list of float
+        The autoregressive coefficients used for calculating the next time step.
+        series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + ... + coef[0] * series[t-len(coef)]
+    start_values : list of float, default: np.ones(len(coef))
+        The starting values used for calculating the first few values for which no lags exist yet.
+        series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + ... + coef[0] * starting_values[0]
+    start : pd.Timestamp or int, default: pd.Timestamp('2000-01-01')
+        The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        either `length` or `end`.
+    end : pd.Timestamp or int, optional
+        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
+        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
+    length : int, optional
+        Optionally, the length of the returned index. Works only with either `start` or `end`.
+    freq : str, default: 'D'
+        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
+        pandas Timestamp. A DateOffset alias is expected; see
+        `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
+    column_name : str, default: 'autoregressive'
+        Optionally, the name of the value column for the returned TimeSeries
+
+    Returns
+    -------
+    TimeSeries
+        An autoregressive TimeSeries created as indicated above.
+    """
+
+    # if no start values specified default to a list of 1s
+    if start_values is None:
+        start_values = np.ones(len(coef))
+    else:
+        raise_if_not(len(start_values) == len(coef), "start_values must have same length as coef.")
+
+    index = _generate_index(start=start, end=end, freq=freq, length=length)
+
+    values = np.empty(len(coef) + len(index))
+    values[:len(coef)] = start_values
+
+    for i in range(len(coef), len(coef) + len(index)):
+        # calculate next time step as dot product of coefs with previous len(coef) time steps
+        values[i] = np.dot(values[i - len(coef):i], coef)
+
+    return TimeSeries.from_times_and_values(index, values[len(coef):], freq=freq, columns=pd.Index([column_name]))
 
 
 def _extend_time_index_until(time_index: Union[pd.DatetimeIndex, pd.RangeIndex],

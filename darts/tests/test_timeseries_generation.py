@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 from typing import Union
 
@@ -9,7 +10,8 @@ from ..utils.timeseries_generation import (
     sine_timeseries,
     gaussian_timeseries,
     random_walk_timeseries,
-    _generate_index
+    _generate_index,
+    autoregressive_timeseries
 )
 from .base_test_class import DartsBaseTestClass
 
@@ -188,3 +190,25 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, end=pd.Timestamp('2000-01-01'))
         with self.assertRaises(ValueError):
             test_routine(start=pd.Timestamp('2000-01-01'), end=10)
+
+    def test_autoregressive_timeseries(self):
+        # testing for correct length
+        def test_length(start, end=None, length=None):
+            autoregressive_ts = autoregressive_timeseries(coef=[-1,1.618], start=start, end=end, length=length)
+            self.assertEqual(len(autoregressive_ts), length_assert)
+
+        # testing for correct calculation
+        def test_calculation(coef):
+            autoregressive_values = autoregressive_timeseries(coef=coef, length=100).values()
+            for idx, val in enumerate(autoregressive_values[len(coef):]):
+                self.assertTrue(val == np.dot(coef, autoregressive_values[idx:idx+len(coef)].ravel()))
+
+        for length_assert in [1, 2, 5, 10, 100]:
+            test_length(start=0, length=length_assert)
+            test_length(start=0, end=length_assert - 1)
+            test_length(start=pd.Timestamp('2000-01-01'), length=length_assert)
+            end_date = _generate_index(start=pd.Timestamp('2000-01-01'), length=length_assert)[-1]
+            test_length(start=pd.Timestamp('2000-01-01'), end=end_date)
+
+        for coef_assert in [[-1], [-1,1.618], [1,2,3], list(range(10))]:
+            test_calculation(coef=coef_assert)
