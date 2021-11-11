@@ -7,38 +7,38 @@ training and using models. It mainly targets deep learning models in Darts.
 The models in Darts will dynamically cast themselves (to 64 or 32-bits)
 to follow the dtype in the `TimeSeries`. Large performance and memory gains
 can often be obtained when everything (data and model) is in float32.
-To achieve this, it is enough to build your `TimeSeries` from arrays (or Dataframe-backing array) having dtype `np.float32`, or simply call `my_series32 = my_series.astype(np.float32)`.
+To achieve this, it is enough to build your `TimeSeries` from arrays (or Dataframe-backing array) having dtype `np.float32`, or simply call `my_series32 = my_series.astype(np.float32)`. Calling `my_series.dtype` gives you the dtype of your `TimeSeries`.
 
 ## Use a GPU
 In many cases using a GPU will provide a drastic speedup compared to CPU.
 It can also incur some overheads (for transferring data to/from the GPU),
-so some testing and tuning is often necessary. If a GPU is present on your
+so some testing and tuning is often necessary. If a CUDA-enabled GPU is present on your
 system, Darts will attempt to use it by default. You can specify
-`torch_device_str` (giving a string such as `cuda` or `cpu`) to control this.
+`torch_device_str` (giving a string such as `"cuda"` or `"cpu"`) to control this.
 
 ## Play with the batch size
-Larger batch sizes tend to speed up the training because it reduces the number
-of backward passes per epoch and has the potential to better parallelize computation. However it also changes the training dynamics (e.g. you might need more epochs, and the convergence dynamics is affected). Furthermore larger batch sizes increase memory consumption.So here too some testing is required.
+A larger batch size tends to speed up the training because it reduces the number
+of backward passes per epoch and has the potential to better parallelize computation. However it also changes the training dynamics (e.g. you might need more epochs, and the convergence dynamics is affected). Furthermore larger batch sizes increase memory consumption. So here too some testing is required.
 
 ## Play with `num_loader_workers`
 All deep learning models in Darts have a parameter `num_loader_workers` which
 configures the `num_workers` parameter in the PyTorch `DataLoaders`. By default
-it is set to 0, which means that the main process will also take care of loading the data. Setting `num_workers > 0` will use additional processes to load the data. This typically incurs some overhead, but in many cases it can also substantially improve performance. The ideal value depends on many factors such as the batch size, whether you are using a GPU, and other things.
+it is set to 0, which means that the main process will also take care of loading the data. Setting `num_workers > 0` will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance. The ideal value depends on many factors such as the batch size, whether you are using a GPU and the number of CPU cores available.
 
 ## Small models first
-Of course one of the main factor affecting performance is the model size
+Of course one of the main factors affecting performance is the model size
 (number of parameters) and the number of operations required by forward/backward passes. Models in Darts can be tuned (e.g. number of layers, attention heads, widths etc), and these hyper-parameters tend to have a large impact on performance. When starting out, it is a good idea to build models of modest size first.
 
 ## Data in Memory and I/O bottlenecks
 It's helpful to load all your `TimeSeries` in memory upfront if you can.
 Darts offers the possibility to train models on any `Sequence[TimeSeries]`,
-which means that for big datasets, you can write your own `Sequence` implementation, and read data lazily from disk. This will typically incur a high I/O cost, though. So when training on multiple series, first try to build a simple `List[TimeSeries]` upfront, and see if it holds in the computer memory.
+which means that for big datasets, you can write your own `Sequence` implementation, and read the time series lazily from disk. This will typically incur a high I/O cost, though. So when training on multiple series, first try to build a simple `List[TimeSeries]` upfront, and see if it holds in the computer memory.
 
 -------------
 
 ## Example Benchmark
-As an example, we show here the time required to train one epoch on the energy dataset (`darts.datasets.EnergyDataset`), which is 28050 timesteps long, and has 28 dimensions.
-We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `input_chunk_length=48` and `output_chunk_length=12` (which amounts to 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter `add_cyclic_encoder='hour'`. The tests are made on a Intel CPU i9-10900K CPU @ 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM, and an SSD drive.
+As an example, we show here the time required to train one epoch on the energy dataset (`darts.datasets.EnergyDataset`), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
+We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `input_chunk_length=48` and `output_chunk_length=12` (which results in 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter `add_cyclic_encoder='hour'`. The tests are made on a Intel CPU i9-10900K CPU @ 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM. All `TimeSeries` are pre-loaded in memory and given to the models as a list.
 
 | Model         | Dataset| dtype | CUDA | Batch size | num workers  | time per epoch |
 | ------------- | ------ | ---- | ---- | ---------- | ------------ | -------------- |
