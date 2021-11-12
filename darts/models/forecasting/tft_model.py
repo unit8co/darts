@@ -84,7 +84,8 @@ class _TFTModule(nn.Module):
             Fraction of neurons afected by Dropout.
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
-            This gives a value to the position of each step from input and output chunk relative to the prediction
+            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
+            It gives a value to the position of each step from input and output chunk relative to the prediction
             point. The values are normalized with `input_chunk_length`.
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
@@ -582,7 +583,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
-            This gives a value to the position of each step from input and output chunk relative to the prediction
+            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
+            It gives a value to the position of each step from input and output chunk relative to the prediction
             point. The values are normalized with `input_chunk_length`.
         loss_fn : nn.Module
             PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
@@ -690,15 +692,15 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         if self.add_relative_index:
             time_steps = self.input_chunk_length + self.output_chunk_length
 
-            expand_covariate = np.arange(time_steps).reshape((time_steps, 1))
+            expand_future_covariate = np.arange(time_steps).reshape((time_steps, 1))
 
             historic_future_covariate = np.concatenate(
-                [ts[:self.input_chunk_length] for ts in [historic_future_covariate, expand_covariate] if
+                [ts[:self.input_chunk_length] for ts in [historic_future_covariate, expand_future_covariate] if
                  ts is not None],
                 axis=1
             )
             future_covariate = np.concatenate(
-                [ts[-self.output_chunk_length:] for ts in [future_covariate, expand_covariate] if
+                [ts[-self.output_chunk_length:] for ts in [future_covariate, expand_future_covariate] if
                  ts is not None],
                 axis=1
             )
