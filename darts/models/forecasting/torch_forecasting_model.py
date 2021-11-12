@@ -596,7 +596,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for deterministic models.
         num_loader_workers
             Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
-            both for the training and validation loaders (if any).
+            for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
 
