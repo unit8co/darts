@@ -52,7 +52,7 @@ class _TFTModule(nn.Module):
                  full_attention: bool = False,
                  hidden_continuous_size: int = 8,
                  dropout: float = 0.1,
-                 add_relative_time_index: bool = False,
+                 add_relative_index: bool = False,
                  likelihood: Optional[Likelihood] = None):
 
         """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -82,7 +82,7 @@ class _TFTModule(nn.Module):
             default for hidden size for processing continuous variables
         dropout : float
             Fraction of neurons afected by Dropout.
-        add_relative_time_index : bool
+        add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
             This gives a value to the position of each step from input and output chunk relative to the prediction
             point. The values are normalized with `input_chunk_length`.
@@ -104,12 +104,12 @@ class _TFTModule(nn.Module):
         self.full_attention = full_attention
         self.dropout = dropout
         self.likelihood = likelihood
-        self.add_relative_time_index = add_relative_time_index
+        self.add_relative_index = add_relative_index
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
         self.attention_mask = None
-        self.relative_time_index = None
+        self.relative_index = None
 
         # general information on variable name endings:
         # _vsn: VariableSelectionNetwork
@@ -276,7 +276,7 @@ class _TFTModule(nn.Module):
         return context[:, None].expand(-1, time_steps, -1)
 
     @staticmethod
-    def get_relative_time_index(encoder_length: int,
+    def get_relative_index(encoder_length: int,
                                 decoder_length: int,
                                 batch_size: int,
                                 dtype: torch.dtype,
@@ -354,8 +354,8 @@ class _TFTModule(nn.Module):
                                                                      decoder_length=decoder_length,
                                                                      batch_size=batch_size,
                                                                      device=past_target.device)
-            if self.add_relative_time_index:
-                self.relative_time_index = self.get_relative_time_index(encoder_length=encoder_length,
+            if self.add_relative_index:
+                self.relative_index = self.get_relative_index(encoder_length=encoder_length,
                                                                         decoder_length=decoder_length,
                                                                         batch_size=batch_size,
                                                                         device=past_target.device,
@@ -363,13 +363,15 @@ class _TFTModule(nn.Module):
 
             self.batch_size_last = batch_size
 
-        if self.add_relative_time_index:
+        if self.add_relative_index:
             historic_future_covariates = torch.cat(
-                [historic_future_covariates, self.relative_time_index[:, :encoder_length, :]],
+                [ts[:, :encoder_length, :] for ts in [historic_future_covariates, self.relative_index] if
+                 ts is not None],
                 dim=dim_variable
             )
             future_covariates = torch.cat(
-                [future_covariates, self.relative_time_index[:, encoder_length:, :]],
+                [ts[:, -decoder_length:, :] for ts in [future_covariates, self.relative_index] if
+                 ts is not None],
                 dim=dim_variable
             )
         # TODO: impelement static covariates
@@ -524,7 +526,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  dropout: float = 0.1,
                  hidden_continuous_size: int = 8,
                  add_cyclic_encoder: Optional[str] = None,
-                 add_relative_time_index: bool = False,
+                 add_relative_index: bool = False,
                  loss_fn: Optional[nn.Module] = None,
                  likelihood: Optional[Likelihood] = None,
                  max_samples_per_ts: Optional[int] = None,
@@ -578,7 +580,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
-        add_relative_time_index : bool
+        add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
             This gives a value to the position of each step from input and output chunk relative to the prediction
             point. The values are normalized with `input_chunk_length`.
@@ -657,7 +659,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
         self.add_cyclic_encoder = add_cyclic_encoder
-        self.add_relative_time_index = add_relative_time_index
+        self.add_relative_index = add_relative_index
         self.loss_fn = loss_fn
         self.likelihood = likelihood
         self.max_sample_per_ts = max_samples_per_ts
@@ -668,11 +670,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         """
         `train_sample` contains the following tensors:
             (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
-            
+
             each tensor has shape (n_timesteps, n_variables)
             - past/historic tensors have shape (input_chunk_length, n_variables)
             - future tensors have shape (output_chunk_length, n_variables)
-        
+
         Darts Interpretation of pytorch-forecasting's TimeSeriesDataSet:
             time_varying_knowns : future_covariates (including historic_future_covariates)
             time_varying_unknowns : past_targets, past_covariates
@@ -685,18 +687,19 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         past_target, past_covariate, historic_future_covariate, future_covariate, future_target = train_sample
 
         # add a covariate placeholder so that relative index will be included
-        if self.add_relative_time_index:
-            prediction_index = self.input_chunk_length
+        if self.add_relative_index:
             time_steps = self.input_chunk_length + self.output_chunk_length
 
-            expand_future_covariate = np.arange(time_steps).reshape((time_steps, 1))
+            expand_covariate = np.arange(time_steps).reshape((time_steps, 1))
 
             historic_future_covariate = np.concatenate(
-                [historic_future_covariate, expand_future_covariate[:prediction_index]],
+                [ts[:self.input_chunk_length] for ts in [historic_future_covariate, expand_covariate] if
+                 ts is not None],
                 axis=1
             )
             future_covariate = np.concatenate(
-                [future_covariate, expand_future_covariate[prediction_index:]],
+                [ts[-self.output_chunk_length:] for ts in [future_covariate, expand_covariate] if
+                 ts is not None],
                 axis=1
             )
 
@@ -761,7 +764,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             full_attention=self.full_attention,
             hidden_continuous_size=self.hidden_continuous_size,
             likelihood=self.likelihood,
-            add_relative_time_index=self.add_relative_time_index
+            add_relative_index=self.add_relative_index
         )
 
     def _build_train_dataset(self,
@@ -769,10 +772,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
 
-        raise_if(future_covariates is None and self.add_cyclic_encoder is None,
+        raise_if(future_covariates is None and self.add_cyclic_encoder is None and not self.add_relative_index,
                  'TFTModel requires future covariates. The model applies multi-head attention queries on future '
-                 'inputs. Consider specifying `add_cyclic_encoder` (read TFT model docs) at model creation which '
-                 'automatically adds cyclic encoding of the time index to `future_covariates`.',
+                 'inputs. Consider specifying `add_cyclic_encoder` or setting `add_relative_index` to `True` '
+                 'at model creation (read TFT model docs for more information). These will automatically generate '
+                 '`future_covariates` from indexes.',
                  logger)
 
         if self.add_cyclic_encoder is not None:

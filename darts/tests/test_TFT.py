@@ -34,18 +34,23 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
                 QuantileRegression(q_non_symmetric)
 
-        def test_no_future_covariates(self):
-            # data comes as multivariate
-            ts = tg.sine_timeseries(length=2, freq='h')
+        def test_future_covariate_handling(self):
+            ts_time_index = tg.sine_timeseries(length=2, freq='h')
+            ts_integer_index = TimeSeries.from_values(values=ts_time_index.values())
 
             # model requires future covariates without cyclic encoding
             model = TFTModel(input_chunk_length=1, output_chunk_length=1)
             with self.assertRaises(ValueError):
-                model.fit(ts, verbose=False)
+                model.fit(ts_time_index, verbose=False)
 
-            # should work with cyclic encoding
+            # should work with cyclic encoding for time index
             model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_cyclic_encoder='hour')
-            model.fit(ts, verbose=False)
+            model.fit(ts_time_index, verbose=False)
+
+            # should work with relative index both with time index and integer index
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_relative_index=True)
+            model.fit(ts_time_index, verbose=False)
+            model.fit(ts_integer_index, verbose=False)
 
         def test_prediction_shape(self):
             """checks whether prediction has same number of variable as input series and
