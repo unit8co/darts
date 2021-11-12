@@ -825,7 +825,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                              freq=ts.freq) for ts in target]
 
         encoded_times = [
-            datetime_attribute_timeseries(ts, attribute=self.add_cyclic_encoder, cyclic=True) for ts in encode_ts
+            datetime_attribute_timeseries(ts, 
+                                          attribute=self.add_cyclic_encoder, 
+                                          cyclic=True, 
+                                          dtype=target[0].dtype) 
+            for ts in encode_ts
         ]
 
         if future_covariates is None:

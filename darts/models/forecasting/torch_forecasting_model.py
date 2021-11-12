@@ -245,14 +245,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         # the tensors have shape (chunk_length, nr_dimensions)
-        model = self._create_model(self.train_sample)
+        self.model = self._create_model(self.train_sample)
 
         if np.issubdtype(self.train_sample[0].dtype, np.float32):
             logger.info('Time series values are 32-bits; casting model to float32.')
-            self.model = model.float()
+            self.model = self.model.float()
+
         elif np.issubdtype(self.train_sample[0].dtype, np.float64):
             logger.info('Time series values are 64-bits; casting model to float64.')
-            self.model = model.double()
+            self.model = self.model.double()
 
         self.model = self.model.to(self.device)
 
@@ -360,7 +361,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             verbose: bool = False,
-            epochs: int = 0) -> None:
+            epochs: int = 0,
+            num_loader_workers: int = 0) -> None:
         """
         The fit method for torch models. It wraps around `fit_from_dataset()`, constructing a default training
         dataset for this model. If you need more control on how the series are sliced for training, consider
@@ -397,6 +399,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            both for the training and validation loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
         """
         super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
 
@@ -426,14 +433,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
-        self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs)
+        self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs, num_loader_workers)
 
     @random_method
     def fit_from_dataset(self,
                          train_dataset: TrainingDataset,
                          val_dataset: Optional[TrainingDataset] = None,
                          verbose: bool = False,
-                         epochs: int = 0) -> None:
+                         epochs: int = 0,
+                         num_loader_workers: int = 0) -> None:
         """
         This method allows for training with a specific `darts.utils.data.TrainingDataset` instance. These datasets
         implement a PyTorch `Dataset`, and specify how the target and covariates are sliced for training. If you
@@ -456,6 +464,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            both for the training and validation loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
         """
 
         self._verify_train_dataset_type(train_dataset)
@@ -493,7 +506,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_loader = DataLoader(train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
-                                  num_workers=0,
+                                  num_workers=num_loader_workers,
                                   pin_memory=True,
                                   drop_last=False,
                                   collate_fn=self._batch_collate_fn)
@@ -502,7 +515,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_loader = None if val_dataset is None else DataLoader(val_dataset,
                                                                  batch_size=self.batch_size,
                                                                  shuffle=False,
-                                                                 num_workers=0,
+                                                                 num_workers=num_loader_workers,
                                                                  pin_memory=True,
                                                                  drop_last=False,
                                                                  collate_fn=self._batch_collate_fn)
@@ -532,6 +545,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 n_jobs: int = 1,
                 roll_size: Optional[int] = None,
                 num_samples: int = 1,
+                num_loader_workers: int = 0
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -580,6 +594,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
 
         Returns
         -------
@@ -623,6 +642,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              n_jobs: int = 1,
                              roll_size: Optional[int] = None,
                              num_samples: int = 1,
+                             num_loader_workers: int = 0
                              ) -> Sequence[TimeSeries]:
 
         """
@@ -653,6 +673,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
 
         Returns
         -------
@@ -679,7 +704,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pred_loader = DataLoader(input_series_dataset,
                                  batch_size=batch_size,
                                  shuffle=False,
-                                 num_workers=0,
+                                 num_workers=num_loader_workers,
                                  pin_memory=True,
                                  drop_last=False,
                                  collate_fn=self._batch_collate_fn)
