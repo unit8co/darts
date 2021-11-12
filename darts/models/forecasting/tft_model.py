@@ -356,10 +356,10 @@ class _TFTModule(nn.Module):
                                                                      device=past_target.device)
             if self.add_relative_index:
                 self.relative_index = self.get_relative_index(encoder_length=encoder_length,
-                                                                        decoder_length=decoder_length,
-                                                                        batch_size=batch_size,
-                                                                        device=past_target.device,
-                                                                        dtype=past_target.dtype)
+                                                              decoder_length=decoder_length,
+                                                              batch_size=batch_size,
+                                                              device=past_target.device,
+                                                              dtype=past_target.dtype)
 
             self.batch_size_last = batch_size
 
