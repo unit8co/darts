@@ -37,7 +37,7 @@ which means that for big datasets, you can write your own `Sequence` implementat
 -------------
 
 ## Example Benchmark
-As an example, we show here the time required to train one epoch on the energy dataset (`darts.datasets.EnergyDataset`), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
+As an example, we show here the time required to train one epoch on the first 80% of the energy dataset (`darts.datasets.EnergyDataset`), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
 We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `input_chunk_length=48` and `output_chunk_length=12` (which results in 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter `add_cyclic_encoder='hour'`. The tests are made on a Intel CPU i9-10900K CPU @ 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM. All `TimeSeries` are pre-loaded in memory and given to the models as a list.
 
 | Model         | Dataset| dtype | CUDA | Batch size | num workers  | time per epoch |
