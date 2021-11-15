@@ -155,6 +155,8 @@ class BacktestingTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_backtest_regression(self):
+        np.random.seed(4)
+
         gaussian_series = gt(mean=2, length=50)
         sine_series = st(length=50)
         features = gaussian_series.stack(sine_series)
