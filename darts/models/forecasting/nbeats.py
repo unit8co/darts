@@ -86,7 +86,7 @@ class _Block(nn.Module):
         """ PyTorch module implementing the basic building block of the N-BEATS architecture.
 
         The blocks produce outputs of size (target_length, nr_likelihood_params); i.e.
-        "one vector per parameter". The parameters a predicted only for forecast outputs.
+        "one vector per parameter". The parameters are predicted only for forecast outputs.
         Backcast outputs are in the original "domain".
 
         Parameters
