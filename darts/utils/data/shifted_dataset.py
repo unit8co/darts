@@ -3,8 +3,11 @@ Shifted Training Dataset
 ------------------------
 """
 
-from typing import Union, Sequence, Optional, Tuple
+from typing import Union, Sequence, Optional, Tuple, Dict
 import numpy as np
+import time
+
+import pandas as pd
 
 from ...timeseries import TimeSeries
 from .training_dataset import (PastCovariatesTrainingDataset,
@@ -442,14 +445,36 @@ class GenericShiftedDataset:
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
 
+        self.ts_idx: int = - 1
+        self.last_data: Optional[Tuple[TimeSeries, TimeSeries]] = None
+        self.index_cache: Dict[int, Union[pd.DatetimeIndex, pd.RangeIndex, pd.Int64Index]] = {}
+        self.elapsed_time: float = 0.
+
     def __len__(self):
         return self.ideal_nr_samples
 
     def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         # determine the index of the time series.
+        st = time.time()
         ts_idx = idx // self.max_samples_per_ts
-        ts_target = self.target_series[ts_idx]
+        # print('----')
+
+        # load data and avoid unnecessary reloading
+        if ts_idx != self.ts_idx:
+            # print(f'RELOAD {ts_idx} - {self.ts_idx}')
+            ts_target = self.target_series[ts_idx]
+            ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
+
+            self.last_data = [ts_target, ts_covariate]
+            self.ts_idx = ts_idx
+        else:
+            ts_target, ts_covariate = self.last_data
+
+        # ts_target = self.target_series[ts_idx]
+        # ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
+
         target_vals = ts_target.values(copy=False)
+        cov_vals = ts_covariate.values(copy=False) if self.covariates else None
 
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = len(target_vals) - self.size_of_both_chunks + 1
@@ -467,9 +492,10 @@ class GenericShiftedDataset:
         if end_of_output_idx == 0:
             # we need this case because "-0" is not supported as an indexing bound
             future_target = target_vals[-self.output_chunk_length:]
+            future_idx = ts_target.time_index[-self.output_chunk_length:]
         else:
             future_target = target_vals[-(self.output_chunk_length + end_of_output_idx):-end_of_output_idx]
-
+            future_idx = ts_target.time_index[-(self.output_chunk_length + end_of_output_idx):-end_of_output_idx]
         # starting from the end
         start_of_input_idx = end_of_output_idx + self.output_chunk_length + self.shift
 
@@ -477,41 +503,21 @@ class GenericShiftedDataset:
         if -(start_of_input_idx - self.input_chunk_length) == 0:
             # handle "-0" indexing bound
             past_target = target_vals[-start_of_input_idx:]
+            past_idx = ts_target.time_index[-start_of_input_idx:]
         else:
             past_target = target_vals[-start_of_input_idx:-(start_of_input_idx - self.input_chunk_length)]
+            past_idx = ts_target.time_index[-start_of_input_idx:-(start_of_input_idx - self.input_chunk_length)]
 
         # optionally also produce the input covariate
         covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx]
-            cov_vals = ts_covariate.values(copy=False)
-
             if self.shift_covariates:
-                # We need to return the future covariates. In this case we use the same indexing as for
-                # "future_target" (shifting the index if the time axes of target and covariate are not the same)
-                end_of_output_idx_cov = _get_matching_index(ts_target, ts_covariate, end_of_output_idx)
-                raise_if_not(end_of_output_idx_cov >= 0,
-                             "The dataset contains some covariates that don't extend far enough into the future. "
-                             "({}-th sample)".format(idx))
-                if end_of_output_idx_cov == 0:
-                    # we need this case because "-0" is not supported as an indexing bound
-                    covariate = cov_vals[-self.output_chunk_length:]
-                else:
-                    covariate = cov_vals[-(self.output_chunk_length + end_of_output_idx_cov):-end_of_output_idx_cov]
-
+                covariate = cov_vals[ts_covariate.time_index.isin(future_idx)]
             else:
-                # We need to return the past covariates. In this case we use the same indexing as for
-                # "past_target" (shifting the index if the time axes of target and covariate are not the same)
-                start_of_input_idx_cov = _get_matching_index(ts_target, ts_covariate, start_of_input_idx)
-                if -(start_of_input_idx_cov - self.input_chunk_length) == 0:
-                    # handle "-0" indexing bound
-                    covariate = cov_vals[-start_of_input_idx_cov:]
-                else:
-                    covariate = cov_vals[-start_of_input_idx_cov:-(start_of_input_idx_cov - self.input_chunk_length)]
-
+                covariate = cov_vals[ts_covariate.time_index.isin(past_idx)]
             raise_if_not(len(covariate) == (self.output_chunk_length if self.shift_covariates else
                                             self.input_chunk_length),
                          "The dataset contains some covariate series whose time axis doesn't allow to "
                          "obtain the input (or output) chunk relative to the target series.")
-
+        self.elapsed_time += time.time() - st
         return past_target, covariate, future_target
