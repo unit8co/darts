@@ -212,12 +212,8 @@ class GaussianLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        # output_size = model_output.shape[-1]
-        # mu = model_output[:, :, :output_size // 2]
-        # sigma = self.softplus(model_output[:, :, output_size // 2:])
-
-        mu = model_output[:,:,:,0]
-        sigma = self.softplus(model_output[:,:,:,1])
+        mu = model_output[:, :, :, 0]
+        sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
 
@@ -314,9 +310,8 @@ class NegativeBinomialLikelihood(Likelihood):
         return distr.sample()
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        mu = self.softplus(model_output[:, :, :output_size // 2])
-        alpha = self.softplus(model_output[:, :, output_size // 2:])
+        mu = self.softplus(model_output[:, :, :, 0])
+        alpha = self.softplus(model_output[:, :, :, 1])
         return mu, alpha
 
     @property
@@ -415,9 +410,8 @@ class BetaLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        alpha = self.softplus(model_output[:, :, :output_size // 2])
-        beta = self.softplus(model_output[:, :, output_size // 2:])
+        alpha = self.softplus(model_output[:, :, :, 0])
+        beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
 
 
@@ -474,9 +468,8 @@ class CauchyLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        xzero = model_output[:, :, :output_size // 2]
-        gamma = self.softplus(model_output[:, :, output_size // 2:])
+        xzero = model_output[:, :, :, 0]
+        gamma = self.softplus(model_output[:, :, :, 1])
         return xzero, gamma
 
 
@@ -662,9 +655,8 @@ class GammaLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        alpha = self.softplus(model_output[:, :, :output_size // 2])
-        beta = self.softplus(model_output[:, :, output_size // 2:])
+        alpha = self.softplus(model_output[:, :, :, 0])
+        beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
 
 
@@ -757,9 +749,8 @@ class GumbelLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        mu = model_output[:, :, :output_size // 2]
-        beta = self.softplus(model_output[:, :, output_size // 2:])
+        mu = model_output[:, :, :, 0]
+        beta = self.softplus(model_output[:, :, :, 1])
         return mu, beta
 
 
@@ -852,9 +843,8 @@ class LaplaceLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        mu = model_output[:, :, :output_size // 2]
-        b = self.softplus(model_output[:, :, output_size // 2:])
+        mu = model_output[:, :, :, 0]
+        b = self.softplus(model_output[:, :, :, 1])
         return mu, b
 
 
@@ -902,9 +892,8 @@ class LogNormalLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        mu = model_output[:, :, :output_size // 2]
-        sigma = self.softplus(model_output[:, :, output_size // 2:])
+        mu = model_output[:, :, :, 0]
+        sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
 
@@ -947,9 +936,8 @@ class WeibullLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        lmbda = self.softplus(model_output[:, :, :output_size // 2])
-        k = self.softplus(model_output[:, :, output_size // 2:])
+        lmbda = self.softplus(model_output[:, :, :, 0])
+        k = self.softplus(model_output[:, :, :, 1])
         return lmbda, k
 
 
