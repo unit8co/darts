@@ -60,7 +60,7 @@ class _RNNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, input_chunk_length, target_size, nr_params)`
+        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
             Tensor containing the outputs of the RNN at every time step of the input sequence.
             During training the whole tensor is used as output, whereas during prediction we only use y[:, -1, :].
             However, this module always returns the whole Tensor.

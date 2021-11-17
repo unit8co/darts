@@ -134,7 +134,7 @@ class _TCNModule(nn.Module):
         target_size
             The dimensionality of the output time series.
         nr_params
-            The number of parameters of the likelihood (or 1)
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
         input_chunk_length
             The length of the input time series.
         target_length
@@ -163,7 +163,6 @@ class _TCNModule(nn.Module):
             Tensor containing the predictions of the next 'output_chunk_length' points in the last
             'output_chunk_length' entries of the tensor. The entries before contain the data points
             leading up to the first prediction, all in chronological order.
-            The output contain one value
         """
 
         super(_TCNModule, self).__init__()

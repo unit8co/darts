@@ -58,7 +58,7 @@ class _BlockRNNModule(nn.Module):
         target_size
             The dimensionality of the output time series.
         nr_params
-            The number of parameters of the likelihood (or 1)
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
         num_layers_out_fc
             A list containing the dimensions of the hidden layers of the fully connected NN.
             This network connects the last hidden layer of the PyTorch RNN module to the output.
@@ -72,8 +72,8 @@ class _BlockRNNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, output_chunk_length, target_size)`
-            Tensor containing the (point) prediction at the last time step of the sequence.
+        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
+            Tensor containing the prediction at the last time step of the sequence.
         """
 
         super(_BlockRNNModule, self).__init__()
