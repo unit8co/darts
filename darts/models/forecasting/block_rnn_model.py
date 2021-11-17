@@ -24,8 +24,9 @@ class _BlockRNNModule(nn.Module):
                  input_size: int,
                  hidden_dim: int,
                  num_layers: int,
-                 output_chunk_length: int = 1,
-                 target_size: int = 1,
+                 output_chunk_length: int,
+                 target_size: int,
+                 nr_params: int,
                  num_layers_out_fc: Optional[List] = None,
                  dropout: float = 0.):
 
@@ -56,6 +57,8 @@ class _BlockRNNModule(nn.Module):
             The number of steps to predict in the future.
         target_size
             The dimensionality of the output time series.
+        nr_params
+            The number of parameters of the likelihood (or 1)
         num_layers_out_fc
             A list containing the dimensions of the hidden layers of the fully connected NN.
             This network connects the last hidden layer of the PyTorch RNN module to the output.
@@ -64,7 +67,7 @@ class _BlockRNNModule(nn.Module):
 
         Inputs
         ------
-        x of shape `(batch_size, input_chunk_length, input_size)`
+        x of shape `(batch_size, input_chunk_length, input_size, nr_params)`
             Tensor containing the features of the input sequence.
 
         Outputs
@@ -237,15 +240,14 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        target_size = (
-            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
-        )
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
             model = _BlockRNNModule(name=self.rnn_type_or_module,
                                     input_size=input_dim,
                                     target_size=target_size,
+                                    nr_params=nr_params,
                                     hidden_dim=self.hidden_size,
                                     num_layers=self.n_rnn_layers,
                                     output_chunk_length=self.output_chunk_length,
