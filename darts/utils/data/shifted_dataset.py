@@ -7,6 +7,8 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 import time
 
+import pandas as pd
+
 from ...timeseries import TimeSeries
 from .training_dataset import (PastCovariatesTrainingDataset,
                                FutureCovariatesTrainingDataset,
@@ -494,8 +496,12 @@ class GenericShiftedDataset:
                 start_time = ts_target.time_index[start]
                 end_time = ts_target.time_index[end - 1]
 
-                cov_start = ts_covariate.get_index_at_point(start_time)
-                cov_end = ts_covariate.get_index_at_point(end_time) + 1
+                raise_if_not(start_time in ts_covariate.time_index and end_time in ts_covariate.time_index,
+                             f'Missing covariates; could not find {"future" if self.shift_covariates else "past"} '
+                             f'covariates in index value range: {start_time} - {end_time}.')
+
+                cov_start = ts_covariate.time_index.get_loc(start_time)
+                cov_end = ts_covariate.time_index.get_loc(end_time) + 1
 
             self.index_cache[ts_idx] = {
                 'end_of_output_idx': end_of_output_idx,
@@ -536,5 +542,6 @@ class GenericShiftedDataset:
                          f"The dataset contains {'future' if self.shift_covariates else 'past'} covariates "
                          f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
                          f"target series.")
+
         self.elapsed_time += time.time() - st
         return past_target, covariate, future_target

@@ -210,11 +210,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                      " training from scratch and remove all the model data".format(self.model_name)
                                      )
 
-        self.train_time = 0
-        self.load_time = 0
-        self.load_per_train = 0
-        self.type_loader = 'new'
-
     def _batch_collate_fn(self, batch: List[Tuple]) -> Tuple:
         """
         Returns a batch Tuple from a list of samples
@@ -816,9 +811,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             verbose=verbose,
         )
 
-        st = time.time()
-        time_loader = 0
-        elapsed_time = 0
         for epoch in iterator:
             total_loss = 0
             for batch_idx, train_batch in enumerate(train_loader):
@@ -832,15 +824,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 self.optimizer.step()
                 total_loss += loss.item()
 
-            time_loader += train_loader.dataset.ds_past.elapsed_time
-            time_loader += train_loader.dataset.ds_dual.ds_past.elapsed_time
-            time_loader += train_loader.dataset.ds_dual.ds_future.elapsed_time
-            elapsed_time += time.time() - st
-
-            self.train_time += elapsed_time - time_loader
-            self.load_time += time_loader
-            self.load_per_train = self.load_time / self.train_time
-            # print(f'model vs loader: {elapsed_time}-{time_loader}')
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
