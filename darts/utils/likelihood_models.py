@@ -212,9 +212,10 @@ class GaussianLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
+        # output_size = model_output.shape[-1]
         # mu = model_output[:, :, :output_size // 2]
         # sigma = self.softplus(model_output[:, :, output_size // 2:])
+
         mu = model_output[:,:,:,0]
         sigma = self.softplus(model_output[:,:,:,1])
         return mu, sigma

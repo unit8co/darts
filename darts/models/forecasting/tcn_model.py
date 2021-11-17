@@ -331,9 +331,6 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        output_dim = (
-            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
-        )
         return _TCNModule(input_size=input_dim,
                           input_chunk_length=self.input_chunk_length,
                           target_size=output_dim,
