@@ -3,11 +3,9 @@ Shifted Training Dataset
 ------------------------
 """
 
-from typing import Union, Sequence, Optional, Tuple, Dict
+from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 import time
-
-import pandas as pd
 
 from ...timeseries import TimeSeries
 from .training_dataset import (PastCovariatesTrainingDataset,
@@ -445,33 +443,23 @@ class GenericShiftedDataset:
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
 
-        self.ts_idx: int = - 1
-        self.last_data: Optional[Tuple[TimeSeries, TimeSeries]] = None
-        self.index_cache: Dict[int, Union[pd.DatetimeIndex, pd.RangeIndex, pd.Int64Index]] = {}
-        self.elapsed_time: float = 0.
+        self.index_cache = {}
+        self.elapsed_time = 0
 
     def __len__(self):
         return self.ideal_nr_samples
 
     def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
-        # determine the index of the time series.
         st = time.time()
+
+        # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
-        # print('----')
-
-        # load data and avoid unnecessary reloading
-        if ts_idx != self.ts_idx:
-            # print(f'RELOAD {ts_idx} - {self.ts_idx}')
-            ts_target = self.target_series[ts_idx]
-            ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-
-            self.last_data = [ts_target, ts_covariate]
-            self.ts_idx = ts_idx
-        else:
-            ts_target, ts_covariate = self.last_data
-
+        ts_target = self.target_series[ts_idx]
         target_vals = ts_target.values(copy=False)
-        cov_vals = ts_covariate.values(copy=False) if self.covariates else None
+
+        # load covariates if required and initialize indexes
+        ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
+        cov_vals, cov_start, cov_end = None, None, None
 
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = len(target_vals) - self.size_of_both_chunks + 1
@@ -483,44 +471,70 @@ class GenericShiftedDataset:
 
         # Determine the index of the end of the output, starting from the end.
         # It is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
-        end_of_output_idx = (idx - (ts_idx * self.max_samples_per_ts)) % n_samples_in_ts
+        end_of_output_idx = len(ts_target) - (idx - (ts_idx * self.max_samples_per_ts)) % n_samples_in_ts
 
-        # select forecast point and target period, using the previously computed indexes
-        if end_of_output_idx == 0:
-            # we need this case because "-0" is not supported as an indexing bound
-            future_start, future_end = -self.output_chunk_length, None
+        start_of_output_idx = end_of_output_idx - self.output_chunk_length
+        start_of_input_idx = start_of_output_idx - self.shift
+
+        if ts_idx not in self.index_cache:
+            # select forecast point and target period, using the previously computed indexes
+            future_start, future_end = start_of_output_idx, start_of_output_idx + self.output_chunk_length
+
+            # select input period; look at the `input_chunk_length` points before the forecast point
+            past_start, past_end = start_of_input_idx, start_of_input_idx + self.input_chunk_length
+
+            if self.covariates is not None:
+                cov_vals = ts_covariate.values(copy=False)
+
+                start = future_start if self.shift_covariates else past_start
+                end = future_end if self.shift_covariates else past_end
+
+                # we need to be careful with getting ranges and indexes:
+                # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
+                start_time = ts_target.time_index[start]
+                end_time = ts_target.time_index[end - 1]
+
+                cov_start = ts_covariate.get_index_at_point(start_time)
+                cov_end = ts_covariate.get_index_at_point(end_time) + 1
+
+            self.index_cache[ts_idx] = {
+                'end_of_output_idx': end_of_output_idx,
+                'past_target': (past_start, past_end),
+                'future_target': (future_start, future_end),
+                'covariate': (cov_start, cov_end),
+            }
         else:
-            future_start, future_end = -(self.output_chunk_length + end_of_output_idx), -end_of_output_idx
+            end_of_output_idx_last = self.index_cache[ts_idx]['end_of_output_idx']
+            past_start, past_end = self.index_cache[ts_idx]['past_target']
+            future_start, future_end = self.index_cache[ts_idx]['future_target']
+            cov_start, cov_end = self.index_cache[ts_idx]['covariate']
+
+            # evaluate how much the new sample needs to be shifted, and shift all indexes
+            idx_shift = end_of_output_idx - end_of_output_idx_last
+            past_start += idx_shift
+            past_end += idx_shift
+            future_start += idx_shift
+            future_end += idx_shift
+            cov_start = cov_start + idx_shift if cov_start is not None else None
+            cov_end = cov_end + idx_shift if cov_end is not None else None
 
         future_target = target_vals[future_start:future_end]
-
-        # starting from the end
-        start_of_input_idx = end_of_output_idx + self.output_chunk_length + self.shift
-
-        # select input period; look at the `input_chunk_length` points before the forecast point
-        if -(start_of_input_idx - self.input_chunk_length) == 0:
-            # handle "-0" indexing bound
-            past_start, past_end = -start_of_input_idx, None
-        else:
-            past_start, past_end = -start_of_input_idx, -(start_of_input_idx - self.input_chunk_length)
-
         past_target = target_vals[past_start:past_end]
+
         # optionally also produce the input covariate
         covariate = None
         if self.covariates is not None:
-            if self.shift_covariates:
-                start_time = ts_target.time_index[future_start]
-                end_time = ts_target.time_index[future_end] if not future_end is None else \
-                    ts_target.end_time() + ts_target.freq
-            else:
-                start_time = ts_target.time_index[past_start]
-                end_time = ts_target.time_index[past_end] if not past_end is None else \
-                    ts_target.end_time() + ts_target.freq
+            raise_if_not(cov_end <= len(ts_covariate),
+                         f"The dataset contains {'future' if self.shift_covariates else 'past'} covariates "
+                         f"that don't extend far enough into the future. ({idx}-th sample)")
 
-            covariate = cov_vals[(ts_covariate.time_index >= start_time) & (ts_covariate.time_index < end_time)]
+            cov_vals = cov_vals if cov_vals is not None else ts_covariate.values(copy=False)
+            covariate = cov_vals[cov_start:cov_end]
+
             raise_if_not(len(covariate) == (self.output_chunk_length if self.shift_covariates else
                                             self.input_chunk_length),
-                         "The dataset contains some covariate series whose time axis doesn't allow to "
-                         "obtain the input (or output) chunk relative to the target series.")
+                         f"The dataset contains {'future' if self.shift_covariates else 'past'} covariates "
+                         f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
+                         f"target series.")
         self.elapsed_time += time.time() - st
         return past_target, covariate, future_target
