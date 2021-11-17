@@ -1024,7 +1024,6 @@ class QuantileRegression(Likelihood):
         dim_q = 3
 
         batch_size, length = model_output.shape[:2]
-        model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
         device = model_output.device
 
         # test if torch model forward produces correct output and store quantiles tensor

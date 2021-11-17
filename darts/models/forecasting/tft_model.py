@@ -62,7 +62,7 @@ class _TFTModule(nn.Module):
         Parameters
         ----------
         output_dim : Tuple[int, int]
-            shape of output given by (n_targets, loss_size).
+            shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).
         input_chunk_length : int
             encoder length; number of past time steps that are fed to the forecasting module at prediction time.
         output_chunk_length : int
@@ -237,8 +237,9 @@ class _TFTModule(nn.Module):
         # output processing -> no dropout at this late stage
         self.pre_output_gan = _GateAddNorm(self.hidden_size, dropout=None)
 
-        self.output_layer = \
-            nn.ModuleList([nn.Linear(self.hidden_size, self.loss_size) for _ in range(self.n_targets)])
+        # self.output_layer = \
+        #     nn.ModuleList([nn.Linear(self.hidden_size, self.loss_size) for _ in range(self.n_targets)])
+        self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
     @property
     def reals(self) -> List[str]:
@@ -335,7 +336,7 @@ class _TFTModule(nn.Module):
         input dimensions: (n_samples, n_time_steps, n_variables)
         """
 
-        dim_samples, dim_time, dim_variable, dim_loss = (0, 1, 2, 3)
+        dim_samples, dim_time, dim_variable, dim_loss = 0, 1, 2, 3
         past_target, past_covariates, historic_future_covariates, future_covariates = x
 
         batch_size = past_target.shape[dim_samples]
@@ -485,11 +486,16 @@ class _TFTModule(nn.Module):
                                   skip=lstm_out if self.full_attention else lstm_out[:, encoder_length:])
 
         # generate output for n_targets and loss_size elements for loss evaluation
-        out = [
-            output_layer(out[:, encoder_length:] if self.full_attention else out) for output_layer in self.output_layer
-        ]
+        
+        # out = [
+        #     output_layer(out[:, encoder_length:] if self.full_attention else out) for output_layer in self.output_layer
+        # ]
+        out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
+
+        out = out.view(batch_size, self.output_chunk_length, self.n_targets, self.loss_size)
 
         # stack output
+        """
         if isinstance(self.likelihood, QuantileRegression):
             # loss_size > 1 for losses such as QuantileLoss
             # returns shape (n_samples, n_timesteps, n_targets, n_losses)
@@ -500,6 +506,7 @@ class _TFTModule(nn.Module):
         else:  # self.loss_size == 1 and self.n_targets == 1
             # returns shape (n_samples, n_timesteps, 1) for univariate
             out = out[0]
+        """
 
         # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
@@ -885,7 +892,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
