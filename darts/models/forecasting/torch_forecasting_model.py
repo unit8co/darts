@@ -840,7 +840,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.train_time += elapsed_time - time_loader
             self.load_time += time_loader
             self.load_per_train = self.load_time / self.train_time
-            print(f'model vs loader: {elapsed_time}-{time_loader}')
+            # print(f'model vs loader: {elapsed_time}-{time_loader}')
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
