@@ -1071,8 +1071,8 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
             return self.likelihood.compute_loss(output, target)
         else:
             # If there's no likelihood, nr_params=1 and we need to squeeze out the 
-            # last dimension for properly computing the loss.
-            return super()._compute_loss(output, target.squeeze(dim=-1))
+            # last dimension of model output, for properly computing the loss.
+            return super()._compute_loss(output.squeeze(dim=-1), target)
 
     @abstractmethod
     def _produce_predict_output(self, x):
