@@ -163,6 +163,7 @@ class _TCNModule(nn.Module):
             Tensor containing the predictions of the next 'output_chunk_length' points in the last
             'output_chunk_length' entries of the tensor. The entries before contain the data points
             leading up to the first prediction, all in chronological order.
+            The output contain one value
         """
 
         super(_TCNModule, self).__init__()
@@ -207,7 +208,6 @@ class _TCNModule(nn.Module):
 
         x = x.transpose(1, 2)
         x = x.view(batch_size, self.input_chunk_length, self.target_size, self.nr_params)
-        # x = x.view(batch_size, self.input_chunk_length, self.target_size)
 
         return x
 
@@ -359,7 +359,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)
 
     @property
     def first_prediction_index(self) -> int:
