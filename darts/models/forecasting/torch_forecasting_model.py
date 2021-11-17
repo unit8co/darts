@@ -17,7 +17,6 @@ This file contains several abstract classes:
       forecasting models.
 """
 
-import time
 import numpy as np
 import os
 import re
@@ -813,6 +812,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         for epoch in iterator:
             total_loss = 0
+
             for batch_idx, train_batch in enumerate(train_loader):
                 self.model.train()
                 train_batch = self._batch_to_device(train_batch)
@@ -823,7 +823,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()
-
             if self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
