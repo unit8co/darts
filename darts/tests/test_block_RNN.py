@@ -21,7 +21,8 @@ if TORCH_AVAILABLE:
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
         module = _BlockRNNModule('RNN', input_size=1, output_chunk_length=1, hidden_dim=25,
-                                 num_layers=1, num_layers_out_fc=[], dropout=0)
+                                 target_size=1, nr_params=1, num_layers=1, 
+                                 num_layers_out_fc=[], dropout=0)
 
         def test_creation(self):
             with self.assertRaises(ValueError):

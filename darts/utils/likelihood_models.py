@@ -264,7 +264,7 @@ class PoissonLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output):
-        lmbda = self.softplus(model_output)
+        lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
 
 
@@ -360,7 +360,7 @@ class BernoulliLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        p = self.sigmoid(model_output)
+        p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
 
 
@@ -515,7 +515,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        lmbda = self.sigmoid(model_output)
+        lmbda = self.sigmoid(model_output.squeeze(dim=-1))
         return lmbda
 
 
@@ -561,7 +561,7 @@ class DirichletLikelihood(Likelihood):
         return 1  # 1 parameter per component
 
     def _params_from_output(self, model_output):
-        alphas = self.softmax(model_output)  # take softmax over components
+        alphas = self.softmax(model_output.squeeze(dim=-1))  # take softmax over components
         return alphas
 
 
@@ -606,7 +606,7 @@ class ExponentialLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        lmbda = self.softplus(model_output)
+        lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
 
 
@@ -701,7 +701,7 @@ class GeometricLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        p = self.sigmoid(model_output)
+        p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
 
 
@@ -795,7 +795,7 @@ class HalfNormalLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        sigma = self.softplus(model_output)
+        sigma = self.softplus(model_output.squeeze(dim=-1))
         return sigma
 
 

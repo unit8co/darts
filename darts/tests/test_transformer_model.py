@@ -26,6 +26,7 @@ if TORCH_AVAILABLE:
                                     input_chunk_length=1,
                                     output_chunk_length=1,
                                     output_size=1,
+                                    nr_params=1,
                                     d_model=512,
                                     nhead=8,
                                     num_encoder_layers=6,
