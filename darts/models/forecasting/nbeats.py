@@ -578,4 +578,4 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)
