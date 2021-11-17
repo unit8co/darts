@@ -32,7 +32,7 @@ class _TrendGenerator(nn.Module):
     def __init__(self,
                  expansion_coefficient_dim,
                  target_length,
-                 nr_likelihood_params):
+                 nr_params):
         super(_TrendGenerator, self).__init__()
 
         # coefs is of size (expansion_coefficient_dim, target_length)
@@ -41,8 +41,8 @@ class _TrendGenerator(nn.Module):
 
         # to make it work seamlessly with likelihood parameters, 
         # we tile it to size (expansion_coefficient_dim, target_length)
-        if nr_likelihood_params is not None:
-            coefs = torch.tile(coefs, dims=(1, 1, nr_likelihood_params))
+        if nr_params is not None:
+            coefs = torch.tile(coefs, dims=(1, 1, nr_params))
         
         self.T = nn.Parameter(coefs, False)
 
@@ -55,7 +55,7 @@ class _SeasonalityGenerator(nn.Module):
 
     def __init__(self,
                  target_length,
-                 nr_likelihood_params):
+                 nr_params):
         super(_SeasonalityGenerator, self).__init__()
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [torch.cos(torch.arange(target_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
@@ -64,8 +64,8 @@ class _SeasonalityGenerator(nn.Module):
 
         # to make it work seamlessly with likelihood parameters, 
         # we tile it to size (expansion_coefficient_dim, target_length)
-        if nr_likelihood_params is not None:
-            coefs = torch.tile(coefs, dims=(1, 1, nr_likelihood_params))
+        if nr_params is not None:
+            coefs = torch.tile(coefs, dims=(1, 1, nr_params))
 
         self.S = nn.Parameter(coefs, False)
 
@@ -78,14 +78,14 @@ class _Block(nn.Module):
     def __init__(self,
                  num_layers: int,
                  layer_width: int,
-                 nr_likelihood_params: int,
+                 nr_params: int,
                  expansion_coefficient_dim: int,
                  input_chunk_length: int,
                  target_length: int,
                  g_type: GTypes):
         """ PyTorch module implementing the basic building block of the N-BEATS architecture.
 
-        The blocks produce outputs of size (target_length, nr_likelihood_params); i.e.
+        The blocks produce outputs of size (target_length, nr_params); i.e.
         "one vector per parameter". The parameters are predicted only for forecast outputs.
         Backcast outputs are in the original "domain".
 
@@ -95,7 +95,7 @@ class _Block(nn.Module):
             The number of fully connected layers preceding the final forking layers.
         layer_width
             The number of neurons that make up each fully connected layer.
-        nr_likelihood_params
+        nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used)
         expansion_coefficient_dim
             The dimensionality of the waveform generator parameters, also known as expansion coefficients.
@@ -126,7 +126,7 @@ class _Block(nn.Module):
         self.num_layers = num_layers
         self.layer_width = layer_width
         self.target_length = target_length
-        self.nr_likelihood_params = nr_likelihood_params
+        self.nr_params = nr_params
         self.g_type = g_type
         self.relu = nn.ReLU()
 
@@ -146,13 +146,13 @@ class _Block(nn.Module):
         # waveform generator functions
         if g_type == _GType.GENERIC:
             self.backcast_g = nn.Linear(expansion_coefficient_dim, input_chunk_length)
-            self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length * nr_likelihood_params)
+            self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length * nr_params)
         elif g_type == _GType.TREND:
             self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_chunk_length, None)
-            self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length, nr_likelihood_params)
+            self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length, nr_params)
         elif g_type == _GType.SEASONALITY:
             self.backcast_g = _SeasonalityGenerator(input_chunk_length, None)
-            self.forecast_g = _SeasonalityGenerator(target_length, nr_likelihood_params)
+            self.forecast_g = _SeasonalityGenerator(target_length, nr_params)
         else:
             raise_log(ValueError("g_type not supported"), logger)
 
@@ -170,7 +170,7 @@ class _Block(nn.Module):
         y_hat = self.forecast_g(theta_forecast)
 
         # Set the distribution parameters as the last dimension
-        y_hat = y_hat.reshape(x.shape[0], self.target_length, self.nr_likelihood_params)
+        y_hat = y_hat.reshape(x.shape[0], self.target_length, self.nr_params)
 
         return x_hat, y_hat
 
@@ -181,7 +181,7 @@ class _Stack(nn.Module):
                  num_blocks: int,
                  num_layers: int,
                  layer_width: int,
-                 nr_likelihood_params: int,
+                 nr_params: int,
                  expansion_coefficient_dim: int,
                  input_chunk_length: int,
                  target_length: int,
@@ -197,7 +197,7 @@ class _Stack(nn.Module):
             The number of fully connected layers preceding the final forking layers in each block.
         layer_width
             The number of neurons that make up each fully connected layer in each block.
-        nr_likelihood_params
+        nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used)
         expansion_coefficient_dim
             The dimensionality of the waveform generator parameters, also known as expansion coefficients.
@@ -227,18 +227,18 @@ class _Stack(nn.Module):
 
         self.input_chunk_length = input_chunk_length
         self.target_length = target_length
-        self.nr_likelihood_params = nr_likelihood_params
+        self.nr_params = nr_params
 
         if g_type == _GType.GENERIC:
             self.blocks_list = [
-                _Block(num_layers, layer_width, nr_likelihood_params, 
+                _Block(num_layers, layer_width, nr_params, 
                        expansion_coefficient_dim, input_chunk_length, 
                        target_length, g_type)
                 for _ in range(num_blocks)
             ]
         else:
             # same block instance is used for weight sharing
-            interpretable_block = _Block(num_layers, layer_width, nr_likelihood_params,
+            interpretable_block = _Block(num_layers, layer_width, nr_params,
                                          expansion_coefficient_dim, input_chunk_length, 
                                          target_length, g_type)
             self.blocks_list = [interpretable_block] * num_blocks
@@ -249,7 +249,7 @@ class _Stack(nn.Module):
         # One forecast vector per parameter in the distribution
         stack_forecast = torch.zeros(x.shape[0], 
                                      self.target_length, 
-                                     self.nr_likelihood_params, 
+                                     self.nr_params, 
                                      device=x.device, 
                                      dtype=x.dtype)
 
@@ -273,7 +273,7 @@ class _NBEATSModule(nn.Module):
     def __init__(self,
                  input_dim: int,
                  output_dim: int,
-                 nr_likelihood_params: int,
+                 nr_params: int,
                  input_chunk_length: int,
                  output_chunk_length: int,
                  generic_architecture: bool,
@@ -290,11 +290,8 @@ class _NBEATSModule(nn.Module):
         ----------
         output_dim
             Number of output components in the target
-        nr_likelihood_params
-            Number of parameters to output per output component. 
-            For instance, this is 2 for a Gaussian, 1 for Exponential (or MSELoss), etc.
-            For a multivariate series with N components, there will be N*K output dimensions and
-            outputs (1, ..., N) correspond to first param, (N+1, ..., 2N) to second param, etc.
+        nr_params
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
         input_chunk_length
             The length of the input sequence fed to the model.
         output_chunk_length
@@ -337,7 +334,7 @@ class _NBEATSModule(nn.Module):
 
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.nr_likelihood_params = nr_likelihood_params
+        self.nr_params = nr_params
         self.input_chunk_length_multi = input_chunk_length * input_dim
         self.output_chunk_length = output_chunk_length
         self.target_length = output_chunk_length * input_dim
@@ -347,7 +344,7 @@ class _NBEATSModule(nn.Module):
                 _Stack(num_blocks,
                        num_layers,
                        layer_widths[i],
-                       nr_likelihood_params,
+                       nr_params,
                        expansion_coefficient_dim,
                        self.input_chunk_length_multi,
                        self.target_length,
@@ -359,7 +356,7 @@ class _NBEATSModule(nn.Module):
             trend_stack = _Stack(num_blocks,
                                  num_layers,
                                  layer_widths[0],
-                                 nr_likelihood_params,
+                                 nr_params,
                                  trend_polynomial_degree + 1,
                                  self.input_chunk_length_multi,
                                  self.target_length,
@@ -367,7 +364,7 @@ class _NBEATSModule(nn.Module):
             seasonality_stack = _Stack(num_blocks,
                                        num_layers,
                                        layer_widths[1],
-                                       nr_likelihood_params,
+                                       nr_params,
                                        -1,
                                        self.input_chunk_length_multi,
                                        self.target_length,
@@ -393,7 +390,7 @@ class _NBEATSModule(nn.Module):
         # One vector of length target_length per parameter in the distribution
         y = torch.zeros(x.shape[0], 
                         self.target_length,
-                        self.nr_likelihood_params,
+                        self.nr_params,
                         device=x.device, 
                         dtype=x.dtype)
 
@@ -407,13 +404,11 @@ class _NBEATSModule(nn.Module):
             # set current stack residual as input for next stack
             x = stack_residual
 
-        # In multivariate case, we get a result x1, y1, z1, x2, y2, z2, ... we want to reshape to original format
-        # In addition, we reshape y in order to have consecutive "blocks" containing the different parameters along the
-        # last dimension. We also get rid of the covariates and keep only the target dimensions.
+        # In multivariate case, we get a result [x1_param1, x1_param2], [y1_param1, y1_param2], [x2..], [y2..], ... 
+        # We want to reshape to original format. We also get rid of the covariates and keep only the target dimensions.
         # The covariates are by construction added as extra time series on the right side. So we need to get rid of this
         # right output (keeping only :self.output_dim).
-        y = torch.cat([y[:,:,i].reshape(y.shape[0], self.output_chunk_length, self.input_dim)[:, :, :self.output_dim]
-                       for i in range(self.nr_likelihood_params)], dim=2)
+        y = y.view(y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params)[:, :, :self.output_dim, :]
 
         return y
 
@@ -555,12 +550,12 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
-        nr_likelihood_params = 1 if self.likelihood is None else self.likelihood.num_parameters
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _NBEATSModule(
             input_dim=input_dim,
             output_dim=output_dim,
-            nr_likelihood_params=nr_likelihood_params,
+            nr_params=nr_params,
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             generic_architecture=self.generic_architecture,
