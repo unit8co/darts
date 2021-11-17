@@ -82,6 +82,7 @@ class _BlockRNNModule(nn.Module):
         self.hidden_dim = hidden_dim
         self.n_layers = num_layers
         self.target_size = target_size
+        self.nr_params = nr_params
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.out_len = output_chunk_length
         self.name = name
@@ -93,7 +94,7 @@ class _BlockRNNModule(nn.Module):
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [output_chunk_length * target_size]:
+        for feature in num_layers_out_fc + [output_chunk_length * target_size * nr_params]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -110,7 +111,7 @@ class _BlockRNNModule(nn.Module):
             hidden = hidden[0]
         predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
-        predictions = predictions.view(batch_size, self.out_len, self.target_size)
+        predictions = predictions.view(batch_size, self.out_len, self.target_size, self.nr_params)
 
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
@@ -148,14 +149,14 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
 
         Parameters
         ----------
-        model
-            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
-            or a PyTorch module with the same specifications as
-            `darts.models.block_rnn_model._BlockRNNModule`.
         input_chunk_length
             The number of time steps that will be fed to the internal forecasting module
         output_chunk_length
             Number of time steps to be output by the internal forecasting module.
+        model
+            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
+            or a PyTorch module with the same specifications as
+            `darts.models.block_rnn_model._BlockRNNModule`.
         hidden_size
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
@@ -246,7 +247,7 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
             hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
             model = _BlockRNNModule(name=self.rnn_type_or_module,
                                     input_size=input_dim,
-                                    target_size=target_size,
+                                    target_size=output_dim,
                                     nr_params=nr_params,
                                     hidden_dim=self.hidden_size,
                                     num_layers=self.n_rnn_layers,
@@ -263,4 +264,4 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)
