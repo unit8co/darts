@@ -1,169 +1,133 @@
 import pandas as pd
+import numpy as np
 
 from abc import ABC, abstractmethod
 from typing import Union, Optional
 
 from darts import TimeSeries
-from darts.utils.timeseries_generation import _generate_index
+from darts.utils.data.covariate_index_generators import (
+    CovariateIndexGenerator,
+    PastCovariateIndexGenerator,
+    FutureCovariateIndexGenerator
+)
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
 
+from darts.utils.timeseries_generation import datetime_attribute_timeseries
+
+SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
 
-SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
-
-
-class CovariateIndexGenerator(ABC):
-    def __init__(self, input_chunk_length, output_chunk_length):
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
-        self.idx_last: Optional[int] = None
-
-    @abstractmethod
-    def generate_train_series(self,
-                              idx: int,
-                              target: TimeSeries,
-                              covariate: Optional[TimeSeries] = None) -> None:
-        """
-        Implement a method that extracts the required covariate index for training.
-
-        Parameters
-        ----------
-        idx
-            the TimeSeries index from Darts' dateset loaders (see GenericShiftedDataset.ts_idx).
-        target
-            the target TimeSeries used during training
-        covariate
-            optionally, the future covariates used for training
-        """
-        pass
-
-    @abstractmethod
-    def generate_inference_series(self,
-                                  idx: int,
-                                  n: int,
-                                  target: TimeSeries,
-                                  covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
-        """
-        Implement a method that extracts the required covariate index for prediction.
-
-        Parameters
-        ----------
-        idx
-            the TimeSeries index from Darts' dateset loaders (see GenericShiftedDataset.ts_idx).
-        n
-            the forecast horizon
-        target
-            the target TimeSeries used during training or passed to prediction as `series`
-        covariate
-            optionally, the future covariates used for prediction
-        """
-        pass
-
-
-class PastCovariateIndexGenerator(CovariateIndexGenerator):
-    """generates index for past covariate"""
-    def generate_train_series(self,
-                              idx: int,
-                              target: TimeSeries,
-                              covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
-        # TODO -> we can probably summarize this in CovariateIndexGenerator as I think it's the same for
-        #  future & past covs
-        super(PastCovariateIndexGenerator, self).generate_train_series(idx, target, covariate)
-        return covariate.time_index if covariate is not None else target.time_index
-
-    def generate_inference_series(self,
-                                  idx: int,
-                                  n: int,
-                                  target: TimeSeries,
-                                  covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
-        """For prediction (`n` is given) with past covariates we have to distinguish between two cases:
-        1)  if past covariates are given, we can use them as reference
-        2)  if past covariates are missing, we need to generate a time index that starts `input_chunk_length`
-            before the end of `target` and ends `max(0, n - output_chunk_length)` after the end of `target`
-        """
-
-        super(PastCovariateIndexGenerator, self).generate_inference_series(idx, n, target, covariate)
-        if covariate is not None:
-            return covariate.time_index
-        else:
-            return _generate_index(start=target.end_time() - target.freq * (self.input_chunk_length - 1),
-                                   length=self.input_chunk_length + max(0, n - self.output_chunk_length),
-                                   freq=target.freq)
-
-
-class FutureCovariateIndexGenerator(CovariateIndexGenerator):
-    """generates index for future covariate."""
-    def generate_train_series(self,
-                              idx: int,
-                              target: TimeSeries,
-                              covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
-        """For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
-        reference to extract the time index.
-        """
-
-        # TODO -> we can probably summarize this in CovariateIndexGenerator as I think it's the same for
-        #  future & past covs
-        super(FutureCovariateIndexGenerator, self).generate_train_series(idx, target, covariate)
-
-        return covariate.time_index if covariate is not None else target.time_index
-
-    def generate_inference_series(self,
-                                  idx: int,
-                                  n: int,
-                                  target: TimeSeries,
-                                  covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
-        """For prediction (`n` is given) with future covariates we have to distinguish between two cases:
-        1)  if future covariates are given, we can use them as reference
-        2)  if future covariates are missing, we need to generate a time index that starts `input_chunk_length`
-            before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
-        """
-        super(FutureCovariateIndexGenerator, self).generate_inference_series(idx, n, target, covariate)
-
-        if covariate is not None:
-            return covariate.time_index
-        else:
-            return _generate_index(start=target.end_time() - target.freq * (self.input_chunk_length - 1),
-                                   length=self.input_chunk_length + max(n, self.output_chunk_length),
-                                   freq=target.freq)
-
-
 class Encoder(ABC):
-    """encode an index"""
+    """Abstract class for index encoders encode an index"""
+
+    @abstractmethod
     def __init__(self, index_generator: CovariateIndexGenerator):
         self.index_generator = index_generator
         self.train_encoded = None
         self.inference_encoded = None
+        self.dtype = None
 
     @abstractmethod
-    def encode_train(self, target: TimeSeries, covariate: TimeSeries) -> None:
-        self.index_generator.generate_train_series()
+    def encode(self, index: SupportedIndexes) -> TimeSeries:
+        pass
+
+    def encode_train(self,
+                     idx: int,
+                     target: TimeSeries,
+                     covariate: Optional[TimeSeries] = None) -> TimeSeries:
+        self.dtype = target.dtype
+        index = self.index_generator.generate_train_series(idx, target, covariate)
+        encoded = self.encode(index)
+        return self.merge_covariate(encoded, covariate=covariate)
+
+    def encode_inference(self,
+                         idx: int,
+                         n: int,
+                         target: TimeSeries,
+                         covariate: Optional[TimeSeries] = None) -> TimeSeries:
+
+        self.dtype = target.dtype
+        index = self.index_generator.generate_inference_series(idx, n, target, covariate)
+        encoded = self.encode(index)
+        return self.merge_covariate(encoded, covariate=covariate)
+
+    def encode_absolute(self,
+                        idx: int,
+                        target: TimeSeries,
+                        covariate: Optional[TimeSeries] = None) -> TimeSeries:
+        return self.encode_train(idx, target, covariate)
+
+    @staticmethod
+    def merge_covariate(encoded: TimeSeries, covariate: Optional[TimeSeries] = None) -> TimeSeries:
+        return covariate.stack(encoded) if covariate is not None else encoded
 
 
-    @abstractmethod
-    def encode_inference(self, target: TimeSeries, covariate: TimeSeries) -> None:
-        self.index_generator.generate_inference_series()
+class TestEncoder(Encoder):
+    def __init__(self, index_generator):
+        super(TestEncoder, self).__init__(index_generator)
+
+    def encode(self, index: SupportedIndexes) -> TimeSeries:
+        super(TestEncoder, self).encode(index)
+        return TimeSeries.from_times_and_values(index, np.arange(len(index)))
 
 
 class CyclicTemporalEncoder(Encoder):
     """adds cyclic time index encoding"""
 
-    def encode_train(self, target: TimeSeries, covariate: TimeSeries) -> None:
-        super(CyclicTemporalEncoder, self).encode_train()
+    def __init__(self, index_generator, attribute):
+        super(CyclicTemporalEncoder, self).__init__(index_generator)
+        self.attribute = attribute
 
-    def encode_inference(self, target: TimeSeries, covariate: TimeSeries) -> None:
-        super(CyclicTemporalEncoder, self).encode_inference()
+    def encode(self, index: SupportedIndexes) -> TimeSeries:
+        super(CyclicTemporalEncoder, self).encode(index)
+        return datetime_attribute_timeseries(index, attribute=self.attribute, cyclic=True, dtype=self.dtype)
 
+
+class CyclicPastEncoder(CyclicTemporalEncoder):
+    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+        super(CyclicPastEncoder, self).__init__(
+            index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            attribute=attribute
+        )
+
+
+class CyclicFutureEncoder(CyclicTemporalEncoder):
+    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+        super(CyclicFutureEncoder, self).__init__(
+            index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            attribute=attribute
+        )
 
 
 class PositionalEncoder(Encoder):
     """adds absolute positional index encoding"""
-    def encode_train(self, index: TimeSeries) -> TimeSeries:
-        super(PositionalEncoder, self).encode_train()
-        return index
+
+    def __init__(self, index_generator, *args):
+        super(PositionalEncoder, self).__init__(index_generator)
+        raise_if(True, 'NotImplementedError')
+
+    def encode(self, index: SupportedIndexes) -> TimeSeries:
+        super(PositionalEncoder, self).encode(index)
+        raise_if(True, 'NotImplementedError')
+        return TimeSeries.from_times_and_values(index, np.arange(len(index)))
 
 
-class CyclicTemporalPastEncoder(CyclicTemporalEncoder):
-    pass
+class PositionalPastEncoder(PositionalEncoder):
+    def __init__(self, input_chunk_length, output_chunk_length, *args):
+        super(PositionalPastEncoder, self).__init__(
+            index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            *args
+        )
+
+
+class PositionalFutureEncoder(PositionalEncoder):
+    def __init__(self, input_chunk_length, output_chunk_length, *args):
+        super(PositionalFutureEncoder, self).__init__(
+            index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            *args
+        )
+
+
 
 
