@@ -89,7 +89,7 @@ class _Block(nn.Module):
             The number of parameters of the likelihood (or 1 if no likelihood is used)
         expansion_coefficient_dim
             The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-            Only used if `generic_architecture` is set to `True`.
+            Used in the generic architecture and the trend module of the interpretable architecture, where it determines the degree of the polynomial basis.
         input_chunk_length
             The length of the input sequence fed to the model.
         target_length
