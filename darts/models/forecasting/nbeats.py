@@ -53,6 +53,8 @@ class _SeasonalityGenerator(nn.Module):
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [torch.cos(torch.arange(target_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
         sin_vectors = [torch.sin(torch.arange(target_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
+        
+        # basis is of size (2 * int(target_length / 2 - 1) + 1, target_length)
         basis = torch.stack([torch.ones(target_length)] + cos_vectors + sin_vectors, dim=1).T
 
         self.basis = nn.Parameter(basis, requires_grad=False)
