@@ -31,46 +31,34 @@ class _TrendGenerator(nn.Module):
 
     def __init__(self,
                  expansion_coefficient_dim,
-                 target_length,
-                 nr_params):
+                 target_length):
         super(_TrendGenerator, self).__init__()
 
-        # coefs is of size (expansion_coefficient_dim, target_length)
-        coefs = torch.stack([(torch.arange(target_length) / target_length)**i for i in range(expansion_coefficient_dim)], 
+        # basis is of size (expansion_coefficient_dim, target_length)
+        basis = torch.stack([(torch.arange(target_length) / target_length)**i for i in range(expansion_coefficient_dim)], 
                             dim=1).T
 
-        # to make it work seamlessly with likelihood parameters, 
-        # we tile it to size (expansion_coefficient_dim, target_length)
-        if nr_params is not None:
-            coefs = torch.tile(coefs, dims=(1, 1, nr_params))
-        
-        self.T = nn.Parameter(coefs, False)
+        self.basis = nn.Parameter(basis, requires_grad=False)
 
 
     def forward(self, x):
-        return torch.matmul(x, self.T)
+        return torch.matmul(x, self.basis)
 
 
 class _SeasonalityGenerator(nn.Module):
 
     def __init__(self,
-                 target_length,
-                 nr_params):
+                 target_length):
         super(_SeasonalityGenerator, self).__init__()
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [torch.cos(torch.arange(target_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
         sin_vectors = [torch.sin(torch.arange(target_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        coefs = torch.stack([torch.ones(target_length)] + cos_vectors + sin_vectors, dim=1).T
+        basis = torch.stack([torch.ones(target_length)] + cos_vectors + sin_vectors, dim=1).T
 
-        # to make it work seamlessly with likelihood parameters, 
-        # we tile it to size (expansion_coefficient_dim, target_length)
-        if nr_params is not None:
-            coefs = torch.tile(coefs, dims=(1, 1, nr_params))
-
-        self.S = nn.Parameter(coefs, False)
+        self.basis = nn.Parameter(basis, requires_grad=False)
 
     def forward(self, x):
-        return torch.matmul(x, self.S)
+        return torch.matmul(x, self.basis)
 
 
 class _Block(nn.Module):
@@ -135,28 +123,31 @@ class _Block(nn.Module):
         self.linear_layer_stack_list += [nn.Linear(layer_width, layer_width) for _ in range(num_layers - 1)]
         self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
 
-        # fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters)
+        # Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).
+        # The coefficients are emitted for each parameter of the likelihood.
         if g_type == _GType.SEASONALITY:
             self.backcast_linear_layer = nn.Linear(layer_width, 2 * int(input_chunk_length / 2 - 1) + 1)
-            self.forecast_linear_layer = nn.Linear(layer_width, 2 * int(target_length / 2 - 1) + 1)
+            self.forecast_linear_layer = nn.Linear(layer_width, nr_params * (2 * int(target_length / 2 - 1) + 1))
         else:
             self.backcast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
-            self.forecast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
+            self.forecast_linear_layer = nn.Linear(layer_width, nr_params * expansion_coefficient_dim)
 
         # waveform generator functions
         if g_type == _GType.GENERIC:
             self.backcast_g = nn.Linear(expansion_coefficient_dim, input_chunk_length)
-            self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length * nr_params)
+            self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length)
         elif g_type == _GType.TREND:
-            self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_chunk_length, None)
-            self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length, nr_params)
+            self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_chunk_length)
+            self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length)
         elif g_type == _GType.SEASONALITY:
-            self.backcast_g = _SeasonalityGenerator(input_chunk_length, None)
-            self.forecast_g = _SeasonalityGenerator(target_length, nr_params)
+            self.backcast_g = _SeasonalityGenerator(input_chunk_length)
+            self.forecast_g = _SeasonalityGenerator(target_length)
         else:
             raise_log(ValueError("g_type not supported"), logger)
 
     def forward(self, x):
+        batch_size = x.shape[0]
+
         # fully connected layer stack
         for layer in self.linear_layer_stack_list:
             x = self.relu(layer(x))
@@ -165,7 +156,10 @@ class _Block(nn.Module):
         theta_backcast = self.backcast_linear_layer(x)
         theta_forecast = self.forecast_linear_layer(x)
 
-        # waveform generator applications
+        # set the expansion coefs in last dimension for the forecasts
+        theta_forecast = theta_forecast.view(batch_size, self.nr_params, -1)
+
+        # waveform generator applications (project the expansion coefs onto basis vectors)
         x_hat = self.backcast_g(theta_backcast)
         y_hat = self.forecast_g(theta_forecast)
 
