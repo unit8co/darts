@@ -67,6 +67,7 @@ class _TransformerModule(nn.Module):
                  output_chunk_length: int,
                  input_size: int,
                  output_size: int,
+                 nr_params: int,
                  d_model: int,
                  nhead: int,
                  num_encoder_layers: int,
@@ -91,6 +92,8 @@ class _TransformerModule(nn.Module):
             Number of time steps to be output by the forecasting module.
         output_size
             The dimensionality of the output time series.
+        nr_params
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
         d_model
             the number of expected features in the transformer encoder/decoder inputs.
         nhead
@@ -117,14 +120,15 @@ class _TransformerModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, output_chunk_length, output_size)`
-            Tensor containing the (point) prediction at the last time step of the sequence.
+        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
+            Tensor containing the prediction at the last time step of the sequence.
         """
 
         super(_TransformerModule, self).__init__()
 
         self.input_size = input_size
         self.target_size = output_size
+        self.nr_params = nr_params
         self.target_length = output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
@@ -141,7 +145,7 @@ class _TransformerModule(nn.Module):
                                           custom_encoder=custom_encoder,
                                           custom_decoder=custom_decoder)
 
-        self.decoder = nn.Linear(d_model, output_chunk_length * output_size)
+        self.decoder = nn.Linear(d_model, output_chunk_length * self.target_size * self.nr_params)
 
     def _create_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
@@ -172,9 +176,9 @@ class _TransformerModule(nn.Module):
 
         # Here we change the data format
         # from (1, batch_size, output_chunk_length * output_size)
-        # to (batch_size, output_chunk_length, output_size)
+        # to (batch_size, output_chunk_length, output_size, nr_params)
         predictions = out[0, :, :]
-        predictions = predictions.view(-1, self.target_length, self.target_size)
+        predictions = predictions.view(-1, self.target_length, self.target_size, self.nr_params)
 
         return predictions
 
@@ -324,14 +328,13 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        target_size = (
-            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
-        )
         return _TransformerModule(input_chunk_length=self.input_chunk_length,
                                   output_chunk_length=self.output_chunk_length,
                                   input_size=input_dim,
-                                  output_size=target_size,
+                                  output_size=output_dim,
+                                  nr_params=nr_params,
                                   d_model=self.d_model,
                                   nhead=self.nhead,
                                   num_encoder_layers=self.num_encoder_layers,
@@ -348,5 +351,5 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)
 
