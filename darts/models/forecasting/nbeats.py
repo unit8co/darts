@@ -320,7 +320,7 @@ class _NBEATSModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, output_chunk_length)`
+        y of shape `(batch_size, output_chunk_length, target_size/output_dim, nr_params)`
             Tensor containing the output of the NBEATS module.
 
         """

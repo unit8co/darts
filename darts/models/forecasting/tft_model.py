@@ -237,8 +237,6 @@ class _TFTModule(nn.Module):
         # output processing -> no dropout at this late stage
         self.pre_output_gan = _GateAddNorm(self.hidden_size, dropout=None)
 
-        # self.output_layer = \
-        #     nn.ModuleList([nn.Linear(self.hidden_size, self.loss_size) for _ in range(self.n_targets)])
         self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
     @property
@@ -487,26 +485,8 @@ class _TFTModule(nn.Module):
 
         # generate output for n_targets and loss_size elements for loss evaluation
         
-        # out = [
-        #     output_layer(out[:, encoder_length:] if self.full_attention else out) for output_layer in self.output_layer
-        # ]
         out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
-
         out = out.view(batch_size, self.output_chunk_length, self.n_targets, self.loss_size)
-
-        # stack output
-        """
-        if isinstance(self.likelihood, QuantileRegression):
-            # loss_size > 1 for losses such as QuantileLoss
-            # returns shape (n_samples, n_timesteps, n_targets, n_losses)
-            out = torch.cat([out_i.unsqueeze(dim_variable) for out_i in out], dim=dim_variable)
-        elif self.likelihood is not None or self.loss_size == 1 and self.n_targets > 1:
-            # returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)
-            out = torch.cat(out, dim=dim_variable)
-        else:  # self.loss_size == 1 and self.n_targets == 1
-            # returns shape (n_samples, n_timesteps, 1) for univariate
-            out = out[0]
-        """
 
         # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
