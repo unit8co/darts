@@ -1139,7 +1139,7 @@ class TimeSeries:
         else:
             raise_if(self._has_datetime_index, 'start and end times have been provided as integers to slice(), but '
                                                'the series is indexed with a DatetimeIndex.', logger)
-            idx = pd.RangeIndex(start_ts, end_ts, step=1)
+            idx = pd.RangeIndex(start_ts, end_ts+1, step=1)
         return self[idx]
 
     def slice_n_points_after(self, start_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
