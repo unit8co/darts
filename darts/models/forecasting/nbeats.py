@@ -197,7 +197,6 @@ class _Stack(nn.Module):
             The number of parameters of the likelihood (or 1 if no likelihood is used)
         expansion_coefficient_dim
             The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-            Only used if `generic_architecture` is set to `True`.
         input_chunk_length
             The length of the input sequence fed to the model.
         target_length
