@@ -1050,6 +1050,10 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
         and it is passed to the superclass via calling super().__init__. If the likelihood is not
         provided, the model is considered as deterministic.
 
+        All TorchParametricProbabilisticForecastingModel's must produce outputs of shape
+        (batch_size, n_timesteps, n_components, n_params). I.e., there's an extra dimension
+        to store the distribution's parameters.
+
         Parameters
         ----------
         likelihood
@@ -1062,17 +1066,18 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
         return self.likelihood is not None
 
     def _compute_loss(self, output, target):
+        # output is of shape (batch_size, n_timesteps, n_components, n_params)
         if self.likelihood:
             return self.likelihood.compute_loss(output, target)
         else:
-            return super()._compute_loss(output, target)
+            # If there's no likelihood, nr_params=1 and we need to squeeze out the 
+            # last dimension of model output, for properly computing the loss.
+            return super()._compute_loss(output.squeeze(dim=-1), target)
 
     @abstractmethod
-    def _produce_predict_output(self, input):
+    def _produce_predict_output(self, x):
         """
         This method has to be implemented by all children.
-
-        TODO: rename parameter as it shadows input name
         """
         pass
 
