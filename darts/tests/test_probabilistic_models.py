@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
-    from ..models import RNNModel, TCNModel, TransformerModel, BlockRNNModel
+    from ..models import RNNModel, TCNModel, TransformerModel, BlockRNNModel, NBEATSModel
     from darts.utils.likelihood_models import (GaussianLikelihood,
                                                PoissonLikelihood,
                                                NegativeBinomialLikelihood,
@@ -49,7 +49,9 @@ if TORCH_AVAILABLE:
         (BlockRNNModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 20, 'random_state': 0,
                          'likelihood': GaussianLikelihood()}, 1),
         (TransformerModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 20, 'random_state': 0,
-                            'likelihood': GaussianLikelihood()}, 1)
+                            'likelihood': GaussianLikelihood()}, 1),
+        (NBEATSModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 5, 'random_state': 0,
+                       'likelihood': GaussianLikelihood()}, 0.3)
     ]
 
 
