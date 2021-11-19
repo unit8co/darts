@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from typing import Union, Optional, Dict, List
 
 from darts import TimeSeries
 from darts.utils.data.covariate_index_generators import (
@@ -10,6 +10,10 @@ from darts.utils.data.covariate_index_generators import (
     PastCovariateIndexGenerator,
     FutureCovariateIndexGenerator
 )
+
+from darts.utils.data.training_dataset import TrainingDataset
+from darts.utils.data.inference_dataset import InferenceDataset
+
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
 
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
@@ -17,6 +21,7 @@ from darts.utils.timeseries_generation import datetime_attribute_timeseries
 SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
+ENCODER_KWARGS = ['add_cyclic_encoder', 'add_positional_encoder']
 
 class Encoder(ABC):
     """Abstract class for index encoders encode an index"""
@@ -129,5 +134,41 @@ class PositionalFutureEncoder(PositionalEncoder):
         )
 
 
+class EncoderSequence:
+    def __init__(self, model_kwargs: Dict, train_dataset: TrainingDataset):
+        _, self.kwargs = model_kwargs
+        self.shift = train_dataset.ds_past.shift
+        self.input_chunk_length = train_dataset.ds_past.input_chunk_length
+        self.output_chunk_length = train_dataset.ds_past.output_chunk_length
+        self.encoders: List[Encoder] = list()
+        self.verify_call()
 
+    @property
+    def add_encoders(self):
+        """returns dict from relevant encoder kwargs at model creation"""
+        return {
+            encoder: self.kwargs.get(encoder, None) for encoder in ENCODER_KWARGS if self.kwargs.get(encoder, None)
+        }
 
+    def verify_call(self):
+        """encoder kwargs must be of form `encoder_kwarg=Dict[str, Union[str, Sequence[str]]]`.
+        For example with cyclic encoders
+
+        Parameters
+        ----------
+        kwargs
+        add_cyclic_encoder={
+            'past': ['month', 'dayofmonth', ...],  # or simply 'month'
+            'future': [],  # or simply omitting `future`
+        }
+        """
+        if not self.add_encoders:
+            return
+
+        for kwarg in self.add_encoders:
+            pass
+
+    def map_encoders(self):
+        mapper = {
+            'add_cyclic_encoder': {'past': []}
+        }

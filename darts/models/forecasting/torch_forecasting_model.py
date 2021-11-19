@@ -53,6 +53,11 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  DualCovariatesSequentialDataset,
                                                  MixedCovariatesSequentialDataset,
                                                  SplitCovariatesSequentialDataset)
+from darts.utils.data.encoders import (EncoderSequence,
+                                       CyclicPastEncoder,
+                                       CyclicFutureEncoder,
+                                       PositionalPastEncoder,
+                                       PositionalFutureEncoder)
 
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
@@ -435,6 +440,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs, num_loader_workers)
 
+    def initialize_encoders(self, train_dataset: TrainingDataset):
+        encoders = EncoderSequence(self._model_params, train_dataset)
+        return encoders
+
     @random_method
     def fit_from_dataset(self,
                          train_dataset: TrainingDataset,
@@ -472,6 +481,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         self._verify_train_dataset_type(train_dataset)
+        # encoders = self.initialize_encoders(train_dataset)
+
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)

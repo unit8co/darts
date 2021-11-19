@@ -32,6 +32,7 @@ from darts.models.forecasting.tft_submodels import (
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
 )
+from darts.utils.data.encoders import CyclicFutureEncoder
 from torch.nn import LSTM as _LSTM
 
 logger = get_logger(__name__)
@@ -526,6 +527,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  full_attention: bool = False,
                  dropout: float = 0.1,
                  hidden_continuous_size: int = 8,
+                 # add_cyclic_encoder: Optional[Dict] = None,
                  add_cyclic_encoder: Optional[str] = None,
                  add_relative_index: bool = False,
                  loss_fn: Optional[nn.Module] = None,
@@ -782,7 +784,13 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  logger)
 
         if self.add_cyclic_encoder is not None:
-            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=None)
+            encoder = CyclicFutureEncoder(input_chunk_length=self.input_chunk_length,
+                                          output_chunk_length=self.output_chunk_length,
+                                          attribute=self.add_cyclic_encoder)
+            future_covariates = encoder.encode_train(idx=0,
+                                                     target=target[0],
+                                                     covariate=future_covariates[0])
+            # future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=None)
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
@@ -856,7 +864,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
 
         if self.add_cyclic_encoder is not None:
-            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=n)
+            encoder = CyclicFutureEncoder(input_chunk_length=self.input_chunk_length,
+                                          output_chunk_length=self.output_chunk_length,
+                                          attribute=self.add_cyclic_encoder)
+            future_covariates = encoder.encode_inference(idx=0,
+                                                         n=n,
+                                                         target=target[0],
+                                                         covariate=future_covariates[0])
+            # future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=n)
 
         return MixedCovariatesInferenceDataset(target_series=target,
                                                past_covariates=past_covariates,
