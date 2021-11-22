@@ -8,7 +8,7 @@ import numpy as np
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
-from .training_dataset import PastCovariatesTrainingDataset
+from .training_dataset import PastCovariatesTrainingDataset, CovariateType
 
 logger = get_logger(__name__)
 
@@ -107,7 +107,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        cov_type = None if self.covariates is None else self.PAST_COV_TYPE
+        cov_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
 
         shift = self.lookback * self.output_chunk_length
         input_chunk_length = shift

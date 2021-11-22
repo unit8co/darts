@@ -12,7 +12,8 @@ from .training_dataset import (TrainingDataset,
                                FutureCovariatesTrainingDataset,
                                DualCovariatesTrainingDataset,
                                MixedCovariatesTrainingDataset,
-                               SplitCovariatesTrainingDataset)
+                               SplitCovariatesTrainingDataset,
+                               CovariateType)
 
 from ..utils import raise_if_not
 
@@ -466,9 +467,9 @@ class GenericShiftedDataset(TrainingDataset):
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        cov_type = None
+        cov_type = CovariateType.NONE
         if self.covariates is not None:
-            cov_type = self.FUTURE_COV_TYPE if self.shift_covariates else self.PAST_COV_TYPE
+            cov_type = CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
 
         # get all indices for the current sample
         past_start, past_end, future_start, future_end, cov_start, cov_end = \
@@ -489,14 +490,14 @@ class GenericShiftedDataset(TrainingDataset):
         covariate = None
         if self.covariates is not None:
             raise_if_not(cov_end <= len(ts_covariate),
-                         f"The dataset contains {cov_type} covariates "
+                         f"The dataset contains {cov_type.value} covariates "
                          f"that don't extend far enough into the future. ({idx}-th sample)")
 
             covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
 
             raise_if_not(len(covariate) == (self.output_chunk_length if self.shift_covariates else
                                             self.input_chunk_length),
-                         f"The dataset contains {cov_type} covariates "
+                         f"The dataset contains {cov_type.value} covariates "
                          f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
                          f"target series.")
 

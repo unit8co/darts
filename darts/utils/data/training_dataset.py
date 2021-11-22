@@ -5,6 +5,7 @@ Training Datasets Base Classes
 
 from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
+from enum import Enum
 import numpy as np
 
 from typing import Tuple, Optional
@@ -15,10 +16,13 @@ logger = get_logger(__name__)
 SampleIndexType = Tuple[int, int, int, int, int, int]
 
 
-class TrainingDataset(ABC, Dataset):
-    PAST_COV_TYPE = 'past'
-    FUTURE_COV_TYPE = 'future'
+class CovariateType(Enum):
+    PAST = 'past'
+    FUTURE = 'future'
+    NONE = None
 
+
+class TrainingDataset(ABC, Dataset):
     def __init__(self):
         """
         Super-class for all training datasets for torch models in Darts. These include
@@ -78,7 +82,7 @@ class TrainingDataset(ABC, Dataset):
                         output_chunk_length: int,
                         end_of_output_idx: int,
                         ts_covariate: TimeSeries,
-                        cov_type: Optional[bool] = None) -> SampleIndexType:
+                        cov_type: CovariateType = CovariateType.NONE) -> SampleIndexType:
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
         sample `i` from `ts_idx`.
 
@@ -106,7 +110,8 @@ class TrainingDataset(ABC, Dataset):
         ts_covariate
             current covariate TimeSeries.
         cov_type:
-            the type of covariate to extract: One of (None, 'past', 'future').
+            the type of covariate to extract. Instance of `CovariateType`: One of (`CovariateType.PAST`,
+            `CovariateType.FUTURE`, `CovariateType.NONE`).
         """
 
         cov_start, cov_end = None, None
@@ -122,9 +127,9 @@ class TrainingDataset(ABC, Dataset):
             # select input period; look at the `input_chunk_length` points after start of input
             past_start, past_end = start_of_input_idx, start_of_input_idx + input_chunk_length
 
-            if cov_type is not None:
-                start = future_start if cov_type == self.FUTURE_COV_TYPE else past_start
-                end = future_end if cov_type == self.FUTURE_COV_TYPE else past_end
+            if cov_type is not CovariateType.NONE:
+                start = future_start if cov_type == CovariateType.FUTURE else past_start
+                end = future_end if cov_type == CovariateType.FUTURE else past_end
 
                 # we need to be careful with getting ranges and indexes:
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
@@ -134,7 +139,7 @@ class TrainingDataset(ABC, Dataset):
                 end_time = ts_target.time_index[end - 1]
 
                 raise_if_not(start_time in ts_covariate.time_index and end_time in ts_covariate.time_index,
-                             f'Missing covariates; could not find {cov_type} covariates in index value range: '
+                             f'Missing covariates; could not find {cov_type.value} covariates in index value range: '
                              f'{start_time} - {end_time}.')
 
                 # extract the index position (index) from index value
