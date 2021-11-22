@@ -11,11 +11,9 @@ from darts.utils.data.covariate_index_generators import (
     FutureCovariateIndexGenerator
 )
 
-from darts.utils.data.training_dataset import TrainingDataset
-from darts.utils.data.inference_dataset import InferenceDataset
+from darts.logging import raise_if_not, get_logger, raise_if
 
-from darts.logging import raise_if_not, get_logger, raise_log, raise_if
-
+from darts import concatenate
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
 
 SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
@@ -30,6 +28,8 @@ VALID_TIME_PARAMS = [
     # 'absolute'
 ]
 VALID_DTYPES = (str, Sequence)
+
+DIMS = ('time', 'component', 'sample')
 
 
 class Encoder(ABC):
@@ -49,22 +49,31 @@ class Encoder(ABC):
     def encode_train(self,
                      idx: int,
                      target: TimeSeries,
-                     covariate: Optional[TimeSeries] = None) -> TimeSeries:
+                     covariate: Optional[TimeSeries] = None,
+                     merge_covariate: bool = True) -> TimeSeries:
         self.dtype = target.dtype
         index = self.index_generator.generate_train_series(idx, target, covariate)
         encoded = self.encode(index)
-        return self.merge_covariate(encoded, covariate=covariate)
+        if merge_covariate:
+            return self.merge_covariate(encoded, covariate=covariate)
+        else:
+            return encoded
 
     def encode_inference(self,
                          idx: int,
                          n: int,
                          target: TimeSeries,
-                         covariate: Optional[TimeSeries] = None) -> TimeSeries:
+                         covariate: Optional[TimeSeries] = None,
+                         merge_covariate: bool = True) -> TimeSeries:
 
         self.dtype = target.dtype
         index = self.index_generator.generate_inference_series(idx, n, target, covariate)
         encoded = self.encode(index)
-        return self.merge_covariate(encoded, covariate=covariate)
+
+        if merge_covariate:
+            return self.merge_covariate(encoded, covariate=covariate)
+        else:
+            return encoded
 
     def encode_absolute(self,
                         idx: int,
@@ -148,13 +157,18 @@ class EncoderSequence:
                  model_kwargs: Dict,
                  input_chunk_length: int,
                  output_chunk_length: int,
-                 shift: int) -> None:
+                 shift: int,
+                 takes_past_covariates: bool = False,
+                 takes_future_covariates: bool = False) -> None:
+
         self.params = model_kwargs
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.shift = shift
         self._past_encoders: List[Encoder] = []
         self._future_encoders: List[Encoder] = []
+        self.takes_past_covariates = takes_past_covariates
+        self.takes_future_covariates = takes_future_covariates
         self.setup_encoders(self.params)
 
     def setup_encoders(self, params):
@@ -233,7 +247,51 @@ class EncoderSequence:
                     else:
                         future_encoders.append((encoder_id, attr))
 
+        past_encoders = past_encoders if self.takes_past_covariates else []
+        future_encoders = future_encoders if self.takes_future_covariates else []
         return past_encoders, future_encoders
+
+    def encode_train(self,
+                     idx: int,
+                     target: Sequence[TimeSeries],
+                     past_covariate: Optional[Sequence[TimeSeries]] = None,
+                     future_covariate: Optional[Sequence[TimeSeries]] = None) -> Tuple[Sequence[TimeSeries],
+                                                                                       Sequence[TimeSeries]]:
+        if not self.past_encoders and not self.future_encoders:
+            return past_covariate, future_covariate
+
+        target = [target] if isinstance(target, TimeSeries) else target
+
+        if self.past_encoders:
+            past_covariate = self.encode_train_single(encoders=self.past_encoders,
+                                                      target=target,
+                                                      covariate=past_covariate)
+
+        if self.future_encoders:
+            future_covariate = self.encode_train_single(encoders=self.future_encoders,
+                                                        target=target,
+                                                        covariate=future_covariate)
+
+        return past_covariate, future_covariate
+
+    def encode_train_single(self,
+                            encoders: Sequence[Encoder],
+                            target: Sequence[TimeSeries],
+                            covariate: Optional[Union[TimeSeries, Sequence[TimeSeries]]]) -> Sequence[TimeSeries]:
+        encoded = []
+        if covariate is None:
+            covariate = [None] * len(target)
+        else:
+            covariate = [covariate] if isinstance(covariate, TimeSeries) else covariate
+
+        for ts, pc in zip(target, covariate):
+            encoded_single = concatenate([enc.encode_train(idx=0,
+                                                           target=ts,
+                                                           covariate=pc,
+                                                           merge_covariate=False) for enc in encoders], axis=DIMS[1])
+            encoded.append(Encoder.merge_covariate(encoded=encoded_single, covariate=pc))
+        return encoded
+
 
     @property
     def future_encoders(self) -> List[Encoder]:

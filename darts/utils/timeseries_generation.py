@@ -561,8 +561,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     if one_hot or cyclic:
         raise_if_not(
             attribute in num_values_dict,
-            "Given datetime attribute not supported"
-            " with one-hot or cyclical encoding."
+            f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
             f"Supported datetime attribute: {list(num_values_dict.keys())}",
             logger,
         )

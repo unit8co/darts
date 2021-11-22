@@ -791,13 +791,22 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         #                                              target=target[0],
         #                                              covariate=future_covariates[0])
         #     future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=None)
+        encoders = self.initialize_encoders(model_params=self._model_params,
+                                            input_chunk_length=self.input_chunk_length,
+                                            output_chunk_length=self.output_chunk_length,
+                                            shift=self.input_chunk_length,
+                                            takes_past_covariates=True,
+                                            takes_future_covariates=True)
+
+        past_covariates, future_covariates = encoders.encode_train(0, target, past_covariates, future_covariates)
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
-                                                max_samples_per_ts=self.max_sample_per_ts)
+                                                max_samples_per_ts=self.max_sample_per_ts,
+                                                encoders=encoders)
 
     def _add_cyclic_encoder(self,
                             target: Sequence[TimeSeries],

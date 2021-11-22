@@ -13,6 +13,7 @@ from .training_dataset import (PastCovariatesTrainingDataset,
                                MixedCovariatesTrainingDataset,
                                SplitCovariatesTrainingDataset)
 from .shifted_dataset import GenericShiftedDataset
+from .encoders import EncoderSequence
 
 
 class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
@@ -221,7 +222,8 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
                  future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 encoders: Optional[EncoderSequence] = None):
         """
         A time series dataset containing tuples of
         (past_target, past_covariates, historic_future_covariates, future_covariates, future_target).
@@ -262,6 +264,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         """
 
         super().__init__()
+
 
         # This dataset is in charge of serving past covariates
         self.ds_past = GenericShiftedDataset(target_series=target_series,

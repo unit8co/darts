@@ -299,7 +299,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             encoders: Optional[EncoderSequence] = None) -> TrainingDataset:
         """
         Each model must specify the default training dataset to use.
         """
@@ -432,7 +433,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                      (val_future_covariates[0].width if val_future_covariates is not None else None))
             raise_if_not(match, 'The dimensions of the series in the training set '
                                 'and the validation set do not match.')
-
         train_dataset = self._build_train_dataset(series, past_covariates, future_covariates)
         val_dataset = self._build_train_dataset(val_series, val_past_covariates, future_covariates) if val_series is not None else None
 
@@ -440,12 +440,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs, num_loader_workers)
 
-    def initialize_encoders(self, train_dataset: TrainingDataset):
-        encoders = EncoderSequence(model_kwargs=self._model_params[1],
-                                   input_chunk_length=train_dataset.ds_past.input_chunk_length,
-                                   output_chunk_length=train_dataset.ds_past.output_chunk_length,
-                                   shift=train_dataset.ds_past.shift)
-        return encoders
+    @staticmethod
+    def initialize_encoders(model_params: Tuple[Tuple, Dict],
+                            input_chunk_length: int,
+                            output_chunk_length: int,
+                            shift: int,
+                            takes_past_covariates: bool = False,
+                            takes_future_covariates: bool = False) -> EncoderSequence:
+
+        return EncoderSequence(model_kwargs=model_params[1],
+                               input_chunk_length=input_chunk_length,
+                               output_chunk_length=output_chunk_length,
+                               shift=shift,
+                               takes_past_covariates=takes_past_covariates,
+                               takes_future_covariates=takes_future_covariates)
 
     @random_method
     def fit_from_dataset(self,
@@ -484,7 +492,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         self._verify_train_dataset_type(train_dataset)
-        encoders = self.initialize_encoders(train_dataset)
 
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
