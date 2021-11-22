@@ -444,7 +444,7 @@ class GenericShiftedDataset:
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
 
-        self.index_memory = {}
+        self._index_memory = {}
 
     def __len__(self):
         return self.ideal_nr_samples
@@ -472,10 +472,10 @@ class GenericShiftedDataset:
 
         # get all indices for the current sample
         past_start, past_end, future_start, future_end, cov_start, cov_end = \
-            self.memory_indexer(ts_idx,
-                                end_of_output_idx,
-                                ts_target,
-                                ts_covariate)
+            self._memory_indexer(ts_idx,
+                                 end_of_output_idx,
+                                 ts_target,
+                                 ts_covariate)
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
@@ -498,11 +498,11 @@ class GenericShiftedDataset:
 
         return past_target, covariate, future_target
 
-    def memory_indexer(self,
-                       ts_idx: int,
-                       end_of_output_idx: int,
-                       ts_target: TimeSeries,
-                       ts_covariate: TimeSeries) -> SampleIndexType:
+    def _memory_indexer(self,
+                        ts_idx: int,
+                        end_of_output_idx: int,
+                        ts_target: TimeSeries,
+                        ts_covariate: TimeSeries) -> SampleIndexType:
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
         sample `i` from `ts_idx`.
 
@@ -530,7 +530,7 @@ class GenericShiftedDataset:
         cov_start, cov_end = None, None
 
         # the first time ts_idx is observed
-        if ts_idx not in self.index_memory:
+        if ts_idx not in self._index_memory:
             start_of_output_idx = end_of_output_idx - self.output_chunk_length
             start_of_input_idx = start_of_output_idx - self.shift
 
@@ -560,7 +560,7 @@ class GenericShiftedDataset:
                 cov_end = ts_covariate.time_index.get_loc(end_time) + 1
 
             # store position of initial sample and all relevant sub set indices
-            self.index_memory[ts_idx] = {
+            self._index_memory[ts_idx] = {
                 'end_of_output_idx': end_of_output_idx,
                 'past_target': (past_start, past_end),
                 'future_target': (future_start, future_end),
@@ -568,10 +568,10 @@ class GenericShiftedDataset:
             }
         else:
             # load position of initial sample and its sub set indices
-            end_of_output_idx_last = self.index_memory[ts_idx]['end_of_output_idx']
-            past_start, past_end = self.index_memory[ts_idx]['past_target']
-            future_start, future_end = self.index_memory[ts_idx]['future_target']
-            cov_start, cov_end = self.index_memory[ts_idx]['covariate']
+            end_of_output_idx_last = self._index_memory[ts_idx]['end_of_output_idx']
+            past_start, past_end = self._index_memory[ts_idx]['past_target']
+            future_start, future_end = self._index_memory[ts_idx]['future_target']
+            cov_start, cov_end = self._index_memory[ts_idx]['covariate']
 
             # evaluate how much the new sample needs to be shifted, and shift all indexes
             idx_shift = end_of_output_idx - end_of_output_idx_last
