@@ -40,10 +40,7 @@ class InputProcessor(ABCMeta):
         for i in range(len(kwargs['future_covariates'])):
             print(kwargs['future_covariates'][i].n_components)
             for encoder in encoders:
-                kwargs['future_covariates'][i] = encoder.encode_train(
-                    idx=0,
-                    target=kwargs['target_series'][i],
-                    covariate=kwargs['future_covariates'][i]
-                )
+                kwargs['future_covariates'][i] = encoder.encode_train(idx=0, target=kwargs['target_series'][i],
+                                                                      covariate=kwargs['future_covariates'][i])
             print(kwargs['future_covariates'][i].n_components)
         return args, kwargs

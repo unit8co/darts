@@ -791,14 +791,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         #                                              target=target[0],
         #                                              covariate=future_covariates[0])
         #     future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=None)
-        encoders = self.initialize_encoders(model_params=self._model_params,
-                                            input_chunk_length=self.input_chunk_length,
-                                            output_chunk_length=self.output_chunk_length,
-                                            shift=self.input_chunk_length,
-                                            takes_past_covariates=True,
-                                            takes_future_covariates=True)
+        self.encoders = self.initialize_encoders(model_params=self._model_params,
+                                                 input_chunk_length=self.input_chunk_length,
+                                                 output_chunk_length=self.output_chunk_length,
+                                                 shift=self.input_chunk_length,
+                                                 takes_past_covariates=True,
+                                                 takes_future_covariates=True)
 
-        past_covariates, future_covariates = encoders.encode_train(0, target, past_covariates, future_covariates)
+        past_covariates, future_covariates = self.encoders.encode_train(target, past_covariates, future_covariates)
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
@@ -849,7 +849,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
 
         encoded_times = [
             datetime_attribute_timeseries(ts, 
-                                          attribute=self.add_cyclic_encoder, 
+                                          attribute=self.add_cyclic_encoder,
                                           cyclic=True, 
                                           dtype=target[0].dtype) 
             for ts in encode_ts

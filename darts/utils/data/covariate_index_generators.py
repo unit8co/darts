@@ -17,11 +17,9 @@ class CovariateIndexGenerator(ABC):
     def __init__(self, input_chunk_length, output_chunk_length):
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
-        self.idx_last: Optional[int] = None
 
     @abstractmethod
     def generate_train_series(self,
-                              idx: int,
                               target: TimeSeries,
                               covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
         """
@@ -29,8 +27,6 @@ class CovariateIndexGenerator(ABC):
 
         Parameters
         ----------
-        idx
-            the TimeSeries index from Darts' dateset loaders (see GenericShiftedDataset.ts_idx).
         target
             the target TimeSeries used during training
         covariate
@@ -40,7 +36,6 @@ class CovariateIndexGenerator(ABC):
 
     @abstractmethod
     def generate_inference_series(self,
-                                  idx: int,
                                   n: int,
                                   target: TimeSeries,
                                   covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
@@ -49,8 +44,6 @@ class CovariateIndexGenerator(ABC):
 
         Parameters
         ----------
-        idx
-            the TimeSeries index from Darts' dateset loaders (see GenericShiftedDataset.ts_idx).
         n
             the forecast horizon
         target
@@ -64,16 +57,14 @@ class CovariateIndexGenerator(ABC):
 class PastCovariateIndexGenerator(CovariateIndexGenerator):
     """generates index for past covariate"""
     def generate_train_series(self,
-                              idx: int,
                               target: TimeSeries,
                               covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
         # TODO -> we can probably summarize this in CovariateIndexGenerator as I think it's the same for
         #  future & past covs
-        super(PastCovariateIndexGenerator, self).generate_train_series(idx, target, covariate)
+        super(PastCovariateIndexGenerator, self).generate_train_series(target, covariate)
         return covariate.time_index if covariate is not None else target.time_index
 
     def generate_inference_series(self,
-                                  idx: int,
                                   n: int,
                                   target: TimeSeries,
                                   covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
@@ -83,7 +74,7 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
             before the end of `target` and ends `max(0, n - output_chunk_length)` after the end of `target`
         """
 
-        super(PastCovariateIndexGenerator, self).generate_inference_series(idx, n, target, covariate)
+        super(PastCovariateIndexGenerator, self).generate_inference_series(n, target, covariate)
         if covariate is not None:
             return covariate.time_index
         else:
@@ -95,7 +86,6 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
 class FutureCovariateIndexGenerator(CovariateIndexGenerator):
     """generates index for future covariate."""
     def generate_train_series(self,
-                              idx: int,
                               target: TimeSeries,
                               covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
         """For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
@@ -104,12 +94,11 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
 
         # TODO -> we can probably summarize this in CovariateIndexGenerator as I think it's the same for
         #  future & past covs
-        super(FutureCovariateIndexGenerator, self).generate_train_series(idx, target, covariate)
+        super(FutureCovariateIndexGenerator, self).generate_train_series(target, covariate)
 
         return covariate.time_index if covariate is not None else target.time_index
 
     def generate_inference_series(self,
-                                  idx: int,
                                   n: int,
                                   target: TimeSeries,
                                   covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
@@ -118,7 +107,7 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
         2)  if future covariates are missing, we need to generate a time index that starts `input_chunk_length`
             before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
         """
-        super(FutureCovariateIndexGenerator, self).generate_inference_series(idx, n, target, covariate)
+        super(FutureCovariateIndexGenerator, self).generate_inference_series(n, target, covariate)
 
         if covariate is not None:
             return covariate.time_index
