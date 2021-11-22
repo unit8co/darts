@@ -128,8 +128,8 @@ class TrainingDataset(ABC, Dataset):
             past_start, past_end = start_of_input_idx, start_of_input_idx + input_chunk_length
 
             if cov_type is not CovariateType.NONE:
-                start = future_start if cov_type == CovariateType.FUTURE else past_start
-                end = future_end if cov_type == CovariateType.FUTURE else past_end
+                start = future_start if cov_type is CovariateType.FUTURE else past_start
+                end = future_end if cov_type is CovariateType.FUTURE else past_end
 
                 # we need to be careful with getting ranges and indexes:
                 # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
