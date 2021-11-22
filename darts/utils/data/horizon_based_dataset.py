@@ -82,8 +82,6 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
 
-        self._index_memory = {}
-
     def __len__(self):
         """
         Returns the total number of possible (input, target) splits.

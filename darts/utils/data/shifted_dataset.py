@@ -443,8 +443,6 @@ class GenericShiftedDataset(TrainingDataset):
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
 
-        self._index_memory = {}
-
     def __len__(self):
         return self.ideal_nr_samples
 
