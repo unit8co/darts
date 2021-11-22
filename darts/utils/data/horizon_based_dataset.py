@@ -3,8 +3,10 @@ Horizon-Based Training Dataset
 ------------------------------
 """
 
+import os
 from typing import Union, Optional, Sequence, Tuple
 import numpy as np
+import pandas as pd
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
@@ -12,6 +14,9 @@ from .training_dataset import PastCovariatesTrainingDataset
 from .utils import _get_matching_index
 
 logger = get_logger(__name__)
+
+
+SampleIndexType = Tuple[int, int, int, int, int, int]
 
 
 class HorizonBasedDataset(PastCovariatesTrainingDataset):
@@ -83,6 +88,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
 
+        self._index_memory = {}
+
     def __len__(self):
         """
         Returns the total number of possible (input, target) splits.
@@ -93,42 +100,149 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         # determine the index of the time series.
         ts_idx = idx // self.nr_samples_per_ts
 
+        # select the time series
+        ts_target = self.target_series[ts_idx]
+        target_vals = ts_target.values(copy=False)
+
+        raise_if_not(len(target_vals) >= (self.lookback + self.max_lh) * self.output_chunk_length,
+                     'The dataset contains some input/target series that are shorter than '
+                     '`(lookback + max_lh) * H` ({}-th)'.format(ts_idx))
+
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.nr_samples_per_ts)
         lh_idx = idx - (ts_idx * self.nr_samples_per_ts)
 
+        cov_type = None if self.covariates is None else self.PAST_COV_TYPE
+
         # The time series index of our forecasting point (indexed from the end of the series):
-        forecast_point_idx = self.min_lh * self.output_chunk_length + lh_idx
+        end_of_output_idx = len(ts_target) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)
 
-        # Sanity check... TODO: remove
-        assert lh_idx < (self.max_lh - self.min_lh) * self.output_chunk_length, 'bug in the Lh indexing'
+        # optionally, load covariates
+        ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
 
-        # select the time series
-        ts_target = self.target_series[ts_idx]
-        target_values = ts_target.values(copy=False)
+        shift = self.lookback * self.output_chunk_length
+        input_chunk_length = shift
 
-        raise_if_not(len(target_values) >= (self.lookback + self.max_lh) * self.output_chunk_length,
-                     'The dataset contains some input/target series that are shorter than '
-                     '`(lookback + max_lh) * H` ({}-th)'.format(ts_idx))
+        # get all indices for the current sample
+        past_start, past_end, future_start, future_end, cov_start, cov_end = \
+            self._memory_indexer(ts_idx,
+                                 end_of_output_idx,
+                                 shift,
+                                 input_chunk_length,
+                                 ts_target,
+                                 ts_covariate,
+                                 cov_type)
 
-        # select forecast point and target period, using the previously computed indexes
-        if forecast_point_idx == self.output_chunk_length:
-            # we need this case because "-0" is not supported as an indexing bound
-            output_series = target_values[-forecast_point_idx:]
-        else:
-            output_series = target_values[-forecast_point_idx:-forecast_point_idx+self.output_chunk_length]
+        # extract sample target
+        future_target = target_vals[future_start:future_end]
+        past_target = target_vals[past_start:past_end]
 
-        # select input period; look at the `lookback * output_series` points before the forecast point
-        input_series = target_values[-(forecast_point_idx + self.lookback * self.output_chunk_length):-forecast_point_idx]
-
-        # optionally also produce the input covariate
-        input_covariate = None
+        # optionally, extract sample covariates
+        covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx]
-            covariate_values = ts_covariate.values(copy=False)
+            raise_if_not(cov_end <= len(ts_covariate),
+                         f"The dataset contains 'past' covariates that don't extend far enough into the future. "
+                         f"({idx}-th sample)")
 
-            cov_fcast_idx = _get_matching_index(ts_target, ts_covariate, forecast_point_idx)
+            covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
 
-            input_covariate = covariate_values[-(cov_fcast_idx + self.lookback * self.output_chunk_length):-cov_fcast_idx]
+            raise_if_not(len(covariate) == len(past_target),
+                         f"The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
+                         f"input (or output) chunk relative to the target series.")
 
-        return input_series, input_covariate, output_series
+        return past_target, covariate, future_target
+
+    def _memory_indexer(self,
+                        ts_idx: int,
+                        end_of_output_idx: int,
+                        shift: int,
+                        input_chunk_length: int,
+                        ts_target: TimeSeries,
+                        ts_covariate: TimeSeries,
+                        cov_type: Optional[bool] = None) -> SampleIndexType:
+        """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
+        sample `i` from `ts_idx`.
+
+        Works for all TimeSeries index types: pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex
+
+        When `ts_idx` is observed for the first time, it stores the position of the sample `0` within the full target
+        time series and the (start, end) indices of all sub sets.
+        This allows to calculate the sub set indices for all future samples `i` by simply adjusting for the difference
+        between the positions of sample `i` and sample `0`.
+
+        Parameters
+        ----------
+        ts_idx
+            index of the current target TimeSeries.
+        ts_target
+            current target TimeSeries.
+        shift
+            The number of time steps by which to shift the output chunks relative to the input chunks.
+        input_chunk_length
+            The length of the emitted past series.
+        end_of_output_idx
+            the index where the output chunk of the current sample ends in `ts_target`.
+        ts_target
+            current target TimeSeries.
+        ts_covariate
+            current covariate TimeSeries.
+        cov_type:
+            the type of covariate to extract: One of (None, 'past', 'future').
+        """
+
+        cov_start, cov_end = None, None
+
+        # the first time ts_idx is observed
+        if ts_idx not in self._index_memory:
+            start_of_output_idx = end_of_output_idx - self.output_chunk_length
+            start_of_input_idx = start_of_output_idx - shift
+
+            # select forecast point and target period, using the previously computed indexes
+            future_start, future_end = start_of_output_idx, start_of_output_idx + self.output_chunk_length
+
+            # select input period; look at the `input_chunk_length` points after start of input
+            past_start, past_end = start_of_input_idx, start_of_input_idx + input_chunk_length
+
+            if self.covariates is not None:
+                start = future_start if cov_type == self.FUTURE_COV_TYPE else past_start
+                end = future_end if cov_type == self.FUTURE_COV_TYPE else past_end
+
+                # we need to be careful with getting ranges and indexes:
+                # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
+
+                # extract actual index value (respects datetime- and integer-based indexes; also from non-zero start)
+                start_time = ts_target.time_index[start]
+                end_time = ts_target.time_index[end - 1]
+
+                raise_if_not(start_time in ts_covariate.time_index and end_time in ts_covariate.time_index,
+                             f'Missing covariates; could not find {cov_type} covariates in index value range: '
+                             f'{start_time} - {end_time}.')
+
+                # extract the index position (index) from index value
+                cov_start = ts_covariate.time_index.get_loc(start_time)
+                cov_end = ts_covariate.time_index.get_loc(end_time) + 1
+
+            # store position of initial sample and all relevant sub set indices
+            self._index_memory[ts_idx] = {
+                'end_of_output_idx': end_of_output_idx,
+                'past_target': (past_start, past_end),
+                'future_target': (future_start, future_end),
+                'covariate': (cov_start, cov_end),
+            }
+        else:
+            # load position of initial sample and its sub set indices
+            end_of_output_idx_last = self._index_memory[ts_idx]['end_of_output_idx']
+            past_start, past_end = self._index_memory[ts_idx]['past_target']
+            future_start, future_end = self._index_memory[ts_idx]['future_target']
+            cov_start, cov_end = self._index_memory[ts_idx]['covariate']
+
+            # evaluate how much the new sample needs to be shifted, and shift all indexes
+            idx_shift = end_of_output_idx - end_of_output_idx_last
+            past_start += idx_shift
+            past_end += idx_shift
+            future_start += idx_shift
+            future_end += idx_shift
+            cov_start = cov_start + idx_shift if cov_start is not None else None
+            cov_end = cov_end + idx_shift if cov_end is not None else None
+
+        return past_start, past_end, future_start, future_end, cov_start, cov_end

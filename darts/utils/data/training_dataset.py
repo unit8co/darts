@@ -14,6 +14,9 @@ logger = get_logger(__name__)
 
 
 class TrainingDataset(ABC, Dataset):
+    PAST_COV_TYPE = 'past'
+    FUTURE_COV_TYPE = 'future'
+
     def __init__(self):
         """
         Super-class for all training datasets for torch models in Darts. These include
