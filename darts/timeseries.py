@@ -1278,7 +1278,7 @@ class TimeSeries:
         if isinstance(start_ts, pd.Timestamp):
             raise_if_not(self._has_datetime_index, 'Timestamps have been provided to slice(), but the series is '
                                                    'indexed using an integer-based Int64Index.', logger)
-            idx = pd.DatetimeIndex(filter(lambda t: start_ts <= t <= end_ts, self._time_index))
+            idx = pd.DatetimeIndex(filter(lambda t: start_ts <= t < end_ts, self._time_index))
         else:
             raise_if(self._has_datetime_index, 'start and end times have been provided as integers to slice(), but '
                                                'the series is indexed with a DatetimeIndex.', logger)

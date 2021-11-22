@@ -150,12 +150,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         # base case
         seriesA = test_series.slice(pd.Timestamp('20130104'), pd.Timestamp('20130107'))
         test_case.assertEqual(seriesA.start_time(), pd.Timestamp('20130104'))
-        test_case.assertEqual(seriesA.end_time(), pd.Timestamp('20130107'))
+        test_case.assertEqual(seriesA.end_time(), pd.Timestamp('20130106'))
 
         # time stamp not in series
         seriesB = test_series.slice(pd.Timestamp('20130104 12:00:00'), pd.Timestamp('20130107'))
         test_case.assertEqual(seriesB.start_time(), pd.Timestamp('20130105'))
-        test_case.assertEqual(seriesB.end_time(), pd.Timestamp('20130107'))
+        test_case.assertEqual(seriesB.end_time(), pd.Timestamp('20130106'))
 
         # end timestamp after series
         seriesC = test_series.slice(pd.Timestamp('20130108'), pd.Timestamp('20130201'))
@@ -615,7 +615,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(len(seriesA), 1)
         self.assertEqual(len(seriesB), 9)
         self.assertEqual(seriesA.time_index[-1], self.series1.time_index[0])
-        seriesC = self.series1.slice(pd.Timestamp('20130105'), pd.Timestamp('20130105'))
+        seriesC = self.series1.slice(pd.Timestamp('20130105'), pd.Timestamp('20130106'))
         self.assertEqual(len(seriesC), 1)
 
     def test_map(self):

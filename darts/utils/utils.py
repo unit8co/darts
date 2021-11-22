@@ -57,7 +57,7 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     """
 
     last_first = max(map(lambda s: s.start_time(), series))
-    first_last = min(map(lambda s: s.end_time(), series))
+    first_last = min(map(lambda s: s.end_time() + s.freq, series))
 
     if last_first >= first_last:
         raise_log(ValueError('The provided time series must have nonzero overlap'), logger)
