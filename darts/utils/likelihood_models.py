@@ -212,9 +212,8 @@ class GaussianLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        mu = model_output[:, :, :output_size // 2]
-        sigma = self.softplus(model_output[:, :, output_size // 2:])
+        mu = model_output[:, :, :, 0]
+        sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
 
@@ -265,7 +264,7 @@ class PoissonLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output):
-        lmbda = self.softplus(model_output)
+        lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
 
 
@@ -311,9 +310,8 @@ class NegativeBinomialLikelihood(Likelihood):
         return distr.sample()
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        mu = self.softplus(model_output[:, :, :output_size // 2])
-        alpha = self.softplus(model_output[:, :, output_size // 2:])
+        mu = self.softplus(model_output[:, :, :, 0])
+        alpha = self.softplus(model_output[:, :, :, 1])
         return mu, alpha
 
     @property
@@ -362,7 +360,7 @@ class BernoulliLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        p = self.sigmoid(model_output)
+        p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
 
 
@@ -412,9 +410,8 @@ class BetaLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        alpha = self.softplus(model_output[:, :, :output_size // 2])
-        beta = self.softplus(model_output[:, :, output_size // 2:])
+        alpha = self.softplus(model_output[:, :, :, 0])
+        beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
 
 
@@ -471,9 +468,8 @@ class CauchyLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        xzero = model_output[:, :, :output_size // 2]
-        gamma = self.softplus(model_output[:, :, output_size // 2:])
+        xzero = model_output[:, :, :, 0]
+        gamma = self.softplus(model_output[:, :, :, 1])
         return xzero, gamma
 
 
@@ -519,7 +515,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        lmbda = self.sigmoid(model_output)
+        lmbda = self.sigmoid(model_output.squeeze(dim=-1))
         return lmbda
 
 
@@ -565,7 +561,7 @@ class DirichletLikelihood(Likelihood):
         return 1  # 1 parameter per component
 
     def _params_from_output(self, model_output):
-        alphas = self.softmax(model_output)  # take softmax over components
+        alphas = self.softmax(model_output.squeeze(dim=-1))  # take softmax over components
         return alphas
 
 
@@ -610,7 +606,7 @@ class ExponentialLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        lmbda = self.softplus(model_output)
+        lmbda = self.softplus(model_output.squeeze(dim=-1))
         return lmbda
 
 
@@ -659,9 +655,8 @@ class GammaLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        alpha = self.softplus(model_output[:, :, :output_size // 2])
-        beta = self.softplus(model_output[:, :, output_size // 2:])
+        alpha = self.softplus(model_output[:, :, :, 0])
+        beta = self.softplus(model_output[:, :, :, 1])
         return alpha, beta
 
 
@@ -706,7 +701,7 @@ class GeometricLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        p = self.sigmoid(model_output)
+        p = self.sigmoid(model_output.squeeze(dim=-1))
         return p
 
 
@@ -754,9 +749,8 @@ class GumbelLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        mu = model_output[:, :, :output_size // 2]
-        beta = self.softplus(model_output[:, :, output_size // 2:])
+        mu = model_output[:, :, :, 0]
+        beta = self.softplus(model_output[:, :, :, 1])
         return mu, beta
 
 
@@ -801,7 +795,7 @@ class HalfNormalLikelihood(Likelihood):
         return 1
 
     def _params_from_output(self, model_output: torch.Tensor):
-        sigma = self.softplus(model_output)
+        sigma = self.softplus(model_output.squeeze(dim=-1))
         return sigma
 
 
@@ -849,9 +843,8 @@ class LaplaceLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        mu = model_output[:, :, :output_size // 2]
-        b = self.softplus(model_output[:, :, output_size // 2:])
+        mu = model_output[:, :, :, 0]
+        b = self.softplus(model_output[:, :, :, 1])
         return mu, b
 
 
@@ -899,9 +892,8 @@ class LogNormalLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output):
-        output_size = model_output.shape[-1]
-        mu = model_output[:, :, :output_size // 2]
-        sigma = self.softplus(model_output[:, :, output_size // 2:])
+        mu = model_output[:, :, :, 0]
+        sigma = self.softplus(model_output[:, :, :, 1])
         return mu, sigma
 
 
@@ -944,9 +936,8 @@ class WeibullLikelihood(Likelihood):
         return 2
 
     def _params_from_output(self, model_output: torch.Tensor):
-        output_size = model_output.shape[-1]
-        lmbda = self.softplus(model_output[:, :, :output_size // 2])
-        k = self.softplus(model_output[:, :, output_size // 2:])
+        lmbda = self.softplus(model_output[:, :, :, 0])
+        k = self.softplus(model_output[:, :, :, 1])
         return lmbda, k
 
 
@@ -1021,7 +1012,6 @@ class QuantileRegression(Likelihood):
         dim_q = 3
 
         batch_size, length = model_output.shape[:2]
-        model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
         device = model_output.device
 
         # test if torch model forward produces correct output and store quantiles tensor
