@@ -441,7 +441,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs, num_loader_workers)
 
     def initialize_encoders(self, train_dataset: TrainingDataset):
-        encoders = EncoderSequence(self._model_params, train_dataset)
+        encoders = EncoderSequence(model_kwargs=self._model_params[1],
+                                   input_chunk_length=train_dataset.ds_past.input_chunk_length,
+                                   output_chunk_length=train_dataset.ds_past.output_chunk_length,
+                                   shift=train_dataset.ds_past.shift)
         return encoders
 
     @random_method
@@ -481,7 +484,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         self._verify_train_dataset_type(train_dataset)
-        # encoders = self.initialize_encoders(train_dataset)
+        encoders = self.initialize_encoders(train_dataset)
 
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',

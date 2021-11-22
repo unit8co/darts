@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 
 from abc import ABC, abstractmethod
-from typing import Union, Optional, Dict, List
+from typing import Union, Optional, Dict, List, Sequence, Tuple
 
 from darts import TimeSeries
 from darts.utils.data.covariate_index_generators import (
@@ -22,6 +22,15 @@ SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
 ENCODER_KWARGS = ['add_cyclic_encoder', 'add_positional_encoder']
+FUTURE = 'future'
+PAST = 'past'
+VALID_TIME_PARAMS = [
+    FUTURE,
+    PAST
+    # 'absolute'
+]
+VALID_DTYPES = (str, Sequence)
+
 
 class Encoder(ABC):
     """Abstract class for index encoders encode an index"""
@@ -135,22 +144,20 @@ class PositionalFutureEncoder(PositionalEncoder):
 
 
 class EncoderSequence:
-    def __init__(self, model_kwargs: Dict, train_dataset: TrainingDataset):
-        _, self.kwargs = model_kwargs
-        self.shift = train_dataset.ds_past.shift
-        self.input_chunk_length = train_dataset.ds_past.input_chunk_length
-        self.output_chunk_length = train_dataset.ds_past.output_chunk_length
-        self.encoders: List[Encoder] = list()
-        self.verify_call()
+    def __init__(self,
+                 model_kwargs: Dict,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
+                 shift: int) -> None:
+        self.params = model_kwargs
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
+        self.shift = shift
+        self._past_encoders: List[Encoder] = []
+        self._future_encoders: List[Encoder] = []
+        self.setup_encoders(self.params)
 
-    @property
-    def add_encoders(self):
-        """returns dict from relevant encoder kwargs at model creation"""
-        return {
-            encoder: self.kwargs.get(encoder, None) for encoder in ENCODER_KWARGS if self.kwargs.get(encoder, None)
-        }
-
-    def verify_call(self):
+    def setup_encoders(self, params):
         """encoder kwargs must be of form `encoder_kwarg=Dict[str, Union[str, Sequence[str]]]`.
         For example with cyclic encoders
 
@@ -162,13 +169,90 @@ class EncoderSequence:
             'future': [],  # or simply omitting `future`
         }
         """
-        if not self.add_encoders:
+        past_encoders, future_encoders = self.process_input(params)
+
+        if not past_encoders and not future_encoders:
             return
 
-        for kwarg in self.add_encoders:
-            pass
+        self._past_encoders = [self.encoder_map[enc_id](self.input_chunk_length,
+                                                        self.output_chunk_length,
+                                                        attr) for enc_id, attr in past_encoders]
+        self._future_encoders = [self.encoder_map[enc_id](self.input_chunk_length,
+                                                          self.output_chunk_length,
+                                                          attr) for enc_id, attr in future_encoders]
 
-    def map_encoders(self):
+    def process_input(self, params) -> Tuple[List, List]:
+        """processes input and returns dict from relevant encoder parameters at model creation.
+
+        If model parameters contain parameters for encoders, this method returns two lists with past and future encoder
+        identifiers and parameters extracted from model parameters.
+
+        `parameters` must be a dictionary of form `encoder_kwarg=Dict[str, Union[str, Sequence[str]]]`.
+        For example with cyclic encoders
+
+        Parameters
+        ----------
+        params
+            add_cyclic_encoder={
+                'past': ['month', 'dayofmonth', ...],  # or simply 'month'
+                'future': [],  # or simply omitting `future`
+            }
+        Raises
+        ------
+        ValueError
+            1) if the outermost key is other than (`past`, `future`, `absolute`)
+            2) if the innermost values are other than type `str` or `Sequence`
+        """
+        # extract encoder params
+        encoders = {enc: params.get(enc, None) for enc in ENCODER_KWARGS if params.get(enc, None)}
+
+        if not encoders:
+            return [], []
+
+        # check input for if invalid temporal types; values other than ('past', 'future', 'absolute')
+        invalid_time_params = list()
+        for encoder, t_types in encoders.items():
+            invalid_time_params += [t_type for t_type in t_types.keys() if t_type not in VALID_TIME_PARAMS]
+
+        raise_if(len(invalid_time_params) > 0,
+                 f'Encountered invalid temporal types `{invalid_time_params}` in `add_*_encoder` parameter at model '
+                 f'creation. Supported temporal types are: `{VALID_TIME_PARAMS}`.')
+
+        # convert
+        past_encoders, future_encoders = list(), list()
+        for enc, enc_params in encoders.items():
+            for enc_time, enc_attr in enc_params.items():
+                raise_if_not(isinstance(enc_attr, VALID_DTYPES),
+                             f'Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for parameter '
+                             f'`{enc}` at model creation. Supported data types are: `{VALID_DTYPES}`.')
+                attrs = [enc_attr] if isinstance(enc_attr, str) else enc_attr
+                for attr in attrs:
+                    encoder_id = '_'.join([enc, enc_time])
+                    if enc_time == PAST:
+                        past_encoders.append((encoder_id, attr))
+                    else:
+                        future_encoders.append((encoder_id, attr))
+
+        return past_encoders, future_encoders
+
+    @property
+    def future_encoders(self) -> List[Encoder]:
+        """returns the future covariate encoder objects"""
+        return self._future_encoders
+
+    @property
+    def past_encoders(self) -> List[Encoder]:
+        """returns the past covariate encoder objects"""
+        return self._past_encoders
+
+    @property
+    def encoder_map(self) -> Dict:
+        """mapping between encoder identifier string (from parameters at model creations) and the corresponding
+        future or past covariate encoder"""
         mapper = {
-            'add_cyclic_encoder': {'past': []}
+            'add_cyclic_encoder_past': CyclicPastEncoder,
+            'add_cyclic_encoder_future': CyclicFutureEncoder,
+            'add_positional_encoder_past': PositionalPastEncoder,
+            'add_positional_encoder_future': PositionalFutureEncoder
         }
+        return mapper
