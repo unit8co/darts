@@ -4,9 +4,10 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from tempfile import NamedTemporaryFile
+from unittest.mock import patch
 
 from .base_test_class import DartsBaseTestClass
-from ..timeseries import TimeSeries
+from ..timeseries import TimeSeries, concatenate
 from ..utils.timeseries_generation import linear_timeseries, constant_timeseries
 
 
@@ -437,6 +438,76 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(series_test.end_time(), range_[-1])
         self.assertTrue(math.isnan(series_test.pd_series().get('20130105')))
 
+        # ------ test infer frequency for all offset aliases from ------
+        # https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#offset-aliases
+        offset_aliases = [
+            'B', 'C', 'D', 'W', 'M', 'SM', 'BM', 'CBM', 'MS', 'SMS', 'BMS', 'CBMS', 'Q', 'BQ', 'QS', 'BQS',
+            'A', 'Y', 'BA', 'BY', 'AS', 'YS', 'BAS', 'BYS', 'BH', 'H', 'T', 'min', 'S', 'L', 'U', 'us', 'N']
+        # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'}) -> good
+        offset_aliases_raise = [
+            'B', 'C', 'SM', 'BM', 'CBM', 'SMS', 'BMS', 'CBMS', 'BQ', 'BA', 'BY', 'BAS', 'BYS', 'BH', 'BQS'
+        ]
+        # frequency cannot be inferred for these types (finds '15D' instead of 'SM')
+        offset_not_supported = ['SM', 'SMS']
+
+        ts_length = 25
+        for offset_alias in offset_aliases:
+            if offset_alias in offset_not_supported:
+                continue
+
+            # test with the initial full DataFrame
+            df_full = pd.DataFrame(
+                data={
+                    'date': pd.date_range(start=pd.to_datetime('01-04-1960'), periods=ts_length, freq=offset_alias),
+                    'value': np.arange(0, ts_length, 1)
+                }
+            )
+            # test fill dates with DataFrame including holes
+            df_holes = pd.concat([df_full[:4], df_full[5:7], df_full[9:]])
+
+            series_target = TimeSeries.from_dataframe(df_full, time_col='date')
+            for df, df_name in zip([df_full, df_holes], ['full', 'holes']):
+
+                # fill_missing_dates will find multiple inferred frequencies (i.e. for 'B' it finds {'B', 'D'})
+                if offset_alias in offset_aliases_raise:
+                    with self.assertRaises(ValueError):
+                        _ = TimeSeries.from_dataframe(df, time_col='date', fill_missing_dates=True)
+                    continue
+
+                # test with different arguments
+                series_out_freq1 = TimeSeries.from_dataframe(
+                    df, time_col='date', fill_missing_dates=True, freq=offset_alias)
+                series_out_freq2 = TimeSeries.from_dataframe(
+                    df, time_col='date', freq=offset_alias)
+                series_out_fill = TimeSeries.from_dataframe(
+                    df, time_col='date', fill_missing_dates=True)
+
+                for series in [series_out_freq1, series_out_freq2, series_out_fill]:
+                    if df_name == 'full':
+                        self.assertTrue(series == series_target)
+                    self.assertTrue(series.time_index.equals(series_target.time_index))
+
+    def test_fillna_value(self):
+        range_ = pd.date_range('20130101', '20130108', freq='D')
+
+        pd_series_nan = pd.Series([np.nan] * len(range_), index=range_)
+        pd_series_1 = pd.Series([1] * len(range_), index=range_)
+        pd_series_holes = pd.concat([pd_series_1[:2], pd_series_nan[3:]])
+
+        series_nan = TimeSeries.from_series(pd_series_nan)
+        series_1 = TimeSeries.from_series(pd_series_1)
+        series_holes = TimeSeries.from_series(pd_series_holes, fill_missing_dates=True)
+
+        series_nan_fillna = TimeSeries.from_series(pd_series_nan, fillna_value=1.)
+        series_1_fillna = TimeSeries.from_series(pd_series_nan, fillna_value=1.)
+        series_holes_fillna = TimeSeries.from_series(pd_series_holes, fill_missing_dates=True, fillna_value=1.)
+
+        for series_with_nan in [series_nan, series_holes]:
+            self.assertTrue(np.isnan(series_with_nan.all_values(copy=False)).any())
+        for series_no_nan in [series_1, series_nan_fillna, series_1_fillna, series_holes_fillna]:
+            self.assertTrue(not np.isnan(series_no_nan.all_values(copy=False)).any())
+            self.assertTrue(series_1 == series_no_nan)
+
     def test_resample_timeseries(self):
         times = pd.date_range('20130101', '20130110')
         pd_series = pd.Series(range(10), index=times)
@@ -463,7 +534,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
                                              fill_missing_dates=True)
         # test empty pandas series error
         with self.assertRaises(ValueError):
-            TimeSeries.from_series(pd.Series(), freq='D')
+            TimeSeries.from_series(pd.Series(dtype='object'), freq='D')
         # frequency should be ignored when fill_missing_dates is False
         seriesA = TimeSeries.from_times_and_values(pd.date_range('20130101', '20130105'),
                                                    range(5),
@@ -472,23 +543,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(seriesA.freq, 'D')
         # test successful instantiation of TimeSeries with length 2
         TimeSeries.from_times_and_values(pd.date_range('20130101', '20130102'), range(2), freq='D')
-
-    def test_from_dataframe(self):
-        data_dict = {"Time": pd.date_range(start="20180501", end="20200301", freq="MS")}
-        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
-        data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Time"]))
-
-        data_pd1 = pd.DataFrame(data_dict)
-        data_pd2 = data_pd1.copy()
-        data_pd2["Time"] = data_pd2["Time"].apply(lambda date: str(date))
-        data_pd3 = data_pd1.set_index("Time")
-
-        data_darts1 = TimeSeries.from_dataframe(df=data_pd1, time_col="Time")
-        data_darts2 = TimeSeries.from_dataframe(df=data_pd2, time_col="Time")
-        data_darts3 = TimeSeries.from_dataframe(df=data_pd3)
-
-        self.assertEqual(data_darts1, data_darts2)
-        self.assertEqual(data_darts1, data_darts3)
 
     def test_from_csv(self):
         data_dict = {"Time": pd.date_range(start="20180501", end="20200301", freq="MS")}
@@ -592,8 +646,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertNotEqual(series_01, series[['0', '1']].map(fn))
 
     def test_map_with_timestamp(self):
-        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
-        zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+        zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start=pd.Timestamp('2000-01-01'))
         zeroes = zeroes.with_columns_renamed('constant', 'linear')
         
         def function(ts, x):
@@ -603,7 +657,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(new_series, zeroes)
 
     def test_map_wrong_fn(self):
-        series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+        series = linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
 
         def add(x, y, z):
             return x + y + z
@@ -672,8 +726,8 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(len(series1.longest_contiguous_slice(2)), 6)
 
     def test_with_columns_renamed(self):
-        series1 = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12).stack(
-            linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)   
+        series1 = linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12).stack(
+            linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12)
         )
 
         series1 = series1.with_columns_renamed(['linear', 'linear_1'], ['linear1', 'linear2'])
@@ -685,3 +739,307 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         #  Linear7 doesn't exist
         with self.assertRaises(ValueError):
             series1.with_columns_renamed('linear7', 'linear5')
+
+    def test_to_csv_probabilistic_ts(self):
+        samples = [linear_timeseries(start_value=val, length=10) for val in [10, 20, 30]]
+        ts = concatenate(samples, axis=2)
+        with self.assertRaises(AssertionError):
+            ts.to_csv('blah.csv')
+
+    @patch('darts.timeseries.TimeSeries.pd_dataframe')
+    def test_to_csv_deterministic(self, pddf_mock):
+        ts = TimeSeries(
+            xr.DataArray(
+                np.random.rand(10, 10, 1),
+                [
+                    ("time", pd.date_range("2000-01-01", periods=10)),
+                    ("component", ['comp_' + str(i) for i in range(10)]),
+                    ("sample", [0])
+                ],
+            ))
+
+        ts.to_csv('test.csv')
+        pddf_mock.assert_called_once()
+
+    @patch('darts.timeseries.TimeSeries.pd_dataframe')
+    def test_to_csv_stochastic(self, pddf_mock):
+        ts = TimeSeries(
+            xr.DataArray(
+                np.random.rand(10, 10, 10),
+                [
+                    ("time", pd.date_range("2000-01-01", periods=10)),
+                    ("component", ['comp_' + str(i) for i in range(10)]),
+                    ("sample", range(10))
+                ],
+            ))
+
+        with self.assertRaises(AssertionError):
+            ts.to_csv('test.csv')
+
+
+class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
+
+    #
+    # COMPONENT AXIS TESTS
+    #
+
+    def test_concatenate_component_sunny_day(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
+
+        ts = concatenate(samples, axis='component')
+        self.assertEqual((10, 3, 1), ts._xa.shape)
+
+    def test_concatenate_component_different_time_axes_no_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-11'), freq='D')]
+
+        with self.assertRaises(ValueError):
+            ts = concatenate(samples, axis='component')
+
+    def test_concatenate_component_different_time_axes_with_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-11'), freq='D')]
+
+        ts = concatenate(samples, axis='component', ignore_time_axis=True)
+        self.assertEqual((10, 3, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-10'), ts.end_time())
+
+    def test_concatenate_component_different_time_axes_with_force_uneven_series(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=20, start=pd.Timestamp('2000-02-11'), freq='D')]
+
+        with self.assertRaises(ValueError):
+            concatenate(samples, axis='component', ignore_time_axis=True)
+
+    #
+    # SAMPLE AXIS TESTS
+    #
+
+    def test_concatenate_sample_sunny_day(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
+
+        ts = concatenate(samples, axis='sample')
+        self.assertEqual((10, 1, 3), ts._xa.shape)
+
+    #
+    # TIME AXIS TESTS
+    #
+
+    def test_concatenate_time_sunny_day(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-21'), freq='D')]
+
+        ts = concatenate(samples, axis='time')
+        self.assertEqual((30, 1, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
+
+    def test_concatenate_time_same_time_no_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
+
+        with self.assertRaises(ValueError):
+            concatenate(samples, axis='time')
+
+    def test_concatenate_time_same_time_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-01'), freq='D')]
+
+        ts = concatenate(samples, axis='time', ignore_time_axis=True)
+        self.assertEqual((30, 1, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
+
+    def test_concatenate_time_different_time_axes_no_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-12'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-18'), freq='D')]
+
+        with self.assertRaises(ValueError):
+            concatenate(samples, axis='time')
+
+    def test_concatenate_time_different_time_axes_force(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-13'), freq='D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-01-19'), freq='D')]
+
+        ts = concatenate(samples, axis='time', ignore_time_axis=True)
+        self.assertEqual((30, 1, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-30'), ts.end_time())
+
+    def test_concatenate_time_different_time_axes_no_force_2_day_freq(self):
+        samples = [linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='2D'),
+                   linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-21'), freq='2D'),
+                   linear_timeseries(start_value=30, length=10, start=pd.Timestamp('2000-02-10'), freq='2D')]
+
+        ts = concatenate(samples, axis='time')
+        self.assertEqual((30, 1, 1), ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-02-28'), ts.end_time())
+        self.assertEqual('2D', ts.freq)
+
+    def test_concatenate_timeseries_method(self):
+        ts1 = linear_timeseries(start_value=10, length=10, start=pd.Timestamp('2000-01-01'), freq='D')
+        ts2 = linear_timeseries(start_value=20, length=10, start=pd.Timestamp('2000-01-11'), freq='D')
+
+        result_ts = ts1.concatenate(ts2, axis='time')
+        self.assertEqual((20, 1, 1), result_ts._xa.shape)
+        self.assertEqual(pd.Timestamp('2000-01-01'), result_ts.start_time())
+        self.assertEqual(pd.Timestamp('2000-01-20'), result_ts.end_time())
+        self.assertEqual('D', result_ts.freq)
+
+
+class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
+
+    ts = TimeSeries(
+        xr.DataArray(
+            np.random.rand(10, 10, 10),
+            [
+                ("time", pd.date_range("2000-01-01", periods=10)),
+                ("component", ['comp_'+str(i) for i in range(10)]),
+                ("sample", range(10))
+            ],
+        ))
+
+    def test_head_sunny_day_time_axis(self):
+        result = self.ts.head()
+        self.assertEqual(5, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-05"), result.end_time())
+
+    def test_head_sunny_day_component_axis(self):
+        result = self.ts.head(axis=1)
+        self.assertEqual(5, result.n_components)
+        self.assertEqual(['comp_0', 'comp_1', 'comp_2', 'comp_3', 'comp_4'],
+                         result._xa.coords['component'].values.tolist())
+
+    def test_head_sunny_day_sample_axis(self):
+        result = self.ts.head(axis=2)
+        self.assertEqual(5, result.n_samples)
+        self.assertEqual(list(range(5)),
+                         result._xa.coords['sample'].values.tolist())
+
+    def test_tail_sunny_day_time_axis(self):
+        result = self.ts.tail()
+        self.assertEqual(5, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-06"), result.start_time())
+
+    def test_tail_sunny_day_component_axis(self):
+        result = self.ts.tail(axis=1)
+        self.assertEqual(5, result.n_components)
+        self.assertEqual(['comp_5', 'comp_6', 'comp_7', 'comp_8', 'comp_9'],
+                         result._xa.coords['component'].values.tolist())
+
+    def test_head_sunny_day_sample_axis(self):
+        result = self.ts.tail(axis=2)
+        self.assertEqual(5, result.n_samples)
+        self.assertEqual(list(range(5, 10)),
+                         result._xa.coords['sample'].values.tolist())
+
+    def test_head_overshot_time_axis(self):
+        result = self.ts.head(20)
+        self.assertEqual(10, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-10"), result.end_time())
+
+    def test_head_overshot_component_axis(self):
+        result = self.ts.head(20, axis='component')
+        self.assertEqual(10, result.n_components)
+
+    def test_head_overshot_sample_axis(self):
+        result = self.ts.head(20, axis='sample')
+        self.assertEqual(10, result.n_samples)
+
+    def test_tail_overshot_time_axis(self):
+        result = self.ts.tail(20)
+        self.assertEqual(10, result.n_timesteps)
+        self.assertEqual(pd.Timestamp("2000-01-01"), result.start_time())
+
+    def test_tail_overshot_component_axis(self):
+        result = self.ts.tail(20, axis='component')
+        self.assertEqual(10, result.n_components)
+
+    def test_tail_overshot_sample_axis(self):
+        result = self.ts.tail(20, axis='sample')
+        self.assertEqual(10, result.n_samples)
+
+class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
+
+    def test_from_dataframe_sunny_day(self):
+        data_dict = {"Time": pd.date_range(start="20180501", end="20200301", freq="MS")}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        data_dict["Values2"] = np.random.uniform(low=0, high=1, size=len(data_dict["Time"]))
+
+        data_pd1 = pd.DataFrame(data_dict)
+        data_pd2 = data_pd1.copy()
+        data_pd2["Time"] = data_pd2["Time"].apply(lambda date: str(date))
+        data_pd3 = data_pd1.set_index("Time")
+
+        data_darts1 = TimeSeries.from_dataframe(df=data_pd1, time_col="Time")
+        data_darts2 = TimeSeries.from_dataframe(df=data_pd2, time_col="Time")
+        data_darts3 = TimeSeries.from_dataframe(df=data_pd3)
+
+        self.assertEqual(data_darts1, data_darts2)
+        self.assertEqual(data_darts1, data_darts3)
+
+    def test_time_col_convert_string_integers(self):
+        expected = np.random.randint(1, 100000, 10, int)
+        data_dict = {"Time": expected.astype(str)}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        df = pd.DataFrame(data_dict)
+        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+
+        self.assertEqual(set(ts.time_index.values.tolist()), set(expected))
+        self.assertEqual(ts.time_index.dtype, int)
+        self.assertEqual(ts.time_index.name, 'Time')
+
+    def test_time_col_convert_integers(self):
+        expected = np.random.randint(1, 100000, 10, int)
+        data_dict = {"Time": expected}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        df = pd.DataFrame(data_dict)
+        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+
+        self.assertEqual(set(ts.time_index.values.tolist()), set(expected))
+        self.assertEqual(ts.time_index.dtype, int)
+        self.assertEqual(ts.time_index.name, 'Time')
+
+    def test_time_col_convert_datetime(self):
+        expected = pd.date_range(start="20180501", end="20200301", freq="MS")
+        data_dict = {"Time": expected}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        df = pd.DataFrame(data_dict)
+        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+
+        self.assertEqual(ts.time_index.dtype, 'datetime64[ns]')
+        self.assertEqual(ts.time_index.name, 'Time')
+
+    def test_time_col_convert_datetime_strings(self):
+        expected = pd.date_range(start="20180501", end="20200301", freq="MS")
+        data_dict = {"Time": expected.values.astype(str)}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        df = pd.DataFrame(data_dict)
+        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+
+        self.assertEqual(ts.time_index.dtype, 'datetime64[ns]')
+        self.assertEqual(ts.time_index.name, 'Time')
+
+    def test_time_col_convert_garbage(self):
+        expected = ['2312312asdfdw', 'asdfsdf432sdf', 'sfsdfsvf3435', 'cdsfs45234', 'vsdgert43534f']
+        data_dict = {"Time": expected}
+        data_dict["Values1"] = np.random.uniform(low=-10, high=10, size=len(data_dict["Time"]))
+        df = pd.DataFrame(data_dict)
+
+        with self.assertRaises(AttributeError):
+            ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+

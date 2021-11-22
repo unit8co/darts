@@ -13,7 +13,7 @@ from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
     ts: TimeSeries = AirPassengersDataset.load()
 """
 
-_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/develop/datasets"
+_DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/master/datasets"
 
 
 class AirPassengersDataset(DatasetLoaderCSV):
@@ -141,7 +141,7 @@ class MonthlyMilkIncompleteDataset(DatasetLoaderCSV):
             hash="49b275c7e2f8f28a6a05224be1a049a4",
             header_time="Month",
             format_time="%Y-%m",
-            freq='M'
+            freq='MS'
         ))
 
 

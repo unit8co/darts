@@ -1,5 +1,3 @@
-import shutil
-import logging
 import numpy as np
 
 from .base_test_class import DartsBaseTestClass
@@ -9,7 +7,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models.nbeats import NBEATSModel
+    from darts.models.forecasting.nbeats import NBEATSModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. TCN tests will be skipped.')

@@ -1,6 +1,6 @@
 # Time Series Made Easy in Python
 
-![darts](https://github.com/unit8co/darts/raw/develop/static/images/darts-logo-trim.png "darts")
+![darts](https://github.com/unit8co/darts/raw/master/static/images/darts-logo-trim.png "darts")
 
 ---
 [![PyPI version](https://badge.fury.io/py/u8darts.svg)](https://badge.fury.io/py/darts)
@@ -33,7 +33,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.
 * [Using Past and Future Covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
 * [Temporal Convolutional Networks and Forecasting](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 
-## Install
+## Quick Install
 
 We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
@@ -80,7 +80,7 @@ plt.legend()
 ```
 
 <div style="text-align:center;">
-<img src="https://github.com/unit8co/darts/raw/develop/static/images/example.png" alt="darts forecast example" />
+<img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
 </div>
 
 We invite you to go over the example and tutorial notebooks in
@@ -123,34 +123,44 @@ inferences of the underlying states/values.
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
 on bringing more models and features.
 
-Model | Univariate | Multivariate | Probabilistic | Multiple-series training | Past-observed covariates support | Future-known covariates support
---- | --- | --- | --- | --- | --- | ---
-`ARIMA` | x | | x | | |
-`VARIMA` | x | x | | | |
-`AutoARIMA` | x | | | | |
-`ExponentialSmoothing` | x | | x | | |
-`Theta` and `FourTheta` | x | | | | |
-`Prophet` | x | | | | |
-`FFT` (Fast Fourier Transform) | x | | | | |
-`RegressionModel` (incl `RandomForest` and `LinearRegressionModel`) | x | x | | x | x | x
-`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | x | x | x | x | | x
-`BlockRNNModel` (incl. LSTM and GRU) | x | x | | x | x | 
-`NBEATSModel` | x | x | | x | x | 
-`TCNModel` | x | x | x | x | x | 
-`TransformerModel` | x | x | | x | x | 
-Naive Baselines | x | | | | |
+Model | Univariate | Multivariate | Probabilistic | Multiple-series training | Past-observed covariates support | Future-known covariates support | Reference
+--- | --- | --- | --- | --- | --- | --- | ---
+`ARIMA` | ✅ | | ✅ | | | ✅ |
+`VARIMA` | ✅ | ✅ | | | | ✅ |
+`AutoARIMA` | ✅ | | | | | ✅ |
+`ExponentialSmoothing` | ✅ | | ✅ | | | |
+`Theta` and `FourTheta` | ✅ | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
+`Prophet` | ✅ | | ✅ | | | ✅ | [Prophet repo](https://github.com/facebook/prophet)
+`FFT` (Fast Fourier Transform) | ✅ | | | | | |
+`RegressionModel` (incl `RandomForest`, `LinearRegressionModel` and `LightGBMModel`) | ✅ | ✅ | | ✅ | ✅ | ✅ |
+`RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | [DeepAR paper](https://arxiv.org/abs/1704.04110)
+`BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | |
+`NBEATSModel` | ✅ | ✅ | | ✅ | ✅ | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
+`TCNModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
+`TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | 
+`TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
+Naive Baselines | ✅ | | | | | |
 
-## Contribute
+
+## Community & Contact
+
+Anyone is welcome to join our [Discord server](https://discord.gg/Um3jBTYFsA) to
+ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
+or have a feature request, Github issues are also welcome.
+
+If what you want to tell us is not suitable for Discord or Github, 
+feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for 
+darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other 
+inquiries.
+
+### Contribute
 
 The development is ongoing, and there are many new features that we want to add.
-We welcome pull requests and issues on GitHub.
+We welcome pull requests and issues on Github.
 
-Before working on a contribution (a new feature or a fix), [**check our contribution guidelines**](CONTRIBUTE.md).
+Before working on a contribution (a new feature or a fix),
+ [**check our contribution guidelines**](CONTRIBUTE.md).
 
-
-## Contact Us
-
-If what you want to tell us is not a suitable github issue, feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other inquiries.
 
 ## Installation Guide
 
@@ -158,8 +168,8 @@ Some of the models depend on `prophet` and `torch`, which have non-Python depend
 A Conda environment is thus recommended because it will handle all of those in one go.
 
 ### From conda-forge
-Currently only Python 3.7 is fully supported with conda; consider using PyPI if you are running
-into troubles.
+Currently only the x86_64 architecture with Python 3.7-3.9
+is fully supported with conda; consider using PyPI if you are running into troubles.
 
 To create a conda environment for Python 3.7
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
@@ -172,8 +182,11 @@ Don't forget to activate your virtual environment
 
 As some models have relatively heavy dependencies, we provide two conda-forge packages:
 
-* Install darts with all available models (recommended): `conda install -c conda-forge u8darts-all`.
+* Install darts with all available models (recommended): `conda install -c conda-forge -c pytorch u8darts-all`.
+* Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
 * Install core only (without neural networks, Prophet or AutoARIMA): `conda install -c conda-forge u8darts`
+
+For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
 
 
 ### From PyPI
@@ -187,9 +200,28 @@ As some models have relatively heavy (or non-Python) dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
 * Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
-* Install core + neural networks (PyTorch): `pip install 'u8darts[torch]'`
-* Install core + Facebook Prophet: `pip install 'u8darts[prophet]'`
-* Install core + AutoARIMA: `pip install 'u8darts[pmdarima]'`
+* Install core + neural networks (PyTorch): `pip install "u8darts[torch]"`
+* Install core + Facebook Prophet: `pip install "u8darts[prophet]"`
+* Install core + AutoARIMA: `pip install "u8darts[pmdarima]"`
+
+#### Enabling Support for LightGBM
+
+To enable support for LightGBM in Darts, please follow the 
+[installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS.
+
+##### MacOS Issues with LightGBM
+At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in 
+[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229). 
+Here's the procedure to downgrade the ``libomp`` library (from the 
+[original Github issue](https://github.com/microsoft/LightGBM/issues/4229#issue-867528353)):
+* [Install brew](https://brew.sh/) if you don't already have it.
+* Install `wget` if you don't already have it : `brew install wget`.
+* Run the commands below:
+```
+wget https://raw.githubusercontent.com/Homebrew/homebrew-core/fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0/Formula/libomp.rb
+brew unlink libomp
+brew install libomp.rb
+```
 
 
 ### Running the examples only, without installing:
@@ -225,8 +257,26 @@ To run the tests for specific flavours of the library, replace `_all` with `_cor
 
 ### Documentation
 
-To build documantation locally just run
+To build documentation locally just run
 ```bash
 ./gradlew buildDocs
 ```
 After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
+
+
+## Citation
+If you are using Darts in your scientific work, we would appreciate citations to the following paper.
+
+[Darts: User-Friendly Modern Machine Learning for Time Series](https://arxiv.org/abs/2110.03224)
+
+Bibtex entry:
+```
+@misc{herzen2021darts,
+      title={Darts: User-Friendly Modern Machine Learning for Time Series}, 
+      author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
+      year={2021},
+      eprint={2110.03224},
+      archivePrefix={arXiv},
+      primaryClass={cs.LG}
+}
+```

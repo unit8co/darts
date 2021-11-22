@@ -7,7 +7,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models.block_rnn_model import _BlockRNNModule, BlockRNNModel
+    from darts.models.forecasting.block_rnn_model import _BlockRNNModule, BlockRNNModel
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. RNN tests will be skipped.')
@@ -21,7 +21,8 @@ if TORCH_AVAILABLE:
         pd_series = pd.Series(range(100), index=times)
         series: TimeSeries = TimeSeries.from_series(pd_series)
         module = _BlockRNNModule('RNN', input_size=1, output_chunk_length=1, hidden_dim=25,
-                                 num_layers=1, num_layers_out_fc=[], dropout=0)
+                                 target_size=1, nr_params=1, num_layers=1, 
+                                 num_layers_out_fc=[], dropout=0)
 
         def test_creation(self):
             with self.assertRaises(ValueError):
@@ -39,7 +40,8 @@ if TORCH_AVAILABLE:
 
             # Test fit-save-load cycle
             model2 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1,
-                                   model='LSTM', n_epochs=3, model_name='unittest-model-lstm')
+                                   model='LSTM', n_epochs=3, model_name='unittest-model-lstm',
+                                   save_checkpoints=True)
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(model_name='unittest-model-lstm', best=False)
             pred1 = model2.predict(n=6)

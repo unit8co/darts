@@ -29,10 +29,10 @@ class MappersTestCase(unittest.TestCase):
     subtract_month = Mapper(ts_func.__func__)
     subtract_month_invertible = InvertibleMapper(ts_func.__func__, inverse_ts_func.__func__)
 
-    lin_series = linear_timeseries(start_value=1, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
-    zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
-    tens = constant_timeseries(value=10.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
-    twenties = constant_timeseries(value=20.0, length=12, freq='MS', start_ts=pd.Timestamp('2000-01-01'))
+    lin_series = linear_timeseries(start_value=1, length=12, freq='MS', start=pd.Timestamp('2000-01-01'), end_value=12)  # noqa: E501
+    zeroes = constant_timeseries(value=0.0, length=12, freq='MS', start=pd.Timestamp('2000-01-01'))
+    tens = constant_timeseries(value=10.0, length=12, freq='MS', start=pd.Timestamp('2000-01-01'))
+    twenties = constant_timeseries(value=20.0, length=12, freq='MS', start=pd.Timestamp('2000-01-01'))
 
     def test_mapper(self):
 
