@@ -16,8 +16,6 @@ from .training_dataset import (TrainingDataset,
 
 from ..utils import raise_if_not
 
-SampleIndexType = Tuple[int, int, int, int, int, int]
-
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
     def __init__(self,
