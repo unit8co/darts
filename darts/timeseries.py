@@ -1258,7 +1258,7 @@ class TimeSeries:
 
     def slice(self, start_ts: Union[pd.Timestamp, int], end_ts: Union[pd.Timestamp, int]):
         """
-        Returns a new TimeSeries, starting later than `start_ts` and ending before `end_ts`, inclusive on both ends.
+        Returns a new TimeSeries, starting later than `start_ts` (inclusive) and ending strictly before `end_ts`.
         The timestamps don't have to be in the series.
 
         Parameters
