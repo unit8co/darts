@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from darts.dataprocessing.transformers import Scaler
 from darts.utils import timeseries_generation as tg
+from darts import TimeSeries
 
 
 class DataTransformerTestCase(unittest.TestCase):
@@ -18,7 +19,6 @@ class DataTransformerTestCase(unittest.TestCase):
     series1 = tg.random_walk_timeseries(length=100, column_name='series1') * 20 - 10.
     series2 = series1.stack(tg.random_walk_timeseries(length=100) * 20 - 100.)
 
-    
     col_1 = series1.columns
 
     def test_scaling(self):
@@ -72,3 +72,17 @@ class DataTransformerTestCase(unittest.TestCase):
                                            series_array[index].values().flatten())
             np.testing.assert_almost_equal(series_array_rec2[index].values().flatten(),
                                            series_array[index].values().flatten())
+
+    def test_multivariate_stochastic_series(self):
+        scaler = Scaler(MinMaxScaler())
+        vals = np.random.rand(10,5,50)
+        s = TimeSeries.from_values(vals)
+        ss = scaler.fit_transform(s)
+        ssi = scaler.inverse_transform(ss)
+
+        # Test inverse transform
+        np.testing.assert_allclose(s.all_values(), ssi.all_values())
+
+        # Test that the transform is done per component (i.e max value over each component should be 1)
+        np.testing.assert_allclose(np.array([ss.all_values(copy=False)[:,i,:].max() for i in range(ss.width)]), 
+                                   np.array([1.0] * ss.width))
