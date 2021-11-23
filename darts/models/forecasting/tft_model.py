@@ -806,7 +806,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
                                                 max_samples_per_ts=self.max_sample_per_ts,
-                                                encoders=encoders)
+                                                encoders=self.encoders)
 
     def _add_cyclic_encoder(self,
                             target: Sequence[TimeSeries],
@@ -848,10 +848,10 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                              freq=ts.freq) for ts in target]
 
         encoded_times = [
-            datetime_attribute_timeseries(ts, 
+            datetime_attribute_timeseries(ts,
                                           attribute=self.add_cyclic_encoder,
-                                          cyclic=True, 
-                                          dtype=target[0].dtype) 
+                                          cyclic=True,
+                                          dtype=target[0].dtype)
             for ts in encode_ts
         ]
 

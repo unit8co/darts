@@ -53,7 +53,7 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  DualCovariatesSequentialDataset,
                                                  MixedCovariatesSequentialDataset,
                                                  SplitCovariatesSequentialDataset)
-from darts.utils.data.encoders import (EncoderSequence,
+from darts.utils.data.encoders import (SequenceEncoder,
                                        CyclicPastEncoder,
                                        CyclicFutureEncoder,
                                        PositionalPastEncoder,
@@ -300,7 +300,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]],
-                             encoders: Optional[EncoderSequence] = None) -> TrainingDataset:
+                             encoders: Optional[SequenceEncoder] = None) -> TrainingDataset:
         """
         Each model must specify the default training dataset to use.
         """
@@ -446,9 +446,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                             output_chunk_length: int,
                             shift: int,
                             takes_past_covariates: bool = False,
-                            takes_future_covariates: bool = False) -> EncoderSequence:
+                            takes_future_covariates: bool = False) -> SequenceEncoder:
 
-        return EncoderSequence(model_kwargs=model_params[1],
+        return SequenceEncoder(model_kwargs=model_params[1],
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
                                shift=shift,

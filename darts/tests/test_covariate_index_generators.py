@@ -23,7 +23,6 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     cov_int_train = target_int
     cov_int_train_short = cov_int_train[1:]
 
-
     input_chunk_length = 12
     output_chunk_length = 6
     n_short = 6
