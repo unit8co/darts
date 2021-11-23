@@ -41,6 +41,8 @@ class EncoderTestCase(DartsBaseTestClass):
     n_short = 6
     n_long = 8
 
+    # for the given input_chunk_length, ..., n_long from above, the time_index of the expected encoded covariate
+    # multi-TS at prediction should be as follows
     inf_ts_short_future = [TimeSeries.from_times_and_values(
         tg._generate_index(start=ts.end_time() + (1 - 12) * ts.freq,
                            length=12 + 6,
@@ -65,13 +67,16 @@ class EncoderTestCase(DartsBaseTestClass):
                            freq=ts.freq),
         np.arange(12 + (8 - 6))) for ts in target_multi]
 
-    def test_encoder_from_model_params(self):
+    def test_sequence_encoder_from_model_params(self):
+        """test if sequence encoder is initialized properly from model params"""
         # valid encoder model parameters are ('past', 'future') for the main key and datetime attribute for sub keys
         valid_encoder_args = {'past': ['month'], 'future': ['dayofyear', 'dayofweek']}
         encoders = self.helper_encoder_from_model(add_encoder_dict=valid_encoder_args)
 
         self.assertTrue(len(encoders.past_encoders) == 1)
         self.assertTrue(len(encoders.future_encoders) == 2)
+
+        # test if encoders have the correct attributes
         self.assertTrue(encoders.past_encoders[0].attribute == 'month')
         self.assertTrue([enc.attribute for enc in encoders.future_encoders] == ['dayofyear', 'dayofweek'])
 
@@ -93,7 +98,111 @@ class EncoderTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_type)
 
+    def test_encoder_sequence_train(self):
+        """Test `SequenceEncoder.encode_train()` output"""
+        # ====> Sequential Cyclic Encoder Tests <====
+        encoder_args = {'past': ['month'], 'future': ['month', 'month']}
+        encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
+
+        # ==> test training <==
+        past_covs_train, future_covs_train = encoders.encode_train(target=self.target_multi,
+                                                                   past_covariate=self.covariate_multi,
+                                                                   future_covariate=self.covariate_multi)
+
+        # encoded multi TS covariates should have same number as input covariates
+        self.assertEqual(len(past_covs_train), 2)
+        self.assertEqual(len(future_covs_train), 2)
+
+        # each attribute (i.e., 'month', ...) generates 2 output variables (+ 1 covariate from input covariates)
+        self.assertEqual(past_covs_train[0].n_components, 3)
+        self.assertEqual(future_covs_train[0].n_components, 5)
+
+        # check with different inputs
+        encoder_args = {'past': ['month'], 'future': ['month']}
+        encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
+
+        # ==> test training <==
+        past_covs_train, future_covs_train = encoders.encode_train(target=self.target_multi,
+                                                                   past_covariate=self.covariate_multi,
+                                                                   future_covariate=self.covariate_multi)
+
+        # encoded multi TS covariates should have same number as input covariates
+        self.assertEqual(len(past_covs_train), 2)
+        self.assertEqual(len(future_covs_train), 2)
+
+        # each attribute (i.e., 'month', ...) generates 2 output variables (+ 1 covariate from input covariates)
+        self.assertEqual(past_covs_train[0].n_components, 3)
+        self.assertEqual(future_covs_train[0].n_components, 3)
+
+        # encoded past covariates must have equal index as input past covariates
+        for pc, pc_in in zip(past_covs_train, self.covariate_multi):
+            self.assertTrue(pc.time_index.equals(pc_in.time_index))
+
+        # encoded future covariates must have equal index as input future covariates
+        for fc, fc_in in zip(future_covs_train, self.covariate_multi):
+            self.assertTrue(fc.time_index.equals(fc_in.time_index))
+
+        # for training dataset: both encoded past and future covariates with cyclic encoder 'month' should be equal
+        for pc, fc in zip(past_covs_train, future_covs_train):
+            self.assertEqual(pc, fc)
+
+    def test_encoder_sequence_inference(self):
+        """Test `SequenceEncoder.encode_inference()` output"""
+        # ==> test prediction <==
+        encoder_args = {'past': ['month'], 'future': ['month']}
+        encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
+
+        # tests with n <= output_chunk_length
+        self.helper_sequence_encode_inference(encoders=encoders,
+                                              n=self.n_short,
+                                              past_covariates=self.covariate_multi,
+                                              future_covariates=self.covariate_multi,
+                                              expected_past_idx_ts=self.covariate_multi,
+                                              expected_future_idx_ts=self.covariate_multi)
+
+        self.helper_sequence_encode_inference(encoders=encoders,
+                                              n=self.n_short,
+                                              past_covariates=None,
+                                              future_covariates=None,
+                                              expected_past_idx_ts=self.inf_ts_short_past,
+                                              expected_future_idx_ts=self.inf_ts_short_future)
+        # tests with n > output_chunk_length
+        self.helper_sequence_encode_inference(encoders=encoders,
+                                              n=self.n_long,
+                                              past_covariates=self.covariate_multi,
+                                              future_covariates=None,
+                                              expected_past_idx_ts=self.covariate_multi,
+                                              expected_future_idx_ts=self.inf_ts_long_future)
+
+        self.helper_sequence_encode_inference(encoders=encoders,
+                                              n=self.n_long,
+                                              past_covariates=None,
+                                              future_covariates=self.covariate_multi,
+                                              expected_past_idx_ts=self.inf_ts_long_past,
+                                              expected_future_idx_ts=self.covariate_multi)
+
+    def helper_sequence_encode_inference(self,
+                                         encoders,
+                                         n,
+                                         past_covariates,
+                                         future_covariates,
+                                         expected_past_idx_ts,
+                                         expected_future_idx_ts):
+        """test comparisons for `SequenceEncoder.encode_inference()`"""
+
+        # generate encodings
+        past_covs_pred, future_covs_pred = encoders.encode_inference(n=n,
+                                                                     target=self.target_multi,
+                                                                     past_covariate=past_covariates,
+                                                                     future_covariate=future_covariates)
+        # encoded past and future covariates must have equal index as expected past and future
+        for pc, pc_in in zip(past_covs_pred, expected_past_idx_ts):
+            self.assertTrue(pc.time_index.equals(pc_in.time_index))
+        for fc, fc_in in zip(future_covs_pred, expected_future_idx_ts):
+            self.assertTrue(fc.time_index.equals(fc_in.time_index))
+
     def helper_encoder_from_model(self, add_encoder_dict, takes_past_covariates=True, takes_future_covariates=True):
+        """Extract encoders from model creation"""
         model = TFTModel(input_chunk_length=self.input_chunk_length,
                          output_chunk_length=self.output_chunk_length,
                          add_cyclic_encoder=add_encoder_dict)
@@ -109,10 +218,8 @@ class EncoderTestCase(DartsBaseTestClass):
         _ = encoders.encode_inference(3, self.target_multi, self.covariate_multi, self.covariate_multi)
         return encoders
 
-    def test_encoder_sequence(self):
-        pass
-
     def test_cyclic_encoder(self):
+        """Test past and future `CyclicTemporalEncoder`"""
         attribute = 'month'
 
         # test past cyclic encoder
@@ -128,6 +235,7 @@ class EncoderTestCase(DartsBaseTestClass):
                                         inf_ts_long=self.inf_ts_long_future)
 
     def helper_test_cyclic_encoder(self, CyclicEncoder, attribute, inf_ts_short, inf_ts_long):
+        """Test cases for both `CyclicPastEncoder` and `CyclicFutureEncoder`"""
         encoder = CyclicEncoder(input_chunk_length=self.input_chunk_length,
                                 output_chunk_length=self.output_chunk_length,
                                 attribute=attribute)
@@ -194,6 +302,7 @@ class EncoderTestCase(DartsBaseTestClass):
                                          covariate: Sequence[Optional[TimeSeries]],
                                          result: Sequence[TimeSeries],
                                          merge_covariates: bool = True):
+        """ test `CyclicTemporalEncoder.encode_train()`"""
         encoded = []
         for ts, cov in zip(target, covariate):
             encoded.append(encoder.encode_train(ts, cov, merge_covariate=merge_covariates))
@@ -206,6 +315,7 @@ class EncoderTestCase(DartsBaseTestClass):
                                              covariate: Sequence[Optional[TimeSeries]],
                                              result: Sequence[TimeSeries],
                                              merge_covariates: bool = True):
+        """ test `CyclicTemporalEncoder.encode_inference()`"""
         encoded = []
         for ts, cov in zip(target, covariate):
             encoded.append(encoder.encode_inference(n, ts, cov, merge_covariate=merge_covariates))
