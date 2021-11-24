@@ -21,7 +21,8 @@ SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
-ENCODER_KWARGS = ['add_cyclic_encoder', 'add_positional_encoder']
+ENCODER_KWARG = 'add_encoders'
+ENCODER_KEYS = ['cyclic', 'datetime_attribute', 'positional']
 FUTURE = 'future'
 PAST = 'past'
 VALID_TIME_PARAMS = [
@@ -90,10 +91,11 @@ class Encoder(ABC):
     def encode_absolute(self,
                         target: TimeSeries,
                         covariate: Optional[TimeSeries] = None) -> TimeSeries:
+        """Tnis is a placeholder for doing absolute encodings"""
         pass
 
     @staticmethod
-    def merge_covariate(encoded: TimeSeries, covariate: Optional[TimeSeries] = None) -> TimeSeries:
+    def _merge_covariate(encoded: TimeSeries, covariate: Optional[TimeSeries] = None) -> TimeSeries:
         """If (actual) covariates are given, merge the encoded index with the covariates
 
         Parameters
@@ -109,9 +111,9 @@ class Encoder(ABC):
 class SingleEncoder(Encoder, ABC):
     """Abstract class for single index encoders.
     Single encoders can be used to implement new encoding techniques.
-    Each single encoder must implement an `encode()` method that carries the encoding logic.
+    Each single encoder must implement an `_encode()` method that carries the encoding logic.
 
-    The `encode()` method must take an `index` as input and generate a encoded single `TimeSeries` as output.
+    The `_encode()` method must take an `index` as input and generate a encoded single `TimeSeries` as output.
     """
 
     def __init__(self, index_generator: CovariateIndexGenerator):
@@ -132,8 +134,8 @@ class SingleEncoder(Encoder, ABC):
         self.index_generator = index_generator
 
     @abstractmethod
-    def encode(self, index: SupportedIndexes) -> TimeSeries:
-        """Single Encoders must implement an encode() method to encode the index.
+    def _encode(self, index: SupportedIndexes) -> TimeSeries:
+        """Single Encoders must implement an _encode() method to encode the index.
 
         Parameters
         ----------
@@ -162,9 +164,9 @@ class SingleEncoder(Encoder, ABC):
         """
         self.dtype = target.dtype
         index = self.index_generator.generate_train_series(target, covariate)
-        encoded = self.encode(index)
+        encoded = self._encode(index)
         if merge_covariate:
-            return self.merge_covariate(encoded, covariate=covariate)
+            return self._merge_covariate(encoded, covariate=covariate)
         else:
             return encoded
 
@@ -191,10 +193,10 @@ class SingleEncoder(Encoder, ABC):
         """
         self.dtype = target.dtype
         index = self.index_generator.generate_inference_series(n, target, covariate)
-        encoded = self.encode(index)
+        encoded = self._encode(index)
 
         if merge_covariate:
-            return self.merge_covariate(encoded, covariate=covariate)
+            return self._merge_covariate(encoded, covariate=covariate)
         else:
             return encoded
 
@@ -228,9 +230,9 @@ class CyclicTemporalEncoder(SingleEncoder):
         super(CyclicTemporalEncoder, self).__init__(index_generator)
         self.attribute = attribute
 
-    def encode(self, index: SupportedIndexes) -> TimeSeries:
+    def _encode(self, index: SupportedIndexes) -> TimeSeries:
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
-        super(CyclicTemporalEncoder, self).encode(index)
+        super(CyclicTemporalEncoder, self)._encode(index)
         return datetime_attribute_timeseries(index, attribute=self.attribute, cyclic=True, dtype=self.dtype)
 
 
@@ -284,6 +286,86 @@ class CyclicFutureEncoder(CyclicTemporalEncoder):
         )
 
 
+class DatetimeAttributeEncoder(SingleEncoder):
+    """DatetimeAttributeEncoder: Adds pd.DatatimeIndex attribute information derived from the index as scalars.
+    Requires the underlying TimeSeries to have a pd.DatetimeIndex
+    """
+
+    def __init__(self, index_generator: CovariateIndexGenerator, attribute: str):
+        """
+        Parameters
+        ----------
+        index_generator
+            an instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
+            `generate_inference_series()`. Used to generate the index for encoders.
+        attribute
+            the attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
+            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+            For more information, check out :meth:`datetime_attribute_timeseries()
+            <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        """
+
+        super(DatetimeAttributeEncoder, self).__init__(index_generator)
+        self.attribute = attribute
+
+    def _encode(self, index: SupportedIndexes) -> TimeSeries:
+        """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
+        super(DatetimeAttributeEncoder, self)._encode(index)
+        return datetime_attribute_timeseries(index, attribute=self.attribute, dtype=self.dtype)
+
+
+class DatetimeAttributePastEncoder(DatetimeAttributeEncoder):
+    """Datetime attribute encoder for past covariates."""
+
+    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+        """
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the emitted past series.
+        output_chunk_length
+            The length of the emitted future series.
+        attribute
+            the attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
+            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+            For more information, check out :meth:`datetime_attribute_timeseries()
+            <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        """
+        super(DatetimeAttributePastEncoder, self).__init__(
+            index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            attribute=attribute
+        )
+
+
+class DatetimeAttributeFutureEncoder(DatetimeAttributeEncoder):
+    """Datetime attribute encoder for future covariates."""
+
+    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+        """
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the emitted past series.
+        output_chunk_length
+            The length of the emitted future series.
+        attribute
+            the attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
+            "weekday", "day", "hour", "minute", "second". See all available attributes in
+            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
+            For more information, check out :meth:`datetime_attribute_timeseries()
+            <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        """
+        super(DatetimeAttributeFutureEncoder, self).__init__(
+            index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            attribute=attribute
+        )
+
+
 class PositionalEncoder(SingleEncoder):
     """PLACEHOLDER: absolute positional index encoding"""
 
@@ -291,8 +373,8 @@ class PositionalEncoder(SingleEncoder):
         super(PositionalEncoder, self).__init__(index_generator)
         raise_if(True, 'NotImplementedError')
 
-    def encode(self, index: SupportedIndexes) -> TimeSeries:
-        super(PositionalEncoder, self).encode(index)
+    def _encode(self, index: SupportedIndexes) -> TimeSeries:
+        super(PositionalEncoder, self)._encode(index)
         return TimeSeries.from_times_and_values(index, np.arange(len(index)))
 
 
@@ -332,19 +414,37 @@ class SequenceEncoder(Encoder):
         SequenceEncoder automatically creates encoder objects from parameters used when creating a
         `TorchForecastingModel` model. Currently these parameters include:
         
-        * add_cyclic_encoder={'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}
+        * add_encoders={
+                'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}
+            }
 
         for example:
-        model = MyModel(..., add_cyclic_encoder={...}, ...)
+        model = MyModel(..., add_encoders={...}, ...)
 
-        A string ID is then extracted from the parameters as follows:
-            str(key) + str(sub_key) -> 'add_cyclic_encoder' + 'past' -> ID = 'add_cyclic_encoder_past'
+        Tuples of `(encoder_id, attribute)` are extracted from the parameters to instantiate the `SingleEncoder`
+        objects:
+        * The `encoder_id` is extracted as follows:
+            str(key) + str(temporal_key) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
+            The `encoder_ix` is used to map the model parameters with the corresponding `SingleEncoder` objects.
+        * The `attribute` is extracted from the values given by `temporal_key`
+            `attribute` = 'month'
+            ...
+            The `attribute` tells the `SingleEncoder` which attribute of the index to encoder
 
-        This ID is used to map the model parameters with the corresponding encoder objects.
+        The resulting `SingleEncoder` objects will be instantiates as follows:
+        self.past_encoders = [
+            CyclicPastEncoder(input_chunk_length, output_chunk_length, attribute='month'),
+            CyclicPastEncoder(input_chunk_length, output_chunk_length, attribute='dayofweek'),
+            ...
+        ]
+        self.future_encoders = [
+            CyclicFutureEncoder(input_chunk_length, output_chunk_length, attribute=future_attribute),
+            ...
+        ]
 
         New encoders can be added by appending them to the mapping property `SequenceEncoder.encoder_map()`
 
-        Paramaters
+        Parameters
         ----------
         model_kwargs
             the parameters used at `TorchForecastingModel` model creation.
@@ -369,7 +469,7 @@ class SequenceEncoder(Encoder):
         self._future_encoders: List[SingleEncoder] = []
         self.takes_past_covariates = takes_past_covariates
         self.takes_future_covariates = takes_future_covariates
-        self.setup_encoders(self.params)
+        self._setup_encoders(self.params)
 
     def encode_train(self,
                      target: SupportedTimeSeries,
@@ -387,6 +487,13 @@ class SequenceEncoder(Encoder):
             optionally, the past covariates used for training.
         future_covariate
             optionally, the future covariates used for training.
+
+        Returns
+        -------
+        Tuple[past_covariate, future_covariate]
+            The past_covariate and/or future_covariate for training including the encodings.
+            If input {x}_covariate is None and no {x}_encoders are given, will return `None`
+            for the {x}_covariate.
         """
 
         return self._launch_encoder(target=target,
@@ -413,6 +520,13 @@ class SequenceEncoder(Encoder):
             optionally, the past covariates used for training.
         future_covariate
             optionally, the future covariates used for training.
+
+        Returns
+        -------
+        Tuple[past_covariate, future_covariate]
+            The past_covariate and/or future_covariate for prediction/inference including the encodings.
+            If input {x}_covariate is None and no {x}_encoders are given, will return `None`
+            for the {x}_covariate.
         """
 
         return self._launch_encoder(target=target,
@@ -468,34 +582,13 @@ class SequenceEncoder(Encoder):
                                                                covariate=pc,
                                                                merge_covariate=False,
                                                                n=n) for enc in encoders], axis=DIMS[1])
-            encoded_sequence.append(self.merge_covariate(encoded=encoded, covariate=pc))
+            encoded_sequence.append(self._merge_covariate(encoded=encoded, covariate=pc))
         return encoded_sequence
 
     def encode_absolute(self,
                         target: TimeSeries,
                         covariate: Optional[TimeSeries] = None) -> TimeSeries:
         pass
-
-    def setup_encoders(self, params: Dict):
-        """Sets up/Initializes all encoders from parameters `params` used at model creation.
-
-        Parameters
-        ----------
-        params
-            Parameters (kwargs) used at model creation. Relevant parameters are:
-            * add_cyclic_encoder={'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}
-        """
-        past_encoders, future_encoders = self._process_input(params)
-
-        if not past_encoders and not future_encoders:
-            return
-
-        self._past_encoders = [self.encoder_map[enc_id](self.input_chunk_length,
-                                                        self.output_chunk_length,
-                                                        attr) for enc_id, attr in past_encoders]
-        self._future_encoders = [self.encoder_map[enc_id](self.input_chunk_length,
-                                                          self.output_chunk_length,
-                                                          attr) for enc_id, attr in future_encoders]
 
     @property
     def future_encoders(self) -> List[SingleEncoder]:
@@ -512,18 +605,41 @@ class SequenceEncoder(Encoder):
         """mapping between encoder identifier string (from parameters at model creations) and the corresponding
         future or past covariate encoder"""
         mapper = {
-            'add_cyclic_encoder_past': CyclicPastEncoder,
-            'add_cyclic_encoder_future': CyclicFutureEncoder,
-            'add_positional_encoder_past': PositionalPastEncoder,
-            'add_positional_encoder_future': PositionalFutureEncoder
+            'cyclic_past': CyclicPastEncoder,
+            'cyclic_future': CyclicFutureEncoder,
+            'datetime_attribute_past': DatetimeAttributePastEncoder,
+            'datetime_attribute_future': DatetimeAttributeFutureEncoder,
+            'positional_past': PositionalPastEncoder,
+            'positional_future': PositionalFutureEncoder
         }
         return mapper
 
-    def _process_input(self, params: Dict) -> Tuple[List, List]:
-        """processes input and returns dict from relevant encoder parameters at model creation.
+    def _setup_encoders(self, params: Dict):
+        """Sets up/Initializes all past and future encoders from parameters `params` used at model creation.
 
-        If model parameters contain parameters for encoders, this method returns two lists with past and future encoder
-        identifiers and parameters extracted from model parameters.
+        Parameters
+        ----------
+        params
+            Parameters (kwargs) used at model creation. Relevant parameters are:
+            * add_encoders={
+                'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}
+            }
+        """
+        past_encoders, future_encoders = self._process_input(params)
+
+        if not past_encoders and not future_encoders:
+            return
+
+        self._past_encoders = [self.encoder_map[enc_id](self.input_chunk_length,
+                                                        self.output_chunk_length,
+                                                        attr) for enc_id, attr in past_encoders]
+        self._future_encoders = [self.encoder_map[enc_id](self.input_chunk_length,
+                                                          self.output_chunk_length,
+                                                          attr) for enc_id, attr in future_encoders]
+
+    def _process_input(self, params: Dict) -> Tuple[List, List]:
+        """processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
+        parameters at model creation.
 
         `params` must be a dictionary of form `encoder_kwarg=Dict[str, Union[str, Sequence[str]]]`.
         For example with cyclic encoders
@@ -532,7 +648,24 @@ class SequenceEncoder(Encoder):
         ----------
         params
             Parameters (kwargs) used at model creation. Relevant parameters are:
-            * add_cyclic_encoder={'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}
+
+            * add_encoders={
+                    'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']},
+                    ...
+                }
+
+            for example:
+            model = MyModel(..., add_encoders={...}, ...)
+
+            Tuples of `(encoder_id, attribute)` are extracted from the parameters to instantiate the `SingleEncoder`
+            objects:
+            * The `encoder_id` is extracted as follows:
+                str(key) + str(temporal_key) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
+                The `encoder_ix` is used to map the model parameters with the corresponding `SingleEncoder` objects.
+            * The `attribute` is extracted from the values given by `temporal_key`
+                `attribute` = 'month'
+                ...
+                The `attribute` tells the `SingleEncoder` which attribute of the index to encoder
 
         Raises
         ------
@@ -541,7 +674,8 @@ class SequenceEncoder(Encoder):
             2) if the innermost values are other than type `str` or `Sequence`
         """
         # extract encoder params
-        encoders = {enc: params.get(enc, None) for enc in ENCODER_KWARGS if params.get(enc, None)}
+        params_encoder = params.get(ENCODER_KWARG, {})
+        encoders = {enc: params_encoder.get(enc, None) for enc in ENCODER_KEYS if params_encoder.get(enc, None)}
 
         if not encoders:
             return [], []

@@ -10,6 +10,8 @@ from ..utils.data.encoders import (Encoder,
                                    SingleEncoder,
                                    CyclicPastEncoder,
                                    CyclicFutureEncoder,
+                                   DatetimeAttributePastEncoder,
+                                   DatetimeAttributeFutureEncoder,
                                    PositionalPastEncoder,
                                    PositionalFutureEncoder,
                                    SequenceEncoder)
@@ -70,7 +72,9 @@ class EncoderTestCase(DartsBaseTestClass):
     def test_sequence_encoder_from_model_params(self):
         """test if sequence encoder is initialized properly from model params"""
         # valid encoder model parameters are ('past', 'future') for the main key and datetime attribute for sub keys
-        valid_encoder_args = {'past': ['month'], 'future': ['dayofyear', 'dayofweek']}
+        valid_encoder_args = {
+            'cyclic': {'past': ['month'], 'future': ['dayofyear', 'dayofweek']}
+        }
         encoders = self.helper_encoder_from_model(add_encoder_dict=valid_encoder_args)
 
         self.assertTrue(len(encoders.past_encoders) == 1)
@@ -80,28 +84,34 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertTrue(encoders.past_encoders[0].attribute == 'month')
         self.assertTrue([enc.attribute for enc in encoders.future_encoders] == ['dayofyear', 'dayofweek'])
 
-        valid_encoder_args = {'past': ['month'], 'future': ['dayofyear', 'dayofweek']}
+        valid_encoder_args = {'cyclic': {'past': ['month']}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=valid_encoder_args, takes_future_covariates=False)
         self.assertTrue(len(encoders.past_encoders) == 1)
         self.assertTrue(len(encoders.future_encoders) == 0)
 
+        # test invalid encoder kwarg at model creation
+        bad_encoder = {'no_encoder': {'past': ['month']}}
+        encoders = self.helper_encoder_from_model(add_encoder_dict=bad_encoder)
+        self.assertTrue(len(encoders.past_encoders) == 0)
+        self.assertTrue(len(encoders.future_encoders) == 0)
+
         # test invalid kwargs at model creation
-        bad_time = {'ppast': ['month']}
+        bad_time = {'cyclic': {'ppast': ['month']}}
         with self.assertRaises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_time)
 
-        bad_attribute = {'past': ['year']}
+        bad_attribute = {'cyclic': {'past': ['year']}}
         with self.assertRaises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_attribute)
 
-        bad_type = {'past': 1}
+        bad_type = {'cyclic': {'past': 1}}
         with self.assertRaises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_type)
 
     def test_encoder_sequence_train(self):
         """Test `SequenceEncoder.encode_train()` output"""
         # ====> Sequential Cyclic Encoder Tests <====
-        encoder_args = {'past': ['month'], 'future': ['month', 'month']}
+        encoder_args = {'cyclic': {'past': ['month'], 'future': ['month', 'month']}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
 
         # ==> test training <==
@@ -118,7 +128,7 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertEqual(future_covs_train[0].n_components, 5)
 
         # check with different inputs
-        encoder_args = {'past': ['month'], 'future': ['month']}
+        encoder_args = {'cyclic': {'past': ['month'], 'future': ['month']}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
 
         # ==> test training <==
@@ -149,7 +159,7 @@ class EncoderTestCase(DartsBaseTestClass):
     def test_encoder_sequence_inference(self):
         """Test `SequenceEncoder.encode_inference()` output"""
         # ==> test prediction <==
-        encoder_args = {'past': ['month'], 'future': ['month']}
+        encoder_args = {'cyclic': {'past': ['month'], 'future': ['month']}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
 
         # tests with n <= output_chunk_length
@@ -205,7 +215,7 @@ class EncoderTestCase(DartsBaseTestClass):
         """Extract encoders from model creation"""
         model = TFTModel(input_chunk_length=self.input_chunk_length,
                          output_chunk_length=self.output_chunk_length,
-                         add_cyclic_encoder=add_encoder_dict)
+                         add_encoders=add_encoder_dict)
 
         encoders = model.initialize_encoders(model_params=model._model_params,
                                              input_chunk_length=model.input_chunk_length,
@@ -222,34 +232,84 @@ class EncoderTestCase(DartsBaseTestClass):
         """Test past and future `CyclicTemporalEncoder`"""
         attribute = 'month'
 
+        month_series = TimeSeries.from_times_and_values(
+            times=tg._generate_index(start=pd.to_datetime('2000-01-01'), length=24, freq='MS'),
+            values=np.arange(24)
+        )
+
+        encoder = CyclicFutureEncoder(input_chunk_length=1, output_chunk_length=1, attribute='month')
+        first_halve = encoder.encode_train(target=month_series[:12],
+                                           covariate=month_series[:12],
+                                           merge_covariate=False)
+        second_halve = encoder.encode_train(target=month_series[12:],
+                                            covariate=month_series[12:],
+                                            merge_covariate=False)
+        # check if encoded values for first 12 months are equal to values of last 12 months
+        self.assertTrue((first_halve.values() == second_halve.values()).all())
+
         # test past cyclic encoder
         self.helper_test_cyclic_encoder(CyclicPastEncoder,
                                         attribute=attribute,
                                         inf_ts_short=self.inf_ts_short_past,
-                                        inf_ts_long=self.inf_ts_long_past)
+                                        inf_ts_long=self.inf_ts_long_past,
+                                        cyclic=True)
 
         # test future cyclic encoder
         self.helper_test_cyclic_encoder(CyclicFutureEncoder,
                                         attribute=attribute,
                                         inf_ts_short=self.inf_ts_short_future,
-                                        inf_ts_long=self.inf_ts_long_future)
+                                        inf_ts_long=self.inf_ts_long_future,
+                                        cyclic=True)
 
-    def helper_test_cyclic_encoder(self, CyclicEncoder, attribute, inf_ts_short, inf_ts_long):
+    def test_datetime_attribute_encoder(self):
+        """Test past and future `DatetimeAttributeEncoder`"""
+        attribute = 'month'
+
+        month_series = TimeSeries.from_times_and_values(
+            times=tg._generate_index(start=pd.to_datetime('2000-01-01'), length=24, freq='MS'),
+            values=np.arange(24)
+        )
+
+        encoder = DatetimeAttributeFutureEncoder(input_chunk_length=1, output_chunk_length=1, attribute='month')
+        first_halve = encoder.encode_train(target=month_series[:12],
+                                           covariate=month_series[:12],
+                                           merge_covariate=False)
+        second_halve = encoder.encode_train(target=month_series[12:],
+                                            covariate=month_series[12:],
+                                            merge_covariate=False)
+        # check if encoded values for first 12 months are equal to values of last 12 months
+        self.assertTrue((first_halve.values() == second_halve.values()).all())
+
+        # test past cyclic encoder
+        self.helper_test_cyclic_encoder(DatetimeAttributePastEncoder,
+                                        attribute=attribute,
+                                        inf_ts_short=self.inf_ts_short_past,
+                                        inf_ts_long=self.inf_ts_long_past,
+                                        cyclic=False)
+
+        # test future cyclic encoder
+        self.helper_test_cyclic_encoder(DatetimeAttributeFutureEncoder,
+                                        attribute=attribute,
+                                        inf_ts_short=self.inf_ts_short_future,
+                                        inf_ts_long=self.inf_ts_long_future,
+                                        cyclic=False)
+
+    def helper_test_cyclic_encoder(self, Encoder, attribute, inf_ts_short, inf_ts_long, cyclic):
         """Test cases for both `CyclicPastEncoder` and `CyclicFutureEncoder`"""
-        encoder = CyclicEncoder(input_chunk_length=self.input_chunk_length,
-                                output_chunk_length=self.output_chunk_length,
-                                attribute=attribute)
+        encoder = Encoder(input_chunk_length=self.input_chunk_length,
+                          output_chunk_length=self.output_chunk_length,
+                          attribute=attribute)
         result_with_cov = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=True) for ts in self.covariate_multi
+            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in self.covariate_multi
         ]
         result_no_cov = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=True) for ts in self.target_multi
+            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in self.target_multi
         ]
         result_no_cov_inf_short = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=True) for ts in inf_ts_short
+            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in inf_ts_short
         ]
         result_no_cov_inf_long = [
-            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=True) for ts in inf_ts_long
+            tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in inf_ts_long
         ]
 
         # test train encoding with covariates
@@ -302,7 +362,7 @@ class EncoderTestCase(DartsBaseTestClass):
                                          covariate: Sequence[Optional[TimeSeries]],
                                          result: Sequence[TimeSeries],
                                          merge_covariates: bool = True):
-        """ test `CyclicTemporalEncoder.encode_train()`"""
+        """ test `SingleEncoder.encode_train()`"""
         encoded = []
         for ts, cov in zip(target, covariate):
             encoded.append(encoder.encode_train(ts, cov, merge_covariate=merge_covariates))
@@ -315,7 +375,7 @@ class EncoderTestCase(DartsBaseTestClass):
                                              covariate: Sequence[Optional[TimeSeries]],
                                              result: Sequence[TimeSeries],
                                              merge_covariates: bool = True):
-        """ test `CyclicTemporalEncoder.encode_inference()`"""
+        """ test `SingleEncoder.encode_inference()`"""
         encoded = []
         for ts, cov in zip(target, covariate):
             encoded.append(encoder.encode_inference(n, ts, cov, merge_covariate=merge_covariates))

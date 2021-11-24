@@ -527,8 +527,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  full_attention: bool = False,
                  dropout: float = 0.1,
                  hidden_continuous_size: int = 8,
-                 add_cyclic_encoder: Optional[Dict] = None,
-                 add_positional_encoder: Optional[Dict] = None,
+                 add_encoders: Optional[Dict] = None,
                  add_relative_index: bool = False,
                  loss_fn: Optional[nn.Module] = None,
                  likelihood: Optional[Likelihood] = None,
@@ -548,8 +547,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         points before prediction time and future covariates known for `output_chunk_length` after prediction time).
 
         The TFT applies multi-head attention queries on future inputs from mandatory `future_covariates`.
-        Specifying `add_cyclic_encoder` (read below) adds cyclic temporal encoding to the model and allows to use
-        the model without having to specify additional `future_covariates` for training and prediction.
+        Specifying future encoders with `add_encoders` (read below) can automatically generate future covariates
+        and allows to use the model without having to pass any `future_covariates` to `fit()` and `predict()`.
 
         By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
         probabilistic; it is recommended to call ``predict()`` with ``num_samples >> 1`` to get meaningful results.
@@ -574,15 +573,22 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             Fraction of neurons afected by Dropout.
         hidden_continuous_size : int
             default for hidden size for processing continuous variables
-        add_cyclic_encoder : optional str
-            If other than None, apply cycling encoding to an attribute of the time index and add it to the
-            `future_covariates`.
-            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`
-            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
-            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
-            For more information, check out :meth:`datetime_attribute_timeseries()
-            <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+        add_encoders : optional Dict
+            If other than None, add index encoding/s to the past and/or future covariates for training and prediction.
+            The dict must follow this convention:
+                `{encoder keyword: {temporal keyword: List[attributes]}}`
+            Supported encoder keywords:
+                `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
+                <darts.utils.data.encoders.CyclicTemporalEncoder>`;
+                `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
+                :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
+            Supported temporal keywords:
+                'past' for adding encoding as past covariates
+                'future' for adding encoding as future covariates
+            Supported attributes:
+                for attributes read the referred docs for the corresponding encoder from above
+            An example of a valid `add_encoders` dict:
+                add_encoders={'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}}
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
             This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
@@ -662,7 +668,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.full_attention = full_attention
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
-        self.add_cyclic_encoder = add_cyclic_encoder
         self.add_relative_index = add_relative_index
         self.loss_fn = loss_fn
         self.likelihood = likelihood
@@ -776,21 +781,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
 
-        raise_if(future_covariates is None and self.add_cyclic_encoder is None and not self.add_relative_index,
-                 'TFTModel requires future covariates. The model applies multi-head attention queries on future '
-                 'inputs. Consider specifying `add_cyclic_encoder` or setting `add_relative_index` to `True` '
-                 'at model creation (read TFT model docs for more information). These will automatically generate '
-                 '`future_covariates` from indexes.',
-                 logger)
-
-        # if self.add_cyclic_encoder is not None:
-        #     encoder = CyclicFutureEncoder(input_chunk_length=self.input_chunk_length,
-        #                                   output_chunk_length=self.output_chunk_length,
-        #                                   attribute=self.add_cyclic_encoder)
-        #     future_covariates = encoder.encode_train(idx=0,
-        #                                              target=target[0],
-        #                                              covariate=future_covariates[0])
-        #     future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=None)
         self.encoders = self.initialize_encoders(model_params=self._model_params,
                                                  input_chunk_length=self.input_chunk_length,
                                                  output_chunk_length=self.output_chunk_length,
@@ -798,7 +788,19 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                  takes_past_covariates=True,
                                                  takes_future_covariates=True)
 
-        past_covariates, future_covariates = self.encoders.encode_train(target, past_covariates, future_covariates)
+        raise_if(future_covariates is None and not self.encoders.future_encoders and not self.add_relative_index,
+                 'TFTModel requires future covariates. The model applies multi-head attention queries on future '
+                 'inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` '
+                 'to `True` at model creation (read TFT model docs for more information). '
+                 'These will automatically generate `future_covariates` from indexes.',
+                 logger)
+
+        # TODO: Find a way to identify if user is loading data lazily
+        is_lazy = False
+        if not is_lazy:
+            past_covariates, future_covariates = self.encoders.encode_train(target,
+                                                                            past_covariates,
+                                                                            future_covariates)
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
@@ -806,61 +808,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
                                                 max_samples_per_ts=self.max_sample_per_ts,
-                                                encoders=self.encoders)
-
-    def _add_cyclic_encoder(self,
-                            target: Sequence[TimeSeries],
-                            future_covariates: Optional[Sequence[TimeSeries]] = None,
-                            n: Optional[int] = None) -> Sequence[TimeSeries]:
-        """adds cyclic encoding of time index to future covariates.
-        For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
-        reference to extract the time index.
-        For prediction (`n` is given) we have to distinguish between two cases:
-            1)
-                if future covariates are given, we can use them as reference
-            2)
-                if future covariates are missing, we need to generate a time index that starts `input_chunk_length`
-                before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
-
-        Parameters
-        ----------
-        target
-            past target TimeSeries
-        future_covariates
-            future covariates TimeSeries
-        n
-            prediciton length (only given for predictions)
-
-        Returns
-        -------
-        Sequence[TimeSeries]
-            future covariates including cyclic encoded time index
-        """
-
-        if n is None:  # training
-            encode_ts = future_covariates if future_covariates is not None else target
-        else:  # prediction
-            if future_covariates is not None:
-                encode_ts = future_covariates
-            else:
-                encode_ts = [_generate_index(start=ts.end_time() - ts.freq * (self.input_chunk_length - 1),
-                                             length=self.input_chunk_length + max(n, self.output_chunk_length),
-                                             freq=ts.freq) for ts in target]
-
-        encoded_times = [
-            datetime_attribute_timeseries(ts,
-                                          attribute=self.add_cyclic_encoder,
-                                          cyclic=True,
-                                          dtype=target[0].dtype)
-            for ts in encode_ts
-        ]
-
-        if future_covariates is None:
-            future_covariates = encoded_times
-        else:
-            future_covariates = [fc.stack(et) for fc, et in zip(future_covariates, encoded_times)]
-
-        return future_covariates
+                                                encoders=self.encoders if is_lazy else None)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(isinstance(train_dataset, MixedCovariatesTrainingDataset),
@@ -872,22 +820,21 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                  past_covariates: Optional[Sequence[TimeSeries]],
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
 
-        # if self.add_cyclic_encoder is not None:
-        #     encoder = CyclicFutureEncoder(input_chunk_length=self.input_chunk_length,
-        #                                   output_chunk_length=self.output_chunk_length,
-        #                                   attribute=self.add_cyclic_encoder)
-        #     future_covariates = encoder.encode_inference(idx=0,
-        #                                                  n=n,
-        #                                                  target=target[0],
-        #                                                  covariate=future_covariates[0])
-        #     future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=n)
+        # TODO: Find a way to identify if user is loading data lazily
+        is_lazy = False
+        if not is_lazy:
+            past_covariates, future_covariates = self.encoders.encode_inference(n,
+                                                                                target,
+                                                                                past_covariates,
+                                                                                future_covariates)
 
         return MixedCovariatesInferenceDataset(target_series=target,
                                                past_covariates=past_covariates,
                                                future_covariates=future_covariates,
                                                n=n,
                                                input_chunk_length=self.input_chunk_length,
-                                               output_chunk_length=self.output_chunk_length)
+                                               output_chunk_length=self.output_chunk_length,
+                                               encoders=self.encoders if is_lazy else None)
 
     def _produce_train_output(self, input_batch: Tuple):
         return self.model(input_batch)

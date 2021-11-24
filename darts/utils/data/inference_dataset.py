@@ -11,6 +11,7 @@ from torch.utils.data import Dataset
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not
 from .utils import _get_matching_index
+from .encoders import SequenceEncoder
 
 
 class InferenceDataset(ABC, Dataset):
@@ -252,7 +253,8 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                  future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 output_chunk_length: int = 1):
+                 output_chunk_length: int = 1,
+                 encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
         tuples. "future_past_covariates" are past covariates that happen to be also known in the future - those
