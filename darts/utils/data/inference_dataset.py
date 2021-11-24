@@ -42,7 +42,8 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 output_chunk_length: int = 1):
+                 output_chunk_length: int = 1,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, past_covariates, future_past_covariates).
 
@@ -64,6 +65,9 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
 
         super().__init__()
@@ -136,7 +140,8 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
                  target_series: Union[TimeSeries, Sequence[TimeSeries]],
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
-                 input_chunk_length: int = 12):
+                 input_chunk_length: int = 12,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, future_covariates) tuples
 
@@ -151,6 +156,9 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             Forecast horizon: The number of time steps to predict after the end of the target series.
         input_chunk_length
             The length of the target series the model takes as input.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
@@ -204,7 +212,8 @@ class DualCovariatesInferenceDataset(InferenceDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 output_chunk_length: int = 1):
+                 output_chunk_length: int = 1,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, historic_future_covariates, future_covariates) tuples.
 
@@ -221,6 +230,9 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -229,13 +241,15 @@ class DualCovariatesInferenceDataset(InferenceDataset):
                                                       covariates=covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
-                                                      output_chunk_length=output_chunk_length)
+                                                      output_chunk_length=output_chunk_length,
+                                                      lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=covariates,
                                                           n=n,
-                                                          input_chunk_length=input_chunk_length)
+                                                          input_chunk_length=input_chunk_length,
+                                                          lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds_past)
@@ -276,6 +290,9 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -284,14 +301,16 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                                                       covariates=past_covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
-                                                      output_chunk_length=output_chunk_length)
+                                                      output_chunk_length=output_chunk_length,
+                                                      lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving historic and future future covariates
         self.ds_future = DualCovariatesInferenceDataset(target_series=target_series,
                                                         covariates=future_covariates,
                                                         n=n,
                                                         input_chunk_length=input_chunk_length,
-                                                        output_chunk_length=output_chunk_length)
+                                                        output_chunk_length=output_chunk_length,
+                                                        lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds_past)
@@ -311,7 +330,8 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
                  future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 output_chunk_length: int = 1):
+                 output_chunk_length: int = 1,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, past_covariates, future_covariates, future_past_covariates) tuples.
         "future_past_covariates" are past covariates that happen to be also known in the future - those
@@ -333,6 +353,9 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -341,13 +364,15 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
                                                       covariates=past_covariates,
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
-                                                      output_chunk_length=output_chunk_length)
+                                                      output_chunk_length=output_chunk_length,
+                                                      lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=future_covariates,
                                                           n=n,
-                                                          input_chunk_length=input_chunk_length)
+                                                          input_chunk_length=input_chunk_length,
+                                                          lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds_past)

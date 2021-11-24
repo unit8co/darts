@@ -8,7 +8,8 @@ from torch.utils.data import Dataset
 from enum import Enum
 import numpy as np
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
+from .encoders import SequenceEncoder
 from ...logging import get_logger, raise_if_not
 from ...timeseries import TimeSeries
 
@@ -63,7 +64,8 @@ class TrainingDataset(ABC, Dataset):
         underlying the `TimeSeries`.
         """
 
-        self._index_memory = {}
+        self.lazy_encoders: Optional[SequenceEncoder] = None
+        self._index_memory: Dict = {}
         pass
 
     @abstractmethod

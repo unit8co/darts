@@ -14,10 +14,8 @@ from .training_dataset import (TrainingDataset,
                                MixedCovariatesTrainingDataset,
                                SplitCovariatesTrainingDataset,
                                CovariateType)
-
+from .encoders import SequenceEncoder
 from ..utils import raise_if_not
-
-SampleIndexType = Tuple[int, int, int, int, int, int]
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
@@ -26,7 +24,8 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  length: int = 12,
                  shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_target)
         arrays, which all have length `length`.
@@ -63,6 +62,9 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -72,7 +74,8 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
                                         output_chunk_length=length,
                                         shift=shift,
                                         shift_covariates=False,
-                                        max_samples_per_ts=max_samples_per_ts)
+                                        max_samples_per_ts=max_samples_per_ts,
+                                        lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds)
@@ -87,7 +90,8 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  length: int = 12,
                  shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         A time series dataset containing tuples of (past_target, future_covariates, future_target)
         arrays, which all have length `length`.
@@ -126,6 +130,9 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
 
         super().__init__()
@@ -136,7 +143,8 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
                                         output_chunk_length=length,
                                         shift=shift,
                                         shift_covariates=True,
-                                        max_samples_per_ts=max_samples_per_ts)
+                                        max_samples_per_ts=max_samples_per_ts,
+                                        lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds)
@@ -151,7 +159,8 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  length: int = 12,
                  shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         A time series dataset containing tuples of
         (past_target, historic_future_covariates, future_covariates, future_target)
@@ -192,6 +201,9 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
 
         super().__init__()
@@ -203,7 +215,8 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                                              output_chunk_length=length,
                                              shift=shift,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
@@ -212,7 +225,8 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                                                output_chunk_length=length,
                                                shift=shift,
                                                shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts)
+                                               max_samples_per_ts=max_samples_per_ts,
+                                               lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds_past)
@@ -230,7 +244,8 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                  future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  length: int = 12,
                  shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,
                                                     future_covariates, future_target)
@@ -273,6 +288,9 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -283,14 +301,16 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                                              output_chunk_length=length,
                                              shift=shift,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             lazy_encoders=lazy_encoders)
 
         # The dual dataset serves both historical and future future covariates
         self.ds_dual = DualCovariatesShiftedDataset(target_series=target_series,
                                                     covariates=future_covariates,
                                                     length=length,
                                                     shift=shift,
-                                                    max_samples_per_ts=max_samples_per_ts)
+                                                    max_samples_per_ts=max_samples_per_ts,
+                                                    lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds_past)
@@ -310,7 +330,8 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                  future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  length: int = 12,
                  shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target)
         arrays, which all have length `length`.
@@ -352,6 +373,9 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
 
         super().__init__()
@@ -363,7 +387,8 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                                              output_chunk_length=length,
                                              shift=shift,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
@@ -372,7 +397,8 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                                                output_chunk_length=length,
                                                shift=shift,
                                                shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts)
+                                               max_samples_per_ts=max_samples_per_ts,
+                                               lazy_encoders=lazy_encoders)
 
     def __len__(self):
         return len(self.ds_past)
@@ -391,7 +417,8 @@ class GenericShiftedDataset(TrainingDataset):
                  output_chunk_length: int = 1,
                  shift: int = 1,
                  shift_covariates: bool = False,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, <X>_covariate, future_target), where "<X>" is past if `shift_covariates = False`
         and future otherwise.
@@ -423,6 +450,9 @@ class GenericShiftedDataset(TrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -445,8 +475,6 @@ class GenericShiftedDataset(TrainingDataset):
                                       self.size_of_both_chunks + 1
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
-
-        self.index_memory = {}
 
     def __len__(self):
         return self.ideal_nr_samples
@@ -506,89 +534,3 @@ class GenericShiftedDataset(TrainingDataset):
                          f"target series.")
 
         return past_target, covariate, future_target
-
-    def memory_indexer(self,
-                       ts_idx: int,
-                       end_of_output_idx: int,
-                       ts_target: TimeSeries,
-                       ts_covariate: TimeSeries) -> SampleIndexType:
-        """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
-        sample `i` from `ts_idx`.
-
-        Works for all TimeSeries index types: pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex
-
-        When `ts_idx` is observed for the first time, it stores the position of the sample `0` within the full target
-        time series and the (start, end) indices of all sub sets.
-        This allows to calculate the sub set indices for all future samples `i` by simply adjusting for the difference
-        between the positions of sample `i` and sample `0`.
-
-        Parameters
-        ----------
-        ts_idx
-            index of the current target TimeSeries.
-        ts_target
-            current target TimeSeries.
-        end_of_output_idx
-            the index where the output chunk of the current sample ends in `ts_target`.
-        ts_target
-            current target TimeSeries.
-        ts_covariate
-            current covariate TimeSeries.
-        """
-
-        cov_start, cov_end = None, None
-
-        # the first time ts_idx is observed
-        if ts_idx not in self.index_memory:
-            start_of_output_idx = end_of_output_idx - self.output_chunk_length
-            start_of_input_idx = start_of_output_idx - self.shift
-
-            # select forecast point and target period, using the previously computed indexes
-            future_start, future_end = start_of_output_idx, start_of_output_idx + self.output_chunk_length
-
-            # select input period; look at the `input_chunk_length` points after start of input
-            past_start, past_end = start_of_input_idx, start_of_input_idx + self.input_chunk_length
-
-            if self.covariates is not None:
-                start = future_start if self.shift_covariates else past_start
-                end = future_end if self.shift_covariates else past_end
-
-                # we need to be careful with getting ranges and indexes:
-                # to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]
-
-                # extract actual index value (respects datetime- and integer-based indexes; also from non-zero start)
-                start_time = ts_target.time_index[start]
-                end_time = ts_target.time_index[end - 1]
-
-                raise_if_not(start_time in ts_covariate.time_index and end_time in ts_covariate.time_index,
-                             f'Missing covariates; could not find {"future" if self.shift_covariates else "past"} '
-                             f'covariates in index value range: {start_time} - {end_time}.')
-
-                # extract the index position (index) from index value
-                cov_start = ts_covariate.time_index.get_loc(start_time)
-                cov_end = ts_covariate.time_index.get_loc(end_time) + 1
-
-            # store position of initial sample and all relevant sub set indices
-            self.index_memory[ts_idx] = {
-                'end_of_output_idx': end_of_output_idx,
-                'past_target': (past_start, past_end),
-                'future_target': (future_start, future_end),
-                'covariate': (cov_start, cov_end),
-            }
-        else:
-            # load position of initial sample and its sub set indices
-            end_of_output_idx_last = self.index_memory[ts_idx]['end_of_output_idx']
-            past_start, past_end = self.index_memory[ts_idx]['past_target']
-            future_start, future_end = self.index_memory[ts_idx]['future_target']
-            cov_start, cov_end = self.index_memory[ts_idx]['covariate']
-
-            # evaluate how much the new sample needs to be shifted, and shift all indexes
-            idx_shift = end_of_output_idx - end_of_output_idx_last
-            past_start += idx_shift
-            past_end += idx_shift
-            future_start += idx_shift
-            future_end += idx_shift
-            cov_start = cov_start + idx_shift if cov_start is not None else None
-            cov_end = cov_end + idx_shift if cov_end is not None else None
-
-        return past_start, past_end, future_start, future_end, cov_start, cov_end

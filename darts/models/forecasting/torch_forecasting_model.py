@@ -487,7 +487,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         self._verify_train_dataset_type(train_dataset)
-
         raise_if(len(train_dataset) == 0,
                  'The provided training time series dataset is too short for obtaining even one training point.',
                  logger)

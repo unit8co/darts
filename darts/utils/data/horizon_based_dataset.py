@@ -9,6 +9,7 @@ import numpy as np
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
 from .training_dataset import PastCovariatesTrainingDataset, CovariateType
+from .encoders import SequenceEncoder
 
 logger = get_logger(__name__)
 
@@ -19,7 +20,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  output_chunk_length: int = 12,
                  lh: Tuple[int, int] = (1, 3),
-                 lookback: int = 3) -> None:
+                 lookback: int = 3,
+                 lazy_encoders: Optional[SequenceEncoder] = None) -> None:
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_target) arrays,
         in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
@@ -60,7 +62,11 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             before the end of the series. It is required that `min_lh >= 1`.
         lookback:
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
-            multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths `3 * output_chunk_length`.
+            multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths
+            `3 * output_chunk_length`.
+        lazy_encoders
+            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
+            covariates are generated at sample loading time.
         """
         super().__init__()
 
