@@ -231,7 +231,7 @@ class PositionalFutureEncoder(PositionalEncoder):
 
 class SequenceEncoder(Encoder):
     """A sequence encoder can store and control multiple past and future covariate encoders at once.
-    It provides the same functionality as single encoders (`encode_train()` and `encode_inference`).
+    It provides the same functionality as single encoders (`encode_train()` and `encode_inference()`).
     Sequence encoders can be used with Darts' darts `Datasets`.
     """
 
@@ -244,36 +244,39 @@ class SequenceEncoder(Encoder):
                  takes_future_covariates: bool = False) -> None:
 
         """
-        SequenceEncoder automatically creates encoder objects from parameters used when creating a
-        `TorchForecastingModel` model. Currently these parameters include:
-        
-        * add_encoders={
-                'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}
+        SequenceEncoder automatically creates encoder objects from parameters `model_kwargs` used when creating a
+        `TorchForecastingModel`.
+
+        *   Only kwarg `add_encoders` of type `Optional[Dict]` will be used to extract the encoders.
+            For example: `model = MyModel(..., add_encoders={...}, ...)`
+
+        The `add_encoders` dict must follow this convention:
+            `{encoder keyword: {temporal keyword: List[attributes]}}`
+        Supported encoder keywords:
+            `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
+            <darts.utils.data.encoders.CyclicTemporalEncoder>`;
+            `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
+            :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
+        Supported temporal keywords:
+            'past' for adding encoding as past covariates
+            'future' for adding encoding as future covariates
+        Supported attributes:
+            for attributes read the referred docs for the corresponding encoder from above
+        An example of a valid `add_encoders` dict for hourly data for :
+            add_encoders={
+                'cyclic': {'future': ['month']},
+                'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']}
             }
 
-        for example:
-        model = MyModel(..., add_encoders={...}, ...)
-
-        Tuples of `(encoder_id, attribute)` are extracted from the parameters to instantiate the `SingleEncoder`
+        Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
         objects:
         * The `encoder_id` is extracted as follows:
-            str(key) + str(temporal_key) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
-            The `encoder_ix` is used to map the model parameters with the corresponding `SingleEncoder` objects.
-        * The `attribute` is extracted from the values given by `temporal_key`
+            str(encoder_kw) + str(temporal_kw) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
+            The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.
+        * The `attribute` is extracted from the values given by values under `temporal_kw`
             `attribute` = 'month'
             ...
-            The `attribute` tells the `SingleEncoder` which attribute of the index to encoder
-
-        The resulting `SingleEncoder` objects will be instantiates as follows:
-        self.past_encoders = [
-            CyclicPastEncoder(input_chunk_length, output_chunk_length, attribute='month'),
-            CyclicPastEncoder(input_chunk_length, output_chunk_length, attribute='dayofweek'),
-            ...
-        ]
-        self.future_encoders = [
-            CyclicFutureEncoder(input_chunk_length, output_chunk_length, attribute=future_attribute),
-            ...
-        ]
+            The `attribute` tells the `SingleEncoder` which attribute of the index to encode
 
         New encoders can be added by appending them to the mapping property `SequenceEncoder.encoder_map()`
 
@@ -460,9 +463,7 @@ class SequenceEncoder(Encoder):
         ----------
         params
             Parameters (kwargs) used at model creation. Relevant parameters are:
-            * add_encoders={
-                'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}
-            }
+            * add_encoders={'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}}
         """
         past_encoders, future_encoders = self._process_input(params)
 
@@ -480,31 +481,39 @@ class SequenceEncoder(Encoder):
         """processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
         parameters at model creation.
 
-        `params` must be a dictionary of form `encoder_kwarg=Dict[str, Union[str, Sequence[str]]]`.
-        For example with cyclic encoders
-
         Parameters
         ----------
         params
-            Parameters (kwargs) used at model creation. Relevant parameters are:
+            Parameters (kwargs) used at model creation. Only kwarg `add_encoders` of type `Optional[Dict]` is valid.
+            For example: `model = MyModel(..., add_encoders={...}, ...)`
 
-            * add_encoders={
-                    'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']},
-                    ...
+            The `add_encoders` dict must follow this convention:
+                `{encoder keyword: {temporal keyword: List[attributes]}}`
+            Supported encoder keywords:
+                `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
+                <darts.utils.data.encoders.CyclicTemporalEncoder>`;
+                `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
+                :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
+            Supported temporal keywords:
+                'past' for adding encoding as past covariates
+                'future' for adding encoding as future covariates
+            Supported attributes:
+                for attributes read the referred docs for the corresponding encoder from above
+            An example of a valid `add_encoders` dict for hourly data for :
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']}
                 }
 
-            for example:
-            model = MyModel(..., add_encoders={...}, ...)
-
-            Tuples of `(encoder_id, attribute)` are extracted from the parameters to instantiate the `SingleEncoder`
+            Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
             objects:
             * The `encoder_id` is extracted as follows:
-                str(key) + str(temporal_key) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
-                The `encoder_ix` is used to map the model parameters with the corresponding `SingleEncoder` objects.
-            * The `attribute` is extracted from the values given by `temporal_key`
+                str(encoder_kw) + str(temporal_kw) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
+                The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.
+            * The `attribute` is extracted from the values given by values under `temporal_kw`
                 `attribute` = 'month'
                 ...
-                The `attribute` tells the `SingleEncoder` which attribute of the index to encoder
+                The `attribute` tells the `SingleEncoder` which attribute of the index to encode
 
         Raises
         ------

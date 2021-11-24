@@ -15,7 +15,6 @@ from darts import TimeSeries
 from darts.utils.torch import random_method
 from darts.logging import get_logger, raise_if_not, raise_if
 from darts.utils.likelihood_models import QuantileRegression, Likelihood
-from darts.utils.timeseries_generation import datetime_attribute_timeseries, _generate_index
 from darts.utils.data import (
     TrainingDataset,
     MixedCovariatesSequentialDataset,
@@ -32,7 +31,6 @@ from darts.models.forecasting.tft_submodels import (
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
 )
-from darts.utils.data.encoders import CyclicFutureEncoder
 from torch.nn import LSTM as _LSTM
 
 logger = get_logger(__name__)
@@ -71,7 +69,8 @@ class _TFTModule(nn.Module):
         variables_meta : Dict[str, Dict[str, List[str]]]
             dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`
         hidden_size : int
-            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT architecture.
+            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
+            architecture.
         lstm_layers : int
             number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).
         num_attention_heads : int
@@ -279,10 +278,10 @@ class _TFTModule(nn.Module):
 
     @staticmethod
     def get_relative_index(encoder_length: int,
-                                decoder_length: int,
-                                batch_size: int,
-                                dtype: torch.dtype,
-                                device: torch.device) -> torch.Tensor:
+                           decoder_length: int,
+                           batch_size: int,
+                           dtype: torch.dtype,
+                           device: torch.device) -> torch.Tensor:
         """
         Returns scaled time index relative to prediction point.
         """
@@ -747,14 +746,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         static_input = []
         for input_var in type_names:
             if input_var in variables_meta['input']:
-                vars = variables_meta['input'][input_var]
-                reals_input += vars
+                vars_meta = variables_meta['input'][input_var]
+                reals_input += vars_meta
                 if input_var in ['past_target', 'past_covariate', 'historic_future_covariate']:
-                    time_varying_encoder_input += vars
+                    time_varying_encoder_input += vars_meta
                 elif input_var in ['future_covariate']:
-                    time_varying_decoder_input += vars
+                    time_varying_decoder_input += vars_meta
                 elif input_var in ['static_covariate']:
-                    static_input += vars
+                    static_input += vars_meta
 
         variables_meta['model_config']['reals_input'] = list(dict.fromkeys(reals_input))
         variables_meta['model_config']['time_varying_encoder_input'] = list(dict.fromkeys(time_varying_encoder_input))
@@ -808,7 +807,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
                                                 max_samples_per_ts=self.max_sample_per_ts,
-                                                encoders=self.encoders if is_lazy else None)
+                                                lazy_encoders=self.encoders if is_lazy else None)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(isinstance(train_dataset, MixedCovariatesTrainingDataset),
@@ -834,7 +833,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                n=n,
                                                input_chunk_length=self.input_chunk_length,
                                                output_chunk_length=self.output_chunk_length,
-                                               encoders=self.encoders if is_lazy else None)
+                                               lazy_encoders=self.encoders if is_lazy else None)
 
     def _produce_train_output(self, input_batch: Tuple):
         return self.model(input_batch)
@@ -878,8 +877,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             = input_batch
 
         n_targets = past_target.shape[dim_component]
-        n_past_covs = past_covariates.shape[dim_component] if not past_covariates is None else 0
-        n_future_covs = future_covariates.shape[dim_component] if not future_covariates is None else 0
+        n_past_covs = past_covariates.shape[dim_component] if past_covariates is not None else 0
+        n_future_covs = future_covariates.shape[dim_component] if future_covariates is not None else 0
 
         input_past = torch.cat(
             [ds for ds in [past_target, past_covariates, historic_future_covariates] if ds is not None],

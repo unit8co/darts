@@ -223,7 +223,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
                  max_samples_per_ts: Optional[int] = None,
-                 encoders: Optional[SequenceEncoder] = None):
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         A time series dataset containing tuples of
         (past_target, past_covariates, historic_future_covariates, future_covariates, future_target).

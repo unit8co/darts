@@ -254,7 +254,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                  n: int = 1,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 encoders: Optional[SequenceEncoder] = None):
+                 lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
         tuples. "future_past_covariates" are past covariates that happen to be also known in the future - those

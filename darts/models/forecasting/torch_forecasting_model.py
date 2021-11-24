@@ -53,11 +53,7 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  DualCovariatesSequentialDataset,
                                                  MixedCovariatesSequentialDataset,
                                                  SplitCovariatesSequentialDataset)
-from darts.utils.data.encoders import (SequenceEncoder,
-                                       CyclicPastEncoder,
-                                       CyclicFutureEncoder,
-                                       PositionalPastEncoder,
-                                       PositionalFutureEncoder)
+from darts.utils.data.encoders import SequenceEncoder
 
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
@@ -299,8 +295,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]],
-                             encoders: Optional[SequenceEncoder] = None) -> TrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
         """
         Each model must specify the default training dataset to use.
         """
