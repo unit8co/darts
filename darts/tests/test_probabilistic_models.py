@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
-    from ..models import RNNModel, TCNModel, TransformerModel, BlockRNNModel
+    from ..models import RNNModel, TCNModel, TransformerModel, BlockRNNModel, NBEATSModel
     from darts.utils.likelihood_models import (GaussianLikelihood,
                                                PoissonLikelihood,
                                                NegativeBinomialLikelihood,
@@ -49,7 +49,9 @@ if TORCH_AVAILABLE:
         (BlockRNNModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 20, 'random_state': 0,
                          'likelihood': GaussianLikelihood()}, 1),
         (TransformerModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 20, 'random_state': 0,
-                            'likelihood': GaussianLikelihood()}, 1)
+                            'likelihood': GaussianLikelihood()}, 1),
+        (NBEATSModel, {'input_chunk_length': 10, 'output_chunk_length': 5, 'n_epochs': 5, 'random_state': 0,
+                       'likelihood': GaussianLikelihood()}, 0.3)
     ]
 
 
@@ -145,7 +147,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                       (ContinuousBernoulliLikelihood(), bounded_series, 0.1, 0.1),
                       (HalfNormalLikelihood(), real_pos_series, 0.3, 8),
                       (LogNormalLikelihood(), real_pos_series, 0.3, 1),
-                      (WeibullLikelihood(), real_pos_series, 0.2, 2),
+                      (WeibullLikelihood(), real_pos_series, 0.2, 2.5),
                       (QuantileRegression(), real_series, 0.2, 1))
 
         def test_likelihoods_and_resulting_mean_forecasts(self):

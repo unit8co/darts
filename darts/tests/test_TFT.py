@@ -17,6 +17,7 @@ try:
 except ImportError:
     logger.warning('Torch not available. TFT tests will be skipped.')
     TORCH_AVAILABLE = False
+    TFTModel, QuantileRegression, MSELoss = None, None, None
 
 
 if TORCH_AVAILABLE:
@@ -39,17 +40,16 @@ if TORCH_AVAILABLE:
             ts_integer_index = TimeSeries.from_values(values=ts_time_index.values())
 
             # model requires future covariates without cyclic encoding
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1, random_state=0)
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1)
             with self.assertRaises(ValueError):
                 model.fit(ts_time_index, verbose=False)
 
             # should work with cyclic encoding for time index
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1,
-                             add_encoders={'cyclic': {'future': 'hour'}}, random_state=0)
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_encoders={'cyclic': {'future': 'hour'}})
             model.fit(ts_time_index, verbose=False)
 
             # should work with relative index both with time index and integer index
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_relative_index=True, random_state=0)
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_relative_index=True)
             model.fit(ts_time_index, verbose=False)
             model.fit(ts_integer_index, verbose=False)
 
