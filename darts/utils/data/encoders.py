@@ -1,14 +1,20 @@
+"""
+Encoder Classes Main
+------------------------------
+"""
+
 import pandas as pd
 import numpy as np
 
-from abc import ABC, abstractmethod
 from typing import Union, Optional, Dict, List, Sequence, Tuple
 
 from darts import TimeSeries
-from darts.utils.data.covariate_index_generators import (
+from darts.utils.data.encoder_base import (
     CovariateIndexGenerator,
     PastCovariateIndexGenerator,
-    FutureCovariateIndexGenerator
+    FutureCovariateIndexGenerator,
+    Encoder,
+    SingleEncoder
 )
 
 from darts.logging import raise_if_not, get_logger, raise_if
@@ -31,179 +37,7 @@ VALID_TIME_PARAMS = [
     # 'absolute'
 ]
 VALID_DTYPES = (str, Sequence)
-
 DIMS = ('time', 'component', 'sample')
-
-
-class Encoder(ABC):
-    """Abstract class for all encoders"""
-
-    @abstractmethod
-    def __init__(self):
-        self.attribute = None
-        self.train_encoded = None
-        self.inference_encoded = None
-        self.dtype = None
-
-    @abstractmethod
-    def encode_train(self,
-                     target: TimeSeries,
-                     covariate: Optional[TimeSeries] = None,
-                     merge_covariate: bool = True,
-                     **kwargs) -> TimeSeries:
-        """Each subclass must implement a method to encode covariate index for training.
-
-        Parameters
-        ----------
-        target
-            the target TimeSeries used during training or passed to prediction as `series`
-        covariate
-            optionally, the future covariates used for prediction
-        merge_covariate
-            whether or not to merge the encoded TimeSeries with `covariate`.
-        """
-        pass
-
-    @abstractmethod
-    def encode_inference(self,
-                         n: int,
-                         target: TimeSeries,
-                         covariate: Optional[TimeSeries] = None,
-                         merge_covariate: bool = True,
-                         **kwargs) -> TimeSeries:
-        """Each subclass must implement a method to encode covariate index for prediction
-
-        Parameters
-        ----------
-        n
-            the forecast horizon
-        target
-            the target TimeSeries used during training or passed to prediction as `series`
-        covariate
-            optionally, the future covariates used for prediction
-        merge_covariate
-            whether or not to merge the encoded TimeSeries with `covariate`.
-
-        """
-        pass
-
-    @abstractmethod
-    def encode_absolute(self,
-                        target: TimeSeries,
-                        covariate: Optional[TimeSeries] = None) -> TimeSeries:
-        """Tnis is a placeholder for doing absolute encodings"""
-        pass
-
-    @staticmethod
-    def _merge_covariate(encoded: TimeSeries, covariate: Optional[TimeSeries] = None) -> TimeSeries:
-        """If (actual) covariates are given, merge the encoded index with the covariates
-
-        Parameters
-        ----------
-        encoded
-            the encoded TimeSeries either from `encode_train()` or `encode_inference()`
-        covariate
-            optionally, the future covariates used for prediction
-        """
-        return covariate.stack(encoded) if covariate is not None else encoded
-
-
-class SingleEncoder(Encoder, ABC):
-    """Abstract class for single index encoders.
-    Single encoders can be used to implement new encoding techniques.
-    Each single encoder must implement an `_encode()` method that carries the encoding logic.
-
-    The `_encode()` method must take an `index` as input and generate a encoded single `TimeSeries` as output.
-    """
-
-    def __init__(self, index_generator: CovariateIndexGenerator):
-        """Single encoders take an `index_generator` to generate the required index for encoding past and future
-        covariates.
-        See darts.utils.data.covariate_index_generators.py for the `CovariateIndexGenerator` subclasses.
-        For past covariate encoders, use a `PastCovariateIndexGenerator`.
-        For future covariate encoders use a `FutureCovariateIndexGenerator`.
-
-        Parameters
-        ----------
-        index_generator
-            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
-            `generate_inference_series()`. Used to generate the index for encoders.
-        """
-
-        super(SingleEncoder, self).__init__()
-        self.index_generator = index_generator
-
-    @abstractmethod
-    def _encode(self, index: SupportedIndexes) -> TimeSeries:
-        """Single Encoders must implement an _encode() method to encode the index.
-
-        Parameters
-        ----------
-        index
-            the index generated from `self.index_generator` for either the train or inference dataset.
-        """
-        pass
-
-    def encode_train(self,
-                     target: TimeSeries,
-                     covariate: Optional[TimeSeries] = None,
-                     merge_covariate: bool = True,
-                     **kwargs) -> TimeSeries:
-        """Returns encoded index for training.
-
-        Parameters
-        ----------
-        target
-            the target TimeSeries used during training or passed to prediction as `series`
-        covariate
-            optionally, the covariate used for training: past covariate if `self.index_generator` is instance of 
-            `PastCovariateIndexGenerator`, future covariate if `self.index_generator` is instance of 
-            `FutureCovariateIndexGenerator`
-        merge_covariate
-            whether or not to merge the encoded TimeSeries with `covariate`.
-        """
-        self.dtype = target.dtype
-        index = self.index_generator.generate_train_series(target, covariate)
-        encoded = self._encode(index)
-        if merge_covariate:
-            return self._merge_covariate(encoded, covariate=covariate)
-        else:
-            return encoded
-
-    def encode_inference(self,
-                         n: int,
-                         target: TimeSeries,
-                         covariate: Optional[TimeSeries] = None,
-                         merge_covariate: bool = True,
-                         **kwargs) -> TimeSeries:
-        """Returns encoded index for inference/prediction.
-
-        Parameters
-        ----------
-        n
-            the forecast horizon
-        target
-            the target TimeSeries used during training or passed to prediction as `series`
-        covariate
-            optionally, the covariate used for prediction: past covariate if `self.index_generator` is instance of 
-            `PastCovariateIndexGenerator`, future covariate if `self.index_generator` is instance of 
-            `FutureCovariateIndexGenerator`
-        merge_covariate
-            whether or not to merge the encoded TimeSeries with `covariate`.
-        """
-        self.dtype = target.dtype
-        index = self.index_generator.generate_inference_series(n, target, covariate)
-        encoded = self._encode(index)
-
-        if merge_covariate:
-            return self._merge_covariate(encoded, covariate=covariate)
-        else:
-            return encoded
-
-    def encode_absolute(self,
-                        target: TimeSeries,
-                        covariate: Optional[TimeSeries] = None) -> TimeSeries:
-        return self.encode_train(target, covariate)
 
 
 class CyclicTemporalEncoder(SingleEncoder):
@@ -225,7 +59,6 @@ class CyclicTemporalEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-
 
         super(CyclicTemporalEncoder, self).__init__(index_generator)
         self.attribute = attribute
@@ -497,9 +330,9 @@ class SequenceEncoder(Encoder):
         """
 
         return self._launch_encoder(target=target,
-                                   past_covariate=past_covariate,
-                                   future_covariate=future_covariate,
-                                   n=None)
+                                    past_covariate=past_covariate,
+                                    future_covariate=future_covariate,
+                                    n=None)
 
     def encode_inference(self,
                          n: int,
@@ -530,9 +363,9 @@ class SequenceEncoder(Encoder):
         """
 
         return self._launch_encoder(target=target,
-                                   past_covariate=past_covariate,
-                                   future_covariate=future_covariate,
-                                   n=n)
+                                    past_covariate=past_covariate,
+                                    future_covariate=future_covariate,
+                                    n=n)
 
     def _launch_encoder(self,
                         target: Sequence[TimeSeries],
@@ -551,10 +384,16 @@ class SequenceEncoder(Encoder):
         target = [target] if isinstance(target, TimeSeries) else target
 
         if self.past_encoders:
-            past_covariate = self._encode_sequence(encoders=self.past_encoders, target=target, covariate=past_covariate, n=n)
+            past_covariate = self._encode_sequence(encoders=self.past_encoders,
+                                                   target=target,
+                                                   covariate=past_covariate,
+                                                   n=n)
 
         if self.future_encoders:
-            future_covariate = self._encode_sequence(encoders=self.future_encoders, target=target, covariate=future_covariate, n=n)
+            future_covariate = self._encode_sequence(encoders=self.future_encoders,
+                                                     target=target,
+                                                     covariate=future_covariate,
+                                                     n=n)
 
         return past_covariate, future_covariate
 

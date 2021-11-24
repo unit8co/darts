@@ -6,15 +6,11 @@ from .base_test_class import DartsBaseTestClass
 from ..models import TFTModel
 from ..utils import timeseries_generation as tg
 from ..timeseries import TimeSeries
-from ..utils.data.encoders import (Encoder,
-                                   SingleEncoder,
-                                   CyclicPastEncoder,
+from ..utils.data.encoder_base import SingleEncoder
+from ..utils.data.encoders import (CyclicPastEncoder,
                                    CyclicFutureEncoder,
                                    DatetimeAttributePastEncoder,
-                                   DatetimeAttributeFutureEncoder,
-                                   PositionalPastEncoder,
-                                   PositionalFutureEncoder,
-                                   SequenceEncoder)
+                                   DatetimeAttributeFutureEncoder)
 
 from ..logging import get_logger
 logger = get_logger(__name__)
@@ -236,7 +232,6 @@ class EncoderTestCase(DartsBaseTestClass):
             times=tg._generate_index(start=pd.to_datetime('2000-01-01'), length=24, freq='MS'),
             values=np.arange(24)
         )
-
         encoder = CyclicFutureEncoder(input_chunk_length=1, output_chunk_length=1, attribute='month')
         first_halve = encoder.encode_train(target=month_series[:12],
                                            covariate=month_series[:12],
@@ -294,11 +289,11 @@ class EncoderTestCase(DartsBaseTestClass):
                                         inf_ts_long=self.inf_ts_long_future,
                                         cyclic=False)
 
-    def helper_test_cyclic_encoder(self, Encoder, attribute, inf_ts_short, inf_ts_long, cyclic):
+    def helper_test_cyclic_encoder(self, encoder_class, attribute, inf_ts_short, inf_ts_long, cyclic):
         """Test cases for both `CyclicPastEncoder` and `CyclicFutureEncoder`"""
-        encoder = Encoder(input_chunk_length=self.input_chunk_length,
-                          output_chunk_length=self.output_chunk_length,
-                          attribute=attribute)
+        encoder = encoder_class(input_chunk_length=self.input_chunk_length,
+                                output_chunk_length=self.output_chunk_length,
+                                attribute=attribute)
         result_with_cov = [
             tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in self.covariate_multi
         ]
@@ -380,5 +375,3 @@ class EncoderTestCase(DartsBaseTestClass):
         for ts, cov in zip(target, covariate):
             encoded.append(encoder.encode_inference(n, ts, cov, merge_covariate=merge_covariates))
         self.assertTrue(encoded == result)
-
-

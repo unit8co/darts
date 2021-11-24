@@ -1,13 +1,12 @@
 import pandas as pd
 import numpy as np
 
-from typing import Sequence, Optional
 from .base_test_class import DartsBaseTestClass
 from ..utils import timeseries_generation as tg
 from ..timeseries import TimeSeries
-from ..utils.data.covariate_index_generators import (CovariateIndexGenerator,
-                                                     PastCovariateIndexGenerator,
-                                                     FutureCovariateIndexGenerator)
+from ..utils.data.encoder_base import (CovariateIndexGenerator,
+                                       PastCovariateIndexGenerator,
+                                       FutureCovariateIndexGenerator)
 
 from ..logging import get_logger
 logger = get_logger(__name__)
