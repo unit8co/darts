@@ -6,12 +6,17 @@ Inference Dataset
 from typing import Union, Sequence, Optional, Tuple
 from abc import ABC, abstractmethod
 import numpy as np
+import pandas as pd
 from torch.utils.data import Dataset
 
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not
-from .utils import _get_matching_index
+from .utils import _get_matching_index, CovariateType
 from .encoders import SequenceEncoder
+from .encoder_base import (PastCovariateIndexGenerator,
+                           FutureCovariateIndexGenerator)
+
+SampleIndexType = Tuple[int, int, int, int, int, int]
 
 
 class InferenceDataset(ABC, Dataset):
@@ -37,6 +42,62 @@ class InferenceDataset(ABC, Dataset):
     def __getitem__(self, idx: int):
         pass
 
+    @staticmethod
+    def _generate_index(past_target: TimeSeries,
+                        main_cov_type: CovariateType,
+                        input_chunk_length: int,
+                        output_chunk_length: int,
+                        n: int):
+        """returns tuple of (past_start, past_end, future_start, future_end)"""
+
+        raise_if_not(main_cov_type in [CovariateType.NONE, CovariateType.PAST, CovariateType.FUTURE],
+                     '`main_cov_type` must be one of `(CovariateType.NONE, CovariateType.PAST, CovariateType.FUTURE)`')
+
+        if main_cov_type is CovariateType.NONE:
+            return past_target.time_index[0], past_target.time_index[1], None, None
+
+        if main_cov_type is CovariateType.PAST:
+            index_generator = PastCovariateIndexGenerator(input_chunk_length=input_chunk_length,
+                                                          output_chunk_length=output_chunk_length)
+        else:  # CovariateType.FUTURE
+            index_generator = FutureCovariateIndexGenerator(input_chunk_length=input_chunk_length,
+                                                            output_chunk_length=output_chunk_length)
+
+        index = index_generator.generate_inference_series(n=n, target=past_target, covariate=None)
+        if len(index) == input_chunk_length:
+            return past_target.time_index[0], past_target.time_index[-1], None, None
+        else:
+            index = index[input_chunk_length:]
+            return past_target.time_index[0], past_target.time_index[-1], index[0], index[-1]
+
+    def _generate_covariates(self,
+                             n: int,
+                             target: TimeSeries,
+                             covariate: Optional[TimeSeries],
+                             cov_type: CovariateType = CovariateType.NONE):
+
+        raise_if_not(cov_type in [CovariateType.PAST, CovariateType.HISTORIC_FUTURE, CovariateType.FUTURE],
+                     '`cov_type` must be one of `(CovariateType.PAST, CovariateType.HISTORIC_FUTURE, '
+                     'CovariateType.FUTURE)` ')
+
+        if cov_type is CovariateType.PAST:
+            covariate, _ = self.lazy_encoders.encode_inference(n=n,
+                                                               target=target,
+                                                               past_covariate=covariate,
+                                                               future_covariate=None,
+                                                               encode_future=False)
+        else:
+            _, covariate = self.lazy_encoders.encode_inference(n=n,
+                                                               target=target,
+                                                               past_covariate=None,
+                                                               future_covariate=covariate,
+                                                               encode_past=False)
+        if covariate is None:
+            return None, None
+        else:
+            cov_vals = covariate[0].values(copy=False)
+            return cov_vals[: self.lazy_encoders.input_chunk_length], cov_vals[ self.lazy_encoders.input_chunk_length:]
+
 
 class PastCovariatesInferenceDataset(InferenceDataset):
     def __init__(self,
@@ -45,6 +106,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                  n: int = 1,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
+                 covariate_type: CovariateType = CovariateType.PAST,
                  lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, past_covariates, future_past_covariates).
@@ -76,9 +138,14 @@ class PastCovariatesInferenceDataset(InferenceDataset):
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+
+        self.covariate_type = covariate_type
+
         self.n = n
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
+
+        self.lazy_encoders = lazy_encoders
 
         raise_if_not((covariates is None or len(self.target_series) == len(self.covariates)),
                      'The number of target series must be equal to the number of covariates.')
@@ -89,66 +156,38 @@ class PastCovariatesInferenceDataset(InferenceDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
-        target_vals = target_series.values(copy=False)
 
-        raise_if_not(len(target_series) >= self.input_chunk_length,
-                     'All input series must have length >= `input_chunk_length` ({}).'.format(
-                         self.input_chunk_length))
+        past_target = target_series[-self.input_chunk_length:]
+        past_target_vals = past_target.values(copy=False)
 
-        tgt_past_vals = target_vals[-self.input_chunk_length:]
+        do_encoding = self.lazy_encoders is not None and (self.lazy_encoders.future_encoders or
+                                                          self.lazy_encoders.past_encoders)
 
-        cov_past = cov_future = None
-        if covariate_series is not None:
-            cov_vals = covariate_series.values(copy=False)
-            start_past_cov_idx = _get_matching_index(target_series, covariate_series, self.input_chunk_length)
+        cov_past, cov_future = None, None
+        if self.covariates is not None or do_encoding:
+            main_cov_type = CovariateType.NONE
+            if self.covariates is not None:
+                main_cov_type = CovariateType.PAST if self.covariate_type is CovariateType.PAST \
+                    else CovariateType.FUTURE
 
-            # because -0 doesn't do what we want as an indexing bound
-            if -start_past_cov_idx+self.input_chunk_length == 0:
-                cov_past = cov_vals[-start_past_cov_idx:]
+            past_start, past_end, future_start, future_end = \
+                self._generate_index(past_target=past_target,
+                                     main_cov_type=main_cov_type,
+                                     input_chunk_length=self.input_chunk_length,
+                                     output_chunk_length=self.output_chunk_length,
+                                     n=self.n)
+
+            covariate = covariate_series[past_start:future_end] if self.covariates else covariate_series
+
+            if not do_encoding:
+                cov_vals = covariate.values(copy=False)
+                cov_past, cov_future = cov_vals[:self.input_chunk_length], cov_vals[self.input_chunk_length:]
             else:
-                cov_past = cov_vals[-start_past_cov_idx:-start_past_cov_idx+self.input_chunk_length]
-
-            raise_if_not(len(cov_past) == self.input_chunk_length,
-                         'The dataset contains past covariates that do not have a sufficient time span to obtain '
-                         'a slice of length input_chunk_length matching the future target')
-
-            # check whether future covariates are also required
-            if self.n > self.output_chunk_length:
-                # check that enough "past" covariates are available into the future
-                # We need `n - output_chunk_length`
-                nr_timestamps_needed = self.n - self.output_chunk_length
-                last_req_ts = target_series.end_time() + nr_timestamps_needed * target_series.freq
-
-                raise_if_not(covariate_series.end_time() >= last_req_ts,
-                             "When forecasting future values for a horizon `n > output_chunk_length` with models "
-                             "requiring past covariates, the past covariates need to be provided for the next "
-                             "`(n - output_chunk_length)` steps in advance. For the dataset's {}-th sample, the last "
-                             "covariate timestamp is {} whereas it should be {}.".format(
-                                 idx, covariate_series.end_time(), last_req_ts
-                             ))
-
-                # because -0 doesn't do what we want as an indexing bound
-                if -start_past_cov_idx+self.input_chunk_length+nr_timestamps_needed == 0:
-                    cov_future = cov_vals[-start_past_cov_idx+self.input_chunk_length:]
-                else:
-                    cov_future = cov_vals[-start_past_cov_idx+self.input_chunk_length:
-                                          -start_past_cov_idx+self.input_chunk_length+nr_timestamps_needed]
-
-        return tgt_past_vals, cov_past, cov_future, target_series
-
-    # def _generate_covariates(self,
-    #                          target: TimeSeries,
-    #                          past_covariate: Optional[TimeSeries] = None,
-    #                          future_covariate: Optional[TimeSeries] = None,
-    #                          return_future: bool = False,
-    #                          shift_covariate: bool = False):
-    #     #TODO: Right now only works for future covariates. Need to add info to GenericShiftedDataset if we deal with
-    #     # future or past covs. Additionally, this is very slow -> think about a better way for lazy loading
-    #     pc_pred, hist_fc_pred = self.lazy_encoders.encode_train(target, past_covariate, future_covariate)
-    #
-    #     # pc_pred = pc_pred[0].values(copy=False) if pc_pred is not None else pc_pred
-    #     covariate = hist_fc_pred[0].values(copy=False) if hist_fc_pred else hist_fc_pred
-    #     return covariate
+                cov_past, cov_future = self._generate_covariates(n=self.n,
+                                                                 target=past_target,
+                                                                 covariate=covariate,
+                                                                 cov_type=self.covariate_type)
+        return past_target_vals, cov_past, cov_future, target_series
 
 
 class FutureCovariatesInferenceDataset(InferenceDataset):
@@ -157,6 +196,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
+                 covariate_type: CovariateType = CovariateType.FUTURE,
                  lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, future_covariates) tuples
@@ -179,8 +219,13 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
         super().__init__()
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.covariate_type = covariate_type
+
         self.n = n
         self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = n
+
+        self.lazy_encoders = lazy_encoders
 
         raise_if_not((covariates is None or len(self.target_series) == len(self.covariates)),
                      'The number of target series must be equal to the number of covariates.')
@@ -191,49 +236,40 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
         covariate_series = None if self.covariates is None else self.covariates[idx]
-        target_vals = target_series.values(copy=False)
 
-        raise_if_not(len(target_series) >= self.input_chunk_length,
-                     'All input series must have length >= `input_chunk_length` ({}).'.format(
-                         self.input_chunk_length))
+        past_target = target_series[-self.input_chunk_length:]
+        past_target_vals = past_target.values(copy=False)
 
-        tgt_past_vals = target_vals[-self.input_chunk_length:]
+        cov_past, cov_future = None, None
 
-        cov_future = None
-        if covariate_series is not None:
-            # check that we have at least n timestamps of future covariates available
-            last_req_ts = target_series.end_time() + self.n * target_series.freq
+        do_encoding = self.lazy_encoders is not None and (self.lazy_encoders.future_encoders or
+                                                          self.lazy_encoders.past_encoders)
 
-            raise_if_not(covariate_series.end_time() >= last_req_ts,
-                         "When forecasting future values for a horizon `n` with models requiring future covariates, "
-                         "the future covariates need to be known `n` time steps in advance. "
-                         "For the dataset's {}-th sample, the last covariate timestamp is {} whereas it "
-                         "should be {}.".format(idx, covariate_series.end_time(), last_req_ts))
+        if self.covariates is not None or do_encoding:
+            main_cov_type = CovariateType.NONE
+            if self.covariates is not None:
+                main_cov_type = CovariateType.PAST if self.covariate_type is CovariateType.PAST \
+                    else CovariateType.FUTURE
 
-            cov_vals = covariate_series.values(copy=False)
-            start_idx = _get_matching_index(target_series, covariate_series, 0)
+            past_start, past_end, future_start, future_end = \
+                self._generate_index(past_target=past_target,
+                                     main_cov_type=main_cov_type,
+                                     input_chunk_length=self.input_chunk_length,
+                                     output_chunk_length=self.output_chunk_length,
+                                     n=self.n)
 
-            # because -0 doesn't do what we want as an indexing bound
-            if -start_idx+self.n == 0:
-                cov_future = cov_vals[-start_idx:]
+            covariate = covariate_series[past_start:future_end] if self.covariates else covariate_series
+
+            if not do_encoding:
+                cov_vals = covariate.values(copy=False)
+                cov_past, cov_future = cov_vals[:self.input_chunk_length], cov_vals[self.input_chunk_length:]
             else:
-                cov_future = cov_vals[-start_idx:-start_idx+self.n]
+                cov_past, cov_future = self._generate_covariates(n=self.n,
+                                                                 target=past_target,
+                                                                 covariate=covariate,
+                                                                 cov_type=self.covariate_type)
 
-        return tgt_past_vals, cov_future, target_series
-
-    def _generate_covariates(self,
-                             target: TimeSeries,
-                             past_covariate: Optional[TimeSeries] = None,
-                             future_covariate: Optional[TimeSeries] = None,
-                             return_future: bool = False,
-                             shift_covariate: bool = False):
-        #TODO: Right now only works for future covariates. Need to add info to GenericShiftedDataset if we deal with
-        # future or past covs. Additionally, this is very slow -> think about a better way for lazy loading
-        pc_pred, hist_fc_pred = self.lazy_encoders.encode_train(target, past_covariate, future_covariate)
-
-        # pc_pred = pc_pred[0].values(copy=False) if pc_pred is not None else pc_pred
-        covariate = hist_fc_pred[0].values(copy=False) if hist_fc_pred else hist_fc_pred
-        return covariate
+        return past_target_vals, cov_future, target_series
 
 
 class DualCovariatesInferenceDataset(InferenceDataset):
@@ -272,6 +308,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length,
+                                                      covariate_type=CovariateType.HISTORIC_FUTURE,
                                                       lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
@@ -279,6 +316,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
                                                           covariates=covariates,
                                                           n=n,
                                                           input_chunk_length=input_chunk_length,
+                                                          covariate_type=CovariateType.FUTURE,
                                                           lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -332,6 +370,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length,
+                                                      covariate_type=CovariateType.PAST,
                                                       lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving historic and future future covariates
@@ -395,6 +434,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length,
+                                                      covariate_type=CovariateType.PAST,
                                                       lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
@@ -402,6 +442,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
                                                           covariates=future_covariates,
                                                           n=n,
                                                           input_chunk_length=input_chunk_length,
+                                                          covariate_type=CovariateType.FUTURE,
                                                           lazy_encoders=lazy_encoders)
 
     def __len__(self):

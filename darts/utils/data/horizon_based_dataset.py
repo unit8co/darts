@@ -90,6 +90,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
 
+        self.lazy_encoders = lazy_encoders
+
     def __len__(self):
         """
         Returns the total number of possible (input, target) splits.
@@ -115,7 +117,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        cov_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
+        main_cov_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
 
         shift = self.lookback * self.output_chunk_length
         input_chunk_length = shift
@@ -129,7 +131,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                                  output_chunk_length=self.output_chunk_length,
                                  end_of_output_idx=end_of_output_idx,
                                  ts_covariate=ts_covariate,
-                                 cov_type=cov_type)
+                                 cov_type=main_cov_type)
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
@@ -148,4 +150,11 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                          f"The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
                          f"input (or output) chunk relative to the target series.")
 
+        #TODO: add lazy encoding
+        if self.lazy_encoders is not None:
+            covariate = self._generate_covariates(target=ts_target,
+                                                  covariate=ts_covariate,
+                                                  in_range_target=(past_start, past_end),
+                                                  in_range_cov=(cov_start, cov_end),
+                                                  cov_type=self.covariate_type)
         return past_target, covariate, future_target

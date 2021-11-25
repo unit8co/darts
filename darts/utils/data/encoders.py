@@ -311,6 +311,8 @@ class SequenceEncoder(Encoder):
                      target: SupportedTimeSeries,
                      past_covariate: Optional[SupportedTimeSeries] = None,
                      future_covariate: Optional[SupportedTimeSeries] = True,
+                     encode_past: bool = True,
+                     encode_future: bool = True,
                      **kwargs) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
         """Returns encoded index for all past and/or future covariates for training.
         Which covariates are generated depends on the parameters used at model creation.
@@ -335,13 +337,17 @@ class SequenceEncoder(Encoder):
         return self._launch_encoder(target=target,
                                     past_covariate=past_covariate,
                                     future_covariate=future_covariate,
-                                    n=None)
+                                    n=None,
+                                    encode_past=encode_past,
+                                    encode_future=encode_future)
 
     def encode_inference(self,
                          n: int,
                          target: SupportedTimeSeries,
                          past_covariate: Optional[SupportedTimeSeries] = None,
                          future_covariate: Optional[SupportedTimeSeries] = True,
+                         encode_past: bool = True,
+                         encode_future: bool = True,
                          **kwargs) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
         """Returns encoded index for all past and/or future covariates for inference/prediction.
         Which covariates are generated depends on the parameters used at model creation.
@@ -368,13 +374,17 @@ class SequenceEncoder(Encoder):
         return self._launch_encoder(target=target,
                                     past_covariate=past_covariate,
                                     future_covariate=future_covariate,
-                                    n=n)
+                                    n=n,
+                                    encode_past=encode_past,
+                                    encode_future=encode_future)
 
     def _launch_encoder(self,
                         target: Sequence[TimeSeries],
                         past_covariate: SupportedTimeSeries,
                         future_covariate: SupportedTimeSeries,
-                        n: Optional[int] = None) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
+                        n: Optional[int] = None,
+                        encode_past: bool = True,
+                        encode_future: bool = True) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
         """Launches the encode sequence for past covariate and future covariate for either training or
         inference/prediction.
 
@@ -386,13 +396,13 @@ class SequenceEncoder(Encoder):
 
         target = [target] if isinstance(target, TimeSeries) else target
 
-        if self.past_encoders:
+        if self.past_encoders and encode_past:
             past_covariate = self._encode_sequence(encoders=self.past_encoders,
                                                    target=target,
                                                    covariate=past_covariate,
                                                    n=n)
 
-        if self.future_encoders:
+        if self.future_encoders and encode_future:
             future_covariate = self._encode_sequence(encoders=self.future_encoders,
                                                      target=target,
                                                      covariate=future_covariate,

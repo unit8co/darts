@@ -123,6 +123,7 @@ class TrainingDataset(ABC, Dataset):
             past_start, past_end = start_of_input_idx, start_of_input_idx + input_chunk_length
 
             if cov_type is not CovariateType.NONE:
+                # not CovariateType.Future -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
                 start = future_start if cov_type is CovariateType.FUTURE else past_start
                 end = future_end if cov_type is CovariateType.FUTURE else past_end
 
@@ -166,24 +167,40 @@ class TrainingDataset(ABC, Dataset):
 
         return past_start, past_end, future_start, future_end, cov_start, cov_end
 
-    # def _generate_covariates(self,
-    #                          target: TimeSeries,
-    #                          past_covariate: Optional[TimeSeries] = None,
-    #                          future_covariate: Optional[TimeSeries] = None,
-    #                          return_future: bool = False,
-    #                          shift_covariate: bool = False):
-    #     #TODO: Right now only works for future covariates. Need to add info to GenericShiftedDataset if we deal with
-    #     # future or past covs. Additionally, this is very slow -> think about a better way for lazy loading
-    #     pc_pred, fc_pred = self.lazy_encoders.encode_inference(
-    #         self.lazy_encoders.output_chunk_length, target, past_covariate, future_covariate
-    #     )
-    #
-    #     # pc_pred = pc_pred[0].values(copy=False) if pc_pred is not None else pc_pred
-    #     fc_pred = fc_pred[0].values(copy=False) if fc_pred else fc_pred
-    #
-    #     covariate = fc_pred[:self.lazy_encoders.input_chunk_length] if not shift_covariate \
-    #         else fc_pred[self.lazy_encoders.input_chunk_length:]
-    #     return covariate
+    def _generate_covariates(self,
+                             target: TimeSeries,
+                             covariate: Optional[TimeSeries],
+                             in_range_target: Tuple[int, int],
+                             in_range_cov: Tuple[int, int],
+                             cov_type: CovariateType = CovariateType.NONE):
+        if not self.lazy_encoders.past_encoders and not self.lazy_encoders.future_encoders:
+            return covariate
+
+        past_start, past_end = in_range_target
+        cov_start, cov_end = in_range_cov
+        target = target[past_start:past_end]
+        covariate = covariate[cov_start:cov_end] if covariate is not None else covariate
+
+        if cov_type is CovariateType.PAST:
+            covariate, _ = self.lazy_encoders.encode_train(target=target,
+                                                           past_covariate=covariate,
+                                                           future_covariate=None,
+                                                           encode_future=False)
+        elif cov_type is CovariateType.HISTORIC_FUTURE:
+            _, covariate = self.lazy_encoders.encode_train(target=target,
+                                                           past_covariate=None,
+                                                           future_covariate=covariate,
+                                                           encode_past=False)
+        elif cov_type is CovariateType.FUTURE:
+            _, covariate = self.lazy_encoders.encode_inference(n=self.lazy_encoders.output_chunk_length,
+                                                               target=target,
+                                                               past_covariate=None,
+                                                               future_covariate=covariate,
+                                                               encode_past=False)
+            if len(covariate[0]) != self.lazy_encoders.output_chunk_length:
+                covariate = [covariate[0][self.lazy_encoders.input_chunk_length:]]
+
+        return covariate[0].values(copy=False) if covariate is not None else covariate
 
 
 class PastCovariatesTrainingDataset(TrainingDataset, ABC):

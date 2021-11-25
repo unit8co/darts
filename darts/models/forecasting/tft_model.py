@@ -519,6 +519,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  likelihood: Optional[Likelihood] = None,
                  max_samples_per_ts: Optional[int] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
+                 is_lazy: bool = False,
                  **kwargs
                  ):
         """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
@@ -659,6 +660,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.likelihood = likelihood
         self.max_sample_per_ts = max_samples_per_ts
         self.output_dim: Optional[Tuple[int, int]] = None
+        self.is_lazy = is_lazy
 
     def _create_model(self,
                       train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
@@ -782,8 +784,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  logger)
 
         # TODO: Find a way to identify if user is loading data lazily
-        is_lazy = False
-        if not is_lazy:
+        if not self.is_lazy:
             past_covariates, future_covariates = self.encoders.encode_train(target,
                                                                             past_covariates,
                                                                             future_covariates)
@@ -794,7 +795,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
                                                 max_samples_per_ts=self.max_sample_per_ts,
-                                                lazy_encoders=self.encoders if is_lazy else None)
+                                                lazy_encoders=self.encoders if self.is_lazy else None)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(isinstance(train_dataset, MixedCovariatesTrainingDataset),
@@ -807,8 +808,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
 
         # TODO: Find a way to identify if user is loading data lazily
-        is_lazy = False
-        if not is_lazy:
+        if not self.is_lazy:
             past_covariates, future_covariates = self.encoders.encode_inference(n,
                                                                                 target,
                                                                                 past_covariates,
@@ -820,7 +820,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                n=n,
                                                input_chunk_length=self.input_chunk_length,
                                                output_chunk_length=self.output_chunk_length,
-                                               lazy_encoders=self.encoders if is_lazy else None)
+                                               lazy_encoders=self.encoders if self.is_lazy else None)
 
     def _produce_train_output(self, input_batch: Tuple):
         return self.model(input_batch)

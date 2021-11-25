@@ -512,9 +512,10 @@ class GenericShiftedDataset(TrainingDataset):
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        cov_type = CovariateType.NONE
+
+        main_cov_type = CovariateType.NONE
         if self.covariates is not None:
-            cov_type = CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
+            main_cov_type = CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
 
         # get all indices for the current sample
         past_start, past_end, future_start, future_end, cov_start, cov_end = \
@@ -525,7 +526,7 @@ class GenericShiftedDataset(TrainingDataset):
                                  output_chunk_length=self.output_chunk_length,
                                  end_of_output_idx=end_of_output_idx,
                                  ts_covariate=ts_covariate,
-                                 cov_type=cov_type)
+                                 cov_type=main_cov_type)
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
@@ -535,23 +536,22 @@ class GenericShiftedDataset(TrainingDataset):
         covariate = None
         if self.covariates is not None:
             raise_if_not(cov_end <= len(ts_covariate),
-                         f"The dataset contains {cov_type.value} covariates "
+                         f"The dataset contains {main_cov_type.value} covariates "
                          f"that don't extend far enough into the future. ({idx}-th sample)")
 
             covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
 
             raise_if_not(len(covariate) == (self.output_chunk_length if self.shift_covariates else
                                             self.input_chunk_length),
-                         f"The dataset contains {cov_type.value} covariates "
+                         f"The dataset contains {main_cov_type.value} covariates "
                          f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
                          f"target series.")
 
         #TODO: add lazy encoding
         if self.lazy_encoders is not None:
-            raise_if_not(False, "Haven't implemented lazy encoding yet")
-            covariate = self._generate_covariates(target=ts_target[past_start:past_end],
-                                                  past_covariate=covariate if not self.shift_covariates else None,
-                                                  future_covariate=covariate if self.shift_covariates else None,
-                                                  return_future=self.shift_covariates,
-                                                  shift_covariate=self.shift_covariates)
+            covariate = self._generate_covariates(target=ts_target,
+                                                  covariate=ts_covariate,
+                                                  in_range_target=(past_start, past_end),
+                                                  in_range_cov=(cov_start, cov_end),
+                                                  cov_type=self.covariate_type)
         return past_target, covariate, future_target
