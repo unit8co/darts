@@ -5,22 +5,16 @@ Training Datasets Base Classes
 
 from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
-from enum import Enum
 import numpy as np
 
 from typing import Tuple, Optional, Dict
 from .encoders import SequenceEncoder
+from .utils import CovariateType
 from ...logging import get_logger, raise_if_not
 from ...timeseries import TimeSeries
 
 logger = get_logger(__name__)
 SampleIndexType = Tuple[int, int, int, int, int, int]
-
-
-class CovariateType(Enum):
-    PAST = 'past'
-    FUTURE = 'future'
-    NONE = None
 
 
 class TrainingDataset(ABC, Dataset):
@@ -66,7 +60,6 @@ class TrainingDataset(ABC, Dataset):
 
         self.lazy_encoders: Optional[SequenceEncoder] = None
         self._index_memory: Dict = {}
-        pass
 
     @abstractmethod
     def __len__(self) -> int:
@@ -172,6 +165,25 @@ class TrainingDataset(ABC, Dataset):
             cov_end = cov_end + idx_shift if cov_end is not None else None
 
         return past_start, past_end, future_start, future_end, cov_start, cov_end
+
+    # def _generate_covariates(self,
+    #                          target: TimeSeries,
+    #                          past_covariate: Optional[TimeSeries] = None,
+    #                          future_covariate: Optional[TimeSeries] = None,
+    #                          return_future: bool = False,
+    #                          shift_covariate: bool = False):
+    #     #TODO: Right now only works for future covariates. Need to add info to GenericShiftedDataset if we deal with
+    #     # future or past covs. Additionally, this is very slow -> think about a better way for lazy loading
+    #     pc_pred, fc_pred = self.lazy_encoders.encode_inference(
+    #         self.lazy_encoders.output_chunk_length, target, past_covariate, future_covariate
+    #     )
+    #
+    #     # pc_pred = pc_pred[0].values(copy=False) if pc_pred is not None else pc_pred
+    #     fc_pred = fc_pred[0].values(copy=False) if fc_pred else fc_pred
+    #
+    #     covariate = fc_pred[:self.lazy_encoders.input_chunk_length] if not shift_covariate \
+    #         else fc_pred[self.lazy_encoders.input_chunk_length:]
+    #     return covariate
 
 
 class PastCovariatesTrainingDataset(TrainingDataset, ABC):

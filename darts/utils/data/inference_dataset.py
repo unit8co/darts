@@ -27,6 +27,8 @@ class InferenceDataset(ABC, Dataset):
         needed in order to properly construct the time axis of the forecast series.
         """
 
+        self.lazy_encoders: Optional[SequenceEncoder] = None
+
     @abstractmethod
     def __len__(self) -> int:
         pass
@@ -134,6 +136,20 @@ class PastCovariatesInferenceDataset(InferenceDataset):
 
         return tgt_past_vals, cov_past, cov_future, target_series
 
+    # def _generate_covariates(self,
+    #                          target: TimeSeries,
+    #                          past_covariate: Optional[TimeSeries] = None,
+    #                          future_covariate: Optional[TimeSeries] = None,
+    #                          return_future: bool = False,
+    #                          shift_covariate: bool = False):
+    #     #TODO: Right now only works for future covariates. Need to add info to GenericShiftedDataset if we deal with
+    #     # future or past covs. Additionally, this is very slow -> think about a better way for lazy loading
+    #     pc_pred, hist_fc_pred = self.lazy_encoders.encode_train(target, past_covariate, future_covariate)
+    #
+    #     # pc_pred = pc_pred[0].values(copy=False) if pc_pred is not None else pc_pred
+    #     covariate = hist_fc_pred[0].values(copy=False) if hist_fc_pred else hist_fc_pred
+    #     return covariate
+
 
 class FutureCovariatesInferenceDataset(InferenceDataset):
     def __init__(self,
@@ -204,6 +220,20 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
                 cov_future = cov_vals[-start_idx:-start_idx+self.n]
 
         return tgt_past_vals, cov_future, target_series
+
+    def _generate_covariates(self,
+                             target: TimeSeries,
+                             past_covariate: Optional[TimeSeries] = None,
+                             future_covariate: Optional[TimeSeries] = None,
+                             return_future: bool = False,
+                             shift_covariate: bool = False):
+        #TODO: Right now only works for future covariates. Need to add info to GenericShiftedDataset if we deal with
+        # future or past covs. Additionally, this is very slow -> think about a better way for lazy loading
+        pc_pred, hist_fc_pred = self.lazy_encoders.encode_train(target, past_covariate, future_covariate)
+
+        # pc_pred = pc_pred[0].values(copy=False) if pc_pred is not None else pc_pred
+        covariate = hist_fc_pred[0].values(copy=False) if hist_fc_pred else hist_fc_pred
+        return covariate
 
 
 class DualCovariatesInferenceDataset(InferenceDataset):

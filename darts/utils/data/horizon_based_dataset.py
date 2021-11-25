@@ -8,7 +8,8 @@ import numpy as np
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
-from .training_dataset import PastCovariatesTrainingDataset, CovariateType
+from .training_dataset import PastCovariatesTrainingDataset
+from .utils import CovariateType
 from .encoders import SequenceEncoder
 
 logger = get_logger(__name__)
@@ -72,6 +73,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.covariate_type = CovariateType.PAST
 
         self.output_chunk_length = output_chunk_length
         self.min_lh, self.max_lh = lh

@@ -1,10 +1,19 @@
 import pandas as pd
+from enum import Enum
 
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not
 
 # Those freqs can be used to divide Time deltas (the others can't):
 DIVISIBLE_FREQS = {'D', 'H', 'T', 'min', 'S', 'L', 'ms', 'U', 'us', 'N'}
+
+
+class CovariateType(Enum):
+    PAST = 'past'
+    FUTURE_PAST = 'future_past'
+    HISTORIC_FUTURE = 'historic_future'
+    FUTURE = 'future'
+    NONE = None
 
 
 def _get_matching_index(ts_target: TimeSeries,

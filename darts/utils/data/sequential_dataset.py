@@ -7,6 +7,7 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
+from .utils import CovariateType
 from .training_dataset import (PastCovariatesTrainingDataset,
                                FutureCovariatesTrainingDataset,
                                DualCovariatesTrainingDataset,
@@ -74,6 +75,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
                                         shift=input_chunk_length,
                                         shift_covariates=False,
                                         max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.PAST,
                                         lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -141,6 +143,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
                                         shift=input_chunk_length,
                                         shift_covariates=True,
                                         max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.FUTURE,
                                         lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -210,6 +213,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
                                              shift=input_chunk_length,
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.HISTORIC_FUTURE,
                                              lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
@@ -220,6 +224,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
                                                shift=input_chunk_length,
                                                shift_covariates=True,
                                                max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE,
                                                lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -292,6 +297,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
                                              shift=input_chunk_length,
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST,
                                              lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving historical and future future covariates
@@ -375,6 +381,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
                                              shift=input_chunk_length,
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST,
                                              lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
@@ -385,6 +392,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
                                                shift=input_chunk_length,
                                                shift_covariates=True,
                                                max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE,
                                                lazy_encoders=lazy_encoders)
 
     def __len__(self):

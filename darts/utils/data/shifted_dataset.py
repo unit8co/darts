@@ -7,13 +7,13 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
+from .utils import CovariateType
 from .training_dataset import (TrainingDataset,
                                PastCovariatesTrainingDataset,
                                FutureCovariatesTrainingDataset,
                                DualCovariatesTrainingDataset,
                                MixedCovariatesTrainingDataset,
-                               SplitCovariatesTrainingDataset,
-                               CovariateType)
+                               SplitCovariatesTrainingDataset)
 from .encoders import SequenceEncoder
 from ..utils import raise_if_not
 
@@ -25,7 +25,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
                  length: int = 12,
                  shift: int = 1,
                  max_samples_per_ts: Optional[int] = None,
-                 lazy_encoders: Optional[SequenceEncoder] = None):
+                 lazy_encoders: Optional[SequenceEncoder] = None,):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_target)
         arrays, which all have length `length`.
@@ -75,6 +75,7 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
                                         shift=shift,
                                         shift_covariates=False,
                                         max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.PAST,
                                         lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -144,6 +145,7 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
                                         shift=shift,
                                         shift_covariates=True,
                                         max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.FUTURE,
                                         lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -216,6 +218,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                                              shift=shift,
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.HISTORIC_FUTURE,
                                              lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
@@ -226,6 +229,7 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                                                shift=shift,
                                                shift_covariates=True,
                                                max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE,
                                                lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -302,6 +306,7 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                                              shift=shift,
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST,
                                              lazy_encoders=lazy_encoders)
 
         # The dual dataset serves both historical and future future covariates
@@ -388,6 +393,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                                              shift=shift,
                                              shift_covariates=False,
                                              max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST,
                                              lazy_encoders=lazy_encoders)
 
         # This dataset is in charge of serving future covariates
@@ -398,6 +404,7 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                                                shift=shift,
                                                shift_covariates=True,
                                                max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE,
                                                lazy_encoders=lazy_encoders)
 
     def __len__(self):
@@ -418,6 +425,7 @@ class GenericShiftedDataset(TrainingDataset):
                  shift: int = 1,
                  shift_covariates: bool = False,
                  max_samples_per_ts: Optional[int] = None,
+                 covariate_type: CovariateType = CovariateType.NONE,
                  lazy_encoders: Optional[SequenceEncoder] = None):
         """
         Contains (past_target, <X>_covariate, future_target), where "<X>" is past if `shift_covariates = False`
@@ -450,6 +458,8 @@ class GenericShiftedDataset(TrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        covariate_type
+            An instance of `CovariateType` describing the type of `covariates`.
         lazy_encoders
             Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
             covariates are generated at sample loading time.
@@ -458,6 +468,7 @@ class GenericShiftedDataset(TrainingDataset):
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.covariate_type = covariate_type
 
         raise_if_not(covariates is None or len(self.target_series) == len(self.covariates),
                      'The provided sequence of target series must have the same length as '
@@ -475,6 +486,8 @@ class GenericShiftedDataset(TrainingDataset):
                                       self.size_of_both_chunks + 1
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
+
+        self.lazy_encoders = lazy_encoders
 
     def __len__(self):
         return self.ideal_nr_samples
@@ -533,4 +546,12 @@ class GenericShiftedDataset(TrainingDataset):
                          f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
                          f"target series.")
 
+        #TODO: add lazy encoding
+        if self.lazy_encoders is not None:
+            raise_if_not(False, "Haven't implemented lazy encoding yet")
+            covariate = self._generate_covariates(target=ts_target[past_start:past_end],
+                                                  past_covariate=covariate if not self.shift_covariates else None,
+                                                  future_covariate=covariate if self.shift_covariates else None,
+                                                  return_future=self.shift_covariates,
+                                                  shift_covariate=self.shift_covariates)
         return past_target, covariate, future_target
