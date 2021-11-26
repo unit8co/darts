@@ -102,8 +102,8 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                 cov_past = cov_vals[-start_past_cov_idx:-start_past_cov_idx+self.input_chunk_length]
 
             raise_if_not(len(cov_past) == self.input_chunk_length,
-                         'The dataset contains some covariates that do not have a sufficient time span to obtain '
-                         'a slice of length input_chunk_length matching the target')
+                         'The dataset contains past covariates that do not have a sufficient time span to obtain '
+                         'a slice of length input_chunk_length matching the future target')
 
             # check whether future covariates are also required
             if self.n > self.output_chunk_length:
@@ -113,10 +113,10 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                 last_req_ts = target_series.end_time() + nr_timestamps_needed * target_series.freq
 
                 raise_if_not(covariate_series.end_time() >= last_req_ts,
-                             "When forecasting future values for a horizon n with models requiring past covariates, "
-                             "the past covariates need to be known (n - output_chunk_length) in advance (needed "
-                             "to produce forecasts when n > output_chunk_length). For the dataset's {}-th sample, "
-                             "the last covariate timestamp is {} whereas it should be {}.".format(
+                             "When forecasting future values for a horizon `n > output_chunk_length` with models "
+                             "requiring past covariates, the past covariates need to be provided for the next "
+                             "`(n - output_chunk_length)` steps in advance. For the dataset's {}-th sample, the last "
+                             "covariate timestamp is {} whereas it should be {}.".format(
                                  idx, covariate_series.end_time(), last_req_ts
                              ))
 
@@ -180,8 +180,8 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             last_req_ts = target_series.end_time() + self.n * target_series.freq
 
             raise_if_not(covariate_series.end_time() >= last_req_ts,
-                         "When forecasting future values for a horizon n with models requiring future covariates, "
-                         "the future covariates need to be known n time steps in advance. "
+                         "When forecasting future values for a horizon `n` with models requiring future covariates, "
+                         "the future covariates need to be known `n` time steps in advance. "
                          "For the dataset's {}-th sample, the last covariate timestamp is {} whereas it "
                          "should be {}.".format(idx, covariate_series.end_time(), last_req_ts))
 
