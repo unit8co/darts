@@ -66,7 +66,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         """ Reshapes the series' values to be fed in input to a transformer.
 
             The output is a 2-D matrix where each column corresponds to a component (dimension)
-            of the series, and the columns' values are the flattened 
+            of the series, and the columns' values are the flattened values over all samples
         """
         vals = series.all_values(copy=False)
         return np.stack([vals[:, i, :].reshape(-1) for i in range(series.width)], axis=1)

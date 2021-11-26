@@ -7,6 +7,7 @@ from typing import Optional, Union, Sequence, Iterator, Tuple
 from scipy.stats import boxcox_normmax, boxcox
 from scipy.special import inv_boxcox
 import pandas as pd
+import numpy as np
 
 from darts.timeseries import TimeSeries
 from darts.dataprocessing.transformers import FittableDataTransformer, InvertibleDataTransformer
@@ -14,8 +15,6 @@ from darts.logging import get_logger, raise_if
 
 
 logger = get_logger(__name__)
-
-# TODO: extend to stochastic series
 
 
 class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
@@ -89,14 +88,36 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         return zip(series, self._fitted_params)
 
     @staticmethod
+    def _reshape_in(series: TimeSeries) -> np.ndarray:
+        """ Reshapes the series' values to be fed in input to a transformer.
+
+            The output is a 2-D matrix where each column corresponds to a component (dimension)
+            of the series, and the columns' values are the flattened values over all samples
+        """
+        vals = series.all_values(copy=False)
+        return np.stack([vals[:, i, :].reshape(-1) for i in range(series.width)], axis=1)
+
+    @staticmethod
+    def _reshape_out(vals: np.ndarray, series_width: int, series_n_samples: int) -> np.ndarray:
+        """ Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix
+            suitable to build a TimeSeries.
+
+            The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)
+            and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.
+        """
+        return np.stack([vals[:, i].reshape(-1, series_n_samples) for i in range(series_width)], axis=1)
+
+    @staticmethod
     def ts_fit(series: TimeSeries,
                lmbda: Optional[Union[float, Sequence[float]]],
                method) -> Union[Sequence[float],
                                 pd.core.series.Series]:
         if lmbda is None:
             # Compute optimal lmbda for each dimension of the time series. In this case, the return type is
-            # a pd.core.series.Series, which is not inhering from collections.abs.Sequence
-            lmbda = series.pd_dataframe(copy=False).apply(boxcox_normmax, method=method)
+            # an ndarray and not a Sequence
+            vals = BoxCox._reshape_in(series)
+            lmbda = np.apply_along_axis(boxcox_normmax, axis=0, arr=vals, method=method)
+
         elif isinstance(lmbda, Sequence):
             raise_if(len(lmbda) != series.width,
                      "lmbda should have one value per dimension (ie. column or variable) of the time series",
@@ -109,21 +130,16 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
 
     @staticmethod
     def ts_transform(series: TimeSeries, lmbda: Union[Sequence[float], pd.core.series.Series]) -> TimeSeries:
+        vals = BoxCox._reshape_in(series)
+        transformed_vals = np.stack([boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series.width)], axis=1)
+        return series.with_values(BoxCox._reshape_out(transformed_vals, series.width, series.n_samples))
 
-        def _boxcox_wrapper(col):
-            idx = series.pd_dataframe(copy=False).columns.get_loc(col.name)  # get index from col name
-            return boxcox(col, lmbda[idx])
-
-        return TimeSeries.from_dataframe(series.pd_dataframe(copy=False).apply(_boxcox_wrapper))
 
     @staticmethod
     def ts_inverse_transform(series: TimeSeries, lmbda: Union[Sequence[float], pd.core.series.Series]) -> TimeSeries:
-
-        def _inv_boxcox_wrapper(col):
-            idx = series.pd_dataframe(copy=False).columns.get_loc(col.name)  # get index from col name
-            return inv_boxcox(col, lmbda[idx])
-
-        return TimeSeries.from_dataframe(series.pd_dataframe(copy=False).apply(_inv_boxcox_wrapper))
+        vals = BoxCox._reshape_in(series)
+        inv_transformed_vals = np.stack([inv_boxcox(vals[:, i], lmbda[i]) for i in range(series.width)], axis=1)
+        return series.with_values(BoxCox._reshape_out(inv_transformed_vals, series.width, series.n_samples))
 
     def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]]) -> 'FittableDataTransformer':
         # adding lmbda and optim_method params

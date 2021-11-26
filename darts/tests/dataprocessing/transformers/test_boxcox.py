@@ -1,5 +1,6 @@
 import unittest
 import pandas as pd
+import numpy as np
 from math import log
 from copy import deepcopy
 
@@ -81,3 +82,15 @@ class BoxCoxTestCase(unittest.TestCase):
         lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
         self.assertNotEqual(lambda1, lambda2, "Lambdas should change when the transformer is retrained")
+
+    def test_multivariate_stochastic_series(self):
+        transformer = BoxCox()
+        sine = sine_timeseries(start=0, length=100) + 1 + (linear_timeseries(start=0, length=100)+0.1) ** 2
+        sine2 = sine_timeseries(start=0, length=100) + 1 + (linear_timeseries(start=0, length=100)+1) ** 4
+        series = sine.stack(sine2)
+
+        new_series = transformer.fit_transform(series)
+        series_back = transformer.inverse_transform(new_series)
+
+        # Test inverse transform
+        np.testing.assert_allclose(series.all_values(), series_back.all_values())
