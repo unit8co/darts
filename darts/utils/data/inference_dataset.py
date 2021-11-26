@@ -50,11 +50,8 @@ class InferenceDataset(ABC, Dataset):
                         n: int):
         """returns tuple of (past_start, past_end, future_start, future_end)"""
 
-        raise_if_not(main_cov_type in [CovariateType.NONE, CovariateType.PAST, CovariateType.FUTURE],
-                     '`main_cov_type` must be one of `(CovariateType.NONE, CovariateType.PAST, CovariateType.FUTURE)`')
-
-        if main_cov_type is CovariateType.NONE:
-            return past_target.time_index[0], past_target.time_index[1], None, None
+        raise_if_not(main_cov_type in [CovariateType.PAST, CovariateType.FUTURE],
+                     '`main_cov_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`')
 
         if main_cov_type is CovariateType.PAST:
             index_generator = PastCovariateIndexGenerator(input_chunk_length=input_chunk_length,
@@ -64,11 +61,14 @@ class InferenceDataset(ABC, Dataset):
                                                             output_chunk_length=output_chunk_length)
 
         index = index_generator.generate_inference_series(n=n, target=past_target, covariate=None)
-        if len(index) == input_chunk_length:
-            return past_target.time_index[0], past_target.time_index[-1], None, None
-        else:
+
+        if len(index) != input_chunk_length:
             index = index[input_chunk_length:]
+
+        if input_chunk_length != 0:  # for regular models
             return past_target.time_index[0], past_target.time_index[-1], index[0], index[-1]
+        else:  # for regression ensemble models
+            return index[0], index[0], index[0], index[-1]
 
     def _generate_covariates(self,
                              n: int,
@@ -94,9 +94,12 @@ class InferenceDataset(ABC, Dataset):
                                                                encode_past=False)
         if covariate is None:
             return None, None
-        else:
-            cov_vals = covariate[0].values(copy=False)
-            return cov_vals[: self.lazy_encoders.input_chunk_length], cov_vals[ self.lazy_encoders.input_chunk_length:]
+
+        cov_vals = covariate[0].values(copy=False)
+        if self.lazy_encoders.input_chunk_length != 0:  # regular models
+            return cov_vals[:self.lazy_encoders.input_chunk_length], cov_vals[self.lazy_encoders.input_chunk_length:]
+        else:  # regression ensemble models
+            return cov_vals, cov_vals
 
 
 class GenericInferenceDataset(InferenceDataset):
@@ -155,20 +158,19 @@ class GenericInferenceDataset(InferenceDataset):
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
+
+        raise_if_not(len(target_series) >= self.input_chunk_length,
+                     f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length}).")
+
         covariate_series = None if self.covariates is None else self.covariates[idx]
 
         past_target = target_series[-self.input_chunk_length:]
         past_target_vals = past_target.values(copy=False)
 
-        do_encoding = self.lazy_encoders is not None and (self.lazy_encoders.future_encoders or
-                                                          self.lazy_encoders.past_encoders)
-
-        cov_past, cov_future = None, None
-        if self.covariates is not None or do_encoding:
-            main_cov_type = CovariateType.NONE
-            if self.covariates is not None:
-                main_cov_type = CovariateType.PAST if self.covariate_type is CovariateType.PAST \
-                    else CovariateType.FUTURE
+        covariate = None
+        if covariate_series is not None:
+            main_cov_type = CovariateType.PAST if self.covariate_type is CovariateType.PAST \
+                else CovariateType.FUTURE
 
             past_start, past_end, future_start, future_end = \
                 self._generate_index(past_target=past_target,
@@ -176,17 +178,43 @@ class GenericInferenceDataset(InferenceDataset):
                                      input_chunk_length=self.input_chunk_length,
                                      output_chunk_length=self.output_chunk_length,
                                      n=self.n)
+            case_start = future_start if self.covariate_type is CovariateType.FUTURE else past_start
+            raise_if_not(
+                covariate_series.start_time() <= case_start,
+                f"For the given forecasting case, the provided {main_cov_type.value} covariates at dataset index "
+                f"`{idx}` do not extend far enough into the past. The {main_cov_type.value} covariates must start at "
+                f"time step `{case_start}`, whereas now they start at time step `{covariate_series.start_time()}`.")
+            raise_if_not(
+                covariate_series.end_time() >= future_end,
+                f"For the given forecasting horizon `n={self.n}`, the provided {main_cov_type.value} covariates "
+                f"at dataset index `{idx}` do not extend far enough into the future. As `"
+                f"{'n > output_chunk_length' if self.n > self.output_chunk_length else 'n <= output_chunk_length'}"
+                f"` the {main_cov_type.value} covariates must end at time step `{future_end}`, "
+                f"whereas now they end at time step `{covariate_series.end_time()}`.")
 
-            covariate = covariate_series[past_start:future_end] if self.covariates else covariate_series
+            # extract the index position (index) from time_index value
+            cov_start = covariate_series.time_index.get_loc(past_start)
+            cov_end = covariate_series.time_index.get_loc(future_end) + 1
+            covariate = covariate_series[cov_start:cov_end]
 
-            if not do_encoding:
-                cov_vals = covariate.values(copy=False)
+        do_encoding = self.lazy_encoders is not None and self.lazy_encoders.encoding_available
+        if do_encoding:  # optionally, use encoders to generate (additional) covariates
+            cov_past, cov_future = self._generate_covariates(n=self.n,
+                                                             target=past_target,
+                                                             covariate=covariate,
+                                                             cov_type=self.covariate_type)
+        elif covariate_series is not None:  # extract past and future covariate parts without encoders
+            cov_vals = covariate.values(copy=False)
+            if self.input_chunk_length != 0:  # regular models
                 cov_past, cov_future = cov_vals[:self.input_chunk_length], cov_vals[self.input_chunk_length:]
-            else:
-                cov_past, cov_future = self._generate_covariates(n=self.n,
-                                                                 target=past_target,
-                                                                 covariate=covariate,
-                                                                 cov_type=self.covariate_type)
+            else:  # regression ensemble models
+                cov_past, cov_future = cov_vals, cov_vals
+        else:
+            cov_past, cov_future = None, None
+
+        cov_past = cov_past if cov_past is not None and len(cov_past) > 0 else None
+        cov_future = cov_future if cov_future is not None and len(cov_future) > 0 else None
+
         return past_target_vals, cov_past, cov_future, target_series
 
 

@@ -305,6 +305,7 @@ class SequenceEncoder(Encoder):
         self._future_encoders: List[SingleEncoder] = []
         self.takes_past_covariates = takes_past_covariates
         self.takes_future_covariates = takes_future_covariates
+        self.encoding_available = False
         self._setup_encoders(self.params)
 
     def encode_train(self,
@@ -391,7 +392,7 @@ class SequenceEncoder(Encoder):
         If `n` is `None` it is a prediction, otherwise it is training.
         """
 
-        if not self.past_encoders and not self.future_encoders:
+        if not self.encoding_available:
             return past_covariate, future_covariate
 
         target = [target] if isinstance(target, TimeSeries) else target
@@ -486,6 +487,7 @@ class SequenceEncoder(Encoder):
         self._future_encoders = [self.encoder_map[enc_id](self.input_chunk_length,
                                                           self.output_chunk_length,
                                                           attr) for enc_id, attr in future_encoders]
+        self.encoding_available = True
 
     def _process_input(self, params: Dict) -> Tuple[List, List]:
         """processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
@@ -533,10 +535,11 @@ class SequenceEncoder(Encoder):
         """
         # extract encoder params
         params_encoder = params.get(ENCODER_KWARG, {})
-        encoders = {enc: params_encoder.get(enc, None) for enc in ENCODER_KEYS if params_encoder.get(enc, None)}
 
-        if not encoders:
+        if not params_encoder:
             return [], []
+
+        encoders = {enc: params_encoder.get(enc, None) for enc in ENCODER_KEYS if params_encoder.get(enc, None)}
 
         # check input for if invalid temporal types; values other than ('past', 'future', 'absolute')
         invalid_time_params = list()
