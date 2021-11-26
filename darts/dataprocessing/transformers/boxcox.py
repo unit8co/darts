@@ -31,6 +31,10 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         Box-Cox data transformer.
         See https://otexts.com/fpp2/transformations.html#mathematical-transformations for more information.
 
+        The transformation is applied independently for each dimension (component) of the time series.
+        For stochastic series, it is done jointly over all samples, effectively merging all samples of
+        a component in order to compute the transform.
+
         Parameters
         ----------
         name

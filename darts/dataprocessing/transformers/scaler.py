@@ -25,6 +25,8 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
 
         When the scaler is applied on multivariate series, the scaling is done per-component.
         When the series are stochastic, the scaling is done across all samples (for each given component).
+        The transformation is applied independently for each dimension (component) of the time series,
+        effectively merging all samples of a component in order to compute the transform.
 
         Parameters
         ----------
