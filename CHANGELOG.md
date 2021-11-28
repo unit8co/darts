@@ -4,17 +4,43 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.13.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.14.0...master)
+
+## [0.14.0](https://github.com/unit8co/darts/tree/0.14.0) (2021-11-28)
+### For users of the library:
+
+**Added**:
+- Probabilistic N-BEATS: The `NBEATSModel` can now produce probabilistic forecasts,
+in a similar way as all the other deep learning models in Darts (specifying a `likelihood`
+and predicting with `num_samples` >> 1).
+- We have improved the speed of the data loaing functionalities for PyTorch-based models.
+This should speedup training, typically by a few percents.
+- Added `num_loader_workers` parameters to `fit()` and `predict()` methods of PyTorch-based models, 
+in order to control the `num_workers` of PyTorch DataLoaders. This can sometimes result in drastic speedups.
+- New method `TimeSeries.astype()` which allows to easily case (e.g. between `np.float64` and `np.float32`).
+- Added `dtype` as an option to the time series generation modules.
+- Added a small [performance guide](https://github.com/unit8co/darts/blob/master/guides/performance.md) for
+PyTorch-based models.
+- Possibility to specify a (relative) time index to be used as future covariates in the TFT Model.
+Future covariates don't have to be specified when this is used.
+- New TFT example notebook.
+- Less strict dependencies: we have loosened the required dependencies versions.
+
+**Fixed**:
+- A small fix on the Temporal Fusion Transformer `TFTModel`, which should improve performance.
+- A small fix in the random state of some unit tests.
+- Fixed a typo in Transformer example notebook.
+
 
 ## [0.13.1](https://github.com/unit8co/darts/tree/0.13.1) (2021-11-08)
 ### For users of the library:
 
 **Added**:
-* Factory methods in `TimeSeries` are now `classmethods`, which makes inheritance of
+- Factory methods in `TimeSeries` are now `classmethods`, which makes inheritance of
   `TimeSeries` more convenient.
 
 **Fixed**:
-* An issue which was causing some of the flavours installations not to work
+- An issue which was causing some of the flavours installations not to work
 
 ## [0.13.0](https://github.com/unit8co/darts/tree/0.13.0) (2021-11-07)
 ### For users of the library:
