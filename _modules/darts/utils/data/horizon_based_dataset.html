@@ -162,8 +162,7 @@
 
 <span class="kn">from</span> <span class="nn">...logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
 <span class="kn">from</span> <span class="nn">...timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">.training_dataset</span> <span class="kn">import</span> <span class="n">PastCovariatesTrainingDataset</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">_get_matching_index</span>
+<span class="kn">from</span> <span class="nn">.training_dataset</span> <span class="kn">import</span> <span class="n">PastCovariatesTrainingDataset</span><span class="p">,</span> <span class="n">CovariateType</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -246,46 +245,56 @@
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="c1"># determine the index of the time series.</span>
         <span class="n">ts_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span>
+        <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span>
+        <span class="n">target_vals</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_vals</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                     <span class="s1">&#39;The dataset contains some input/target series that are shorter than &#39;</span>
+                     <span class="s1">&#39;`(lookback + max_lh) * H` (</span><span class="si">{}</span><span class="s1">-th series)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">))</span>
 
         <span class="c1"># determine the index lh_idx of the forecasting point (the last point of the input series, before the target)</span>
         <span class="c1"># lh_idx should be in [0, self.nr_samples_per_ts)</span>
         <span class="n">lh_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">-</span> <span class="p">(</span><span class="n">ts_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span><span class="p">)</span>
 
-        <span class="c1"># The time series index of our forecasting point (indexed from the end of the series):</span>
-        <span class="n">forecast_point_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">lh_idx</span>
+        <span class="c1"># determine the index at the end of the output chunk</span>
+        <span class="n">end_of_output_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">)</span> <span class="o">-</span> <span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">lh_idx</span><span class="p">)</span>
 
-        <span class="c1"># Sanity check... TODO: remove</span>
-        <span class="k">assert</span> <span class="n">lh_idx</span> <span class="o">&lt;</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="s1">&#39;bug in the Lh indexing&#39;</span>
+        <span class="c1"># optionally, load covariates</span>
+        <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">cov_type</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span>
 
-        <span class="c1"># select the time series</span>
-        <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span>
-        <span class="n">target_values</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">shift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+        <span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">shift</span>
 
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_values</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
-                     <span class="s1">&#39;The dataset contains some input/target series that are shorter than &#39;</span>
-                     <span class="s1">&#39;`(lookback + max_lh) * H` (</span><span class="si">{}</span><span class="s1">-th)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">))</span>
+        <span class="c1"># get all indices for the current sample</span>
+        <span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span><span class="p">,</span> <span class="n">future_start</span><span class="p">,</span> <span class="n">future_end</span><span class="p">,</span> <span class="n">cov_start</span><span class="p">,</span> <span class="n">cov_end</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">_memory_indexer</span><span class="p">(</span><span class="n">ts_idx</span><span class="o">=</span><span class="n">ts_idx</span><span class="p">,</span>
+                                 <span class="n">ts_target</span><span class="o">=</span><span class="n">ts_target</span><span class="p">,</span>
+                                 <span class="n">shift</span><span class="o">=</span><span class="n">shift</span><span class="p">,</span>
+                                 <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                 <span class="n">end_of_output_idx</span><span class="o">=</span><span class="n">end_of_output_idx</span><span class="p">,</span>
+                                 <span class="n">ts_covariate</span><span class="o">=</span><span class="n">ts_covariate</span><span class="p">,</span>
+                                 <span class="n">cov_type</span><span class="o">=</span><span class="n">cov_type</span><span class="p">)</span>
 
-        <span class="c1"># select forecast point and target period, using the previously computed indexes</span>
-        <span class="k">if</span> <span class="n">forecast_point_idx</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
-            <span class="c1"># we need this case because &quot;-0&quot; is not supported as an indexing bound</span>
-            <span class="n">output_series</span> <span class="o">=</span> <span class="n">target_values</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">:]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">output_series</span> <span class="o">=</span> <span class="n">target_values</span><span class="p">[</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">:</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">]</span>
+        <span class="c1"># extract sample target</span>
+        <span class="n">future_target</span> <span class="o">=</span> <span class="n">target_vals</span><span class="p">[</span><span class="n">future_start</span><span class="p">:</span><span class="n">future_end</span><span class="p">]</span>
+        <span class="n">past_target</span> <span class="o">=</span> <span class="n">target_vals</span><span class="p">[</span><span class="n">past_start</span><span class="p">:</span><span class="n">past_end</span><span class="p">]</span>
 
-        <span class="c1"># select input period; look at the `lookback * output_series` points before the forecast point</span>
-        <span class="n">input_series</span> <span class="o">=</span> <span class="n">target_values</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">forecast_point_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">):</span><span class="o">-</span><span class="n">forecast_point_idx</span><span class="p">]</span>
-
-        <span class="c1"># optionally also produce the input covariate</span>
-        <span class="n">input_covariate</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># optionally, extract sample covariates</span>
+        <span class="n">covariate</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span>
-            <span class="n">covariate_values</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">cov_end</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_covariate</span><span class="p">),</span>
+                         <span class="sa">f</span><span class="s2">&quot;The dataset contains &#39;past&#39; covariates that don&#39;t extend far enough into the future. &quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">-th sample)&quot;</span><span class="p">)</span>
 
-            <span class="n">cov_fcast_idx</span> <span class="o">=</span> <span class="n">_get_matching_index</span><span class="p">(</span><span class="n">ts_target</span><span class="p">,</span> <span class="n">ts_covariate</span><span class="p">,</span> <span class="n">forecast_point_idx</span><span class="p">)</span>
+            <span class="n">covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">cov_start</span><span class="p">:</span><span class="n">cov_end</span><span class="p">]</span>
 
-            <span class="n">input_covariate</span> <span class="o">=</span> <span class="n">covariate_values</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">cov_fcast_idx</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">):</span><span class="o">-</span><span class="n">cov_fcast_idx</span><span class="p">]</span>
+            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">covariate</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">past_target</span><span class="p">),</span>
+                         <span class="sa">f</span><span class="s2">&quot;The dataset contains &#39;past&#39; covariates whose time axis doesn&#39;t allow to obtain the &quot;</span>
+                         <span class="sa">f</span><span class="s2">&quot;input (or output) chunk relative to the target series.&quot;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">input_series</span><span class="p">,</span> <span class="n">input_covariate</span><span class="p">,</span> <span class="n">output_series</span></div>
+        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
 </pre></div>
 
               </div>

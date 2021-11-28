@@ -166,7 +166,8 @@
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">raise_if_not</span>
 <span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
+<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">Likelihood</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">PastCovariatesTorchModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -184,29 +185,36 @@
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">expansion_coefficient_dim</span><span class="p">,</span>
-                 <span class="n">output_dim</span><span class="p">):</span>
+                 <span class="n">target_length</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">_TrendGenerator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">T</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span>
-            <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)</span> <span class="o">/</span> <span class="n">output_dim</span><span class="p">)</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">expansion_coefficient_dim</span><span class="p">)],</span> <span class="mi">1</span><span class="p">),</span>
-            <span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># basis is of size (expansion_coefficient_dim, target_length)</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">target_length</span><span class="p">)</span> <span class="o">/</span> <span class="n">target_length</span><span class="p">)</span><span class="o">**</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">expansion_coefficient_dim</span><span class="p">)],</span> 
+                            <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">basis</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">basis</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">_SeasonalityGenerator</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">output_dim</span><span class="p">):</span>
+                 <span class="n">target_length</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">(</span><span class="n">_SeasonalityGenerator</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="n">half_minus_one</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">output_dim</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="n">cos_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_minus_one</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-        <span class="n">sin_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_minus_one</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">S</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">output_dim</span><span class="p">)]</span> <span class="o">+</span> <span class="n">cos_vectors</span> <span class="o">+</span> <span class="n">sin_vectors</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
-                              <span class="kc">False</span><span class="p">)</span>
+        <span class="n">half_minus_one</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">target_length</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">cos_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">cos</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">target_length</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_minus_one</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        <span class="n">sin_vectors</span> <span class="o">=</span> <span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">sin</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">target_length</span><span class="p">)</span> <span class="o">*</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">half_minus_one</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)]</span>
+        
+        <span class="c1"># basis is of size (2 * int(target_length / 2 - 1) + 1, target_length)</span>
+        <span class="n">basis</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">torch</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">target_length</span><span class="p">)]</span> <span class="o">+</span> <span class="n">cos_vectors</span> <span class="o">+</span> <span class="n">sin_vectors</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">basis</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">basis</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">S</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">matmul</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">basis</span><span class="p">)</span>
 
 
 <span class="k">class</span> <span class="nc">_Block</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
@@ -214,11 +222,16 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">layer_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">g_type</span><span class="p">:</span> <span class="n">GTypes</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; PyTorch module implementing the basic building block of the N-BEATS architecture.</span>
+
+<span class="sd">        The blocks produce outputs of size (target_length, nr_params); i.e.</span>
+<span class="sd">        &quot;one vector per parameter&quot;. The parameters are predicted only for forecast outputs.</span>
+<span class="sd">        Backcast outputs are in the original &quot;domain&quot;.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -226,9 +239,11 @@
 <span class="sd">            The number of fully connected layers preceding the final forking layers.</span>
 <span class="sd">        layer_width</span>
 <span class="sd">            The number of neurons that make up each fully connected layer.</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used)</span>
 <span class="sd">        expansion_coefficient_dim</span>
 <span class="sd">            The dimensionality of the waveform generator parameters, also known as expansion coefficients.</span>
-<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">            Used in the generic architecture and the trend module of the interpretable architecture, where it determines the degree of the polynomial basis.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the input sequence fed to the model.</span>
 <span class="sd">        target_length</span>
@@ -254,6 +269,8 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">layer_width</span> <span class="o">=</span> <span class="n">layer_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">target_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">g_type</span> <span class="o">=</span> <span class="n">g_type</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">relu</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
 
@@ -262,13 +279,14 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span> <span class="o">+=</span> <span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)]</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fc_stack</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="p">)</span>
 
-        <span class="c1"># fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters)</span>
+        <span class="c1"># Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).</span>
+        <span class="c1"># The coefficients are emitted for each parameter of the likelihood.</span>
         <span class="k">if</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">SEASONALITY</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">input_chunk_length</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">target_length</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">nr_params</span> <span class="o">*</span> <span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">target_length</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">nr_params</span> <span class="o">*</span> <span class="n">expansion_coefficient_dim</span><span class="p">)</span>
 
         <span class="c1"># waveform generator functions</span>
         <span class="k">if</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">GENERIC</span><span class="p">:</span>
@@ -284,6 +302,8 @@
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;g_type not supported&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
         <span class="c1"># fully connected layer stack</span>
         <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="p">:</span>
             <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
@@ -292,9 +312,15 @@
         <span class="n">theta_backcast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="n">theta_forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
-        <span class="c1"># waveform generator applications</span>
+        <span class="c1"># set the expansion coefs in last dimension for the forecasts</span>
+        <span class="n">theta_forecast</span> <span class="o">=</span> <span class="n">theta_forecast</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># waveform generator applications (project the expansion coefs onto basis vectors)</span>
         <span class="n">x_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backcast_g</span><span class="p">(</span><span class="n">theta_backcast</span><span class="p">)</span>
         <span class="n">y_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_g</span><span class="p">(</span><span class="n">theta_forecast</span><span class="p">)</span>
+
+        <span class="c1"># Set the distribution parameters as the last dimension</span>
+        <span class="n">y_hat</span> <span class="o">=</span> <span class="n">y_hat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">y_hat</span>
 
@@ -305,6 +331,7 @@
                  <span class="n">num_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">layer_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -320,9 +347,10 @@
 <span class="sd">            The number of fully connected layers preceding the final forking layers in each block.</span>
 <span class="sd">        layer_width</span>
 <span class="sd">            The number of neurons that make up each fully connected layer in each block.</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used)</span>
 <span class="sd">        expansion_coefficient_dim</span>
 <span class="sd">            The dimensionality of the waveform generator parameters, also known as expansion coefficients.</span>
-<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the input sequence fed to the model.</span>
 <span class="sd">        target_length</span>
@@ -348,22 +376,32 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">target_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
 
         <span class="k">if</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">GENERIC</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span> <span class="o">=</span> <span class="p">[</span>
-                <span class="n">_Block</span><span class="p">(</span><span class="n">num_layers</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">target_length</span><span class="p">,</span> <span class="n">g_type</span><span class="p">)</span>
+                <span class="n">_Block</span><span class="p">(</span><span class="n">num_layers</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">,</span> <span class="n">nr_params</span><span class="p">,</span> 
+                       <span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> 
+                       <span class="n">target_length</span><span class="p">,</span> <span class="n">g_type</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">)</span>
             <span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># same block instance is used for weight sharing</span>
-            <span class="n">interpretable_block</span> <span class="o">=</span> <span class="n">_Block</span><span class="p">(</span><span class="n">num_layers</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">,</span> <span class="n">expansion_coefficient_dim</span><span class="p">,</span>
-                                         <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">target_length</span><span class="p">,</span> <span class="n">g_type</span><span class="p">)</span>
+            <span class="n">interpretable_block</span> <span class="o">=</span> <span class="n">_Block</span><span class="p">(</span><span class="n">num_layers</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">,</span> <span class="n">nr_params</span><span class="p">,</span>
+                                         <span class="n">expansion_coefficient_dim</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> 
+                                         <span class="n">target_length</span><span class="p">,</span> <span class="n">g_type</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">interpretable_block</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_blocks</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># One forecast vector per parameter in the distribution</span>
+        <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> 
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span> 
+                                     <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">,</span> 
+                                     <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> 
+                                     <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
         <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span><span class="p">:</span>
             <span class="c1"># pass input through block</span>
             <span class="n">x_hat</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -384,6 +422,7 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">generic_architecture</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
@@ -398,6 +437,10 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
+<span class="sd">        output_dim</span>
+<span class="sd">            Number of output components in the target</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used).</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the input sequence fed to the model.</span>
 <span class="sd">        output_chunk_length</span>
@@ -432,7 +475,7 @@
 
 <span class="sd">        Outputs</span>
 <span class="sd">        -------</span>
-<span class="sd">        y of shape `(batch_size, output_chunk_length)`</span>
+<span class="sd">        y of shape `(batch_size, output_chunk_length, target_size/output_dim, nr_params)`</span>
 <span class="sd">            Tensor containing the output of the NBEATS module.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -440,15 +483,17 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span> <span class="o">=</span> <span class="n">input_chunk_length</span><span class="o">*</span><span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span> <span class="o">=</span> <span class="n">input_chunk_length</span> <span class="o">*</span> <span class="n">input_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span><span class="o">*</span><span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span> <span class="o">*</span> <span class="n">input_dim</span>
 
         <span class="k">if</span> <span class="n">generic_architecture</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="n">_Stack</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">,</span>
                        <span class="n">num_layers</span><span class="p">,</span>
                        <span class="n">layer_widths</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                       <span class="n">nr_params</span><span class="p">,</span>
                        <span class="n">expansion_coefficient_dim</span><span class="p">,</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
                        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
@@ -460,6 +505,7 @@
             <span class="n">trend_stack</span> <span class="o">=</span> <span class="n">_Stack</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">,</span>
                                  <span class="n">num_layers</span><span class="p">,</span>
                                  <span class="n">layer_widths</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                 <span class="n">nr_params</span><span class="p">,</span>
                                  <span class="n">trend_polynomial_degree</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
                                  <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
                                  <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
@@ -467,6 +513,7 @@
             <span class="n">seasonality_stack</span> <span class="o">=</span> <span class="n">_Stack</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">,</span>
                                        <span class="n">num_layers</span><span class="p">,</span>
                                        <span class="n">layer_widths</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+                                       <span class="n">nr_params</span><span class="p">,</span>
                                        <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
                                        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
                                        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
@@ -489,7 +536,13 @@
         <span class="c1"># squeeze last dimension (because model is univariate)</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
-        <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># One vector of length target_length per parameter in the distribution</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> 
+                        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">,</span>
+                        <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span> 
+                        <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span>
+
         <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">:</span>
             <span class="c1"># compute stack output</span>
             <span class="n">stack_residual</span><span class="p">,</span> <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -500,18 +553,16 @@
             <span class="c1"># set current stack residual as input for next stack</span>
             <span class="n">x</span> <span class="o">=</span> <span class="n">stack_residual</span>
 
-        <span class="c1"># in multivariate case, we get a result x1, y1, z1 we want to reshape to original format</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">)</span>
-
-        <span class="c1"># if some covariates, we don&#39;t want them for the output to be predicted.</span>
-        <span class="c1"># the covariates are by construction added as extra time series on the right side. So we need to get rid of this</span>
-        <span class="c1"># right output</span>
-        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">]</span>
+        <span class="c1"># In multivariate case, we get a result [x1_param1, x1_param2], [y1_param1, y1_param2], [x2..], [y2..], ... </span>
+        <span class="c1"># We want to reshape to original format. We also get rid of the covariates and keep only the target dimensions.</span>
+        <span class="c1"># The covariates are by construction added as extra time series on the right side. So we need to get rid of this</span>
+        <span class="c1"># right output (keeping only :self.output_dim).</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">)[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="p">:]</span>
 
         <span class="k">return</span> <span class="n">y</span>
 
 
-<div class="viewcode-block" id="NBEATSModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel">[docs]</a><span class="k">class</span> <span class="nc">NBEATSModel</span><span class="p">(</span><span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
+<div class="viewcode-block" id="NBEATSModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.nbeats.html#darts.models.forecasting.nbeats.NBEATSModel">[docs]</a><span class="k">class</span> <span class="nc">NBEATSModel</span><span class="p">(</span><span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
     <span class="nd">@random_method</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                  <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -523,6 +574,7 @@
                  <span class="n">layer_widths</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
                  <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
                  <span class="n">trend_polynomial_degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+                 <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Likelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot; Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).</span>
@@ -565,6 +617,9 @@
 <span class="sd">        trend_polynomial_degree</span>
 <span class="sd">            The degree of the polynomial used as waveform generator in trend stacks. Only used if</span>
 <span class="sd">            `generic_architecture` is set to `False`.</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            Optionally, the likelihood model to be used for probabilistic forecasts.</span>
+<span class="sd">            If no likelihood model is provided, forecasts will be deterministic.</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Control the randomness of the weights initialization. Check this</span>
 <span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random-state&gt;`_ for more details.</span>
@@ -618,7 +673,7 @@
 
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;input_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;output_chunk_length&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_stacks</span><span class="p">,</span>
                      <span class="s2">&quot;Please pass an integer or a list of integers with length `num_stacks`&quot;</span>
@@ -644,10 +699,12 @@
         <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>
         <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
 
         <span class="k">return</span> <span class="n">_NBEATSModule</span><span class="p">(</span>
             <span class="n">input_dim</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
             <span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+            <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">generic_architecture</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">generic_architecture</span><span class="p">,</span>
@@ -657,7 +714,15 @@
             <span class="n">layer_widths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span><span class="p">,</span>
             <span class="n">expansion_coefficient_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expansion_coefficient_dim</span><span class="p">,</span>
             <span class="n">trend_polynomial_degree</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_polynomial_degree</span>
-        <span class="p">)</span></div>
+        <span class="p">)</span>
+    
+    <span class="nd">@random_method</span>
+    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
+            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

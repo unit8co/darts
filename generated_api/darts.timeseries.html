@@ -512,7 +512,7 @@ It can represent a stochastic time series by storing several samples (trajectori
 you know what you are doing.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries._fill_missing_dates">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">_fill_missing_dates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xa</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">xarray.core.dataarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.core.dataarray.DataArray</span></span></span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries._fill_missing_dates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries._fill_missing_dates" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">_fill_missing_dates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xa</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">xarray.core.dataarray.DataArray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">xarray.core.dataarray.DataArray</span></span></span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries._fill_missing_dates"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries._fill_missing_dates" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns an xarray DataArray instance with missing dates inserted from an input xarray DataArray.
 The first dimension of the input DataArray <cite>xa</cite> has to be the time dimension.</p>
 <p>This requires either a provided <cite>freq</cite> or the possibility to infer a unique frequency (see
@@ -673,6 +673,23 @@ Leave it to True unless you know what you are doing.</p>
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.astype">
+<span class="sig-name descname"><span class="pre">astype</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dtype</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.dtype</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.astype"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.astype" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts this TimeSeries to a new TimeSeries with desired dtype</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>dtype</strong> – A NumPy dtype (np.float32 or np.float64)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A TimeSeries having the desired dtype.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.autocorr">
 <span class="sig-name descname"><span class="pre">autocorr</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span></span></span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.autocorr"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.autocorr" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
@@ -807,6 +824,11 @@ The timestamp may not be in the TimeSeries. If it is, the timestamp will be drop
 </dd>
 </dl>
 </dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.dtype">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">dtype</span></span><a class="headerlink" href="#darts.timeseries.TimeSeries.dtype" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.duration">

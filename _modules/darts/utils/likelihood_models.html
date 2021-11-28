@@ -366,9 +366,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
-        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span></div>
 
 
@@ -419,7 +418,7 @@
         <span class="k">return</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
-        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">lmbda</span></div>
 
 
@@ -465,9 +464,8 @@
         <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span></div>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">])</span>
-        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">alpha</span>
 
     <span class="nd">@property</span>
@@ -516,7 +514,7 @@
         <span class="k">return</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">p</span></div>
 
 
@@ -566,9 +564,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">])</span>
-        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span></div>
 
 
@@ -625,9 +622,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">xzero</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
-        <span class="n">gamma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">xzero</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">gamma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">xzero</span><span class="p">,</span> <span class="n">gamma</span></div>
 
 
@@ -673,7 +669,7 @@
         <span class="k">return</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">lmbda</span></div>
 
 
@@ -719,7 +715,7 @@
         <span class="k">return</span> <span class="mi">1</span>  <span class="c1"># 1 parameter per component</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
-        <span class="n">alphas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>  <span class="c1"># take softmax over components</span>
+        <span class="n">alphas</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>  <span class="c1"># take softmax over components</span>
         <span class="k">return</span> <span class="n">alphas</span></div>
 
 
@@ -764,7 +760,7 @@
         <span class="k">return</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">lmbda</span></div>
 
 
@@ -813,9 +809,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">])</span>
-        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">beta</span></div>
 
 
@@ -860,7 +855,7 @@
         <span class="k">return</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">p</span></div>
 
 
@@ -908,9 +903,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
-        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">beta</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">beta</span></div>
 
 
@@ -955,7 +949,7 @@
         <span class="k">return</span> <span class="mi">1</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">sigma</span></div>
 
 
@@ -1003,9 +997,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
-        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">b</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">b</span></div>
 
 
@@ -1053,9 +1046,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">]</span>
-        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">sigma</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">mu</span><span class="p">,</span> <span class="n">sigma</span></div>
 
 
@@ -1098,9 +1090,8 @@
         <span class="k">return</span> <span class="mi">2</span>
 
     <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-        <span class="n">output_size</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span><span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">])</span>
-        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">output_size</span> <span class="o">//</span> <span class="mi">2</span><span class="p">:])</span>
+        <span class="n">lmbda</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span>
         <span class="k">return</span> <span class="n">lmbda</span><span class="p">,</span> <span class="n">k</span></div>
 
 
@@ -1175,7 +1166,6 @@
         <span class="n">dim_q</span> <span class="o">=</span> <span class="mi">3</span>
 
         <span class="n">batch_size</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
-        <span class="n">model_output</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">))</span>
         <span class="n">device</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">device</span>
 
         <span class="c1"># test if torch model forward produces correct output and store quantiles tensor</span>

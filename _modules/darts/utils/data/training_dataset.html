@@ -159,12 +159,21 @@
 
 <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Optional</span>
-<span class="kn">from</span> <span class="nn">...logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">...logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">...timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+<span class="n">SampleIndexType</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="CovariateType"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.CovariateType">[docs]</a><span class="k">class</span> <span class="nc">CovariateType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="n">PAST</span> <span class="o">=</span> <span class="s1">&#39;past&#39;</span>
+    <span class="n">FUTURE</span> <span class="o">=</span> <span class="s1">&#39;future&#39;</span>
+    <span class="n">NONE</span> <span class="o">=</span> <span class="kc">None</span></div>
 
 
 <div class="viewcode-block" id="TrainingDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset">[docs]</a><span class="k">class</span> <span class="nc">TrainingDataset</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
@@ -207,6 +216,8 @@
 <span class="sd">        and so we can get big performance gains when slicing by returning only numpy views of the data</span>
 <span class="sd">        underlying the `TimeSeries`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">pass</span>
 
     <span class="nd">@abstractmethod</span>
@@ -215,7 +226,104 @@
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="k">pass</span>
+
+    <span class="k">def</span> <span class="nf">_memory_indexer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">ts_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">ts_target</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                        <span class="n">shift</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">end_of_output_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                        <span class="n">ts_covariate</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                        <span class="n">cov_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SampleIndexType</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current</span>
+<span class="sd">        sample `i` from `ts_idx`.</span>
+
+<span class="sd">        Works for all TimeSeries index types: pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex</span>
+
+<span class="sd">        When `ts_idx` is observed for the first time, it stores the position of the sample `0` within the full target</span>
+<span class="sd">        time series and the (start, end) indices of all sub sets.</span>
+<span class="sd">        This allows to calculate the sub set indices for all future samples `i` by simply adjusting for the difference</span>
+<span class="sd">        between the positions of sample `i` and sample `0`.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ts_idx</span>
+<span class="sd">            index of the current target TimeSeries.</span>
+<span class="sd">        ts_target</span>
+<span class="sd">            current target TimeSeries.</span>
+<span class="sd">        shift</span>
+<span class="sd">            The number of time steps by which to shift the output chunks relative to the input chunks.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future output series.</span>
+<span class="sd">        end_of_output_idx</span>
+<span class="sd">            the index where the output chunk of the current sample ends in `ts_target`.</span>
+<span class="sd">        ts_covariate</span>
+<span class="sd">            current covariate TimeSeries.</span>
+<span class="sd">        cov_type:</span>
+<span class="sd">            the type of covariate to extract. Instance of `CovariateType`: One of (`CovariateType.PAST`,</span>
+<span class="sd">            `CovariateType.FUTURE`, `CovariateType.NONE`).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">cov_start</span><span class="p">,</span> <span class="n">cov_end</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+
+        <span class="c1"># the first time ts_idx is observed</span>
+        <span class="k">if</span> <span class="n">ts_idx</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">:</span>
+            <span class="n">start_of_output_idx</span> <span class="o">=</span> <span class="n">end_of_output_idx</span> <span class="o">-</span> <span class="n">output_chunk_length</span>
+            <span class="n">start_of_input_idx</span> <span class="o">=</span> <span class="n">start_of_output_idx</span> <span class="o">-</span> <span class="n">shift</span>
+
+            <span class="c1"># select forecast point and target period, using the previously computed indexes</span>
+            <span class="n">future_start</span><span class="p">,</span> <span class="n">future_end</span> <span class="o">=</span> <span class="n">start_of_output_idx</span><span class="p">,</span> <span class="n">start_of_output_idx</span> <span class="o">+</span> <span class="n">output_chunk_length</span>
+
+            <span class="c1"># select input period; look at the `input_chunk_length` points after start of input</span>
+            <span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span> <span class="o">=</span> <span class="n">start_of_input_idx</span><span class="p">,</span> <span class="n">start_of_input_idx</span> <span class="o">+</span> <span class="n">input_chunk_length</span>
+
+            <span class="k">if</span> <span class="n">cov_type</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span><span class="p">:</span>
+                <span class="n">start</span> <span class="o">=</span> <span class="n">future_start</span> <span class="k">if</span> <span class="n">cov_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span> <span class="k">else</span> <span class="n">past_start</span>
+                <span class="n">end</span> <span class="o">=</span> <span class="n">future_end</span> <span class="k">if</span> <span class="n">cov_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span> <span class="k">else</span> <span class="n">past_end</span>
+
+                <span class="c1"># we need to be careful with getting ranges and indexes:</span>
+                <span class="c1"># to get entire range, full_range = ts[:len(ts)]; to get last index: last_idx = ts[len(ts) - 1]</span>
+
+                <span class="c1"># extract actual index value (respects datetime- and integer-based indexes; also from non-zero start)</span>
+                <span class="n">start_time</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="n">start</span><span class="p">]</span>
+                <span class="n">end_time</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="n">end</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+
+                <span class="n">raise_if_not</span><span class="p">(</span><span class="n">start_time</span> <span class="ow">in</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">time_index</span> <span class="ow">and</span> <span class="n">end_time</span> <span class="ow">in</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+                             <span class="sa">f</span><span class="s1">&#39;Missing covariates; could not find </span><span class="si">{</span><span class="n">cov_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s1"> covariates in index value range: &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">start_time</span><span class="si">}</span><span class="s1"> - </span><span class="si">{</span><span class="n">end_time</span><span class="si">}</span><span class="s1">.&#39;</span><span class="p">)</span>
+
+                <span class="c1"># extract the index position (index) from index value</span>
+                <span class="n">cov_start</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">start_time</span><span class="p">)</span>
+                <span class="n">cov_end</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">end_time</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+
+            <span class="c1"># store position of initial sample and all relevant sub set indices</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="s1">&#39;end_of_output_idx&#39;</span><span class="p">:</span> <span class="n">end_of_output_idx</span><span class="p">,</span>
+                <span class="s1">&#39;past_target&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span><span class="p">),</span>
+                <span class="s1">&#39;future_target&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">future_start</span><span class="p">,</span> <span class="n">future_end</span><span class="p">),</span>
+                <span class="s1">&#39;covariate&#39;</span><span class="p">:</span> <span class="p">(</span><span class="n">cov_start</span><span class="p">,</span> <span class="n">cov_end</span><span class="p">),</span>
+            <span class="p">}</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># load position of initial sample and its sub set indices</span>
+            <span class="n">end_of_output_idx_last</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">][</span><span class="s1">&#39;end_of_output_idx&#39;</span><span class="p">]</span>
+            <span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">][</span><span class="s1">&#39;past_target&#39;</span><span class="p">]</span>
+            <span class="n">future_start</span><span class="p">,</span> <span class="n">future_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">][</span><span class="s1">&#39;future_target&#39;</span><span class="p">]</span>
+            <span class="n">cov_start</span><span class="p">,</span> <span class="n">cov_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_index_memory</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">][</span><span class="s1">&#39;covariate&#39;</span><span class="p">]</span>
+
+            <span class="c1"># evaluate how much the new sample needs to be shifted, and shift all indexes</span>
+            <span class="n">idx_shift</span> <span class="o">=</span> <span class="n">end_of_output_idx</span> <span class="o">-</span> <span class="n">end_of_output_idx_last</span>
+            <span class="n">past_start</span> <span class="o">+=</span> <span class="n">idx_shift</span>
+            <span class="n">past_end</span> <span class="o">+=</span> <span class="n">idx_shift</span>
+            <span class="n">future_start</span> <span class="o">+=</span> <span class="n">idx_shift</span>
+            <span class="n">future_end</span> <span class="o">+=</span> <span class="n">idx_shift</span>
+            <span class="n">cov_start</span> <span class="o">=</span> <span class="n">cov_start</span> <span class="o">+</span> <span class="n">idx_shift</span> <span class="k">if</span> <span class="n">cov_start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">cov_end</span> <span class="o">=</span> <span class="n">cov_end</span> <span class="o">+</span> <span class="n">idx_shift</span> <span class="k">if</span> <span class="n">cov_end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span><span class="p">,</span> <span class="n">future_start</span><span class="p">,</span> <span class="n">future_end</span><span class="p">,</span> <span class="n">cov_start</span><span class="p">,</span> <span class="n">cov_end</span></div>
 
 
 <div class="viewcode-block" id="PastCovariatesTrainingDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.PastCovariatesTrainingDataset">[docs]</a><span class="k">class</span> <span class="nc">PastCovariatesTrainingDataset</span><span class="p">(</span><span class="n">TrainingDataset</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>

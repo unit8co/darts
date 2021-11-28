@@ -178,8 +178,9 @@
                  <span class="n">input_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">hidden_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                 <span class="n">target_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">target_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                  <span class="n">num_layers_out_fc</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.</span><span class="p">):</span>
 
@@ -210,6 +211,8 @@
 <span class="sd">            The number of steps to predict in the future.</span>
 <span class="sd">        target_size</span>
 <span class="sd">            The dimensionality of the output time series.</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used).</span>
 <span class="sd">        num_layers_out_fc</span>
 <span class="sd">            A list containing the dimensions of the hidden layers of the fully connected NN.</span>
 <span class="sd">            This network connects the last hidden layer of the PyTorch RNN module to the output.</span>
@@ -218,13 +221,13 @@
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
-<span class="sd">        x of shape `(batch_size, input_chunk_length, input_size)`</span>
+<span class="sd">        x of shape `(batch_size, input_chunk_length, input_size, nr_params)`</span>
 <span class="sd">            Tensor containing the features of the input sequence.</span>
 
 <span class="sd">        Outputs</span>
 <span class="sd">        -------</span>
-<span class="sd">        y of shape `(batch_size, output_chunk_length, target_size)`</span>
-<span class="sd">            Tensor containing the (point) prediction at the last time step of the sequence.</span>
+<span class="sd">        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`</span>
+<span class="sd">            Tensor containing the prediction at the last time step of the sequence.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="nb">super</span><span class="p">(</span><span class="n">_BlockRNNModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
@@ -233,6 +236,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_dim</span> <span class="o">=</span> <span class="n">hidden_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">n_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">=</span> <span class="n">target_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
         <span class="n">num_layers_out_fc</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="n">num_layers_out_fc</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">num_layers_out_fc</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">name</span>
@@ -244,7 +248,7 @@
         <span class="c1"># to the output of desired length</span>
         <span class="n">last</span> <span class="o">=</span> <span class="n">hidden_dim</span>
         <span class="n">feats</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="n">target_size</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">feature</span> <span class="ow">in</span> <span class="n">num_layers_out_fc</span> <span class="o">+</span> <span class="p">[</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="n">target_size</span> <span class="o">*</span> <span class="n">nr_params</span><span class="p">]:</span>
             <span class="n">feats</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">last</span><span class="p">,</span> <span class="n">feature</span><span class="p">))</span>
             <span class="n">last</span> <span class="o">=</span> <span class="n">feature</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">feats</span><span class="p">)</span>
@@ -261,7 +265,7 @@
             <span class="n">hidden</span> <span class="o">=</span> <span class="n">hidden</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">predictions</span> <span class="o">=</span> <span class="n">hidden</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]</span>
         <span class="n">predictions</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fc</span><span class="p">(</span><span class="n">predictions</span><span class="p">)</span>
-        <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span><span class="p">)</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="n">predictions</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_len</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">)</span>
 
         <span class="c1"># predictions is of size (batch_size, output_chunk_length, 1)</span>
         <span class="k">return</span> <span class="n">predictions</span>
@@ -299,14 +303,14 @@
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        model</span>
-<span class="sd">            Either a string specifying the RNN module type (&quot;RNN&quot;, &quot;LSTM&quot; or &quot;GRU&quot;),</span>
-<span class="sd">            or a PyTorch module with the same specifications as</span>
-<span class="sd">            `darts.models.block_rnn_model._BlockRNNModule`.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The number of time steps that will be fed to the internal forecasting module</span>
 <span class="sd">        output_chunk_length</span>
 <span class="sd">            Number of time steps to be output by the internal forecasting module.</span>
+<span class="sd">        model</span>
+<span class="sd">            Either a string specifying the RNN module type (&quot;RNN&quot;, &quot;LSTM&quot; or &quot;GRU&quot;),</span>
+<span class="sd">            or a PyTorch module with the same specifications as</span>
+<span class="sd">            `darts.models.block_rnn_model._BlockRNNModule`.</span>
 <span class="sd">        hidden_size</span>
 <span class="sd">            Size for feature maps for each hidden RNN layer (:math:`h_n`).</span>
 <span class="sd">        n_rnn_layers</span>
@@ -391,15 +395,14 @@
         <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>
         <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span><span class="p">)</span>
         <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
 
-        <span class="n">target_size</span> <span class="o">=</span> <span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span> <span class="o">*</span> <span class="n">output_dim</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">output_dim</span>
-        <span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;RNN&#39;</span><span class="p">,</span> <span class="s1">&#39;LSTM&#39;</span><span class="p">,</span> <span class="s1">&#39;GRU&#39;</span><span class="p">]:</span>
             <span class="n">hidden_fc_sizes</span> <span class="o">=</span> <span class="p">[]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_fc_sizes</span>
             <span class="n">model</span> <span class="o">=</span> <span class="n">_BlockRNNModule</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rnn_type_or_module</span><span class="p">,</span>
                                     <span class="n">input_size</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
-                                    <span class="n">target_size</span><span class="o">=</span><span class="n">target_size</span><span class="p">,</span>
+                                    <span class="n">target_size</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+                                    <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
                                     <span class="n">hidden_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
                                     <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_rnn_layers</span><span class="p">,</span>
                                     <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
@@ -415,7 +418,7 @@
             <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span></div>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
 </pre></div>
 
               </div>

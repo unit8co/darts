@@ -501,6 +501,28 @@
   <span class="target" id="module-darts.utils.data.training_dataset"></span><section id="training-datasets-base-classes">
 <h1>Training Datasets Base Classes<a class="headerlink" href="#training-datasets-base-classes" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.training_dataset.CovariateType">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">CovariateType</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#CovariateType"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.CovariateType" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">enum.Enum</span></code></p>
+<p>An enumeration.</p>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.data.training_dataset.CovariateType.FUTURE">
+<span class="sig-name descname"><span class="pre">FUTURE</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'future'</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.CovariateType.FUTURE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.data.training_dataset.CovariateType.NONE">
+<span class="sig-name descname"><span class="pre">NONE</span></span><em class="property"> <span class="pre">=</span> <span class="pre">None</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.CovariateType.NONE" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.utils.data.training_dataset.CovariateType.PAST">
+<span class="sig-name descname"><span class="pre">PAST</span></span><em class="property"> <span class="pre">=</span> <span class="pre">'past'</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.CovariateType.PAST" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.training_dataset.DualCovariatesTrainingDataset">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#DualCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.utils.data.dataset.T_co</span></code>]</p>

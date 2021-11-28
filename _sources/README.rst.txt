@@ -281,7 +281,7 @@ on bringing more models and features.
    * - ``NBEATSModel``
      - ✅
      - ✅
-     - 
+     - ✅
      - ✅
      - ✅
      - 
