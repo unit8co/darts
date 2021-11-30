@@ -6,6 +6,7 @@ from copy import deepcopy
 
 from darts.dataprocessing.transformers import BoxCox, Mapper
 from darts.utils.timeseries_generation import sine_timeseries, linear_timeseries
+from darts import TimeSeries
 
 
 class BoxCoxTestCase(unittest.TestCase):
@@ -85,9 +86,8 @@ class BoxCoxTestCase(unittest.TestCase):
 
     def test_multivariate_stochastic_series(self):
         transformer = BoxCox()
-        sine = sine_timeseries(start=0, length=100) + 1 + (linear_timeseries(start=0, length=100)+0.1) ** 2
-        sine2 = sine_timeseries(start=0, length=100) + 1 + (linear_timeseries(start=0, length=100)+1) ** 4
-        series = sine.stack(sine2)
+        vals = np.random.rand(10, 5, 10)
+        series = TimeSeries.from_values(vals)
 
         new_series = transformer.fit_transform(series)
         series_back = transformer.inverse_transform(new_series)
