@@ -2,7 +2,7 @@
 
 package:
   name: "darts"
-  version: "0.13.1"
+  version: "0.14.0"
 
 source:
   # root folder, not the package
