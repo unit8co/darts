@@ -159,13 +159,14 @@ class EncoderTestCase(DartsBaseTestClass):
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
 
         # tests with n <= output_chunk_length
+        # with supplying past and future covariates as input
         self.helper_sequence_encode_inference(encoders=encoders,
                                               n=self.n_short,
                                               past_covariates=self.covariate_multi,
                                               future_covariates=self.covariate_multi,
                                               expected_past_idx_ts=self.covariate_multi,
                                               expected_future_idx_ts=self.covariate_multi)
-
+        # without supplying covariates as input
         self.helper_sequence_encode_inference(encoders=encoders,
                                               n=self.n_short,
                                               past_covariates=None,
@@ -173,13 +174,14 @@ class EncoderTestCase(DartsBaseTestClass):
                                               expected_past_idx_ts=self.inf_ts_short_past,
                                               expected_future_idx_ts=self.inf_ts_short_future)
         # tests with n > output_chunk_length
+        # with supplying past covariates as input
         self.helper_sequence_encode_inference(encoders=encoders,
                                               n=self.n_long,
                                               past_covariates=self.covariate_multi,
                                               future_covariates=None,
                                               expected_past_idx_ts=self.covariate_multi,
                                               expected_future_idx_ts=self.inf_ts_long_future)
-
+        # with supplying future covariates as input
         self.helper_sequence_encode_inference(encoders=encoders,
                                               n=self.n_long,
                                               past_covariates=None,
@@ -194,7 +196,7 @@ class EncoderTestCase(DartsBaseTestClass):
                                          future_covariates,
                                          expected_past_idx_ts,
                                          expected_future_idx_ts):
-        """test comparisons for `SequenceEncoder.encode_inference()`"""
+        """test comparisons for `SequenceEncoder.encode_inference()"""
 
         # generate encodings
         past_covs_pred, future_covs_pred = encoders.encode_inference(n=n,
@@ -208,7 +210,7 @@ class EncoderTestCase(DartsBaseTestClass):
             self.assertTrue(fc.time_index.equals(fc_in.time_index))
 
     def helper_encoder_from_model(self, add_encoder_dict, takes_past_covariates=True, takes_future_covariates=True):
-        """Extract encoders from model creation"""
+        """extracts encoders from parameters at model creation"""
         model = TFTModel(input_chunk_length=self.input_chunk_length,
                          output_chunk_length=self.output_chunk_length,
                          add_encoders=add_encoder_dict)
@@ -225,7 +227,8 @@ class EncoderTestCase(DartsBaseTestClass):
         return encoders
 
     def test_cyclic_encoder(self):
-        """Test past and future `CyclicTemporalEncoder`"""
+        """Test past and future `CyclicTemporalEncoder``"""
+
         attribute = 'month'
 
         month_series = TimeSeries.from_times_and_values(
@@ -248,7 +251,6 @@ class EncoderTestCase(DartsBaseTestClass):
                                         inf_ts_short=self.inf_ts_short_past,
                                         inf_ts_long=self.inf_ts_long_past,
                                         cyclic=True)
-
         # test future cyclic encoder
         self.helper_test_cyclic_encoder(CyclicFutureEncoder,
                                         attribute=attribute,
@@ -258,6 +260,7 @@ class EncoderTestCase(DartsBaseTestClass):
 
     def test_datetime_attribute_encoder(self):
         """Test past and future `DatetimeAttributeEncoder`"""
+
         attribute = 'month'
 
         month_series = TimeSeries.from_times_and_values(
@@ -294,15 +297,20 @@ class EncoderTestCase(DartsBaseTestClass):
         encoder = encoder_class(input_chunk_length=self.input_chunk_length,
                                 output_chunk_length=self.output_chunk_length,
                                 attribute=attribute)
+        # covs: covariates; ds: dataset
+        # expected generated covs when covs are supplied as input for train and inference ds
         result_with_cov = [
             tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in self.covariate_multi
         ]
+        # expected generated covs when covs are not supplied as input for train ds
         result_no_cov = [
             tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in self.target_multi
         ]
+        # expected generated covs when covs are not supplied as input for inference ds and n <= output_chunk_length
         result_no_cov_inf_short = [
             tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in inf_ts_short
         ]
+        # expected generated covs when covs are not supplied as input for inference ds and n > output_chunk_length
         result_no_cov_inf_long = [
             tg.datetime_attribute_timeseries(ts, attribute=attribute, cyclic=cyclic) for ts in inf_ts_long
         ]
@@ -320,7 +328,6 @@ class EncoderTestCase(DartsBaseTestClass):
                                               covariate=[None]*len(self.target_multi),
                                               result=result_no_cov,
                                               merge_covariates=False)
-
         # test inference encoding with covariates and n <= output_chunk_length
         self.helper_test_encoder_single_inference(encoder=encoder,
                                                   n=self.n_short,
@@ -335,7 +342,6 @@ class EncoderTestCase(DartsBaseTestClass):
                                                   covariate=self.covariate_multi,
                                                   result=result_with_cov,
                                                   merge_covariates=False)
-
         # test inference encoding without covariates and n <= output_chunk_length
         self.helper_test_encoder_single_inference(encoder=encoder,
                                                   n=self.n_short,
@@ -357,7 +363,8 @@ class EncoderTestCase(DartsBaseTestClass):
                                          covariate: Sequence[Optional[TimeSeries]],
                                          result: Sequence[TimeSeries],
                                          merge_covariates: bool = True):
-        """ test `SingleEncoder.encode_train()`"""
+        """Test `SingleEncoder.encode_train()`"""
+
         encoded = []
         for ts, cov in zip(target, covariate):
             encoded.append(encoder.encode_train(ts, cov, merge_covariate=merge_covariates))
@@ -370,7 +377,8 @@ class EncoderTestCase(DartsBaseTestClass):
                                              covariate: Sequence[Optional[TimeSeries]],
                                              result: Sequence[TimeSeries],
                                              merge_covariates: bool = True):
-        """ test `SingleEncoder.encode_inference()`"""
+        """Test `SingleEncoder.encode_inference()`"""
+
         encoded = []
         for ts, cov in zip(target, covariate):
             encoded.append(encoder.encode_inference(n, ts, cov, merge_covariate=merge_covariates))

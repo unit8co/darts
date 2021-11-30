@@ -443,7 +443,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                             takes_past_covariates: bool = False,
                             takes_future_covariates: bool = False) -> SequenceEncoder:
 
-        return SequenceEncoder(model_kwargs=model_params[1],
+        return SequenceEncoder(add_encoders=model_params[1].get('add_encoders', None),
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
                                shift=shift,

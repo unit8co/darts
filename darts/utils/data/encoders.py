@@ -27,7 +27,6 @@ SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
-ENCODER_KWARG = 'add_encoders'
 ENCODER_KEYS = ['cyclic', 'datetime_attribute', 'positional']
 FUTURE = 'future'
 PAST = 'past'
@@ -236,7 +235,7 @@ class SequenceEncoder(Encoder):
     """
 
     def __init__(self,
-                 model_kwargs: Dict,
+                 add_encoders: Dict,
                  input_chunk_length: int,
                  output_chunk_length: int,
                  shift: int,
@@ -244,7 +243,7 @@ class SequenceEncoder(Encoder):
                  takes_future_covariates: bool = False) -> None:
 
         """
-        SequenceEncoder automatically creates encoder objects from parameters `model_kwargs` used when creating a
+        SequenceEncoder automatically creates encoder objects from parameter `add_encoders` used when creating a
         `TorchForecastingModel`.
 
         *   Only kwarg `add_encoders` of type `Optional[Dict]` will be used to extract the encoders.
@@ -282,7 +281,7 @@ class SequenceEncoder(Encoder):
 
         Parameters
         ----------
-        model_kwargs
+        add_encoders
             the parameters used at `TorchForecastingModel` model creation.
         input_chunk_length
             The length of the emitted past series.
@@ -297,7 +296,7 @@ class SequenceEncoder(Encoder):
         """
 
         super(SequenceEncoder, self).__init__()
-        self.params = model_kwargs
+        self.params = add_encoders
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.shift = shift
@@ -468,13 +467,13 @@ class SequenceEncoder(Encoder):
         return mapper
 
     def _setup_encoders(self, params: Dict):
-        """Sets up/Initializes all past and future encoders from parameters `params` used at model creation.
+        """Sets up/Initializes all past and future encoders from `add_encoder` parameter used at model creation.
 
         Parameters
         ----------
         params
-            Parameters (kwargs) used at model creation. Relevant parameters are:
-            * add_encoders={'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}}
+            Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:
+            * params={'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}}
         """
         past_encoders, future_encoders = self._process_input(params)
 
@@ -496,10 +495,11 @@ class SequenceEncoder(Encoder):
         Parameters
         ----------
         params
-            Parameters (kwargs) used at model creation. Only kwarg `add_encoders` of type `Optional[Dict]` is valid.
+            A dict of type Optional[Dict] from parameter `add_encoders` used at model creation.
+
             For example: `model = MyModel(..., add_encoders={...}, ...)`
 
-            The `add_encoders` dict must follow this convention:
+            The `params`/`add_encoders` dict must follow this convention:
                 `{encoder keyword: {temporal keyword: List[attributes]}}`
             Supported encoder keywords:
                 `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
@@ -511,7 +511,7 @@ class SequenceEncoder(Encoder):
                 'future' for adding encoding as future covariates
             Supported attributes:
                 for attributes read the referred docs for the corresponding encoder from above
-            An example of a valid `add_encoders` dict for hourly data for :
+            An example of a valid `add_encoders` dict at model creation for hourly data for :
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']}
@@ -533,13 +533,11 @@ class SequenceEncoder(Encoder):
             1) if the outermost key is other than (`past`, `future`, `absolute`)
             2) if the innermost values are other than type `str` or `Sequence`
         """
-        # extract encoder params
-        params_encoder = params.get(ENCODER_KWARG, {})
 
-        if not params_encoder:
+        if not params:
             return [], []
 
-        encoders = {enc: params_encoder.get(enc, None) for enc in ENCODER_KEYS if params_encoder.get(enc, None)}
+        encoders = {enc: params.get(enc, None) for enc in ENCODER_KEYS if params.get(enc, None)}
 
         # check input for if invalid temporal types; values other than ('past', 'future', 'absolute')
         invalid_time_params = list()

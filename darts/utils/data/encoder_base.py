@@ -59,12 +59,11 @@ class CovariateIndexGenerator(ABC):
 
 
 class PastCovariateIndexGenerator(CovariateIndexGenerator):
-    """generates index for past covariate"""
+    """generates index for past covariates on train and inference datasets"""
     def generate_train_series(self,
                               target: TimeSeries,
                               covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
-        # TODO -> we can probably summarize this in CovariateIndexGenerator as I think it's the same for
-        #  future & past covs
+
         super(PastCovariateIndexGenerator, self).generate_train_series(target, covariate)
         return covariate.time_index if covariate is not None else target.time_index
 
@@ -88,7 +87,7 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
 
 
 class FutureCovariateIndexGenerator(CovariateIndexGenerator):
-    """generates index for future covariate."""
+    """generates index for future covariates on train and inference datasets."""
     def generate_train_series(self,
                               target: TimeSeries,
                               covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
@@ -96,8 +95,6 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
         reference to extract the time index.
         """
 
-        # TODO -> we can probably summarize this in CovariateIndexGenerator as I think it's the same for
-        #  future & past covs
         super(FutureCovariateIndexGenerator, self).generate_train_series(target, covariate)
 
         return covariate.time_index if covariate is not None else target.time_index

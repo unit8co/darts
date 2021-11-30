@@ -27,25 +27,32 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     n_short = 6
     n_long = 8
 
+    # pd.DatetimeIndex
+    # target covariate for inference dataset for n <= output_chunk_length
     cov_time_inf_short = TimeSeries.from_times_and_values(tg._generate_index(start=target_time.start_time(),
                                                                              length=n_target + n_short,
                                                                              freq=target_time.freq),
                                                           np.arange(n_target + n_short))
-
+    # target covariate for inference dataset for n > output_chunk_length
     cov_time_inf_long = TimeSeries.from_times_and_values(tg._generate_index(start=target_time.start_time(),
                                                                             length=n_target + n_long,
                                                                             freq=target_time.freq),
                                                          np.arange(n_target + n_long))
+
+    # integer index
+    # target covariate for inference dataset for n <= output_chunk_length
     cov_int_inf_short = TimeSeries.from_times_and_values(tg._generate_index(start=target_int.start_time(),
                                                                             length=n_target + n_short,
                                                                             freq=target_int.freq),
                                                          np.arange(n_target + n_short))
+    # target covariate for inference dataset for n > output_chunk_length
     cov_int_inf_long = TimeSeries.from_times_and_values(tg._generate_index(start=target_int.start_time(),
                                                                            length=n_target + n_long,
                                                                            freq=target_int.freq),
                                                         np.arange(n_target + n_long))
 
     def helper_test_index_types(self, ig: CovariateIndexGenerator):
+        """test the index type of generated index"""
         # pd.DatetimeIndex
         idx = ig.generate_train_series(self.target_time, self.cov_time_train)
         self.assertTrue(isinstance(idx, pd.DatetimeIndex))
@@ -67,17 +74,25 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         If covariates are given, the index generators should return the covariate series' index.
         If covariates are not given, the index generators should return the target series' index.
         """
+        # pd.DatetimeIndex
+        # generated index must be equal to input covariate index
         idx = ig.generate_train_series(self.target_time, self.cov_time_train)
         self.assertTrue(idx.equals(self.cov_time_train.time_index))
+        # generated index must be equal to input covariate index
         idx = ig.generate_train_series(self.target_time, self.cov_time_train_short)
         self.assertTrue(idx.equals(self.cov_time_train_short.time_index))
+        # generated index must be equal to input target index when no covariates are defined
         idx = ig.generate_train_series(self.target_time, None)
         self.assertTrue(idx.equals(self.cov_time_train.time_index))
 
+        # integer index
+        # generated index must be equal to input covariate index
         idx = ig.generate_train_series(self.target_int, self.cov_int_train)
         self.assertTrue(idx.equals(self.cov_int_train.time_index))
+        # generated index must be equal to input covariate index
         idx = ig.generate_train_series(self.target_time, self.cov_int_train_short)
         self.assertTrue(idx.equals(self.cov_int_train_short.time_index))
+        # generated index must be equal to input target index when no covariates are defined
         idx = ig.generate_train_series(self.target_int, None)
         self.assertTrue(idx.equals(self.cov_int_train.time_index))
 
