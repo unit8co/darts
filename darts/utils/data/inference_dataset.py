@@ -12,7 +12,6 @@ from typing import Union, Sequence, Optional, Tuple
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not
 from .utils import CovariateType
-from .encoders import SequenceEncoder
 from .encoder_base import (PastCovariateIndexGenerator,
                            FutureCovariateIndexGenerator)
 
@@ -31,8 +30,6 @@ class InferenceDataset(ABC, Dataset):
         by the torch DataLoader). The last elements of the tuples are the (past) target TimeSeries, which is
         needed in order to properly construct the time axis of the forecast series.
         """
-
-        self.lazy_encoders: Optional[SequenceEncoder] = None
 
     @abstractmethod
     def __len__(self) -> int:
@@ -70,37 +67,6 @@ class InferenceDataset(ABC, Dataset):
         else:  # for regression ensemble models
             return index[0], index[0], index[0], index[-1]
 
-    def _generate_covariates(self,
-                             n: int,
-                             target: TimeSeries,
-                             covariate: Optional[TimeSeries],
-                             cov_type: CovariateType = CovariateType.NONE):
-
-        raise_if_not(cov_type in [CovariateType.PAST, CovariateType.HISTORIC_FUTURE, CovariateType.FUTURE],
-                     '`cov_type` must be one of `(CovariateType.PAST, CovariateType.HISTORIC_FUTURE, '
-                     'CovariateType.FUTURE)` ')
-
-        if cov_type is CovariateType.PAST:
-            covariate, _ = self.lazy_encoders.encode_inference(n=n,
-                                                               target=target,
-                                                               past_covariate=covariate,
-                                                               future_covariate=None,
-                                                               encode_future=False)
-        else:
-            _, covariate = self.lazy_encoders.encode_inference(n=n,
-                                                               target=target,
-                                                               past_covariate=None,
-                                                               future_covariate=covariate,
-                                                               encode_past=False)
-        if covariate is None:
-            return None, None
-
-        cov_vals = covariate[0].values(copy=False)
-        if self.lazy_encoders.input_chunk_length != 0:  # regular models
-            return cov_vals[:self.lazy_encoders.input_chunk_length], cov_vals[self.lazy_encoders.input_chunk_length:]
-        else:  # regression ensemble models
-            return cov_vals, cov_vals
-
 
 class GenericInferenceDataset(InferenceDataset):
     def __init__(self,
@@ -109,8 +75,7 @@ class GenericInferenceDataset(InferenceDataset):
                  n: int = 1,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 covariate_type: CovariateType = CovariateType.PAST,
-                 lazy_encoders: Optional[SequenceEncoder] = None):
+                 covariate_type: CovariateType = CovariateType.PAST):
         """
         Contains (past_target, past_covariates | historic_future_covariates, future_past_covariates | future_covariate).
 
@@ -133,9 +98,6 @@ class GenericInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emits in output.
-        lazy_encoders
-            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
-            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -147,8 +109,6 @@ class GenericInferenceDataset(InferenceDataset):
         self.n = n
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
-
-        self.lazy_encoders = lazy_encoders
 
         raise_if_not((covariates is None or len(self.target_series) == len(self.covariates)),
                      'The number of target series must be equal to the number of covariates.')
@@ -167,10 +127,9 @@ class GenericInferenceDataset(InferenceDataset):
         past_target = target_series[-self.input_chunk_length:]
         past_target_vals = past_target.values(copy=False)
 
-        covariate = None
+        cov_past, cov_future = None, None
         if covariate_series is not None:
-            main_cov_type = CovariateType.PAST if self.covariate_type is CovariateType.PAST \
-                else CovariateType.FUTURE
+            main_cov_type = CovariateType.PAST if self.covariate_type is CovariateType.PAST else CovariateType.FUTURE
 
             past_start, past_end, future_start, future_end = \
                 self._generate_index(past_target=past_target,
@@ -178,6 +137,7 @@ class GenericInferenceDataset(InferenceDataset):
                                      input_chunk_length=self.input_chunk_length,
                                      output_chunk_length=self.output_chunk_length,
                                      n=self.n)
+
             case_start = future_start if self.covariate_type is CovariateType.FUTURE else past_start
             raise_if_not(
                 covariate_series.start_time() <= case_start,
@@ -197,20 +157,11 @@ class GenericInferenceDataset(InferenceDataset):
             cov_end = covariate_series.time_index.get_loc(future_end) + 1
             covariate = covariate_series[cov_start:cov_end]
 
-        do_encoding = self.lazy_encoders is not None and self.lazy_encoders.encoding_available
-        if do_encoding:  # optionally, use encoders to generate (additional) covariates
-            cov_past, cov_future = self._generate_covariates(n=self.n,
-                                                             target=past_target,
-                                                             covariate=covariate,
-                                                             cov_type=self.covariate_type)
-        elif covariate_series is not None:  # extract past and future covariate parts without encoders
             cov_vals = covariate.values(copy=False)
             if self.input_chunk_length != 0:  # regular models
                 cov_past, cov_future = cov_vals[:self.input_chunk_length], cov_vals[self.input_chunk_length:]
             else:  # regression ensemble models
                 cov_past, cov_future = cov_vals, cov_vals
-        else:
-            cov_past, cov_future = None, None
 
         cov_past = cov_past if cov_past is not None and len(cov_past) > 0 else None
         cov_future = cov_future if cov_future is not None and len(cov_future) > 0 else None
@@ -225,8 +176,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                  n: int = 1,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
-                 covariate_type: CovariateType = CovariateType.PAST,
-                 lazy_encoders: Optional[SequenceEncoder] = None):
+                 covariate_type: CovariateType = CovariateType.PAST):
         """
         Contains (past_target, past_covariates, future_past_covariates).
 
@@ -248,9 +198,6 @@ class PastCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
-        lazy_encoders
-            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
-            covariates are generated at sample loading time.
         """
 
         super().__init__()
@@ -260,8 +207,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
                                           n=n,
                                           input_chunk_length=input_chunk_length,
                                           output_chunk_length=output_chunk_length,
-                                          covariate_type=covariate_type,
-                                          lazy_encoders=lazy_encoders)
+                                          covariate_type=covariate_type)
 
     def __len__(self):
         return len(self.ds)
@@ -276,8 +222,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 covariate_type: CovariateType = CovariateType.FUTURE,
-                 lazy_encoders: Optional[SequenceEncoder] = None):
+                 covariate_type: CovariateType = CovariateType.FUTURE):
         """
         Contains (past_target, future_covariates) tuples
 
@@ -292,9 +237,6 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
             Forecast horizon: The number of time steps to predict after the end of the target series.
         input_chunk_length
             The length of the target series the model takes as input.
-        lazy_encoders
-            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
-            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -303,8 +245,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
                                           n=n,
                                           input_chunk_length=input_chunk_length,
                                           output_chunk_length=n,
-                                          covariate_type=covariate_type,
-                                          lazy_encoders=lazy_encoders)
+                                          covariate_type=covariate_type)
 
     def __len__(self):
         return len(self.ds)
@@ -320,8 +261,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 lazy_encoders: Optional[SequenceEncoder] = None):
+                 output_chunk_length: int = 1):
         """
         Contains (past_target, historic_future_covariates, future_covariates) tuples.
 
@@ -338,9 +278,6 @@ class DualCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
-        lazy_encoders
-            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
-            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -350,16 +287,14 @@ class DualCovariatesInferenceDataset(InferenceDataset):
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length,
-                                                      covariate_type=CovariateType.HISTORIC_FUTURE,
-                                                      lazy_encoders=lazy_encoders)
+                                                      covariate_type=CovariateType.HISTORIC_FUTURE)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=covariates,
                                                           n=n,
                                                           input_chunk_length=input_chunk_length,
-                                                          covariate_type=CovariateType.FUTURE,
-                                                          lazy_encoders=lazy_encoders)
+                                                          covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds_past)
@@ -377,8 +312,7 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                  future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 lazy_encoders: Optional[SequenceEncoder] = None):
+                 output_chunk_length: int = 1):
         """
         Contains (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
         tuples. "future_past_covariates" are past covariates that happen to be also known in the future - those
@@ -400,9 +334,6 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
-        lazy_encoders
-            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
-            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -412,16 +343,14 @@ class MixedCovariatesInferenceDataset(InferenceDataset):
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length,
-                                                      covariate_type=CovariateType.PAST,
-                                                      lazy_encoders=lazy_encoders)
+                                                      covariate_type=CovariateType.PAST)
 
         # This dataset is in charge of serving historic and future future covariates
         self.ds_future = DualCovariatesInferenceDataset(target_series=target_series,
                                                         covariates=future_covariates,
                                                         n=n,
                                                         input_chunk_length=input_chunk_length,
-                                                        output_chunk_length=output_chunk_length,
-                                                        lazy_encoders=lazy_encoders)
+                                                        output_chunk_length=output_chunk_length)
 
     def __len__(self):
         return len(self.ds_past)
@@ -441,8 +370,7 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
                  future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  n: int = 1,
                  input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 lazy_encoders: Optional[SequenceEncoder] = None):
+                 output_chunk_length: int = 1):
         """
         Contains (past_target, past_covariates, future_covariates, future_past_covariates) tuples.
         "future_past_covariates" are past covariates that happen to be also known in the future - those
@@ -464,9 +392,6 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
             The length of the target series the model takes as input.
         output_chunk_length
             The length of the target series the model emmits in output.
-        lazy_encoders
-            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
-            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -476,16 +401,14 @@ class SplitCovariatesInferenceDataset(InferenceDataset):
                                                       n=n,
                                                       input_chunk_length=input_chunk_length,
                                                       output_chunk_length=output_chunk_length,
-                                                      covariate_type=CovariateType.PAST,
-                                                      lazy_encoders=lazy_encoders)
+                                                      covariate_type=CovariateType.PAST)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = FutureCovariatesInferenceDataset(target_series=target_series,
                                                           covariates=future_covariates,
                                                           n=n,
                                                           input_chunk_length=input_chunk_length,
-                                                          covariate_type=CovariateType.FUTURE,
-                                                          lazy_encoders=lazy_encoders)
+                                                          covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds_past)

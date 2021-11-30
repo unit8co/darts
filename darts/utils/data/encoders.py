@@ -305,6 +305,8 @@ class SequenceEncoder(Encoder):
         self.takes_past_covariates = takes_past_covariates
         self.takes_future_covariates = takes_future_covariates
         self.encoding_available = False
+        self.train_called = False
+
         self._setup_encoders(self.params)
 
     def encode_train(self,
@@ -332,7 +334,22 @@ class SequenceEncoder(Encoder):
             The past_covariate and/or future_covariate for training including the encodings.
             If input {x}_covariate is None and no {x}_encoders are given, will return `None`
             for the {x}_covariate.
+
+        Raises
+        Warning
+            If model was created with `add_encoders` and there is suspicion of lazy loading.
+            The encodings/covariates are generated pre-train for all individual targets and
+            loaded into memory. Depending on the size of target data, this can create memory
+            issues. In case this applies, consider setting `add_encoders=None` at model
+            creation
         """
+        if not self.train_called:
+            if not isinstance(target, (TimeSeries, list)):
+                logger.warning("Fitting was called with `add_encoders` and suspicion of lazy loading. "
+                               "The encodings/covariates are generated pre-train for all individual targets and "
+                               "loaded into memory. Depending on the size of your data, this can create memory issues. "
+                               "In case this applies, consider setting `add_encoders=None` at model creation.")
+            self.train_called = True
 
         return self._launch_encoder(target=target,
                                     past_covariate=past_covariate,

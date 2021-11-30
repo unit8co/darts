@@ -8,7 +8,6 @@ from torch.utils.data import Dataset
 import numpy as np
 
 from typing import Tuple, Optional, Dict
-from .encoders import SequenceEncoder
 from .utils import CovariateType
 from ...logging import get_logger, raise_if_not
 from ...timeseries import TimeSeries
@@ -58,7 +57,6 @@ class TrainingDataset(ABC, Dataset):
         underlying the `TimeSeries`.
         """
 
-        self.lazy_encoders: Optional[SequenceEncoder] = None
         self._index_memory: Dict = {}
 
     @abstractmethod
@@ -166,41 +164,6 @@ class TrainingDataset(ABC, Dataset):
             cov_end = cov_end + idx_shift if cov_end is not None else None
 
         return past_start, past_end, future_start, future_end, cov_start, cov_end
-
-    def _generate_covariates(self,
-                             target: TimeSeries,
-                             covariate: Optional[TimeSeries],
-                             in_range_target: Tuple[int, int],
-                             in_range_cov: Tuple[int, int],
-                             cov_type: CovariateType = CovariateType.NONE):
-        if not self.lazy_encoders.past_encoders and not self.lazy_encoders.future_encoders:
-            return covariate
-
-        past_start, past_end = in_range_target
-        cov_start, cov_end = in_range_cov
-        target = target[past_start:past_end]
-        covariate = covariate[cov_start:cov_end] if covariate is not None else covariate
-
-        if cov_type is CovariateType.PAST:
-            covariate, _ = self.lazy_encoders.encode_train(target=target,
-                                                           past_covariate=covariate,
-                                                           future_covariate=None,
-                                                           encode_future=False)
-        elif cov_type is CovariateType.HISTORIC_FUTURE:
-            _, covariate = self.lazy_encoders.encode_train(target=target,
-                                                           past_covariate=None,
-                                                           future_covariate=covariate,
-                                                           encode_past=False)
-        elif cov_type is CovariateType.FUTURE:
-            _, covariate = self.lazy_encoders.encode_inference(n=self.lazy_encoders.output_chunk_length,
-                                                               target=target,
-                                                               past_covariate=None,
-                                                               future_covariate=covariate,
-                                                               encode_past=False)
-            if len(covariate[0]) != self.lazy_encoders.output_chunk_length:
-                covariate = [covariate[0][self.lazy_encoders.input_chunk_length:]]
-
-        return covariate[0].values(copy=False) if covariate is not None else covariate
 
 
 class PastCovariatesTrainingDataset(TrainingDataset, ABC):

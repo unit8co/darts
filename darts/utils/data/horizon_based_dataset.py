@@ -10,7 +10,6 @@ from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
 from .training_dataset import PastCovariatesTrainingDataset
 from .utils import CovariateType
-from .encoders import SequenceEncoder
 
 logger = get_logger(__name__)
 
@@ -21,8 +20,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                  covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                  output_chunk_length: int = 12,
                  lh: Tuple[int, int] = (1, 3),
-                 lookback: int = 3,
-                 lazy_encoders: Optional[SequenceEncoder] = None) -> None:
+                 lookback: int = 3) -> None:
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_target) arrays,
         in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
@@ -65,9 +63,6 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
             multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths
             `3 * output_chunk_length`.
-        lazy_encoders
-            Optionally, an instance of `SequenceEncoder`. If data is loaded lazily and lazy_encoders are given,
-            covariates are generated at sample loading time.
         """
         super().__init__()
 
@@ -89,8 +84,6 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
-
-        self.lazy_encoders = lazy_encoders
 
     def __len__(self):
         """
@@ -150,11 +143,4 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                          f"The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
                          f"input (or output) chunk relative to the target series.")
 
-        #TODO: add lazy encoding
-        if self.lazy_encoders is not None:
-            covariate = self._generate_covariates(target=ts_target,
-                                                  covariate=ts_covariate,
-                                                  in_range_target=(past_start, past_end),
-                                                  in_range_cov=(cov_start, cov_end),
-                                                  cov_type=self.covariate_type)
         return past_target, covariate, future_target
