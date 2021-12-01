@@ -83,6 +83,9 @@ class DataTransformerTestCase(unittest.TestCase):
         # Test inverse transform
         np.testing.assert_allclose(s.all_values(), ssi.all_values())
 
-        # Test that the transform is done per component (i.e max value over each component should be 1)
+        # Test that the transform is done per component (i.e max value over each component should be 1 and min 0)
         np.testing.assert_allclose(np.array([ss.all_values(copy=False)[:,i,:].max() for i in range(ss.width)]), 
-                                   np.array([1.0] * ss.width))
+                                   np.array([1.] * ss.width))
+
+        np.testing.assert_allclose(np.array([ss.all_values(copy=False)[:,i,:].min() for i in range(ss.width)]), 
+                                   np.array([0.] * ss.width))
