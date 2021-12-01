@@ -16,6 +16,7 @@ from darts.utils.data.encoder_base import (
     Encoder,
     SingleEncoder
 )
+from darts.utils.data.utils import _index_diff
 
 from darts.logging import raise_if_not, get_logger, raise_if
 
@@ -27,7 +28,7 @@ SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
-ENCODER_KEYS = ['cyclic', 'datetime_attribute', 'positional']
+ENCODER_KEYS = ['cyclic', 'datetime_attribute', 'position']
 FUTURE = 'future'
 PAST = 'past'
 VALID_TIME_PARAMS = [
@@ -198,33 +199,115 @@ class DatetimeAttributeFutureEncoder(DatetimeAttributeEncoder):
         )
 
 
-class PositionalEncoder(SingleEncoder):
-    """PLACEHOLDER: absolute positional index encoding"""
+class IntegerIndexEncoder(SingleEncoder):
+    """IntegerIndexEncoder: Adds integer index value (position) derived from the underlying TimeSeries' time index.
+    """
 
-    def __init__(self, index_generator, *args):
-        super(PositionalEncoder, self).__init__(index_generator)
-        raise_if(True, 'NotImplementedError')
+    def __init__(self, index_generator: CovariateIndexGenerator, attribute: str):
+        """
+        Parameters
+        ----------
+        index_generator
+            an instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
+            `generate_inference_series()`. Used to generate the index for encoders.
+        attribute
+            either 'absolute' or 'relative'.
+            If 'absolute', the generated encoded values will range from (0, inf) and the train target series
+            will be used as a reference to set the 0-index.
+            If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
+            end time will be used as a reference to evaluate the relative index positions.
+        """
+        raise_if_not(attribute in ['absolute', 'relative'],
+                     f'Encountered invalid encoder argument `{attribute}` for encoder `position`.'
+                     f'Attribute must be one of `("absolute", "relative")`.')
+
+        super(IntegerIndexEncoder, self).__init__(index_generator)
+        self.attribute = attribute
+        self.was_called = False
+        self.current_start_index: Tuple[int, Optional[Union[pd.Timestamp, int]]] = (0, None)
+        self.last_end_index: Optional[Tuple[int, Optional[Union[pd.Timestamp, int]]]] = None
+        self.train_end_index: Tuple[int, Optional[Union[pd.Timestamp, int]]] = (0, None)
+        self.freq = None
 
     def _encode(self, index: SupportedIndexes) -> TimeSeries:
-        super(PositionalEncoder, self)._encode(index)
-        return TimeSeries.from_times_and_values(index, np.arange(len(index)))
+        """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
+        super(IntegerIndexEncoder, self)._encode(index)
+
+        # initialize encoder -> required to correctly assign integer index for train, validation and inference datasets
+        if not self.was_called:
+            self.freq = index.freq
+            self.last_end_index = (0, index[0] - self.freq)
+            self.prediction_point = (len(index) - 1, index[-1])
+            self.was_called = True
+
+        # get the difference between last index and reference index for each case
+        current_start_value = index[0]
+        if self.attribute == 'absolute':
+            reference_index, reference_value = self.last_end_index
+            index_diff = _index_diff(self=current_start_value, other=reference_value, freq=self.freq)
+            current_start_index = reference_index - index_diff - 1
+        else:  # relative
+            reference_index, reference_value = self.prediction_point
+            index_diff = _index_diff(self=current_start_value, other=reference_value, freq=self.freq)
+            current_start_index = -index_diff
+
+        encoded = TimeSeries.from_times_and_values(times=index,
+                                                   values=np.arange(current_start_index,
+                                                                    current_start_index + len(index)))
+
+        self.last_end_index = (current_start_index + len(encoded), encoded.time_index[-1])
+        return encoded
 
 
-class PositionalPastEncoder(PositionalEncoder):
-    """PLACEHOLDER: absolute index encoder for past covariates"""
-    def __init__(self, input_chunk_length, output_chunk_length, *args):
-        super(PositionalPastEncoder, self).__init__(
+class IntegerIndexPastEncoder(IntegerIndexEncoder):
+    """IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying
+    TimeSeries' time index.
+    """
+
+    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+        """
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the emitted past series.
+        output_chunk_length
+            The length of the emitted future series.
+        attribute
+            either 'absolute' or 'relative'.
+            If 'absolute', the generated encoded values will range from (0, inf) and the train target series
+            will be used as a reference to set the 0-index.
+            If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
+            end time will be used as a reference to evaluate the relative index positions.
+        """
+        super(IntegerIndexPastEncoder, self).__init__(
             index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
-            *args
+            attribute=attribute
         )
 
 
-class PositionalFutureEncoder(PositionalEncoder):
-    """PLACEHOLDER: absolute index encoder for future covariates"""
-    def __init__(self, input_chunk_length, output_chunk_length, *args):
-        super(PositionalFutureEncoder, self).__init__(
+class IntegerIndexFutureEncoder(IntegerIndexEncoder):
+    """IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying
+    TimeSeries' time index.
+    """
+
+    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+        """
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the emitted past series.
+        output_chunk_length
+            The length of the emitted future series.
+        attribute
+            either 'absolute' or 'relative'.
+            If 'absolute', the generated encoded values will range from (0, inf) and the train target series
+            will be used as a reference to set the 0-index.
+            If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
+            end time will be used as a reference to evaluate the relative index positions.
+        """
+        super(IntegerIndexFutureEncoder, self).__init__(
             index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
-            *args
+            attribute=attribute
         )
 
 
@@ -312,7 +395,7 @@ class SequenceEncoder(Encoder):
     def encode_train(self,
                      target: SupportedTimeSeries,
                      past_covariate: Optional[SupportedTimeSeries] = None,
-                     future_covariate: Optional[SupportedTimeSeries] = True,
+                     future_covariate: Optional[SupportedTimeSeries] = None,
                      encode_past: bool = True,
                      encode_future: bool = True,
                      **kwargs) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
@@ -362,7 +445,7 @@ class SequenceEncoder(Encoder):
                          n: int,
                          target: SupportedTimeSeries,
                          past_covariate: Optional[SupportedTimeSeries] = None,
-                         future_covariate: Optional[SupportedTimeSeries] = True,
+                         future_covariate: Optional[SupportedTimeSeries] = None,
                          encode_past: bool = True,
                          encode_future: bool = True,
                          **kwargs) -> Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]:
@@ -478,8 +561,8 @@ class SequenceEncoder(Encoder):
             'cyclic_future': CyclicFutureEncoder,
             'datetime_attribute_past': DatetimeAttributePastEncoder,
             'datetime_attribute_future': DatetimeAttributeFutureEncoder,
-            'positional_past': PositionalPastEncoder,
-            'positional_future': PositionalFutureEncoder
+            'position_past': IntegerIndexPastEncoder,
+            'position_future': IntegerIndexFutureEncoder
         }
         return mapper
 

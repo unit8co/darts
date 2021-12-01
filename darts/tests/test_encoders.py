@@ -7,7 +7,8 @@ from ..models import TFTModel
 from ..utils import timeseries_generation as tg
 from ..timeseries import TimeSeries
 from ..utils.data.encoder_base import SingleEncoder
-from ..utils.data.encoders import (CyclicPastEncoder,
+from ..utils.data.encoders import (SequenceEncoder,
+                                   CyclicPastEncoder,
                                    CyclicFutureEncoder,
                                    DatetimeAttributePastEncoder,
                                    DatetimeAttributeFutureEncoder)
@@ -291,6 +292,66 @@ class EncoderTestCase(DartsBaseTestClass):
                                         inf_ts_short=self.inf_ts_short_future,
                                         inf_ts_long=self.inf_ts_long_future,
                                         cyclic=False)
+
+    def test_integer_positional_encoder(self):
+        """Test past `IntegerIndexEncoder`"""
+
+        ts = tg.linear_timeseries(length=24, freq='MS')
+        input_chunk_length = 12
+        output_chunk_length = 6
+
+        # ===> test absolute position encoder <===
+        encoder_params = {'position': {'past': ['absolute']}}
+        encs = SequenceEncoder(add_encoders=encoder_params,
+                               input_chunk_length=input_chunk_length,
+                               output_chunk_length=output_chunk_length,
+                               shift=0,
+                               takes_past_covariates=True,
+                               takes_future_covariates=True)
+
+        t1, _ = encs.encode_train(ts)
+        t2, _ = encs.encode_train(TimeSeries.from_times_and_values(ts.time_index + ts.freq, ts.values()))
+        t3, _ = encs.encode_train(TimeSeries.from_times_and_values(ts.time_index - ts.freq, ts.values()))
+
+        # absolute encoder takes the first observed index as a reference (from training)
+        vals = np.arange(len(ts)).reshape((len(ts), 1))
+        self.assertTrue((t1[0].time_index == ts.time_index).all() and (t1[0].values() == vals).all())
+        # test that the position values are updated correctly
+        self.assertTrue((t2[0].time_index == ts.time_index + ts.freq).all() and (t2[0].values() == vals + 1).all())
+        self.assertTrue((t3[0].time_index == ts.time_index - ts.freq).all() and (t3[0].values() == vals - 1).all())
+        # quickly test inference encoding
+        # n > output_chunk_length
+        t4, _ = encs.encode_inference(output_chunk_length + 1, ts)
+
+        self.assertTrue((t4[0].values()[:, 0] == np.arange(len(ts) - input_chunk_length, len(ts) + 1)).all())
+        # n <= output_chunk_length
+        t5, _ = encs.encode_inference(output_chunk_length - 1, ts)
+        self.assertTrue((t5[0].values()[:, 0] == np.arange(len(ts) - input_chunk_length, len(ts))).all())
+
+        # ===> test relative position encoder <===
+        encoder_params = {'position': {'past': ['relative']}}
+        encs = SequenceEncoder(add_encoders=encoder_params,
+                               input_chunk_length=input_chunk_length,
+                               output_chunk_length=output_chunk_length,
+                               shift=0,
+                               takes_past_covariates=True,
+                               takes_future_covariates=True)
+
+        t1, _ = encs.encode_train(ts)
+        t2, _ = encs.encode_train(TimeSeries.from_times_and_values(ts.time_index + ts.freq, ts.values()))
+        t3, _ = encs.encode_train(TimeSeries.from_times_and_values(ts.time_index - ts.freq, ts.values()))
+        # relative encoder takes the end of the training series as reference
+        vals = np.arange(-len(ts) + 1, 1).reshape((len(ts), 1))
+        self.assertTrue((t1[0].time_index == ts.time_index).all() and (t1[0].values() == vals).all())
+        self.assertTrue((t2[0].time_index == ts.time_index + ts.freq).all() and (t2[0].values() == vals + 1).all())
+        self.assertTrue((t3[0].time_index == ts.time_index - ts.freq).all() and (t3[0].values() == vals - 1).all())
+        # quickly test inference encoding
+        # n > output_chunk_length
+        t4, _ = encs.encode_inference(output_chunk_length + 1, ts)
+        self.assertTrue((t4[0].values()[:, 0] == np.arange(-input_chunk_length + 1, 1 + 1)).all())
+        # n <= output_chunk_length
+        t5, _ = encs.encode_inference(output_chunk_length - 1, ts)
+        self.assertTrue((t5[0].values()[:, 0] == np.arange(-input_chunk_length + 1, 0 + 1)).all())
 
     def helper_test_cyclic_encoder(self, encoder_class, attribute, inf_ts_short, inf_ts_long, cyclic):
         """Test cases for both `CyclicPastEncoder` and `CyclicFutureEncoder`"""
