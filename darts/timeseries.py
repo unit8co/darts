@@ -1611,6 +1611,31 @@ class TimeSeries:
                                                                 times=idx,
                                                                 fill_missing_dates=False))
 
+    def with_values(self, values: np.ndarray) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries, with the new specified values.
+
+        Parameters
+        ----------
+        values
+            A Numpy array with new values. It must have the same shape as the present 
+            series (time, components, samples)
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the new values and same index
+        """
+        raise_if_not(values.shape == self._xa.values.shape,
+                     'The new values must have the same shape (time, components, samples) as the present series. '
+                     'Received: {}, expected: {}'.format(values.shape, self._xa.values.shape))
+
+        new_xa = xr.DataArray(values,
+                              dims=self._xa.dims,
+                              coords=self._xa.coords)
+
+        return self.__class__(new_xa)
+
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
         Stacks another univariate or multivariate TimeSeries with the same time index on top of
@@ -2293,7 +2318,7 @@ class TimeSeries:
                 raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
             return self.__class__(self._xa / other)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            if not (other.all_values() != 0).all():
+            if not (other.all_values(copy=False) != 0).all():
                 raise_log(ZeroDivisionError('Cannot divide by a TimeSeries with a value 0.'), logger)
             return self._combine_arrays(other, lambda s1, s2: s1 / s2)
         else:
