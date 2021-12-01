@@ -181,6 +181,8 @@ class BaseDataTransformer(ABC):
     def _reshape_in(series: TimeSeries) -> np.ndarray:
         """ Reshapes the series' values to be fed in input to a transformer.
 
+            This is to feed 3-D (stochastic) series into transformers excepting 2-D arrays.
+
             The output is a 2-D matrix where each column corresponds to a component (dimension)
             of the series, and the columns' values are the flattened values over all samples
         """
@@ -191,6 +193,8 @@ class BaseDataTransformer(ABC):
     def _reshape_out(vals: np.ndarray, series_width: int, series_n_samples: int) -> np.ndarray:
         """ Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix
             suitable to build a TimeSeries.
+
+            This is to translate 2-D transformed arrays back into 3-D (stochastic) series.
 
             The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)
             and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.
