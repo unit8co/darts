@@ -6,7 +6,8 @@ Encoder Base Classes
 import pandas as pd
 
 from abc import ABC, abstractmethod
-from typing import Union, Optional
+from enum import Enum, auto
+from typing import Union, Optional, Tuple
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -17,10 +18,31 @@ SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
 
+class ReferenceIndexType(Enum):
+    PREDICTION = auto()
+    START = auto()
+    NONE = auto()
+
+
 class CovariateIndexGenerator(ABC):
-    def __init__(self, input_chunk_length, output_chunk_length):
+    def __init__(self,
+                 input_chunk_length: int,
+                 output_chunk_length: int,
+                 reference_index_type: ReferenceIndexType = ReferenceIndexType.NONE):
+        """
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the emitted past series.
+        output_chunk_length
+            The length of the emitted future series.
+        reference_index
+            if a reference index should be saved, set `reference_index` to
+        """
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
+        self.reference_index_type = reference_index_type
+        self.reference_index: Optional[Tuple[int, Union[pd.Timestamp, int]]] = None
 
     @abstractmethod
     def generate_train_series(self,
@@ -65,6 +87,14 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
                               covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
 
         super(PastCovariateIndexGenerator, self).generate_train_series(target, covariate)
+
+        # save a reference index if specified
+        if self.reference_index_type is not ReferenceIndexType.NONE and self.reference_index is None:
+            if self.reference_index_type is ReferenceIndexType.PREDICTION:
+                self.reference_index = (len(target) - 1, target.end_time())
+            else:  # save the time step before start of target series
+                self.reference_index = (-1, target.start_time() - target.freq)
+
         return covariate.time_index if covariate is not None else target.time_index
 
     def generate_inference_series(self,
@@ -96,6 +126,13 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
         """
 
         super(FutureCovariateIndexGenerator, self).generate_train_series(target, covariate)
+
+        # save a reference index if specified
+        if self.reference_index_type is not ReferenceIndexType.NONE and self.reference_index is None:
+            if self.reference_index_type is ReferenceIndexType.PREDICTION:
+                self.reference_index = (len(target) - 1, target.end_time())
+            else:  # save the time step before start of target series
+                self.reference_index = (-1, target.start_time() - target.freq)
 
         return covariate.time_index if covariate is not None else target.time_index
 

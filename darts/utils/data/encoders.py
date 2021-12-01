@@ -9,13 +9,12 @@ import numpy as np
 from typing import Union, Optional, Dict, List, Sequence, Tuple
 
 from darts import TimeSeries
-from darts.utils.data.encoder_base import (
-    CovariateIndexGenerator,
-    PastCovariateIndexGenerator,
-    FutureCovariateIndexGenerator,
-    Encoder,
-    SingleEncoder
-)
+from darts.utils.data.encoder_base import (ReferenceIndexType,
+                                           CovariateIndexGenerator,
+                                           PastCovariateIndexGenerator,
+                                           FutureCovariateIndexGenerator,
+                                           Encoder,
+                                           SingleEncoder)
 from darts.utils.data.utils import _index_diff
 
 from darts.logging import raise_if_not, get_logger, raise_if
@@ -222,41 +221,41 @@ class IntegerIndexEncoder(SingleEncoder):
                      f'Attribute must be one of `("absolute", "relative")`.')
 
         super(IntegerIndexEncoder, self).__init__(index_generator)
+
         self.attribute = attribute
+        self.reference_index: Optional[Tuple[int, Optional[Union[pd.Timestamp, int]]]] = None
         self.was_called = False
-        self.current_start_index: Tuple[int, Optional[Union[pd.Timestamp, int]]] = (0, None)
-        self.last_end_index: Optional[Tuple[int, Optional[Union[pd.Timestamp, int]]]] = None
-        self.train_end_index: Tuple[int, Optional[Union[pd.Timestamp, int]]] = (0, None)
-        self.freq = None
 
     def _encode(self, index: SupportedIndexes) -> TimeSeries:
-        """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
+        """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.
+        1)  for attribute=='absolute', the reference point/index is one step before start of the train target series
+        2)  for attribute=='relative', the reference point/index is the overall prediction/forecast index
+        """
         super(IntegerIndexEncoder, self)._encode(index)
 
-        # initialize encoder -> required to correctly assign integer index for train, validation and inference datasets
+        # load reference index from index_generators
         if not self.was_called:
-            self.freq = index.freq
-            self.last_end_index = (0, index[0] - self.freq)
-            self.prediction_point = (len(index) - 1, index[-1])
+            self.reference_index = self.index_generator.reference_index
             self.was_called = True
 
-        # get the difference between last index and reference index for each case
         current_start_value = index[0]
-        if self.attribute == 'absolute':
-            reference_index, reference_value = self.last_end_index
-            index_diff = _index_diff(self=current_start_value, other=reference_value, freq=self.freq)
-            current_start_index = reference_index - index_diff - 1
-        else:  # relative
-            reference_index, reference_value = self.prediction_point
-            index_diff = _index_diff(self=current_start_value, other=reference_value, freq=self.freq)
-            current_start_index = -index_diff
+
+        # extract reference index
+        reference_index, reference_value = self.reference_index
+
+        # get the difference between last index and reference index for each case
+        index_diff = _index_diff(self=current_start_value, other=reference_value, freq=index.freq)
+        # set the start integer index value for the current index
+        current_start_index = reference_index - index_diff if self.attribute == 'absolute' else - index_diff
 
         encoded = TimeSeries.from_times_and_values(times=index,
                                                    values=np.arange(current_start_index,
                                                                     current_start_index + len(index)),
                                                    columns=[self.attribute + '_idx'])
 
-        self.last_end_index = (current_start_index + len(encoded), encoded.time_index[-1])
+        # update reference index for 'absolute' case to avoid having to evaluate longer differences (cost-intensive)
+        if self.attribute == 'absolute':
+            self.reference_index = (current_start_index + len(encoded) - 1, encoded.time_index[-1])
         return encoded
 
 
@@ -280,8 +279,11 @@ class IntegerIndexPastEncoder(IntegerIndexEncoder):
             If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
             end time will be used as a reference to evaluate the relative index positions.
         """
+        reference_index_type = ReferenceIndexType.PREDICTION if attribute == 'relative' else ReferenceIndexType.START
         super(IntegerIndexPastEncoder, self).__init__(
-            index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            index_generator=PastCovariateIndexGenerator(input_chunk_length,
+                                                        output_chunk_length,
+                                                        reference_index_type=reference_index_type),
             attribute=attribute
         )
 
@@ -306,8 +308,11 @@ class IntegerIndexFutureEncoder(IntegerIndexEncoder):
             If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
             end time will be used as a reference to evaluate the relative index positions.
         """
+        reference_index_type = ReferenceIndexType.PREDICTION if attribute == 'relative' else ReferenceIndexType.START
         super(IntegerIndexFutureEncoder, self).__init__(
-            index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            index_generator=FutureCovariateIndexGenerator(input_chunk_length,
+                                                          output_chunk_length,
+                                                          reference_index_type=reference_index_type),
             attribute=attribute
         )
 
