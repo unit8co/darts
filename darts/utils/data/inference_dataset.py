@@ -40,32 +40,52 @@ class InferenceDataset(ABC, Dataset):
         pass
 
     @staticmethod
-    def _generate_index(past_target: TimeSeries,
-                        main_cov_type: CovariateType,
-                        input_chunk_length: int,
-                        output_chunk_length: int,
-                        n: int):
+    def _covariate_indexer(ts_idx: int,
+                          target_series: TimeSeries,
+                          covariate_series: TimeSeries,
+                          cov_type: CovariateType,
+                          input_chunk_length: int,
+                          output_chunk_length: int,
+                          n: int):
         """returns tuple of (past_start, past_end, future_start, future_end)"""
+        # get the main covariate type: CovariateType.PAST or CovariateType.FUTURE
+        main_cov_type = CovariateType.PAST if cov_type is CovariateType.PAST else CovariateType.FUTURE
 
         raise_if_not(main_cov_type in [CovariateType.PAST, CovariateType.FUTURE],
                      '`main_cov_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`')
 
+        # we need to use the time index (datetime or integer) here to match the index with the covariate series
+        past_start = target_series.time_index[-input_chunk_length]
+        past_end = target_series.time_index[-1]
         if main_cov_type is CovariateType.PAST:
-            index_generator = PastCovariateIndexGenerator(input_chunk_length=input_chunk_length,
-                                                          output_chunk_length=output_chunk_length)
+            future_end = past_end + max(0, n - output_chunk_length) * target_series.freq
         else:  # CovariateType.FUTURE
-            index_generator = FutureCovariateIndexGenerator(input_chunk_length=input_chunk_length,
-                                                            output_chunk_length=output_chunk_length)
+            future_end = past_end + max(n, output_chunk_length) * target_series.freq
 
-        index = index_generator.generate_inference_series(n=n, target=past_target, covariate=None)
+        future_start = past_end + target_series.freq if future_end != past_end else future_end
 
-        if len(index) != input_chunk_length:
-            index = index[input_chunk_length:]
+        if input_chunk_length == 0:  # for regression ensemble models
+            past_start, past_end = future_start, future_start
 
-        if input_chunk_length != 0:  # for regular models
-            return past_target.time_index[0], past_target.time_index[-1], index[0], index[-1]
-        else:  # for regression ensemble models
-            return index[0], index[0], index[0], index[-1]
+        # check if case specific indexes are available
+        case_start = future_start if cov_type is CovariateType.FUTURE else past_start
+        raise_if_not(
+            covariate_series.start_time() <= case_start,
+            f"For the given forecasting case, the provided {main_cov_type.value} covariates at dataset index "
+            f"`{ts_idx}` do not extend far enough into the past. The {main_cov_type.value} covariates must start at "
+            f"time step `{case_start}`, whereas now they start at time step `{covariate_series.start_time()}`.")
+        raise_if_not(
+            covariate_series.end_time() >= future_end,
+            f"For the given forecasting horizon `n={n}`, the provided {main_cov_type.value} covariates "
+            f"at dataset index `{ts_idx}` do not extend far enough into the future. As `"
+            f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
+            f"` the {main_cov_type.value} covariates must end at time step `{future_end}`, "
+            f"whereas now they end at time step `{covariate_series.end_time()}`.")
+
+        # extract the index position (index) from time_index value
+        cov_start = covariate_series.time_index.get_loc(past_start)
+        cov_end = covariate_series.time_index.get_loc(future_end) + 1
+        return cov_start, cov_end
 
 
 class GenericInferenceDataset(InferenceDataset):
@@ -118,55 +138,37 @@ class GenericInferenceDataset(InferenceDataset):
 
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
-
         raise_if_not(len(target_series) >= self.input_chunk_length,
                      f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length}).")
 
-        covariate_series = None if self.covariates is None else self.covariates[idx]
+        # extract past target values
+        past_target = target_series.values(copy=False)[-self.input_chunk_length:]
 
-        past_target = target_series[-self.input_chunk_length:]
-        past_target_vals = past_target.values(copy=False)
-
+        # optionally, extract covariates
         cov_past, cov_future = None, None
+        covariate_series = None if self.covariates is None else self.covariates[idx]
         if covariate_series is not None:
-            main_cov_type = CovariateType.PAST if self.covariate_type is CovariateType.PAST else CovariateType.FUTURE
+            # get start and end indices (integer) of the covariates including historic and future parts
+            cov_start, cov_end = self._covariate_indexer(ts_idx=idx,
+                                                         target_series=target_series,
+                                                         covariate_series=covariate_series,
+                                                         cov_type=self.covariate_type,
+                                                         input_chunk_length=self.input_chunk_length,
+                                                         output_chunk_length=self.output_chunk_length,
+                                                         n=self.n)
 
-            past_start, past_end, future_start, future_end = \
-                self._generate_index(past_target=past_target,
-                                     main_cov_type=main_cov_type,
-                                     input_chunk_length=self.input_chunk_length,
-                                     output_chunk_length=self.output_chunk_length,
-                                     n=self.n)
-
-            case_start = future_start if self.covariate_type is CovariateType.FUTURE else past_start
-            raise_if_not(
-                covariate_series.start_time() <= case_start,
-                f"For the given forecasting case, the provided {main_cov_type.value} covariates at dataset index "
-                f"`{idx}` do not extend far enough into the past. The {main_cov_type.value} covariates must start at "
-                f"time step `{case_start}`, whereas now they start at time step `{covariate_series.start_time()}`.")
-            raise_if_not(
-                covariate_series.end_time() >= future_end,
-                f"For the given forecasting horizon `n={self.n}`, the provided {main_cov_type.value} covariates "
-                f"at dataset index `{idx}` do not extend far enough into the future. As `"
-                f"{'n > output_chunk_length' if self.n > self.output_chunk_length else 'n <= output_chunk_length'}"
-                f"` the {main_cov_type.value} covariates must end at time step `{future_end}`, "
-                f"whereas now they end at time step `{covariate_series.end_time()}`.")
-
-            # extract the index position (index) from time_index value
-            cov_start = covariate_series.time_index.get_loc(past_start)
-            cov_end = covariate_series.time_index.get_loc(future_end) + 1
-            covariate = covariate_series[cov_start:cov_end]
-
-            cov_vals = covariate.values(copy=False)
+            # extract covariate values and split into a past (historic) and future part
+            covariate = covariate_series.values(copy=False)[cov_start:cov_end]
             if self.input_chunk_length != 0:  # regular models
-                cov_past, cov_future = cov_vals[:self.input_chunk_length], cov_vals[self.input_chunk_length:]
-            else:  # regression ensemble models
-                cov_past, cov_future = cov_vals, cov_vals
+                cov_past, cov_future = covariate[:self.input_chunk_length], covariate[self.input_chunk_length:]
+            else:  # regression ensemble models have a input_chunk_length == 0 part for using predictions as input
+                cov_past, cov_future = covariate, covariate
 
-        cov_past = cov_past if cov_past is not None and len(cov_past) > 0 else None
-        cov_future = cov_future if cov_future is not None and len(cov_future) > 0 else None
+            # set to None if empty array
+            cov_past = cov_past if cov_past is not None and len(cov_past) > 0 else None
+            cov_future = cov_future if cov_future is not None and len(cov_future) > 0 else None
 
-        return past_target_vals, cov_past, cov_future, target_series
+        return past_target, cov_past, cov_future, target_series
 
 
 class PastCovariatesInferenceDataset(InferenceDataset):
