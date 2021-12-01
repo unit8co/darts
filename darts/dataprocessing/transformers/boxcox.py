@@ -92,26 +92,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         return zip(series, self._fitted_params)
 
     @staticmethod
-    def _reshape_in(series: TimeSeries) -> np.ndarray:
-        """ Reshapes the series' values to be fed in input to a transformer.
-
-            The output is a 2-D matrix where each column corresponds to a component (dimension)
-            of the series, and the columns' values are the flattened values over all samples
-        """
-        vals = series.all_values(copy=False)
-        return np.stack([vals[:, i, :].reshape(-1) for i in range(series.width)], axis=1)
-
-    @staticmethod
-    def _reshape_out(vals: np.ndarray, series_width: int, series_n_samples: int) -> np.ndarray:
-        """ Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix
-            suitable to build a TimeSeries.
-
-            The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)
-            and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.
-        """
-        return np.stack([vals[:, i].reshape(-1, series_n_samples) for i in range(series_width)], axis=1)
-
-    @staticmethod
     def ts_fit(series: TimeSeries,
                lmbda: Optional[Union[float, Sequence[float]]],
                method) -> Union[Sequence[float],
