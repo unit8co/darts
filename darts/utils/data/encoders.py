@@ -340,15 +340,18 @@ class SequenceEncoder(Encoder):
             <darts.utils.data.encoders.CyclicTemporalEncoder>`;
             `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
             :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
+            `position` for integer index position encoder. See the docs :meth:`IntegerIndexEncoder
+            <darts.utils.data.encoders.IntegerIndexEncoder>`;
         Supported temporal keywords:
             'past' for adding encoding as past covariates
             'future' for adding encoding as future covariates
         Supported attributes:
             for attributes read the referred docs for the corresponding encoder from above
-        An example of a valid `add_encoders` dict for hourly data for :
+        An example of a valid `add_encoders` dict for hourly data:
             add_encoders={
                 'cyclic': {'future': ['month']},
-                'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']}
+                'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                'position': {'past': ['absolute'], 'future': ['relative']}
             }
 
         Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
@@ -607,15 +610,18 @@ class SequenceEncoder(Encoder):
                 <darts.utils.data.encoders.CyclicTemporalEncoder>`;
                 `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
                 :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
+                `position` for integer index position encoder. See the docs :meth:`IntegerIndexEncoder
+                <darts.utils.data.encoders.IntegerIndexEncoder>`;
             Supported temporal keywords:
                 'past' for adding encoding as past covariates
                 'future' for adding encoding as future covariates
             Supported attributes:
                 for attributes read the referred docs for the corresponding encoder from above
-            An example of a valid `add_encoders` dict at model creation for hourly data for :
+            An example of a valid `add_encoders` dict for hourly data for :
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']}
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']}
                 }
 
             Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`

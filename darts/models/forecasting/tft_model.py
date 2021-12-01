@@ -562,20 +562,26 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             default for hidden size for processing continuous variables
         add_encoders : optional Dict
             If other than None, add index encoding/s to the past and/or future covariates for training and prediction.
-            The dict must follow this convention:
+            The `add_encoders` dict must follow this convention:
                 `{encoder keyword: {temporal keyword: List[attributes]}}`
             Supported encoder keywords:
                 `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
                 <darts.utils.data.encoders.CyclicTemporalEncoder>`;
                 `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
                 :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
+                `position` for integer index position encoder. See the docs :meth:`IntegerIndexEncoder
+                <darts.utils.data.encoders.IntegerIndexEncoder>`;
             Supported temporal keywords:
                 'past' for adding encoding as past covariates
                 'future' for adding encoding as future covariates
             Supported attributes:
                 for attributes read the referred docs for the corresponding encoder from above
-            An example of a valid `add_encoders` dict:
-                add_encoders={'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}}
+            An example of a valid `add_encoders` dict for hourly data:
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']}
+                }
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
             This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
