@@ -216,12 +216,7 @@ class EncoderTestCase(DartsBaseTestClass):
                          output_chunk_length=self.output_chunk_length,
                          add_encoders=add_encoder_dict)
 
-        encoders = model.initialize_encoders(model_params=model._model_params,
-                                             input_chunk_length=model.input_chunk_length,
-                                             output_chunk_length=model.output_chunk_length,
-                                             shift=model.input_chunk_length,
-                                             takes_past_covariates=takes_past_covariates,
-                                             takes_future_covariates=takes_future_covariates)
+        encoders = model.initialize_encoders()
         # see if encoding works
         _ = encoders.encode_train(self.target_multi, self.covariate_multi, self.covariate_multi)
         _ = encoders.encode_inference(3, self.target_multi, self.covariate_multi, self.covariate_multi)

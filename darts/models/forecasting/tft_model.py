@@ -19,7 +19,8 @@ from darts.utils.data import (
     TrainingDataset,
     MixedCovariatesSequentialDataset,
     MixedCovariatesTrainingDataset,
-    MixedCovariatesInferenceDataset
+    MixedCovariatesInferenceDataset,
+    SequenceEncoder
 )
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
@@ -762,17 +763,22 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             add_relative_index=self.add_relative_index
         )
 
+    def _model_encoder_settings(self):
+        """Needs to be defined for every model. This will be an abstract method as soon as we apply encoders for
+        all models.
+        This function is called by `TorchForecastingModel.initialize_encoders()` and will return the required settings.
+        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
+        """
+        input_chunk_length = self.input_chunk_length
+        output_chunk_length = self.output_chunk_length
+        takes_past_covariates = True
+        takes_future_covariates = True
+        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
+
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
-
-        self.encoders = self.initialize_encoders(model_params=self._model_params,
-                                                 input_chunk_length=self.input_chunk_length,
-                                                 output_chunk_length=self.output_chunk_length,
-                                                 shift=self.input_chunk_length,
-                                                 takes_past_covariates=True,
-                                                 takes_future_covariates=True)
 
         raise_if(future_covariates is None and not self.encoders.future_encoders and not self.add_relative_index,
                  'TFTModel requires future covariates. The model applies multi-head attention queries on future '

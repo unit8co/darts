@@ -195,6 +195,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = None
 
+        # by default models do not use encoders
+        self.encoders = None
+
         self.force_reset = force_reset
         self.save_checkpoints = save_checkpoints
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
@@ -428,6 +431,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                      (val_future_covariates[0].width if val_future_covariates is not None else None))
             raise_if_not(match, 'The dimensions of the series in the training set '
                                 'and the validation set do not match.')
+
+        self.encoders = self.initialize_encoders()
         train_dataset = self._build_train_dataset(series, past_covariates, future_covariates)
         val_dataset = self._build_train_dataset(val_series, val_past_covariates, future_covariates) if val_series is not None else None
 
@@ -435,18 +440,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs, num_loader_workers)
 
-    @staticmethod
-    def initialize_encoders(model_params: Tuple[Tuple, Dict],
-                            input_chunk_length: int,
-                            output_chunk_length: int,
-                            shift: int,
-                            takes_past_covariates: bool = False,
-                            takes_future_covariates: bool = False) -> SequenceEncoder:
+    def _model_encoder_settings(self):
+        """Needs to be defined for every model. this will be an abstract method as soon as we apply encoders for
+        all models.
+        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
+        """
+        input_chunk_length = 0
+        output_chunk_length = 0
+        takes_past_covariates = False
+        takes_future_covariates = False
+        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
 
-        return SequenceEncoder(add_encoders=model_params[1].get('add_encoders', None),
+    def initialize_encoders(self) -> SequenceEncoder:
+
+        input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates =\
+            self._model_encoder_settings()
+
+        return SequenceEncoder(add_encoders=self._model_params[1].get('add_encoders', None),
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
-                               shift=shift,
+                               shift=0,
                                takes_past_covariates=takes_past_covariates,
                                takes_future_covariates=takes_future_covariates)
 

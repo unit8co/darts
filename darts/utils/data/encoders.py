@@ -253,7 +253,8 @@ class IntegerIndexEncoder(SingleEncoder):
 
         encoded = TimeSeries.from_times_and_values(times=index,
                                                    values=np.arange(current_start_index,
-                                                                    current_start_index + len(index)))
+                                                                    current_start_index + len(index)),
+                                                   columns=[self.attribute + '_idx'])
 
         self.last_end_index = (current_start_index + len(encoded), encoded.time_index[-1])
         return encoded
