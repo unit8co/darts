@@ -1,10 +1,12 @@
 import unittest
 import pandas as pd
+import numpy as np
 from math import log
 from copy import deepcopy
 
 from darts.dataprocessing.transformers import BoxCox, Mapper
 from darts.utils.timeseries_generation import sine_timeseries, linear_timeseries
+from darts import TimeSeries
 
 
 class BoxCoxTestCase(unittest.TestCase):
@@ -81,3 +83,14 @@ class BoxCoxTestCase(unittest.TestCase):
         lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
         self.assertNotEqual(lambda1, lambda2, "Lambdas should change when the transformer is retrained")
+
+    def test_multivariate_stochastic_series(self):
+        transformer = BoxCox()
+        vals = np.random.rand(10, 5, 10)
+        series = TimeSeries.from_values(vals)
+
+        new_series = transformer.fit_transform(series)
+        series_back = transformer.inverse_transform(new_series)
+
+        # Test inverse transform
+        np.testing.assert_allclose(series.all_values(), series_back.all_values())

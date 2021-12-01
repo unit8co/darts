@@ -18,7 +18,7 @@ class MissingValuesFiller(BaseDataTransformer):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to fill missing values from a (sequence of) TimeSeries
+        Data transformer to fill missing values from a (sequence of) deterministic TimeSeries.
 
         Parameters
         ----------
