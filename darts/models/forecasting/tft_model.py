@@ -565,12 +565,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             The `add_encoders` dict must follow this convention:
                 `{encoder keyword: {temporal keyword: List[attributes]}}`
             Supported encoder keywords:
-                `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
-                <darts.utils.data.encoders.CyclicTemporalEncoder>`;
-                `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
+                `'cyclic'` for cyclic temporal encoder. See the docs
+                :meth:`CyclicTemporalEncoder <darts.utils.data.encoders.CyclicTemporalEncoder>`;
+                `'datetime_attribute'` for adding scalar information of pd.DatetimeIndex attribute. See the docs
                 :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
-                `position` for integer index position encoder. See the docs :meth:`IntegerIndexEncoder
-                <darts.utils.data.encoders.IntegerIndexEncoder>`;
+                `'position'` for integer index position encoder. See the docs
+                :meth:`IntegerIndexEncoder <darts.utils.data.encoders.IntegerIndexEncoder>`;
+                `'custom'` for encoding index with custom callables (functions). See the docs
+                :meth:`CallableIndexEncoder <darts.utils.data.encoders.CallableIndexEncoder>`;
             Supported temporal keywords:
                 'past' for adding encoding as past covariates
                 'future' for adding encoding as future covariates
@@ -580,7 +582,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']}
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]}
                 }
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.

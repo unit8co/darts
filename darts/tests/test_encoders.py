@@ -8,10 +8,10 @@ from ..utils import timeseries_generation as tg
 from ..timeseries import TimeSeries
 from ..utils.data.encoder_base import SingleEncoder
 from ..utils.data.encoders import (SequenceEncoder,
-                                   CyclicPastEncoder,
-                                   CyclicFutureEncoder,
-                                   DatetimeAttributePastEncoder,
-                                   DatetimeAttributeFutureEncoder)
+                                   PastCyclicEncoder,
+                                   FutureCyclicEncoder,
+                                   PastDatetimeAttributeEncoder,
+                                   FutureDatetimeAttributeEncoder)
 
 from ..logging import get_logger
 logger = get_logger(__name__)
@@ -88,9 +88,8 @@ class EncoderTestCase(DartsBaseTestClass):
 
         # test invalid encoder kwarg at model creation
         bad_encoder = {'no_encoder': {'past': ['month']}}
-        encoders = self.helper_encoder_from_model(add_encoder_dict=bad_encoder)
-        self.assertTrue(len(encoders.past_encoders) == 0)
-        self.assertTrue(len(encoders.future_encoders) == 0)
+        with self.assertRaises(ValueError):
+            _ = self.helper_encoder_from_model(add_encoder_dict=bad_encoder)
 
         # test invalid kwargs at model creation
         bad_time = {'cyclic': {'ppast': ['month']}}
@@ -231,7 +230,7 @@ class EncoderTestCase(DartsBaseTestClass):
             times=tg._generate_index(start=pd.to_datetime('2000-01-01'), length=24, freq='MS'),
             values=np.arange(24)
         )
-        encoder = CyclicFutureEncoder(input_chunk_length=1, output_chunk_length=1, attribute='month')
+        encoder = FutureCyclicEncoder(input_chunk_length=1, output_chunk_length=1, attribute='month')
         first_halve = encoder.encode_train(target=month_series[:12],
                                            covariate=month_series[:12],
                                            merge_covariate=False)
@@ -242,13 +241,13 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertTrue((first_halve.values() == second_halve.values()).all())
 
         # test past cyclic encoder
-        self.helper_test_cyclic_encoder(CyclicPastEncoder,
+        self.helper_test_cyclic_encoder(PastCyclicEncoder,
                                         attribute=attribute,
                                         inf_ts_short=self.inf_ts_short_past,
                                         inf_ts_long=self.inf_ts_long_past,
                                         cyclic=True)
         # test future cyclic encoder
-        self.helper_test_cyclic_encoder(CyclicFutureEncoder,
+        self.helper_test_cyclic_encoder(FutureCyclicEncoder,
                                         attribute=attribute,
                                         inf_ts_short=self.inf_ts_short_future,
                                         inf_ts_long=self.inf_ts_long_future,
@@ -264,7 +263,7 @@ class EncoderTestCase(DartsBaseTestClass):
             values=np.arange(24)
         )
 
-        encoder = DatetimeAttributeFutureEncoder(input_chunk_length=1, output_chunk_length=1, attribute='month')
+        encoder = FutureDatetimeAttributeEncoder(input_chunk_length=1, output_chunk_length=1, attribute='month')
         first_halve = encoder.encode_train(target=month_series[:12],
                                            covariate=month_series[:12],
                                            merge_covariate=False)
@@ -275,14 +274,14 @@ class EncoderTestCase(DartsBaseTestClass):
         self.assertTrue((first_halve.values() == second_halve.values()).all())
 
         # test past cyclic encoder
-        self.helper_test_cyclic_encoder(DatetimeAttributePastEncoder,
+        self.helper_test_cyclic_encoder(PastDatetimeAttributeEncoder,
                                         attribute=attribute,
                                         inf_ts_short=self.inf_ts_short_past,
                                         inf_ts_long=self.inf_ts_long_past,
                                         cyclic=False)
 
         # test future cyclic encoder
-        self.helper_test_cyclic_encoder(DatetimeAttributeFutureEncoder,
+        self.helper_test_cyclic_encoder(FutureDatetimeAttributeEncoder,
                                         attribute=attribute,
                                         inf_ts_short=self.inf_ts_short_future,
                                         inf_ts_long=self.inf_ts_long_future,
@@ -348,8 +347,27 @@ class EncoderTestCase(DartsBaseTestClass):
         t5, _ = encs.encode_inference(output_chunk_length - 1, ts)
         self.assertTrue((t5[0].values()[:, 0] == np.arange(-input_chunk_length + 1, 0 + 1)).all())
 
+    def test_callable_encoder(self):
+        """Test `CallableIndexEncoder`"""
+        ts = tg.linear_timeseries(length=24, freq='A')
+        input_chunk_length = 12
+        output_chunk_length = 6
+
+        # ===> test absolute position encoder <===
+        encoder_params = {'custom': {'past': [lambda index: index.year, lambda index: index.year - 1]}}
+        encs = SequenceEncoder(add_encoders=encoder_params,
+                               input_chunk_length=input_chunk_length,
+                               output_chunk_length=output_chunk_length,
+                               shift=0,
+                               takes_past_covariates=True,
+                               takes_future_covariates=True)
+
+        t1, _ = encs.encode_train(ts)
+        self.assertTrue((ts.time_index.year.values == t1[0].values()[:, 0]).all())
+        self.assertTrue((ts.time_index.year.values - 1 == t1[0].values()[:, 1]).all())
+
     def helper_test_cyclic_encoder(self, encoder_class, attribute, inf_ts_short, inf_ts_long, cyclic):
-        """Test cases for both `CyclicPastEncoder` and `CyclicFutureEncoder`"""
+        """Test cases for both `PastCyclicEncoder` and `FutureCyclicEncoder`"""
         encoder = encoder_class(input_chunk_length=self.input_chunk_length,
                                 output_chunk_length=self.output_chunk_length,
                                 attribute=attribute)

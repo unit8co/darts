@@ -6,7 +6,7 @@ Encoder Classes Main
 import pandas as pd
 import numpy as np
 
-from typing import Union, Optional, Dict, List, Sequence, Tuple
+from typing import Union, Optional, Dict, List, Sequence, Tuple, Callable
 
 from darts import TimeSeries
 from darts.utils.data.encoder_base import (ReferenceIndexType,
@@ -27,7 +27,7 @@ SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 logger = get_logger(__name__)
 
-ENCODER_KEYS = ['cyclic', 'datetime_attribute', 'position']
+ENCODER_KEYS = ['cyclic', 'datetime_attribute', 'position', 'custom']
 FUTURE = 'future'
 PAST = 'past'
 VALID_TIME_PARAMS = [
@@ -48,17 +48,16 @@ class CyclicTemporalEncoder(SingleEncoder):
         Parameters
         ----------
         index_generator
-            an instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
+            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
             `generate_inference_series()`. Used to generate the index for encoders.
         attribute
-            the attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
+            The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-
         super(CyclicTemporalEncoder, self).__init__(index_generator)
         self.attribute = attribute
 
@@ -68,7 +67,7 @@ class CyclicTemporalEncoder(SingleEncoder):
         return datetime_attribute_timeseries(index, attribute=self.attribute, cyclic=True, dtype=self.dtype)
 
 
-class CyclicPastEncoder(CyclicTemporalEncoder):
+class PastCyclicEncoder(CyclicTemporalEncoder):
     """Cyclic encoder for past covariates."""
 
     def __init__(self, input_chunk_length, output_chunk_length, attribute):
@@ -80,20 +79,20 @@ class CyclicPastEncoder(CyclicTemporalEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            the attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
+            The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(CyclicPastEncoder, self).__init__(
+        super(PastCyclicEncoder, self).__init__(
             index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
             attribute=attribute
         )
 
 
-class CyclicFutureEncoder(CyclicTemporalEncoder):
+class FutureCyclicEncoder(CyclicTemporalEncoder):
     """Cyclic encoder for future covariates."""
 
     def __init__(self, input_chunk_length, output_chunk_length, attribute):
@@ -105,14 +104,14 @@ class CyclicFutureEncoder(CyclicTemporalEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            the attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
+            The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(CyclicFutureEncoder, self).__init__(
+        super(FutureCyclicEncoder, self).__init__(
             index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
             attribute=attribute
         )
@@ -128,27 +127,26 @@ class DatetimeAttributeEncoder(SingleEncoder):
         Parameters
         ----------
         index_generator
-            an instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
+            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
             `generate_inference_series()`. Used to generate the index for encoders.
         attribute
-            the attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-
         super(DatetimeAttributeEncoder, self).__init__(index_generator)
         self.attribute = attribute
 
     def _encode(self, index: SupportedIndexes) -> TimeSeries:
-        """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
+        """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
         super(DatetimeAttributeEncoder, self)._encode(index)
         return datetime_attribute_timeseries(index, attribute=self.attribute, dtype=self.dtype)
 
 
-class DatetimeAttributePastEncoder(DatetimeAttributeEncoder):
+class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     """Datetime attribute encoder for past covariates."""
 
     def __init__(self, input_chunk_length, output_chunk_length, attribute):
@@ -160,20 +158,20 @@ class DatetimeAttributePastEncoder(DatetimeAttributeEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            the attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(DatetimeAttributePastEncoder, self).__init__(
+        super(PastDatetimeAttributeEncoder, self).__init__(
             index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
             attribute=attribute
         )
 
 
-class DatetimeAttributeFutureEncoder(DatetimeAttributeEncoder):
+class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     """Datetime attribute encoder for future covariates."""
 
     def __init__(self, input_chunk_length, output_chunk_length, attribute):
@@ -185,21 +183,22 @@ class DatetimeAttributeFutureEncoder(DatetimeAttributeEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            the attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
             Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
             "weekday", "day", "hour", "minute", "second". See all available attributes in
             https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(DatetimeAttributeFutureEncoder, self).__init__(
+        super(FutureDatetimeAttributeEncoder, self).__init__(
             index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
             attribute=attribute
         )
 
 
 class IntegerIndexEncoder(SingleEncoder):
-    """IntegerIndexEncoder: Adds integer index value (position) derived from the underlying TimeSeries' time index.
+    """IntegerIndexEncoder: Adds integer index value (position) derived from the underlying TimeSeries' time index
+    for past and future covariates.
     """
 
     def __init__(self, index_generator: CovariateIndexGenerator, attribute: str):
@@ -207,17 +206,16 @@ class IntegerIndexEncoder(SingleEncoder):
         Parameters
         ----------
         index_generator
-            an instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
+            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
             `generate_inference_series()`. Used to generate the index for encoders.
         attribute
-            either 'absolute' or 'relative'.
-            If 'absolute', the generated encoded values will range from (0, inf) and the train target series
-            will be used as a reference to set the 0-index.
-            If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
-            end time will be used as a reference to evaluate the relative index positions.
+            Either 'absolute' or 'relative'. If 'absolute', the generated encoded values will range from (0, inf)
+            and the train target series will be used as a reference to set the 0-index. If 'relative', the generated
+            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
+            to evaluate the relative index positions.
         """
-        raise_if_not(attribute in ['absolute', 'relative'],
-                     f'Encountered invalid encoder argument `{attribute}` for encoder `position`.'
+        raise_if_not(isinstance(attribute, str) and attribute in ['absolute', 'relative'],
+                     f'Encountered invalid encoder argument `{attribute}` for encoder `position`. '
                      f'Attribute must be one of `("absolute", "relative")`.')
 
         super(IntegerIndexEncoder, self).__init__(index_generator)
@@ -227,7 +225,7 @@ class IntegerIndexEncoder(SingleEncoder):
         self.was_called = False
 
     def _encode(self, index: SupportedIndexes) -> TimeSeries:
-        """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.
+        """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.
         1)  for attribute=='absolute', the reference point/index is one step before start of the train target series
         2)  for attribute=='relative', the reference point/index is the overall prediction/forecast index
         """
@@ -259,12 +257,12 @@ class IntegerIndexEncoder(SingleEncoder):
         return encoded
 
 
-class IntegerIndexPastEncoder(IntegerIndexEncoder):
+class PastIntegerIndexEncoder(IntegerIndexEncoder):
     """IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying
     TimeSeries' time index.
     """
 
-    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+    def __init__(self, input_chunk_length: int, output_chunk_length: int, attribute: str):
         """
         Parameters
         ----------
@@ -273,14 +271,14 @@ class IntegerIndexPastEncoder(IntegerIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            either 'absolute' or 'relative'.
-            If 'absolute', the generated encoded values will range from (0, inf) and the train target series
-            will be used as a reference to set the 0-index.
-            If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
-            end time will be used as a reference to evaluate the relative index positions.
+            Either 'absolute' or 'relative'. If 'absolute', the generated encoded values will range from (0, inf)
+            and the train target series will be used as a reference to set the 0-index. If 'relative', the generated
+            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
+            to evaluate the relative index positions.
         """
         reference_index_type = ReferenceIndexType.PREDICTION if attribute == 'relative' else ReferenceIndexType.START
-        super(IntegerIndexPastEncoder, self).__init__(
+
+        super(PastIntegerIndexEncoder, self).__init__(
             index_generator=PastCovariateIndexGenerator(input_chunk_length,
                                                         output_chunk_length,
                                                         reference_index_type=reference_index_type),
@@ -288,12 +286,12 @@ class IntegerIndexPastEncoder(IntegerIndexEncoder):
         )
 
 
-class IntegerIndexFutureEncoder(IntegerIndexEncoder):
+class FutureIntegerIndexEncoder(IntegerIndexEncoder):
     """IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying
     TimeSeries' time index.
     """
 
-    def __init__(self, input_chunk_length, output_chunk_length, attribute):
+    def __init__(self, input_chunk_length: int, output_chunk_length: int, attribute: str):
         """
         Parameters
         ----------
@@ -302,17 +300,109 @@ class IntegerIndexFutureEncoder(IntegerIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            either 'absolute' or 'relative'.
-            If 'absolute', the generated encoded values will range from (0, inf) and the train target series
-            will be used as a reference to set the 0-index.
-            If 'relative', the generated encoded values will range from (-inf, inf) and the train target series
-            end time will be used as a reference to evaluate the relative index positions.
+            Either 'absolute' or 'relative'. If 'absolute', the generated encoded values will range from (0, inf)
+            and the train target series will be used as a reference to set the 0-index. If 'relative', the generated
+            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
+            to evaluate the relative index positions.
         """
         reference_index_type = ReferenceIndexType.PREDICTION if attribute == 'relative' else ReferenceIndexType.START
-        super(IntegerIndexFutureEncoder, self).__init__(
+
+        super(FutureIntegerIndexEncoder, self).__init__(
             index_generator=FutureCovariateIndexGenerator(input_chunk_length,
                                                           output_chunk_length,
                                                           reference_index_type=reference_index_type),
+            attribute=attribute
+        )
+
+
+class CallableIndexEncoder(SingleEncoder):
+    """CallableIndexEncoder: Applies a user-defined callable to encode the underlying index for past and future covariates.
+    """
+
+    def __init__(self, index_generator: CovariateIndexGenerator, attribute: Callable):
+        """
+        Parameters
+        ----------
+        index_generator
+            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
+            `generate_inference_series()`. Used to generate the index for encoders.
+        attribute
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            and returns a np.ndarray of shape `(len(index),)`.
+            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:
+                `attribute = lambda index: (index.year - 1950) / 50]}`
+            And for pd.Int64Index or pd.RangeIndex:
+                `attribute = lambda index: (index - 1950) / 50]}`
+        """
+        raise_if_not(callable(attribute),
+                     f'Encountered invalid encoder argument `{attribute}` for encoder `callable`. '
+                     f'Attribute must be a callable that returns a `np.ndarray`.')
+
+        super(CallableIndexEncoder, self).__init__(index_generator)
+
+        self.attribute = attribute
+
+    def _encode(self, index: SupportedIndexes) -> TimeSeries:
+        """Apply the user-defined callable to encode the index
+        """
+        super(CallableIndexEncoder, self)._encode(index)
+
+        return TimeSeries.from_times_and_values(times=index,
+                                                values=self.attribute(index),
+                                                columns=['custom'])
+
+
+class PastCallableIndexEncoder(CallableIndexEncoder):
+    """IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying
+    TimeSeries' time index.
+    """
+
+    def __init__(self, input_chunk_length: int, output_chunk_length: int, attribute: Union[str, Callable]):
+        """
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the emitted past series.
+        output_chunk_length
+            The length of the emitted future series.
+        attribute
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            and returns a np.ndarray of shape `(len(index),)`.
+            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:
+                `attribute = lambda index: (index.year - 1950) / 50}`
+            And for pd.Int64Index or pd.RangeIndex:
+                `attribute = lambda index: (index - 1950) / 50}`
+        """
+        super(PastCallableIndexEncoder, self).__init__(
+            index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
+            attribute=attribute
+        )
+
+
+class FutureCallableIndexEncoder(CallableIndexEncoder):
+    """IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying
+    TimeSeries' time index.
+    """
+
+    def __init__(self, input_chunk_length: int, output_chunk_length: int, attribute: Union[str, Callable]):
+        """
+        Parameters
+        ----------
+        input_chunk_length
+            The length of the emitted past series.
+        output_chunk_length
+            The length of the emitted future series.
+        attribute
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            and returns a np.ndarray of shape `(len(index),)`.
+            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:
+                `attribute = lambda index: (index.year - 1950) / 50]}`
+            And for pd.Int64Index or pd.RangeIndex:
+                `attribute = lambda index: (index - 1950) / 50]}`
+        """
+
+        super(FutureCallableIndexEncoder, self).__init__(
+            index_generator=FutureCovariateIndexGenerator(input_chunk_length, output_chunk_length),
             attribute=attribute
         )
 
@@ -341,12 +431,14 @@ class SequenceEncoder(Encoder):
         The `add_encoders` dict must follow this convention:
             `{encoder keyword: {temporal keyword: List[attributes]}}`
         Supported encoder keywords:
-            `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
-            <darts.utils.data.encoders.CyclicTemporalEncoder>`;
-            `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
+            `'cyclic'` for cyclic temporal encoder. See the docs
+            :meth:`CyclicTemporalEncoder <darts.utils.data.encoders.CyclicTemporalEncoder>`;
+            `'datetime_attribute'` for adding scalar information of pd.DatetimeIndex attribute. See the docs
             :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
-            `position` for integer index position encoder. See the docs :meth:`IntegerIndexEncoder
-            <darts.utils.data.encoders.IntegerIndexEncoder>`;
+            `'position'` for integer index position encoder. See the docs
+            :meth:`IntegerIndexEncoder <darts.utils.data.encoders.IntegerIndexEncoder>`;
+            `'custom'` for encoding index with custom callables (functions). See the docs
+            :meth:`CallableIndexEncoder <darts.utils.data.encoders.CallableIndexEncoder>`;
         Supported temporal keywords:
             'past' for adding encoding as past covariates
             'future' for adding encoding as future covariates
@@ -356,7 +448,8 @@ class SequenceEncoder(Encoder):
             add_encoders={
                 'cyclic': {'future': ['month']},
                 'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
-                'position': {'past': ['absolute'], 'future': ['relative']}
+                'position': {'past': ['absolute'], 'future': ['relative']},
+                'custom': {'past': [lambda index: (index.year - 1950) / 50]}
             }
 
         Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
@@ -374,7 +467,7 @@ class SequenceEncoder(Encoder):
         Parameters
         ----------
         add_encoders
-            the parameters used at `TorchForecastingModel` model creation.
+            The parameters used at `TorchForecastingModel` model creation.
         input_chunk_length
             The length of the emitted past series.
         output_chunk_length
@@ -382,9 +475,9 @@ class SequenceEncoder(Encoder):
         shift
             The number of time steps by which to shift the output chunks relative to the input chunks.
         takes_past_covariates
-            whether or not the `TrainingDataset` takes past covariates
+            Whether or not the `TrainingDataset` takes past covariates
         takes_future_covariates
-            whether or not the `TrainingDataset` takes past covariates
+            Whether or not the `TrainingDataset` takes past covariates
         """
 
         super(SequenceEncoder, self).__init__()
@@ -414,11 +507,11 @@ class SequenceEncoder(Encoder):
         Parameters
         ----------
         target
-            the target TimeSeries used during training or passed to prediction as `series`
+            The target TimeSeries used during training or passed to prediction as `series`
         past_covariate
-            optionally, the past covariates used for training.
+            Optionally, the past covariates used for training.
         future_covariate
-            optionally, the future covariates used for training.
+            Optionally, the future covariates used for training.
 
         Returns
         -------
@@ -464,13 +557,13 @@ class SequenceEncoder(Encoder):
         Parameters
         ----------
         n
-            the forecast horizon
+            The forecast horizon
         target
-            the target TimeSeries used during training or passed to prediction as `series`
+            The target TimeSeries used during training or passed to prediction as `series`
         past_covariate
-            optionally, the past covariates used for training.
+            Optionally, the past covariates used for training.
         future_covariate
-            optionally, the future covariates used for training.
+            Optionally, the future covariates used for training.
 
         Returns
         -------
@@ -553,25 +646,27 @@ class SequenceEncoder(Encoder):
 
     @property
     def future_encoders(self) -> List[SingleEncoder]:
-        """returns the future covariate encoder objects"""
+        """Returns the future covariate encoder objects"""
         return self._future_encoders
 
     @property
     def past_encoders(self) -> List[SingleEncoder]:
-        """returns the past covariate encoder objects"""
+        """Returns the past covariate encoder objects"""
         return self._past_encoders
 
     @property
     def encoder_map(self) -> Dict:
-        """mapping between encoder identifier string (from parameters at model creations) and the corresponding
+        """Mapping between encoder identifier string (from parameters at model creations) and the corresponding
         future or past covariate encoder"""
         mapper = {
-            'cyclic_past': CyclicPastEncoder,
-            'cyclic_future': CyclicFutureEncoder,
-            'datetime_attribute_past': DatetimeAttributePastEncoder,
-            'datetime_attribute_future': DatetimeAttributeFutureEncoder,
-            'position_past': IntegerIndexPastEncoder,
-            'position_future': IntegerIndexFutureEncoder
+            'cyclic_past': PastCyclicEncoder,
+            'cyclic_future': FutureCyclicEncoder,
+            'datetime_attribute_past': PastDatetimeAttributeEncoder,
+            'datetime_attribute_future': FutureDatetimeAttributeEncoder,
+            'position_past': PastIntegerIndexEncoder,
+            'position_future': FutureIntegerIndexEncoder,
+            'custom_past': PastCallableIndexEncoder,
+            'custom_future': FutureCallableIndexEncoder
         }
         return mapper
 
@@ -598,7 +693,7 @@ class SequenceEncoder(Encoder):
         self.encoding_available = True
 
     def _process_input(self, params: Dict) -> Tuple[List, List]:
-        """processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
+        """Processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
         parameters at model creation.
 
         Parameters
@@ -611,22 +706,25 @@ class SequenceEncoder(Encoder):
             The `params`/`add_encoders` dict must follow this convention:
                 `{encoder keyword: {temporal keyword: List[attributes]}}`
             Supported encoder keywords:
-                `cyclic` for cyclic temporal encoder. See the docs :meth:`CyclicTemporalEncoder
-                <darts.utils.data.encoders.CyclicTemporalEncoder>`;
-                `datetime_attribute` for adding scalar information of pd.DatetimeIndex attribute. See the docs
+                `'cyclic'` for cyclic temporal encoder. See the docs
+                :meth:`CyclicTemporalEncoder <darts.utils.data.encoders.CyclicTemporalEncoder>`;
+                `'datetime_attribute'` for adding scalar information of pd.DatetimeIndex attribute. See the docs
                 :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
-                `position` for integer index position encoder. See the docs :meth:`IntegerIndexEncoder
-                <darts.utils.data.encoders.IntegerIndexEncoder>`;
+                `'position'` for integer index position encoder. See the docs
+                :meth:`IntegerIndexEncoder <darts.utils.data.encoders.IntegerIndexEncoder>`;
+                `'custom'` for encoding index with custom callables (functions). See the docs
+                :meth:`CallableIndexEncoder <darts.utils.data.encoders.CallableIndexEncoder>`;
             Supported temporal keywords:
                 'past' for adding encoding as past covariates
                 'future' for adding encoding as future covariates
             Supported attributes:
                 for attributes read the referred docs for the corresponding encoder from above
-            An example of a valid `add_encoders` dict for hourly data for :
+            An example of a valid `add_encoders` dict for hourly data:
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']}
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]}
                 }
 
             Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
@@ -649,24 +747,31 @@ class SequenceEncoder(Encoder):
         if not params:
             return [], []
 
+        # check input for invalid encoder types
+        invalid_encoders = [enc for enc in params if not enc in ENCODER_KEYS]
+        raise_if(len(invalid_encoders) > 0,
+                 f'Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model '
+                 f'creation. Supported encoder types are: `{ENCODER_KEYS}`.')
+
         encoders = {enc: params.get(enc, None) for enc in ENCODER_KEYS if params.get(enc, None)}
 
-        # check input for if invalid temporal types; values other than ('past', 'future', 'absolute')
+        # check input for invalid temporal types
         invalid_time_params = list()
         for encoder, t_types in encoders.items():
             invalid_time_params += [t_type for t_type in t_types.keys() if t_type not in VALID_TIME_PARAMS]
 
         raise_if(len(invalid_time_params) > 0,
-                 f'Encountered invalid temporal types `{invalid_time_params}` in `add_*_encoder` parameter at model '
+                 f'Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model '
                  f'creation. Supported temporal types are: `{VALID_TIME_PARAMS}`.')
 
-        # convert
+        # convert into tuples of (encoder string identifier, encoder attribute)
         past_encoders, future_encoders = list(), list()
         for enc, enc_params in encoders.items():
             for enc_time, enc_attr in enc_params.items():
                 raise_if_not(isinstance(enc_attr, VALID_DTYPES),
-                             f'Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for parameter '
-                             f'`{enc}` at model creation. Supported data types are: `{VALID_DTYPES}`.')
+                             f'Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder '
+                             f'`{enc}` in `add_encoders` at model creation. Supported data types are: '
+                             f'`{VALID_DTYPES}`.')
                 attrs = [enc_attr] if isinstance(enc_attr, str) else enc_attr
                 for attr in attrs:
                     encoder_id = '_'.join([enc, enc_time])
