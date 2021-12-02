@@ -14,14 +14,15 @@ from darts.utils.data.encoder_base import (ReferenceIndexType,
                                            PastCovariateIndexGenerator,
                                            FutureCovariateIndexGenerator,
                                            Encoder,
-                                           SingleEncoder)
+                                           SingleEncoder,
+                                           SequenceEncoderTransformer)
 from darts.utils.data.utils import _index_diff
 
 from darts.logging import raise_if_not, get_logger, raise_if
 
 from darts import concatenate
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
-
+from darts.dataprocessing.transformers import FittableDataTransformer
 
 SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
@@ -35,7 +36,11 @@ VALID_TIME_PARAMS = [
     PAST
     # 'absolute'
 ]
-VALID_DTYPES = (str, Sequence)
+VALID_ENCODER_DTYPES = (str, Sequence)
+
+TRANSFORMER_KEYS = ['transformer']
+VALID_TRANSFORMER_DTYPES = FittableDataTransformer
+
 DIMS = ('time', 'component', 'sample')
 
 
@@ -65,6 +70,11 @@ class CyclicTemporalEncoder(SingleEncoder):
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
         super(CyclicTemporalEncoder, self)._encode(index)
         return datetime_attribute_timeseries(index, attribute=self.attribute, cyclic=True, dtype=self.dtype)
+
+    @property
+    def accept_transformer(self) -> bool:
+        """CyclicTemporalEncoder should not be transformed"""
+        return False
 
 
 class PastCyclicEncoder(CyclicTemporalEncoder):
@@ -145,6 +155,11 @@ class DatetimeAttributeEncoder(SingleEncoder):
         super(DatetimeAttributeEncoder, self)._encode(index)
         return datetime_attribute_timeseries(index, attribute=self.attribute, dtype=self.dtype)
 
+    @property
+    def accept_transformer(self) -> bool:
+        """DatetimeAttributeEncoder accepts transformations"""
+        return True
+
 
 class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
     """Datetime attribute encoder for past covariates."""
@@ -216,7 +231,8 @@ class IntegerIndexEncoder(SingleEncoder):
         """
         raise_if_not(isinstance(attribute, str) and attribute in ['absolute', 'relative'],
                      f'Encountered invalid encoder argument `{attribute}` for encoder `position`. '
-                     f'Attribute must be one of `("absolute", "relative")`.')
+                     f'Attribute must be one of `("absolute", "relative")`.',
+                     logger)
 
         super(IntegerIndexEncoder, self).__init__(index_generator)
 
@@ -255,6 +271,12 @@ class IntegerIndexEncoder(SingleEncoder):
         if self.attribute == 'absolute':
             self.reference_index = (current_start_index + len(encoded) - 1, encoded.time_index[-1])
         return encoded
+
+    @property
+    def accept_transformer(self) -> bool:
+        """IntegerIndexEncoder accepts transformations. Note that transforming 'relative' IntegerIndexEncoder
+        will return an 'absolute' index."""
+        return True
 
 
 class PastIntegerIndexEncoder(IntegerIndexEncoder):
@@ -336,7 +358,8 @@ class CallableIndexEncoder(SingleEncoder):
         """
         raise_if_not(callable(attribute),
                      f'Encountered invalid encoder argument `{attribute}` for encoder `callable`. '
-                     f'Attribute must be a callable that returns a `np.ndarray`.')
+                     f'Attribute must be a callable that returns a `np.ndarray`.',
+                     logger)
 
         super(CallableIndexEncoder, self).__init__(index_generator)
 
@@ -350,6 +373,11 @@ class CallableIndexEncoder(SingleEncoder):
         return TimeSeries.from_times_and_values(times=index,
                                                 values=self.attribute(index),
                                                 columns=['custom'])
+
+    @property
+    def accept_transformer(self) -> bool:
+        """CallableIndexEncoder accepts transformations."""
+        return True
 
 
 class PastCallableIndexEncoder(CallableIndexEncoder):
@@ -408,7 +436,7 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
 
 
 class SequenceEncoder(Encoder):
-    """A sequence encoder can store and control multiple past and future covariate encoders at once.
+    """A `SequenceEncoder` object can store and control multiple past and future covariate encoders at once.
     It provides the same functionality as single encoders (`encode_train()` and `encode_inference()`).
     Sequence encoders can be used with Darts' darts `Datasets`.
     """
@@ -485,14 +513,21 @@ class SequenceEncoder(Encoder):
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
         self.shift = shift
-        self._past_encoders: List[SingleEncoder] = []
-        self._future_encoders: List[SingleEncoder] = []
+        self.train_called = False
+        self.encoding_available = False
         self.takes_past_covariates = takes_past_covariates
         self.takes_future_covariates = takes_future_covariates
-        self.encoding_available = False
-        self.train_called = False
 
+        # encoders
+        self._past_encoders: List[SingleEncoder] = []
+        self._future_encoders: List[SingleEncoder] = []
+
+        # transformer
+        self._transformer: Optional[SequenceEncoderTransformer] = None
+
+        # setup encoders and transformer
         self._setup_encoders(self.params)
+        self._setup_transformer(self.params)
 
     def encode_train(self,
                      target: SupportedTimeSeries,
@@ -512,7 +547,10 @@ class SequenceEncoder(Encoder):
             Optionally, the past covariates used for training.
         future_covariate
             Optionally, the future covariates used for training.
-
+        encode_past
+            Whether or not to apply encoders for past covariates
+        encode_future
+            Whether or not to apply encoders for future covariates
         Returns
         -------
         Tuple[past_covariate, future_covariate]
@@ -534,6 +572,7 @@ class SequenceEncoder(Encoder):
                                "The encodings/covariates are generated pre-train for all individual targets and "
                                "loaded into memory. Depending on the size of your data, this can create memory issues. "
                                "In case this applies, consider setting `add_encoders=None` at model creation.")
+
             self.train_called = True
 
         return self._launch_encoder(target=target,
@@ -564,6 +603,10 @@ class SequenceEncoder(Encoder):
             Optionally, the past covariates used for training.
         future_covariate
             Optionally, the future covariates used for training.
+        encode_past
+            Whether or not to apply encoders for past covariates
+        encode_future
+            Whether or not to apply encoders for future covariates
 
         Returns
         -------
@@ -609,6 +652,9 @@ class SequenceEncoder(Encoder):
                                                      target=target,
                                                      covariate=future_covariate,
                                                      n=n)
+        if self.transformer is not None:
+            past_covariate, future_covariate = self.transformer.transform(past_covariate=past_covariate,
+                                                                          future_covariate=future_covariate)
 
         return past_covariate, future_covariate
 
@@ -616,7 +662,7 @@ class SequenceEncoder(Encoder):
                          encoders: Sequence[SingleEncoder],
                          target: Sequence[TimeSeries],
                          covariate: Optional[SupportedTimeSeries],
-                         n: Optional[int] = None) -> Sequence[TimeSeries]:
+                         n: Optional[int] = None) -> List[TimeSeries]:
         """Sequentially encodes the index of all input target/covariate TimeSeries
 
         If `n` is `None` it is a prediction and method `encoder.encode_inference()` is called.
@@ -655,6 +701,11 @@ class SequenceEncoder(Encoder):
         return self._past_encoders
 
     @property
+    def transformer(self) -> SequenceEncoderTransformer:
+        """Returns the transformer object"""
+        return self._transformer
+
+    @property
     def encoder_map(self) -> Dict:
         """Mapping between encoder identifier string (from parameters at model creations) and the corresponding
         future or past covariate encoder"""
@@ -670,8 +721,10 @@ class SequenceEncoder(Encoder):
         }
         return mapper
 
-    def _setup_encoders(self, params: Dict):
-        """Sets up/Initializes all past and future encoders from `add_encoder` parameter used at model creation.
+    def _setup_encoders(self, params: Dict) -> None:
+        """Sets up/Initializes all past and future encoders and an optional transformer from `add_encoder` parameter
+        used at model creation.
+
 
         Parameters
         ----------
@@ -679,7 +732,7 @@ class SequenceEncoder(Encoder):
             Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:
             * params={'cyclic': {'past': ['month', 'dayofweek', ...], 'future': [same as for 'past']}}
         """
-        past_encoders, future_encoders = self._process_input(params)
+        past_encoders, future_encoders = self._process_input_encoders(params)
 
         if not past_encoders and not future_encoders:
             return
@@ -692,7 +745,19 @@ class SequenceEncoder(Encoder):
                                                           attr) for enc_id, attr in future_encoders]
         self.encoding_available = True
 
-    def _process_input(self, params: Dict) -> Tuple[List, List]:
+    def _setup_transformer(self, params: Dict) -> None:
+        """Sets up/Initializes an optional transformer from `add_encoder` parameter used at model creation.
+
+        Parameters
+        ----------
+        params
+            Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:
+            * params={..., 'transformer': Scaler()}
+        """
+        transformer, transform_past_mask, transform_future_mask = self._process_input_transformer(params)
+        self._transformer = SequenceEncoderTransformer(transformer, transform_past_mask, transform_future_mask)
+
+    def _process_input_encoders(self, params: Dict) -> Tuple[List, List]:
         """Processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder
         parameters at model creation.
 
@@ -724,7 +789,8 @@ class SequenceEncoder(Encoder):
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
                     'position': {'past': ['absolute'], 'future': ['relative']},
-                    'custom': {'past': [lambda index: (index.year - 1950) / 50]}
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'transformer': Scaler()
                 }
 
             Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
@@ -748,10 +814,11 @@ class SequenceEncoder(Encoder):
             return [], []
 
         # check input for invalid encoder types
-        invalid_encoders = [enc for enc in params if not enc in ENCODER_KEYS]
+        invalid_encoders = [enc for enc in params if not enc in ENCODER_KEYS + TRANSFORMER_KEYS]
         raise_if(len(invalid_encoders) > 0,
                  f'Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model '
-                 f'creation. Supported encoder types are: `{ENCODER_KEYS}`.')
+                 f'creation. Supported encoder types are: `{ENCODER_KEYS + TRANSFORMER_KEYS}`.',
+                 logger)
 
         encoders = {enc: params.get(enc, None) for enc in ENCODER_KEYS if params.get(enc, None)}
 
@@ -762,16 +829,18 @@ class SequenceEncoder(Encoder):
 
         raise_if(len(invalid_time_params) > 0,
                  f'Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model '
-                 f'creation. Supported temporal types are: `{VALID_TIME_PARAMS}`.')
+                 f'creation. Supported temporal types are: `{VALID_TIME_PARAMS}`.',
+                 logger)
 
         # convert into tuples of (encoder string identifier, encoder attribute)
         past_encoders, future_encoders = list(), list()
         for enc, enc_params in encoders.items():
             for enc_time, enc_attr in enc_params.items():
-                raise_if_not(isinstance(enc_attr, VALID_DTYPES),
+                raise_if_not(isinstance(enc_attr, VALID_ENCODER_DTYPES),
                              f'Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder '
                              f'`{enc}` in `add_encoders` at model creation. Supported data types are: '
-                             f'`{VALID_DTYPES}`.')
+                             f'`{VALID_ENCODER_DTYPES}`.',
+                             logger)
                 attrs = [enc_attr] if isinstance(enc_attr, str) else enc_attr
                 for attr in attrs:
                     encoder_id = '_'.join([enc, enc_time])
@@ -783,3 +852,25 @@ class SequenceEncoder(Encoder):
         past_encoders = past_encoders if self.takes_past_covariates else []
         future_encoders = future_encoders if self.takes_future_covariates else []
         return past_encoders, future_encoders
+
+    def _process_input_transformer(self, params: Dict) -> Tuple[Optional[FittableDataTransformer], List, List]:
+        """Processes input params used at model creation and returns tuple of one transformer object and two masks
+        that specify which past / future encoders accept being transformed.
+
+        Parameters
+        ----------
+        params
+            Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:
+            * params={'transformer': Scaler()}
+        """
+
+        transformer = params.get(TRANSFORMER_KEYS[0], None)
+        raise_if_not(isinstance(transformer, VALID_TRANSFORMER_DTYPES),
+                     f'Encountered `{TRANSFORMER_KEYS[0]}` of invalid type `{type(transformer)}` '
+                     f'in `add_encoders` at model creation. Transformer must be an instance of '
+                     f'`{VALID_TRANSFORMER_DTYPES}`.',
+                     logger)
+
+        transform_past_mask = [enc.accept_transformer for enc in self.past_encoders]
+        transform_future_mask = [enc.accept_transformer for enc in self.future_encoders]
+        return transformer, transform_past_mask, transform_future_mask
