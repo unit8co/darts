@@ -436,8 +436,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             raise_if_not(match, 'The dimensions of the series in the training set '
                                 'and the validation set do not match.')
 
-        train_dataset = self._build_train_dataset(series, past_covariates, future_covariates)
-        val_dataset = self._build_train_dataset(val_series, val_past_covariates, future_covariates) if val_series is not None else None
+        train_dataset = self._build_train_dataset(target=series, 
+                                                  past_covariates=past_covariates, 
+                                                  future_covariates=future_covariates, 
+                                                  max_samples_per_ts=max_samples_per_ts)
+
+        if val_series is not None:
+            val_dataset = self._build_train_dataset(target=val_series, 
+                                                    past_covariates=val_past_covariates, 
+                                                    future_covariates=future_covariates,
+                                                    max_samples_per_ts=max_samples_per_ts)
+        else:
+            val_dataset = None
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
