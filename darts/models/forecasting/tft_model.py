@@ -759,7 +759,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> MixedCovariatesSequentialDataset:
 
         raise_if(future_covariates is None and self.add_cyclic_encoder is None and not self.add_relative_index,
                  'TFTModel requires future covariates. The model applies multi-head attention queries on future '
@@ -776,7 +777,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
-                                                max_samples_per_ts=self.max_sample_per_ts)
+                                                max_samples_per_ts=self.max_sample_per_ts,
+                                                max_samples_per_ts=max_samples_per_ts)
 
     def _add_cyclic_encoder(self,
                             target: Sequence[TimeSeries],
