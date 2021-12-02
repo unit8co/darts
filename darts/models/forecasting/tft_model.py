@@ -648,7 +648,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.add_relative_index = add_relative_index
         self.loss_fn = loss_fn
         self.likelihood = likelihood
-        self.max_sample_per_ts = max_samples_per_ts
         self.output_dim: Optional[Tuple[int, int]] = None
 
     def _create_model(self,
