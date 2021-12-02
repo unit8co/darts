@@ -89,3 +89,27 @@ class DataTransformerTestCase(unittest.TestCase):
 
         np.testing.assert_allclose(np.array([ss.all_values(copy=False)[:,i,:].min() for i in range(ss.width)]), 
                                    np.array([0.] * ss.width))
+
+    def test_component_mask_transformation(self):
+        scaler = Scaler(MinMaxScaler())
+        # shape = (10, 3, 2)
+        vals = np.array([np.arange(6).reshape(3, 2)] * 10)
+
+        # scalers should only consider True columns
+        component_mask = [True, False, True]
+
+        s = TimeSeries.from_values(vals)
+        ss = scaler.fit_transform(s, component_mask=component_mask)
+        ss_vals = ss.all_values(copy=False)
+
+        # test non-masked columns
+        self.assertTrue((ss_vals[:, 1, :] == vals[:, 1, :]).all())
+        # test masked columns
+        self.assertAlmostEqual(ss_vals[:, [0, 2], :].max(), 1.)
+        self.assertAlmostEqual(ss_vals[:, [0, 2], :].min(), 0.)
+
+        ssi = scaler.inverse_transform(ss, component_mask=component_mask)
+
+        # Test inverse transform
+        np.testing.assert_allclose(s.all_values(), ssi.all_values())
+

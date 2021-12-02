@@ -129,6 +129,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
         kwargs
             Additional keyword arguments for the `ts_inverse_transform()` method
 
+            component_mask : Optional[List[bool]] = None
+                Optionally, a 1-D boolean list of length `series.n_components` that specifies which components of
+                the underlying `series` the Scaler should consider.
+
         Returns
         -------
         Union[TimeSeries, List[TimeSeries]]

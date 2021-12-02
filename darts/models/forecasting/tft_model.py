@@ -20,7 +20,6 @@ from darts.utils.data import (
     MixedCovariatesSequentialDataset,
     MixedCovariatesTrainingDataset,
     MixedCovariatesInferenceDataset,
-    SequenceEncoder
 )
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,

@@ -12,6 +12,8 @@ from ..utils.data.encoders import (SequenceEncoder,
                                    FutureCyclicEncoder,
                                    PastDatetimeAttributeEncoder,
                                    FutureDatetimeAttributeEncoder)
+from ..dataprocessing.transformers import Scaler
+
 
 from ..logging import get_logger
 logger = get_logger(__name__)
@@ -299,7 +301,6 @@ class EncoderTestCase(DartsBaseTestClass):
         encs = SequenceEncoder(add_encoders=encoder_params,
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
-                               shift=0,
                                takes_past_covariates=True,
                                takes_future_covariates=True)
 
@@ -327,7 +328,6 @@ class EncoderTestCase(DartsBaseTestClass):
         encs = SequenceEncoder(add_encoders=encoder_params,
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
-                               shift=0,
                                takes_past_covariates=True,
                                takes_future_covariates=True)
 
@@ -358,13 +358,55 @@ class EncoderTestCase(DartsBaseTestClass):
         encs = SequenceEncoder(add_encoders=encoder_params,
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
-                               shift=0,
                                takes_past_covariates=True,
                                takes_future_covariates=True)
 
         t1, _ = encs.encode_train(ts)
         self.assertTrue((ts.time_index.year.values == t1[0].values()[:, 0]).all())
         self.assertTrue((ts.time_index.year.values - 1 == t1[0].values()[:, 1]).all())
+
+    def test_transformer(self):
+        ts1 = tg.linear_timeseries(start_value=1, end_value=2, length=60, freq='T', column_name='cov_in')
+        encoder_params = {'position': {'future': ['absolute']},
+                          'cyclic': {'future': ['minute']},
+                          'transformer': Scaler()}
+
+        encs = SequenceEncoder(add_encoders=encoder_params,
+                               input_chunk_length=12,
+                               output_chunk_length=6,
+                               takes_past_covariates=True,
+                               takes_future_covariates=True)
+
+        _, t1 = encs.encode_train(ts1, future_covariate=ts1)
+
+        # ===> train set test <===
+        # user supplied covariates should not be transformed
+        self.assertTrue(t1[0]['cov_in'] == ts1)
+        # cyclic encodings should not be transformed
+        for curve in ['sin', 'cos']:
+            self.assertAlmostEqual(t1[0][f'minute_{curve}'].all_values(copy=False).min(), -1., delta=10e-9)
+            self.assertAlmostEqual(t1[0][f'minute_{curve}'].values(copy=False).max(), 1., delta=10e-9)
+        # all others should be transformed to values between 0 and 1
+        self.assertAlmostEqual(t1[0]['absolute_idx'].values(copy=False).min(), 0., delta=10e-9)
+        self.assertAlmostEqual(t1[0]['absolute_idx'].values(copy=False).max(), 1., delta=10e-9)
+
+        # ===> validation set test <===
+        ts2 = tg.linear_timeseries(start_value=1, end_value=2,
+                                   start=ts1.end_time(), length=60, freq=ts1.freq, column_name='cov_in')
+        _, t2 = encs.encode_train(ts2, future_covariate=ts2)
+        # make sure that when calling encoders the second time, scalers are not fit again (for validation and inference)
+        self.assertAlmostEqual(t2[0]['absolute_idx'].values(copy=False).min(), 1., delta=10e-9)
+        self.assertAlmostEqual(t2[0]['absolute_idx'].values(copy=False).max(), 2., delta=10e-9)
+
+        fc_inf = tg.linear_timeseries(start_value=1, end_value=3, length=80, freq='T', column_name='cov_in')
+        _, t3 = encs.encode_inference(n=12, target=ts1, future_covariate=fc_inf)
+
+        # index 0 is also start of train target series and value should be 0
+        self.assertAlmostEqual(t3[0]['absolute_idx'][0].values()[0, 0], 0.)
+        # index len(ts1) - 1 is the prediction point and value should be 0
+        self.assertAlmostEqual(t3[0]['absolute_idx'][len(ts1) - 1].values()[0, 0], 1.)
+        # the future should scale proportional to distance to prediction point
+        self.assertAlmostEqual(t3[0]['absolute_idx'][80 - 1].values()[0, 0], 80/60, delta=0.01)
 
     def helper_test_cyclic_encoder(self, encoder_class, attribute, inf_ts_short, inf_ts_long, cyclic):
         """Test cases for both `PastCyclicEncoder` and `FutureCyclicEncoder`"""

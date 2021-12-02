@@ -2,14 +2,13 @@
 Encoder Base Classes
 ------------------------------
 """
-
+import numpy as np
 import pandas as pd
 
 from abc import ABC, abstractmethod
 from enum import Enum, auto
 from typing import Union, Optional, Tuple, Sequence, List
 
-from itertools import compress
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.utils.timeseries_generation import _generate_index
@@ -165,9 +164,7 @@ class Encoder(ABC):
     @abstractmethod
     def __init__(self):
         self.attribute = None
-        self.train_encoded = None
-        self.inference_encoded = None
-        self.dtype = None
+        self.dtype = np.float64
 
     @abstractmethod
     def encode_train(self,
@@ -209,13 +206,6 @@ class Encoder(ABC):
             Whether or not to merge the encoded TimeSeries with `covariate`.
 
         """
-        pass
-
-    @abstractmethod
-    def encode_absolute(self,
-                        target: TimeSeries,
-                        covariate: Optional[TimeSeries] = None) -> TimeSeries:
-        """Tnis is a placeholder for doing absolute encodings"""
         pass
 
     @staticmethod
@@ -324,114 +314,68 @@ class SingleEncoder(Encoder, ABC):
         else:
             return encoded
 
-    def encode_absolute(self,
-                        target: TimeSeries,
-                        covariate: Optional[TimeSeries] = None) -> TimeSeries:
-        return self.encode_train(target, covariate)
-
     @property
     @abstractmethod
-    def accept_transformer(self) -> bool:
+    def accept_transformer(self) -> List[bool]:
         """Whether or not the SingleEncoder sub class accepts to be transformed."""
         pass
 
 
 class SequenceEncoderTransformer:
-    """`SequenceEncoderTransformer` applies transformation to the non-transformed past and future covariate output of
+    """`SequenceEncoderTransformer` applies transformation to the non-transformed encoded covariate output of
     `SequenceEncoder.encode_train()` and `SequenceEncoder.encode_inference()`. The transformer is fitted
     when `transform()` is called for the first time. This ensures proper transformation of train, validation and
-    inference dataset covariates."""
+    inference dataset covariates. User-supplied covariates are not transformed."""
 
-    def __init__(self, transformer: FittableDataTransformer, transform_past_mask: List, transform_future_mask: List):
+    def __init__(self, transformer: FittableDataTransformer, transform_mask: List[bool]):
         """
         Parameters
         ----------
         transformer
             A `FittableDataTransformer` object with a `fit_transform()` and `transform()` method.
-        transform_past_mask
+        transform_mask
             A boolean 1-D mask specifying which of the input covariates to :meth:`transform()
-            <SequenceEncoderTransformer.transform()>` must be transformed.
-        transform_future_mask
-            A boolean 1-D mask specifying which of the input future covariates to :meth:`transform()
             <SequenceEncoderTransformer.transform()>` must be transformed.
         """
         self.transformer = transformer
-        self.transform_past_mask = transform_past_mask
-        self.transform_future_mask = transform_future_mask
+        self.transform_mask = transform_mask
         self._fit_called = False
 
-    def transform(self,
-                  past_covariate: EncoderOutputType,
-                  future_covariate: EncoderOutputType) -> Tuple[EncoderOutputType, EncoderOutputType]:
-        """This method applies transformation to the non-transformed past and future covariate output of
-        `SequenceEncoder.encode_train()` and `SequenceEncoder.encode_inference()`. The transformer is fitted when
-        `transform()` is called for the first time. This ensures proper transformation of train, validation and
-        inference dataset covariates.
+    def transform(self, covariate: List[TimeSeries]) -> List[TimeSeries]:
+        """This method applies transformation to the non-transformed encoded covariate output of
+        `SequenceEncoder._encode_sequence()` after being merged with user-defined covariates. The transformer is
+        fitted when `transform()` is called for the first time. This ensures proper transformation of train, validation
+        and inference dataset covariates. The masks ensure that no covariates are transformed that user explicitly
+        supplied to `TorchForecastingModel.fit()` and `TorchForecastingModel.predict()`
 
         Parameters
         ----------
-        past_covariate
-            The non-transformed past covariate output of `SequenceEncoder`. A sequence or list containing user-defined
-            past covariates that were supplied to `fit()` or `predict()` and optional generated encoded past covariates
-            from `SequenceEncoder`.
-        future_covariate
-            The non-transformed future covariate output of `SequenceEncoder`. A sequence or list containing user-
-            defined future covariates that were supplied to `fit()` or `predict()` and optional generated encoded
-            future covariates from `SequenceEncoder`.
+        covariate
+            The non-transformed encoded covariate output of `SequenceEncoder._encode_sequence()` before merging with
+            user-defined covariates.
         """
         if not self.fit_called:
-            self._update_masks(past_covariate, future_covariate)
-            transformed = self.transformer.fit_transform(self._extract(past_covariate, future_covariate))
+            self._update_mask(covariate)
+            transformed = self.transformer.fit_transform(covariate, component_mask=self.transform_mask)
             self._fit_called = True
         else:
-            transformed = self.transformer.transform(self._extract(past_covariate, future_covariate))
-        return self._insert(past_covariate, future_covariate, transformed)
+            transformed = self.transformer.transform(covariate, component_mask=self.transform_mask)
+        return transformed
 
-    def _extract(self,
-                 past_covariate: EncoderOutputType,
-                 future_covariate: EncoderOutputType) -> List[TimeSeries]:
-        """Extract covariates that need to be transformed.
+    def _update_mask(self, covariate: List[TimeSeries]) -> None:
+        """if user supplied additional covariates to model.fit() or model.predict(), `self.transform_mask` has to be
+        updated as user-defined covariates should not be transformed. These covariates are always located in the
+        first `n_diff = covariate[0].width - len(self.transform_mask)` components of each TimeSeries in in `covariate`.
         """
-        extracted = []
-        if self.transform_past_mask:
-            extracted += list(compress(past_covariate, self.transform_past_mask))
-        if self.transform_future_mask:
-            extracted += list(compress(future_covariate, self.transform_future_mask))
-        return extracted
 
-    def _insert(self,
-                past_covariate: EncoderOutputType,
-                future_covariate: EncoderOutputType,
-                covariate_transformed: List[TimeSeries]) -> Tuple[EncoderOutputType, EncoderOutputType]:
-        """Insert transformed covariates into input covariates.
-        """
-        get_idx = 0
-        for idx, insert_past in enumerate(self.transform_past_mask):
-            if insert_past:
-                past_covariate[idx] = covariate_transformed[get_idx]
-                get_idx += 1
-        for idx, insert_future in enumerate(self.transform_future_mask):
-            if insert_future:
-                future_covariate[idx] = covariate_transformed[get_idx]
-                get_idx += 1
-        return past_covariate, future_covariate
-
-    def _update_masks(self,
-                      past_covariate: EncoderOutputType,
-                      future_covariate: EncoderOutputType) -> None:
-        """A mismatch between lengths of {x}_covariate and transform_{}_mask means that user passed additional
-        {}_covariate to `model.fit()`. User-defined covariates are always located at the beginning of {}_covariate.
-        In case of a mismatch, the masks are updated so that user-defined covariates are not transformed.
-        """
-        if past_covariate is not None and len(past_covariate) != len(self.transform_past_mask):
-            n_diff = (len(past_covariate) - len(self.transform_past_mask))
-            self.transform_past_mask = [False] * n_diff + self.transform_past_mask
-        if future_covariate is not None and len(future_covariate) != len(self.transform_future_mask):
-            n_diff = (len(future_covariate) - len(self.transform_future_mask))
-            self.transform_future_mask = [False] * n_diff + self.transform_future_mask
+        n_diff = covariate[0].width - len(self.transform_mask)
+        if not n_diff:
+            pass
+        else:
+            self.transform_mask = [False] * n_diff + self.transform_mask
 
     @property
-    def fit_called(self):
+    def fit_called(self) -> bool:
         """Return whether or not the transformer has been fitted."""
         return self._fit_called
 
