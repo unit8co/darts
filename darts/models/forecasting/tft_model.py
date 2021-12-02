@@ -773,7 +773,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
-                                                max_samples_per_ts=self.max_sample_per_ts)
+                                                max_samples_per_ts=max_sample_per_ts)
 
     def _add_cyclic_encoder(self,
                             target: Sequence[TimeSeries],
