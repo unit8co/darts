@@ -269,7 +269,7 @@ if TORCH_AVAILABLE:
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
                 multiple_ts = [self.ts_pass_train] * 10
-                train_dataset = model._build_train_dataset(multiple_ts, past_covariates=None, future_covariates=None)
+                train_dataset = model._build_train_dataset(multiple_ts, past_covariates=None, future_covariates=None, max_samples_per_ts=None)
                 epochs = 42
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
@@ -297,3 +297,17 @@ if TORCH_AVAILABLE:
                              n_epochs=2,
                              batch_size=32)
             model.fit(ts)
+
+        def test_max_samples_per_ts(self):
+            """
+            Checking that we can fit TorchForecastingModels with max_samples_per_ts, without crash
+            """
+            
+            ts = linear_timeseries(start_value=0, end_value=1, length=50)
+
+            model = RNNModel(input_chunk_length=20,
+                             output_chunk_length=2,
+                             n_epochs=2,
+                             batch_size=32)
+
+            model.fit(ts, max_samples_per_ts=5)
