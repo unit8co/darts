@@ -542,48 +542,39 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         Parameters
         ----------
         input_chunk_length : int
-            encoder length; number of past time steps that are fed to the forecasting module at prediction time.
+            Encoder length; number of past time steps that are fed to the forecasting module at prediction time.
         output_chunk_length : int
-            decoder length; number of future time steps that are fed to the forecasting module at prediction time.
+            Decoder length; number of future time steps that are fed to the forecasting module at prediction time.
         hidden_size : int
-            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
+            Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
             architecture.
         lstm_layers : int
-            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).
+            Number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).
         num_attention_heads : int
-            number of attention heads (4 is a good default)
+            Number of attention heads (4 is a good default)
         full_attention : bool
             If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
             only queries on future part. Defaults to `False`.
         dropout : float
             Fraction of neurons afected by Dropout.
         hidden_continuous_size : int
-            default for hidden size for processing continuous variables
+            Default for hidden size for processing continuous variables
         add_encoders : optional Dict
-            If other than None, add index encoding/s to the past and/or future covariates for training and prediction.
-            The `add_encoders` dict must follow this convention:
-                `{encoder keyword: {temporal keyword: List[attributes]}}`
-            Supported encoder keywords:
-                `'cyclic'` for cyclic temporal encoder. See the docs
-                :meth:`CyclicTemporalEncoder <darts.utils.data.encoders.CyclicTemporalEncoder>`;
-                `'datetime_attribute'` for adding scalar information of pd.DatetimeIndex attribute. See the docs
-                :meth:`DatetimeAttributeEncoder <darts.utils.data.encoders.DatetimeAttributeEncoder>`
-                `'position'` for integer index position encoder. See the docs
-                :meth:`IntegerIndexEncoder <darts.utils.data.encoders.IntegerIndexEncoder>`;
-                `'custom'` for encoding index with custom callables (functions). See the docs
-                :meth:`CallableIndexEncoder <darts.utils.data.encoders.CallableIndexEncoder>`;
-            Supported temporal keywords:
-                'past' for adding encoding as past covariates
-                'future' for adding encoding as future covariates
-            Supported attributes:
-                for attributes read the referred docs for the corresponding encoder from above
-            An example of a valid `add_encoders` dict for hourly data:
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequenceEncoder <darts.utils.data.encoders.SequenceEncoder>` to find out more about
+            `add_encoders`. An example showing some of `add_encoders` features:
+
                 add_encoders={
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
                     'position': {'past': ['absolute'], 'future': ['relative']},
                     'custom': {'past': [lambda index: (index.year - 1950) / 50]}
-                }
+                    'transformer': Scaler()
+
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
             This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.

@@ -453,7 +453,7 @@ class SequenceEncoder(Encoder):
             For example: `model = MyModel(..., add_encoders={...}, ...)`
 
         The `add_encoders` dict must follow this convention:
-            `{encoder keyword: {temporal keyword: List[attributes]}}`
+            `{encoder keyword: {temporal keyword: List[attributes]}, ..., transformer keyword: transformer object}`
         Supported encoder keywords:
             `'cyclic'` for cyclic temporal encoder. See the docs
             :meth:`CyclicTemporalEncoder <darts.utils.data.encoders.CyclicTemporalEncoder>`;
@@ -468,12 +468,21 @@ class SequenceEncoder(Encoder):
             'future' for adding encoding as future covariates
         Supported attributes:
             for attributes read the referred docs for the corresponding encoder from above
+        Supported transformers:
+            a transformer can be added with transformer keyword 'transformer'. The transformer object must be an
+            instance of Darts' :meth:`FittableDataTransformer
+            <darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer>` such as Scaler() or
+            BoxCox(). The transformers will be fitted on the training dataset when calling calling `model.fit()`.
+            The training, validation and inference datasets are then transformed equally.
+
         An example of a valid `add_encoders` dict for hourly data:
+            from darts.dataprocessing.transformers import Scaler
             add_encoders={
                 'cyclic': {'future': ['month']},
                 'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
                 'position': {'past': ['absolute'], 'future': ['relative']},
-                'custom': {'past': [lambda index: (index.year - 1950) / 50]}
+                'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                'transformer': Scaler()
             }
 
         Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
@@ -550,8 +559,8 @@ class SequenceEncoder(Encoder):
             The past_covariate and/or future_covariate for training including the encodings.
             If input {x}_covariate is None and no {x}_encoders are given, will return `None`
             for the {x}_covariate.
-
         Raises
+        ------
         Warning
             If model was created with `add_encoders` and there is suspicion of lazy loading.
             The encodings/covariates are generated pre-train for all individual targets and
