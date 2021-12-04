@@ -54,15 +54,30 @@ if PROPHET_AVAILABLE:
             perform_full_test = False
 
             test_cases_all = {'A': 12, 'W': 7, 'BM': 12, 'C': 5, 'D': 7, 'MS': 12,
-                              'B': 5, 'H': 24, 'BH': 8, 'Q': 4, 'min': 60, 'S': 60}
+                              'B': 5, 'H': 24, 'BH': 8, 'Q': 4, 'min': 60, 'S': 60, '30S': 60, '24T': 60}
+
             test_cases_fast = {key: test_cases_all[key] for key in ['MS', 'D', 'H']}  # monthly, daily, hourly
 
+            self.helper_test_freq_coversion(test_cases_all)
             test_cases = test_cases_all if perform_full_test else test_cases_fast
             for i, (freq, period) in enumerate(test_cases.items()):
                 if not i:
                     self.helper_test_prophet_model(period=period, freq=freq, compare_all_models=True)
                 else:
                     self.helper_test_prophet_model(period=period, freq=freq, compare_all_models=False)
+
+        def helper_test_freq_coversion(self, test_cases):
+            for freq, period in test_cases.items():
+                ts_sine = tg.sine_timeseries(value_frequency=1 / period, length=3, freq=freq)
+                # this should not raise an error if frequency is known
+                _ = Prophet._freq_to_days(freq=ts_sine.freq_str)
+
+            self.assertAlmostEqual(Prophet._freq_to_days(freq='30S'), 30 * Prophet._freq_to_days(freq='S'),
+                                   delta=10e-9)
+
+            # check bad frequency string
+            with self.assertRaises(ValueError):
+                _ = Prophet._freq_to_days(freq='30SS')
 
         def helper_test_prophet_model(self, period, freq, compare_all_models=False):
             """Test which includes adding custom seasonalities and future covariates. The tests compare the output of

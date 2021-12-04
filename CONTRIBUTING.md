@@ -1,5 +1,17 @@
 # Darts Contribution Guidelines
 
+## Picking an Issue on Which to Work
+
+The backlog of issues and ongoing work is tracked here: https://github.com/unit8co/darts/projects/1
+Anyone is welcome to pick an issue from the backlog, work on it and submit a pull request.
+However, it is strongly recommended to first comment on the issue, and discuss the approach
+together with some of the core developers.
+
+If you spot issues or would like to propose new improvements that are not (yet) in the backlog
+of issues above, the best procedure is to open a regular Github issue (https://github.com/unit8co/darts/issues), 
+and discuss it with some of the core team.
+
+
 ## Main Development Principles
 
 * Focus on simplicity and clarity for end users.
@@ -17,17 +29,13 @@
 
 #### These principles should prevail even if:
 * They mean more code has to be written inside the library.
-* They decrease the raw performance / computational speed.
-
+* They decrease the raw performance / computational speed; although in general we always
+  strive to find computationally efficient solutions.
 
 
 ## Technical Procedure
 
-Before working on a contribution (a new feature or a fix) make sure you can't find anything 
-related in [issues](https://github.com/unit8co/darts/issues). 
-If there is no on-going effort on what you plan to do then we recommend to do the following:
-
-1. Create an issue, describe how you would attempt to solve it, and if possible wait for a discussion.
+1. Make sure your work is being tracked (and if possible discussed) by an existing issue on the backlog
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
