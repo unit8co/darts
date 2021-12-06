@@ -961,6 +961,12 @@ class SequentialEncoder(Encoder):
                     else:
                         future_encoders.append((encoder_id, attr))
 
+        for temp_enc, takes_temp, temp in [(past_encoders, self.takes_past_covariates, 'past'),
+                                           (future_encoders, self.takes_future_covariates, 'future')]:
+            if temp_enc and not takes_temp:
+                logger.warning(f'Specified {temp} encoders in `add_encoders` at model creation but model does not '
+                               f'accept {temp} covariates. {temp} encoders will be ignored.')
+
         past_encoders = past_encoders if self.takes_past_covariates else []
         future_encoders = future_encoders if self.takes_future_covariates else []
         return past_encoders, future_encoders

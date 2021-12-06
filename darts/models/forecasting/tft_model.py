@@ -513,7 +513,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  full_attention: bool = False,
                  dropout: float = 0.1,
                  hidden_continuous_size: int = 8,
-                 add_encoders: Optional[Dict] = None,
                  add_relative_index: bool = False,
                  loss_fn: Optional[nn.Module] = None,
                  likelihood: Optional[Likelihood] = None,
@@ -559,23 +558,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             Fraction of neurons afected by Dropout.
         hidden_continuous_size : int
             Default for hidden size for processing continuous variables
-        add_encoders : optional Dict
-            A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
-            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
-            transform the generated covariates. This happens all under one hood and only needs to be specified at
-            model creation.
-            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            `add_encoders`. An example showing some of `add_encoders` features:
-
-                add_encoders={
-                    'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
-                    'position': {'past': ['absolute'], 'future': ['relative']},
-                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
-                    'transformer': Scaler()
-                }
-
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
             This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
@@ -600,6 +582,26 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            `add_encoders`. An example showing some of `add_encoders` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
@@ -763,34 +765,17 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             add_relative_index=self.add_relative_index
         )
 
-    def _model_encoder_settings(self):
-        """Needs to be defined for every model. This will be an abstract method as soon as we apply encoders for
-        all models.
-        This function is called by `TorchForecastingModel.initialize_encoders()` and will return the required settings.
-        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
-        """
-        input_chunk_length = self.input_chunk_length
-        output_chunk_length = self.output_chunk_length
-        takes_past_covariates = True
-        takes_future_covariates = True
-        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
-
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
 
-        raise_if(future_covariates is None and not self.encoders.future_encoders and not self.add_relative_index,
+        raise_if(future_covariates is None and not self.add_relative_index,
                  'TFTModel requires future covariates. The model applies multi-head attention queries on future '
                  'inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` '
                  'to `True` at model creation (read TFT model docs for more information). '
                  'These will automatically generate `future_covariates` from indexes.',
                  logger)
-
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_train(target,
-                                                                            past_covariates,
-                                                                            future_covariates)
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
@@ -809,12 +794,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                  past_covariates: Optional[Sequence[TimeSeries]],
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
 
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_inference(n,
-                                                                                target,
-                                                                                past_covariates,
-                                                                                future_covariates)
-
         return MixedCovariatesInferenceDataset(target_series=target,
                                                past_covariates=past_covariates,
                                                future_covariates=future_covariates,
@@ -826,11 +805,10 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         return self.model(input_batch)
 
     def predict(self, n, *args, **kwargs):
-        """
-        since we have future covariates, the inference dataset for future input must be at least of length
-        `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
-        `input_chunk_length`.
-        """
+        # since we have future covariates, the inference dataset for future input must be at least of length
+        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
+        # `input_chunk_length`.
+
         if n >= self.output_chunk_length:
             return super().predict(n, *args, **kwargs)
         else:

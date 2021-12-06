@@ -526,7 +526,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
 
     raise_if_not(
         hasattr(pd.DatetimeIndex, attribute) or (attribute in ["week", "weekofyear", "week_of_year"]),
-        '"attribute" needs to be an attribute of pd.DatetimeIndex.'
+        f'attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. '
         'See all available attributes in '
         'https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex',
         logger,
