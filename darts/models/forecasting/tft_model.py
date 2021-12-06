@@ -572,8 +572,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                     'cyclic': {'future': ['month']},
                     'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
                     'position': {'past': ['absolute'], 'future': ['relative']},
-                    'custom': {'past': [lambda index: (index.year - 1950) / 50]}
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
                     'transformer': Scaler()
+                }
 
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.

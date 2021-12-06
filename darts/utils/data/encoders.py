@@ -563,10 +563,10 @@ class SequenceEncoder(Encoder):
         ------
         Warning
             If model was created with `add_encoders` and there is suspicion of lazy loading.
-            The encodings/covariates are generated pre-train for all individual targets and
+            The encodings/covariates are generated eagerly before starting training for all individual targets and
             loaded into memory. Depending on the size of target data, this can create memory
             issues. In case this applies, consider setting `add_encoders=None` at model
-            creation
+            creation and build your encodings covariates manually for lazy loading.
         """
         if not self.train_called:
             if not isinstance(target, (TimeSeries, list)):
