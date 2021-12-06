@@ -345,12 +345,14 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesShiftedDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> PastCovariatesShiftedDataset:
 
         return PastCovariatesShiftedDataset(target_series=target,
                                             covariates=past_covariates,
                                             length=self.input_chunk_length,
-                                            shift=self.output_chunk_length)
+                                            shift=self.output_chunk_length,
+                                            max_samples_per_ts=max_samples_per_ts)
     
     @random_method
     def _produce_predict_output(self, x):

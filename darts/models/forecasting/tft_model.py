@@ -517,7 +517,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  add_relative_index: bool = False,
                  loss_fn: Optional[nn.Module] = None,
                  likelihood: Optional[Likelihood] = None,
-                 max_samples_per_ts: Optional[int] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs
                  ):
@@ -580,8 +579,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
             a ``QuantileRegression`` likelihood.
-        max_samples_per_ts
-            Optionally, a maximum number of training sample to generate per time series.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -651,7 +648,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.add_relative_index = add_relative_index
         self.loss_fn = loss_fn
         self.likelihood = likelihood
-        self.max_sample_per_ts = max_samples_per_ts
         self.output_dim: Optional[Tuple[int, int]] = None
 
     def _create_model(self,
@@ -759,7 +755,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> MixedCovariatesSequentialDataset:
 
         raise_if(future_covariates is None and self.add_cyclic_encoder is None and not self.add_relative_index,
                  'TFTModel requires future covariates. The model applies multi-head attention queries on future '
@@ -776,7 +773,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
-                                                max_samples_per_ts=self.max_sample_per_ts)
+                                                max_samples_per_ts=max_samples_per_ts)
 
     def _add_cyclic_encoder(self,
                             target: Sequence[TimeSeries],
