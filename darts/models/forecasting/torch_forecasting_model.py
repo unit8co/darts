@@ -53,7 +53,7 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  DualCovariatesSequentialDataset,
                                                  MixedCovariatesSequentialDataset,
                                                  SplitCovariatesSequentialDataset)
-from darts.utils.data.encoders import SequenceEncoder
+from darts.utils.data.encoders import SequentialEncoder
 
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
@@ -451,12 +451,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         takes_future_covariates = False
         return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
 
-    def initialize_encoders(self) -> SequenceEncoder:
+    def initialize_encoders(self) -> SequentialEncoder:
 
         input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates =\
             self._model_encoder_settings()
 
-        return SequenceEncoder(add_encoders=self._model_params[1].get('add_encoders', None),
+        return SequentialEncoder(add_encoders=self._model_params[1].get('add_encoders', None),
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
                                takes_past_covariates=takes_past_covariates,

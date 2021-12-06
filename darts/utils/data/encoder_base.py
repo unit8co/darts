@@ -15,7 +15,7 @@ from darts.utils.timeseries_generation import _generate_index
 from darts.dataprocessing.transformers import FittableDataTransformer
 
 
-SupportedIndexes = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
+SupportedIndex = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
 EncoderOutputType = Optional[Union[Sequence[TimeSeries], List[TimeSeries]]]
 logger = get_logger(__name__)
 
@@ -50,7 +50,7 @@ class CovariateIndexGenerator(ABC):
     @abstractmethod
     def generate_train_series(self,
                               target: TimeSeries,
-                              covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
+                              covariate: Optional[TimeSeries] = None) -> SupportedIndex:
         """
         Implement a method that extracts the required covariate index for training.
 
@@ -67,7 +67,7 @@ class CovariateIndexGenerator(ABC):
     def generate_inference_series(self,
                                   n: int,
                                   target: TimeSeries,
-                                  covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
+                                  covariate: Optional[TimeSeries] = None) -> SupportedIndex:
         """
         Implement a method that extracts the required covariate index for prediction.
 
@@ -87,7 +87,7 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
     """Generates index for past covariates on train and inference datasets"""
     def generate_train_series(self,
                               target: TimeSeries,
-                              covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
+                              covariate: Optional[TimeSeries] = None) -> SupportedIndex:
 
         super(PastCovariateIndexGenerator, self).generate_train_series(target, covariate)
 
@@ -103,7 +103,7 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
     def generate_inference_series(self,
                                   n: int,
                                   target: TimeSeries,
-                                  covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
+                                  covariate: Optional[TimeSeries] = None) -> SupportedIndex:
         """For prediction (`n` is given) with past covariates we have to distinguish between two cases:
         1)  If past covariates are given, we can use them as reference
         2)  If past covariates are missing, we need to generate a time index that starts `input_chunk_length`
@@ -123,7 +123,7 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
     """Generates index for future covariates on train and inference datasets."""
     def generate_train_series(self,
                               target: TimeSeries,
-                              covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
+                              covariate: Optional[TimeSeries] = None) -> SupportedIndex:
         """For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
         reference to extract the time index.
         """
@@ -142,7 +142,7 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
     def generate_inference_series(self,
                                   n: int,
                                   target: TimeSeries,
-                                  covariate: Optional[TimeSeries] = None) -> SupportedIndexes:
+                                  covariate: Optional[TimeSeries] = None) -> SupportedIndex:
         """For prediction (`n` is given) with future covariates we have to distinguish between two cases:
         1)  If future covariates are given, we can use them as reference
         2)  If future covariates are missing, we need to generate a time index that starts `input_chunk_length`
@@ -248,13 +248,16 @@ class SingleEncoder(Encoder, ABC):
         self.index_generator = index_generator
 
     @abstractmethod
-    def _encode(self, index: SupportedIndexes) -> TimeSeries:
+    def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
         """Single Encoders must implement an _encode() method to encode the index.
 
         Parameters
         ----------
         index
             The index generated from `self.index_generator` for either the train or inference dataset.
+            :param dtype:
+        dtype
+            The dtype of the encoded index
         """
         pass
 
@@ -276,9 +279,8 @@ class SingleEncoder(Encoder, ABC):
         merge_covariate
             Whether or not to merge the encoded TimeSeries with `covariate`.
         """
-        self.dtype = target.dtype
         index = self.index_generator.generate_train_series(target, covariate)
-        encoded = self._encode(index)
+        encoded = self._encode(index, target.dtype)
         if merge_covariate:
             return self._merge_covariate(encoded, covariate=covariate)
         else:
@@ -305,9 +307,8 @@ class SingleEncoder(Encoder, ABC):
         merge_covariate
             Whether or not to merge the encoded TimeSeries with `covariate`.
         """
-        self.dtype = target.dtype
         index = self.index_generator.generate_inference_series(n, target, covariate)
-        encoded = self._encode(index)
+        encoded = self._encode(index, target.dtype)
 
         if merge_covariate:
             return self._merge_covariate(encoded, covariate=covariate)
@@ -321,9 +322,9 @@ class SingleEncoder(Encoder, ABC):
         pass
 
 
-class SequenceEncoderTransformer:
-    """`SequenceEncoderTransformer` applies transformation to the non-transformed encoded covariate output of
-    `SequenceEncoder.encode_train()` and `SequenceEncoder.encode_inference()`. The transformer is fitted
+class SequentialEncoderTransformer:
+    """`SequentialEncoderTransformer` applies transformation to the non-transformed encoded covariate output of
+    `SequentialEncoder.encode_train()` and `SequentialEncoder.encode_inference()`. The transformer is fitted
     when `transform()` is called for the first time. This ensures proper transformation of train, validation and
     inference dataset covariates. User-supplied covariates are not transformed."""
 
@@ -335,15 +336,15 @@ class SequenceEncoderTransformer:
             A `FittableDataTransformer` object with a `fit_transform()` and `transform()` method.
         transform_mask
             A boolean 1-D mask specifying which of the input covariates to :meth:`transform()
-            <SequenceEncoderTransformer.transform()>` must be transformed.
+            <SequentialEncoderTransformer.transform()>` must be transformed.
         """
-        self.transformer = transformer
-        self.transform_mask = transform_mask
-        self._fit_called = False
+        self.transformer: FittableDataTransformer = transformer
+        self.transform_mask: np.ndarray = np.array(transform_mask)
+        self._fit_called: bool = False
 
     def transform(self, covariate: List[TimeSeries]) -> List[TimeSeries]:
         """This method applies transformation to the non-transformed encoded covariate output of
-        `SequenceEncoder._encode_sequence()` after being merged with user-defined covariates. The transformer is
+        `SequentialEncoder._encode_sequence()` after being merged with user-defined covariates. The transformer is
         fitted when `transform()` is called for the first time. This ensures proper transformation of train, validation
         and inference dataset covariates. The masks ensure that no covariates are transformed that user explicitly
         supplied to `TorchForecastingModel.fit()` and `TorchForecastingModel.predict()`
@@ -351,7 +352,7 @@ class SequenceEncoderTransformer:
         Parameters
         ----------
         covariate
-            The non-transformed encoded covariate output of `SequenceEncoder._encode_sequence()` before merging with
+            The non-transformed encoded covariate output of `SequentialEncoder._encode_sequence()` before merging with
             user-defined covariates.
         """
         if not self.fit_called:
@@ -372,7 +373,7 @@ class SequenceEncoderTransformer:
         if not n_diff:
             pass
         else:
-            self.transform_mask = [False] * n_diff + self.transform_mask
+            self.transform_mask = np.array([False] * n_diff + list(self.transform_mask))
 
     @property
     def fit_called(self) -> bool:

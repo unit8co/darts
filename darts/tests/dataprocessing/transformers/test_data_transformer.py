@@ -96,7 +96,7 @@ class DataTransformerTestCase(unittest.TestCase):
         vals = np.array([np.arange(6).reshape(3, 2)] * 10)
 
         # scalers should only consider True columns
-        component_mask = [True, False, True]
+        component_mask = np.array([True, False, True])
 
         s = TimeSeries.from_values(vals)
         ss = scaler.fit_transform(s, component_mask=component_mask)

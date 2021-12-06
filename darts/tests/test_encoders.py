@@ -7,7 +7,7 @@ from ..models import TFTModel
 from ..utils import timeseries_generation as tg
 from ..timeseries import TimeSeries
 from ..utils.data.encoder_base import SingleEncoder
-from ..utils.data.encoders import (SequenceEncoder,
+from ..utils.data.encoders import (SequentialEncoder,
                                    PastCyclicEncoder,
                                    FutureCyclicEncoder,
                                    PastDatetimeAttributeEncoder,
@@ -107,7 +107,7 @@ class EncoderTestCase(DartsBaseTestClass):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_type)
 
     def test_encoder_sequence_train(self):
-        """Test `SequenceEncoder.encode_train()` output"""
+        """Test `SequentialEncoder.encode_train()` output"""
         # ====> Sequential Cyclic Encoder Tests <====
         encoder_args = {'cyclic': {'past': ['month'], 'future': ['month', 'month']}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
@@ -155,7 +155,7 @@ class EncoderTestCase(DartsBaseTestClass):
             self.assertEqual(pc, fc)
 
     def test_encoder_sequence_inference(self):
-        """Test `SequenceEncoder.encode_inference()` output"""
+        """Test `SequentialEncoder.encode_inference()` output"""
         # ==> test prediction <==
         encoder_args = {'cyclic': {'past': ['month'], 'future': ['month']}}
         encoders = self.helper_encoder_from_model(add_encoder_dict=encoder_args)
@@ -198,7 +198,7 @@ class EncoderTestCase(DartsBaseTestClass):
                                          future_covariates,
                                          expected_past_idx_ts,
                                          expected_future_idx_ts):
-        """test comparisons for `SequenceEncoder.encode_inference()"""
+        """test comparisons for `SequentialEncoder.encode_inference()"""
 
         # generate encodings
         past_covs_pred, future_covs_pred = encoders.encode_inference(n=n,
@@ -298,7 +298,7 @@ class EncoderTestCase(DartsBaseTestClass):
 
         # ===> test absolute position encoder <===
         encoder_params = {'position': {'past': ['absolute']}}
-        encs = SequenceEncoder(add_encoders=encoder_params,
+        encs = SequentialEncoder(add_encoders=encoder_params,
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
                                takes_past_covariates=True,
@@ -325,7 +325,7 @@ class EncoderTestCase(DartsBaseTestClass):
 
         # ===> test relative position encoder <===
         encoder_params = {'position': {'past': ['relative']}}
-        encs = SequenceEncoder(add_encoders=encoder_params,
+        encs = SequentialEncoder(add_encoders=encoder_params,
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
                                takes_past_covariates=True,
@@ -355,7 +355,7 @@ class EncoderTestCase(DartsBaseTestClass):
 
         # ===> test absolute position encoder <===
         encoder_params = {'custom': {'past': [lambda index: index.year, lambda index: index.year - 1]}}
-        encs = SequenceEncoder(add_encoders=encoder_params,
+        encs = SequentialEncoder(add_encoders=encoder_params,
                                input_chunk_length=input_chunk_length,
                                output_chunk_length=output_chunk_length,
                                takes_past_covariates=True,
@@ -371,7 +371,7 @@ class EncoderTestCase(DartsBaseTestClass):
                           'cyclic': {'future': ['minute']},
                           'transformer': Scaler()}
 
-        encs = SequenceEncoder(add_encoders=encoder_params,
+        encs = SequentialEncoder(add_encoders=encoder_params,
                                input_chunk_length=12,
                                output_chunk_length=6,
                                takes_past_covariates=True,

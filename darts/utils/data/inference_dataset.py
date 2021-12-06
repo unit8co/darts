@@ -12,10 +12,6 @@ from typing import Union, Sequence, Optional, Tuple
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not
 from .utils import CovariateType
-from .encoder_base import (PastCovariateIndexGenerator,
-                           FutureCovariateIndexGenerator)
-
-SampleIndexType = Tuple[int, int, int, int, int, int]
 
 
 class InferenceDataset(ABC, Dataset):

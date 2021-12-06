@@ -565,7 +565,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
-            Read :meth:`SequenceEncoder <darts.utils.data.encoders.SequenceEncoder>` to find out more about
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
             `add_encoders`. An example showing some of `add_encoders` features:
 
                 add_encoders={

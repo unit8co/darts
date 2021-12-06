@@ -28,7 +28,7 @@ try:
     from .horizon_based_dataset import HorizonBasedDataset
 
     # Sequence Encoder
-    from .encoders import SequenceEncoder
+    from .encoders import SequentialEncoder
 
 except ImportError:
     # Torch is not available
