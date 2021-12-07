@@ -299,10 +299,10 @@ class EncoderTestCase(DartsBaseTestClass):
         # ===> test absolute position encoder <===
         encoder_params = {'position': {'past': ['absolute']}}
         encs = SequentialEncoder(add_encoders=encoder_params,
-                               input_chunk_length=input_chunk_length,
-                               output_chunk_length=output_chunk_length,
-                               takes_past_covariates=True,
-                               takes_future_covariates=True)
+                                 input_chunk_length=input_chunk_length,
+                                 output_chunk_length=output_chunk_length,
+                                 takes_past_covariates=True,
+                                 takes_future_covariates=True)
 
         t1, _ = encs.encode_train(ts)
         t2, _ = encs.encode_train(TimeSeries.from_times_and_values(ts.time_index + ts.freq, ts.values()))
@@ -326,10 +326,10 @@ class EncoderTestCase(DartsBaseTestClass):
         # ===> test relative position encoder <===
         encoder_params = {'position': {'past': ['relative']}}
         encs = SequentialEncoder(add_encoders=encoder_params,
-                               input_chunk_length=input_chunk_length,
-                               output_chunk_length=output_chunk_length,
-                               takes_past_covariates=True,
-                               takes_future_covariates=True)
+                                 input_chunk_length=input_chunk_length,
+                                 output_chunk_length=output_chunk_length,
+                                 takes_past_covariates=True,
+                                 takes_future_covariates=True)
 
         t1, _ = encs.encode_train(ts)
         t2, _ = encs.encode_train(TimeSeries.from_times_and_values(ts.time_index + ts.freq, ts.values()))
@@ -356,10 +356,10 @@ class EncoderTestCase(DartsBaseTestClass):
         # ===> test absolute position encoder <===
         encoder_params = {'custom': {'past': [lambda index: index.year, lambda index: index.year - 1]}}
         encs = SequentialEncoder(add_encoders=encoder_params,
-                               input_chunk_length=input_chunk_length,
-                               output_chunk_length=output_chunk_length,
-                               takes_past_covariates=True,
-                               takes_future_covariates=True)
+                                 input_chunk_length=input_chunk_length,
+                                 output_chunk_length=output_chunk_length,
+                                 takes_past_covariates=True,
+                                 takes_future_covariates=True)
 
         t1, _ = encs.encode_train(ts)
         self.assertTrue((ts.time_index.year.values == t1[0].values()[:, 0]).all())
@@ -372,10 +372,10 @@ class EncoderTestCase(DartsBaseTestClass):
                           'transformer': Scaler()}
 
         encs = SequentialEncoder(add_encoders=encoder_params,
-                               input_chunk_length=12,
-                               output_chunk_length=6,
-                               takes_past_covariates=True,
-                               takes_future_covariates=True)
+                                 input_chunk_length=12,
+                                 output_chunk_length=6,
+                                 takes_past_covariates=True,
+                                 takes_future_covariates=True)
 
         _, t1 = encs.encode_train(ts1, future_covariate=ts1)
 
