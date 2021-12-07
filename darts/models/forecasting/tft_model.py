@@ -288,7 +288,7 @@ class _TFTModule(nn.Module):
         prediction_index = encoder_length - 1
         index[:encoder_length] = index[:encoder_length] / prediction_index
         index[encoder_length:] = index[encoder_length:] / prediction_index
-        return index.resize(1, len(index), 1).repeat(batch_size, 1, 1)
+        return index.reshape(1, len(index), 1).repeat(batch_size, 1, 1)
 
     @staticmethod
     def get_attention_mask_full(time_steps: int,
