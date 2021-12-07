@@ -299,7 +299,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> TrainingDataset:
         """
         Each model must specify the default training dataset to use.
         """
@@ -367,6 +368,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             verbose: bool = False,
             epochs: int = 0,
+            max_samples_per_ts: Optional[int] = None,
             num_loader_workers: int = 0) -> None:
         """
         The fit method for torch models. It wraps around `fit_from_dataset()`, constructing a default training
@@ -404,6 +406,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
+        max_samples_per_ts
+            Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
+            by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
+            large number of training samples. This parameter upper-bounds the number of training samples per time
+            series (taking only the most recent samples in each series). Leaving to None does not apply any
+            upper bound.
         num_loader_workers
             Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
             both for the training and validation loaders (if any).
@@ -436,22 +444,27 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.encoders = self.initialize_encoders()
 
         if self.encoders.encoding_available:
-            past_covariates, future_covariates = \
-                self.encoders.encode_train(target=series,
-                                           past_covariate=past_covariates,
-                                           future_covariate=future_covariates)
-            if val_series is not None:
+            past_covariates, future_covariates = self.encoders.encode_train(target=series,
+                                                                            past_covariate=past_covariates,
+                                                                            future_covariate=future_covariates)
+        train_dataset = self._build_train_dataset(target=series,
+                                                  past_covariates=past_covariates, 
+                                                  future_covariates=future_covariates, 
+                                                  max_samples_per_ts=max_samples_per_ts)
+
+        if val_series is not None:
+            if self.encoders.encoding_available:
                 val_past_covariates, val_future_covariates = \
                     self.encoders.encode_train(target=val_series,
                                                past_covariate=val_past_covariates,
                                                future_covariate=val_future_covariates)
 
-        train_dataset = self._build_train_dataset(series,
-                                                  past_covariates,
-                                                  future_covariates)
-        val_dataset = self._build_train_dataset(val_series,
-                                                val_past_covariates,
-                                                val_future_covariates) if val_series is not None else None
+            val_dataset = self._build_train_dataset(target=val_series, 
+                                                    past_covariates=val_past_covariates, 
+                                                    future_covariates=val_future_covariates,
+                                                    max_samples_per_ts=max_samples_per_ts)
+        else:
+            val_dataset = None
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
@@ -1216,7 +1229,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> PastCovariatesTrainingDataset:
 
         raise_if_not(future_covariates is None,
                      'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
@@ -1224,7 +1238,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         return PastCovariatesSequentialDataset(target_series=target,
                                                covariates=past_covariates,
                                                input_chunk_length=self.input_chunk_length,
-                                               output_chunk_length=self.output_chunk_length)
+                                               output_chunk_length=self.output_chunk_length,
+                                               max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1335,14 +1350,16 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> FutureCovariatesTrainingDataset:
         raise_if_not(past_covariates is None,
                      'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
 
         return FutureCovariatesSequentialDataset(target_series=target,
                                                  covariates=future_covariates,
                                                  input_chunk_length=self.input_chunk_length,
-                                                 output_chunk_length=self.output_chunk_length)
+                                                 output_chunk_length=self.output_chunk_length,
+                                                 max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1390,12 +1407,14 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> DualCovariatesTrainingDataset:
 
         return DualCovariatesSequentialDataset(target_series=target,
                                                covariates=future_covariates,
                                                input_chunk_length=self.input_chunk_length,
-                                               output_chunk_length=self.output_chunk_length)
+                                               output_chunk_length=self.output_chunk_length,
+                                               max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1439,13 +1458,15 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> MixedCovariatesTrainingDataset:
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
-                                                output_chunk_length=self.output_chunk_length)
+                                                output_chunk_length=self.output_chunk_length,
+                                                max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1489,13 +1510,15 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> SplitCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> SplitCovariatesTrainingDataset:
 
         return SplitCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
-                                                output_chunk_length=self.output_chunk_length)
+                                                output_chunk_length=self.output_chunk_length,
+                                                max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
