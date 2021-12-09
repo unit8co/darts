@@ -474,6 +474,26 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            `add_encoders`. An example showing some of `add_encoders` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs

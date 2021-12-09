@@ -1,10 +1,20 @@
 import pandas as pd
+from enum import Enum
+from typing import Union
 
 from ...timeseries import TimeSeries
 from ...logging import raise_if_not
 
 # Those freqs can be used to divide Time deltas (the others can't):
 DIVISIBLE_FREQS = {'D', 'H', 'T', 'min', 'S', 'L', 'ms', 'U', 'us', 'N'}
+
+
+class CovariateType(Enum):
+    PAST = 'past'
+    FUTURE_PAST = 'future_past'
+    HISTORIC_FUTURE = 'historic_future'
+    FUTURE = 'future'
+    NONE = None
 
 
 def _get_matching_index(ts_target: TimeSeries,
@@ -26,18 +36,25 @@ def _get_matching_index(ts_target: TimeSeries,
 
     freq = ts_target.freq
 
-    if isinstance(freq, int):
-        return idx + int(ts_covariate.end_time() - ts_target.end_time())
+    return idx + _index_diff(self=ts_target.end_time(), other=ts_covariate.end_time(), freq=freq)
 
-    elif ts_target.freq.freqstr in DIVISIBLE_FREQS:
-        return idx + int((ts_covariate.end_time() - ts_target.end_time()) / freq)
+
+def _index_diff(self: Union[pd.Timestamp, int],
+                other: Union[pd.Timestamp, int],
+                freq: pd.offsets):
+    """Returns the difference between two indexes `other` and `self` (`other` - `self`) of frequency `freq`.
+    """
+    if isinstance(freq, int):
+        return int(other - self)
+
+    elif freq.freqstr in DIVISIBLE_FREQS:
+        return int((other - self) / freq)
 
     # /!\ THIS IS TAKING LINEAR TIME IN THE LENGTH OF THE SERIES
     # it won't scale if the end of target and covariates are far apart and the freq is not in DIVISIBLE_FREQS
     # (Not sure there's a way around it for exotic freqs)
-    if ts_covariate.end_time() >= ts_target.end_time():
-        return idx - 1 + len(
-            pd.date_range(start=ts_target.end_time(), end=ts_covariate.end_time(), freq=ts_target.freq))
+    if other >= self:
+        return -1 + len(pd.date_range(start=self, end=other, freq=freq))
     else:
-        return idx + 1 - len(
-            pd.date_range(start=ts_covariate.end_time(), end=ts_target.end_time(), freq=ts_target.freq))
+        return 1 - len(pd.date_range(start=other, end=self, freq=freq))
+

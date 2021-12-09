@@ -2,7 +2,7 @@
 Scaler
 ------
 """
-import numpy as np
+
 from typing import Sequence, Iterator, Any, Tuple
 from darts.dataprocessing.transformers import InvertibleDataTransformer, FittableDataTransformer
 from darts.timeseries import TimeSeries
@@ -64,29 +64,12 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         self.transformer_instances = None
 
     @staticmethod
-    def _reshape_in(series: TimeSeries) -> np.ndarray:
-        """ Reshapes the series' values to be fed in input to a transformer.
+    def ts_transform(series: TimeSeries, transformer, **kwargs) -> TimeSeries:
+        component_mask = kwargs.get('component_mask', None)
 
-            The output is a 2-D matrix where each column corresponds to a component (dimension)
-            of the series, and the columns' values are the flattened values over all samples
-        """
-        vals = series.all_values(copy=False)
-        return np.stack([vals[:, i, :].reshape(-1) for i in range(series.width)], axis=1)
+        tr_out = transformer.transform(Scaler._reshape_in(series, component_mask=component_mask))
 
-    @staticmethod
-    def _reshape_out(vals: np.ndarray, series_width: int, series_n_samples: int) -> np.ndarray:
-        """ Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix
-            suitable to build a TimeSeries.
-
-            The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)
-            and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.
-        """
-        return np.stack([vals[:, i].reshape(-1, series_n_samples) for i in range(series_width)], axis=1)
-
-    @staticmethod
-    def ts_transform(series: TimeSeries, transformer) -> TimeSeries:
-        tr_out = transformer.transform(Scaler._reshape_in(series))
-        transformed_vals = Scaler._reshape_out(tr_out, series.width, series.n_samples)
+        transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
 
         return TimeSeries.from_times_and_values(times=series.time_index,
                                                 values=transformed_vals,
@@ -95,8 +78,10 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
 
     @staticmethod
     def ts_inverse_transform(series: TimeSeries, transformer, *args, **kwargs) -> TimeSeries:
-        tr_out = transformer.inverse_transform(Scaler._reshape_in(series))
-        inv_transformed_vals = Scaler._reshape_out(tr_out, series.width, series.n_samples)
+        component_mask = kwargs.get('component_mask', None)
+
+        tr_out = transformer.inverse_transform(Scaler._reshape_in(series, component_mask=component_mask))
+        inv_transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
 
         return TimeSeries.from_times_and_values(times=series.time_index,
                                                 values=inv_transformed_vals,
@@ -106,7 +91,9 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
     @staticmethod
     def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:
         # fit_parameter will receive the transformer object instance
-        scaler = transformer.fit(Scaler._reshape_in(series))
+        component_mask = kwargs.get('component_mask', None)
+
+        scaler = transformer.fit(Scaler._reshape_in(series, component_mask=component_mask))
         return scaler
 
     def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
