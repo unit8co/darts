@@ -1818,7 +1818,7 @@ class TimeSeries:
         ----------
         fn
             Either a function which takes a NumPy array and returns a NumPy array of same shape; 
-            e.g., `lambda x: x ** 2` or `lambda x: x / x.shape[0]`.
+            e.g., `lambda x: x ** 2`, `lambda x: x / x.shape[0]` or `np.log`.
             It can also be a function which takes a timestamp and array, and returns a new array of same shape;
             e.g., `lambda ts, x: x / ts.days_in_month`.
             The type of `ts` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
