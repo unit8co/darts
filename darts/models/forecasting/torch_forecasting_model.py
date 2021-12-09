@@ -209,6 +209,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                      " training from scratch and remove all the model data".format(self.model_name)
                                      )
 
+    @property
+    def min_train_series_length(self) -> int:
+        """
+        Class property defining the minimum required length for the training series;
+        overriding the default value of 3 of ForecastingModel
+        """
+        return self.input_chunk_length + self.output_chunk_length
+
     def _batch_collate_fn(self, batch: List[Tuple]) -> Tuple:
         """
         Returns a batch Tuple from a list of samples
