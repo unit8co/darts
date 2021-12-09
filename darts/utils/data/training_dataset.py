@@ -5,21 +5,15 @@ Training Datasets Base Classes
 
 from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
-from enum import Enum
 import numpy as np
 
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
+from .utils import CovariateType
 from ...logging import get_logger, raise_if_not
 from ...timeseries import TimeSeries
 
 logger = get_logger(__name__)
 SampleIndexType = Tuple[int, int, int, int, int, int]
-
-
-class CovariateType(Enum):
-    PAST = 'past'
-    FUTURE = 'future'
-    NONE = None
 
 
 class TrainingDataset(ABC, Dataset):
@@ -63,8 +57,7 @@ class TrainingDataset(ABC, Dataset):
         underlying the `TimeSeries`.
         """
 
-        self._index_memory = {}
-        pass
+        self._index_memory: Dict = {}
 
     @abstractmethod
     def __len__(self) -> int:
@@ -128,6 +121,7 @@ class TrainingDataset(ABC, Dataset):
             past_start, past_end = start_of_input_idx, start_of_input_idx + input_chunk_length
 
             if cov_type is not CovariateType.NONE:
+                # not CovariateType.Future -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
                 start = future_start if cov_type is CovariateType.FUTURE else past_start
                 end = future_end if cov_type is CovariateType.FUTURE else past_end
 
