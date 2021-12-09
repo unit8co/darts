@@ -108,6 +108,16 @@ You will find below an example Jupyter notebook showcasing the usage of the Deep
 
    examples/10-DeepTCN-examples.ipynb
 
+Temporal Fusion Transformer (TFT) Model
+===================
+
+You will find below an example Jupyter notebook showcasing the usage of the TFT model
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/14-TFT-examples.ipynb
+
 Kalman Filter Model
 ===================
 
@@ -127,3 +137,13 @@ You will find below an example Jupyter notebook showcasing the usage of the Gaus
    :maxdepth: 1
 
    examples/12-GP-filter-examples.ipynb
+
+Dynamic Time Warping (DTW)
+=============================
+
+You will find below an example Jupyter notebook showcasing the usage of the Dynamic Time Warping
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/13-Dynamic-Time-Warping-example.ipynb
