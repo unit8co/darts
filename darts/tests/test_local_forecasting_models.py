@@ -165,7 +165,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 model.fit(self.ts_gaussian[1:], future_covariates=self.ts_gaussian[:-1])
 
-
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)
         ts = TimeSeries.from_dataframe(pd.DataFrame({"V1": values}))
