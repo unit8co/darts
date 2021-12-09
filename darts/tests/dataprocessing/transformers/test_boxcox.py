@@ -40,7 +40,7 @@ class BoxCoxTestCase(unittest.TestCase):
         self.assertNotEqual(lmbda1, lmbda2)
 
     def test_boxcox_transform(self):
-        log_mapper = Mapper(lambda x: log(x))
+        log_mapper = Mapper(lambda x: np.log(x))
         boxcox = BoxCox(lmbda=0)
 
         transformed1 = log_mapper.transform(self.sine_series)
