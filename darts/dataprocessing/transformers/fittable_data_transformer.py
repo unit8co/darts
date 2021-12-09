@@ -137,6 +137,10 @@ class FittableDataTransformer(BaseDataTransformer):
         kwargs
             Additional keyword arguments for the `ts_fit()` method
 
+            component_mask : Optional[np.ndarray] = None
+                Optionally, a 1-D boolean np.ndarray of length `series.n_components` that specifies which components of
+                the underlying `series` the Scaler should consider.
+
         Returns
         -------
         FittableDataTransformer
@@ -175,11 +179,16 @@ class FittableDataTransformer(BaseDataTransformer):
         args
             Additional positional arguments for the `ts_transform()` method
         kwargs
-            Additional keyword arguments for the `ts_transform()` method
+            Additional keyword arguments for the `ts_transform()` method:
+
+            component_mask : Optional[np.ndarray] = None
+                Optionally, a 1-D boolean np.ndarray of length `series.n_components` that specifies which components of
+                the underlying `series` the Scaler should consider.
 
         Returns
         -------
         Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
-        return self.fit(series).transform(series, *args, **kwargs)
+        component_mask = kwargs.get('component_mask', None)
+        return self.fit(series, component_mask=component_mask).transform(series, *args, **kwargs)

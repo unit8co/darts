@@ -8,7 +8,8 @@ import numpy as np
 
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
-from .training_dataset import PastCovariatesTrainingDataset, CovariateType
+from .training_dataset import PastCovariatesTrainingDataset
+from .utils import CovariateType
 
 logger = get_logger(__name__)
 
@@ -60,12 +61,14 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             before the end of the series. It is required that `min_lh >= 1`.
         lookback:
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
-            multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths `3 * output_chunk_length`.
+            multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths
+            `3 * output_chunk_length`.
         """
         super().__init__()
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.covariate_type = CovariateType.PAST
 
         self.output_chunk_length = output_chunk_length
         self.min_lh, self.max_lh = lh
@@ -107,7 +110,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        cov_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
+        main_cov_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
 
         shift = self.lookback * self.output_chunk_length
         input_chunk_length = shift
@@ -121,7 +124,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                                  output_chunk_length=self.output_chunk_length,
                                  end_of_output_idx=end_of_output_idx,
                                  ts_covariate=ts_covariate,
-                                 cov_type=cov_type)
+                                 cov_type=main_cov_type)
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
