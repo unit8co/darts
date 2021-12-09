@@ -311,3 +311,21 @@ if TORCH_AVAILABLE:
                              batch_size=32)
 
             model.fit(ts, max_samples_per_ts=5)
+
+
+        def test_residuals(self):
+            """
+            Torch models should not fail when computing residuals on a series
+            long enough to accomodate at least one training sample.
+            """
+            ts = linear_timeseries(start_value=0, end_value=1, length=38)
+
+            model = NBEATSModel(input_chunk_length=24, 
+                    output_chunk_length=12, 
+                    num_stacks=2, 
+                    num_blocks=1, 
+                    num_layers=1, 
+                    layer_widths=2,  
+                    n_epochs=2)
+
+            model.residuals(ts)
