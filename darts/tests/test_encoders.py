@@ -1,9 +1,10 @@
+import unittest
+
 import pandas as pd
 import numpy as np
 
 from typing import Sequence, Optional
 from .base_test_class import DartsBaseTestClass
-from ..models import TFTModel
 from ..utils import timeseries_generation as tg
 from ..timeseries import TimeSeries
 from ..utils.data.encoder_base import SingleEncoder
@@ -14,9 +15,17 @@ from ..utils.data.encoders import (SequentialEncoder,
                                    FutureDatetimeAttributeEncoder)
 from ..dataprocessing.transformers import Scaler
 
-
 from ..logging import get_logger
 logger = get_logger(__name__)
+
+try:
+    from ..models import TFTModel
+    import torch
+
+    TORCH_AVAILABLE = True
+except ImportError:
+    logger.warning('Torch not installed - will be skipping Torch models tests')
+    TORCH_AVAILABLE = False
 
 
 class EncoderTestCase(DartsBaseTestClass):
@@ -68,7 +77,9 @@ class EncoderTestCase(DartsBaseTestClass):
                            freq=ts.freq),
         np.arange(12 + (8 - 6))) for ts in target_multi]
 
+    @unittest.skipUnless(TORCH_AVAILABLE, 'Torch not available. SequentialEncoder tests with models will be skipped.')
     def test_sequence_encoder_from_model_params(self):
+        print('was called')
         """test if sequence encoder is initialized properly from model params"""
         # valid encoder model parameters are ('past', 'future') for the main key and datetime attribute for sub keys
         valid_encoder_args = {
@@ -106,6 +117,7 @@ class EncoderTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             _ = self.helper_encoder_from_model(add_encoder_dict=bad_type)
 
+    @unittest.skipUnless(TORCH_AVAILABLE, 'Torch not available. SequentialEncoder tests with models will be skipped.')
     def test_encoder_sequence_train(self):
         """Test `SequentialEncoder.encode_train()` output"""
         # ====> Sequential Cyclic Encoder Tests <====
@@ -154,6 +166,7 @@ class EncoderTestCase(DartsBaseTestClass):
         for pc, fc in zip(past_covs_train, future_covs_train):
             self.assertEqual(pc, fc)
 
+    @unittest.skipUnless(TORCH_AVAILABLE, 'Torch not available. SequentialEncoder tests with models will be skipped.')
     def test_encoder_sequence_inference(self):
         """Test `SequentialEncoder.encode_inference()` output"""
         # ==> test prediction <==
