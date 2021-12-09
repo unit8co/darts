@@ -1276,62 +1276,81 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         inpt = torch.cat([past_target, past_covariate], dim=2) if past_covariate is not None else past_target
         return self.model(inpt)
 
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
-        past_target, past_covariates, cov_future = input_batch
-        input_series = torch.cat([past_target, past_covariates], dim=2) if past_covariates is not None else past_target
+    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+        """
+        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset to farecast
+        the next `n` target values per target variable.
 
-        batch_prediction = []
+        Parameters:
+        ----------
+        n
+            prediction length
+        input_batch
+            (past_target, past_covariates, future_past_covariates)
+        roll_size
+            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to
+            `self.output_chunk_length`
+        """
+        dim_component = 2
+        past_target, past_covariates, future_past_covariates = input_batch
 
-        # TODO: remove this "first_prediction_index" and move it into the models that need it
-        out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
+        n_targets = past_target.shape[dim_component]
+        n_past_covs = past_covariates.shape[dim_component] if not past_covariates is None else 0
 
-        batch_prediction.append(out[:, :roll_size, :])
+        input_past = torch.cat(
+            [ds for ds in [past_target, past_covariates] if ds is not None],
+            dim=dim_component
+        )
+
+        out = self._produce_predict_output(input_past)[:, self.first_prediction_index:, :]
+
+        batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
         while prediction_length < n:
+            # we want the last prediction to end exactly at `n` into the future.
+            # this means we may have to truncate the previous prediction and step
+            # back the roll size for the last chunk
+            if prediction_length + self.output_chunk_length > n:
+                spillover_prediction_length = prediction_length + self.output_chunk_length - n
+                roll_size -= spillover_prediction_length
+                prediction_length -= spillover_prediction_length
+                batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
+            # ==========> PAST INPUT <==========
             # roll over input series to contain latest target and covariate
-            input_series = torch.roll(input_series, -roll_size, 1)
+            input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions
             if self.input_chunk_length >= roll_size:
-                input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
+                input_past[:, -roll_size:, :n_targets] = out[:, :roll_size, :]
             else:
-                input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
+                input_past[:, :, :n_targets] = out[:, -self.input_chunk_length:, :]
 
-            # update covariates to include next `roll_size` predictions into the future
-            if cov_future is not None and self.input_chunk_length >= roll_size:
-                input_series[:, -roll_size:, self.output_dim:] = (
-                    cov_future[:, prediction_length - roll_size:prediction_length, :]
+            # set left and right boundaries for extracting future elements
+            if self.input_chunk_length >= roll_size:
+                left_past, right_past = prediction_length - roll_size, prediction_length
+            else:
+                left_past, right_past = prediction_length - self.input_chunk_length, prediction_length
+
+            # update past covariates to include next `roll_size` future past covariates elements
+            if n_past_covs and self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
                 )
-            elif cov_future is not None:
-                input_series[:, :, self.output_dim:] = (
-                    cov_future[:, prediction_length - self.input_chunk_length:prediction_length, :]
+            elif n_past_covs:
+                input_past[:, :, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
                 )
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
-
-            # update predictions depending on how many data points have been predicted
-            if prediction_length <= n - self.output_chunk_length - roll_size:
-                batch_prediction.append(out[:, :roll_size, :])
-                prediction_length += roll_size
-            elif prediction_length < n - self.output_chunk_length:
-                # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
-                # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
-                # so that the final forecast produces exactly the right number of predictions to reach `n`
-                spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
-                roll_size -= spillover_prediction_length
-                batch_prediction.append(out[:, :roll_size, :])
-                prediction_length += roll_size
-            else:
-                batch_prediction.append(out)
-                prediction_length += self.output_chunk_length
+            out = self._produce_predict_output(input_past)[:, self.first_prediction_index:, :]
+            batch_prediction.append(out)
+            prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
-
         return batch_prediction
 
     @property
