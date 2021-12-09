@@ -7,14 +7,13 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
+from .utils import CovariateType
 from .training_dataset import (TrainingDataset,
                                PastCovariatesTrainingDataset,
                                FutureCovariatesTrainingDataset,
                                DualCovariatesTrainingDataset,
                                MixedCovariatesTrainingDataset,
-                               SplitCovariatesTrainingDataset,
-                               CovariateType)
-
+                               SplitCovariatesTrainingDataset)
 from ..utils import raise_if_not
 
 
@@ -70,7 +69,8 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
                                         output_chunk_length=length,
                                         shift=shift,
                                         shift_covariates=False,
-                                        max_samples_per_ts=max_samples_per_ts)
+                                        max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.PAST)
 
     def __len__(self):
         return len(self.ds)
@@ -134,7 +134,8 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
                                         output_chunk_length=length,
                                         shift=shift,
                                         shift_covariates=True,
-                                        max_samples_per_ts=max_samples_per_ts)
+                                        max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds)
@@ -201,7 +202,8 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                                              output_chunk_length=length,
                                              shift=shift,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.HISTORIC_FUTURE)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
@@ -210,7 +212,8 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
                                                output_chunk_length=length,
                                                shift=shift,
                                                shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts)
+                                               max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds_past)
@@ -281,7 +284,8 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
                                              output_chunk_length=length,
                                              shift=shift,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST)
 
         # The dual dataset serves both historical and future future covariates
         self.ds_dual = DualCovariatesShiftedDataset(target_series=target_series,
@@ -361,7 +365,8 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                                              output_chunk_length=length,
                                              shift=shift,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
@@ -370,7 +375,8 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
                                                output_chunk_length=length,
                                                shift=shift,
                                                shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts)
+                                               max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds_past)
@@ -389,7 +395,8 @@ class GenericShiftedDataset(TrainingDataset):
                  output_chunk_length: int = 1,
                  shift: int = 1,
                  shift_covariates: bool = False,
-                 max_samples_per_ts: Optional[int] = None):
+                 max_samples_per_ts: Optional[int] = None,
+                 covariate_type: CovariateType = CovariateType.NONE):
         """
         Contains (past_target, <X>_covariate, future_target), where "<X>" is past if `shift_covariates = False`
         and future otherwise.
@@ -421,11 +428,14 @@ class GenericShiftedDataset(TrainingDataset):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        covariate_type
+            An instance of `CovariateType` describing the type of `covariates`.
         """
         super().__init__()
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.covariate_type = covariate_type
 
         raise_if_not(covariates is None or len(self.target_series) == len(self.covariates),
                      'The provided sequence of target series must have the same length as '
@@ -467,9 +477,10 @@ class GenericShiftedDataset(TrainingDataset):
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        cov_type = CovariateType.NONE
+
+        main_cov_type = CovariateType.NONE
         if self.covariates is not None:
-            cov_type = CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
+            main_cov_type = CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
 
         # get all indices for the current sample
         past_start, past_end, future_start, future_end, cov_start, cov_end = \
@@ -480,7 +491,7 @@ class GenericShiftedDataset(TrainingDataset):
                                  output_chunk_length=self.output_chunk_length,
                                  end_of_output_idx=end_of_output_idx,
                                  ts_covariate=ts_covariate,
-                                 cov_type=cov_type)
+                                 cov_type=main_cov_type)
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
@@ -490,14 +501,14 @@ class GenericShiftedDataset(TrainingDataset):
         covariate = None
         if self.covariates is not None:
             raise_if_not(cov_end <= len(ts_covariate),
-                         f"The dataset contains {cov_type.value} covariates "
+                         f"The dataset contains {main_cov_type.value} covariates "
                          f"that don't extend far enough into the future. ({idx}-th sample)")
 
             covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
 
             raise_if_not(len(covariate) == (self.output_chunk_length if self.shift_covariates else
                                             self.input_chunk_length),
-                         f"The dataset contains {cov_type.value} covariates "
+                         f"The dataset contains {main_cov_type.value} covariates "
                          f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
                          f"target series.")
 
