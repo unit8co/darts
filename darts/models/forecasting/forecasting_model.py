@@ -336,7 +336,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
-            if retrain or (not self._fit_called):
+            if retrain:
                 self._fit_wrapper(series=train, past_covariates=past_covariates, future_covariates=future_covariates)
 
             forecast = self._predict_wrapper(n=forecast_horizon,
@@ -561,8 +561,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
         n_random_samples
-            The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform 
-            a random search instead of using the full grid. 
+            The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform
+            a random search instead of using the full grid.
             If an integer, `n_random_samples` is the number of parameter combinations selected from the full grid and must
             be between `0` and the total number of parameter combinations.
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must be
@@ -601,7 +601,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         #If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_random_samples is not None:
             params_cross_product = model_class._sample_params(params_cross_product, n_random_samples)
-            
+
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
@@ -885,7 +885,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             The model will be trained to forecast this time series. Can be multivariate if the model supports it.
         future_covariates
             A time series of future-known covariates. This time series will not be forecasted, but can be used by
-            some models as an input.
+            some models as an input. It must contain at least the same time steps/indices as the target `series`.
         """
 
         if future_covariates is not None:
@@ -894,8 +894,8 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                 future_covariates = future_covariates.slice_intersect(series)
 
             raise_if_not(series.has_same_time_as(future_covariates),
-                         "The provided `future_covariates` series must contain at least the same time steps/indices "
-                         "as the target `series`.",
+                         "The provided `future_covariates` series must contain at least the same time steps/"
+                         "indices as the target `series`.",
                          logger)
             self._expect_covariate = True
 
@@ -925,8 +925,9 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         future_covariates
-            The time series of future-known covariates which can be fed as input to the model. It must correspond to the
-            covariate time series that has been used with the `fit()` method for training, and it must be of length `n`.
+            The time series of future-known covariates which can be fed as input to the model. It must correspond to
+            the covariate time series that has been used with the `fit()` method for training, and it must contain at
+            least the next `n` time steps/indices after the end of the training target series.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.

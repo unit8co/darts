@@ -148,7 +148,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
             # Test models runnability - proper future covariates slicing
             model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian_long)
-            print(model)
             prediction = model.predict(self.forecasting_horizon, future_covariates=self.ts_gaussian_long)
 
             self.assertTrue(len(prediction) == self.forecasting_horizon)
