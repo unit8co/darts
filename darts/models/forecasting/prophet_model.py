@@ -87,11 +87,11 @@ class Prophet(DualCovariatesForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self,
-            series: TimeSeries,
-            future_covariates: Optional[TimeSeries] = None) -> None:
+    def _fit(self,
+             series: TimeSeries,
+             future_covariates: Optional[TimeSeries] = None) -> None:
 
-        super().fit(series, future_covariates)
+        super()._fit(series, future_covariates)
         series = self.training_series
 
         fit_df = pd.DataFrame(data={
@@ -120,12 +120,12 @@ class Prophet(DualCovariatesForecastingModel):
 
         execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
 
-    def predict(self,
-                n: int,
-                future_covariates: Optional[TimeSeries] = None,
-                num_samples: int = 1) -> TimeSeries:
+    def _predict(self,
+                 n: int,
+                 future_covariates: Optional[TimeSeries] = None,
+                 num_samples: int = 1) -> TimeSeries:
 
-        super().predict(n, future_covariates, num_samples)
+        super()._predict(n, future_covariates, num_samples)
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 

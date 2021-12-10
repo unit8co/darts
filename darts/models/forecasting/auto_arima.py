@@ -41,16 +41,16 @@ class AutoARIMA(DualCovariatesForecastingModel):
     def __str__(self):
         return 'Auto-ARIMA'
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super().fit(series, future_covariates)
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        super()._fit(series, future_covariates)
         series = self.training_series
         self.model.fit(series.values(),
                        X=future_covariates.values() if future_covariates else None)
 
-    def predict(self, n: int,
-                future_covariates: Optional[TimeSeries] = None,
-                num_samples: int = 1):
-        super().predict(n, future_covariates, num_samples)
+    def _predict(self, n: int,
+                 future_covariates: Optional[TimeSeries] = None,
+                 num_samples: int = 1):
+        super()._predict(n, future_covariates, num_samples)
         forecast = self.model.predict(n_periods=n,
                                       X=future_covariates.values() if future_covariates else None)
         return self._build_forecast_series(forecast)
@@ -61,7 +61,6 @@ class AutoARIMA(DualCovariatesForecastingModel):
 
     def _supports_range_index(self) -> bool:
         raise_if(self.trend and self.trend != "c",
-            "'trend' is not None. Range indexing is not supported in that case.",
-            logger
-        )
+                 "'trend' is not None. Range indexing is not supported in that case.",
+                 logger)
         return True
