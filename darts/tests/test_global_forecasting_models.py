@@ -348,11 +348,11 @@ if TORCH_AVAILABLE:
             ts = linear_timeseries(start_value=0, end_value=1, length=38)
 
             model = NBEATSModel(input_chunk_length=24, 
-                    output_chunk_length=12, 
-                    num_stacks=2, 
-                    num_blocks=1, 
-                    num_layers=1, 
-                    layer_widths=2,  
-                    n_epochs=2)
+                                output_chunk_length=12, 
+                                num_stacks=2, 
+                                num_blocks=1, 
+                                num_layers=1, 
+                                layer_widths=2,  
+                                n_epochs=2)
 
             model.residuals(ts)
