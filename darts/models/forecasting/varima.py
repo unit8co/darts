@@ -57,22 +57,32 @@ class VARIMA(DualCovariatesForecastingModel):
             return 'VARMA({},{})'.format(self.p, self.q)
         return 'VARIMA({},{},{})'.format(self.p, self.d, self.q)
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None) -> None:
+        # for VARIMA we need to process target `series` before calling DualForecastingModels' fit() method
         self._last_values = series.last_values()  # needed for back-transformation when d=1
         for _ in range(self.d):
             series = TimeSeries.from_dataframe(series.pd_dataframe(copy=False).diff().dropna())
 
         super().fit(series, future_covariates)
+
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None) -> None:
+        super()._fit(series, future_covariates)
         series = self.training_series
         future_covariates = future_covariates.values() if future_covariates else None
-        m = staVARMA(endog=series.pd_dataframe(copy=False), exog=future_covariates, order=(self.p, self.q), trend=self.trend)
+
+        m = staVARMA(endog=series.pd_dataframe(copy=False),
+                     exog=future_covariates,
+                     order=(self.p, self.q),
+                     trend=self.trend)
+
         self.model = m.fit(disp=0)
 
-    def predict(self,
-                n: int,
-                future_covariates: Optional[TimeSeries] = None,
-                num_samples: int = 1):
-        super().predict(n, future_covariates, num_samples)
+    def _predict(self,
+                 n: int,
+                 future_covariates: Optional[TimeSeries] = None,
+                 num_samples: int = 1) -> TimeSeries:
+
+        super()._predict(n, future_covariates, num_samples)
         forecast = self.model.forecast(steps=n, exog=future_covariates.values() if future_covariates else None)
         forecast = self._invert_transformation(forecast)
         return self._build_forecast_series(np.array(forecast))
@@ -89,7 +99,6 @@ class VARIMA(DualCovariatesForecastingModel):
 
     def _supports_range_index(self) -> bool:
         raise_if(self.trend and self.trend != "c",
-            "'trend' is not None. Range indexing is not supported in that case.",
-            logger
-        )
+                 "'trend' is not None. Range indexing is not supported in that case.",
+                 logger)
         return True
