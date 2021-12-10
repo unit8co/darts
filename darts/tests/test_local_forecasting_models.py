@@ -59,6 +59,7 @@ dual_models = [ARIMA()]
 try:
     from ..models import Prophet
     models.append((Prophet(), 13.5))
+    dual_models.append(Prophet())
 except ImportError:
     logger.warning("Prophet not installed - will be skipping Prophet tests")
 
@@ -89,6 +90,10 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     # dummy timeseries for runnability tests
     np.random.seed(1)
     ts_gaussian = tg.gaussian_timeseries(length=100, mean=50)
+    # for testing covariate slicing
+    ts_gaussian_long = tg.gaussian_timeseries(length=len(ts_gaussian) + 2 * forecasting_horizon,
+                                              start=ts_gaussian.start_time() - forecasting_horizon * ts_gaussian.freq,
+                                              mean=50)
 
     # real timeseries for functionality tests
     ts_passengers = AirPassengersDataset().load()
@@ -141,14 +146,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_exogenous_variables_support(self):
         for model in dual_models:
 
-            # Test models runnability
-            model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian)
-
-            prediction = model.predict(
-                self.forecasting_horizon,
-                future_covariates=tg.gaussian_timeseries(
-                    length=self.forecasting_horizon,
-                    start=self.ts_gaussian.end_time() + self.ts_gaussian.freq))
+            # Test models runnability - proper future covariates slicing
+            model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian_long)
+            prediction = model.predict(self.forecasting_horizon, future_covariates=self.ts_gaussian_long)
 
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
