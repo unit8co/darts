@@ -340,7 +340,6 @@ if TORCH_AVAILABLE:
 
             model.fit(ts, max_samples_per_ts=5)
 
-
         def test_residuals(self):
             """
             Torch models should not fail when computing residuals on a series
