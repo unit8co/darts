@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+from nfoursid import kalman, state_space
 from sklearn.gaussian_process.kernels import RBF, ExpSineSquared
 
 from darts.models import GaussianProcessFilter, MovingAverage, KalmanFilter
@@ -76,10 +77,10 @@ class KalmanFilterTestCase(FilterBaseTestClass):
 
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
         noise_ts = tg.gaussian_timeseries(length=30) * 0.1
-        ts = sine_ts.stack(noise_ts)
+        series = sine_ts.stack(noise_ts)
 
-        kf.fit(ts)
-        prediction = kf.filter(ts)
+        kf.fit(series)
+        prediction = kf.filter(series)
 
         self.assertEqual(prediction.width, 2)
         self.assertEqual(prediction.n_samples, 1)
@@ -87,13 +88,32 @@ class KalmanFilterTestCase(FilterBaseTestClass):
     def test_kalman_samples(self):
         kf = KalmanFilter(dim_x=1)
 
-        ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        series = tg.sine_timeseries(length=30, value_frequency=0.1)
 
-        kf.fit(ts)
-        prediction = kf.filter(ts, num_samples=10)
+        kf.fit(series)
+        prediction = kf.filter(series, num_samples=10)
 
         self.assertEqual(prediction.width, 1)
         self.assertEqual(prediction.n_samples, 10)
+
+    def test_kalman_given_kf(self):
+        nfoursid_ss = state_space.StateSpace(
+            a=np.eye(2),
+            b=np.ones((2, 1)),
+            c=np.ones((1, 2)),
+            d=np.ones((1, 1))
+        )
+        nfoursid_kf = kalman.Kalman(nfoursid_ss, np.ones((3, 3)) * 0.1)
+        kf = KalmanFilter(dim_x=1, kf=nfoursid_kf)
+
+        series = tg.sine_timeseries(length=30, value_frequency=0.1)
+
+        prediction = kf.filter(series, covariates=-series.copy())
+
+        self.assertEqual(kf.dim_u, 1)
+        self.assertEqual(kf.dim_x, 2)
+        self.assertEqual(prediction.width, 1)
+        self.assertEqual(prediction.n_samples, 1)
 
 
 class MovingAverageTestCase(FilterBaseTestClass):
@@ -165,6 +185,7 @@ if __name__ == '__main__':
     KalmanFilterTestCase().test_kalman_covariates()
     KalmanFilterTestCase().test_kalman_covariates_multivariate()
     KalmanFilterTestCase().test_kalman_samples()
+    KalmanFilterTestCase().test_kalman_given_kf()
     MovingAverageTestCase().test_moving_average_univariate()
     MovingAverageTestCase().test_moving_average_multivariate()
     GaussianProcessFilterTestCase().test_gaussian_process()

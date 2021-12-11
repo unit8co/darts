@@ -101,7 +101,7 @@ class KalmanFilter(FilteringModel, ABC):
         outputs = series.pd_dataframe()
         outputs.columns = [f'y_{i}' for i in outputs.columns]
 
-        if self._expect_covariates:
+        if covariates is not None:
             self.dim_u = covariates.width
             inputs = covariates.pd_dataframe()
             inputs.columns = [f'u_{i}' for i in inputs.columns]
@@ -152,6 +152,9 @@ class KalmanFilter(FilteringModel, ABC):
                                                  'the output dimensionality of the Kalman filter.')
 
         if self._expect_covariates:
+            raise_if(covariates is None and self._expect_covariates,
+                    'The Kalman filter was fitted with covariates, but these were not provided.')
+
             raise_if(covariates is not None and not self._expect_covariates,
                     'Covariates were provided, but the Kalman filter was not fitted with covariates.')
 
