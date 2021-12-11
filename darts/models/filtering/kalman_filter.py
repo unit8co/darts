@@ -24,49 +24,36 @@ class KalmanFilter(FilteringModel, ABC):
             kf: Optional[Kalman] = None
             ):
         """
-        This model implements a Kalman filter over a time series (without control signal).
+        This model implements a Kalman filter over a time series.
 
         The key method is `KalmanFilter.filter()`.
         It considers the provided time series as containing (possibly noisy) observations z obtained from a
         (possibly noisy) linear dynamical system with hidden state x. The function `filter(series)` returns a new
-        `TimeSeries` describing the distribution of the state x, as inferred by the Kalman filter from
-        sequentially observing z from `series`.
-        Depending on the use case, this can be used to de-noise a series or infer the underlying hidden state of the
-        data generating process (assuming notably that the dynamical system generating the data is known, as captured
-        by the `F` matrix.).
+        `TimeSeries` describing the distribution of the output z (without noise), as inferred by the Kalman filter from
+        sequentially observing z from `series`, and the dynamics of the linear system of order dim_x.
 
-        This implementation wraps around filterpy.kalman.KalmanFilter, so more information the parameters can be found
-        here: https://filterpy.readthedocs.io/en/latest/kalman/KalmanFilter.html
+        The method `KalmanFilter.fit()` is used to initialize the Kalman filter by estimating the state space model of the
+        a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID algorithm.
 
-        The dimensionality of the measurements z is automatically inferred upon calling `filter()`.
-        This implementation doesn't include control signal.
+        This implementation uses Kalman from the NFourSID package. More information can be found here:
+        https://nfoursid.readthedocs.io/en/latest/source/kalman.html.
+
+        The dimensionality of the measurements z and optional control signal (covariates) u is automatically inferred upon
+        calling `filter()`.
 
         Parameters
         ----------
         dim_x : int
-            Size of the Kalman filter state vector. It determines the dimensionality of the `TimeSeries`
-            returned by the `filter()` function.
-        x_init : ndarray (dim_x, 1), default: [0, 0, ..., 0]
-            Initial state; will be updated at each time step.
-        P : ndarray (dim_x, dim_x), default: identity matrix
-            initial covariance matrix; will be update at each time step
-        Q : ndarray (dim_x, dim_x), default: identity matrix
-            Process noise covariance matrix
-        R : ndarray (dim_z, dim_z), default: identity matrix
-            Measurement noise covariance matrix. `dim_z` must match the dimensionality (width) of the `TimeSeries`
-            used with `filter()`.
-        H : ndarray (dim_z, dim_x), default: all-ones matrix
-            measurement function; describes how the measurement z is obtained from the state vector x
-        F : ndarray (dim_x, dim_x), default: identity matrix
-            State transition matrix; describes how the state evolves from one time step to the next
-            in the underlying dynamical system.
-        kf : filterpy.kalman.KalmanFilter
-            Optionally, an instance of `filterpy.kalman.KalmanFilter`.
-            If this is provided, the other parameters are ignored. This instance will be copied for every
+            Size of the Kalman filter state vector.
+        kf : nfoursid.kalman.Kalman
+            Optionally, an instance of `nfoursid.kalman.Kalman`.
+            If this is provided, the parameter dim_x is ignored. This instance will be copied for every
             call to `filter()`, so the state is not carried over from one time series to another across several
             calls to `filter()`.
-            The various dimensionality in the filter must match those in the `TimeSeries` used when calling `filter()`.
+            The various dimensionalities of the filter must match those of the `TimeSeries` used when calling `filter()`.
         """
+        # TODO: Add support for x_init. Needs reimplementation of NFourSID.
+
         super().__init__()
         self._expect_covariates = False
 
@@ -90,7 +77,18 @@ class KalmanFilter(FilteringModel, ABC):
             series: TimeSeries,
             covariates: Optional[TimeSeries] = None,
             num_block_rows: Optional[int] = None) -> None:
+        """
+        Initializes the Kalman filter using the N4SID algorithm.
 
+        Parameters
+        ----------
+        series : TimeSeries
+            The series of outputs (observations) used to infer the underlying state space model.
+            This must be a deterministic series (containing one sample).
+        covariates : Optional[TimeSeries]
+            An optional series of inputs (control signal) that will also be used to infer the underlying state space model.
+            This must be a deterministic series (containing one sample).
+        """
         if covariates is not None:
             self._expect_covariates = True
             raise_if_not(series.n_timesteps == covariates.n_timesteps,
@@ -135,13 +133,16 @@ class KalmanFilter(FilteringModel, ABC):
         Parameters
         ----------
         series : TimeSeries
-            The series of observations used to infer the state values according to the specified Kalman process.
+            The series of outputs (observations) used to infer the underlying outputs according to the specified Kalman process.
+            This must be a deterministic series (containing one sample).
+        covariates : Optional[TimeSeries]
+            An optional series of inputs (control signal), necessary if the Kalman filter was initialized with covariates.
             This must be a deterministic series (containing one sample).
 
         Returns
         -------
         TimeSeries
-            A stochastic `TimeSeries` of state values, of dimension `dim_x`.
+            A stochastic `TimeSeries` of state values, of the same width as the input series.
         """
         super().filter(series)
 
@@ -200,7 +201,6 @@ class KalmanFilter(FilteringModel, ABC):
             preds.append(kf.H.dot(kf.x))
             preds_cov.append(kf.H.dot(kf.P).dot(kf.H.T))
         """
-        # TODO: docstrings
         # TODO: example
 
         return TimeSeries.from_times_and_values(series.time_index, sampled_states)
