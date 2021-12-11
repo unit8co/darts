@@ -20,9 +20,7 @@ from darts.logging import raise_if, raise_if_not
 class KalmanFilter(FilteringModel, ABC):
     def __init__(
             self, 
-            # TODO: add input dimension?
             dim_x: int = 1,
-            # x_init: Optional[np.array] = None,
             kf: Optional[Kalman] = None
             ):
         """
@@ -90,7 +88,7 @@ class KalmanFilter(FilteringModel, ABC):
     def fit(self,
             series: TimeSeries,
             covariates: Optional[TimeSeries] = None,
-            num_block_rows: Optional[int] = None):
+            num_block_rows: Optional[int] = None) -> None:
 
         if covariates is not None:
             self._expect_covariates = True
@@ -127,9 +125,9 @@ class KalmanFilter(FilteringModel, ABC):
 
 
     def filter(self,
-               series: Union[TimeSeries, Sequence[TimeSeries]],
-               covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-               num_samples: int = 1):
+               series: TimeSeries,
+               covariates: Optional[TimeSeries] = None,
+               num_samples: int = 1) -> TimeSeries:
         """
         Sequentially applies the Kalman filter on the provided series of observations.
 
@@ -201,5 +199,7 @@ class KalmanFilter(FilteringModel, ABC):
         # TODO: test cases
         # - with/without input (check on conistency + dim between fit/filter)
         # - single/multiple timeseries at fit/predict time
+        # TODO: docstrings
+        # TODO: example
 
         return TimeSeries.from_times_and_values(series.time_index, sampled_states)
