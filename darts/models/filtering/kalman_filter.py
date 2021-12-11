@@ -14,7 +14,7 @@ from nfoursid.nfoursid import NFourSID
 
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
-from darts.utils.utils import raise_if_not
+from darts.logging import raise_if, raise_if_not
 
 
 class KalmanFilter(FilteringModel, ABC):
@@ -22,7 +22,6 @@ class KalmanFilter(FilteringModel, ABC):
             self, 
             # TODO: add input dimension?
             dim_x: int = 1,
-            dim_y: int = 1,  # TODO: infer at fitting time?
             # x_init: Optional[np.array] = None,
             kf: Optional[Kalman] = None
             ):
@@ -71,28 +70,40 @@ class KalmanFilter(FilteringModel, ABC):
             The various dimensionality in the filter must match those in the `TimeSeries` used when calling `filter()`.
         """
         super().__init__()
+        self._expect_covariates = False
+
         if kf is None:
             self.dim_x = dim_x
-            self.dim_y = dim_y
-            self.kf_provided = False
+            self._kf_provided = False
         else:
             self.kf = kf
+            self.dim_u = kf.state_space.u_dim
             self.dim_x = kf.state_space.x_dim
             self.dim_y = kf.state_space.y_dim
-            self.kf_provided = True
+            self._kf_provided = True
+            if self.dim_u > 0:
+                self._expect_covariates = True
 
     def __str__(self):
         return 'KalmanFilter(dim_x={})'.format(self.dim_x)
 
     def fit(self,
-            series: Union[TimeSeries, Sequence[TimeSeries]],
-            covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None):
-        
-        #TODO: If multiple timeseries, loop over
+            series: TimeSeries,
+            covariates: Optional[TimeSeries] = None,
+            num_block_rows: Optional[int] = None):
 
+        if covariates is not None:
+            self._expect_covariates = True
+            raise_if_not(len(series) == len(covariates),
+                         'The length of the series must match the length of the covariates.')
+        
+        # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
+        self.dim_y = series.width
         outputs = series.pd_dataframe()
         outputs.columns = [f'y_{i}' for i in outputs.columns]
-        if covariates is not None:
+
+        if self._expect_covariates:
+            self.dim_u = covariates.width
             inputs = covariates.pd_dataframe()
             inputs.columns = [f'u_{i}' for i in inputs.columns]
             input_columns = inputs.columns
@@ -101,10 +112,12 @@ class KalmanFilter(FilteringModel, ABC):
             measurements = outputs
             input_columns = None
 
+        if num_block_rows is None:
+            num_block_rows = max(10, self.dim_x)
         nfoursid = NFourSID(measurements,
                             output_columns=outputs.columns,
                             input_columns=input_columns,
-                            num_block_rows=10) #TODO: make num_block_rows parameter
+                            num_block_rows=num_block_rows)
         nfoursid.subspace_identification()
         state_space_identified, covariance_matrix = nfoursid.system_identification(
             rank=self.dim_x
@@ -131,24 +144,31 @@ class KalmanFilter(FilteringModel, ABC):
         TimeSeries
             A stochastic `TimeSeries` of state values, of dimension `dim_x`.
         """
+        super().filter(series)
 
-        raise_if_not(series.is_deterministic, 'The input series for the Kalman filter must be '
-                                              'deterministic (observations).')
+        raise_if(self.kf is None, 'The Kalman filter has not been fitted yet. Call `fit()` first '
+                                  'or provide Kalman filter in constructor.')
+                                  
+        raise_if_not(series.width == self.dim_y, 'The provided TimeSeries dimensionality does not match '
+                                                 'the output dimensionality of the Kalman filter.')
 
-        if not self.kf_provided: #TODO: simplify to is None?
-            #TODO: raise error model not fitted
-            pass
-        else:
-            raise_if_not(series.width == self.dim_y, 'The provided TimeSeries dimensionality does not match '
-                                                     'the output dimensionality of the Kalman filter.')
+        if self._expect_covariates:
+            raise_if(covariates is not None and not self._expect_covariates,
+                    'Covariates were provided, but the Kalman filter was not fitted with covariates.')
+
+            raise_if_not(len(series) == len(covariates),
+                         'The length of the series must match the length of the covariates.')
+        
+            raise_if_not(covariates.is_deterministic, 'The covariates must be '
+                                                    'deterministic (observations).')
+
         kf = deepcopy(self.kf)
 
-        super().filter(series)
         y_values = series.values(copy=False)
-        if covariates is None:
-            u_values = np.zeros((len(y_values), 0))
+        if self._expect_covariates:
+            u_values = covariates.values(copy=False)
         else:
-            u_values = covariates.values(copy=False) #TODO: check lengths are equal
+            u_values = np.zeros((len(y_values), 0))
         
         # For each time step, we'll sample "n_samples" from a multivariate Gaussian
         # whose mean vector and covariance matrix come from the Kalman filter.
@@ -157,8 +177,6 @@ class KalmanFilter(FilteringModel, ABC):
         else:
             sampled_states = np.zeros(((len(y_values)), self.dim_y, num_samples))
 
-        # process_means = np.zeros((len(values), self.dim_x))  # mean values
-        # process_covariances = ...                            # covariance matrices; TODO
         for i in range(len(y_values)):
             y = y_values[i, :].reshape(-1, 1)
             u = u_values[i, :].reshape(-1, 1)
@@ -166,7 +184,6 @@ class KalmanFilter(FilteringModel, ABC):
             mean_vec = kf.y_filtereds[-1].reshape(self.dim_y,)
 
             if num_samples == 1:
-                # It's actually not sampled in this case
                 sampled_states[i, :] = mean_vec
             else:
                 # TODO: check formula for covariance matrix
