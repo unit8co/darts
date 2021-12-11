@@ -5,7 +5,7 @@ Kalman Filter
 
 from abc import ABC
 from copy import deepcopy
-from typing import Optional, Sequence, Union
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -71,6 +71,7 @@ class KalmanFilter(FilteringModel, ABC):
         self._expect_covariates = False
 
         if kf is None:
+            self.kf = None
             self.dim_x = dim_x
             self._kf_provided = False
         else:
@@ -92,8 +93,8 @@ class KalmanFilter(FilteringModel, ABC):
 
         if covariates is not None:
             self._expect_covariates = True
-            raise_if_not(len(series) == len(covariates),
-                         'The length of the series must match the length of the covariates.')
+            raise_if_not(series.n_timesteps == covariates.n_timesteps,
+                         'The number of timesteps in the series and the covariates must match.')
         
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
         self.dim_y = series.width
@@ -104,7 +105,7 @@ class KalmanFilter(FilteringModel, ABC):
             self.dim_u = covariates.width
             inputs = covariates.pd_dataframe()
             inputs.columns = [f'u_{i}' for i in inputs.columns]
-            input_columns = inputs.columns
+            input_columns = list(inputs.columns)
             measurements = pd.concat([outputs, inputs], axis=1)
         else:
             measurements = outputs
@@ -113,7 +114,7 @@ class KalmanFilter(FilteringModel, ABC):
         if num_block_rows is None:
             num_block_rows = max(10, self.dim_x)
         nfoursid = NFourSID(measurements,
-                            output_columns=outputs.columns,
+                            output_columns=list(outputs.columns),
                             input_columns=input_columns,
                             num_block_rows=num_block_rows)
         nfoursid.subspace_identification()
@@ -196,9 +197,6 @@ class KalmanFilter(FilteringModel, ABC):
             preds.append(kf.H.dot(kf.x))
             preds_cov.append(kf.H.dot(kf.P).dot(kf.H.T))
         """
-        # TODO: test cases
-        # - with/without input (check on conistency + dim between fit/filter)
-        # - single/multiple timeseries at fit/predict time
         # TODO: docstrings
         # TODO: example
 
