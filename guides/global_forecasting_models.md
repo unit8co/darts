@@ -66,8 +66,6 @@ The output chunk only takes optional `future_covariates` values that fall into t
 
 All this information is used to predict the "future target" - the next `output_chunk_length` points after the end of "past target".
 
-
-
 ![figure0](./images/global_forecasting_models/tfm.png)
 
 
@@ -113,6 +111,7 @@ GFM | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
 `TCNModel` | ✅ |  |  |  |  |
 `TransformerModel` | ✅ |  |  |  |  |
 `TFT` |  |  |  | ✅ |  |
+
 **Table 2: Darts' Global Forecasting Model covariate support**
 
 ## 1.3. Required target time spans for training and prediction
@@ -176,6 +175,7 @@ The **prediction point** for each sample separates input chunk from output chunk
 Mon1 - Sun1 stand for the first 7 days from our training dataset (week 1 of the year). Mon2 is the Monday of week 2.
 
 ![figure4](./images/covariates/seq_covs_single.png)
+
 **Figure 4: Overview of a single sequence from our ice-cream sales example**
 
 Using information from the **input chunk** and **output chunk**, the model predicts the future target on the output chunk (see Figure 5 below).
@@ -184,12 +184,14 @@ The training loss is evaluated between the predicted future target and the actua
 trains itself by minimizing the loss over all sequences.
 
 ![figure5](./images/covariates/seq_covs_1.png)
+
 **Figure 5: Prediction and loss evaluation in a single sequence**
 
 After having completed computations on the first sequence, the model moves to the next sequence, which, in the
 case of sequential models, starts one time step later than the previous sequence. This process is repeated until all 365 days were covered.
 
 ![figure6](./images/covariates/sequential_training.png)
+
 **Figure 6: Move to next sequence and repeat**
 
 ### 2.1.1. Training with a validation dataset
@@ -248,6 +250,13 @@ want to predict - the forecast horizon `n` - we distinguish between two cases:
     - example: predict the next day's ice-cream sales (`n = 1`)
 - If `n > output_chunk_length`: we must predict `n` by calling the internal model multiple times. Each call outputs `output_chunk_length` prediction points. We go through as many calls as needed until we get to the final `n` prediction points, in an auto-regressive fashion.
     - example: predict ice-cream sales for the next 3 days at once (`n = 3`)
+
+```
+prediction = model.predict(n=n, 
+                           series=past_ice_cream_sales_train, 
+                           past_covariates=measured_past_temperature,
+                           future_covariates=estimated_future_temperature)
+```
 
 ![figure7](./images/covariates/prediction_once.png)
 

@@ -45,6 +45,7 @@ If you train a model using `past_covariates`, you'll have to provide these `past
 
 -----
 ![figure0](./images/covariates/top_level.png)
+
 #### Figure 1: Top level summary of how forecasting models work with target and covariates for a prediction with forecast horizon n=2
 -----
 
