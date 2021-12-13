@@ -1852,13 +1852,18 @@ class TimeSeries:
             
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
 
-            # Poor man's solution - we iterate over all timestamps 
-            # (not sure there's a better solution here)
-            ars = []
-            for ts in self.time_index:
-                vals = self._xa.sel({self._time_dim: ts})
-                ars.append(np.expand_dims(fn(ts, vals), 0))
-            new_xa.values = np.vstack(ars)
+            # go over shortest amount of iterations, either over time steps or components and samples
+            if self.n_timesteps <= self.n_components * self.n_samples:
+                new_vals = np.vstack([
+                    np.expand_dims(fn(self.time_index[i], self._xa[i, :, :]), axis=0) for i in range(self.n_timesteps)
+                ])
+            else:
+                new_vals = np.stack([
+                    np.column_stack([fn(self.time_index, self._xa[:, i, j]) for j in range(self.n_samples)])
+                    for i in range(self.n_components)
+                ], axis=1)
+            new_xa.values = new_vals
+            
         else:
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
