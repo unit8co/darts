@@ -201,6 +201,5 @@ class KalmanFilter(FilteringModel, ABC):
             preds.append(kf.H.dot(kf.x))
             preds_cov.append(kf.H.dot(kf.P).dot(kf.H.T))
         """
-        # TODO: example
 
         return TimeSeries.from_times_and_values(series.time_index, sampled_states)
