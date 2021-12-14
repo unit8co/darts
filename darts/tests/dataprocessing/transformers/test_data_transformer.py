@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
 from darts.dataprocessing.transformers import Scaler
 from darts.utils import timeseries_generation as tg
+from darts import TimeSeries
 
 
 class DataTransformerTestCase(unittest.TestCase):
@@ -18,7 +19,6 @@ class DataTransformerTestCase(unittest.TestCase):
     series1 = tg.random_walk_timeseries(length=100, column_name='series1') * 20 - 10.
     series2 = series1.stack(tg.random_walk_timeseries(length=100) * 20 - 100.)
 
-    
     col_1 = series1.columns
 
     def test_scaling(self):
@@ -72,3 +72,44 @@ class DataTransformerTestCase(unittest.TestCase):
                                            series_array[index].values().flatten())
             np.testing.assert_almost_equal(series_array_rec2[index].values().flatten(),
                                            series_array[index].values().flatten())
+
+    def test_multivariate_stochastic_series(self):
+        scaler = Scaler(MinMaxScaler())
+        vals = np.random.rand(10,5,50)
+        s = TimeSeries.from_values(vals)
+        ss = scaler.fit_transform(s)
+        ssi = scaler.inverse_transform(ss)
+
+        # Test inverse transform
+        np.testing.assert_allclose(s.all_values(), ssi.all_values())
+
+        # Test that the transform is done per component (i.e max value over each component should be 1 and min 0)
+        np.testing.assert_allclose(np.array([ss.all_values(copy=False)[:,i,:].max() for i in range(ss.width)]), 
+                                   np.array([1.] * ss.width))
+
+        np.testing.assert_allclose(np.array([ss.all_values(copy=False)[:,i,:].min() for i in range(ss.width)]), 
+                                   np.array([0.] * ss.width))
+
+    def test_component_mask_transformation(self):
+        scaler = Scaler(MinMaxScaler())
+        # shape = (10, 3, 2)
+        vals = np.array([np.arange(6).reshape(3, 2)] * 10)
+
+        # scalers should only consider True columns
+        component_mask = np.array([True, False, True])
+
+        s = TimeSeries.from_values(vals)
+        ss = scaler.fit_transform(s, component_mask=component_mask)
+        ss_vals = ss.all_values(copy=False)
+
+        # test non-masked columns
+        self.assertTrue((ss_vals[:, 1, :] == vals[:, 1, :]).all())
+        # test masked columns
+        self.assertAlmostEqual(ss_vals[:, [0, 2], :].max(), 1.)
+        self.assertAlmostEqual(ss_vals[:, [0, 2], :].min(), 0.)
+
+        ssi = scaler.inverse_transform(ss, component_mask=component_mask)
+
+        # Test inverse transform
+        np.testing.assert_allclose(s.all_values(), ssi.all_values())
+

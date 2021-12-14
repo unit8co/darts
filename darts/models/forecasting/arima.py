@@ -58,8 +58,9 @@ class ARIMA(DualCovariatesForecastingModel):
             return f'ARIMA{self.order}'
         return f'SARIMA{self.order}x{self.seasonal_order}'
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        super().fit(series, future_covariates)
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None) -> None:
+
+        super()._fit(series, future_covariates)
         m = staARIMA(
             self.training_series.values(),
             exog=future_covariates.values() if future_covariates else None,
@@ -69,16 +70,16 @@ class ARIMA(DualCovariatesForecastingModel):
         )
         self.model = m.fit()
 
-    def predict(self, n: int,
-                future_covariates: Optional[TimeSeries] = None,
-                num_samples: int = 1):
+    def _predict(self, n: int,
+                 future_covariates: Optional[TimeSeries] = None,
+                 num_samples: int = 1) -> TimeSeries:
 
         if num_samples > 1 and self.trend:
             logger.warn('Trends are not well supported yet for getting probabilistic forecasts with ARIMA.'
                         'If you run into issues, try calling fit() with num_samples=1 or removing the trend from'
                         'your model.')
 
-        super().predict(n, future_covariates, num_samples)
+        super()._predict(n, future_covariates, num_samples)
 
         if num_samples == 1:
             forecast = self.model.forecast(steps=n,

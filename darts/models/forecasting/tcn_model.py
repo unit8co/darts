@@ -120,6 +120,7 @@ class _TCNModule(nn.Module):
                  dilation_base: int,
                  weight_norm: bool,
                  target_size: int,
+                 nr_params: int,   
                  target_length: int,
                  dropout: float):
 
@@ -132,6 +133,8 @@ class _TCNModule(nn.Module):
             The dimensionality of the input time series.
         target_size
             The dimensionality of the output time series.
+        nr_params
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
         input_chunk_length
             The length of the input time series.
         target_length
@@ -156,7 +159,7 @@ class _TCNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, input_chunk_length, 1)`
+        y of shape `(batch_size, input_chunk_length, target_size, nr_params)`
             Tensor containing the predictions of the next 'output_chunk_length' points in the last
             'output_chunk_length' entries of the tensor. The entries before contain the data points
             leading up to the first prediction, all in chronological order.
@@ -171,6 +174,7 @@ class _TCNModule(nn.Module):
         self.kernel_size = kernel_size
         self.target_length = target_length
         self.target_size = target_size
+        self.nr_params = nr_params
         self.dilation_base = dilation_base
         self.dropout = nn.Dropout(p=dropout)
 
@@ -188,7 +192,8 @@ class _TCNModule(nn.Module):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers, self.input_size, target_size)
+                                       self.dropout, weight_norm, i, num_layers, 
+                                       self.input_size, target_size * nr_params)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -201,7 +206,7 @@ class _TCNModule(nn.Module):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(batch_size, self.input_chunk_length, self.target_size)
+        x = x.view(batch_size, self.input_chunk_length, self.target_size, self.nr_params)
 
         return x
 
@@ -257,6 +262,26 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            `add_encoders`. An example showing some of `add_encoders` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
@@ -323,13 +348,12 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        target_size = (
-            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
-        )
         return _TCNModule(input_size=input_dim,
                           input_chunk_length=self.input_chunk_length,
-                          target_size=target_size,
+                          target_size=output_dim,
+                          nr_params=nr_params,
                           kernel_size=self.kernel_size,
                           num_filters=self.num_filters,
                           num_layers=self.num_layers,
@@ -341,12 +365,14 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesShiftedDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> PastCovariatesShiftedDataset:
 
         return PastCovariatesShiftedDataset(target_series=target,
                                             covariates=past_covariates,
                                             length=self.input_chunk_length,
-                                            shift=self.output_chunk_length)
+                                            shift=self.output_chunk_length,
+                                            max_samples_per_ts=max_samples_per_ts)
     
     @random_method
     def _produce_predict_output(self, x):
@@ -354,7 +380,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)
 
     @property
     def first_prediction_index(self) -> int:

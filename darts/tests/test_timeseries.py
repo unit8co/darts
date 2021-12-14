@@ -341,6 +341,20 @@ class TimeSeriesTestCase(DartsBaseTestClass):
     def test_append(self):
         TimeSeriesTestCase.helper_test_append(self, self.series1)
 
+    def test_with_values(self):
+        vals = np.random.rand(5,10,3)
+        series = TimeSeries.from_values(vals)
+        series2 = series.with_values(vals + 1)
+        series3 = series2.with_values(series2.all_values() - 1)
+
+        # values should work
+        np.testing.assert_allclose(series3.all_values(), series.all_values())
+        np.testing.assert_allclose(series2.all_values(), vals+1)
+
+        # should fail if shape is not the same:
+        with self.assertRaises(ValueError):
+            series.with_values(np.random.rand(5,10,2))
+
     def test_diff(self):
         diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())
         diff2 = TimeSeries.from_dataframe(diff1.pd_dataframe().diff())

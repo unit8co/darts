@@ -35,6 +35,7 @@ class TrendMode(Enum):
 class ModelMode(Enum):
     MULTIPLICATIVE = 'multiplicative'
     ADDITIVE = 'additive'
+    NONE = None
 
 
 # TODO: we do not check the time index here

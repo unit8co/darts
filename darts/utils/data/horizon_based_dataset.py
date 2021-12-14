@@ -9,7 +9,7 @@ import numpy as np
 from ...logging import raise_if_not, get_logger
 from ...timeseries import TimeSeries
 from .training_dataset import PastCovariatesTrainingDataset
-from .utils import _get_matching_index
+from .utils import CovariateType
 
 logger = get_logger(__name__)
 
@@ -61,12 +61,14 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             before the end of the series. It is required that `min_lh >= 1`.
         lookback:
             A integer interval for the length of the input in the emitted input and output splits, expressed as a
-            multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths `3 * output_chunk_length`.
+            multiple of `output_chunk_length`. For instance, `lookback=3` will emit "inputs" of lengths
+            `3 * output_chunk_length`.
         """
         super().__init__()
 
         self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
         self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.covariate_type = CovariateType.PAST
 
         self.output_chunk_length = output_chunk_length
         self.min_lh, self.max_lh = lh
@@ -92,43 +94,53 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
     def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         # determine the index of the time series.
         ts_idx = idx // self.nr_samples_per_ts
+        ts_target = self.target_series[ts_idx]
+        target_vals = ts_target.values(copy=False)
+
+        raise_if_not(len(target_vals) >= (self.lookback + self.max_lh) * self.output_chunk_length,
+                     'The dataset contains some input/target series that are shorter than '
+                     '`(lookback + max_lh) * H` ({}-th series)'.format(ts_idx))
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.nr_samples_per_ts)
         lh_idx = idx - (ts_idx * self.nr_samples_per_ts)
 
-        # The time series index of our forecasting point (indexed from the end of the series):
-        forecast_point_idx = self.min_lh * self.output_chunk_length + lh_idx
+        # determine the index at the end of the output chunk
+        end_of_output_idx = len(ts_target) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)
 
-        # Sanity check... TODO: remove
-        assert lh_idx < (self.max_lh - self.min_lh) * self.output_chunk_length, 'bug in the Lh indexing'
+        # optionally, load covariates
+        ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
+        main_cov_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
 
-        # select the time series
-        ts_target = self.target_series[ts_idx]
-        target_values = ts_target.values(copy=False)
+        shift = self.lookback * self.output_chunk_length
+        input_chunk_length = shift
 
-        raise_if_not(len(target_values) >= (self.lookback + self.max_lh) * self.output_chunk_length,
-                     'The dataset contains some input/target series that are shorter than '
-                     '`(lookback + max_lh) * H` ({}-th)'.format(ts_idx))
+        # get all indices for the current sample
+        past_start, past_end, future_start, future_end, cov_start, cov_end = \
+            self._memory_indexer(ts_idx=ts_idx,
+                                 ts_target=ts_target,
+                                 shift=shift,
+                                 input_chunk_length=input_chunk_length,
+                                 output_chunk_length=self.output_chunk_length,
+                                 end_of_output_idx=end_of_output_idx,
+                                 ts_covariate=ts_covariate,
+                                 cov_type=main_cov_type)
 
-        # select forecast point and target period, using the previously computed indexes
-        if forecast_point_idx == self.output_chunk_length:
-            # we need this case because "-0" is not supported as an indexing bound
-            output_series = target_values[-forecast_point_idx:]
-        else:
-            output_series = target_values[-forecast_point_idx:-forecast_point_idx+self.output_chunk_length]
+        # extract sample target
+        future_target = target_vals[future_start:future_end]
+        past_target = target_vals[past_start:past_end]
 
-        # select input period; look at the `lookback * output_series` points before the forecast point
-        input_series = target_values[-(forecast_point_idx + self.lookback * self.output_chunk_length):-forecast_point_idx]
-
-        # optionally also produce the input covariate
-        input_covariate = None
+        # optionally, extract sample covariates
+        covariate = None
         if self.covariates is not None:
-            ts_covariate = self.covariates[ts_idx]
-            covariate_values = ts_covariate.values(copy=False)
+            raise_if_not(cov_end <= len(ts_covariate),
+                         f"The dataset contains 'past' covariates that don't extend far enough into the future. "
+                         f"({idx}-th sample)")
 
-            cov_fcast_idx = _get_matching_index(ts_target, ts_covariate, forecast_point_idx)
+            covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
 
-            input_covariate = covariate_values[-(cov_fcast_idx + self.lookback * self.output_chunk_length):-cov_fcast_idx]
+            raise_if_not(len(covariate) == len(past_target),
+                         f"The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
+                         f"input (or output) chunk relative to the target series.")
 
-        return input_series, input_covariate, output_series
+        return past_target, covariate, future_target

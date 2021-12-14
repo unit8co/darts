@@ -17,21 +17,18 @@ from darts.models import (
     FFT,
     ExponentialSmoothing,
     NaiveSeasonal,
-    LinearRegressionModel,
     NaiveDrift,
-    RandomForest,
     ARIMA
 )
-
-from itertools import product
-
-from .base_test_class import DartsBaseTestClass
 from ..logging import get_logger
-
 logger = get_logger(__name__)
 
+from itertools import product
+from .base_test_class import DartsBaseTestClass
+
 try:
-    from ..models import TCNModel, BlockRNNModel
+    from darts.models import TCNModel, BlockRNNModel
+    from darts.models import LinearRegressionModel, RandomForest
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning("Torch models are not installed - will not be tested for backtesting")
@@ -156,7 +153,10 @@ class BacktestingTestCase(DartsBaseTestClass):
             self.assertEqual(pred.width, 2)
             self.assertEqual(pred.end_time(), linear_series.end_time())
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_backtest_regression(self):
+        np.random.seed(4)
+
         gaussian_series = gt(mean=2, length=50)
         sine_series = st(length=50)
         features = gaussian_series.stack(sine_series)
@@ -243,6 +243,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             compare_best_against_random(ExponentialSmoothing, es_params, dummy_series)
         )
 
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_random_search(self):
         np.random.seed(1)
 
@@ -263,7 +264,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertEqual(type(result[1]['lags']), int)
         self.assertTrue(min(param_range) <= result[1]['lags'] <= max(param_range))
 
-
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_random_samples_bad_arguments(self):
         ts_length = 50
         dummy_series = (
@@ -274,17 +275,17 @@ class BacktestingTestCase(DartsBaseTestClass):
             "lags": list(range(1, 11)),
             "past_covariates": list(range(1, 11))
             }
-        
+
         with self.assertRaises(ValueError):
             RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = -5)
         with self.assertRaises(ValueError):
             RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = 105)
-        with self.assertRaises(ValueError):            
+        with self.assertRaises(ValueError):
             RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = -24.56)
         with self.assertRaises(ValueError):
             RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples = 1.5)
 
-
+    @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_random_samples(self):
         np.random.seed(1)
 
@@ -294,7 +295,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             }
 
         params_cross_product = list(product(*params.values()))
-        
+
         #Test absolute sample
         absolute_sampled_result = RandomForest._sample_params(params_cross_product, 10)
         self.assertEqual(len(absolute_sampled_result), 10)
@@ -302,7 +303,6 @@ class BacktestingTestCase(DartsBaseTestClass):
         #Test percentage sample
         percentage_sampled_result = RandomForest._sample_params(params_cross_product, 0.37)
         self.assertEqual(len(percentage_sampled_result), 37)
-
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_jobs(self):

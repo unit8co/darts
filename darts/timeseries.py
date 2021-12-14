@@ -115,9 +115,9 @@ class TimeSeries:
     Factory Methods
     ===============
     """
-
-    @staticmethod
-    def from_xarray(xa: xr.DataArray,
+    @classmethod
+    def from_xarray(cls,
+                    xa: xr.DataArray,
                     fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
@@ -159,10 +159,10 @@ class TimeSeries:
         has_frequency = has_datetime_index and xa_index.freq is not None
         # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a Int64Index)
         if fill_missing_dates and has_datetime_index:
-            xa_ = TimeSeries._fill_missing_dates(xa, freq=freq)
+            xa_ = cls._fill_missing_dates(xa, freq=freq)
         # The provided index does not have a freq; using the provided freq
         elif has_datetime_index and freq is not None and not has_frequency:
-            xa_ = TimeSeries._restore_xarray_from_frequency(xa, freq=freq)
+            xa_ = cls._restore_xarray_from_frequency(xa, freq=freq)
         else:
             xa_ = xa
         if fillna_value is not None:
@@ -207,12 +207,13 @@ class TimeSeries:
 
         # We cast the array to float
         if np.issubdtype(xa_.values.dtype, np.float32) or np.issubdtype(xa_.values.dtype, np.float64):
-            return TimeSeries(xa_)
+            return cls(xa_)
         else:
-            return TimeSeries(xa_.astype(np.float64))
+            return cls(xa_.astype(np.float64))
 
-    @staticmethod
-    def from_csv(filepath_or_buffer: pd._typing.FilePathOrBuffer,
+    @classmethod
+    def from_csv(cls,
+                 filepath_or_buffer: pd._typing.FilePathOrBuffer,
                  time_col: Optional[str] = None,
                  value_cols: Optional[Union[List[str], str]] = None,
                  fill_missing_dates: Optional[bool] = False,
@@ -253,15 +254,16 @@ class TimeSeries:
         """
 
         df = pd.read_csv(filepath_or_buffer=filepath_or_buffer, **kwargs)
-        return TimeSeries.from_dataframe(df=df,
-                                         time_col=time_col,
-                                         value_cols=value_cols,
-                                         fill_missing_dates=fill_missing_dates,
-                                         freq=freq,
-                                         fillna_value=fillna_value)
+        return cls.from_dataframe(df=df,
+                                  time_col=time_col,
+                                  value_cols=value_cols,
+                                  fill_missing_dates=fill_missing_dates,
+                                  freq=freq,
+                                  fillna_value=fillna_value)
 
-    @staticmethod
-    def from_dataframe(df: pd.DataFrame,
+    @classmethod
+    def from_dataframe(cls,
+                       df: pd.DataFrame,
                        time_col: Optional[str] = None,
                        value_cols: Optional[Union[List[str], str]] = None,
                        fill_missing_dates: Optional[bool] = False,
@@ -343,10 +345,11 @@ class TimeSeries:
                           dims=(time_index.name,) + DIMS[-2:],
                           coords={time_index.name: time_index, DIMS[1]: series_df.columns})
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
+        return cls.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
 
-    @staticmethod
-    def from_series(pd_series: pd.Series,
+    @classmethod
+    def from_series(cls,
+                    pd_series: pd.Series,
                     fill_missing_dates: Optional[bool] = False,
                     freq: Optional[str] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
@@ -379,15 +382,16 @@ class TimeSeries:
         """
 
         df = pd.DataFrame(pd_series)
-        return TimeSeries.from_dataframe(df,
-                                         time_col=None,
-                                         value_cols=None,
-                                         fill_missing_dates=fill_missing_dates,
-                                         freq=freq,
-                                         fillna_value=fillna_value)
+        return cls.from_dataframe(df,
+                                  time_col=None,
+                                  value_cols=None,
+                                  fill_missing_dates=fill_missing_dates,
+                                  freq=freq,
+                                  fillna_value=fillna_value)
 
-    @staticmethod
-    def from_times_and_values(times: Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex],
+    @classmethod
+    def from_times_and_values(cls,
+                              times: Union[pd.DatetimeIndex, pd.Int64Index],
                               values: np.ndarray,
                               fill_missing_dates: Optional[bool] = False,
                               freq: Optional[str] = None,
@@ -446,10 +450,11 @@ class TimeSeries:
                           dims=(times_name,) + DIMS[-2:],
                           coords=coords)
 
-        return TimeSeries.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
+        return cls.from_xarray(xa=xa, fill_missing_dates=fill_missing_dates, freq=freq, fillna_value=fillna_value)
 
-    @staticmethod
-    def from_values(values: np.ndarray,
+    @classmethod
+    def from_values(cls,
+                    values: np.ndarray,
                     columns: Optional[pd._typing.Axes] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
         """
@@ -475,15 +480,15 @@ class TimeSeries:
         time_index = pd.RangeIndex(0, len(values), 1)
         values_ = np.reshape(values, (len(values), 1)) if len(values.shape) == 1 else values
 
-        return TimeSeries.from_times_and_values(times=time_index,
-                                                values=values_,
-                                                fill_missing_dates=False,
-                                                freq=None,
-                                                columns=columns,
-                                                fillna_value=fillna_value)
+        return cls.from_times_and_values(times=time_index,
+                                         values=values_,
+                                         fill_missing_dates=False,
+                                         freq=None,
+                                         columns=columns,
+                                         fillna_value=fillna_value)
 
-    @staticmethod
-    def from_json(json_str: str) -> 'TimeSeries':
+    @classmethod
+    def from_json(cls, json_str: str) -> 'TimeSeries':
         """
         Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
         into a `TimeSeries` object
@@ -501,10 +506,10 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient='split')
-        return TimeSeries.from_dataframe(df)
+        return cls.from_dataframe(df)
 
-    @staticmethod
-    def from_pickle(path: str) -> 'TimeSeries':
+    @classmethod
+    def from_pickle(cls, path: str) -> 'TimeSeries':
         """
         Reads Timeseries object that was pickled.
 
@@ -569,6 +574,10 @@ class TimeSeries:
     @property
     def freq_str(self):
         return self._freq_str
+
+    @property
+    def dtype(self):
+        return self._xa.values.dtype
 
     @property
     def components(self):
@@ -797,7 +806,7 @@ class TimeSeries:
         TimeSeries
             The TimeSeries containing the desired quantile for each component.
         """
-        return TimeSeries.from_dataframe(self.quantile_df(quantile))
+        return self.__class__.from_dataframe(self.quantile_df(quantile))
 
     def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
         """
@@ -823,6 +832,22 @@ class TimeSeries:
         """
         # TODO: there might be a slightly more efficient way to do it for several quantiles at once with xarray...
         return pd.concat([self.quantile_df(quantile) for quantile in quantiles], axis=1)
+
+    def astype(self, dtype: Union[str, np.dtype]) -> 'TimeSeries':
+        """
+        Converts this TimeSeries to a new TimeSeries with desired dtype
+
+        Parameters
+        ----------
+        dtype
+            A NumPy dtype (np.float32 or np.float64)
+
+        Returns
+        -------
+        TimeSeries
+            A TimeSeries having the desired dtype.
+        """
+        return self.__class__(self._xa.astype(dtype))
 
     def start_time(self) -> Union[pd.Timestamp, int]:
         """
@@ -976,7 +1001,7 @@ class TimeSeries:
 
         axis_str = self._get_dim_name(axis)
         display_n = range(min(size, self._xa.sizes[axis_str]))
-        return TimeSeries(self._xa[{axis_str: display_n}])
+        return self.__class__(self._xa[{axis_str: display_n}])
 
     def tail(self,
              size: Optional[int] = 5,
@@ -1000,7 +1025,7 @@ class TimeSeries:
 
         axis_str = self._get_dim_name(axis)
         display_n = range(-min(size, self._xa.sizes[axis_str]), 0)
-        return TimeSeries(self._xa[{axis_str: display_n}])
+        return self.__class__(self._xa[{axis_str: display_n}])
 
     def concatenate(self,
                     other: 'TimeSeries',
@@ -1084,7 +1109,7 @@ class TimeSeries:
         """
 
         # the xarray will be copied in the TimeSeries constructor.
-        return TimeSeries(self._xa)
+        return self.__class__(self._xa)
 
     def get_index_at_point(self, point: Union[pd.Timestamp, float, int], after=True) -> int:
         """
@@ -1359,7 +1384,7 @@ class TimeSeries:
         new_start_idx = df.first_valid_index()
         new_end_idx = df.last_valid_index()
         new_series = df.loc[new_start_idx:new_end_idx]
-        return TimeSeries.from_dataframe(new_series)
+        return self.__class__.from_dataframe(new_series)
 
     def longest_contiguous_slice(self, max_gap_size: int = 0) -> 'TimeSeries':
         """
@@ -1419,7 +1444,7 @@ class TimeSeries:
         coef = value_at_first_step / self._xa.isel({self._time_dim: [0]})
         coef = coef.values.reshape((self.n_components, self.n_samples))  # TODO: test
         new_series = coef * self._xa
-        return TimeSeries(new_series)
+        return self.__class__(new_series)
 
     def shift(self, n: int) -> 'TimeSeries':
         """
@@ -1455,7 +1480,7 @@ class TimeSeries:
         else:
             new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
-        return TimeSeries(new_xa)
+        return self.__class__(new_xa)
 
     def diff(self,
              n: Optional[int] = 1,
@@ -1502,7 +1527,7 @@ class TimeSeries:
         new_xa = _compute_diff(self._xa)
         for _ in range(n-1):
             new_xa = _compute_diff(new_xa)
-        return TimeSeries(new_xa)
+        return self.__class__(new_xa)
 
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
         """
@@ -1559,7 +1584,7 @@ class TimeSeries:
         if not self._has_datetime_index:
             new_xa = new_xa.reset_index(dims_or_levels=new_xa.dims[0])
 
-        return TimeSeries.from_xarray(new_xa, fill_missing_dates=True, freq=self._freq_str)
+        return self.__class__.from_xarray(new_xa, fill_missing_dates=True, freq=self._freq_str)
 
     def append_values(self, values: np.ndarray) -> 'TimeSeries':
         """
@@ -1582,9 +1607,34 @@ class TimeSeries:
         else:
             idx = pd.RangeIndex(len(self), len(self)+len(values), 1)
 
-        return self.append(TimeSeries.from_times_and_values(values=values,
-                                                            times=idx,
-                                                            fill_missing_dates=False))
+        return self.append(self.__class__.from_times_and_values(values=values,
+                                                                times=idx,
+                                                                fill_missing_dates=False))
+
+    def with_values(self, values: np.ndarray) -> 'TimeSeries':
+        """
+        Returns a new TimeSeries, with the new specified values.
+
+        Parameters
+        ----------
+        values
+            A Numpy array with new values. It must have the same shape as the present 
+            series (time, components, samples)
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with the new values and same index
+        """
+        raise_if_not(values.shape == self._xa.values.shape,
+                     'The new values must have the same shape (time, components, samples) as the present series. '
+                     'Received: {}, expected: {}'.format(values.shape, self._xa.values.shape))
+
+        new_xa = xr.DataArray(values,
+                              dims=self._xa.dims,
+                              coords=self._xa.coords)
+
+        return self.__class__(new_xa)
 
     def stack(self, other: 'TimeSeries') -> 'TimeSeries':
         """
@@ -1621,7 +1671,7 @@ class TimeSeries:
         new_xa = xr.concat((self._xa, new_other_xa), dim=DIMS[1])
 
         # we call the factory method here to disambiguate column names if needed.
-        return TimeSeries.from_xarray(new_xa, fill_missing_dates=False)
+        return self.__class__.from_xarray(new_xa, fill_missing_dates=False)
 
     def univariate_component(self, index: Union[str, int]) -> 'TimeSeries':
         """
@@ -1643,7 +1693,7 @@ class TimeSeries:
             new_xa = self._xa.isel(component=index).expand_dims(DIMS[1], axis=1)
         else:
             new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
-        return TimeSeries(new_xa)
+        return self.__class__(new_xa)
 
     def add_datetime_attribute(self, attribute, one_hot: bool = False, cyclic: bool = False) -> 'TimeSeries':
         """
@@ -1734,7 +1784,7 @@ class TimeSeries:
             new_xa = resample.backfill()
         else:
             raise_log(ValueError('Unknown method: {}'.format(method)), logger)
-        return TimeSeries(new_xa)
+        return self.__class__(new_xa)
 
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
         """
@@ -1757,18 +1807,21 @@ class TimeSeries:
             fn: Union[Callable[[np.number], np.number],
                       Callable[[Union[pd.Timestamp, int], np.number], np.number]]) -> 'TimeSeries':  # noqa: E501
         """
-        Applies the function `fn` elementwise to all values in this TimeSeries.
-        Returns a new TimeSeries instance. If `fn` takes 1 argument it is simply applied elementwise.
-        If it takes 2 arguments, it is applied elementwise on the (timestamp, value) tuples.
-
-        At the moment this function works only on deterministic time series (i.e., made of 1 sample).
+        Applies the function `fn` to the underlying NumPy array containing this series' values.
+        Returns a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array
+        of shape (time, n_components, n_samples).
+        If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where
+        "ts" denotes a timestamp value, and "value[ts]" denote the array of values at this timestamp, of shape
+        (n_components, n_samples).
 
         Parameters
         ----------
         fn
-            Either a function which takes a value and returns a value ie. `f(x) = y`
-            Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`
-            The type of `timestamp` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
+            Either a function which takes a NumPy array and returns a NumPy array of same shape; 
+            e.g., `lambda x: x ** 2`, `lambda x: x / x.shape[0]` or `np.log`.
+            It can also be a function which takes a timestamp and array, and returns a new array of same shape;
+            e.g., `lambda ts, x: x / ts.days_in_month`.
+            The type of `ts` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
             or an integer otherwise (if the series is indexed with an Int64Index).
 
         Returns
@@ -1793,18 +1846,28 @@ class TimeSeries:
                 raise_log(ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"),
                           logger)
 
-        if num_args == 1:  # simple map function f(x)
-            df = self.pd_dataframe().applymap(fn)
+        new_xa = self._xa.copy()
+        if num_args == 1:  # apply fn on values directly
+            new_xa.values = fn(self._xa.values)
+            
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-            def apply_fn_wrapper(row):
-                timestamp = row.name
-                return row.map(lambda x: fn(timestamp, x))
-            df = self.pd_dataframe().apply(apply_fn_wrapper, axis=1)
+
+            # go over shortest amount of iterations, either over time steps or components and samples
+            if self.n_timesteps <= self.n_components * self.n_samples:
+                new_vals = np.vstack([
+                    np.expand_dims(fn(self.time_index[i], self._xa[i, :, :]), axis=0) for i in range(self.n_timesteps)
+                ])
+            else:
+                new_vals = np.stack([
+                    np.column_stack([fn(self.time_index, self._xa[:, i, j]) for j in range(self.n_samples)])
+                    for i in range(self.n_components)
+                ], axis=1)
+            new_xa.values = new_vals
+            
         else:
-            df = None
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
-        return TimeSeries.from_dataframe(df)
+        return self.__class__(new_xa)
 
     def to_json(self) -> str:
         """
@@ -1990,7 +2053,7 @@ class TimeSeries:
                 }
         )
         
-        return TimeSeries(new_xa)
+        return self.__class__(new_xa)
 
 
     """
@@ -2053,10 +2116,11 @@ class TimeSeries:
                                                                 'of unequal shapes.', logger)
         new_xa = self._xa.copy()
         new_xa.values = combine_fn(new_xa.values, other_vals)
-        return TimeSeries(new_xa)
+        return self.__class__(new_xa)
 
-    @staticmethod
-    def _fill_missing_dates(xa: xr.DataArray,
+    @classmethod
+    def _fill_missing_dates(cls,
+                            xa: xr.DataArray,
                             freq: Optional[str] = None) -> xr.DataArray:
         """ Returns an xarray DataArray instance with missing dates inserted from an input xarray DataArray.
         The first dimension of the input DataArray `xa` has to be the time dimension.
@@ -2087,7 +2151,7 @@ class TimeSeries:
         """
 
         if freq is not None:
-            return TimeSeries._restore_xarray_from_frequency(xa, freq)
+            return cls._restore_xarray_from_frequency(xa, freq)
 
         raise_if(len(xa) <= 2, f"Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
                  logger)
@@ -2117,7 +2181,7 @@ class TimeSeries:
 
         freq = observed_freqs.pop()
 
-        return TimeSeries._restore_xarray_from_frequency(sorted_xa, freq)
+        return cls._restore_xarray_from_frequency(sorted_xa, freq)
 
     @staticmethod
     def _restore_xarray_from_frequency(xa: xr.DataArray,
@@ -2217,7 +2281,7 @@ class TimeSeries:
 
     def __add__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return TimeSeries(self._xa + other)
+            return self.__class__(self._xa + other)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 + s2)
         else:
@@ -2229,7 +2293,7 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return TimeSeries(self._xa - other)
+            return self.__class__(self._xa - other)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 - s2)
         else:
@@ -2241,7 +2305,7 @@ class TimeSeries:
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return TimeSeries(self._xa * other)
+            return self.__class__(self._xa * other)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 * s2)
         else:
@@ -2254,7 +2318,7 @@ class TimeSeries:
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
             raise_if(n < 0, 'Attempted to raise a series to a negative power.', logger)
-            return TimeSeries(self._xa ** float(n))
+            return self.__class__(self._xa ** float(n))
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(n, lambda s1, s2: s1 ** s2)  # elementwise power
         else:
@@ -2265,9 +2329,9 @@ class TimeSeries:
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError('Cannot divide by 0.'), logger)
-            return TimeSeries(self._xa / other)
+            return self.__class__(self._xa / other)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
-            if not (other.all_values() != 0).all():
+            if not (other.all_values(copy=False) != 0).all():
                 raise_log(ZeroDivisionError('Cannot divide by a TimeSeries with a value 0.'), logger)
             return self._combine_arrays(other, lambda s1, s2: s1 / s2)
         else:
@@ -2278,16 +2342,16 @@ class TimeSeries:
         return n * (self ** (-1))
 
     def __abs__(self):
-        return TimeSeries(abs(self._xa))
+        return self.__class__(abs(self._xa))
 
     def __neg__(self):
-        return TimeSeries(-self._xa)
+        return self.__class__(-self._xa)
 
     def __contains__(self, ts: Union[int, pd.Timestamp]) -> bool:
         return ts in self.time_index
 
     def __round__(self, n=None):
-        return TimeSeries(self._xa.round(n))
+        return self.__class__(self._xa.round(n))
 
     def __lt__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
@@ -2345,7 +2409,7 @@ class TimeSeries:
         return self.copy()
 
     def __deepcopy__(self):
-        return TimeSeries(self._xa.copy())
+        return self.__class__(self._xa.copy())
 
     def __getitem__(self,
                     key: Union[pd.DatetimeIndex,
@@ -2396,59 +2460,59 @@ class TimeSeries:
             # TODO: unit-test this
             _set_freq_in_xa(xa_)
 
-            return TimeSeries(xa_)
+            return self.__class__(xa_)
         elif isinstance(key, (pd.Int64Index, pd.RangeIndex)):
             _check_range()
 
-            return TimeSeries(self._xa.sel({self._time_dim: key}))
+            return self.__class__(self._xa.sel({self._time_dim: key}))
 
         # handle slices:
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
-                return TimeSeries(self._xa.sel({DIMS[1]: key}))
+                return self.__class__(self._xa.sel({DIMS[1]: key}))
             elif isinstance(key.start, (int, np.int64)) or isinstance(key.stop, (int, np.int64)):
                 xa_ = self._xa.isel({self._time_dim: key})
                 _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
-                return TimeSeries(xa_)
+                return self.__class__(xa_)
             elif isinstance(key.start, pd.Timestamp) or isinstance(key.stop, pd.Timestamp):
                 _check_dt()
 
                 # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
                 _set_freq_in_xa(xa_)
-                return TimeSeries(xa_)
+                return self.__class__(xa_)
 
         # handle simple types:
         elif isinstance(key, str):
-            return TimeSeries(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
+            return self.__class__(self._xa.sel({DIMS[1]: [key]}))  # have to put key in a list not to drop the dimension
         elif isinstance(key, (int, np.int64)):
             xa_ = self._xa.isel({self._time_dim: [key]})
             _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
-            return TimeSeries(xa_)
+            return self.__class__(xa_)
         elif isinstance(key, pd.Timestamp):
             _check_dt()
 
             # indexing may discard the freq so we restore it...
             xa_ = self._xa.sel({self._time_dim: [key]})
             _set_freq_in_xa(xa_)
-            return TimeSeries(xa_)
+            return self.__class__(xa_)
 
         # handle lists:
         if isinstance(key, list):
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
-                return TimeSeries(self._xa.sel({DIMS[1]: key}))
+                return self.__class__(self._xa.sel({DIMS[1]: key}))
             elif all(isinstance(i, (int, np.int64)) for i in key):
                 xa_ = self._xa.isel({self._time_dim: key})
                 _set_freq_in_xa(xa_)  # indexing may discard the freq so we restore it...
-                return TimeSeries(xa_)
+                return self.__class__(xa_)
             elif all(isinstance(t, pd.Timestamp) for t in key):
                 _check_dt()
 
                 # indexing may discard the freq so we restore it...
                 xa_ = self._xa.sel({self._time_dim: key})
                 _set_freq_in_xa(xa_)
-                return TimeSeries(xa_)
+                return self.__class__(xa_)
 
         raise_log(IndexError("The type of your index was not matched."), logger)
 

@@ -53,6 +53,7 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  DualCovariatesSequentialDataset,
                                                  MixedCovariatesSequentialDataset,
                                                  SplitCovariatesSequentialDataset)
+from darts.utils.data.encoders import SequentialEncoder
 
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
@@ -90,8 +91,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None,
-                 force_reset=False,
-                 save_checkpoints=False):
+                 force_reset: bool = False,
+                 save_checkpoints: bool =False,
+                 add_encoders: Optional[Dict] = None):
 
         """ Pytorch-based Forecasting Model.
 
@@ -194,6 +196,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = None
 
+        # by default models do not use encoders
+        self.encoders = None
+
         self.force_reset = force_reset
         self.save_checkpoints = save_checkpoints
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
@@ -208,6 +213,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                      " training or use `force_reset=True` to initialize anyway to start"
                                      " training from scratch and remove all the model data".format(self.model_name)
                                      )
+
+    @property
+    def min_train_series_length(self) -> int:
+        """
+        Class property defining the minimum required length for the training series;
+        overriding the default value of 3 of ForecastingModel
+        """
+        return self.input_chunk_length + self.output_chunk_length
 
     def _batch_collate_fn(self, batch: List[Tuple]) -> Tuple:
         """
@@ -245,14 +258,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         # the tensors have shape (chunk_length, nr_dimensions)
-        model = self._create_model(self.train_sample)
+        self.model = self._create_model(self.train_sample)
 
         if np.issubdtype(self.train_sample[0].dtype, np.float32):
             logger.info('Time series values are 32-bits; casting model to float32.')
-            self.model = model.float()
+            self.model = self.model.float()
+
         elif np.issubdtype(self.train_sample[0].dtype, np.float64):
             logger.info('Time series values are 64-bits; casting model to float64.')
-            self.model = model.double()
+            self.model = self.model.double()
 
         self.model = self.model.to(self.device)
 
@@ -293,7 +307,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> TrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> TrainingDataset:
         """
         Each model must specify the default training dataset to use.
         """
@@ -360,7 +375,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             verbose: bool = False,
-            epochs: int = 0) -> None:
+            epochs: int = 0,
+            max_samples_per_ts: Optional[int] = None,
+            num_loader_workers: int = 0) -> None:
         """
         The fit method for torch models. It wraps around `fit_from_dataset()`, constructing a default training
         dataset for this model. If you need more control on how the series are sliced for training, consider
@@ -397,6 +414,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
+        max_samples_per_ts
+            Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
+            by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
+            large number of training samples. This parameter upper-bounds the number of training samples per time
+            series (taking only the most recent samples in each series). Leaving to None does not apply any
+            upper bound.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            both for the training and validation loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
         """
         super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
 
@@ -421,19 +449,62 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             raise_if_not(match, 'The dimensions of the series in the training set '
                                 'and the validation set do not match.')
 
-        train_dataset = self._build_train_dataset(series, past_covariates, future_covariates)
-        val_dataset = self._build_train_dataset(val_series, val_past_covariates, future_covariates) if val_series is not None else None
+        self.encoders = self.initialize_encoders()
+
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_train(target=series,
+                                                                            past_covariate=past_covariates,
+                                                                            future_covariate=future_covariates)
+        train_dataset = self._build_train_dataset(target=series,
+                                                  past_covariates=past_covariates, 
+                                                  future_covariates=future_covariates, 
+                                                  max_samples_per_ts=max_samples_per_ts)
+
+        if val_series is not None:
+            if self.encoders.encoding_available:
+                val_past_covariates, val_future_covariates = \
+                    self.encoders.encode_train(target=val_series,
+                                               past_covariate=val_past_covariates,
+                                               future_covariate=val_future_covariates)
+
+            val_dataset = self._build_train_dataset(target=val_series, 
+                                                    past_covariates=val_past_covariates, 
+                                                    future_covariates=val_future_covariates,
+                                                    max_samples_per_ts=max_samples_per_ts)
+        else:
+            val_dataset = None
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
-        self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs)
+        self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs, num_loader_workers)
+
+    @property
+    @abstractmethod
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
+
+        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
+        """
+        pass
+
+    def initialize_encoders(self) -> SequentialEncoder:
+
+        input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates =\
+            self._model_encoder_settings
+
+        return SequentialEncoder(add_encoders=self._model_params[1].get('add_encoders', None),
+                                 input_chunk_length=input_chunk_length,
+                                 output_chunk_length=output_chunk_length,
+                                 takes_past_covariates=takes_past_covariates,
+                                 takes_future_covariates=takes_future_covariates)
 
     @random_method
     def fit_from_dataset(self,
                          train_dataset: TrainingDataset,
                          val_dataset: Optional[TrainingDataset] = None,
                          verbose: bool = False,
-                         epochs: int = 0) -> None:
+                         epochs: int = 0,
+                         num_loader_workers: int = 0) -> None:
         """
         This method allows for training with a specific `darts.utils.data.TrainingDataset` instance. These datasets
         implement a PyTorch `Dataset`, and specify how the target and covariates are sliced for training. If you
@@ -456,6 +527,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            both for the training and validation loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
         """
 
         self._verify_train_dataset_type(train_dataset)
@@ -493,7 +569,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_loader = DataLoader(train_dataset,
                                   batch_size=self.batch_size,
                                   shuffle=True,
-                                  num_workers=0,
+                                  num_workers=num_loader_workers,
                                   pin_memory=True,
                                   drop_last=False,
                                   collate_fn=self._batch_collate_fn)
@@ -502,7 +578,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_loader = None if val_dataset is None else DataLoader(val_dataset,
                                                                  batch_size=self.batch_size,
                                                                  shuffle=False,
-                                                                 num_workers=0,
+                                                                 num_workers=num_loader_workers,
                                                                  pin_memory=True,
                                                                  drop_last=False,
                                                                  collate_fn=self._batch_collate_fn)
@@ -532,6 +608,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 n_jobs: int = 1,
                 roll_size: Optional[int] = None,
                 num_samples: int = 1,
+                num_loader_workers: int = 0
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -580,6 +657,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
 
         Returns
         -------
@@ -606,6 +688,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         past_covariates = [past_covariates] if isinstance(past_covariates, TimeSeries) else past_covariates
         future_covariates = [future_covariates] if isinstance(future_covariates, TimeSeries) else future_covariates
 
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_inference(n=n,
+                                                                                target=series,
+                                                                                past_covariate=past_covariates,
+                                                                                future_covariate=future_covariates)
+
         dataset = self._build_inference_dataset(target=series,
                                                 n=n,
                                                 past_covariates=past_covariates,
@@ -623,6 +711,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              n_jobs: int = 1,
                              roll_size: Optional[int] = None,
                              num_samples: int = 1,
+                             num_loader_workers: int = 0
                              ) -> Sequence[TimeSeries]:
 
         """
@@ -653,6 +742,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        num_loader_workers
+            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            for the inference/prediction dataset loaders (if any).
+            A larger number of workers can sometimes increase performance, but can also incur extra overheads
+            and increase memory usage, as more batches are loaded in parallel.
 
         Returns
         -------
@@ -679,7 +773,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pred_loader = DataLoader(input_series_dataset,
                                  batch_size=batch_size,
                                  shuffle=False,
-                                 num_workers=0,
+                                 num_workers=num_loader_workers,
                                  pin_memory=True,
                                  drop_last=False,
                                  collate_fn=self._batch_collate_fn)
@@ -1025,6 +1119,10 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
         and it is passed to the superclass via calling super().__init__. If the likelihood is not
         provided, the model is considered as deterministic.
 
+        All TorchParametricProbabilisticForecastingModel's must produce outputs of shape
+        (batch_size, n_timesteps, n_components, n_params). I.e., there's an extra dimension
+        to store the distribution's parameters.
+
         Parameters
         ----------
         likelihood
@@ -1037,17 +1135,18 @@ class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
         return self.likelihood is not None
 
     def _compute_loss(self, output, target):
+        # output is of shape (batch_size, n_timesteps, n_components, n_params)
         if self.likelihood:
             return self.likelihood.compute_loss(output, target)
         else:
-            return super()._compute_loss(output, target)
+            # If there's no likelihood, nr_params=1 and we need to squeeze out the 
+            # last dimension of model output, for properly computing the loss.
+            return super()._compute_loss(output.squeeze(dim=-1), target)
 
     @abstractmethod
-    def _produce_predict_output(self, input):
+    def _produce_predict_output(self, x):
         """
         This method has to be implemented by all children.
-
-        TODO: rename parameter as it shadows input name
         """
         pass
 
@@ -1138,7 +1237,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> PastCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> PastCovariatesTrainingDataset:
 
         raise_if_not(future_covariates is None,
                      'Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).')
@@ -1146,7 +1246,8 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         return PastCovariatesSequentialDataset(target_series=target,
                                                covariates=past_covariates,
                                                input_chunk_length=self.input_chunk_length,
-                                               output_chunk_length=self.output_chunk_length)
+                                               output_chunk_length=self.output_chunk_length,
+                                               max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1183,63 +1284,90 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
         inpt = torch.cat([past_target, past_covariate], dim=2) if past_covariate is not None else past_target
         return self.model(inpt)
 
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
-        past_target, past_covariates, cov_future = input_batch
-        input_series = torch.cat([past_target, past_covariates], dim=2) if past_covariates is not None else past_target
+    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+        """
+        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset to farecast
+        the next `n` target values per target variable.
 
-        batch_prediction = []
+        Parameters:
+        ----------
+        n
+            prediction length
+        input_batch
+            (past_target, past_covariates, future_past_covariates)
+        roll_size
+            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to
+            `self.output_chunk_length`
+        """
+        dim_component = 2
+        past_target, past_covariates, future_past_covariates = input_batch
 
-        # TODO: remove this "first_prediction_index" and move it into the models that need it
-        out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
+        n_targets = past_target.shape[dim_component]
+        n_past_covs = past_covariates.shape[dim_component] if not past_covariates is None else 0
 
-        batch_prediction.append(out[:, :roll_size, :])
+        input_past = torch.cat(
+            [ds for ds in [past_target, past_covariates] if ds is not None],
+            dim=dim_component
+        )
+
+        out = self._produce_predict_output(input_past)[:, self.first_prediction_index:, :]
+
+        batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
 
         while prediction_length < n:
+            # we want the last prediction to end exactly at `n` into the future.
+            # this means we may have to truncate the previous prediction and step
+            # back the roll size for the last chunk
+            if prediction_length + self.output_chunk_length > n:
+                spillover_prediction_length = prediction_length + self.output_chunk_length - n
+                roll_size -= spillover_prediction_length
+                prediction_length -= spillover_prediction_length
+                batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
+            # ==========> PAST INPUT <==========
             # roll over input series to contain latest target and covariate
-            input_series = torch.roll(input_series, -roll_size, 1)
+            input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions
             if self.input_chunk_length >= roll_size:
-                input_series[:, -roll_size:, :self.output_dim] = out[:, :roll_size, :]
+                input_past[:, -roll_size:, :n_targets] = out[:, :roll_size, :]
             else:
-                input_series[:, :, :self.output_dim] = out[:, -self.input_chunk_length:, :]
+                input_past[:, :, :n_targets] = out[:, -self.input_chunk_length:, :]
 
-            # update covariates to include next `roll_size` predictions into the future
-            if cov_future is not None and self.input_chunk_length >= roll_size:
-                input_series[:, -roll_size:, self.output_dim:] = (
-                    cov_future[:, prediction_length - roll_size:prediction_length, :]
+            # set left and right boundaries for extracting future elements
+            if self.input_chunk_length >= roll_size:
+                left_past, right_past = prediction_length - roll_size, prediction_length
+            else:
+                left_past, right_past = prediction_length - self.input_chunk_length, prediction_length
+
+            # update past covariates to include next `roll_size` future past covariates elements
+            if n_past_covs and self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
                 )
-            elif cov_future is not None:
-                input_series[:, :, self.output_dim:] = (
-                    cov_future[:, prediction_length - self.input_chunk_length:prediction_length, :]
+            elif n_past_covs:
+                input_past[:, :, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
                 )
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(input_series)[:, self.first_prediction_index:, :]
-
-            # update predictions depending on how many data points have been predicted
-            if prediction_length <= n - self.output_chunk_length - roll_size:
-                batch_prediction.append(out[:, :roll_size, :])
-                prediction_length += roll_size
-            elif prediction_length < n - self.output_chunk_length:
-                # if we produce have `n - output_chunk_length < #predictions < n` we want to only use
-                # the predictions and covariates necessary to exactly reach `n - output_chunk_length`,
-                # so that the final forecast produces exactly the right number of predictions to reach `n`
-                spillover_prediction_length = (prediction_length + roll_size) - (n - self.output_chunk_length)
-                roll_size -= spillover_prediction_length
-                batch_prediction.append(out[:, :roll_size, :])
-                prediction_length += roll_size
-            else:
-                batch_prediction.append(out)
-                prediction_length += self.output_chunk_length
+            out = self._produce_predict_output(input_past)[:, self.first_prediction_index:, :]
+            batch_prediction.append(out)
+            prediction_length += self.output_chunk_length
 
         # bring predictions into desired format and drop unnecessary values
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
-
         return batch_prediction
+
+    @property
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        input_chunk_length = self.input_chunk_length
+        output_chunk_length = self.output_chunk_length
+        takes_past_covariates = True
+        takes_future_covariates = False
+        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
@@ -1249,14 +1377,16 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> FutureCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> FutureCovariatesTrainingDataset:
         raise_if_not(past_covariates is None,
                      'Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).')
 
         return FutureCovariatesSequentialDataset(target_series=target,
                                                  covariates=future_covariates,
                                                  input_chunk_length=self.input_chunk_length,
-                                                 output_chunk_length=self.output_chunk_length)
+                                                 output_chunk_length=self.output_chunk_length,
+                                                 max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1288,6 +1418,14 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
+    @property
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        input_chunk_length = self.input_chunk_length
+        output_chunk_length = self.output_chunk_length
+        takes_past_covariates = False
+        takes_future_covariates = True
+        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
+
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
 
@@ -1296,12 +1434,14 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> DualCovariatesTrainingDataset:
 
         return DualCovariatesSequentialDataset(target_series=target,
                                                covariates=future_covariates,
                                                input_chunk_length=self.input_chunk_length,
-                                               output_chunk_length=self.output_chunk_length)
+                                               output_chunk_length=self.output_chunk_length,
+                                               max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1332,18 +1472,28 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: The only DualCovariatesModel is an RNN with a specific implementation.")
 
+    @property
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        input_chunk_length = self.input_chunk_length
+        output_chunk_length = self.output_chunk_length
+        takes_past_covariates = False
+        takes_future_covariates = True
+        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
+
 
 class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> MixedCovariatesTrainingDataset:
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
-                                                output_chunk_length=self.output_chunk_length)
+                                                output_chunk_length=self.output_chunk_length,
+                                                max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1374,18 +1524,28 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
+    @property
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        input_chunk_length = self.input_chunk_length
+        output_chunk_length = self.output_chunk_length
+        takes_past_covariates = True
+        takes_future_covariates = True
+        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
+
 
 class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> SplitCovariatesTrainingDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> SplitCovariatesTrainingDataset:
 
         return SplitCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
-                                                output_chunk_length=self.output_chunk_length)
+                                                output_chunk_length=self.output_chunk_length,
+                                                max_samples_per_ts=max_samples_per_ts)
 
     def _build_inference_dataset(self,
                                  target: Sequence[TimeSeries],
@@ -1416,3 +1576,11 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
+
+    @property
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        input_chunk_length = self.input_chunk_length
+        output_chunk_length = self.output_chunk_length
+        takes_past_covariates = True
+        takes_future_covariates = True
+        return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates

@@ -24,8 +24,9 @@ class _BlockRNNModule(nn.Module):
                  input_size: int,
                  hidden_dim: int,
                  num_layers: int,
-                 output_chunk_length: int = 1,
-                 target_size: int = 1,
+                 output_chunk_length: int,
+                 target_size: int,
+                 nr_params: int,
                  num_layers_out_fc: Optional[List] = None,
                  dropout: float = 0.):
 
@@ -56,6 +57,8 @@ class _BlockRNNModule(nn.Module):
             The number of steps to predict in the future.
         target_size
             The dimensionality of the output time series.
+        nr_params
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
         num_layers_out_fc
             A list containing the dimensions of the hidden layers of the fully connected NN.
             This network connects the last hidden layer of the PyTorch RNN module to the output.
@@ -64,13 +67,13 @@ class _BlockRNNModule(nn.Module):
 
         Inputs
         ------
-        x of shape `(batch_size, input_chunk_length, input_size)`
+        x of shape `(batch_size, input_chunk_length, input_size, nr_params)`
             Tensor containing the features of the input sequence.
 
         Outputs
         -------
-        y of shape `(batch_size, output_chunk_length, target_size)`
-            Tensor containing the (point) prediction at the last time step of the sequence.
+        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
+            Tensor containing the prediction at the last time step of the sequence.
         """
 
         super(_BlockRNNModule, self).__init__()
@@ -79,6 +82,7 @@ class _BlockRNNModule(nn.Module):
         self.hidden_dim = hidden_dim
         self.n_layers = num_layers
         self.target_size = target_size
+        self.nr_params = nr_params
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
         self.out_len = output_chunk_length
         self.name = name
@@ -90,7 +94,7 @@ class _BlockRNNModule(nn.Module):
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [output_chunk_length * target_size]:
+        for feature in num_layers_out_fc + [output_chunk_length * target_size * nr_params]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -107,7 +111,7 @@ class _BlockRNNModule(nn.Module):
             hidden = hidden[0]
         predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
-        predictions = predictions.view(batch_size, self.out_len, self.target_size)
+        predictions = predictions.view(batch_size, self.out_len, self.target_size, self.nr_params)
 
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
@@ -145,14 +149,14 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
 
         Parameters
         ----------
-        model
-            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
-            or a PyTorch module with the same specifications as
-            `darts.models.block_rnn_model._BlockRNNModule`.
         input_chunk_length
             The number of time steps that will be fed to the internal forecasting module
         output_chunk_length
             Number of time steps to be output by the internal forecasting module.
+        model
+            Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
+            or a PyTorch module with the same specifications as
+            `darts.models.block_rnn_model._BlockRNNModule`.
         hidden_size
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
@@ -172,6 +176,26 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            `add_encoders`. An example showing some of `add_encoders` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
@@ -237,15 +261,14 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        target_size = (
-            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
-        )
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
             model = _BlockRNNModule(name=self.rnn_type_or_module,
                                     input_size=input_dim,
-                                    target_size=target_size,
+                                    target_size=output_dim,
+                                    nr_params=nr_params,
                                     hidden_dim=self.hidden_size,
                                     num_layers=self.n_rnn_layers,
                                     output_chunk_length=self.output_chunk_length,
@@ -261,4 +284,4 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)

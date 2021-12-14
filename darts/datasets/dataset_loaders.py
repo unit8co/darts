@@ -5,6 +5,7 @@ import hashlib
 from abc import ABC, abstractmethod
 
 import pandas as pd
+import numpy as np
 import requests
 
 from ..timeseries import TimeSeries
@@ -147,5 +148,7 @@ class DatasetLoaderCSV(DatasetLoader):
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)
-            return TimeSeries.from_dataframe(df=df, time_col=metadata.header_time, freq=metadata.freq)
+            return TimeSeries.from_dataframe(df=df, 
+                                             time_col=metadata.header_time, 
+                                             freq=metadata.freq)
         return TimeSeries.from_dataframe(df)

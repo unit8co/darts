@@ -5,6 +5,7 @@ Facebook Prophet
 
 from typing import Optional, Union, List
 
+import re
 import logging
 import prophet
 import numpy as np
@@ -86,11 +87,11 @@ class Prophet(DualCovariatesForecastingModel):
     def __str__(self):
         return 'Prophet'
 
-    def fit(self,
-            series: TimeSeries,
-            future_covariates: Optional[TimeSeries] = None) -> None:
+    def _fit(self,
+             series: TimeSeries,
+             future_covariates: Optional[TimeSeries] = None) -> None:
 
-        super().fit(series, future_covariates)
+        super()._fit(series, future_covariates)
         series = self.training_series
 
         fit_df = pd.DataFrame(data={
@@ -119,12 +120,12 @@ class Prophet(DualCovariatesForecastingModel):
 
         execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
 
-    def predict(self,
-                n: int,
-                future_covariates: Optional[TimeSeries] = None,
-                num_samples: int = 1) -> TimeSeries:
+    def _predict(self,
+                 n: int,
+                 future_covariates: Optional[TimeSeries] = None,
+                 num_samples: int = 1) -> TimeSeries:
 
-        super().predict(n, future_covariates, num_samples)
+        super()._predict(n, future_covariates, num_samples)
 
         predict_df = self._generate_predict_df(n=n, future_covariates=future_covariates)
 
@@ -307,34 +308,43 @@ class Prophet(DualCovariatesForecastingModel):
         freq
             frequency string of the underlying TimeSeries's time index (pd.DateTimeIndex.freq_str)
         """
+
+        # this regex extracts all digits from `freq`: exp: '30S' -> 30
+        freq_times = re.findall(r'\d+', freq)
+        freq_times = 1 if not freq_times else int(freq_times[0])
+
+        # this regex extracts all characters and '-' from `freq` and then extracts left string from '-'
+        # exp: 'W-SUN' -> 'W', '30S' -> 'S'
+        freq = ''.join(re.split('[^a-zA-Z-]*', freq)).split('-')[0]
+
         seconds_per_day = 86400
-        if freq == ['A', 'BYS', 'BA', 'RE'] or freq.startswith(('A', 'BYS', 'BA', 'RE-')):  # year
+        if freq in ['A', 'BA', 'Y', 'BY', 'RE'] or freq.startswith(('A', 'BA', 'Y', 'BY', 'RE')):  # year
             days = 365.25
-        elif freq == ['Q', 'BQ', 'REQ'] or freq.startswith(('Q', 'BQ', 'REQ')):  # quarter
+        elif freq in ['Q', 'BQ', 'REQ'] or freq.startswith(('Q', 'BQ', 'REQ')):  # quarter
             days = 3 * 30.4375
         elif freq in ['M', 'BM', 'CBM', 'SM'] or freq.startswith(('M', 'BM', 'BS', 'CBM', 'SM')):  # month
             days = 30.4375
-        elif freq in 'W' or freq.startswith('W-'):  # week
+        elif freq in ['W']:  # week
             days = 7.
-        elif freq in ['B', 'C'] or freq.startswith(('B-', 'C-')):  # business day
+        elif freq in ['B', 'C']:  # business day
             days = 1 * 7/5
-        elif freq in ['D'] or freq.startswith('D-'):  # day
+        elif freq in ['D']:  # day
             days = 1.
-        elif freq in ['H', 'BH', 'CBH'] or freq.startswith(('H', 'BH', 'CBH')):  # hour
+        elif freq in ['H', 'BH', 'CBH']:  # hour
             days = 1/24
-        elif freq in ['T', 'min'] or freq.startswith(('H', 'BH', 'CBH')):  # minute
+        elif freq in ['T', 'min']:  # minute
             days = 1/(24 * 60)
-        elif freq == 'S' or freq.startswith('S'):  # second
+        elif freq in ['S']:  # second
             days = 1/seconds_per_day
-        elif freq in ['L', 'ms'] or freq.startswith(('L', 'ms')):  # millisecond
+        elif freq in ['L', 'ms']:  # millisecond
             days = 1/(seconds_per_day * 10**3)
-        elif freq == ['U', 'us'] or freq.startswith(('U', 'us')):  # microsecond
+        elif freq in ['U', 'us']:  # microsecond
             days = 1/(seconds_per_day * 10**6)
-        elif freq == 'N' or freq.startswith('N'):  # nanosecond
+        elif freq in ['N']:  # nanosecond
             days = 1/(seconds_per_day * 10**9)
         else:
             raise ValueError("freq {} not understood. Please report if you think this is in error.".format(freq))
-        return days
+        return freq_times * days
 
     def _supports_range_index(self) -> bool:
         """Prophet does not support integer range index."""

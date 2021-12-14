@@ -2,11 +2,15 @@
 Base Data Transformer
 ---------------------
 """
-from typing import Sequence, Union, Iterator, Tuple, List
-from darts.logging import raise_if_not
+from typing import Sequence, Union, Iterator, Tuple, List, Optional
+import numpy as np
+
+from darts.logging import get_logger, raise_if_not
 from darts.utils import _parallel_apply, _build_tqdm_iterator
 from darts import TimeSeries
 from abc import ABC, abstractmethod
+
+logger = get_logger(__name__)
 
 
 class BaseDataTransformer(ABC):
@@ -174,6 +178,74 @@ class BaseDataTransformer(ABC):
                                            self._n_jobs, args, kwargs)
 
         return transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
+
+    @staticmethod
+    def _reshape_in(series: TimeSeries, component_mask: Optional[np.ndarray] = None) -> np.ndarray:
+        """ Reshapes the series' values to be fed in input to a transformer.
+
+        The output is a 2-D matrix where each column corresponds to a component (dimension)
+        of the series, and the columns' values are the flattened values over all samples
+
+        Parameters
+        ----------
+        series
+            input TimeSeries to be fed into transformer.
+        component_mask
+            Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components to
+            extract from `series`.
+        """
+
+        if component_mask is None:
+            component_mask = np.ones(series.n_components, dtype=bool)
+
+        raise_if_not(isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
+                     '`component_mask` must be a boolean np.ndarray`',
+                     logger)
+        raise_if_not(series.width == len(component_mask),
+                     'mismatch between number of components in `series` and length of `component_mask`',
+                     logger)
+
+        vals = series.all_values(copy=False)[:, component_mask, :]
+
+        return np.stack([vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1)
+
+    @staticmethod
+    def _reshape_out(series: TimeSeries,
+                     vals: np.ndarray,
+                     component_mask: Optional[np.ndarray] = None) -> np.ndarray:
+        """ Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries.
+
+        The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)
+        and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.
+
+        Parameters
+        ----------
+        series
+            input TimeSeries that was fed into transformer.
+        vals:
+            transformer output
+        component_mask
+            Optionally, np.ndarray boolean mask of shape (n_components, 1) specifying which components were extracted
+            from `series`. If given, insert `vals` back into the columns of the original array.
+        """
+
+        raise_if_not(component_mask is None or isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
+                     'If `component_mask` is given, must be a boolean np.ndarray`',
+                     logger)
+
+        series_width = series.width if component_mask is None else component_mask.sum()
+        reshaped = np.stack([vals[:, i].reshape(-1, series.n_samples) for i in range(series_width)], axis=1)
+
+        if component_mask is None:
+            return reshaped
+
+        raise_if_not(series.width == len(component_mask),
+                     'mismatch between number of components in `series` and length of `component_mask`',
+                     logger)
+
+        series_vals = series.all_values(copy=True)
+        series_vals[:, component_mask, :] = reshaped
+        return series_vals
 
     @property
     def name(self):

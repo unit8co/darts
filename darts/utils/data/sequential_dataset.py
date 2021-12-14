@@ -7,6 +7,7 @@ from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
 from ...timeseries import TimeSeries
+from .utils import CovariateType
 from .training_dataset import (PastCovariatesTrainingDataset,
                                FutureCovariatesTrainingDataset,
                                DualCovariatesTrainingDataset,
@@ -68,7 +69,8 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
                                         output_chunk_length=output_chunk_length,
                                         shift=input_chunk_length,
                                         shift_covariates=False,
-                                        max_samples_per_ts=max_samples_per_ts)
+                                        max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.PAST)
 
     def __len__(self):
         return len(self.ds)
@@ -130,7 +132,8 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
                                         output_chunk_length=output_chunk_length,
                                         shift=input_chunk_length,
                                         shift_covariates=True,
-                                        max_samples_per_ts=max_samples_per_ts)
+                                        max_samples_per_ts=max_samples_per_ts,
+                                        covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds)
@@ -194,7 +197,8 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
                                              output_chunk_length=output_chunk_length,
                                              shift=input_chunk_length,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.HISTORIC_FUTURE)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
@@ -203,7 +207,8 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
                                                output_chunk_length=output_chunk_length,
                                                shift=input_chunk_length,
                                                shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts)
+                                               max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds_past)
@@ -270,7 +275,8 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
                                              output_chunk_length=output_chunk_length,
                                              shift=input_chunk_length,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST)
 
         # This dataset is in charge of serving historical and future future covariates
         self.ds_dual = DualCovariatesSequentialDataset(target_series=target_series,
@@ -347,7 +353,8 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
                                              output_chunk_length=output_chunk_length,
                                              shift=input_chunk_length,
                                              shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts)
+                                             max_samples_per_ts=max_samples_per_ts,
+                                             covariate_type=CovariateType.PAST)
 
         # This dataset is in charge of serving future covariates
         self.ds_future = GenericShiftedDataset(target_series=target_series,
@@ -356,7 +363,8 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
                                                output_chunk_length=output_chunk_length,
                                                shift=input_chunk_length,
                                                shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts)
+                                               max_samples_per_ts=max_samples_per_ts,
+                                               covariate_type=CovariateType.FUTURE)
 
     def __len__(self):
         return len(self.ds_past)

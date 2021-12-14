@@ -17,6 +17,7 @@ try:
 except ImportError:
     logger.warning('Torch not available. TFT tests will be skipped.')
     TORCH_AVAILABLE = False
+    TFTModel, QuantileRegression, MSELoss = None, None, None
 
 
 if TORCH_AVAILABLE:
@@ -34,18 +35,23 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
                 QuantileRegression(q_non_symmetric)
 
-        def test_no_future_covariates(self):
-            # data comes as multivariate
-            ts = tg.sine_timeseries(length=2, freq='h')
+        def test_future_covariate_handling(self):
+            ts_time_index = tg.sine_timeseries(length=2, freq='h')
+            ts_integer_index = TimeSeries.from_values(values=ts_time_index.values())
 
             # model requires future covariates without cyclic encoding
             model = TFTModel(input_chunk_length=1, output_chunk_length=1)
             with self.assertRaises(ValueError):
-                model.fit(ts, verbose=False)
+                model.fit(ts_time_index, verbose=False)
 
-            # should work with cyclic encoding
-            model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_cyclic_encoder='hour')
-            model.fit(ts, verbose=False)
+            # should work with cyclic encoding for time index
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_encoders={'cyclic': {'future': 'hour'}})
+            model.fit(ts_time_index, verbose=False)
+
+            # should work with relative index both with time index and integer index
+            model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_relative_index=True)
+            model.fit(ts_time_index, verbose=False)
+            model.fit(ts_integer_index, verbose=False)
 
         def test_prediction_shape(self):
             """checks whether prediction has same number of variable as input series and
@@ -82,7 +88,7 @@ if TORCH_AVAILABLE:
             self.helper_test_prediction_shape(season_length, ts, ts_train, ts_val,
                                               future_covariates=covariates, kwargs_tft=kwargs_TFT_quick_test)
             # multi-TS
-            kwargs_TFT_quick_test['add_cyclic_encoder'] = 'hour'
+            kwargs_TFT_quick_test['add_encoders'] = {'cyclic': {'future': 'hour'}}
             second_var = ts.columns[-1]
             self.helper_test_prediction_shape(season_length,
                                               [ts[first_var], ts[second_var]],
@@ -108,7 +114,7 @@ if TORCH_AVAILABLE:
                 'hidden_size': 32,
                 'likelihood': QuantileRegression(quantiles=[0.1, 0.5, 0.9]),
                 'random_state': 42,
-                'add_cyclic_encoder': 'hour'
+                'add_encoders': {'cyclic': {'future': 'hour'}}
             }
 
             self.helper_test_prediction_accuracy(season_length, ts, ts_train, ts_val,

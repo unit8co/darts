@@ -2,6 +2,7 @@
 Scaler
 ------
 """
+
 from typing import Sequence, Iterator, Any, Tuple
 from darts.dataprocessing.transformers import InvertibleDataTransformer, FittableDataTransformer
 from darts.timeseries import TimeSeries
@@ -21,6 +22,11 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         """
         Generic wrapper class for using scalers that implement `fit()`, `transform()` and
         `inverse_transform()` methods (typically from scikit-learn) on `TimeSeries`.
+
+        When the scaler is applied on multivariate series, the scaling is done per-component.
+        When the series are stochastic, the scaling is done across all samples (for each given component).
+        The transformation is applied independently for each dimension (component) of the time series,
+        effectively merging all samples of a component in order to compute the transform.
 
         Parameters
         ----------
@@ -58,25 +64,36 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         self.transformer_instances = None
 
     @staticmethod
-    def ts_transform(series: TimeSeries, transformer) -> TimeSeries:
+    def ts_transform(series: TimeSeries, transformer, **kwargs) -> TimeSeries:
+        component_mask = kwargs.get('component_mask', None)
+
+        tr_out = transformer.transform(Scaler._reshape_in(series, component_mask=component_mask))
+
+        transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
+
         return TimeSeries.from_times_and_values(times=series.time_index,
-                                                values=transformer.transform(series.values().
-                                                                             reshape((-1, series.width))),
+                                                values=transformed_vals,
                                                 fill_missing_dates=False,
                                                 columns=series.columns)
 
     @staticmethod
     def ts_inverse_transform(series: TimeSeries, transformer, *args, **kwargs) -> TimeSeries:
+        component_mask = kwargs.get('component_mask', None)
+
+        tr_out = transformer.inverse_transform(Scaler._reshape_in(series, component_mask=component_mask))
+        inv_transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
+
         return TimeSeries.from_times_and_values(times=series.time_index,
-                                                values=transformer.inverse_transform(series.values().
-                                                                              reshape((-1, series.width))),
+                                                values=inv_transformed_vals,
                                                 fill_missing_dates=False,
                                                 columns=series.columns)
 
     @staticmethod
     def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:
         # fit_parameter will receive the transformer object instance
-        scaler = transformer.fit(series.values().reshape((-1, series.width)))
+        component_mask = kwargs.get('component_mask', None)
+
+        scaler = transformer.fit(Scaler._reshape_in(series, component_mask=component_mask))
         return scaler
 
     def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:

@@ -25,7 +25,8 @@ class _RNNModule(nn.Module):
                  input_size: int,
                  hidden_dim: int,
                  num_layers: int,
-                 target_size: int = 1,
+                 target_size: int,
+                 nr_params: int,
                  dropout: float = 0.):
 
         """ PyTorch module implementing an RNN to be used in `RNNModel`.
@@ -47,11 +48,10 @@ class _RNNModule(nn.Module):
             The number of recurrent layers.
         target_size
             The dimensionality of the output time series.
+        nr_params
+            The number of parameters of the likelihood (or 1 if no likelihood is used).
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
-        likelihood
-            Optionally, the likelihood model to be used for probabilistic forecasts.
-            Expects an instance of 'darts.utils.likelihood_model.Likelihood'.
 
         Inputs
         ------
@@ -60,7 +60,7 @@ class _RNNModule(nn.Module):
 
         Outputs
         -------
-        y of shape `(batch_size, input_length, output_size)`
+        y of shape `(batch_size, output_chunk_length, target_size, nr_params)`
             Tensor containing the outputs of the RNN at every time step of the input sequence.
             During training the whole tensor is used as output, whereas during prediction we only use y[:, -1, :].
             However, this module always returns the whole Tensor.
@@ -70,13 +70,14 @@ class _RNNModule(nn.Module):
 
         # Defining parameters
         self.target_size = target_size
+        self.nr_params = nr_params
         self.name = name
 
         # Defining the RNN module
         self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
-        self.V = nn.Linear(hidden_dim, target_size)
+        self.V = nn.Linear(hidden_dim, target_size * nr_params)
 
     def forward(self, x, h=None):
         # data is of size (batch_size, input_length, input_size)
@@ -89,7 +90,7 @@ class _RNNModule(nn.Module):
         predictions = self.V(out)
 
         # predictions is of size (batch_size, input_length, target_size)
-        predictions = predictions.view(batch_size, -1, self.target_size)
+        predictions = predictions.view(batch_size, -1, self.target_size, self.nr_params)
 
         # returns outputs for all inputs, only the last one is needed for prediction time
         return predictions, last_hidden_state
@@ -163,6 +164,26 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            `add_encoders`. An example showing some of `add_encoders` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
@@ -227,21 +248,21 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         # historic_future_covariates and future_covariates have the same width
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
+        nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        target_size = (
-            self.likelihood.num_parameters * output_dim if self.likelihood is not None else output_dim
-        )
         if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
             model = _RNNModule(name=self.rnn_type_or_module,
                                input_size=input_dim,
-                               target_size=target_size,
+                               target_size=output_dim,
+                               nr_params=nr_params,
                                hidden_dim=self.hidden_dim,
                                dropout=self.dropout,
                                num_layers=self.n_rnn_layers)
         else:
             model = self.rnn_type_or_module(name='custom_module',
                                             input_size=input_dim,
-                                            target_size=target_size,
+                                            target_size=output_dim,
+                                            nr_params=nr_params,
                                             hidden_dim=self.hidden_dim,
                                             dropout=self.dropout,
                                             num_layers=self.n_rnn_layers)
@@ -250,12 +271,14 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesShiftedDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> DualCovariatesShiftedDataset:
 
         return DualCovariatesShiftedDataset(target_series=target,
                                             covariates=future_covariates,
                                             length=self.training_length,
-                                            shift=1)
+                                            shift=1,
+                                            max_samples_per_ts=max_samples_per_ts)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(isinstance(train_dataset, DualCovariatesShiftedDataset),
@@ -272,11 +295,11 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
 
     @random_method
     def _produce_predict_output(self, x, last_hidden_state=None):
+        output, hidden = self.model(x, last_hidden_state)
         if self.likelihood:
-            output, hidden = self.model(x, last_hidden_state)
             return self.likelihood.sample(output), hidden
         else:
-            return self.model(x, last_hidden_state)
+            return output.squeeze(dim=-1), hidden
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """

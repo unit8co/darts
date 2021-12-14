@@ -5,6 +5,7 @@ Temporal Fusion Transformer (TFT)
 
 from typing import Union, List, Optional, Tuple, Dict, Sequence
 
+import numpy as np
 from numpy.random import RandomState
 
 import torch
@@ -14,12 +15,11 @@ from darts import TimeSeries
 from darts.utils.torch import random_method
 from darts.logging import get_logger, raise_if_not, raise_if
 from darts.utils.likelihood_models import QuantileRegression, Likelihood
-from darts.utils.timeseries_generation import datetime_attribute_timeseries, _generate_index
 from darts.utils.data import (
     TrainingDataset,
     MixedCovariatesSequentialDataset,
     MixedCovariatesTrainingDataset,
-    MixedCovariatesInferenceDataset
+    MixedCovariatesInferenceDataset,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
@@ -46,10 +46,12 @@ class _TFTModule(nn.Module):
                  output_chunk_length: int,
                  variables_meta: Dict[str, Dict[str, List[str]]],
                  hidden_size: Union[int, List[int]] = 16,
-                 lstm_layers: int = 2,
+                 lstm_layers: int = 1,
                  num_attention_heads: int = 4,
+                 full_attention: bool = False,
                  hidden_continuous_size: int = 8,
                  dropout: float = 0.1,
+                 add_relative_index: bool = False,
                  likelihood: Optional[Likelihood] = None):
 
         """ PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -59,7 +61,7 @@ class _TFTModule(nn.Module):
         Parameters
         ----------
         output_dim : Tuple[int, int]
-            shape of output given by (n_targets, loss_size).
+            shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).
         input_chunk_length : int
             encoder length; number of past time steps that are fed to the forecasting module at prediction time.
         output_chunk_length : int
@@ -67,15 +69,27 @@ class _TFTModule(nn.Module):
         variables_meta : Dict[str, Dict[str, List[str]]]
             dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`
         hidden_size : int
-            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT architecture.
+            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
+            architecture.
         lstm_layers : int
-            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (2 is a good default).
+            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).
         num_attention_heads : int
             number of attention heads (4 is a good default)
+        full_attention : bool
+            If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
+            only queries on future part. Defaults to `False`.
         hidden_continuous_size : int
             default for hidden size for processing continuous variables
         dropout : float
             Fraction of neurons afected by Dropout.
+        add_relative_index : bool
+            Whether to add positional values to future covariates. Defaults to `False`.
+            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
+            It gives a value to the position of each step from input and output chunk relative to the prediction
+            point. The values are normalized with `input_chunk_length`.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts. By default the TFT uses
+            a ``QuantileRegression`` likelihood.
         """
 
         super(_TFTModule, self).__init__()
@@ -88,12 +102,15 @@ class _TFTModule(nn.Module):
         self.hidden_continuous_size = hidden_continuous_size
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
+        self.full_attention = full_attention
         self.dropout = dropout
         self.likelihood = likelihood
+        self.add_relative_index = add_relative_index
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
         self.attention_mask = None
+        self.relative_index = None
 
         # general information on variable name endings:
         # _vsn: VariableSelectionNetwork
@@ -194,11 +211,7 @@ class _TFTModule(nn.Module):
         )
 
         # post lstm GateAddNorm
-        self.post_lstm_encoder_gan = _GateAddNorm(
-            input_size=self.hidden_size,
-            dropout=dropout
-        )
-        self.post_lstm_decoder_gan = _GateAddNorm(
+        self.post_lstm_gan = _GateAddNorm(
             input_size=self.hidden_size,
             dropout=dropout
         )
@@ -224,8 +237,7 @@ class _TFTModule(nn.Module):
         # output processing -> no dropout at this late stage
         self.pre_output_gan = _GateAddNorm(self.hidden_size, dropout=None)
 
-        self.output_layer = \
-            nn.ModuleList([nn.Linear(self.hidden_size, self.loss_size) for _ in range(self.n_targets)])
+        self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
     @property
     def reals(self) -> List[str]:
@@ -257,17 +269,44 @@ class _TFTModule(nn.Module):
         return self.variables_meta['model_config']['time_varying_decoder_input']
 
     @staticmethod
-    def expand_static_context(context: torch.Tensor, timesteps: int) -> torch.Tensor:
+    def expand_static_context(context: torch.Tensor, time_steps: int) -> torch.Tensor:
         """
         add time dimension to static context
         """
-        return context[:, None].expand(-1, timesteps, -1)
+        return context[:, None].expand(-1, time_steps, -1)
 
     @staticmethod
-    def get_attention_mask(encoder_length: int,
+    def get_relative_index(encoder_length: int,
                            decoder_length: int,
                            batch_size: int,
-                           device: str):
+                           dtype: torch.dtype,
+                           device: torch.device) -> torch.Tensor:
+        """
+        Returns scaled time index relative to prediction point.
+        """
+        index = torch.arange(encoder_length + decoder_length, dtype=dtype, device=device)
+        prediction_index = encoder_length - 1
+        index[:encoder_length] = index[:encoder_length] / prediction_index
+        index[encoder_length:] = index[encoder_length:] / prediction_index
+        return index.reshape(1, len(index), 1).repeat(batch_size, 1, 1)
+
+    @staticmethod
+    def get_attention_mask_full(time_steps: int,
+                                batch_size: int,
+                                dtype: torch.dtype,
+                                device: torch.device) -> torch.Tensor:
+        """
+        Returns causal mask to apply for self-attention layer.
+        """
+        eye = torch.eye(time_steps, dtype=dtype, device=device)
+        mask = torch.cumsum(eye.unsqueeze(0).repeat(batch_size, 1, 1), dim=1)
+        return mask < 1
+
+    @staticmethod
+    def get_attention_mask_future(encoder_length: int,
+                                  decoder_length: int,
+                                  batch_size: int,
+                                  device: str) -> torch.Tensor:
         """
         Returns causal mask to apply for self-attention layer that acts on future input only.
         """
@@ -286,7 +325,7 @@ class _TFTModule(nn.Module):
                 encoder_mask.unsqueeze(1).expand(-1, decoder_length, -1),
                 decoder_mask.unsqueeze(0).expand(batch_size, -1, -1),
             ),
-            dim=2,
+            dim=2
         )
         return mask
 
@@ -295,14 +334,46 @@ class _TFTModule(nn.Module):
         input dimensions: (n_samples, n_time_steps, n_variables)
         """
 
-        dim_samples, dim_time, dim_variable, dim_loss = (0, 1, 2, 3)
+        dim_samples, dim_time, dim_variable, dim_loss = 0, 1, 2, 3
         past_target, past_covariates, historic_future_covariates, future_covariates = x
 
         batch_size = past_target.shape[dim_samples]
         encoder_length = self.input_chunk_length
         decoder_length = self.output_chunk_length
-        timesteps = encoder_length + decoder_length
+        time_steps = encoder_length + decoder_length
 
+        # avoid unnecessary regeneration of attention mask
+        if batch_size != self.batch_size_last:
+            if self.full_attention:
+                self.attention_mask = self.get_attention_mask_full(time_steps=time_steps,
+                                                                   batch_size=batch_size,
+                                                                   dtype=past_target.dtype,
+                                                                   device=past_target.device)
+            else:
+                self.attention_mask = self.get_attention_mask_future(encoder_length=encoder_length,
+                                                                     decoder_length=decoder_length,
+                                                                     batch_size=batch_size,
+                                                                     device=past_target.device)
+            if self.add_relative_index:
+                self.relative_index = self.get_relative_index(encoder_length=encoder_length,
+                                                              decoder_length=decoder_length,
+                                                              batch_size=batch_size,
+                                                              device=past_target.device,
+                                                              dtype=past_target.dtype)
+
+            self.batch_size_last = batch_size
+
+        if self.add_relative_index:
+            historic_future_covariates = torch.cat(
+                [ts[:, :encoder_length, :] for ts in [historic_future_covariates, self.relative_index] if
+                 ts is not None],
+                dim=dim_variable
+            )
+            future_covariates = torch.cat(
+                [ts[:, -decoder_length:, :] for ts in [future_covariates, self.relative_index] if
+                 ts is not None],
+                dim=dim_variable
+            )
         # TODO: impelement static covariates
         static_covariates = None
 
@@ -350,7 +421,7 @@ class _TFTModule(nn.Module):
 
         static_context_expanded = self.expand_static_context(
             context=self.static_context_grn(static_embedding),
-            timesteps=timesteps
+            time_steps=time_steps
         )
 
         embeddings_varying_encoder = {name: input_vectors_past[name] for name in self.encoder_variables}
@@ -380,58 +451,42 @@ class _TFTModule(nn.Module):
         # run local lstm decoder
         decoder_out, _ = self.lstm_decoder(input=embeddings_varying_decoder, hx=(hidden, cell))
 
-        # post lstm GateAddNorm
-        lstm_out_encoder = self.post_lstm_encoder_gan(x=encoder_out, skip=embeddings_varying_encoder)
-        lstm_out_decoder = self.post_lstm_encoder_gan(x=decoder_out, skip=embeddings_varying_decoder)
+        lstm_layer = torch.cat([encoder_out, decoder_out], dim=dim_time)
+        input_embeddings = torch.cat([embeddings_varying_encoder, embeddings_varying_decoder], dim=dim_time)
 
-        lstm_out = torch.cat([lstm_out_encoder, lstm_out_decoder], dim=1)
+        # post lstm GateAddNorm
+        lstm_out = self.post_lstm_gan(x=lstm_layer, skip=input_embeddings)
 
         # static enrichment
         static_context_enriched = self.static_context_enrichment(static_embedding)
         attn_input = self.static_enrichment_grn(
             x=lstm_out,
-            context=self.expand_static_context(context=static_context_enriched, timesteps=timesteps)
+            context=self.expand_static_context(context=static_context_enriched, time_steps=time_steps)
         )
-
-        # avoid unnecessary regeneration of attention mask
-        if batch_size != self.batch_size_last:
-            self.attention_mask = self.get_attention_mask(encoder_length=encoder_length,
-                                                          decoder_length=decoder_length,
-                                                          batch_size=batch_size,
-                                                          device=past_target.device)
-            self.batch_size_last = batch_size
 
         # multi-head attention
         attn_out, attn_out_weights = self.multihead_attn(
-            q=attn_input[:, encoder_length:],  # query only for predictions
+            q=attn_input if self.full_attention else attn_input[:, encoder_length:],
             k=attn_input,
             v=attn_input,
             mask=self.attention_mask
         )
 
         # skip connection over attention
-        attn_out = self.post_attn_gan(x=attn_out, skip=attn_input[:, encoder_length:])
+        attn_out = self.post_attn_gan(x=attn_out,
+                                      skip=attn_input if self.full_attention else attn_input[:, encoder_length:])
 
         # position-wise feed-forward
         out = self.positionwise_feedforward_grn(x=attn_out, context=None)
 
         # skip connection over temporal fusion decoder from LSTM post _GateAddNorm
-        out = self.pre_output_gan(x=out, skip=lstm_out[:, encoder_length:])
+        out = self.pre_output_gan(x=out,
+                                  skip=lstm_out if self.full_attention else lstm_out[:, encoder_length:])
 
         # generate output for n_targets and loss_size elements for loss evaluation
-        out = [output_layer(out) for output_layer in self.output_layer]
-
-        # stack output
-        if isinstance(self.likelihood, QuantileRegression):
-            # loss_size > 1 for losses such as QuantileLoss
-            # returns shape (n_samples, n_timesteps, n_targets, n_losses)
-            out = torch.cat([out_i.unsqueeze(dim_variable) for out_i in out], dim=dim_variable)
-        elif self.likelihood is not None or self.loss_size == 1 and self.n_targets > 1:
-            # returns shape (n_samples, n_timesteps, n_likelihood_params/n_targets)
-            out = torch.cat(out, dim=dim_variable)
-        else:  # self.loss_size == 1 and self.n_targets == 1
-            # returns shape (n_samples, n_timesteps, 1) for univariate
-            out = out[0]
+        
+        out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
+        out = out.view(batch_size, self.output_chunk_length, self.n_targets, self.loss_size)
 
         # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
@@ -455,12 +510,12 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                  hidden_size: Union[int, List[int]] = 16,
                  lstm_layers: int = 1,
                  num_attention_heads: int = 4,
+                 full_attention: bool = False,
                  dropout: float = 0.1,
                  hidden_continuous_size: int = 8,
-                 add_cyclic_encoder: Optional[str] = None,
+                 add_relative_index: bool = False,
                  loss_fn: Optional[nn.Module] = None,
                  likelihood: Optional[Likelihood] = None,
-                 max_samples_per_ts: Optional[int] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs
                  ):
@@ -476,8 +531,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         points before prediction time and future covariates known for `output_chunk_length` after prediction time).
 
         The TFT applies multi-head attention queries on future inputs from mandatory `future_covariates`.
-        Specifying `add_cyclic_encoder` (read below) adds cyclic temporal encoding to the model and allows to use
-        the model without having to specify additional `future_covariates` for training and prediction.
+        Specifying future encoders with `add_encoders` (read below) can automatically generate future covariates
+        and allows to use the model without having to pass any `future_covariates` to `fit()` and `predict()`.
 
         By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
         probabilistic; it is recommended to call ``predict()`` with ``num_samples >> 1`` to get meaningful results.
@@ -485,28 +540,28 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         Parameters
         ----------
         input_chunk_length : int
-            encoder length; number of past time steps that are fed to the forecasting module at prediction time.
+            Encoder length; number of past time steps that are fed to the forecasting module at prediction time.
         output_chunk_length : int
-            decoder length; number of future time steps that are fed to the forecasting module at prediction time.
+            Decoder length; number of future time steps that are fed to the forecasting module at prediction time.
         hidden_size : int
-            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT architecture.
+            Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
+            architecture.
         lstm_layers : int
-            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (2 is a good default).
+            Number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).
         num_attention_heads : int
-            number of attention heads (4 is a good default)
+            Number of attention heads (4 is a good default)
+        full_attention : bool
+            If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
+            only queries on future part. Defaults to `False`.
         dropout : float
             Fraction of neurons afected by Dropout.
         hidden_continuous_size : int
-            default for hidden size for processing continuous variables
-        add_cyclic_encoder : optional str
-            If other than None, apply cycling encoding to an attribute of the time index and add it to the
-            `future_covariates`.
-            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`
-            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month",
-            "weekday", "day", "hour", "minute", "second". See all available attributes in
-            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
-            For more information, check out :meth:`datetime_attribute_timeseries()
-            <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
+            Default for hidden size for processing continuous variables
+        add_relative_index : bool
+            Whether to add positional values to future covariates. Defaults to `False`.
+            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
+            It gives a value to the position of each step from input and output chunk relative to the prediction
+            point. The values are normalized with `input_chunk_length`.
         loss_fn : nn.Module
             PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
             instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None
@@ -514,8 +569,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
             a ``QuantileRegression`` likelihood.
-        max_samples_per_ts
-            Optionally, a maximum number of training sample to generate per time series.
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
@@ -526,6 +579,26 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            `add_encoders`. An example showing some of `add_encoders` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
@@ -578,12 +651,12 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.hidden_size = hidden_size
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
+        self.full_attention = full_attention
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
-        self.add_cyclic_encoder = add_cyclic_encoder
+        self.add_relative_index = add_relative_index
         self.loss_fn = loss_fn
         self.likelihood = likelihood
-        self.max_sample_per_ts = max_samples_per_ts
         self.output_dim: Optional[Tuple[int, int]] = None
 
     def _create_model(self,
@@ -591,11 +664,11 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         """
         `train_sample` contains the following tensors:
             (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
-            
+
             each tensor has shape (n_timesteps, n_variables)
             - past/historic tensors have shape (input_chunk_length, n_variables)
             - future tensors have shape (output_chunk_length, n_variables)
-        
+
         Darts Interpretation of pytorch-forecasting's TimeSeriesDataSet:
             time_varying_knowns : future_covariates (including historic_future_covariates)
             time_varying_unknowns : past_targets, past_covariates
@@ -606,6 +679,23 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         `variable_meta` is used in TFT to access specific variables
         """
         past_target, past_covariate, historic_future_covariate, future_covariate, future_target = train_sample
+
+        # add a covariate placeholder so that relative index will be included
+        if self.add_relative_index:
+            time_steps = self.input_chunk_length + self.output_chunk_length
+
+            expand_future_covariate = np.arange(time_steps).reshape((time_steps, 1))
+
+            historic_future_covariate = np.concatenate(
+                [ts[:self.input_chunk_length] for ts in [historic_future_covariate, expand_future_covariate] if
+                 ts is not None],
+                axis=1
+            )
+            future_covariate = np.concatenate(
+                [ts[-self.output_chunk_length:] for ts in [future_covariate, expand_future_covariate] if
+                 ts is not None],
+                axis=1
+            )
 
         static_covariates = None  # placeholder for future
 
@@ -642,14 +732,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         static_input = []
         for input_var in type_names:
             if input_var in variables_meta['input']:
-                vars = variables_meta['input'][input_var]
-                reals_input += vars
+                vars_meta = variables_meta['input'][input_var]
+                reals_input += vars_meta
                 if input_var in ['past_target', 'past_covariate', 'historic_future_covariate']:
-                    time_varying_encoder_input += vars
+                    time_varying_encoder_input += vars_meta
                 elif input_var in ['future_covariate']:
-                    time_varying_decoder_input += vars
+                    time_varying_decoder_input += vars_meta
                 elif input_var in ['static_covariate']:
-                    static_input += vars
+                    static_input += vars_meta
 
         variables_meta['model_config']['reals_input'] = list(dict.fromkeys(reals_input))
         variables_meta['model_config']['time_varying_encoder_input'] = list(dict.fromkeys(time_varying_encoder_input))
@@ -665,80 +755,31 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             lstm_layers=self.lstm_layers,
             dropout=self.dropout,
             num_attention_heads=self.num_attention_heads,
+            full_attention=self.full_attention,
             hidden_continuous_size=self.hidden_continuous_size,
-            likelihood=self.likelihood
+            likelihood=self.likelihood,
+            add_relative_index=self.add_relative_index
         )
 
     def _build_train_dataset(self,
                              target: Sequence[TimeSeries],
                              past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesSequentialDataset:
+                             future_covariates: Optional[Sequence[TimeSeries]],
+                             max_samples_per_ts: Optional[int]) -> MixedCovariatesSequentialDataset:
 
-        raise_if(future_covariates is None and self.add_cyclic_encoder is None,
+        raise_if(future_covariates is None and not self.add_relative_index,
                  'TFTModel requires future covariates. The model applies multi-head attention queries on future '
-                 'inputs. Consider specifying `add_cyclic_encoder` (read TFT model docs) at model creation which '
-                 'automatically adds cyclic encoding of the time index to `future_covariates`.',
+                 'inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` '
+                 'to `True` at model creation (read TFT model docs for more information). '
+                 'These will automatically generate `future_covariates` from indexes.',
                  logger)
-
-        if self.add_cyclic_encoder is not None:
-            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=None)
 
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
                                                 input_chunk_length=self.input_chunk_length,
                                                 output_chunk_length=self.output_chunk_length,
-                                                max_samples_per_ts=self.max_sample_per_ts)
-
-    def _add_cyclic_encoder(self,
-                             target: Sequence[TimeSeries],
-                             future_covariates: Optional[Sequence[TimeSeries]] = None,
-                             n: Optional[int] = None) -> Sequence[TimeSeries]:
-        """adds cyclic encoding of time index to future covariates.
-        For training (when `n` is `None`) we can simply use the future covariates (if available) or target as
-        reference to extract the time index.
-        For prediction (`n` is given) we have to distinguish between two cases:
-            1)
-                if future covariates are given, we can use them as reference
-            2)
-                if future covariates are missing, we need to generate a time index that starts `input_chunk_length`
-                before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
-
-        Parameters
-        ----------
-        target
-            past target TimeSeries
-        future_covariates
-            future covariates TimeSeries
-        n
-            prediciton length (only given for predictions)
-
-        Returns
-        -------
-        Sequence[TimeSeries]
-            future covariates including cyclic encoded time index
-        """
-
-        if n is None:  # training
-            encode_ts = future_covariates if future_covariates is not None else target
-        else:  # prediction
-            if future_covariates is not None:
-                encode_ts = future_covariates
-            else:
-                encode_ts = [_generate_index(start=ts.end_time() - ts.freq * (self.input_chunk_length - 1),
-                                             length=self.input_chunk_length + max(n, self.output_chunk_length),
-                                             freq=ts.freq) for ts in target]
-
-        encoded_times = [
-            datetime_attribute_timeseries(ts, attribute=self.add_cyclic_encoder, cyclic=True) for ts in encode_ts
-        ]
-
-        if future_covariates is None:
-            future_covariates = encoded_times
-        else:
-            future_covariates = [fc.stack(et) for fc, et in zip(future_covariates, encoded_times)]
-
-        return future_covariates
+                                                max_samples_per_ts=max_samples_per_ts)
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(isinstance(train_dataset, MixedCovariatesTrainingDataset),
@@ -749,9 +790,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                                  n: int,
                                  past_covariates: Optional[Sequence[TimeSeries]],
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
-
-        if self.add_cyclic_encoder is not None:
-            future_covariates = self._add_cyclic_encoder(target, future_covariates=future_covariates, n=n)
 
         return MixedCovariatesInferenceDataset(target_series=target,
                                                past_covariates=past_covariates,
@@ -764,11 +802,10 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         return self.model(input_batch)
 
     def predict(self, n, *args, **kwargs):
-        """
-        since we have future covariates, the inference dataset for future input must be at least of length
-        `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
-        `input_chunk_length`.
-        """
+        # since we have future covariates, the inference dataset for future input must be at least of length
+        # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
+        # `input_chunk_length`.
+
         if n >= self.output_chunk_length:
             return super().predict(n, *args, **kwargs)
         else:
@@ -780,7 +817,7 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             output = self.model(x)
             return self.likelihood.sample(output)
         else:
-            return self.model(x)
+            return self.model(x).squeeze(dim=-1)
 
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
@@ -802,8 +839,8 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             = input_batch
 
         n_targets = past_target.shape[dim_component]
-        n_past_covs = past_covariates.shape[dim_component] if not past_covariates is None else 0
-        n_future_covs = future_covariates.shape[dim_component] if not future_covariates is None else 0
+        n_past_covs = past_covariates.shape[dim_component] if past_covariates is not None else 0
+        n_future_covs = future_covariates.shape[dim_component] if future_covariates is not None else 0
 
         input_past = torch.cat(
             [ds for ds in [past_target, past_covariates, historic_future_covariates] if ds is not None],
