@@ -1807,18 +1807,21 @@ class TimeSeries:
             fn: Union[Callable[[np.number], np.number],
                       Callable[[Union[pd.Timestamp, int], np.number], np.number]]) -> 'TimeSeries':  # noqa: E501
         """
-        Applies the function `fn` elementwise to all values in this TimeSeries.
-        Returns a new TimeSeries instance. If `fn` takes 1 argument it is simply applied elementwise.
-        If it takes 2 arguments, it is applied elementwise on the (timestamp, value) tuples.
-
-        At the moment this function works only on deterministic time series (i.e., made of 1 sample).
+        Applies the function `fn` to the underlying NumPy array containing this series' values.
+        Returns a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array
+        of shape (time, n_components, n_samples).
+        If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where
+        "ts" denotes a timestamp value, and "value[ts]" denote the array of values at this timestamp, of shape
+        (n_components, n_samples).
 
         Parameters
         ----------
         fn
-            Either a function which takes a value and returns a value ie. `f(x) = y`
-            Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`
-            The type of `timestamp` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
+            Either a function which takes a NumPy array and returns a NumPy array of same shape; 
+            e.g., `lambda x: x ** 2`, `lambda x: x / x.shape[0]` or `np.log`.
+            It can also be a function which takes a timestamp and array, and returns a new array of same shape;
+            e.g., `lambda ts, x: x / ts.days_in_month`.
+            The type of `ts` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),
             or an integer otherwise (if the series is indexed with an Int64Index).
 
         Returns
@@ -1843,18 +1846,28 @@ class TimeSeries:
                 raise_log(ValueError("inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)"),
                           logger)
 
-        if num_args == 1:  # simple map function f(x)
-            df = self.pd_dataframe().applymap(fn)
+        new_xa = self._xa.copy()
+        if num_args == 1:  # apply fn on values directly
+            new_xa.values = fn(self._xa.values)
+            
         elif num_args == 2:  # map function uses timestamp f(timestamp, x)
-            def apply_fn_wrapper(row):
-                timestamp = row.name
-                return row.map(lambda x: fn(timestamp, x))
-            df = self.pd_dataframe().apply(apply_fn_wrapper, axis=1)
+
+            # go over shortest amount of iterations, either over time steps or components and samples
+            if self.n_timesteps <= self.n_components * self.n_samples:
+                new_vals = np.vstack([
+                    np.expand_dims(fn(self.time_index[i], self._xa[i, :, :]), axis=0) for i in range(self.n_timesteps)
+                ])
+            else:
+                new_vals = np.stack([
+                    np.column_stack([fn(self.time_index, self._xa[:, i, j]) for j in range(self.n_samples)])
+                    for i in range(self.n_components)
+                ], axis=1)
+            new_xa.values = new_vals
+            
         else:
-            df = None
             raise_log(ValueError("fn must have either one or two arguments"), logger)
 
-        return self.__class__.from_dataframe(df)
+        return self.__class__(new_xa)
 
     def to_json(self) -> str:
         """
