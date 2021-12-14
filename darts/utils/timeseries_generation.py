@@ -526,7 +526,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
 
     raise_if_not(
         hasattr(pd.DatetimeIndex, attribute) or (attribute in ["week", "weekofyear", "week_of_year"]),
-        '"attribute" needs to be an attribute of pd.DatetimeIndex.'
+        f'attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. '
         'See all available attributes in '
         'https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex',
         logger,
@@ -538,19 +538,19 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         "month": 12,
         "day": 31,
         "weekday": 7,
-        "dayofweek":7,
-        "day_of_week":7,
+        "dayofweek": 7,
+        "day_of_week": 7,
         "hour": 24,
         "minute": 60,
         "second": 60,
         "microsecond": 1000000,
         "nanosecond": 1000,
         "quarter": 4,
-        "dayofyear":365,
-        "day_of_year":365,
-        "week":52,
-        "weekofyear":52,
-        "week_of_year":52,
+        "dayofyear": 365,
+        "day_of_year": 365,
+        "week": 52,
+        "weekofyear": 52,
+        "week_of_year": 52,
     }
 
     if not attribute in ["week", "weekofyear", "week_of_year"]:
@@ -561,8 +561,7 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     if one_hot or cyclic:
         raise_if_not(
             attribute in num_values_dict,
-            "Given datetime attribute not supported"
-            " with one-hot or cyclical encoding."
+            f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
             f"Supported datetime attribute: {list(num_values_dict.keys())}",
             logger,
         )

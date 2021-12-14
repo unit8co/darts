@@ -71,7 +71,8 @@ class ExponentialSmoothing(ForecastingModel):
         np.random.seed(random_state)
 
     def __str__(self):
-        return 'Exponential smoothing'
+        return (f"ExponentialSmoothing(trend={self.trend}, damped={self.damped}, "
+                f"seasonal={self.seasonal}, seasonal_periods={self.seasonal_periods}")
 
     def fit(self, series: TimeSeries):
         super().fit(series)

@@ -561,8 +561,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
             Defaults to `1` (sequential). Setting the parameter to `-1` means using all the available cores.
         n_random_samples
-            The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform 
-            a random search instead of using the full grid. 
+            The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform
+            a random search instead of using the full grid.
             If an integer, `n_random_samples` is the number of parameter combinations selected from the full grid and must
             be between `0` and the total number of parameter combinations.
             If a float, `n_random_samples` is the ratio of parameter combinations selected from the full grid and must be
@@ -601,7 +601,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         #If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_random_samples is not None:
             params_cross_product = model_class._sample_params(params_cross_product, n_random_samples)
-            
+
 
         # iterate through all combinations of the provided parameters and choose the best one
         iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
@@ -871,12 +871,10 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
     _expect_covariate = False
 
-    @abstractmethod
     def fit(self,
             series: TimeSeries,
-            future_covariates: Optional[TimeSeries] = None
-            ) -> None:
-        """ Fits/trains the model on the provided series
+            future_covariates: Optional[TimeSeries] = None) -> None:
+        """ Fits/trains the model on the provided series.
 
         Defines behavior that should happen when calling the `fit()` method for the forecasting models handling
         optional future covariates (exogenous variables).
@@ -887,22 +885,37 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             The model will be trained to forecast this time series. Can be multivariate if the model supports it.
         future_covariates
             A time series of future-known covariates. This time series will not be forecasted, but can be used by
-            some models as an input.
+            some models as an input. It must contain at least the same time steps/indices as the target `series`.
         """
 
-        # TODO: is this really needed or could we find a workaround?
         if future_covariates is not None:
+            if not series.has_same_time_as(future_covariates):
+                # fit() expects future_covariates to have same time as the target, so we intersect it here
+                future_covariates = future_covariates.slice_intersect(series)
+
             raise_if_not(series.has_same_time_as(future_covariates),
-                         'The target series and the future_covariates series must have the same time index.')
+                         "The provided `future_covariates` series must contain at least the same time steps/"
+                         "indices as the target `series`.",
+                         logger)
             self._expect_covariate = True
+
         super().fit(series)
 
+        self._fit(series, future_covariates=future_covariates)
+
     @abstractmethod
+    def _fit(self,
+             series: TimeSeries,
+             future_covariates: Optional[TimeSeries] = None) -> None:
+        """Fits/trains the model on the provided series.
+        DualCovariatesModels must implement the fit logic in this method.
+        """
+        pass
+
     def predict(self,
                 n: int,
                 future_covariates: Optional[TimeSeries] = None,
-                num_samples: int = 1
-                ) -> TimeSeries:
+                num_samples: int = 1) -> TimeSeries:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
         If some future covariates were specified during the training, they must also be specified here.
@@ -912,8 +925,9 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
         future_covariates
-            The time series of future-known covariates which can be fed as input to the model. It must correspond to the
-            covariate time series that has been used with the `fit()` method for training, and it must be of length `n`.
+            The time series of future-known covariates which can be fed as input to the model. It must correspond to
+            the covariate time series that has been used with the `fit()` method for training, and it must contain at
+            least the next `n` time steps/indices after the end of the training target series.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
@@ -922,30 +936,46 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
+
         if future_covariates is None:
             super().predict(n, num_samples)
-        if self._expect_covariate and future_covariates is None:
-            raise_log(ValueError('The model has been trained with future_covariates variables. Some matching '
-                                 'future_covariates variables have to be provided to `predict()`.'))
 
-        # TODO Here we could maybe slice the series and then check
-        if self._expect_covariate and len(future_covariates) != n:
-            raise_log(ValueError(f'Expecting future_covariates variables with the same length as the'
-                                 f' forecasting horizon ({n}).'))
+        if self._expect_covariate and future_covariates is None:
+            raise_log(ValueError('The model has been trained with `future_covariates` variable. Some matching '
+                                 '`future_covariates` variables have to be provided to `predict()`.'))
+
+        if future_covariates is not None:
+            start = self.training_series.end_time() + self.training_series.freq
+
+            invalid_time_span_error = f"For the given forecasting horizon `n={n}`, the provided `future_covariates` " \
+                                      f"series must contain at least the next `n={n}` time steps/indices after the " \
+                                      f"end of the target `series` that was used to train the model."
+
+            # we raise an error here already to avoid getting error from empty TimeSeries creation
+            raise_if_not(future_covariates.end_time() >= start, invalid_time_span_error, logger)
+
+            future_covariates = future_covariates[start:start + (n - 1) * self.training_series.freq]
+
+            raise_if_not(len(future_covariates) == n and self._expect_covariate, invalid_time_span_error, logger)
+
+        return self._predict(n, future_covariates=future_covariates, num_samples=num_samples)
+
+    @abstractmethod
+    def _predict(self,
+                 n: int,
+                 future_covariates: Optional[TimeSeries] = None,
+                 num_samples: int = 1) -> TimeSeries:
+        """Forecasts values for a certain number of time steps after the end of the series.
+        DualCovariatesModels must implement the predict logic in this method.
+        """
+        pass
 
     def _fit_wrapper(self, series: TimeSeries, past_covariates: Optional[TimeSeries],
                      future_covariates: Optional[TimeSeries]):
-        if future_covariates is not None and not series.has_same_time_as(future_covariates):
-            # fit() expects future_covariates to have same time as the target, so we intersect it here
-            # in case it's longer.
-            future_covariates = future_covariates.slice_intersect(series)
         self.fit(series, future_covariates=future_covariates)
 
     def _predict_wrapper(self, n: int, series: TimeSeries,
                          past_covariates: Optional[TimeSeries],
                          future_covariates: Optional[TimeSeries],
                          num_samples: int) -> TimeSeries:
-        if future_covariates is not None:
-            start = series.end_time() + series.freq
-            future_covariates = future_covariates[start:start + (n - 1) * series.freq]
         return self.predict(n, future_covariates=future_covariates, num_samples=num_samples)

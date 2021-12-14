@@ -12,9 +12,11 @@ from darts.utils.timeseries_generation import linear_timeseries
 logger = get_logger(__name__)
 
 try:
-    from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel
+    from ..models import BlockRNNModel, TCNModel, TransformerModel, NBEATSModel, RNNModel, TFTModel
     from darts.utils.likelihood_models import GaussianLikelihood
-    from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
+    from darts.models.forecasting.torch_forecasting_model import (PastCovariatesTorchModel,
+                                                                  DualCovariatesTorchModel,
+                                                                  MixedCovariatesTorchModel)
     import torch
     TORCH_AVAILABLE = True
 except ImportError:
@@ -28,11 +30,13 @@ if TORCH_AVAILABLE:
     models_cls_kwargs_errs = [
         (BlockRNNModel, {'model': 'RNN', 'hidden_size': 10, 'n_rnn_layers': 1, 'batch_size': 32, 'n_epochs': 10}, 180.),
         (RNNModel, {'model': 'RNN', 'hidden_dim': 10, 'batch_size': 32, 'n_epochs': 10}, 180.),
-        (RNNModel, {'training_length': 12, 'n_epochs': 10, 'likelihood': GaussianLikelihood()}, 80),
+        (RNNModel, {'training_length': 12, 'n_epochs': 10, 'likelihood': GaussianLikelihood()}, 80.),
         (TCNModel, {'n_epochs': 10, 'batch_size': 32}, 240.),
         (TransformerModel, {'d_model': 16, 'nhead': 2, 'num_encoder_layers': 2, 'num_decoder_layers': 2,
                             'dim_feedforward': 16, 'batch_size': 32, 'n_epochs': 10}, 180.),
-        (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12, 'n_epochs': 10}, 180.)
+        (NBEATSModel, {'num_stacks': 4, 'num_blocks': 1, 'num_layers': 2, 'layer_widths': 12, 'n_epochs': 10}, 180.),
+        (TFTModel, {'hidden_size': 16, 'lstm_layers': 1, 'num_attention_heads': 4, 'add_relative_index': True,
+                    'n_epochs': 10}, 100.)
     ]
 
     class GlobalForecastingModelsTestCase(DartsBaseTestClass):
@@ -218,6 +222,30 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
                 model.predict_from_dataset(n=1, input_series_dataset=unsupported_type)
 
+        def test_prediction_with_different_n(self):
+            # test model predictions for n < out_len, n == out_len and n > out_len
+            for model_cls, kwargs, err in models_cls_kwargs_errs:
+                model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
+
+                self.assertTrue(isinstance(model, (PastCovariatesTorchModel,
+                                                   DualCovariatesTorchModel,
+                                                   MixedCovariatesTorchModel)),
+                                'unit test not yet defined for the given {X}CovariatesTorchModel.')
+
+                if isinstance(model, PastCovariatesTorchModel):
+                    past_covs, future_covs = self.covariates, None
+                elif isinstance(model, DualCovariatesTorchModel):
+                    past_covs, future_covs = None, self.covariates
+                else:
+                    past_covs, future_covs = self.covariates, self.covariates
+
+                model.fit(self.target_past, past_covariates=past_covs, future_covariates=future_covs, epochs=1)
+
+                # test prediction for n < out_len, n == out_len and n > out_len
+                for n in [OUT_LEN - 1, OUT_LEN, 2 * OUT_LEN - 1]:
+                    pred = model.predict(n=n, past_covariates=past_covs, future_covariates=future_covs)
+                    self.assertEqual(len(pred), n)
+
         def test_same_result_with_different_n_jobs(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs)
@@ -311,3 +339,20 @@ if TORCH_AVAILABLE:
                              batch_size=32)
 
             model.fit(ts, max_samples_per_ts=5)
+
+        def test_residuals(self):
+            """
+            Torch models should not fail when computing residuals on a series
+            long enough to accomodate at least one training sample.
+            """
+            ts = linear_timeseries(start_value=0, end_value=1, length=38)
+
+            model = NBEATSModel(input_chunk_length=24, 
+                                output_chunk_length=12, 
+                                num_stacks=2, 
+                                num_blocks=1, 
+                                num_layers=1, 
+                                layer_widths=2,  
+                                n_epochs=2)
+
+            model.residuals(ts)
