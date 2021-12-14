@@ -79,7 +79,6 @@ class EncoderTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, 'Torch not available. SequentialEncoder tests with models will be skipped.')
     def test_sequence_encoder_from_model_params(self):
-        print('was called')
         """test if sequence encoder is initialized properly from model params"""
         # valid encoder model parameters are ('past', 'future') for the main key and datetime attribute for sub keys
         valid_encoder_args = {
