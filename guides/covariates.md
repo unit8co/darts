@@ -54,7 +54,7 @@ model.predict(n=12,
               )
 ```
 
-If you train a model using `past_covariates`, you'll have to provide these `past_covariates` also at prediction time to `predict()`. This applies to `future_covariates` too, with a nuance that `future_covariates` have to extend far enough into the future at prediction time (all the way to the forecast horizon `n`). This can be seen in the graph below. `past_covariates` needs to include the same time steps as `target`, and `future_covariates` must include the same time span plus additional `n` forecast horizon time steps. 
+If you train a model using `past_covariates`, you'll have to provide these `past_covariates` also at prediction time to `predict()`. This applies to `future_covariates` too, with a nuance that `future_covariates` have to extend far enough into the future at prediction time (all the way to the forecast horizon `n`). This can be seen in the graph below. `past_covariates` needs to include at least the same time steps as `target`, and `future_covariates` must include at least the same time span plus additional `n` forecast horizon time steps. 
 
 ***You can use the same `*_covariates` for both training and prediction, given that they contain the required time spans.***
 
@@ -112,7 +112,7 @@ Side note: if you don't have future values (e.g. of measured temperatures), noth
 Darts' forecasting models accept optional `past_covariates` and / or `future_covariates` in their `fit()` and `predict()` methods, depending on their capabilities. Table 1 shows the supported covariate types for each model. The models will raise an error if covariates were used that are not supported.
 
 ### Local Forecasting Models (LFMs):
-LFMs are broadly speaking statisical forecasting models (FEEDBACK REQUIRED). LFMs accept only a single `target` (and covariate) time series and usually train on the entire series you supplied when calling `fit()` at once. They can also predict in one go for any number of predictions `n` after the end of the training series.
+LFMs are models that can be trained on a single target series only. In Darts most models in this category tend to be simpler statistical models (such as ETS or ARIMA). LFMs accept only a single `target` (and covariate) time series and usually train on the entire series you supplied when calling `fit()` at once. They can also predict in one go for any number of predictions `n` after the end of the training series.
 
 ### Global Forecasting Models (GFMs)
 GFMs are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models as well as RegressionModels. Global models can all be trained on multiple `target` (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data.
@@ -156,7 +156,7 @@ It is very simple to use covariates with Darts' forecasting models. There are ju
 
 Just like the `target` series, each of your past and / or future covariates series must be a `TimeSeries` object. When you train your model with `fit()` using past and /or future covariates, you have to supply the same types of covariates to `predict()`. Depending on the choice of your model and how long your forecast horizon `n` is, there might be different time span requirements for your covariates. You can find these requirements in the next [section 2.3.](#23-covariate-time-span-requirements-for-local-and-global-forecasting-models). 
 
-***You can even use the same `*_covariates` for fitting and prediction if they contain the required time spans.***
+***You can even use the same `*_covariates` for fitting and prediction if they contain the required time spans. This is because Darts will "intelligently" slice them for you based on the target time axis.***
 
 ```
 # create one of Darts' forecasting model
@@ -218,7 +218,7 @@ LFMs usually train on the entire `target` and `future_covariates` series (if sup
 
 
 ### Global Forecasting Models (GFMs):
-GFMs train and predict on fixed-length chunks (sub-samples) of the `target` and `*_covariates` series (if supported). Each chunk contains an input chunk - resembling the sample's past - and an output chunk - the sample's future. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length`.
+GFMs train and predict on fixed-length chunks (sub-samples) of the `target` and `*_covariates` series (if supported). Each chunk contains an input chunk - resembling the sample's past - and an output chunk - the sample's future. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (one notable exception is `RNNModel` which always uses an `output_chunk_length` of 1).
 
 Depending on your forecast horizon `n`, the model can either predict in one go, or auto-regressively, by predicting on multiple chunks in the future. That is the reason why when predicting with `past_covariates` you have to supply additional "future values of your `past_covariates`".
 

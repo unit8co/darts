@@ -24,7 +24,7 @@ model.fit(target,
           future_covariates=future_covariates)
 ```
 
-You can produce forecasts for any input `target` TimeSeries (also unobserved targets) as long as it contains `input_chunk_length` time steps.
+You can produce forecasts for any input `target` TimeSeries or for several targets given as a sequence of TimeSeries. This will also work on series that have not been seen during training, but the series must contain `input_chunk_length` time steps.
 
 ```
 # predict the next n=3 time steps for any input series with `series`
@@ -251,7 +251,7 @@ You can also save or load manually:
 model.save_model(model_path)
 loaded_model = model.load_model(model_path)
 ```
-
+/!\ Warning /!\ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.
 
 ## 2.2. Forecast/Prediction
 
