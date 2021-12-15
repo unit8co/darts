@@ -218,7 +218,7 @@ LFMs usually train on the entire `target` and `future_covariates` series (if sup
 
 
 ### Global Forecasting Models (GFMs):
-GFMs train and predict on fixed-length chunks (sub-samples) of the `target` and `*_covariates` series (if supported). Each chunk contains an input chunk - resembling the sample's past - and an output chunk - the sample's future. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (one notable exception is `RNNModel` which always uses an `output_chunk_length` of 1).
+GFMs train and predict on fixed-length chunks (sub-samples) of the `target` and `*_covariates` series (if supported). Each chunk contains an input chunk - representing the sample's past - and an output chunk - the sample's future. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (one notable exception is `RNNModel` which always uses an `output_chunk_length` of 1).
 
 Depending on your forecast horizon `n`, the model can either predict in one go, or auto-regressively, by predicting on multiple chunks in the future. That is the reason why when predicting with `past_covariates` you have to supply additional "future values of your `past_covariates`".
 
@@ -230,7 +230,7 @@ Depending on your forecast horizon `n`, the model can either predict in one go, 
   - `past_covariates`: **at least** the same time span as `target` plus the next `n - output_chunk_length` time steps after the end of `target`
   - `future_covariates`: **at least** the same time span as `target` plus the next `n` time steps after the end of `target`
 
-If you want to know more details about how covariates are used behind the scenes in Global Forecasting Models, read our continuation guide darts/guides/covariates_tfms.md. It gives a step-by-step explanation of the training and prediction process using one of our Torch Forecasting Models (PyTorch based GFMs).
+If you want to know more details about how covariates are used behind the scenes in Global Forecasting Models, read our [guide on Torch Forecasting Models](https://github.com/unit8co/darts/blob/master/guides/torch_forecasting_models.md) (PyTorch based GFMs). It gives a step-by-step explanation of the training and prediction process using one of our Torch Forecasting Models.
 
 ## 2.4. Examples
 We have lots of great examples showcasing how to use covariates with Darts' forecasting models.
