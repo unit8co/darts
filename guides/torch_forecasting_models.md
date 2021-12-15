@@ -5,13 +5,14 @@ We assume that you already know about covariates in Darts. If you're new to the 
 
 ## Content of this document
 
-[Section 1](#11-introduction) covers the most important points about Torch Forecasting Models:
-- how they work on a top-level
-- Torch Forecasting Model covariates support
-- time span requirements for target and covariate series
+[Section 1](#11-introduction) covers the most important points about Torch Forecasting Models (TFMs):
+- How to use TFMs
+- Top-level look at chunks
+- TFM covariates support
+- Time span requirements for target and covariate series
 
-[Section 2](#2-in-depth-look-at-how-past-and-future-covariates-are-used-in-a-torch-forecasting-model) gives
-an in-depth guide of how covariates are used in Darts' PyTorch-based Forecasting Models.
+[Section 2](#2-in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms) gives
+an in-depth guide of how input data is used when training and predicting with TFMs.
 
 ## 1.1. Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
@@ -27,9 +28,9 @@ model = SomeTorchForecastingModel(input_chunk_length=7,
                                   **model_kwargs)
 ```
 
-All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [section 1.3.](#13-torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply a dedicated past and / or future covariates series for each target series.
+All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [section 1.3.](#13-torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
 
-Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction.
+Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in [section 1.4.](#14-required-target-time-spans-for-training-validation-and-prediction))
 
 ```
 # fit the model on a single target series with optional past and / or future covariates
@@ -115,7 +116,7 @@ For **prediction** you have to supply the `target` series that you wish to forec
 
 Side note: Our `*RNNModels` accept a `training_length` parameter at model creation instead of `output_chunk_length`. Internally the `output_chunk_length` for these models is automatically set to `1`. For training, past `target` must have a minimum length of `training_length + 1` and for prediction, a length of `input_chunk_length`.
 
-## 2. In-depth look at how past and future covariates are used in a Torch Forecasting Model
+## 2. In-depth look at how input data is used when training and predicting with TFMs
 ## 2.1. Training
 
 Let's have a look at how the models work under the hood.
