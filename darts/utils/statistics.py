@@ -11,7 +11,7 @@ import numpy as np
 from scipy.stats import norm
 from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import acf, pacf
+from statsmodels.tsa.stattools import acf, pacf, grangercausalitytests
 
 from warnings import warn
 from ..logging import raise_log, get_logger, raise_if_not, raise_if
@@ -254,6 +254,56 @@ def remove_trend(ts: TimeSeries,
     new_ts = remove_from_series(ts, trend, model)
     return new_ts
 
+
+def granger_causality_tests(ts_cause: TimeSeries,
+                            ts_effect: TimeSeries,
+                            maxlag: int,
+                            addconst: bool = True,
+                            verbose: bool = True
+                          ) -> None:
+    
+    """
+    Provides four tests for granger non causality of 2 time series using `statsmodels.tsa.stattools.grangercausalitytests`.
+
+
+    Parameters
+    ----------
+    ts_cause
+        An univariate time series. The statistical test determines if this time series 
+        'Granger causes' the time series ts_effect (second parameter). Missing values are not supported.
+        if H_0 is (non causality) is rejected (p near 0), then there is a 'granger causality'.
+    ts_effect
+        Univariate time series 'Granger caused' by ts_cause.
+    maxlag
+        If an integer, computes the test for all lags up to maxlag. 
+        If an iterable, computes the tests only for the lags in maxlag.
+    addconst
+        Include a constant in the model.
+    verbose
+        Print results.
+    Returns
+    -------
+    Dict
+        All test results, dictionary keys are the number of lags. For each lag the values are a tuple, 
+        with the first element a dictionary with test statistic, pvalues, degrees of freedom, the second element are 
+        the OLS estimation results for the restricted model, the unrestricted model and the restriction (contrast) 
+        matrix for the parameter f_test.
+    """
+
+    ts_cause._assert_univariate()
+    ts_effect._assert_univariate()
+
+    raise_if(not ts_cause.has_same_time_as(ts_effect),
+            'ts_cause and ts_effect time series have different time index.')
+
+
+
+    return grangercausalitytests(
+        np.concatenate((ts_effect.values(), ts_cause.values()), axis=1), 
+        maxlag,
+        addconst,
+        verbose
+        )
 
 def plot_acf(ts: TimeSeries,
              m: Optional[int] = None,
