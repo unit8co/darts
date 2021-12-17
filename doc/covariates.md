@@ -230,7 +230,7 @@ Depending on your forecast horizon `n`, the model can either predict in one go, 
   - `past_covariates`: **at least** the same time span as `target` plus the next `n - output_chunk_length` time steps after the end of `target`
   - `future_covariates`: **at least** the same time span as `target` plus the next `n` time steps after the end of `target`
 
-If you want to know more details about how covariates are used behind the scenes in Global Forecasting Models, read our [guide on Torch Forecasting Models](https://github.com/unit8co/darts/blob/master/guides/torch_forecasting_models.md) (PyTorch based GFMs). It gives a step-by-step explanation of the training and prediction process using one of our Torch Forecasting Models.
+If you want to know more details about how covariates are used behind the scenes in Global Forecasting Models, read our [guide on Torch Forecasting Models](https://github.com/unit8co/darts/blob/master/doc/torch_forecasting_models.md) (PyTorch based GFMs). It gives a step-by-step explanation of the training and prediction process using one of our Torch Forecasting Models.
 
 ## 2.4. Examples
 We have lots of great examples showcasing how to use covariates with Darts' forecasting models.
