@@ -22,7 +22,8 @@ import os
 import re
 from glob import glob
 import shutil
-from joblib import Parallel, delayed
+
+import pytorch_lightning as pl
 from typing import Optional, Dict, Tuple, Union, Sequence, List
 from abc import ABC, abstractmethod
 import torch
@@ -76,24 +77,22 @@ def _get_runs_folder(work_dir, model_name):
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
+    # @random_method
     def __init__(self,
                  input_chunk_length: int,
                  output_chunk_length: int,
                  batch_size: int = 32,
                  n_epochs: int = 100,
-                 optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
-                 optimizer_kwargs: Optional[Dict] = None,
-                 lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
-                 lr_scheduler_kwargs: Optional[Dict] = None,
-                 loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
                  model_name: str = None,
                  work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
                  log_tensorboard: bool = False,
                  nr_epochs_val_period: int = 10,
                  torch_device_str: Optional[str] = None,
                  force_reset: bool = False,
-                 save_checkpoints: bool =False,
-                 add_encoders: Optional[Dict] = None):
+                 save_checkpoints: bool = False,
+                 add_encoders: Optional[Dict] = None,
+                 random_state: Optional[int] = None,
+                 trainer: Optional[pl.Trainer] = None):
 
         """ Pytorch-based Forecasting Model.
 
@@ -111,21 +110,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
-        optimizer_cls
-            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
-        optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
-            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
-            will be used.
-        lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
-            to using a constant learning rate.
-        lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer.
-        loss_fn
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: `torch.nn.MSELoss()`.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
@@ -154,7 +138,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             <TorchForeCastingModel.load_model()>`.
         """
         super().__init__()
-
         if torch_device_str is None:
             self.device = self._get_best_torch_device()
         else:
@@ -167,6 +150,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
+
+        # TODO tensorboard for PL (PyTorch-Lightning)
         self.log_tensorboard = log_tensorboard
         self.nr_epochs_val_period = nr_epochs_val_period
 
@@ -181,17 +166,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.total_epochs = 0  # 0 means it wasn't trained yet.
         self.batch_size = batch_size
 
-        # Define the loss function
-        self.criterion = loss_fn
-
         # The tensorboard writer
         self.tb_writer = None
 
-        # Persist optimiser and LR scheduler parameters
-        self.optimizer_cls = optimizer_cls
-        self.optimizer_kwargs = dict() if optimizer_kwargs is None else optimizer_kwargs
-        self.lr_scheduler_cls = lr_scheduler_cls
-        self.lr_scheduler_kwargs = dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
+        # set up pytorch lightning trainer
+        self.trainer = trainer if trainer is not None else pl.Trainer(max_epochs=n_epochs,
+                                                                      enable_checkpointing=save_checkpoints)
 
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = None
@@ -199,6 +179,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # by default models do not use encoders
         self.encoders = None
 
+        # TODO checkpointing/saving/loading with PL (PyTorch-Lightning)
         self.force_reset = force_reset
         self.save_checkpoints = save_checkpoints
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
@@ -213,6 +194,42 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                      " training or use `force_reset=True` to initialize anyway to start"
                                      " training from scratch and remove all the model data".format(self.model_name)
                                      )
+
+    @staticmethod
+    def _extract_torch_model_params(**kwargs):
+        """extract params from model creation to set up TorchForecastingModels"""
+        get_params = [
+            'input_chunk_length',
+            'output_chunk_length',
+            'batch_size',
+            'n_epochs',
+            'model_name',
+            'work_dir',
+            'log_tensorboard',
+            'nr_epochs_val_period',
+            'torch_device_str',
+            'force_reset',
+            'save_checkpoints',
+            'add_encoders',
+            'random_state',
+            'trainer'
+        ]
+
+        return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
+
+    @staticmethod
+    def _extract_pl_module_params(**kwargs):
+        """extract params from model creation to set up pl.LightningModule (the actual torch.nn.Module)"""
+
+        get_params = [
+            'loss_fn',
+            'likelihood',
+            'optimizer_cls',
+            'optimizer_kwargs',
+            'lr_scheduler_cls',
+            'lr_scheduler_kwargs'
+        ]
+        return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
     @property
     def min_train_series_length(self) -> int:
@@ -243,6 +260,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def reset_model(self):
         """ Resets the model object and removes all the stored data - model, checkpoints and training history.
         """
+
+        # TODO probably update for PL
         shutil.rmtree(_get_checkpoint_folder(self.work_dir, self.model_name), ignore_errors=True)
         shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
 
@@ -257,6 +276,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         sizes right).
         """
 
+        # TODO probably update for PL
         # the tensors have shape (chunk_length, nr_dimensions)
         self.model = self._create_model(self.train_sample)
 
@@ -269,31 +289,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             self.model = self.model.double()
 
         self.model = self.model.to(self.device)
-
-        # A utility function to create optimizer and lr scheduler from desired classes
-        def _create_from_cls_and_kwargs(cls, kws):
-            try:
-                return cls(**kws)
-            except (TypeError, ValueError) as e:
-                raise_log(ValueError('Error when building the optimizer or learning rate scheduler;'
-                                     'please check the provided class and arguments'
-                                     '\nclass: {}'
-                                     '\narguments (kwargs): {}'
-                                     '\nerror:\n{}'.format(cls, kws, e)),
-                          logger)
-
-        # Create the optimizer and (optionally) the learning rate scheduler
-        # we have to create copies because we cannot save model.parameters into object state (not serializable)
-        optimizer_kws = {k: v for k, v in self.optimizer_kwargs.items()}
-        optimizer_kws['params'] = self.model.parameters()
-        self.optimizer = _create_from_cls_and_kwargs(self.optimizer_cls, optimizer_kws)
-
-        if self.lr_scheduler_cls is not None:
-            lr_sched_kws = {k: v for k, v in self.lr_scheduler_kwargs.items()}
-            lr_sched_kws['optimizer'] = self.optimizer
-            self.lr_scheduler = _create_from_cls_and_kwargs(self.lr_scheduler_cls, lr_sched_kws)
-        else:
-            self.lr_scheduler = None  # We won't use a LR scheduler
 
     @abstractmethod
     def _create_model(self, train_sample: Tuple[Tensor]) -> torch.nn.Module:
@@ -351,18 +346,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         """
         Verify that any non-None covariates comply with the model type.
-        """
-        pass
-
-    @abstractmethod
-    def _produce_train_output(self, input_batch: Tuple) -> Tensor:
-        pass
-
-    @abstractmethod
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
-        """
-        In charge of apply the recurrent logic for non-recurrent models.
-        Should be overwritten by recurrent models.
         """
         pass
 
@@ -456,8 +439,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                                             past_covariate=past_covariates,
                                                                             future_covariate=future_covariates)
         train_dataset = self._build_train_dataset(target=series,
-                                                  past_covariates=past_covariates, 
-                                                  future_covariates=future_covariates, 
+                                                  past_covariates=past_covariates,
+                                                  future_covariates=future_covariates,
                                                   max_samples_per_ts=max_samples_per_ts)
 
         if val_series is not None:
@@ -467,8 +450,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                past_covariate=val_past_covariates,
                                                future_covariate=val_future_covariates)
 
-            val_dataset = self._build_train_dataset(target=val_series, 
-                                                    past_covariates=val_past_covariates, 
+            val_dataset = self._build_train_dataset(target=val_series,
+                                                    past_covariates=val_past_covariates,
                                                     future_covariates=val_future_covariates,
                                                     max_samples_per_ts=max_samples_per_ts)
         else:
@@ -489,7 +472,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def initialize_encoders(self) -> SequentialEncoder:
 
-        input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates =\
+        input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates = \
             self._model_encoder_settings
 
         return SequentialEncoder(add_encoders=self._model_params[1].get('add_encoders', None),
@@ -701,8 +684,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
                                                 roll_size=roll_size, num_samples=num_samples)
+        predictions = [p[0] for p in predictions]
         return predictions[0] if called_with_single_series else predictions
 
+    # @random_method
     def predict_from_dataset(self,
                              n: int,
                              input_series_dataset: InferenceDataset,
@@ -770,6 +755,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
 
+        self.model.pred_n = n
+        self.model.pred_num_samples = num_samples
+        self.model.pred_roll_size = roll_size
+        self.model.pred_n_jobs = n_jobs
+        self.model.pred_batch_size = batch_size
+
         pred_loader = DataLoader(input_series_dataset,
                                  batch_size=batch_size,
                                  shuffle=False,
@@ -777,74 +768,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  pin_memory=True,
                                  drop_last=False,
                                  collate_fn=self._batch_collate_fn)
-        predictions = []
-        iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
 
-        self.model.eval()
-        with torch.no_grad():
-            for batch_tuple in iterator:
-                batch_tuple = self._batch_to_device(batch_tuple)
-                input_data_tuple, batch_input_series = batch_tuple[:-1], batch_tuple[-1]
-
-                # number of individual series to be predicted in current batch
-                num_series = input_data_tuple[0].shape[0]
-
-                # number of of times the input tensor should be tiled to produce predictions for multiple samples
-                # this variable is larger than 1 only if the batch_size is at least twice as large as the number
-                # of individual time series being predicted in current batch (`num_series`)
-                batch_sample_size = min(max(batch_size // num_series, 1), num_samples)
-
-                # counts number of produced prediction samples for every series to be predicted in current batch
-                sample_count = 0
-
-                # repeat prediction procedure for every needed sample
-                batch_predictions = []
-                while sample_count < num_samples:
-
-                    # make sure we don't produce too many samples
-                    if sample_count + batch_sample_size > num_samples:
-                        batch_sample_size = num_samples - sample_count
-
-                    # stack multiple copies of the tensors to produce probabilistic forecasts
-                    input_data_tuple_samples = self._sample_tiling(input_data_tuple, batch_sample_size)
-
-                    # get predictions for 1 whole batch (can include predictions of multiple series
-                    # and for multiple samples if a probabilistic forecast is produced)
-                    batch_prediction = self._get_batch_prediction(n, input_data_tuple_samples, roll_size)
-
-                    # reshape from 3d tensor (num_series x batch_sample_size, ...)
-                    # into 4d tensor (batch_sample_size, num_series, ...), where dim 0 represents the samples
-                    out_shape = batch_prediction.shape
-                    batch_prediction = batch_prediction.reshape((batch_sample_size, num_series,) + out_shape[1:])
-
-                    # save all predictions and update the `sample_count` variable
-                    batch_predictions.append(batch_prediction)
-                    sample_count += batch_sample_size
-
-                # concatenate the batch of samples, to form num_samples samples
-                batch_predictions = torch.cat(batch_predictions, dim=0)
-                batch_predictions = batch_predictions.cpu().detach().numpy()
-
-                # create `TimeSeries` objects from prediction tensors
-                ts_forecasts = Parallel(n_jobs=n_jobs)(
-                    delayed(self._build_forecast_series)(
-                        [batch_prediction[batch_idx] for batch_prediction in batch_predictions], input_series
-                    )
-                    for batch_idx, input_series in enumerate(batch_input_series)
-                )
-
-                predictions.extend(ts_forecasts)
-
-        return predictions
-
-    def _sample_tiling(self, input_data_tuple, batch_sample_size):
-        tiled_input_data = []
-        for tensor in input_data_tuple:
-            if tensor is not None:
-                tiled_input_data.append(tensor.tile((batch_sample_size, 1, 1)))
-            else:
-                tiled_input_data.append(None)
-        return tuple(tiled_input_data)
+        return self.trainer.predict(self.model, pred_loader)
 
     def _batch_to_device(self, batch):
         batch = [elem.to(self.device) if isinstance(elem, torch.Tensor) else elem for elem in batch]
@@ -871,66 +796,66 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         :param tb_writer: optionally, a TensorBoard writer
         :param epochs: value >0 means we're retraining model
         """
-
-        best_loss = np.inf
-
-        iterator = _build_tqdm_iterator(
-            range(self.total_epochs, self.total_epochs + epochs),
-            verbose=verbose,
-        )
-
-        for epoch in iterator:
-            total_loss = 0
-
-            for batch_idx, train_batch in enumerate(train_loader):
-                self.model.train()
-                train_batch = self._batch_to_device(train_batch)
-                output = self._produce_train_output(train_batch[:-1])
-                target = train_batch[-1]  # By convention target is always the last element returned by datasets
-                loss = self._compute_loss(output, target)
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-                total_loss += loss.item()
-            if self.lr_scheduler is not None:
-                self.lr_scheduler.step()
-
-            if tb_writer is not None:
-                for name, param in self.model.named_parameters():
-                    # if the param doesn't require gradient, then param.grad = None and param.grad.data will crash
-                    if param.requires_grad:
-                        tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
-
-                tb_writer.add_scalar("training/loss", total_loss / (batch_idx + 1), epoch)
-                tb_writer.add_scalar("training/loss_total", total_loss / (batch_idx + 1), epoch)
-                tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
-
-            self.total_epochs = epoch + 1
-
-            if self.save_checkpoints:
-                self._save_model_from_fit(is_best=False,
-                                          folder=_get_checkpoint_folder(self.work_dir, self.model_name),
-                                          epoch=epoch)
-
-            if epoch % self.nr_epochs_val_period == 0:
-                training_loss = total_loss / len(train_loader)
-                if val_loader is not None:
-                    validation_loss = self._evaluate_validation_loss(val_loader)
-                    if tb_writer is not None:
-                        tb_writer.add_scalar("validation/loss_total", validation_loss, epoch)
-
-                    if validation_loss < best_loss:
-                        best_loss = validation_loss
-                        if self.save_checkpoints:
-                            self._save_model_from_fit(is_best=True,
-                                                      folder=_get_checkpoint_folder(self.work_dir, self.model_name),
-                                                      epoch=epoch)
-
-                    if verbose:
-                        print("Training loss: {:.4f}, validation loss: {:.4f}, best val loss: {:.4f}".
-                              format(training_loss, validation_loss, best_loss), end="\r")
-                elif verbose:
-                    print("Training loss: {:.4f}".format(training_loss), end="\r")
+        self.trainer.fit(self.model, train_loader, val_loader)
+        # best_loss = np.inf
+        #
+        # iterator = _build_tqdm_iterator(
+        #     range(self.total_epochs, self.total_epochs + epochs),
+        #     verbose=verbose,
+        # )
+        #
+        # for epoch in iterator:
+        #     total_loss = 0
+        #
+        #     for batch_idx, train_batch in enumerate(train_loader):
+        #         self.model.train()
+        #         train_batch = self._batch_to_device(train_batch)
+        #         output = self._produce_train_output(train_batch[:-1])
+        #         target = train_batch[-1]  # By convention target is always the last element returned by datasets
+        #         loss = self._compute_loss(output, target)
+        #         self.optimizer.zero_grad()
+        #         loss.backward()
+        #         self.optimizer.step()
+        #         total_loss += loss.item()
+        #     if self.lr_scheduler is not None:
+        #         self.lr_scheduler.step()
+        #
+        #     if tb_writer is not None:
+        #         for name, param in self.model.named_parameters():
+        #             # if the param doesn't require gradient, then param.grad = None and param.grad.data will crash
+        #             if param.requires_grad:
+        #                 tb_writer.add_histogram(name + '/gradients', param.grad.data.cpu().numpy(), epoch)
+        #
+        #         tb_writer.add_scalar("training/loss", total_loss / (batch_idx + 1), epoch)
+        #         tb_writer.add_scalar("training/loss_total", total_loss / (batch_idx + 1), epoch)
+        #         tb_writer.add_scalar("training/learning_rate", self._get_learning_rate(), epoch)
+        #
+        #     self.total_epochs = epoch + 1
+        #
+        #     if self.save_checkpoints:
+        #         self._save_model_from_fit(is_best=False,
+        #                                   folder=_get_checkpoint_folder(self.work_dir, self.model_name),
+        #                                   epoch=epoch)
+        #
+        #     if epoch % self.nr_epochs_val_period == 0:
+        #         training_loss = total_loss / len(train_loader)
+        #         if val_loader is not None:
+        #             validation_loss = self._evaluate_validation_loss(val_loader)
+        #             if tb_writer is not None:
+        #                 tb_writer.add_scalar("validation/loss_total", validation_loss, epoch)
+        #
+        #             if validation_loss < best_loss:
+        #                 best_loss = validation_loss
+        #                 if self.save_checkpoints:
+        #                     self._save_model_from_fit(is_best=True,
+        #                                               folder=_get_checkpoint_folder(self.work_dir, self.model_name),
+        #                                               epoch=epoch)
+        #
+        #             if verbose:
+        #                 print("Training loss: {:.4f}, validation loss: {:.4f}, best val loss: {:.4f}".
+        #                       format(training_loss, validation_loss, best_loss), end="\r")
+        #         elif verbose:
+        #             print("Training loss: {:.4f}".format(training_loss), end="\r")
 
     def _compute_loss(self, output, target):
         return self.criterion(output, target)
@@ -951,7 +876,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         validation_loss = total_loss / (batch_idx + 1)
         return validation_loss
-    
+
     def save_model(self, path: str) -> None:
         """Saves the model under a given path. The path should end with '.pth.tar'
 
@@ -1055,7 +980,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         If you manually saved your model, consider using :meth:`load_model() <TorchForeCastingModel.load_model()>` .
 
         If `file_name` is given, returns the model saved under '{work_dir}/checkpoints/{model_name}/{file_name}'
-        
+
         If `file_name` is not given, will try to restore the best checkpoint (if `best` is `True`) or the most
         recent checkpoint (if `best` is `False`cfrom '{work_dir}/checkpoints/{model_name}'.
 
@@ -1076,7 +1001,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         TorchForecastingModel
             The corresponding trained `TorchForecastingModel`.
         """
-
+        # TODO probably update for PL
         if work_dir is None:
             work_dir = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER)
 
@@ -1088,8 +1013,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             checklist = glob(path)
             if len(checklist) == 0:
                 raise_log(FileNotFoundError('There is no file matching prefix {} in {}'.format(
-                          "model_best_*" if best else "checkpoint_*", checkpoint_dir)),
-                          logger)
+                    "model_best_*" if best else "checkpoint_*", checkpoint_dir)),
+                    logger)
             file_name = max(checklist, key=os.path.getctime)  # latest file TODO: check case where no files match
             file_name = os.path.basename(file_name)
 
@@ -1098,6 +1023,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return TorchForecastingModel.load_model(file_path)
 
     def _get_best_torch_device(self):
+        # TODO probably update for PL
         is_cuda = torch.cuda.is_available()
         if is_cuda:
             return torch.device("cuda:0")
@@ -1105,50 +1031,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             return torch.device("cpu")
 
     def _get_learning_rate(self):
+        # TODO probably update for PL
         for p in self.optimizer.param_groups:
             return p['lr']
-
-
-class TorchParametricProbabilisticForecastingModel(TorchForecastingModel, ABC):
-    def __init__(self, likelihood: Optional[Likelihood] = None, **kwargs):
-        """ Pytorch Parametric Probabilistic Forecasting Model.
-
-        This is a base class for pytroch parametric probabilistic models. "Parametric"
-        means that these models are based on some predefined parametric distribution, say Gaussian.
-        Make sure that subclasses contain the *likelihood* parameter in __init__ method
-        and it is passed to the superclass via calling super().__init__. If the likelihood is not
-        provided, the model is considered as deterministic.
-
-        All TorchParametricProbabilisticForecastingModel's must produce outputs of shape
-        (batch_size, n_timesteps, n_components, n_params). I.e., there's an extra dimension
-        to store the distribution's parameters.
-
-        Parameters
-        ----------
-        likelihood
-            The likelihood model to be used for probabilistic forecasts.
-        """
-        super().__init__(**kwargs)
-        self.likelihood = likelihood
-
-    def _is_probabilistic(self):
-        return self.likelihood is not None
-
-    def _compute_loss(self, output, target):
-        # output is of shape (batch_size, n_timesteps, n_components, n_params)
-        if self.likelihood:
-            return self.likelihood.compute_loss(output, target)
-        else:
-            # If there's no likelihood, nr_params=1 and we need to squeeze out the 
-            # last dimension of model output, for properly computing the loss.
-            return super()._compute_loss(output.squeeze(dim=-1), target)
-
-    @abstractmethod
-    def _produce_predict_output(self, x):
-        """
-        This method has to be implemented by all children.
-        """
-        pass
 
 
 def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
@@ -1171,6 +1056,8 @@ Below we define the 5 torch model types:
     * MixedCovariatesTorchModel
     * SplitCovariatesTorchModel
 """
+
+
 # TODO: there's a lot of repetition below... is there a cleaner way to do this in Python- Using eg generics or something
 
 
@@ -1231,7 +1118,6 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
 
 
 class PastCovariatesTorchModel(TorchForecastingModel, ABC):
-
     uses_future_covariates = False
 
     def _build_train_dataset(self,
@@ -1371,7 +1257,6 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
 
 class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
-
     uses_past_covariates = False
 
     def _build_train_dataset(self,
@@ -1428,7 +1313,6 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
 
 
 class DualCovariatesTorchModel(TorchForecastingModel, ABC):
-
     uses_past_covariates = False
 
     def _build_train_dataset(self,
@@ -1436,7 +1320,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]],
                              max_samples_per_ts: Optional[int]) -> DualCovariatesTrainingDataset:
-
         return DualCovariatesSequentialDataset(target_series=target,
                                                covariates=future_covariates,
                                                input_chunk_length=self.input_chunk_length,
@@ -1448,7 +1331,6 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
                                  n: int,
                                  past_covariates: Optional[Sequence[TimeSeries]],
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> DualCovariatesInferenceDataset:
-
         return DualCovariatesInferenceDataset(target_series=target,
                                               covariates=future_covariates,
                                               n=n,
@@ -1487,7 +1369,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]],
                              max_samples_per_ts: Optional[int]) -> MixedCovariatesTrainingDataset:
-
         return MixedCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
@@ -1500,7 +1381,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
                                  n: int,
                                  past_covariates: Optional[Sequence[TimeSeries]],
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> MixedCovariatesInferenceDataset:
-
         return MixedCovariatesInferenceDataset(target_series=target,
                                                past_covariates=past_covariates,
                                                future_covariates=future_covariates,
@@ -1521,9 +1401,6 @@ class MixedCovariatesTorchModel(TorchForecastingModel, ABC):
         # both covariates are supported; do nothing
         pass
 
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
-        raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
-
     @property
     def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
         input_chunk_length = self.input_chunk_length
@@ -1539,7 +1416,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
                              past_covariates: Optional[Sequence[TimeSeries]],
                              future_covariates: Optional[Sequence[TimeSeries]],
                              max_samples_per_ts: Optional[int]) -> SplitCovariatesTrainingDataset:
-
         return SplitCovariatesSequentialDataset(target_series=target,
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates,
@@ -1552,7 +1428,6 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
                                  n: int,
                                  past_covariates: Optional[Sequence[TimeSeries]],
                                  future_covariates: Optional[Sequence[TimeSeries]]) -> SplitCovariatesInferenceDataset:
-
         return SplitCovariatesInferenceDataset(target_series=target,
                                                past_covariates=past_covariates,
                                                future_covariates=future_covariates,
@@ -1584,3 +1459,8 @@ class SplitCovariatesTorchModel(TorchForecastingModel, ABC):
         takes_past_covariates = True
         takes_future_covariates = True
         return input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates
+
+
+# placeholder for library to work
+class TorchParametricProbabilisticForecastingModel:
+    pass
