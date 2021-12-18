@@ -8,7 +8,7 @@ Here you will find some example notebooks to get more familiar with the API.
 darts intro
 ===========
 
-You will find below an example Jupyter notebook containing an intro to the usage of darts.
+Intro to darts example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -19,7 +19,7 @@ You will find below an example Jupyter notebook containing an intro to the usage
 Multiple Time Series, Pre-trained Models and Covariates
 =======================================================
 
-You will find below an example Jupyter notebook showcasing models trained on multiple time series, pre-trained models, and the usage of covariates.
+Example notebook on training with multiple time series, pre-trained models and using covariates:
 
 .. toctree::
    :maxdepth: 1
@@ -30,7 +30,7 @@ You will find below an example Jupyter notebook showcasing models trained on mul
 Data (pre) Processing
 =====================
 
-You will find below an example Jupyter notebook showcasing the data processing abilities of darts.
+Data processing example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -41,7 +41,7 @@ You will find below an example Jupyter notebook showcasing the data processing a
 Fast Fourier Transform
 ======================
 
-You will find below an example Jupyter notebook showcasing the usage of the FFT model
+FFT model example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -51,7 +51,7 @@ You will find below an example Jupyter notebook showcasing the usage of the FFT 
 Recurrent Neural Networks
 =========================
 
-You will find below an example Jupyter notebook showcasing the usage of the RNN model
+RNN model example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -61,7 +61,7 @@ You will find below an example Jupyter notebook showcasing the usage of the RNN 
 Temporal Convolutional Networks
 ===============================
 
-You will find below an example Jupyter notebook showcasing the usage of the TCN model
+TCN model example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -71,7 +71,7 @@ You will find below an example Jupyter notebook showcasing the usage of the TCN 
 Transformer Model
 =================
 
-You will find below an example Jupyter notebook showcasing the usage of the Transformer model
+Transformer model example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -81,7 +81,7 @@ You will find below an example Jupyter notebook showcasing the usage of the Tran
 N-BEATS Model
 =============
 
-You will find below an example Jupyter notebook showcasing the usage of the N-BEATS model
+N-BEATS model example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -91,7 +91,7 @@ You will find below an example Jupyter notebook showcasing the usage of the N-BE
 DeepAR Model
 ============
 
-You will find below an example Jupyter notebook showcasing the usage of the DeepAR model
+DeepAR model example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -101,17 +101,27 @@ You will find below an example Jupyter notebook showcasing the usage of the Deep
 DeepTCN Model
 =============
 
-You will find below an example Jupyter notebook showcasing the usage of the DeepTCN model
+DeepTCN model example notebook:
 
 .. toctree::
    :maxdepth: 1
 
    examples/10-DeepTCN-examples.ipynb
 
+Temporal Fusion Transformer (TFT) Model
+===================
+
+TFT model example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/14-TFT-examples.ipynb
+
 Kalman Filter Model
 ===================
 
-You will find below an example Jupyter notebook showcasing the usage of the Kalman filter model
+Kalman filter model example notebook:
 
 .. toctree::
    :maxdepth: 1
@@ -121,9 +131,19 @@ You will find below an example Jupyter notebook showcasing the usage of the Kalm
 Gaussian Process Filter Model
 =============================
 
-You will find below an example Jupyter notebook showcasing the usage of the Gaussian Process filter model
+Gaussian process filter model example notebook:
 
 .. toctree::
    :maxdepth: 1
 
    examples/12-GP-filter-examples.ipynb
+
+Dynamic Time Warping (DTW)
+=============================
+
+Dynamic time warping example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/13-Dynamic-Time-Warping-example.ipynb

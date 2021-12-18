@@ -18,7 +18,7 @@ A clear and concise description of what you expected to happen.
 
 **System (please complete the following information):**
  - Python version: [e.g. 3.7]
- - darts version [e.g. 0.5.0]
+ - darts version [e.g. 0.14.0]
 
 **Additional context**
 Add any other context about the problem here.
