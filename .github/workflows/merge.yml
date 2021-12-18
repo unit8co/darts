@@ -52,7 +52,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example-name: [01-darts-intro.ipynb, 02-multi-time-series-and-covariates.ipynb, 03-data-processing.ipynb, 04-FFT-examples.ipynb, 05-RNN-examples.ipynb]
+        example-name: [01-darts-intro.ipynb, 02-multi-time-series-and-covariates.ipynb, 03-data-processing.ipynb, 04-FFT-examples.ipynb, 05-RNN-examples.ipynb, 06-TCN-examples.ipynb, 07-Transformer-examples.ipynb, 08-NBEATS-examples.ipynb, 09-DeepAR-examples.ipynb, 10-DeepTCN-examples.ipynb, 11-Kalman-filter-examples.ipynb, 12-GP-filter-examples.ipynb, 13-Dynamic-Time-Warping-example.ipynb, 14-TFT-examples.ipynb]
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2
