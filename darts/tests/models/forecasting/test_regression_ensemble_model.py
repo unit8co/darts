@@ -8,10 +8,10 @@ from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.models import NaiveDrift, NaiveSeasonal
 from darts.logging import get_logger
-from darts.tests.test_ensemble_models import _make_ts
+from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.metrics import rmse
 from darts import TimeSeries
-from darts.tests.test_regression_models import train_test_split
+from darts.tests.models.forecasting.test_regression_models import train_test_split
 
 logger = get_logger(__name__)
 

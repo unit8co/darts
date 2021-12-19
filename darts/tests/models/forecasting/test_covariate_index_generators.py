@@ -4,18 +4,23 @@ import numpy as np
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts import TimeSeries
-from darts.utils.data.encoder_base import (CovariateIndexGenerator,
-                                           PastCovariateIndexGenerator,
-                                           FutureCovariateIndexGenerator)
+from darts.utils.data.encoder_base import (
+    CovariateIndexGenerator,
+    PastCovariateIndexGenerator,
+    FutureCovariateIndexGenerator,
+)
 
-from ..logging import get_logger
+from darts.logging import get_logger
+
 logger = get_logger(__name__)
 
 
 class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
     n_target = 24
-    target_time = tg.linear_timeseries(length=n_target, freq='MS')
-    cov_time_train = tg.datetime_attribute_timeseries(target_time, attribute='month', cyclic=True)
+    target_time = tg.linear_timeseries(length=n_target, freq="MS")
+    cov_time_train = tg.datetime_attribute_timeseries(
+        target_time, attribute="month", cyclic=True
+    )
     cov_time_train_short = cov_time_train[1:]
 
     target_int = tg.linear_timeseries(length=n_target, start=2)
@@ -29,34 +34,52 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
 
     # pd.DatetimeIndex
     # target covariate for inference dataset for n <= output_chunk_length
-    cov_time_inf_short = TimeSeries.from_times_and_values(tg._generate_index(start=target_time.start_time(),
-                                                                             length=n_target + n_short,
-                                                                             freq=target_time.freq),
-                                                          np.arange(n_target + n_short))
+    cov_time_inf_short = TimeSeries.from_times_and_values(
+        tg._generate_index(
+            start=target_time.start_time(),
+            length=n_target + n_short,
+            freq=target_time.freq,
+        ),
+        np.arange(n_target + n_short),
+    )
     # target covariate for inference dataset for n > output_chunk_length
-    cov_time_inf_long = TimeSeries.from_times_and_values(tg._generate_index(start=target_time.start_time(),
-                                                                            length=n_target + n_long,
-                                                                            freq=target_time.freq),
-                                                         np.arange(n_target + n_long))
+    cov_time_inf_long = TimeSeries.from_times_and_values(
+        tg._generate_index(
+            start=target_time.start_time(),
+            length=n_target + n_long,
+            freq=target_time.freq,
+        ),
+        np.arange(n_target + n_long),
+    )
 
     # integer index
     # target covariate for inference dataset for n <= output_chunk_length
-    cov_int_inf_short = TimeSeries.from_times_and_values(tg._generate_index(start=target_int.start_time(),
-                                                                            length=n_target + n_short,
-                                                                            freq=target_int.freq),
-                                                         np.arange(n_target + n_short))
+    cov_int_inf_short = TimeSeries.from_times_and_values(
+        tg._generate_index(
+            start=target_int.start_time(),
+            length=n_target + n_short,
+            freq=target_int.freq,
+        ),
+        np.arange(n_target + n_short),
+    )
     # target covariate for inference dataset for n > output_chunk_length
-    cov_int_inf_long = TimeSeries.from_times_and_values(tg._generate_index(start=target_int.start_time(),
-                                                                           length=n_target + n_long,
-                                                                           freq=target_int.freq),
-                                                        np.arange(n_target + n_long))
+    cov_int_inf_long = TimeSeries.from_times_and_values(
+        tg._generate_index(
+            start=target_int.start_time(),
+            length=n_target + n_long,
+            freq=target_int.freq,
+        ),
+        np.arange(n_target + n_long),
+    )
 
     def helper_test_index_types(self, ig: CovariateIndexGenerator):
         """test the index type of generated index"""
         # pd.DatetimeIndex
         idx = ig.generate_train_series(self.target_time, self.cov_time_train)
         self.assertTrue(isinstance(idx, pd.DatetimeIndex))
-        idx = ig.generate_inference_series(self.n_short, self.target_time, self.cov_time_inf_short)
+        idx = ig.generate_inference_series(
+            self.n_short, self.target_time, self.cov_time_inf_short
+        )
         self.assertTrue(isinstance(idx, pd.DatetimeIndex))
         idx = ig.generate_train_series(self.target_time, None)
         self.assertTrue(isinstance(idx, pd.DatetimeIndex))
@@ -64,7 +87,9 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         # pd.Int64Index
         idx = ig.generate_train_series(self.target_int, self.cov_int_train)
         self.assertTrue(isinstance(idx, pd.Int64Index))
-        idx = ig.generate_inference_series(self.n_short, self.target_int, self.cov_int_inf_short)
+        idx = ig.generate_inference_series(
+            self.n_short, self.target_int, self.cov_int_inf_short
+        )
         self.assertTrue(isinstance(idx, pd.Int64Index))
         idx = ig.generate_train_series(self.target_int, None)
         self.assertTrue(isinstance(idx, pd.Int64Index))
@@ -125,7 +150,10 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         idx = ig.generate_inference_series(self.n_long, self.target_time, None)
         if is_past:
             n_out = self.input_chunk_length + self.n_long - self.output_chunk_length
-            last_idx = self.target_time.end_time() + (self.n_long - self.output_chunk_length) * self.target_time.freq
+            last_idx = (
+                self.target_time.end_time()
+                + (self.n_long - self.output_chunk_length) * self.target_time.freq
+            )
         else:
             n_out = self.input_chunk_length + self.n_long
             last_idx = self.cov_time_inf_long.end_time()
@@ -133,23 +161,35 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         self.assertTrue(len(idx) == n_out)
         self.assertTrue(idx[-1] == last_idx)
 
-        idx = ig.generate_inference_series(self.n_short, self.target_time, self.cov_time_inf_short)
+        idx = ig.generate_inference_series(
+            self.n_short, self.target_time, self.cov_time_inf_short
+        )
         self.assertTrue(idx.equals(self.cov_time_inf_short.time_index))
-        idx = ig.generate_inference_series(self.n_long, self.target_time, self.cov_time_inf_long)
+        idx = ig.generate_inference_series(
+            self.n_long, self.target_time, self.cov_time_inf_long
+        )
         self.assertTrue(idx.equals(self.cov_time_inf_long.time_index))
-        idx = ig.generate_inference_series(self.n_short, self.target_int, self.cov_int_inf_short)
+        idx = ig.generate_inference_series(
+            self.n_short, self.target_int, self.cov_int_inf_short
+        )
         self.assertTrue(idx.equals(self.cov_int_inf_short.time_index))
-        idx = ig.generate_inference_series(self.n_long, self.target_int, self.cov_int_inf_long)
+        idx = ig.generate_inference_series(
+            self.n_long, self.target_int, self.cov_int_inf_long
+        )
         self.assertTrue(idx.equals(self.cov_int_inf_long.time_index))
 
     def test_past_index_generator(self):
-        ig = PastCovariateIndexGenerator(self.input_chunk_length, self.output_chunk_length)
+        ig = PastCovariateIndexGenerator(
+            self.input_chunk_length, self.output_chunk_length
+        )
         self.helper_test_index_types(ig)
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=True)
 
     def test_future_index_generator(self):
-        ig = FutureCovariateIndexGenerator(self.input_chunk_length, self.output_chunk_length)
+        ig = FutureCovariateIndexGenerator(
+            self.input_chunk_length, self.output_chunk_length
+        )
         self.helper_test_index_types(ig)
         self.helper_test_index_generator_train(ig)
         self.helper_test_index_generator_inference(ig, is_past=False)

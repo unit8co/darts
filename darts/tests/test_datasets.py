@@ -9,7 +9,7 @@ from darts.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from darts.utils.data import (
+    from darts.utils.data import (  # noqa: F401
         PastCovariatesInferenceDataset,
         FutureCovariatesInferenceDataset,
         DualCovariatesInferenceDataset,

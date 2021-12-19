@@ -14,9 +14,9 @@ from darts.models import (
     FFT,
     VARIMA,
 )
-from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
-from ..logging import get_logger
-from ..datasets import AirPassengersDataset, IceCreamHeaterDataset
+from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
+from darts.logging import get_logger
+from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
 
 logger = get_logger(__name__)
 
