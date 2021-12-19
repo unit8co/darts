@@ -401,7 +401,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             lt(length=ts_length, end_value=1)
             + st(length=ts_length, value_y_offset=0)
             + rt(length=ts_length)
-        )
+        ).astype(np.float32)
 
         ts_train = dummy_series[: round(ts_length * 0.8)]
         ts_val = dummy_series[round(ts_length * 0.8) :]
@@ -409,13 +409,13 @@ class BacktestingTestCase(DartsBaseTestClass):
         test_cases = [
             {
                 "model": ARIMA,  # ExtendedForecastingModel
-                "parameters": {"p": [18, 4, 8], "q": [1, 2, 3]},
+                "parameters": {"p": [18, 4], "q": [2, 3]},
             },
             {
                 "model": BlockRNNModel,  # TorchForecastingModel
                 "parameters": {
-                    "input_chunk_length": [1, 3, 5, 10],
-                    "output_chunk_length": [1, 3, 5, 10],
+                    "input_chunk_length": [5, 10],
+                    "output_chunk_length": [1, 3],
                     "n_epochs": [1, 5],
                     "random_state": [
                         42
@@ -433,11 +433,13 @@ class BacktestingTestCase(DartsBaseTestClass):
             _, best_params1 = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
             )
+            print("best params 1 : {}".format(best_params1))
 
             np.random.seed(1)
             _, best_params2 = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
             )
+            print("best params 1 : {}".format(best_params2))
 
             self.assertEqual(best_params1, best_params2)
 

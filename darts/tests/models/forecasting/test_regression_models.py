@@ -11,8 +11,6 @@ from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
 from unittest.mock import patch
 
-# Required to import HistGradientBoostingRegressor in sklearn
-from sklearn.experimental import enable_hist_gradient_boosting  # noqa: F401
 
 logger = get_logger(__name__)
 
