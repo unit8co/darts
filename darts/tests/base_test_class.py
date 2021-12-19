@@ -19,5 +19,5 @@ class DartsBaseTestClass(unittest.TestCase):
             print("Test {} finished after {:.2f} s.".format(self.id(), duration))
         try:
             shutil.rmtree(".darts")
-        except:
+        except FileNotFoundError:
             pass

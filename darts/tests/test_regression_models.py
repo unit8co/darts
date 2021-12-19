@@ -12,7 +12,7 @@ from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegresso
 from unittest.mock import patch
 
 # Required to import HistGradientBoostingRegressor in sklearn
-from sklearn.experimental import enable_hist_gradient_boosting
+from sklearn.experimental import enable_hist_gradient_boosting  # noqa: F401
 
 logger = get_logger(__name__)
 

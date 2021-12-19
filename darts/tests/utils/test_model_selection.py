@@ -93,7 +93,7 @@ class ClassTrainTestSplitTestCase(DartsBaseTestClass):
         train_set, test_set = train_test_split(make_dataset(8, 10), lazy=True)
 
         with self.assertRaisesRegex(
-            IndexError, "Exceeded the size of the test sequence\."
+            IndexError, "Exceeded the size of the test sequence."
         ):
             test_set[2]
 

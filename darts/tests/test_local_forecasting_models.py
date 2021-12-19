@@ -81,7 +81,7 @@ except ImportError:
     PMDARIMA_AVAILABLE = False
 
 try:
-    from ..models import TCNModel
+    from ..models import TCNModel  # noqa: F401
 
     TORCH_AVAILABLE = True
 except ImportError:

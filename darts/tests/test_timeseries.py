@@ -443,9 +443,6 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         diff2_shift2 = TimeSeries.from_dataframe(
             diff_shift2.pd_dataframe().diff(periods=2)
         )
-        diff2_shift2_no_na = TimeSeries.from_dataframe(
-            diff2_shift2.pd_dataframe().diff(periods=2).dropna()
-        )
 
         with self.assertRaises(ValueError):
             self.series1.diff(n=0)
@@ -1116,7 +1113,7 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
         ]
 
         with self.assertRaises(ValueError):
-            ts = concatenate(samples, axis="component")
+            concatenate(samples, axis="component")
 
     def test_concatenate_component_different_time_axes_with_force(self):
         samples = [
@@ -1322,11 +1319,6 @@ class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
             result._xa.coords["component"].values.tolist(),
         )
 
-    def test_head_sunny_day_sample_axis(self):
-        result = self.ts.head(axis=2)
-        self.assertEqual(5, result.n_samples)
-        self.assertEqual(list(range(5)), result._xa.coords["sample"].values.tolist())
-
     def test_tail_sunny_day_time_axis(self):
         result = self.ts.tail()
         self.assertEqual(5, result.n_timesteps)
@@ -1461,4 +1453,4 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         df = pd.DataFrame(data_dict)
 
         with self.assertRaises(AttributeError):
-            ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+            TimeSeries.from_dataframe(df=df, time_col="Time")
