@@ -7,7 +7,7 @@ from sklearn.linear_model import LinearRegression
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from darts.models import NaiveDrift, NaiveSeasonal
-from dars.logging import get_logger
+from darts.logging import get_logger
 from darts.tests.test_ensemble_models import _make_ts
 from darts.metrics import rmse
 from darts import TimeSeries

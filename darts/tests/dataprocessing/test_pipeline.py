@@ -1,7 +1,7 @@
+import unittest
 import logging
 
 from darts import TimeSeries
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import (
@@ -12,7 +12,7 @@ from darts.dataprocessing.transformers import (
 from darts.dataprocessing.transformers import InvertibleMapper, Mapper
 
 
-class PipelineTestCase(DartsBaseTestClass):
+class PipelineTestCase(unittest.TestCase):
     __test__ = True
 
     @classmethod
