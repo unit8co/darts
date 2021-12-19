@@ -7,7 +7,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
-    from ..utils.torch import random_method
+    from darts.utils.torch import random_method
 
     TORCH_AVAILABLE = True
 except ImportError:
