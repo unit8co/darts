@@ -433,13 +433,11 @@ class BacktestingTestCase(DartsBaseTestClass):
             _, best_params1 = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
             )
-            print("best params 1 : {}".format(best_params1))
 
             np.random.seed(1)
             _, best_params2 = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
             )
-            print("best params 1 : {}".format(best_params2))
 
             self.assertEqual(best_params1, best_params2)
 
