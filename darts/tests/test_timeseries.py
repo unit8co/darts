@@ -23,9 +23,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
     def test_creation(self):
         series_test = TimeSeries.from_series(self.pd_series1)
-        self.assertTrue(
-            series_test.pd_series().equals(self.pd_series1.astype(np.float))
-        )
+        self.assertTrue(series_test.pd_series().equals(self.pd_series1.astype(float)))
 
         # Creation with a well formed array:
         ar = xr.DataArray(
