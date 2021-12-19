@@ -4,3 +4,4 @@ coverage==5.5
 
 # linters
 flake8==3.9.0
+black

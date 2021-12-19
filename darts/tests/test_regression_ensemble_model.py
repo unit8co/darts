@@ -4,20 +4,27 @@ import unittest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
-from .base_test_class import DartsBaseTestClass
-from ..utils import timeseries_generation as tg
-from ..models import NaiveDrift, NaiveSeasonal
-from ..logging import get_logger
-from .test_ensemble_models import _make_ts
-from ..metrics import rmse
-from .. import TimeSeries
-from .test_regression_models import train_test_split
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
+from darts.models import NaiveDrift, NaiveSeasonal
+from dars.logging import get_logger
+from darts.tests.test_ensemble_models import _make_ts
+from darts.metrics import rmse
+from darts import TimeSeries
+from darts.tests.test_regression_models import train_test_split
+
 logger = get_logger(__name__)
 
 try:
     import torch
     from darts.models import RNNModel, BlockRNNModel
-    from darts.models import RegressionEnsembleModel, LinearRegressionModel, RandomForest, RegressionModel
+    from darts.models import (
+        RegressionEnsembleModel,
+        LinearRegressionModel,
+        RandomForest,
+        RegressionModel,
+    )
+
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning("Torch not available. Some tests will be skipped.")
@@ -28,7 +35,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     RANDOM_SEED = 111
 
-    sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
+    sine_series = tg.sine_timeseries(
+        value_frequency=(1 / 5), value_y_offset=10, length=50
+    )
     lin_series = tg.linear_timeseries(length=50)
 
     combined = sine_series + lin_series
@@ -58,11 +67,20 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def get_global_models(self, output_chunk_length=5):
-        return [RNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1,
-                         random_state=42),
-                BlockRNNModel(input_chunk_length=20, output_chunk_length=output_chunk_length, n_epochs=1,
-                              random_state=42),
-                ]
+        return [
+            RNNModel(
+                input_chunk_length=20,
+                output_chunk_length=output_chunk_length,
+                n_epochs=1,
+                random_state=42,
+            ),
+            BlockRNNModel(
+                input_chunk_length=20,
+                output_chunk_length=output_chunk_length,
+                n_epochs=1,
+                random_state=42,
+            ),
+        ]
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_accepts_different_regression_models(self):
@@ -117,8 +135,12 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_torch_models_retrain(self):
-        model1 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
-        model2 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
+        model1 = BlockRNNModel(
+            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+        )
+        model2 = BlockRNNModel(
+            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
+        )
 
         ensemble = RegressionEnsembleModel([model1], 5)
         ensemble.fit(self.combined)
@@ -129,7 +151,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         model2.fit(self.combined)
         forecast2 = model2.predict(10)
 
-        self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0., places=2)
+        self.assertAlmostEqual(
+            sum(forecast1.values() - forecast2.values())[0], 0.0, places=2
+        )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_train_predict_global_models_univar(self):
@@ -156,9 +180,13 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble.predict(10, self.seq2, self.cov2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
-    def helper_test_models_accuracy(self, model_instance, n, series, past_covariates, min_rmse):
+    def helper_test_models_accuracy(
+        self, model_instance, n, series, past_covariates, min_rmse
+    ):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
-        train_f, train_t, test_f, test_t = train_test_split(past_covariates, series, pd.Timestamp("20010101"))
+        train_f, train_t, test_f, test_t = train_test_split(
+            past_covariates, series, pd.Timestamp("20010101")
+        )
 
         model_instance.fit(series=train_t, past_covariates=train_f)
         prediction = model_instance.predict(n=n, past_covariates=past_covariates)
@@ -166,7 +194,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
         self.assertTrue(
             current_rmse <= min_rmse,
-            f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded."
+            f"Model was not able to denoise data. A rmse score of {current_rmse} was recorded.",
         )
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -196,9 +224,19 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         torch.manual_seed(self.RANDOM_SEED)
 
         ensemble_models = [
-            RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
-            BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
-            RegressionModel(lags=1, lags_past_covariates=[-1])
+            RNNModel(
+                input_chunk_length=20,
+                output_chunk_length=horizon,
+                n_epochs=1,
+                random_state=self.RANDOM_SEED,
+            ),
+            BlockRNNModel(
+                input_chunk_length=20,
+                output_chunk_length=horizon,
+                n_epochs=1,
+                random_state=self.RANDOM_SEED,
+            ),
+            RegressionModel(lags=1, lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
@@ -212,9 +250,20 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         torch.manual_seed(self.RANDOM_SEED)
 
         ensemble_models = [
-            RNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
-            BlockRNNModel(input_chunk_length=20, output_chunk_length=horizon, n_epochs=1, random_state=self.RANDOM_SEED),
-            RegressionModel(lags=1, lags_past_covariates=[-1]), RegressionModel(lags=1, lags_past_covariates=[-1])
+            RNNModel(
+                input_chunk_length=20,
+                output_chunk_length=horizon,
+                n_epochs=1,
+                random_state=self.RANDOM_SEED,
+            ),
+            BlockRNNModel(
+                input_chunk_length=20,
+                output_chunk_length=horizon,
+                n_epochs=1,
+                random_state=self.RANDOM_SEED,
+            ),
+            RegressionModel(lags=1, lags_past_covariates=[-1]),
+            RegressionModel(lags=1, lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)

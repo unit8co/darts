@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 
-from .base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
 from darts.metrics import mape
@@ -12,18 +12,22 @@ from darts.models import (
     Theta,
     FourTheta,
     FFT,
-    VARIMA
+    VARIMA,
 )
 from ..utils.utils import SeasonalityMode, TrendMode, ModelMode
 from ..logging import get_logger
 from ..datasets import AirPassengersDataset, IceCreamHeaterDataset
+
 logger = get_logger(__name__)
 
 try:
     from darts.models import RandomForest, LinearRegressionModel
+
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning('Torch not installed - some local forecasting models tests will be skipped')
+    logger.warning(
+        "Torch not installed - some local forecasting models tests will be skipped"
+    )
     TORCH_AVAILABLE = False
 
 # (forecasting models, maximum error) tuples
@@ -40,12 +44,14 @@ models = [
     (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
     (FFT(trend="poly"), 11.4),
-    (NaiveSeasonal(), 32.4)
+    (NaiveSeasonal(), 32.4),
 ]
 
 if TORCH_AVAILABLE:
-    models += [(LinearRegressionModel(lags=12), 11.0),
-               (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5)]
+    models += [
+        (LinearRegressionModel(lags=12), 11.0),
+        (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5),
+    ]
 
 # forecasting models with exogenous variables support
 multivariate_models = [
@@ -58,6 +64,7 @@ dual_models = [ARIMA()]
 
 try:
     from ..models import Prophet
+
     models.append((Prophet(), 13.5))
     dual_models.append(Prophet())
 except ImportError:
@@ -91,9 +98,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     np.random.seed(1)
     ts_gaussian = tg.gaussian_timeseries(length=100, mean=50)
     # for testing covariate slicing
-    ts_gaussian_long = tg.gaussian_timeseries(length=len(ts_gaussian) + 2 * forecasting_horizon,
-                                              start=ts_gaussian.start_time() - forecasting_horizon * ts_gaussian.freq,
-                                              mean=50)
+    ts_gaussian_long = tg.gaussian_timeseries(
+        length=len(ts_gaussian) + 2 * forecasting_horizon,
+        start=ts_gaussian.start_time() - forecasting_horizon * ts_gaussian.freq,
+        mean=50,
+    )
 
     # real timeseries for functionality tests
     ts_passengers = AirPassengersDataset().load()
@@ -121,8 +130,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(self.ts_pass_train)
             prediction = model.predict(len(self.ts_pass_val))
             current_mape = mape(prediction, self.ts_pass_val)
-            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}. "
-                            "with a MAPE of {}".format(str(model), max_mape, current_mape))
+            self.assertTrue(
+                current_mape < max_mape,
+                "{} model exceeded the maximum MAPE of {}. "
+                "with a MAPE of {}".format(str(model), max_mape, current_mape),
+            )
 
     def test_multivariate_models_performance(self):
         # for every model, check whether its errors do not exceed the given bounds
@@ -131,8 +143,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(self.ts_ice_heater_train)
             prediction = model.predict(len(self.ts_ice_heater_val))
             current_mape = mape(prediction, self.ts_ice_heater_val)
-            self.assertTrue(current_mape < max_mape, "{} model exceeded the maximum MAPE of {}. "
-                            "with a MAPE of {}".format(str(model), max_mape, current_mape))
+            self.assertTrue(
+                current_mape < max_mape,
+                "{} model exceeded the maximum MAPE of {}. "
+                "with a MAPE of {}".format(str(model), max_mape, current_mape),
+            )
 
     def test_multivariate_input(self):
         es_model = ExponentialSmoothing()
@@ -148,7 +163,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
             # Test models runnability - proper future covariates slicing
             model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian_long)
-            prediction = model.predict(self.forecasting_horizon, future_covariates=self.ts_gaussian_long)
+            prediction = model.predict(
+                self.forecasting_horizon, future_covariates=self.ts_gaussian_long
+            )
 
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
@@ -156,7 +173,10 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 model.predict(
                     self.forecasting_horizon,
-                    future_covariates=tg.gaussian_timeseries(length=self.forecasting_horizon - 1))
+                    future_covariates=tg.gaussian_timeseries(
+                        length=self.forecasting_horizon - 1
+                    ),
+                )
 
             # Test mismatch in time-index/length between series and exogenous variables
             with self.assertRaises(ValueError):

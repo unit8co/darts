@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
 
-from .base_test_class import DartsBaseTestClass
-from ..utils import timeseries_generation as tg
-from ..timeseries import TimeSeries
-from ..utils.data.encoder_base import (CovariateIndexGenerator,
-                                       PastCovariateIndexGenerator,
-                                       FutureCovariateIndexGenerator)
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
+from darts import TimeSeries
+from darts.utils.data.encoder_base import (CovariateIndexGenerator,
+                                           PastCovariateIndexGenerator,
+                                           FutureCovariateIndexGenerator)
 
 from ..logging import get_logger
 logger = get_logger(__name__)

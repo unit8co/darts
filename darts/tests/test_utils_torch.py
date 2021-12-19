@@ -1,16 +1,17 @@
 from numpy.random import RandomState
 
-from .base_test_class import DartsBaseTestClass
-from ..logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
 try:
     import torch
     from ..utils.torch import random_method
+
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning('Torch not available. Torch utils will not be tested.')
+    logger.warning("Torch not available. Torch utils will not be tested.")
     TORCH_AVAILABLE = False
 
 
@@ -29,6 +30,7 @@ if TORCH_AVAILABLE:
     class RandomMethodTestCase(DartsBaseTestClass):
         def test_it_raises_error_if_used_on_function(self):
             with self.assertRaises(ValueError):
+
                 @random_method
                 def a_random_function():
                     pass
@@ -84,7 +86,9 @@ if TORCH_AVAILABLE:
             model = TorchModelMock(random_state=42)
             self.helper_test_successive_call_are_different(model)
 
-        def test_successive_call_to_rng_are_different_when_random_instance_specified(self):
+        def test_successive_call_to_rng_are_different_when_random_instance_specified(
+            self,
+        ):
             model = TorchModelMock(random_state=RandomState(42))
             self.helper_test_successive_call_are_different(model)
 

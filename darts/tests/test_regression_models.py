@@ -2,10 +2,10 @@ import numpy as np
 import pandas as pd
 
 import darts
-from ..logging import get_logger
+from darts.logging import get_logger
 from darts import TimeSeries
 from darts.metrics import rmse
-from .base_test_class import DartsBaseTestClass
+from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 from sklearn.linear_model import LinearRegression
 from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
@@ -17,13 +17,22 @@ from sklearn.experimental import enable_hist_gradient_boosting
 logger = get_logger(__name__)
 
 try:
-    from darts.models import RegressionModel, RandomForest, LinearRegressionModel, LightGBMModel
+    from darts.models import (
+        RegressionModel,
+        RandomForest,
+        LinearRegressionModel,
+        LightGBMModel,
+    )
     from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
     from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
-    from darts.models.forecasting.regression_model import _shift_matrices, _update_min_max
+    from darts.models.forecasting.regression_model import (
+        _shift_matrices,
+        _update_min_max,
+    )
+
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning('Torch not available. Regression models tests will be skipped.')
+    logger.warning("Torch not available. Regression models tests will be skipped.")
     TORCH_AVAILABLE = False
 
 
@@ -53,6 +62,7 @@ def train_test_split(features, target, split_ts):
 
 # Regression models rely on torch for the Datasets
 if TORCH_AVAILABLE:
+
     class RegressionModelsTestCase(DartsBaseTestClass):
 
         np.random.seed(42)
@@ -74,18 +84,15 @@ if TORCH_AVAILABLE:
         ts_multivariate1 = ts_sum1.stack(ts_sum2)
 
         # default regression models
-        models = [
-            RandomForest,
-            LinearRegressionModel,
-            RegressionModel,
-            LightGBMModel
-        ]
+        models = [RandomForest, LinearRegressionModel, RegressionModel, LightGBMModel]
 
         target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
-        past_covariates = tg.linear_timeseries(start_value=50, end_value=99, length=50).stack(
-            tg.linear_timeseries(start_value=50.5, end_value=99.5, length=50)
+        past_covariates = tg.linear_timeseries(
+            start_value=50, end_value=99, length=50
+        ).stack(tg.linear_timeseries(start_value=50.5, end_value=99.5, length=50))
+        future_covariates = tg.linear_timeseries(
+            start_value=100, end_value=199, length=100
         )
-        future_covariates = tg.linear_timeseries(start_value=100, end_value=199, length=100)
 
         lags_1 = [-5, -3, -1]
         lags_past_covariates_1 = [-4, -2]
@@ -107,7 +114,9 @@ if TORCH_AVAILABLE:
                 self.assertEqual(model_instance.max_lag, -1)
                 # testing lags_future covariates
                 model_instance = model(lags=None, lags_future_covariates=(3, 5))
-                self.assertEqual(model_instance.lags_historical_covariates, [-3, -2, -1])
+                self.assertEqual(
+                    model_instance.lags_historical_covariates, [-3, -2, -1]
+                )
                 self.assertEqual(model_instance.lags_future_covariates, [0, 1, 2, 3, 4])
                 self.assertEqual(model_instance.min_lag, -3)
                 self.assertEqual(model_instance.max_lag, 4)
@@ -130,12 +139,14 @@ if TORCH_AVAILABLE:
                     # lags as input, lags_historical_covariates, lags_future_covariates, min_lag, max_lag
                     ([-3, -5, 1, 5], [-5, -3], [1, 5], -5, 5),
                     ([-3, -5], [-5, -3], None, -5, -3),
-                    ([1, 5], None, [1, 5], 1, 5)
+                    ([1, 5], None, [1, 5], 1, 5),
                 ]
 
                 for lags, lags_hist, lags_fut, min_l, max_l in checks_future_covariates:
                     model_instance = model(lags_future_covariates=lags)
-                    self.assertEqual(model_instance.lags_historical_covariates, lags_hist)
+                    self.assertEqual(
+                        model_instance.lags_historical_covariates, lags_hist
+                    )
                     self.assertEqual(model_instance.lags_future_covariates, lags_fut)
                     self.assertEqual(model_instance.min_lag, min_l)
                     self.assertEqual(model_instance.max_lag, max_l)
@@ -174,7 +185,7 @@ if TORCH_AVAILABLE:
             model_instance = RegressionModel(
                 lags=self.lags_1,
                 lags_past_covariates=self.lags_past_covariates_1,
-                lags_future_covariates=self.lags_future_covariates_1
+                lags_future_covariates=self.lags_future_covariates_1,
             )
 
             input_chunk_length = -model_instance.min_lag
@@ -185,27 +196,38 @@ if TORCH_AVAILABLE:
                 past_covariates=self.past_covariates,
                 future_covariates=self.future_covariates,
                 input_chunk_length=input_chunk_length,
-                output_chunk_length=training_output_chunk_length
+                output_chunk_length=training_output_chunk_length,
             )
 
-            training_samples, training_labels = model_instance._get_training_data(training_dataset=training_dataset)
+            training_samples, training_labels = model_instance._get_training_data(
+                training_dataset=training_dataset
+            )
 
             # checking number of dimensions
             self.assertEqual(len(training_samples.shape), 2)  # samples, features
-            self.assertEqual(len(training_labels.shape), 2)  # samples, components (multivariate)
+            self.assertEqual(
+                len(training_labels.shape), 2
+            )  # samples, components (multivariate)
             self.assertEqual(training_samples.shape[0], training_labels.shape[0])
-            self.assertEqual(training_samples.shape[1],
-                             len(self.lags_1) + len(self.lags_past_covariates_1) * 2 + len(self.lags_future_covariates_1))
+            self.assertEqual(
+                training_samples.shape[1],
+                len(self.lags_1)
+                + len(self.lags_past_covariates_1) * 2
+                + len(self.lags_future_covariates_1),
+            )
 
             # checking first row order lags | lags_past_cov | lags_future_cov
-            self.assertListEqual(list(training_samples[-1, :]), [0, 2, 4, 51, 51.5, 53, 53.5, 104, 105, 108])
+            self.assertListEqual(
+                list(training_samples[-1, :]),
+                [0, 2, 4, 51, 51.5, 53, 53.5, 104, 105, 108],
+            )
             self.assertEqual(training_labels[-1], 5)
 
         def test_prediction_data_creation(self):
             model_instance = RegressionModel(
                 lags=self.lags_1,
                 lags_past_covariates=self.lags_past_covariates_1,
-                lags_future_covariates=self.lags_future_covariates_1
+                lags_future_covariates=self.lags_future_covariates_1,
             )
 
             n = 2
@@ -217,7 +239,7 @@ if TORCH_AVAILABLE:
                 past_covariates=self.past_covariates,
                 future_covariates=self.future_covariates,
                 input_chunk_length=input_chunk_length,
-                output_chunk_length=prediction_output_chunk_length
+                output_chunk_length=prediction_output_chunk_length,
             )
 
             (
@@ -225,29 +247,43 @@ if TORCH_AVAILABLE:
                 past_covariates_matrix,
                 historic_future_covariates_matrix,
                 future_covariates_matrix,
-                future_past_covariates_matrix
+                future_past_covariates_matrix,
             ) = model_instance._get_prediction_data(prediction_dataset)
 
             # checking matrices sizes and content
 
-            for matrix in [target_matrix, past_covariates_matrix, historic_future_covariates_matrix,
-                           future_covariates_matrix]:
+            for matrix in [
+                target_matrix,
+                past_covariates_matrix,
+                historic_future_covariates_matrix,
+                future_covariates_matrix,
+            ]:
                 self.assertEqual(matrix.shape[0], 1)  # we are training on a single ts
 
             # checking matrices dimensions
             self.assertEqual(target_matrix.ndim, 3)  # samples, time, dim (multivariate)
-            self.assertEqual(past_covariates_matrix.ndim, 3)  # samples, time, dim (could be multivariate)
+            self.assertEqual(
+                past_covariates_matrix.ndim, 3
+            )  # samples, time, dim (could be multivariate)
             self.assertEqual(historic_future_covariates_matrix.ndim, 3)  # same
             self.assertEqual(future_covariates_matrix.ndim, 3)  # same
 
             # checking the first sample of the matrices, (should contain input_chunk_length matrices) for
             # past values, while should contain n + max_lag in the future ones (where not empty)
             np.testing.assert_array_equal(target_matrix[0].ravel(), np.arange(45, 50))
-            np.testing.assert_array_equal(past_covariates_matrix[0, :, 0], np.arange(95, 100))
-            np.testing.assert_array_equal(past_covariates_matrix[0, :, 1], np.arange(95.5, 100.5))
-            np.testing.assert_array_equal(historic_future_covariates_matrix[0].ravel(), np.arange(145, 150))
+            np.testing.assert_array_equal(
+                past_covariates_matrix[0, :, 0], np.arange(95, 100)
+            )
+            np.testing.assert_array_equal(
+                past_covariates_matrix[0, :, 1], np.arange(95.5, 100.5)
+            )
+            np.testing.assert_array_equal(
+                historic_future_covariates_matrix[0].ravel(), np.arange(145, 150)
+            )
             self.assertIsNone(future_past_covariates_matrix)
-            np.testing.assert_array_equal(future_covariates_matrix[0].ravel(), np.arange(150, 151))
+            np.testing.assert_array_equal(
+                future_covariates_matrix[0].ravel(), np.arange(150, 151)
+            )
 
         def test_shift_matrices(self):
             a = np.zeros((10, 8, 2))
@@ -277,7 +313,9 @@ if TORCH_AVAILABLE:
                 with self.assertRaises(ValueError):
                     # testing lags_past_covariates None but past_covariates during training
                     model_instance = model(lags=4, lags_past_covariates=None)
-                    model_instance.fit(series=self.ts_sum1, past_covariates=self.ts_cov1)
+                    model_instance.fit(
+                        series=self.ts_sum1, past_covariates=self.ts_cov1
+                    )
 
                 with self.assertRaises(ValueError):
                     # testing lags_past_covariates but no past_covariates during fit
@@ -288,7 +326,9 @@ if TORCH_AVAILABLE:
                 with self.assertRaises(ValueError):
                     # testing lags_future_covariates None but future_covariates during training
                     model_instance = model(lags=4, lags_future_covariates=None)
-                    model_instance.fit(series=self.ts_sum1, future_covariates=self.ts_cov1)
+                    model_instance.fit(
+                        series=self.ts_sum1, future_covariates=self.ts_cov1
+                    )
 
                 with self.assertRaises(ValueError):
                     # testing lags_covariate but no covariate during fit
@@ -298,8 +338,7 @@ if TORCH_AVAILABLE:
                 # testing input_dim
                 model_instance = model(lags=4, lags_past_covariates=2)
                 model_instance.fit(
-                    series=train_y,
-                    past_covariates=self.ts_sum1.stack(self.ts_sum1)
+                    series=train_y, past_covariates=self.ts_sum1.stack(self.ts_sum1)
                 )
 
                 self.assertEqual(model_instance.input_dim, 3)
@@ -340,24 +379,36 @@ if TORCH_AVAILABLE:
                     model_instance.fit(series=series, past_covariates=self.ts_cov1)
                     self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
-                    model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6], lags_future_covariates=[-2, 0])
-                    model_instance.fit(series=series, past_covariates=self.ts_cov1, future_covariates=self.ts_cov1)
+                    model_instance = model(
+                        lags=12,
+                        lags_past_covariates=[-1, -4, -6],
+                        lags_future_covariates=[-2, 0],
+                    )
+                    model_instance.fit(
+                        series=series,
+                        past_covariates=self.ts_cov1,
+                        future_covariates=self.ts_cov1,
+                    )
                     self.assertEqual(len(model_instance.lags_past_covariates), 3)
 
         def helper_test_models_accuracy(self, series, past_covariates, min_rmse):
             # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
-            train_f, train_t, test_f, test_t = train_test_split(past_covariates, series, pd.Timestamp("20010101"))
+            train_f, train_t, test_f, test_t = train_test_split(
+                past_covariates, series, pd.Timestamp("20010101")
+            )
 
             for model in self.models:
                 model_instance = model(lags=12, lags_past_covariates=2)
                 model_instance.fit(series=train_t, past_covariates=train_f)
-                prediction = model_instance.predict(n=len(test_t), past_covariates=past_covariates)
+                prediction = model_instance.predict(
+                    n=len(test_t), past_covariates=past_covariates
+                )
                 current_rmse = rmse(prediction, test_t)
 
                 self.assertTrue(
                     current_rmse <= min_rmse,
                     f"{str(model_instance)} model was not able to denoise data. A rmse score of {current_rmse} was"
-                    "recorded."
+                    "recorded.",
                 )
 
         def test_models_denoising(self):
@@ -379,7 +430,7 @@ if TORCH_AVAILABLE:
                 retrain=True,
                 overlap_end=False,
                 last_points_only=True,
-                verbose=False
+                verbose=False,
             )
             self.assertEqual(len(result), 51)
 
@@ -393,7 +444,7 @@ if TORCH_AVAILABLE:
                 retrain=True,
                 overlap_end=False,
                 last_points_only=True,
-                verbose=False
+                verbose=False,
             )
             self.assertEqual(len(result), 51)
 
@@ -403,7 +454,7 @@ if TORCH_AVAILABLE:
                 RegressionModel(lags=lags),
                 RegressionModel(lags=lags, model=LinearRegression()),
                 RegressionModel(lags=lags, model=RandomForestRegressor()),
-                RegressionModel(lags=lags, model=HistGradientBoostingRegressor())
+                RegressionModel(lags=lags, model=HistGradientBoostingRegressor()),
             ]
 
             for model in models:
@@ -414,50 +465,77 @@ if TORCH_AVAILABLE:
         def test_multiple_ts(self):
             lags = 4
             lags_past_covariates = 3
-            model = RegressionModel(lags=lags, lags_past_covariates=lags_past_covariates)
+            model = RegressionModel(
+                lags=lags, lags_past_covariates=lags_past_covariates
+            )
 
             target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
-            past_covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
+            past_covariates = tg.linear_timeseries(
+                start_value=100, end_value=149, length=50
+            )
             past_covariates = past_covariates.stack(
-                tg.linear_timeseries(start_value=400, end_value=449, length=50))
+                tg.linear_timeseries(start_value=400, end_value=449, length=50)
+            )
 
             target_train, target_test = target_series.split_after(0.7)
-            past_covariates_train, past_covariates_test = past_covariates.split_after(0.7)
+            past_covariates_train, past_covariates_test = past_covariates.split_after(
+                0.7
+            )
             model.fit(
                 series=[target_train, target_train + 0.5],
-                past_covariates=[past_covariates_train, past_covariates_train + 0.5])
+                past_covariates=[past_covariates_train, past_covariates_train + 0.5],
+            )
 
             predictions = model.predict(
                 10,
                 series=[target_train, target_train + 0.5],
-                past_covariates=[past_covariates, past_covariates + 0.5])
+                past_covariates=[past_covariates, past_covariates + 0.5],
+            )
 
-            self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions)} instead")
+            self.assertEqual(
+                len(predictions[0]), 10, f"Found {len(predictions)} instead"
+            )
 
-            # multiple TS, both future and past covariates, checking that both covariates lead to better results than using
-            # a single one (target series = past_cov + future_cov + noise)
+            # multiple TS, both future and past covariates, checking that both covariates lead to better results than
+            # using a single one (target series = past_cov + future_cov + noise)
             np.random.seed(42)
 
             linear_ts_1 = tg.linear_timeseries(start_value=10, end_value=59, length=50)
             linear_ts_2 = tg.linear_timeseries(start_value=40, end_value=89, length=50)
 
             past_covariates = tg.sine_timeseries(length=50) * 10
-            future_covariates = tg.sine_timeseries(length=50, value_frequency=0.015) * 50
+            future_covariates = (
+                tg.sine_timeseries(length=50, value_frequency=0.015) * 50
+            )
 
             target_series_1 = linear_ts_1 + 4 * past_covariates + 2 * future_covariates
             target_series_2 = linear_ts_2 + 4 * past_covariates + 2 * future_covariates
 
-            target_series_1_noise = (linear_ts_1 + 4 * past_covariates + 2 * future_covariates
-                                     + tg.gaussian_timeseries(std=7, length=50))
+            target_series_1_noise = (
+                linear_ts_1
+                + 4 * past_covariates
+                + 2 * future_covariates
+                + tg.gaussian_timeseries(std=7, length=50)
+            )
 
-            target_series_2_noise = (linear_ts_2 + 4 * past_covariates + 2 * future_covariates
-                                     + tg.gaussian_timeseries(std=7, length=50))
+            target_series_2_noise = (
+                linear_ts_2
+                + 4 * past_covariates
+                + 2 * future_covariates
+                + tg.gaussian_timeseries(std=7, length=50)
+            )
 
             target_train_1, target_test_1 = target_series_1.split_after(0.7)
             target_train_2, target_test_2 = target_series_2.split_after(0.7)
 
-            target_train_1_noise, target_test_1_noise = target_series_1_noise.split_after(0.7)
-            target_train_2_noise, target_test_2_noise = target_series_2_noise.split_after(0.7)
+            (
+                target_train_1_noise,
+                target_test_1_noise,
+            ) = target_series_1_noise.split_after(0.7)
+            (
+                target_train_2_noise,
+                target_test_2_noise,
+            ) = target_series_2_noise.split_after(0.7)
 
             # testing improved denoise with multiple TS
 
@@ -466,30 +544,54 @@ if TORCH_AVAILABLE:
             model.fit([target_train_1_noise], [past_covariates])
 
             prediction_past_only = model.predict(
-                n=len(target_test_1), series=[target_train_1_noise, target_train_2_noise],
-                past_covariates=[past_covariates] * 2
+                n=len(target_test_1),
+                series=[target_train_1_noise, target_train_2_noise],
+                past_covariates=[past_covariates] * 2,
             )
 
-            model = RegressionModel(lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0))
+            model = RegressionModel(
+                lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0)
+            )
             model.fit([target_train_1_noise], [past_covariates], [future_covariates])
             prediction_past_and_future = model.predict(
-                n=len(target_test_1), series=[target_train_1_noise, target_train_2_noise],
-                past_covariates=[past_covariates] * 2, future_covariates=[future_covariates] * 2
+                n=len(target_test_1),
+                series=[target_train_1_noise, target_train_2_noise],
+                past_covariates=[past_covariates] * 2,
+                future_covariates=[future_covariates] * 2,
             )
 
-            error_past_only = rmse([target_test_1, target_test_2], prediction_past_only, inter_reduction=np.mean)
-            error_both = rmse([target_test_1, target_test_2], prediction_past_and_future, inter_reduction=np.mean)
+            error_past_only = rmse(
+                [target_test_1, target_test_2],
+                prediction_past_only,
+                inter_reduction=np.mean,
+            )
+            error_both = rmse(
+                [target_test_1, target_test_2],
+                prediction_past_and_future,
+                inter_reduction=np.mean,
+            )
 
             self.assertTrue(error_past_only > error_both)
             # test 2: with both covariates, 2 TS should learn more than one (with little noise)
-            model = RegressionModel(lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0))
-            model.fit([target_train_1_noise, target_train_2_noise], [past_covariates] * 2, [future_covariates] * 2)
-            prediction_past_and_future_multi_ts = model.predict(
-                n=len(target_test_1), series=[target_train_1_noise, target_train_2_noise],
-                past_covariates=[past_covariates] * 2, future_covariates=[future_covariates] * 2
+            model = RegressionModel(
+                lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0)
             )
-            error_both_multi_ts = rmse([target_test_1, target_test_2], prediction_past_and_future_multi_ts,
-                                       inter_reduction=np.mean)
+            model.fit(
+                [target_train_1_noise, target_train_2_noise],
+                [past_covariates] * 2,
+                [future_covariates] * 2,
+            )
+            prediction_past_and_future_multi_ts = model.predict(
+                n=len(target_test_1),
+                series=[target_train_1_noise, target_train_2_noise],
+                past_covariates=[past_covariates] * 2,
+                future_covariates=[future_covariates] * 2,
+            )
+            error_both_multi_ts = rmse(
+                [target_test_1, target_test_2],
+                prediction_past_and_future_multi_ts,
+                inter_reduction=np.mean,
+            )
 
             self.assertTrue(error_both > error_both_multi_ts)
 
@@ -516,7 +618,9 @@ if TORCH_AVAILABLE:
                 future_covariates=[covariates, covariates + 0.5],
             )
 
-            self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions[0])} instead")
+            self.assertEqual(
+                len(predictions[0]), 10, f"Found {len(predictions[0])} instead"
+            )
 
         def test_not_enough_future_covariate(self):
 
@@ -540,20 +644,23 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
                 model.predict(12, series=target_train, past_covariates=covariates)
 
-        @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit")
+        @patch.object(
+            darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit"
+        )
         # @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
         def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
             """test whether these evaluation set parameters are passed to LGBRegressor """
             model = LightGBMModel(lags=4, lags_past_covariates=2)
             split_index = 450
-            model.fit(series=self.ts_sum1[:split_index],
-                      past_covariates=self.ts_cov1[:split_index],
-                      val_series=self.ts_sum1[split_index:],
-                      val_past_covariates=self.ts_cov1[split_index:],
-                      early_stopping_rounds=2,
-                      )
+            model.fit(
+                series=self.ts_sum1[:split_index],
+                past_covariates=self.ts_cov1[:split_index],
+                val_series=self.ts_sum1[split_index:],
+                val_past_covariates=self.ts_cov1[split_index:],
+                early_stopping_rounds=2,
+            )
 
             lgb_fit_patch.assert_called_once()
 
-            assert lgb_fit_patch.call_args[1]['eval_set'] is not None
-            assert lgb_fit_patch.call_args[1]['early_stopping_rounds'] == 2
+            assert lgb_fit_patch.call_args[1]["eval_set"] is not None
+            assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
