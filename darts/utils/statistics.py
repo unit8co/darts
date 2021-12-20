@@ -264,6 +264,7 @@ def granger_causality_tests(ts_cause: TimeSeries,
     
     """
     Provides four tests for granger non causality of 2 time series using `statsmodels.tsa.stattools.grangercausalitytests`.
+    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html
 
 
     Parameters
