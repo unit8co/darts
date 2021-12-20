@@ -92,6 +92,8 @@ class _TFTModule(PLTorchParametricProbabilisticForecastingModel, PLMixedCovariat
         """
 
         super(_TFTModule, self).__init__(likelihood=likelihood, **kwargs)
+        # TODO: This is required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         self.n_targets, self.loss_size = output_dim
         self.input_chunk_length = input_chunk_length
@@ -346,17 +348,17 @@ class _TFTModule(PLTorchParametricProbabilisticForecastingModel, PLMixedCovariat
                 self.attention_mask = self.get_attention_mask_full(time_steps=time_steps,
                                                                    batch_size=batch_size,
                                                                    dtype=past_target.dtype,
-                                                                   device=past_target.device)
+                                                                   device=self.device)
             else:
                 self.attention_mask = self.get_attention_mask_future(encoder_length=encoder_length,
                                                                      decoder_length=decoder_length,
                                                                      batch_size=batch_size,
-                                                                     device=past_target.device)
+                                                                     device=self.device)
             if self.add_relative_index:
                 self.relative_index = self.get_relative_index(encoder_length=encoder_length,
                                                               decoder_length=decoder_length,
                                                               batch_size=batch_size,
-                                                              device=past_target.device,
+                                                              device=self.device,
                                                               dtype=past_target.dtype)
 
             self.batch_size_last = batch_size
@@ -407,12 +409,12 @@ class _TFTModule(PLTorchParametricProbabilisticForecastingModel, PLMixedCovariat
         else:
             static_embedding = torch.zeros((past_target.shape[0], self.hidden_size),
                                            dtype=past_target.dtype,
-                                           device=past_target.device)
+                                           device=self.device)
 
             # this is only to interpret the output
             static_covariate_var = torch.zeros((past_target.shape[0], 0),
                                                dtype=past_target.dtype,
-                                               device=past_target.device)
+                                               device=self.device)
 
         if future_covariates is None and static_covariates is None:
             raise NotImplementedError('make zero tensor if future covariates is None')
@@ -512,7 +514,6 @@ class _TFTModule(PLTorchParametricProbabilisticForecastingModel, PLMixedCovariat
         else:
             return super().predict(self.output_chunk_length, *args, **kwargs)[:n]
 
-    @random_method
     def _produce_predict_output(self, x):
         if self.likelihood:
             output = self(x)
@@ -630,7 +631,7 @@ class _TFTModule(PLTorchParametricProbabilisticForecastingModel, PLMixedCovariat
 
 
 class TFTModel(MixedCovariatesTorchModel):
-    @random_method
+
     def __init__(self,
                  input_chunk_length: int = 12,
                  output_chunk_length: int = 1,
