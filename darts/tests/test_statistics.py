@@ -27,7 +27,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         )
         series_cause_2 = gaussian_timeseries(start = 0, end = 9999)
         series_effect_1  = constant_timeseries(start = 0, end = 999)
-        series_effect_2  = TimeSeries.from_series(pd.Series(np.random.uniform(0, 1, 10000)))
+        series_effect_2  = TimeSeries.from_values(np.random.uniform(0, 1, 10000))
 
         #Test univariate
         with self.assertRaises(AssertionError):

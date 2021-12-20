@@ -269,9 +269,9 @@ def granger_causality_tests(ts_cause: TimeSeries,
     Parameters
     ----------
     ts_cause
-        An univariate time series. The statistical test determines if this time series 
+        A univariate deterministic time series. The statistical test determines if this time series 
         'Granger causes' the time series ts_effect (second parameter). Missing values are not supported.
-        if H_0 is (non causality) is rejected (p near 0), then there is a 'granger causality'.
+        if H_0 (non causality) is rejected (p near 0), then there is a 'granger causality'.
     ts_effect
         Univariate time series 'Granger caused' by ts_cause.
     maxlag
@@ -293,13 +293,16 @@ def granger_causality_tests(ts_cause: TimeSeries,
     ts_cause._assert_univariate()
     ts_effect._assert_univariate()
 
+    ts_cause._assert_deterministic()
+    ts_effect._assert_deterministic()
+
     raise_if(not ts_cause.has_same_time_as(ts_effect),
             'ts_cause and ts_effect time series have different time index.')
 
 
 
     return grangercausalitytests(
-        np.concatenate((ts_effect.values(), ts_cause.values()), axis=1), 
+        np.concatenate((ts_effect.values(copy=False), ts_cause.values(copy=False)), axis=1), 
         maxlag,
         addconst,
         verbose
