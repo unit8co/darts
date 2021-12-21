@@ -287,7 +287,7 @@ def stationarity_tests(ts: TimeSeries,
     adf_res = stationarity_test_adf(ts)
     kpss_res = stationarity_test_kpss(ts)
 
-    return (adf_res[1]<p_value_threshold_adfuller) & (kpss_res[1]>p_value_threshold_kpss)
+    return (adf_res[1]<p_value_threshold_adfuller) and (kpss_res[1]>p_value_threshold_kpss)
 
 
 def stationarity_test_kpss(ts: TimeSeries,
