@@ -28,17 +28,27 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         series_cause_2 = gaussian_timeseries(start = 0, end = 9999)
         series_effect_1  = constant_timeseries(start = 0, end = 999)
         series_effect_2  = TimeSeries.from_values(np.random.uniform(0, 1, 10000))
+        series_effect_3 = TimeSeries.from_values(np.random.uniform(0, 1, (1000, 2, 1000)))
+        series_effect_4 = constant_timeseries(start=pd.Timestamp('2000-01-01'), length=10000)
 
         #Test univariate
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_cause_1, series_effect_1, 10, verbose=False)
-        #Test same time index
+            granger_causality_tests(series_cause_1, series_effect_1,  10, verbose=False)
         with self.assertRaises(AssertionError):
-            granger_causality_tests(series_cause_1, series_effect_2, 10, verbose=False)
-        
+            granger_causality_tests(series_effect_1, series_cause_1, 10, verbose=False)
 
+        #Test deterministic
+        with self.assertRaises(AssertionError):
+            granger_causality_tests(series_cause_1, series_effect_3, 10, verbose=False)
+        with self.assertRaises(AssertionError):
+            granger_causality_tests(series_effect_3, series_cause_1,  10, verbose=False)
+
+        #Test Frequency
+        with self.assertRaises(ValueError):
+            granger_causality_tests(series_cause_2, series_effect_4,  10, verbose=False)
+
+        #Test granger basics
         tests = granger_causality_tests(series_effect_2, series_effect_2, 10, verbose=False)
         self.assertTrue(tests[1][0]['ssr_ftest'][1]>0.99)
-
         tests = granger_causality_tests(series_cause_2, series_effect_2, 10, verbose=False)
         self.assertTrue(tests[1][0]['ssr_ftest'][1]>0.01)
