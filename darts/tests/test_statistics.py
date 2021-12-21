@@ -4,7 +4,7 @@ import pandas as pd
 from .base_test_class import DartsBaseTestClass
 from .. import TimeSeries
 from ..utils.timeseries_generation import constant_timeseries, linear_timeseries, gaussian_timeseries
-from ..utils.statistics import check_seasonality, granger_causality_tests
+from ..utils.statistics import check_seasonality, granger_causality_tests, stationarity_test_adf, stationarity_test_kpss, stationarity_tests
 
 
 class TimeSeriesTestCase(DartsBaseTestClass):
@@ -52,3 +52,34 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertTrue(tests[1][0]['ssr_ftest'][1]>0.99)
         tests = granger_causality_tests(series_cause_2, series_effect_2, 10, verbose=False)
         self.assertTrue(tests[1][0]['ssr_ftest'][1]>0.01)
+    
+    def test_stationarity_tests(self):
+        series_1 = (
+            constant_timeseries(start = 0, end = 9999)
+            .stack(constant_timeseries(start = 0, end = 9999))
+        )
+
+        series_2 = TimeSeries.from_values(np.random.uniform(0, 1, (1000, 2, 1000)))
+        series_3 = gaussian_timeseries(start = 0, end = 9999)
+
+        #Test univariate
+        with self.assertRaises(AssertionError):
+            stationarity_tests(series_1)
+        with self.assertRaises(AssertionError):
+            stationarity_test_adf(series_1)
+        with self.assertRaises(AssertionError):
+            stationarity_test_kpss(series_1)
+        
+        #Test deterministic
+        with self.assertRaises(AssertionError):
+            stationarity_tests(series_2)
+        with self.assertRaises(AssertionError):
+            stationarity_test_adf(series_2)
+        with self.assertRaises(AssertionError):
+            stationarity_test_kpss(series_2)
+        
+        #Test basics
+        self.assertTrue(stationarity_test_kpss(series_3)[1]>0.05)
+        self.assertTrue(stationarity_test_adf(series_3)[1]<0.05)
+        self.assertTrue(stationarity_tests)
+        
