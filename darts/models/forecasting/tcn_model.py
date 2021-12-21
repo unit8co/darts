@@ -105,7 +105,7 @@ class _ResidualBlock(nn.Module):
         # add residual
         if self.conv1.in_channels != self.conv2.out_channels:
             residual = self.conv3(residual)
-        x += residual
+        x = x + residual
 
         return x
 
