@@ -423,15 +423,14 @@ def granger_causality_tests(ts_cause: TimeSeries,
     ts_cause._assert_deterministic()
     ts_effect._assert_deterministic()
 
+    raise_if_not(ts_cause.freq == ts_effect.freq,
+                'ts_cause and ts_effect must have the same frequency.')
+
     if not ts_cause.has_same_time_as(ts_effect):
         logger.warning('ts_cause and ts_effect time series have different time index. We will slice-intersect ts_cause with ts_effect.')
     
     ts_cause = ts_cause.slice_intersect(ts_effect)
     ts_effect = ts_effect.slice_intersect(ts_cause)
-
-    raise_if_not(ts_cause.has_same_time_as(ts_effect),
-            'After slice-intersect, ts_cause and ts_effect still don''t have same time index.' )
-
 
 
     if not stationarity_tests(ts_cause):
