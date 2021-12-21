@@ -267,8 +267,8 @@ def stationarity_tests(ts: TimeSeries,
     Because Augmented Dickey-Fuller is testing null hypothesis that ts IS NOT stationary and Kwiatkowski-Phillips-Schmidt-Shin that
     ts IS stationary, we can't really decide on the same p_value threshold for both tests in general.
     It seems reasonable to keep them both at 0.05.
-    If other thrsehold to be tested, they have to go in opposite direction (for example, p_value_threshold_adfuller = 0.01 and
-    p_value_threshold_kpss = 0.1)
+    If other threshold has to be tested, they have to go in opposite direction (for example, p_value_threshold_adfuller = 0.01 and
+    p_value_threshold_kpss = 0.1).
 
     Parameters
     ----------
@@ -423,9 +423,17 @@ def granger_causality_tests(ts_cause: TimeSeries,
     ts_cause._assert_deterministic()
     ts_effect._assert_deterministic()
 
-    raise_if(not ts_cause.has_same_time_as(ts_effect),
-            'ts_cause and ts_effect time series have different time index.')
+    if not ts_cause.has_same_time_as(ts_effect):
+        logger.warning('ts_cause and ts_effect time series have different time index. We will slice-intersect ts_cause with ts_effect.')
     
+    ts_cause = ts_cause.slice_intersect(ts_effect)
+    ts_effect = ts_effect.slice_intersect(ts_cause)
+
+    raise_if_not(ts_cause.has_same_time_as(ts_effect),
+            'After slice-intersect, ts_cause and ts_effect still don''t have same time index.' )
+
+
+
     if not stationarity_tests(ts_cause):
         logger.warning(f"ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context.")
     if not stationarity_tests(ts_effect):
