@@ -4,7 +4,11 @@ import logging
 from darts import TimeSeries
 from darts.utils.timeseries_generation import constant_timeseries
 from darts.dataprocessing import Pipeline
-from darts.dataprocessing.transformers import BaseDataTransformer, FittableDataTransformer, InvertibleDataTransformer
+from darts.dataprocessing.transformers import (
+    BaseDataTransformer,
+    FittableDataTransformer,
+    InvertibleDataTransformer,
+)
 from darts.dataprocessing.transformers import InvertibleMapper, Mapper
 
 
@@ -132,9 +136,9 @@ class PipelineTestCase(unittest.TestCase):
     def test_fit(self):
         # given
         data = constant_timeseries(value=0, length=3)
-        transformers = [
-            self.DataTransformerMock1() for _ in range(10)
-        ] + [self.DataTransformerMock2() for _ in range(10)]
+        transformers = [self.DataTransformerMock1() for _ in range(10)] + [
+            self.DataTransformerMock2() for _ in range(10)
+        ]
         p = Pipeline(transformers)
 
         # when
@@ -149,9 +153,11 @@ class PipelineTestCase(unittest.TestCase):
     def test_fit_skips_superfluous_transforms(self):
         # given
         data = constant_timeseries(value=0, length=100)
-        transformers = [self.DataTransformerMock1() for _ in range(10)]\
-            + [self.DataTransformerMock2()]\
-            + [self. DataTransformerMock1() for _ in range(10)]
+        transformers = (
+            [self.DataTransformerMock1() for _ in range(10)]
+            + [self.DataTransformerMock2()]
+            + [self.DataTransformerMock1() for _ in range(10)]
+        )
         p = Pipeline(transformers)
 
         # when
@@ -168,9 +174,9 @@ class PipelineTestCase(unittest.TestCase):
     def test_transform_fit(self):
         # given
         data = constant_timeseries(value=0, length=3)
-        transformers = [
-            self.DataTransformerMock1() for _ in range(10)
-        ] + [self.DataTransformerMock2() for _ in range(10)]
+        transformers = [self.DataTransformerMock1() for _ in range(10)] + [
+            self.DataTransformerMock2() for _ in range(10)
+        ]
         p = Pipeline(transformers)
 
         # when
@@ -186,7 +192,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_inverse_transform(self):
         # given
-        data = constant_timeseries(value=0., length=3)
+        data = constant_timeseries(value=0.0, length=3)
 
         transformers = [self.PlusTenTransformer(), self.TimesTwoTransformer()]
         p = Pipeline(transformers)
@@ -201,7 +207,10 @@ class PipelineTestCase(unittest.TestCase):
     def test_getitem(self):
         # given
 
-        transformers = [self.PlusTenTransformer(name="+10 transformer{}".format(i)) for i in range(0, 10)]
+        transformers = [
+            self.PlusTenTransformer(name="+10 transformer{}".format(i))
+            for i in range(0, 10)
+        ]
         p = Pipeline(transformers)
 
         # when & then
@@ -217,7 +226,10 @@ class PipelineTestCase(unittest.TestCase):
         input_list = list(range(10))
 
         # when & then
-        with self.assertRaises(ValueError, msg="transformers should be objects deriving from BaseDataTransformer"):
+        with self.assertRaises(
+            ValueError,
+            msg="transformers should be objects deriving from BaseDataTransformer",
+        ):
             Pipeline(input_list)
 
     def test_raises_on_bad_key(self):
@@ -231,8 +243,8 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_multi_ts(self):
 
-        series1 = constant_timeseries(value=0., length=3)
-        series2 = constant_timeseries(value=1., length=3)
+        series1 = constant_timeseries(value=0.0, length=3)
+        series2 = constant_timeseries(value=1.0, length=3)
 
         data = [series1, series2]
 
@@ -250,7 +262,7 @@ class PipelineTestCase(unittest.TestCase):
         self.assertEqual(data, back)
 
     def test_pipeline_partial_inverse(self):
-        series = constant_timeseries(value=0., length=3)
+        series = constant_timeseries(value=0.0, length=3)
 
         def plus_ten(x):
             return x + 10
@@ -275,7 +287,7 @@ class PipelineTestCase(unittest.TestCase):
 
     def test_pipeline_verbose(self):
         """
-        Checks if the verbose param applied to the pipeline is changing the verbosity level in the 
+        Checks if the verbose param applied to the pipeline is changing the verbosity level in the
         contained transformers.
         """
 
@@ -283,7 +295,9 @@ class PipelineTestCase(unittest.TestCase):
             return x + 10
 
         mapper = Mapper(fn=plus_ten, verbose=True)
-        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True)
+        mapper_inv = InvertibleMapper(
+            fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True
+        )
 
         verbose_value = False
         pipeline = Pipeline([mapper, mapper_inv], verbose=verbose_value)
@@ -301,7 +315,9 @@ class PipelineTestCase(unittest.TestCase):
             return x + 10
 
         mapper = Mapper(fn=plus_ten, n_jobs=1)
-        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2)
+        mapper_inv = InvertibleMapper(
+            fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2
+        )
 
         n_jobs_value = -1
         pipeline = Pipeline([mapper, mapper_inv], n_jobs=n_jobs_value)

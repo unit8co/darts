@@ -3,21 +3,19 @@ from typing import Union, Tuple
 import numpy as np
 import xarray as xr
 from matplotlib import pyplot as plt
-from matplotlib import transforms
-
-from ...logging import raise_if_not
 
 
-def plot(self,
-         new_plot: bool = False,
-         show_series: bool = False,
-         show_cost: bool = True,
-         cost_cmap: str = "summer",
-         args_path: dict = {},
-         args_cost: dict = {},
-         args_series1: dict = {},
-         args_series2: dict = {}
-         ):
+def plot(
+    self,
+    new_plot: bool = False,
+    show_series: bool = False,
+    show_cost: bool = True,
+    cost_cmap: str = "summer",
+    args_path: dict = {},
+    args_cost: dict = {},
+    args_series1: dict = {},
+    args_series2: dict = {},
+):
     """
     Plot the warp path.
 
@@ -67,15 +65,21 @@ def plot(self,
     if show_cost:
         cost_matrix = self.cost.to_dense()
         cost_matrix = np.transpose(cost_matrix[1:, 1:])
-        warp.imshow(cost_matrix, cmap=cost_cmap, interpolation='none',
-                    origin="lower", extent=[0, self.n, 0, self.m], **args_cost)
+        warp.imshow(
+            cost_matrix,
+            cmap=cost_cmap,
+            interpolation="none",
+            origin="lower",
+            extent=[0, self.n, 0, self.m],
+            **args_cost
+        )
 
     show_path = True
     if show_path:
         path = self.path()
 
-        i_coords = path[:,0] + 0.5
-        j_coords = path[:,1] + 0.5
+        i_coords = path[:, 0] + 0.5
+        j_coords = path[:, 1] + 0.5
         warp.plot(i_coords, j_coords, **args_path)
 
     if show_series:
@@ -86,22 +90,23 @@ def plot(self,
         left.set_ylim([self.series2.start_time(), self.series2.end_time()])
 
         bottom.legend()
-        bottom.set_title('')
+        bottom.set_title("")
         left.legend()
-        left.set_title('')
+        left.set_title("")
 
-    warp.set_aspect('auto')
+    warp.set_aspect("auto")
 
 
-def plot_alignment(self,
-                   new_plot: bool = False,
-                   series1_y_offset: float = 0,
-                   series2_y_offset: float = 0,
-                   components: Union[Tuple[Union[str, int], Union[str, int]]] = (0,0),
-                   args_line: dict = {},
-                   args_series1: dict = {},
-                   args_series2: dict = {}
-                   ):
+def plot_alignment(
+    self,
+    new_plot: bool = False,
+    series1_y_offset: float = 0,
+    series2_y_offset: float = 0,
+    components: Union[Tuple[Union[str, int], Union[str, int]]] = (0, 0),
+    args_line: dict = {},
+    args_series1: dict = {},
+    args_series2: dict = {},
+):
     """
     Plots the uni-variate component of each series,
     with lines between them indicating the alignment selected by the DTW algorithm.
@@ -129,8 +134,10 @@ def plot_alignment(self,
 
     (component1, component2) = components
 
-    if not series1.is_univariate: series1 = series1.univariate_component(component1)
-    if not series2.is_univariate: series2 = series2.univariate_component(component2)
+    if not series1.is_univariate:
+        series1 = series1.univariate_component(component1)
+    if not series2.is_univariate:
+        series2 = series2.univariate_component(component2)
 
     series1 += series1_y_offset
     series2 += series2_y_offset
@@ -151,7 +158,7 @@ def plot_alignment(self,
     y_coords2 = series2.univariate_values()[path[:, 1]]
 
     x_coords = np.empty(n * 3, dtype="datetime64[s]")
-    y_coords = np.empty(n * 3, dtype=np.float)
+    y_coords = np.empty(n * 3, dtype=np.float64)
 
     x_coords[0::3] = x_coords1
     x_coords[1::3] = x_coords2

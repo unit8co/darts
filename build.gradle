@@ -97,16 +97,6 @@ task pipInstall() {
     dependsOn pip_core, pip_dev, pip_prophet, pip_pmdarima, pip_torch, pip_release
 }
 
-// Tests
-void coverageTestSteps() {
-    exec {
-        commandLine "coverage", "run", "--source=darts/", "-m", "unittest"
-    }
-    exec {
-        commandLine "coverage", "report", "-m", "--fail-under=80", "--omit=darts/tests*,*__init__.py"
-    }
-}
-
 task lint(type: Exec) {
     dependsOn pip_dev
     commandLine "flake8", "--config=setup.cfg", "--exit-zero", "darts"
@@ -119,7 +109,7 @@ void createPipRelatedTask(String flavour) {
         dependsOn(taskArgument)
         dependsOn pip_core
         dependsOn pip_dev
-        commandLine "python", "-m", "unittest"
+        commandLine "pytest", "--durations=50", "--cov=darts", "darts/tests"
    }
 
    taskName = "test_" + flavour;
@@ -141,22 +131,11 @@ task unitTest_all(type: Exec) {
     doFirst {
         installPipLatest
     }
-    commandLine "python", "-m", "unittest"
-}
-
-task coverageTest_all() {
-    dependsOn installPipLatest, pip_dev
-    doFirst {
-        installPipLatest
-    }
-    doLast {
-        coverageTestSteps()
-    }
+    commandLine "pytest", "--durations=50", "--cov=darts", "darts/tests"
 }
 
 task test_all() {
     dependsOn unitTest_all
-    dependsOn coverageTest_all
     dependsOn lint
 }
 
