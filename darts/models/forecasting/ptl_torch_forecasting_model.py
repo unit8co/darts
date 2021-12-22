@@ -784,8 +784,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                 future_covariates=future_covariates)
 
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
-                                                roll_size=roll_size, num_samples=num_samples)
-        predictions = [p[0] for p in predictions]
+                                                roll_size=roll_size, num_samples=num_samples)[0]
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
