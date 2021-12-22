@@ -109,7 +109,7 @@ void createPipRelatedTask(String flavour) {
         dependsOn(taskArgument)
         dependsOn pip_core
         dependsOn pip_dev
-        commandLine "pytest", "--durations=50", "--cov=darts", "darts/tests"
+        commandLine "pytest", "--durations=50", "--cov=darts", "--cov-config=.coveragerc", "darts/tests"
    }
 
    taskName = "test_" + flavour;
@@ -131,7 +131,7 @@ task unitTest_all(type: Exec) {
     doFirst {
         installPipLatest
     }
-    commandLine "pytest", "--durations=50", "--cov=darts", "darts/tests"
+    commandLine "pytest", "--durations=50", "--cov=darts", "--cov-config=.coveragerc", "darts/tests"
 }
 
 task test_all() {
