@@ -1,7 +1,5 @@
 import numpy as np
-import xarray as xr
-import pandas as pd
-from typing import Callable, Union, Tuple
+from typing import Callable, Union
 import copy
 
 from .window import Window, CRWindow, NoWindow
@@ -11,14 +9,14 @@ from ...logging import get_logger, raise_if_not, raise_if
 
 logger = get_logger(__name__)
 
-SeriesValue = Union[np.ndarray, np.float]
+SeriesValue = Union[np.ndarray, np.floating]
 DistanceFunc = Callable[[SeriesValue, SeriesValue], float]
 
 
 # CORE ALGORITHM
-def _dtw_cost_matrix(x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window) -> np.ndarray:
-    n = len(x)
-    m = len(y)
+def _dtw_cost_matrix(
+    x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: Window
+) -> np.ndarray:
 
     dtw = CostMatrix._from_window(window)
 
@@ -27,9 +25,7 @@ def _dtw_cost_matrix(x: np.ndarray, y: np.ndarray, dist: DistanceFunc, window: W
 
     for i, j in window:
         cost = dist(x[i - 1], y[j - 1])
-        min_cost_prev = min(dtw[i - 1, j],
-                            dtw[i, j - 1],
-                            dtw[i - 1, j - 1])
+        min_cost_prev = min(dtw[i - 1, j], dtw[i, j - 1], dtw[i - 1, j - 1])
         dtw[i, j] = cost + min_cost_prev
 
     return dtw
@@ -71,10 +67,7 @@ def _down_sample(high_res: np.ndarray):
     return low_res
 
 
-def _expand_window(low_res_path: np.ndarray,
-                   n: int,
-                   m: int,
-                   radius: int) -> CRWindow:
+def _expand_window(low_res_path: np.ndarray, n: int, m: int, radius: int) -> CRWindow:
     high_res_grid = CRWindow(n, m)
 
     def is_valid(cell):
@@ -115,11 +108,9 @@ def _expand_window(low_res_path: np.ndarray,
     return high_res_grid
 
 
-def _fast_dtw(x: np.ndarray,
-              y: np.ndarray,
-              dist: DistanceFunc,
-              radius: int,
-              depth: int = 0) -> CostMatrix:
+def _fast_dtw(
+    x: np.ndarray, y: np.ndarray, dist: DistanceFunc, radius: int, depth: int = 0
+) -> CostMatrix:
     n = len(x)
     m = len(y)
     min_size = radius + 2
@@ -150,10 +141,7 @@ class DTWAlignment:
     series2: TimeSeries
     cost: CostMatrix
 
-    def __init__(self,
-                 series1: TimeSeries,
-                 series2: TimeSeries,
-                 cost: CostMatrix):
+    def __init__(self, series1: TimeSeries, series2: TimeSeries, cost: CostMatrix):
 
         self.n = len(series1)
         self.m = len(series2)
@@ -168,11 +156,13 @@ class DTWAlignment:
         Returns
         -------
         np.ndarray of shape `(len(path), 2)`
-            An array of indices [[i0,j0], [i1,j1], [i2,j2], ...], where i indexes into series1 and j indexes into series2.
+            An array of indices [[i0,j0], [i1,j1], [i2,j2], ...], where i indexes into series1
+            and j indexes into series2.
             Indices are in monotonic order, path[n] >= path[n-1]
         """
 
-        if hasattr(self, "_path"): return self._path
+        if hasattr(self, "_path"):
+            return self._path
         self._path = _dtw_path(self.cost)
         return self._path
 
@@ -192,7 +182,8 @@ class DTWAlignment:
         float
             The mean distance between pair-wise elements in the two series after warping.
         """
-        if hasattr(self, "_mean_distance"): return self._mean_distance
+        if hasattr(self, "_mean_distance"):
+            return self._mean_distance
 
         path = self.path()
         self._mean_distance = self.distance() / len(path)
@@ -200,7 +191,8 @@ class DTWAlignment:
 
     def warped(self) -> (TimeSeries, TimeSeries):
         """
-        Warps the two time series according to the warp path returned by .path(), which minimizes the pair-wise distance.
+        Warps the two time series according to the warp path returned by .path(), which minimizes
+        the pair-wise distance.
         This will bring two time series that are out-of-phase back into phase.
 
         Returns
@@ -243,7 +235,9 @@ class DTWAlignment:
             time_index = time_index.rename({time_dim1: time_dim2})
             warped_series2[time_dim2] = time_index
 
-        return TimeSeries.from_xarray(warped_series1), TimeSeries.from_xarray(warped_series2)
+        return TimeSeries.from_xarray(warped_series1), TimeSeries.from_xarray(
+            warped_series2
+        )
 
 
 def default_distance_multi(x_values: np.ndarray, y_values: np.ndarray):
@@ -254,16 +248,19 @@ def default_distance_uni(x_value: float, y_value: float):
     return abs(x_value - y_value)
 
 
-def dtw(series1: TimeSeries,
-        series2: TimeSeries,
-        window: Window = NoWindow(),
-        distance: Union[DistanceFunc, None] = None,
-        multi_grid_radius: int = -1
-        ) -> DTWAlignment:
+def dtw(
+    series1: TimeSeries,
+    series2: TimeSeries,
+    window: Window = NoWindow(),
+    distance: Union[DistanceFunc, None] = None,
+    multi_grid_radius: int = -1,
+) -> DTWAlignment:
     """
-    Determines the optimal alignment between two time series series1 and series2, according to the Dynamic Time Warping algorithm.
-    The alignment minimizes the distance between pair-wise elements after warping. All elements in the two series are matched
-    and are in strictly monotonically increasing order. Considers only the values in the series, ignoring the time axis.
+    Determines the optimal alignment between two time series series1 and series2,
+    according to the Dynamic Time Warping algorithm.
+    The alignment minimizes the distance between pair-wise elements after warping.
+    All elements in the two series are matched and are in strictly monotonically increasing order.
+    Considers only the values in the series, ignoring the time axis.
 
     Dynamic Time Warping can be applied to determine how closely two time series correspond,
     irrespective of phase, length or speed differences.
@@ -285,8 +282,8 @@ def dtw(series1: TimeSeries,
         sum of the abs difference for multi-variate series.
     multi_grid_radius
         Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.
-        Without constraints DTW runs in O(nxm) time where n,m are the size of the series. Exact evaluation with no constraints,
-        will result in a performance warning on large datasets.
+        Without constraints DTW runs in O(nxm) time where n,m are the size of the series.
+        Exact evaluation with no constraints, will result in a performance warning on large datasets.
 
         Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,
         which executes in linear time, vs quadratic time for exact evaluation.
@@ -298,15 +295,24 @@ def dtw(series1: TimeSeries,
         Helper object for getting warp path, mean_distance, distance and warped time series
     """
 
-    if multi_grid_radius == -1 and type(window) is NoWindow and len(series1) * len(series2) > 10 ** 6:
-        logger.warn("Exact evaluation will result in poor performance on large datasets."
-                    " Consider enabling multi-grid or using a window.")
+    if (
+        multi_grid_radius == -1
+        and type(window) is NoWindow
+        and len(series1) * len(series2) > 10 ** 6
+    ):
+        logger.warn(
+            "Exact evaluation will result in poor performance on large datasets."
+            " Consider enabling multi-grid or using a window."
+        )
 
     both_univariate = series1.is_univariate and series2.is_univariate
 
     if distance is None:
-        raise_if_not(series1.n_components == series2.n_components,
-                     "Expected series to have same number of components, or to supply custom distance function", logger)
+        raise_if_not(
+            series1.n_components == series2.n_components,
+            "Expected series to have same number of components, or to supply custom distance function",
+            logger,
+        )
 
         distance = default_distance_uni if both_univariate else default_distance_multi
 
@@ -317,12 +323,20 @@ def dtw(series1: TimeSeries,
         values_x = series1.values(copy=False)
         values_y = series2.values(copy=False)
 
-    raise_if(np.any(np.isnan(values_x)), "Dynamic Time Warping does not support nan values. "
-                                         "You can use the module darts.utils.missing_values to fill them, "
-                                         "before passing them to dtw.", logger)
-    raise_if(np.any(np.isnan(values_y)), "Dynamic Time Warping does not support nan values. "
-                                         "You can use the module darts.utils.missing_values to fill them,"
-                                         "before passing it into dtw", logger)
+    raise_if(
+        np.any(np.isnan(values_x)),
+        "Dynamic Time Warping does not support nan values. "
+        "You can use the module darts.utils.missing_values to fill them, "
+        "before passing them to dtw.",
+        logger,
+    )
+    raise_if(
+        np.any(np.isnan(values_y)),
+        "Dynamic Time Warping does not support nan values. "
+        "You can use the module darts.utils.missing_values to fill them,"
+        "before passing it into dtw",
+        logger,
+    )
 
     window = copy.deepcopy(window)
     window.init_size(len(values_x), len(values_y))
@@ -330,7 +344,11 @@ def dtw(series1: TimeSeries,
     raise_if(multi_grid_radius < -1, "Expected multi-grid radius to be positive or -1")
 
     if multi_grid_radius >= 0:
-        raise_if_not(isinstance(window, NoWindow), "Multi-grid solver does not currently support windows", logger)
+        raise_if_not(
+            isinstance(window, NoWindow),
+            "Multi-grid solver does not currently support windows",
+            logger,
+        )
         cost_matrix = _fast_dtw(values_x, values_y, distance, multi_grid_radius)
     else:
         cost_matrix = _dtw_cost_matrix(values_x, values_y, distance, window)
