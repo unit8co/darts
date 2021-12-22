@@ -11,7 +11,7 @@ import numpy as np
 from scipy.stats import norm
 from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import acf, pacf
+from statsmodels.tsa.stattools import acf, pacf, grangercausalitytests, adfuller, kpss
 
 from warnings import warn
 from ..logging import raise_log, get_logger, raise_if_not, raise_if
@@ -254,6 +254,196 @@ def remove_trend(ts: TimeSeries,
     new_ts = remove_from_series(ts, trend, model)
     return new_ts
 
+
+def stationarity_tests(ts: TimeSeries,
+                       p_value_threshold_adfuller: float = 0.05,
+                       p_value_threshold_kpss: float = 0.05
+                       ) -> bool:
+    
+    """
+    Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented Dickey-Fuller statistical tests.
+
+    WARNING
+    Because Augmented Dickey-Fuller is testing null hypothesis that ts IS NOT stationary and Kwiatkowski-Phillips-Schmidt-Shin that
+    ts IS stationary, we can't really decide on the same p_value threshold for both tests in general.
+    It seems reasonable to keep them both at 0.05.
+    If other threshold has to be tested, they have to go in opposite direction (for example, p_value_threshold_adfuller = 0.01 and
+    p_value_threshold_kpss = 0.1).
+
+    Parameters
+    ----------
+    ts
+        The TimeSeries we test.
+    p_value_threshold_adfuller
+        p_value threshold to reject stationarity for Augmented Dickey-Fuller test.
+    p_value_threshold_kpss
+        p_value threshold to reject non-stationarity for Kwiatkowski-Phillips-Schmidt-Shin test.
+
+    Returns
+    -------
+    Boolean
+        If ts is stationary or not.
+    """
+    adf_res = stationarity_test_adf(ts)
+    kpss_res = stationarity_test_kpss(ts)
+
+    return (adf_res[1]<p_value_threshold_adfuller) and (kpss_res[1]>p_value_threshold_kpss)
+
+
+def stationarity_test_kpss(ts: TimeSeries,
+                           regression: str = 'c',
+                           nlags: Union[str, int] = 'auto',
+                            ) -> set:
+    """
+    Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series, using `statsmodels.tsa.stattools.kpss`.
+    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html
+
+
+    Parameters
+    ----------
+    ts
+        The time series to test.
+    regression
+        The null hypothesis for the KPSS test.
+        “c” : The data is stationary around a constant (default).
+        “ct” : The data is stationary around a trend.
+    nlags
+       Indicates the number of lags to be used. If “auto” (default), lags is calculated using the data-dependent method of Hobijn et al. (1998). 
+       See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to “legacy”, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
+
+    Returns
+    -------
+    A set of values:
+        kpss_stat: The test statistic.
+        pvalue: The p-value of the test. The p-value is interpolated from Table 1 in Kwiatkowski et al. (1992), 
+        and a boundary point is returned if the test statistic is outside the table of critical values, that is, if the p-value is outside the interval (0.01, 0.1).
+        lags: The truncation lag parameter.
+        crit: The critical values at 10%, 5%, 2.5% and 1%. Based on Kwiatkowski et al. (1992).
+    """
+    ts._assert_univariate()
+    ts._assert_deterministic()
+    
+    return kpss(
+        ts.values(copy=False),
+        regression,
+        nlags
+    )
+
+
+def stationarity_test_adf(ts: TimeSeries,
+                          maxlag: Union[None, int] = None,
+                          regression: str = 'c',
+                          autolag: Union[None, str] = 'AIC'
+                            ) -> set:
+    
+    """
+    Provides Augmented Dickey-Fuller unit root test for a time series, using `statsmodels.tsa.stattools.adfuller`.
+    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html
+
+
+    Parameters
+    ----------
+    ts
+        The time series to test.
+    maxlag
+        Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.
+    regression
+        Constant and trend order to include in regression.
+        “c” : constant only (default).
+        “ct” : constant and trend.
+        “ctt” : constant, and linear and quadratic trend.
+        “n” : no constant, no trend.
+    autolag
+        Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
+        If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding information criterion.
+        “t-stat” based choice of maxlag. Starts with maxlag and drops a lag until the t-statistic on the last lag length is significant using a 5%-sized test.
+        If None, then the number of included lags is set to maxlag.
+
+    Returns
+    -------
+    A set of values:
+        adf: The test statistic.
+        pvalue: MacKinnon’s approximate p-value based on MacKinnon (1994, 2010).
+        usedlag: The number of lags used.
+        nobs: The number of observations used for the ADF regression and calculation of the critical values.
+        critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on MacKinnon (2010).
+        icbest: The maximized information criterion if autolag is not None.
+    """
+
+    ts._assert_univariate()
+    ts._assert_deterministic()
+
+    return adfuller(
+        ts.values(copy=False),
+        maxlag,
+        regression,
+        autolag
+    )
+
+
+def granger_causality_tests(ts_cause: TimeSeries,
+                            ts_effect: TimeSeries,
+                            maxlag: int,
+                            addconst: bool = True,
+                            verbose: bool = True
+                          ) -> None:
+    
+    """
+    Provides four tests for granger non causality of 2 time series using `statsmodels.tsa.stattools.grangercausalitytests`.
+    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html
+
+
+    Parameters
+    ----------
+    ts_cause
+        A univariate deterministic time series. The statistical test determines if this time series 
+        'Granger causes' the time series ts_effect (second parameter). Missing values are not supported.
+        if H_0 (non causality) is rejected (p near 0), then there is a 'granger causality'.
+    ts_effect
+        Univariate time series 'Granger caused' by ts_cause.
+    maxlag
+        If an integer, computes the test for all lags up to maxlag. 
+        If an iterable, computes the tests only for the lags in maxlag.
+    addconst
+        Include a constant in the model.
+    verbose
+        Print results.
+    Returns
+    -------
+    Dict
+        All test results, dictionary keys are the number of lags. For each lag the values are a tuple, 
+        with the first element a dictionary with test statistic, pvalues, degrees of freedom, the second element are 
+        the OLS estimation results for the restricted model, the unrestricted model and the restriction (contrast) 
+        matrix for the parameter f_test.
+    """
+
+    ts_cause._assert_univariate()
+    ts_effect._assert_univariate()
+
+    ts_cause._assert_deterministic()
+    ts_effect._assert_deterministic()
+
+    raise_if_not(ts_cause.freq == ts_effect.freq,
+                'ts_cause and ts_effect must have the same frequency.')
+
+    if not ts_cause.has_same_time_as(ts_effect):
+        logger.warning('ts_cause and ts_effect time series have different time index. We will slice-intersect ts_cause with ts_effect.')
+    
+    ts_cause = ts_cause.slice_intersect(ts_effect)
+    ts_effect = ts_effect.slice_intersect(ts_cause)
+
+
+    if not stationarity_tests(ts_cause):
+        logger.warning(f"ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context.")
+    if not stationarity_tests(ts_effect):
+        logger.warning(f"ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context.")
+
+    return grangercausalitytests(
+        np.concatenate((ts_effect.values(copy=False), ts_cause.values(copy=False)), axis=1), 
+        maxlag,
+        addconst,
+        verbose
+        )
 
 def plot_acf(ts: TimeSeries,
              m: Optional[int] = None,
