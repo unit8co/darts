@@ -53,7 +53,6 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         # initialize prediction settings
         self.pred_n: Optional[int] = None
         self.pred_num_samples: Optional[int] = None
-        self.pred_n_jobs: Optional[int] = None
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
 
@@ -83,10 +82,19 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         return loss
 
     def predict_step(self,
-                     batch: Any,
+                     batch: Tuple,
                      batch_idx: int,
                      dataloader_idx: Optional[int] = None) -> Tuple[torch.Tensor, Sequence[TimeSeries]]:
+        """performs the prediction step
 
+        batch
+            output of Darts' `InferenceDataset` - tuple of (past_target, past_covariates, historic_future_covariates,
+            future_covariates, future_past_covariates, input_timeseries)
+        batch_idx
+            the batch index of the current batch
+        dataloader_idx
+            the dataloader index
+        """
         input_data_tuple, batch_input_series = batch[:-1], batch[-1]
 
         # number of individual series to be predicted in current batch
@@ -130,9 +138,9 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         return batch_predictions, batch_input_series
 
     def on_predict_end(self) -> None:
+        """reset all prediction-relevant parameters"""
         self.pred_n = None
         self.pred_num_samples = None
-        self.pred_n_jobs = None
         self.pred_roll_size = None
         self.pred_batch_size = None
 
@@ -178,7 +186,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
     @abstractmethod
     def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
         """
-        In charge of apply the recurrent logic for non-recurrent models.
+        In charge of applying the recurrent logic for non-recurrent models.
         Should be overwritten by recurrent models.
         """
         pass

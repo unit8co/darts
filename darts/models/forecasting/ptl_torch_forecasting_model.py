@@ -328,6 +328,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
 
+        # create work dir and model dir
+        if not os.path.exists(self.work_dir):
+            os.mkdir(self.work_dir)
+        if not os.path.exists(_get_runs_folder(self.work_dir, self.model_name)):
+            os.mkdir(_get_runs_folder(self.work_dir, self.model_name))
+
         self.total_epochs = 0
         self.model = None
         self.trainer = None
@@ -364,14 +370,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  logger)
 
         self.trainer_params['precision'] = precision
-        self.trainer = self._init_trainer(self.trainer_params)
+        # self.trainer = self._init_trainer(self.trainer_params)
 
         # we need to save the initialized TorchForecastingModel as pytorch-lightning only saves module checkpoints
         if self.save_checkpoints:
-            if not os.path.exists(self.work_dir):
-                os.mkdir(self.work_dir)
-            if not os.path.exists(_get_runs_folder(self.work_dir, self.model_name)):
-                os.mkdir(_get_runs_folder(self.work_dir, self.model_name))
             self.save_model(os.path.join(_get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME))
 
     @abstractmethod
@@ -440,6 +442,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+            trainer: Optional[pl.Trainer] = None,
+            ckpt_path: Optional[str] = None,
             verbose: bool = False,
             epochs: int = 0,
             max_samples_per_ts: Optional[int] = None,
@@ -475,8 +479,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Optionally, the past covariates corresponding to the validation series (must match `covariates`)
         val_future_covariates
             Optionally, the future covariates corresponding to the validation series (must match `covariates`)
+        trainer
+            Optionally, a custom pytorch-lightning Trainer object to perform training and prediction
+        ckpt_path:
+            Optionally, the path to the checkpoint from which training should be resumed. This is only required if
+            using a custom `trainer` and model has been trained before (resume training).
         verbose
-            Optionally, whether to print progress.
+            Optionally, whether to print model summary and progress bar.
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
@@ -542,11 +551,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
-        self.fit_from_dataset(train_dataset, val_dataset, verbose, epochs, num_loader_workers)
+        self.fit_from_dataset(train_dataset, val_dataset, trainer, ckpt_path, verbose, epochs, num_loader_workers)
 
     def fit_from_dataset(self,
                          train_dataset: TrainingDataset,
                          val_dataset: Optional[TrainingDataset] = None,
+                         trainer: Optional[pl.Trainer] = None,
+                         ckpt_path: Optional[str] = None,
                          verbose: bool = False,
                          epochs: int = 0,
                          num_loader_workers: int = 0) -> None:
@@ -567,8 +578,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_dataset
             A training dataset with a type matching this model (e.g. `PastCovariatesTrainingDataset` for
             `PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
+        trainer
+            Optionally, a custom pytorch-lightning Trainer object to perform training and prediction
+        ckpt_path:
+            Optionally, the path to the checkpoint from which training should be resumed. This is only required if
+            using a custom `trainer` and model has been trained before (resume training).
         verbose
-            Optionally, whether to print progress.
+            Optionally, whether to print model summary and progress bar.
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
@@ -631,59 +647,76 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
+        # setup trainer and extract optional ckpt_path to resume training
+        ckpt_path = self._setup_trainer(trainer, ckpt_path, verbose, epochs)
+
         # Train model
-        self._train(train_loader, val_loader, verbose, train_num_epochs)
+        self._train(train_loader, val_loader, ckpt_path, train_num_epochs)
+
+    def _setup_trainer(self,
+                       trainer: pl.Trainer,
+                       ckpt_path: Optional[str],
+                       verbose: bool,
+                       epochs: int = 0) -> Optional[str]:
+
+        max_epochs = self.total_epochs + epochs
+
+        resume_checkpoint = None
+        self.trainer_params['enable_model_summary'] = verbose
+        if not verbose:
+            self.trainer_params['progress_bar_refresh_rate'] = 0
+
+        # total epochs > 0 means model resumes training -> requires a checkpoint from which to resume training
+        if self.total_epochs > 0:
+            if trainer is None:
+                raise_if_not(self.save_checkpoints,
+                             'Resuming training with built-in trainer is only possible when `save_checkpoints` '
+                             'was set to `True` at model creation.',
+                             logger)
+
+                self.trainer_params['enable_model_summary'] = False
+                resume_checkpoint = os.path.join(
+                    _get_checkpoint_folder(self.work_dir, self.model_name),
+                    _get_checkpoint_fname(self.work_dir, self.model_name, best=False)
+                )
+            else:
+                raise_if(ckpt_path is None,
+                         'Model has been fit before with a custom `trainer`. To resume training you must pass '
+                         'parameter `ckpt_path` to fit().',
+                         logger)
+                resume_checkpoint = ckpt_path
+
+        self.trainer = self._init_trainer(
+            trainer_params=self.trainer_params,
+            max_epochs=max_epochs
+        ) if trainer is None else trainer
+
+        return resume_checkpoint
 
     def _train(self,
                train_loader: DataLoader,
                val_loader: Optional[DataLoader],
-               verbose: bool,
-               epochs: int = 0
-               ) -> None:
+               ckpt_path: Optional[str],
+               epochs: int = 0) -> None:
         """
         Performs the actual training
+
         Parameters
         ----------
         train_loader
             the training data loader feeding the training data and targets
         val_loader
             optionally, a validation set loader
+        trainer
+            Optionally, a custom pytorch-lightning Trainer object to perform training and prediction
+        ckpt_path:
+            Optionally, the path to the checkpoint from which training should be resumed.
+        verbose
+            Optionally, whether to print model summary and progress bar.
         epochs
             value >0 means we're retraining model
         """
-        max_epochs = self.total_epochs + epochs
-
-        self.trainer_params['enable_model_summary'] = False
-
-        resume_checkpoint = None
-        # total epochs > 0 means model resumes training
-        if self.total_epochs > 0:
-            raise_if_not(self.save_checkpoints,
-                         'Resuming training is only possible when `save_checkpoints` is set to `True` at model '
-                         'creation',
-                         logger)
-
-            self.trainer_params['enable_model_summary'] = False
-
-            self.trainer = self._init_trainer(
-                trainer_params=self.trainer_params,
-                max_epochs=max_epochs
-            )
-            resume_checkpoint = os.path.join(
-                _get_checkpoint_folder(self.work_dir, self.model_name),
-                _get_checkpoint_fname(self.work_dir, self.model_name, best=False)
-            )
-
-        # initialize trainer (no checkpoints available) with a new number of epochs
-        elif self.total_epochs == 0 and max_epochs != self.n_epochs:
-            self.trainer = self._init_trainer(
-                trainer_params=self.trainer_params,
-                max_epochs=max_epochs
-            )
-        else:
-            pass
-
-        self.trainer.fit(self.model, train_loader, val_loader, ckpt_path=resume_checkpoint)
+        self.trainer.fit(self.model, train_loader, val_loader, ckpt_path=ckpt_path)
         self.total_epochs += epochs
         self.trainer_params['max_epochs'] = self.total_epochs
 
