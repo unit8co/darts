@@ -14,7 +14,6 @@ import torch.nn as nn
 
 from darts.timeseries import TimeSeries
 from darts.utils.timeseries_generation import _generate_index
-from darts.models.forecasting.ptl_torch_forecasting_model import TorchForecastingModel
 
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import get_logger, raise_log, raise_if
@@ -83,7 +82,11 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         self.log('val_loss', loss, batch_size=val_batch[0].shape[0])
         return loss
 
-    def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: Optional[int] = None) -> Any:
+    def predict_step(self,
+                     batch: Any,
+                     batch_idx: int,
+                     dataloader_idx: Optional[int] = None) -> Tuple[torch.Tensor, Sequence[TimeSeries]]:
+
         input_data_tuple, batch_input_series = batch[:-1], batch[-1]
 
         # number of individual series to be predicted in current batch
@@ -124,15 +127,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         # concatenate the batch of samples, to form self.pred_num_samples samples
         batch_predictions = torch.cat(batch_predictions, dim=0)
         batch_predictions = batch_predictions.cpu().detach().numpy()
-
-        # create `TimeSeries` objects from prediction tensors
-        ts_forecasts = Parallel(n_jobs=self.pred_n_jobs)(
-            delayed(self._build_forecast_series)(
-                [batch_prediction[batch_idx] for batch_prediction in batch_predictions], input_series
-            )
-            for batch_idx, input_series in enumerate(batch_input_series)
-        )
-        return ts_forecasts
+        return batch_predictions, batch_input_series
 
     def on_predict_end(self) -> None:
         self.pred_n = None
@@ -187,39 +182,6 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         Should be overwritten by recurrent models.
         """
         pass
-
-    # TODO: had to copy these methods over from ForecastingModel as it is not a parent class.
-    #  Maybe let TorchForecastingModel handle the _build_forecast_series()
-    def _build_forecast_series(self,
-                               points_preds: Union[np.ndarray, Sequence[np.ndarray]],
-                               input_series: TimeSeries) -> TimeSeries:
-        """
-        Builds a forecast time series starting after the end of the training time series, with the
-        correct time index (or after the end of the input series, if specified).
-        """
-
-        time_index_length = len(points_preds) if isinstance(points_preds, np.ndarray) else len(points_preds[0])
-        time_index = self._generate_new_dates(time_index_length, input_series=input_series)
-        if isinstance(points_preds, np.ndarray):
-            return TimeSeries.from_times_and_values(time_index,
-                                                    points_preds,
-                                                    freq=input_series.freq_str,
-                                                    columns=input_series.columns)
-
-        return TimeSeries.from_times_and_values(time_index,
-                                                np.stack(points_preds, axis=2),
-                                                freq=input_series.freq_str,
-                                                columns=input_series.columns)
-
-    @staticmethod
-    def _generate_new_dates(n: int,
-                            input_series: TimeSeries) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
-        """
-        Generates `n` new dates after the end of the specified series
-        """
-        last = input_series.end_time()
-        start = last + input_series.freq if input_series.has_datetime_index else last + 1
-        return _generate_index(start=start, freq=input_series.freq, length=n)
 
     @staticmethod
     def _sample_tiling(input_data_tuple, batch_sample_size):

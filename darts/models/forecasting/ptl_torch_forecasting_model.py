@@ -19,9 +19,10 @@ This file contains several abstract classes:
 
 import numpy as np
 import os
-import re
 from glob import glob
 import shutil
+
+from joblib import Parallel, delayed
 
 import pytorch_lightning as pl
 from pytorch_lightning import loggers as pl_loggers
@@ -652,6 +653,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         max_epochs = self.total_epochs + epochs
 
+        self.trainer_params['enable_model_summary'] = False
+
         resume_checkpoint = None
         # total epochs > 0 means model resumes training
         if self.total_epochs > 0:
@@ -659,6 +662,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          'Resuming training is only possible when `save_checkpoints` is set to `True` at model '
                          'creation',
                          logger)
+
+            self.trainer_params['enable_model_summary'] = False
 
             self.trainer = self._init_trainer(
                 trainer_params=self.trainer_params,
@@ -784,7 +789,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                 future_covariates=future_covariates)
 
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
-                                                roll_size=roll_size, num_samples=num_samples)[0]
+                                                roll_size=roll_size, num_samples=num_samples)
+
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
@@ -858,7 +864,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model.pred_n = n
         self.model.pred_num_samples = num_samples
         self.model.pred_roll_size = roll_size
-        self.model.pred_n_jobs = n_jobs
         self.model.pred_batch_size = batch_size
 
         pred_loader = DataLoader(input_series_dataset,
@@ -869,7 +874,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  drop_last=False,
                                  collate_fn=self._batch_collate_fn)
 
-        return self.trainer.predict(self.model, pred_loader)
+        batch_predictions, batch_input_series = self.trainer.predict(self.model, pred_loader)[0]
+
+        # create `TimeSeries` objects from prediction tensors
+        ts_forecasts = Parallel(n_jobs=n_jobs)(
+            delayed(self._build_forecast_series)(
+                [batch_prediction[batch_idx] for batch_prediction in batch_predictions], input_series
+            )
+            for batch_idx, input_series in enumerate(batch_input_series)
+        )
+        return ts_forecasts
 
     @property
     @abstractmethod
