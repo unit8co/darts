@@ -83,3 +83,4 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertTrue(stationarity_test_adf(series_3)[1]<0.05)
         self.assertTrue(stationarity_tests)
         
+        
