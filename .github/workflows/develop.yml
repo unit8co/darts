@@ -55,14 +55,12 @@ jobs:
         run: |
           ./gradlew "test_${{matrix.flavour}}"
 
-      - name: "8. Codecov (Test - to be moved to merge workflow)"
+      - name: "8. Codecov upload"
         if: ${{ matrix.flavour == 'all' }}
         uses: codecov/codecov-action@v2
         with:
           fail_ci_if_error: true
           files: ./coverage.xml
-          verbose: true
-
 
   docs:
     runs-on: ubuntu-latest
