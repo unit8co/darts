@@ -4,8 +4,8 @@ import copy
 
 from .window import Window, CRWindow, NoWindow
 from .cost_matrix import CostMatrix
-from ...timeseries import TimeSeries
-from ...logging import get_logger, raise_if_not, raise_if
+from darts import TimeSeries
+from darts.logging import get_logger, raise_if_not, raise_if
 
 logger = get_logger(__name__)
 

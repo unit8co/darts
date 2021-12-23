@@ -63,7 +63,7 @@ dual_models = [ARIMA()]
 
 
 try:
-    from ..models import Prophet
+    from darts.models import Prophet
 
     models.append((Prophet(), 13.5))
     dual_models.append(Prophet())
@@ -71,7 +71,7 @@ except ImportError:
     logger.warning("Prophet not installed - will be skipping Prophet tests")
 
 try:
-    from ..models import AutoARIMA
+    from darts.models import AutoARIMA
 
     models.append((AutoARIMA(), 12.2))
     dual_models.append(AutoARIMA())
@@ -81,7 +81,7 @@ except ImportError:
     PMDARIMA_AVAILABLE = False
 
 try:
-    from ..models import TCNModel  # noqa: F401
+    from darts.models import TCNModel  # noqa: F401
 
     TORCH_AVAILABLE = True
 except ImportError:

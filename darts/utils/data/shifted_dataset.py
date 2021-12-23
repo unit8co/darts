@@ -6,7 +6,7 @@ Shifted Training Dataset
 from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
-from ...timeseries import TimeSeries
+from darts import TimeSeries
 from .utils import CovariateType
 from .training_dataset import (TrainingDataset,
                                PastCovariatesTrainingDataset,
@@ -14,7 +14,7 @@ from .training_dataset import (TrainingDataset,
                                DualCovariatesTrainingDataset,
                                MixedCovariatesTrainingDataset,
                                SplitCovariatesTrainingDataset)
-from ..utils import raise_if_not
+from darts.utils import raise_if_not
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
