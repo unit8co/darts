@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 import holidays
 
-from ..timeseries import TimeSeries
-from ..logging import raise_if_not, get_logger, raise_log, raise_if
+from darts import TimeSeries
+from darts.logging import raise_if_not, get_logger, raise_log, raise_if
 
 logger = get_logger(__name__)
 

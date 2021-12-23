@@ -22,7 +22,7 @@ from darts.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import TFTModel
+    from darts.models import TFTModel
 
     TORCH_AVAILABLE = True
 except ImportError:

@@ -1119,7 +1119,7 @@ if TORCH_AVAILABLE:
             )
 
         def test_get_matching_index(self):
-            from ..utils.data.utils import _get_matching_index
+            from darts.utils.data.utils import _get_matching_index
 
             # Check dividable freq
             times1 = pd.date_range(start="20100101", end="20100330", freq="D")

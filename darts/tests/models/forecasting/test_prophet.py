@@ -6,7 +6,7 @@ from darts.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import Prophet
+    from darts.models import Prophet
 
     PROPHET_AVAILABLE = True
 except ImportError:

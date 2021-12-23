@@ -12,7 +12,7 @@ from darts.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from ..models import RNNModel, TCNModel, NBEATSModel
+    from darts.models import RNNModel, TCNModel, NBEATSModel
 
     TORCH_AVAILABLE = True
 except ImportError:

@@ -5,7 +5,7 @@ Utilities that help in model selection e.g. by splitting a dataset.
 """
 
 from typing import Sequence, Optional, Union, Tuple
-from ..timeseries import TimeSeries
+from darts import TimeSeries
 
 MODEL_AWARE = 'model-aware'
 SIMPLE = 'simple'

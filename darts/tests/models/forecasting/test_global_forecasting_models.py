@@ -12,7 +12,7 @@ from darts.utils.timeseries_generation import linear_timeseries
 logger = get_logger(__name__)
 
 try:
-    from ..models import (
+    from darts.models import (
         BlockRNNModel,
         TCNModel,
         TransformerModel,

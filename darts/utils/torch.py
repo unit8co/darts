@@ -10,7 +10,7 @@ from sklearn.utils import check_random_state
 from torch.random import fork_rng, manual_seed
 from numpy.random import randint
 
-from ..logging import raise_if_not, get_logger
+from darts.logging import raise_if_not, get_logger
 
 T = TypeVar('T')
 logger = get_logger(__name__)

@@ -6,7 +6,7 @@ Sequential Training Dataset
 from typing import Union, Sequence, Optional, Tuple
 import numpy as np
 
-from ...timeseries import TimeSeries
+from darts import TimeSeries
 from .utils import CovariateType
 from .training_dataset import (PastCovariatesTrainingDataset,
                                FutureCovariatesTrainingDataset,

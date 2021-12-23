@@ -12,7 +12,7 @@ logger = get_logger(__name__)
 
 try:
     import torch
-    from ..models import (
+    from darts.models import (
         RNNModel,
         TCNModel,
         TransformerModel,

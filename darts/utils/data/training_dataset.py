@@ -9,8 +9,8 @@ import numpy as np
 
 from typing import Tuple, Optional, Dict
 from .utils import CovariateType
-from ...logging import get_logger, raise_if_not
-from ...timeseries import TimeSeries
+from darts.logging import get_logger, raise_if_not
+from darts import TimeSeries
 
 logger = get_logger(__name__)
 SampleIndexType = Tuple[int, int, int, int, int, int]
