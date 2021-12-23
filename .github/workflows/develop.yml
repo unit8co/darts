@@ -55,6 +55,13 @@ jobs:
         run: |
           ./gradlew "test_${{matrix.flavour}}"
 
+      - name: "8. Codecov upload"
+        if: ${{ matrix.flavour == 'all' }}
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+          files: ./coverage.xml
+
   docs:
     runs-on: ubuntu-latest
     steps:
