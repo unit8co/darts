@@ -14,7 +14,7 @@ from .training_dataset import (TrainingDataset,
                                DualCovariatesTrainingDataset,
                                MixedCovariatesTrainingDataset,
                                SplitCovariatesTrainingDataset)
-from darts.utils import raise_if_not
+from darts.logging import raise_if_not
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
