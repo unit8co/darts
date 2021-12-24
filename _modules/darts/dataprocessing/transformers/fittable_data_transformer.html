@@ -291,6 +291,10 @@
 <span class="sd">        kwargs</span>
 <span class="sd">            Additional keyword arguments for the `ts_fit()` method</span>
 
+<span class="sd">            component_mask : Optional[np.ndarray] = None</span>
+<span class="sd">                Optionally, a 1-D boolean np.ndarray of length `series.n_components` that specifies which components of</span>
+<span class="sd">                the underlying `series` the Scaler should consider.</span>
+
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        FittableDataTransformer</span>
@@ -329,14 +333,19 @@
 <span class="sd">        args</span>
 <span class="sd">            Additional positional arguments for the `ts_transform()` method</span>
 <span class="sd">        kwargs</span>
-<span class="sd">            Additional keyword arguments for the `ts_transform()` method</span>
+<span class="sd">            Additional keyword arguments for the `ts_transform()` method:</span>
+
+<span class="sd">            component_mask : Optional[np.ndarray] = None</span>
+<span class="sd">                Optionally, a 1-D boolean np.ndarray of length `series.n_components` that specifies which components of</span>
+<span class="sd">                the underlying `series` the Scaler should consider.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        Union[TimeSeries, Sequence[TimeSeries]]</span>
 <span class="sd">            Transformed data.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
+        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;component_mask&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">)</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span></div></div>
 </pre></div>
 
               </div>

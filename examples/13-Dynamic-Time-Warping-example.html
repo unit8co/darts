@@ -38,6 +38,7 @@
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="prev" title="Filtering and predicting using the Gaussian Process filter" href="12-GP-filter-examples.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -86,7 +87,7 @@
  </a>
 </li>
 
-<li class="toctree-l1 nav-item">
+<li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="../examples.html">
   Examples
  </a>
@@ -133,7 +134,121 @@
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="01-darts-intro.html">
+   Introduction to
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     darts
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="02-multi-time-series-and-covariates.html">
+   Multiple Time Series, Pre-trained Models and Covariates
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="03-data-processing.html">
+   Data (pre) processing using
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     DataTransformer
+    </span>
+   </code>
+   and
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     Pipeline
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="04-FFT-examples.html">
+   Fast Fourier Transform Forecasting Model (FFT)
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="05-RNN-examples.html">
+   Recurrent Neural Networks Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="06-TCN-examples.html">
+   Temporal Convolutional Network
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="07-Transformer-examples.html">
+   Transformer Model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="08-NBEATS-examples.html">
+   N-BEATS
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="09-DeepAR-examples.html">
+   Probabilistic RNN
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="10-DeepTCN-examples.html">
+   DeepTCN model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="14-TFT-examples.html">
+   Temporal Fusion Transformer
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="11-Kalman-filter-examples.html">
+   Filtering and predicting using the darts filters
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="12-GP-filter-examples.html">
+   Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Dynamic Time Warping (DTW)
+  </a>
+ </li>
+</ul>
+
   </div>
 </nav>
             </div>
@@ -534,7 +649,7 @@ div.rendered_html tbody tr:hover {
 <span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">SunspotsDataset</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">dtw_metric</span><span class="p">,</span> <span class="n">mae</span><span class="p">,</span> <span class="n">mape</span>
-<span class="kn">from</span> <span class="nn">darts.models.filtering_model</span> <span class="kn">import</span> <span class="n">MovingAverage</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">MovingAverage</span>
 <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelextrema</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
@@ -820,7 +935,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">alignment</span><span class="o">.</span><span class="n">plot_alignment</span><span class="p">(</span><span class="n">pred_series_y_offset</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span>
+<span></span><span class="n">alignment</span><span class="o">.</span><span class="n">plot_alignment</span><span class="p">(</span><span class="n">series2_y_offset</span> <span class="o">=</span> <span class="mi">200</span><span class="p">)</span>
 <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;Warp Alignment&quot;</span><span class="p">);</span>
 </pre></div>
 </div>
@@ -836,7 +951,7 @@ div.rendered_html tbody tr:hover {
 <h3>Warped Time Series<a class="headerlink" href="#Warped-Time-Series" title="Permalink to this headline">¶</a></h3>
 <p>Once we have found an aligment, we can produce two warped series, of the same length. Since we’ve warped the time dimension, by default the new warped series are indexed by <code class="docutils literal notranslate"><span class="pre">pd.RangeIndex</span></code>. Now our simple pattern matches up with the series, despite them not doing so originally!</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -888,7 +1003,7 @@ div.rendered_html tbody tr:hover {
 <li><p>The subsequence has some minimum length</p></li>
 </ol>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -927,7 +1042,7 @@ div.rendered_html tbody tr:hover {
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -948,7 +1063,7 @@ div.rendered_html tbody tr:hover {
 <h2>Visualizing the Matching Subsequences<a class="headerlink" href="#Visualizing-the-Matching-Subsequences" title="Permalink to this headline">¶</a></h2>
 <p>We can simply index the warped shape series by the RangeIndex to extract the subsequence. Moreover we must shift the series by r.start, to ensure the series begin at the right time. Without this they would all bunch up around time 0.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -969,6 +1084,15 @@ div.rendered_html tbody tr:hover {
 <img alt="../_images/examples_13-Dynamic-Time-Warping-example_34_0.png" src="../_images/examples_13-Dynamic-Time-Warping-example_34_0.png" />
 </div>
 </div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
 </section>
 </section>
 
@@ -977,7 +1101,14 @@ div.rendered_html tbody tr:hover {
               
               
               <!-- Previous / next buttons -->
-<div class='prev-next-area'>
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="12-GP-filter-examples.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Filtering and predicting using the Gaussian Process filter</p>
+        </div>
+    </a>
 </div>
               
           </main>

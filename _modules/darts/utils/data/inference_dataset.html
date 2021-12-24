@@ -157,14 +157,15 @@
 <span class="sd">-----------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>
 
-<span class="kn">from</span> <span class="nn">...timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">...logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
-<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">_get_matching_index</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">Dataset</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">CovariateType</span>
 
 
 <div class="viewcode-block" id="InferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.InferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">InferenceDataset</span><span class="p">(</span><span class="n">ABC</span><span class="p">,</span> <span class="n">Dataset</span><span class="p">):</span>
@@ -186,7 +187,138 @@
 
     <span class="nd">@abstractmethod</span>
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
-        <span class="k">pass</span></div>
+        <span class="k">pass</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_covariate_indexer</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                          <span class="n">target_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                          <span class="n">covariate_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                          <span class="n">cov_type</span><span class="p">:</span> <span class="n">CovariateType</span><span class="p">,</span>
+                          <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                          <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                          <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;returns tuple of (past_start, past_end, future_start, future_end)&quot;&quot;&quot;</span>
+        <span class="c1"># get the main covariate type: CovariateType.PAST or CovariateType.FUTURE</span>
+        <span class="n">main_cov_type</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span> <span class="k">if</span> <span class="n">cov_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span> <span class="k">else</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">main_cov_type</span> <span class="ow">in</span> <span class="p">[</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">,</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">],</span>
+                     <span class="s1">&#39;`main_cov_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`&#39;</span><span class="p">)</span>
+
+        <span class="c1"># we need to use the time index (datetime or integer) here to match the index with the covariate series</span>
+        <span class="n">past_start</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="n">input_chunk_length</span><span class="p">]</span>
+        <span class="n">past_end</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">main_cov_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">:</span>
+            <span class="n">future_end</span> <span class="o">=</span> <span class="n">past_end</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">n</span> <span class="o">-</span> <span class="n">output_chunk_length</span><span class="p">)</span> <span class="o">*</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span>
+        <span class="k">else</span><span class="p">:</span>  <span class="c1"># CovariateType.FUTURE</span>
+            <span class="n">future_end</span> <span class="o">=</span> <span class="n">past_end</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">)</span> <span class="o">*</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span>
+
+        <span class="n">future_start</span> <span class="o">=</span> <span class="n">past_end</span> <span class="o">+</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">future_end</span> <span class="o">!=</span> <span class="n">past_end</span> <span class="k">else</span> <span class="n">future_end</span>
+
+        <span class="k">if</span> <span class="n">input_chunk_length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># for regression ensemble models</span>
+            <span class="n">past_start</span><span class="p">,</span> <span class="n">past_end</span> <span class="o">=</span> <span class="n">future_start</span><span class="p">,</span> <span class="n">future_start</span>
+
+        <span class="c1"># check if case specific indexes are available</span>
+        <span class="n">case_start</span> <span class="o">=</span> <span class="n">future_start</span> <span class="k">if</span> <span class="n">cov_type</span> <span class="ow">is</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span> <span class="k">else</span> <span class="n">past_start</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">covariate_series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">case_start</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;For the given forecasting case, the provided </span><span class="si">{</span><span class="n">main_cov_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates at dataset index &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;`</span><span class="si">{</span><span class="n">ts_idx</span><span class="si">}</span><span class="s2">` do not extend far enough into the past. The </span><span class="si">{</span><span class="n">main_cov_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates must start at &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;time step `</span><span class="si">{</span><span class="n">case_start</span><span class="si">}</span><span class="s2">`, whereas now they start at time step `</span><span class="si">{</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">future_end</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;For the given forecasting horizon `n=</span><span class="si">{</span><span class="n">n</span><span class="si">}</span><span class="s2">`, the provided </span><span class="si">{</span><span class="n">main_cov_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;at dataset index `</span><span class="si">{</span><span class="n">ts_idx</span><span class="si">}</span><span class="s2">` do not extend far enough into the future. As `&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="s1">&#39;n &gt; output_chunk_length&#39;</span> <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;</span> <span class="n">output_chunk_length</span> <span class="k">else</span> <span class="s1">&#39;n &lt;= output_chunk_length&#39;</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;` the </span><span class="si">{</span><span class="n">main_cov_type</span><span class="o">.</span><span class="n">value</span><span class="si">}</span><span class="s2"> covariates must end at time step `</span><span class="si">{</span><span class="n">future_end</span><span class="si">}</span><span class="s2">`, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;whereas now they end at time step `</span><span class="si">{</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span><span class="si">}</span><span class="s2">`.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># extract the index position (index) from time_index value</span>
+        <span class="n">cov_start</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">past_start</span><span class="p">)</span>
+        <span class="n">cov_end</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">future_end</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">cov_start</span><span class="p">,</span> <span class="n">cov_end</span></div>
+
+
+<div class="viewcode-block" id="GenericInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.GenericInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">GenericInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                 <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                 <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Contains (past_target, past_covariates | historic_future_covariates, future_past_covariates | future_covariate).</span>
+
+<span class="sd">        &quot;future_past_covariates&quot; are past covariates that happen to be also known in the future - those</span>
+<span class="sd">        are needed for forecasting with n &gt; output_chunk_length by any model relying on past covariates.</span>
+<span class="sd">        For this reason, when n &gt; output_chunk_length, this dataset will also emmit the &quot;future past_covariates&quot;.</span>
+<span class="sd">        </span>
+<span class="sd">        &quot;historic_future_covariates&quot; are historic future covariates that are given for the input_chunk in the past.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target_series</span>
+<span class="sd">            The target series that are to be predicted into the future.</span>
+<span class="sd">        covariates</span>
+<span class="sd">            Optionally, one or a sequence of `TimeSeries` containing either past or future covariates. If covariates</span>
+<span class="sd">            were used during training, the same type of cavariates must be supplied at prediction.</span>
+<span class="sd">        n</span>
+<span class="sd">            Forecast horizon: The number of time steps to predict after the end of the target series.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the target series the model takes as input.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the target series the model emits in output.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_series</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">target_series</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariates</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariates</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">covariate_type</span> <span class="o">=</span> <span class="n">covariate_type</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+
+        <span class="n">raise_if_not</span><span class="p">((</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">)),</span>
+                     <span class="s1">&#39;The number of target series must be equal to the number of covariates.&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                     <span class="sa">f</span><span class="s2">&quot;All input series must have length &gt;= `input_chunk_length` (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="si">}</span><span class="s2">).&quot;</span><span class="p">)</span>
+
+        <span class="c1"># extract past target values</span>
+        <span class="n">past_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:]</span>
+
+        <span class="c1"># optionally, extract covariates</span>
+        <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+        <span class="n">covariate_series</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">covariate_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># get start and end indices (integer) of the covariates including historic and future parts</span>
+            <span class="n">cov_start</span><span class="p">,</span> <span class="n">cov_end</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_covariate_indexer</span><span class="p">(</span><span class="n">ts_idx</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
+                                                         <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                                         <span class="n">covariate_series</span><span class="o">=</span><span class="n">covariate_series</span><span class="p">,</span>
+                                                         <span class="n">cov_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">covariate_type</span><span class="p">,</span>
+                                                         <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                         <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                         <span class="n">n</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">)</span>
+
+            <span class="c1"># extract covariate values and split into a past (historic) and future part</span>
+            <span class="n">covariate</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">cov_start</span><span class="p">:</span><span class="n">cov_end</span><span class="p">]</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># regular models</span>
+                <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span> <span class="o">=</span> <span class="n">covariate</span><span class="p">[:</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">],</span> <span class="n">covariate</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:]</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># regression ensemble models have a input_chunk_length == 0 part for using predictions as input</span>
+                <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span> <span class="o">=</span> <span class="n">covariate</span><span class="p">,</span> <span class="n">covariate</span>
+
+            <span class="c1"># set to None if empty array</span>
+            <span class="n">cov_past</span> <span class="o">=</span> <span class="n">cov_past</span> <span class="k">if</span> <span class="n">cov_past</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cov_past</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+            <span class="n">cov_future</span> <span class="o">=</span> <span class="n">cov_future</span> <span class="k">if</span> <span class="n">cov_future</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">cov_future</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="kc">None</span>
+
+        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span><span class="p">,</span> <span class="n">target_series</span></div>
 
 
 <div class="viewcode-block" id="PastCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.PastCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">PastCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
@@ -195,7 +327,8 @@
                  <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
                  <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
-                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+                 <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, past_covariates, future_past_covariates).</span>
 
@@ -221,67 +354,18 @@
 
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_series</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">target_series</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariates</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariates</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
-
-        <span class="n">raise_if_not</span><span class="p">((</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">)),</span>
-                     <span class="s1">&#39;The number of target series must be equal to the number of covariates.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="n">GenericInferenceDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                          <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+                                          <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                                          <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                          <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                          <span class="n">covariate_type</span><span class="o">=</span><span class="n">covariate_type</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">]:</span>
-        <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">covariate_series</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">target_vals</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                     <span class="s1">&#39;All input series must have length &gt;= `input_chunk_length` (</span><span class="si">{}</span><span class="s1">).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">))</span>
-
-        <span class="n">tgt_past_vals</span> <span class="o">=</span> <span class="n">target_vals</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:]</span>
-
-        <span class="n">cov_past</span> <span class="o">=</span> <span class="n">cov_future</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">covariate_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">cov_vals</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">start_past_cov_idx</span> <span class="o">=</span> <span class="n">_get_matching_index</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">covariate_series</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">)</span>
-
-            <span class="c1"># because -0 doesn&#39;t do what we want as an indexing bound</span>
-            <span class="k">if</span> <span class="o">-</span><span class="n">start_past_cov_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">cov_past</span> <span class="o">=</span> <span class="n">cov_vals</span><span class="p">[</span><span class="o">-</span><span class="n">start_past_cov_idx</span><span class="p">:]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">cov_past</span> <span class="o">=</span> <span class="n">cov_vals</span><span class="p">[</span><span class="o">-</span><span class="n">start_past_cov_idx</span><span class="p">:</span><span class="o">-</span><span class="n">start_past_cov_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">]</span>
-
-            <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">cov_past</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                         <span class="s1">&#39;The dataset contains past covariates that do not have a sufficient time span to obtain &#39;</span>
-                         <span class="s1">&#39;a slice of length input_chunk_length matching the future target&#39;</span><span class="p">)</span>
-
-            <span class="c1"># check whether future covariates are also required</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
-                <span class="c1"># check that enough &quot;past&quot; covariates are available into the future</span>
-                <span class="c1"># We need `n - output_chunk_length`</span>
-                <span class="n">nr_timestamps_needed</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
-                <span class="n">last_req_ts</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">nr_timestamps_needed</span> <span class="o">*</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span>
-
-                <span class="n">raise_if_not</span><span class="p">(</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">last_req_ts</span><span class="p">,</span>
-                             <span class="s2">&quot;When forecasting future values for a horizon `n &gt; output_chunk_length` with models &quot;</span>
-                             <span class="s2">&quot;requiring past covariates, the past covariates need to be provided for the next &quot;</span>
-                             <span class="s2">&quot;`(n - output_chunk_length)` steps in advance. For the dataset&#39;s </span><span class="si">{}</span><span class="s2">-th sample, the last &quot;</span>
-                             <span class="s2">&quot;covariate timestamp is </span><span class="si">{}</span><span class="s2"> whereas it should be </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                                 <span class="n">idx</span><span class="p">,</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">last_req_ts</span>
-                             <span class="p">))</span>
-
-                <span class="c1"># because -0 doesn&#39;t do what we want as an indexing bound</span>
-                <span class="k">if</span> <span class="o">-</span><span class="n">start_past_cov_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="o">+</span><span class="n">nr_timestamps_needed</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="n">cov_future</span> <span class="o">=</span> <span class="n">cov_vals</span><span class="p">[</span><span class="o">-</span><span class="n">start_past_cov_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:]</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">cov_future</span> <span class="o">=</span> <span class="n">cov_vals</span><span class="p">[</span><span class="o">-</span><span class="n">start_past_cov_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:</span>
-                                          <span class="o">-</span><span class="n">start_past_cov_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="o">+</span><span class="n">nr_timestamps_needed</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">tgt_past_vals</span><span class="p">,</span> <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span><span class="p">,</span> <span class="n">target_series</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
 
 
 <div class="viewcode-block" id="FutureCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.FutureCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">FutureCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
@@ -289,7 +373,8 @@
                  <span class="n">target_series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
                  <span class="n">covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">n</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
-                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">):</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
+                 <span class="n">covariate_type</span><span class="p">:</span> <span class="n">CovariateType</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Contains (past_target, future_covariates) tuples</span>
 
@@ -306,49 +391,20 @@
 <span class="sd">            The length of the target series the model takes as input.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_series</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">target_series</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariates</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariates</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="n">n</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
 
-        <span class="n">raise_if_not</span><span class="p">((</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">)),</span>
-                     <span class="s1">&#39;The number of target series must be equal to the number of covariates.&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="n">GenericInferenceDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
+                                          <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
+                                          <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                                          <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                          <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                                          <span class="n">covariate_type</span><span class="o">=</span><span class="n">covariate_type</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">)</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">TimeSeries</span><span class="p">]:</span>
-        <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">covariate_series</span> <span class="o">=</span> <span class="kc">None</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">target_vals</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                     <span class="s1">&#39;All input series must have length &gt;= `input_chunk_length` (</span><span class="si">{}</span><span class="s1">).&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">))</span>
-
-        <span class="n">tgt_past_vals</span> <span class="o">=</span> <span class="n">target_vals</span><span class="p">[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">:]</span>
-
-        <span class="n">cov_future</span> <span class="o">=</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">covariate_series</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># check that we have at least n timestamps of future covariates available</span>
-            <span class="n">last_req_ts</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">*</span> <span class="n">target_series</span><span class="o">.</span><span class="n">freq</span>
-
-            <span class="n">raise_if_not</span><span class="p">(</span><span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">last_req_ts</span><span class="p">,</span>
-                         <span class="s2">&quot;When forecasting future values for a horizon `n` with models requiring future covariates, &quot;</span>
-                         <span class="s2">&quot;the future covariates need to be known `n` time steps in advance. &quot;</span>
-                         <span class="s2">&quot;For the dataset&#39;s </span><span class="si">{}</span><span class="s2">-th sample, the last covariate timestamp is </span><span class="si">{}</span><span class="s2"> whereas it &quot;</span>
-                         <span class="s2">&quot;should be </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">idx</span><span class="p">,</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">(),</span> <span class="n">last_req_ts</span><span class="p">))</span>
-
-            <span class="n">cov_vals</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
-            <span class="n">start_idx</span> <span class="o">=</span> <span class="n">_get_matching_index</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">covariate_series</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-
-            <span class="c1"># because -0 doesn&#39;t do what we want as an indexing bound</span>
-            <span class="k">if</span> <span class="o">-</span><span class="n">start_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                <span class="n">cov_future</span> <span class="o">=</span> <span class="n">cov_vals</span><span class="p">[</span><span class="o">-</span><span class="n">start_idx</span><span class="p">:]</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">cov_future</span> <span class="o">=</span> <span class="n">cov_vals</span><span class="p">[</span><span class="o">-</span><span class="n">start_idx</span><span class="p">:</span><span class="o">-</span><span class="n">start_idx</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">n</span><span class="p">]</span>
-
-        <span class="k">return</span> <span class="n">tgt_past_vals</span><span class="p">,</span> <span class="n">cov_future</span><span class="p">,</span> <span class="n">target_series</span></div>
+        <span class="n">past_target_vals</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">cov_future</span><span class="p">,</span> <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">past_target_vals</span><span class="p">,</span> <span class="n">cov_future</span><span class="p">,</span> <span class="n">target_series</span></div>
 
 
 <div class="viewcode-block" id="DualCovariatesInferenceDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.DualCovariatesInferenceDataset">[docs]</a><span class="k">class</span> <span class="nc">DualCovariatesInferenceDataset</span><span class="p">(</span><span class="n">InferenceDataset</span><span class="p">):</span>
@@ -382,13 +438,15 @@
                                                       <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
                                                       <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
                                                       <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                                                      <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">)</span>
+                                                      <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                      <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">HISTORIC_FUTURE</span><span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving future covariates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span> <span class="o">=</span> <span class="n">FutureCovariatesInferenceDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
                                                           <span class="n">covariates</span><span class="o">=</span><span class="n">covariates</span><span class="p">,</span>
                                                           <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-                                                          <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">)</span>
+                                                          <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                          <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>
@@ -436,7 +494,8 @@
                                                       <span class="n">covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
                                                       <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
                                                       <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                                                      <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">)</span>
+                                                      <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                      <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving historic and future future covariates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span> <span class="o">=</span> <span class="n">DualCovariatesInferenceDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
@@ -493,13 +552,15 @@
                                                       <span class="n">covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
                                                       <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
                                                       <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
-                                                      <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">)</span>
+                                                      <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                      <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span><span class="p">)</span>
 
         <span class="c1"># This dataset is in charge of serving future covariates</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span> <span class="o">=</span> <span class="n">FutureCovariatesInferenceDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
                                                           <span class="n">covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
                                                           <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
-                                                          <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">)</span>
+                                                          <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                          <span class="n">covariate_type</span><span class="o">=</span><span class="n">CovariateType</span><span class="o">.</span><span class="n">FUTURE</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">)</span>

@@ -38,6 +38,8 @@
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Filtering and predicting using the darts filters" href="11-Kalman-filter-examples.html" />
+    <link rel="prev" title="DeepTCN model" href="10-DeepTCN-examples.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -86,7 +88,7 @@
  </a>
 </li>
 
-<li class="toctree-l1 nav-item">
+<li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="../examples.html">
   Examples
  </a>
@@ -133,7 +135,121 @@
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="01-darts-intro.html">
+   Introduction to
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     darts
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="02-multi-time-series-and-covariates.html">
+   Multiple Time Series, Pre-trained Models and Covariates
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="03-data-processing.html">
+   Data (pre) processing using
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     DataTransformer
+    </span>
+   </code>
+   and
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     Pipeline
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="04-FFT-examples.html">
+   Fast Fourier Transform Forecasting Model (FFT)
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="05-RNN-examples.html">
+   Recurrent Neural Networks Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="06-TCN-examples.html">
+   Temporal Convolutional Network
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="07-Transformer-examples.html">
+   Transformer Model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="08-NBEATS-examples.html">
+   N-BEATS
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="09-DeepAR-examples.html">
+   Probabilistic RNN
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="10-DeepTCN-examples.html">
+   DeepTCN model
+  </a>
+ </li>
+</ul>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Temporal Fusion Transformer
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="11-Kalman-filter-examples.html">
+   Filtering and predicting using the darts filters
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="12-GP-filter-examples.html">
+   Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="13-Dynamic-Time-Warping-example.html">
+   Dynamic Time Warping (DTW)
+  </a>
+ </li>
+</ul>
+
   </div>
 </nav>
             </div>
@@ -529,7 +645,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nbinput docutils container">
+<div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
 </pre></div>
 </div>
@@ -556,14 +672,6 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 </div>
-<div class="nboutput nblast docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-Importing plotly failed. Interactive plots will not work.
-</pre></div></div>
-</div>
 <section id="Temporal-Fusion-Transformer-(TFT)">
 <h2>Temporal Fusion Transformer (TFT)<a class="headerlink" href="#Temporal-Fusion-Transformer-(TFT)" title="Permalink to this headline">¶</a></h2>
 <p>Darts’ <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> incorporates the following main components from the original Temporal Fusion Transformer (TFT) architecture as outlined in <a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">this paper</a>:</p>
@@ -586,7 +694,7 @@ Importing plotly failed. Interactive plots will not work.
 </li>
 <li><p>decoder: future known input with <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code></p>
 <ul>
-<li><p><strong>future covariates</strong>: mandatory (if none are available, consider <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>’s optional arguments <code class="docutils literal notranslate"><span class="pre">add_cyclic_encoder</span></code> or <code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code> from <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html?highlight=tftmodel#temporal-fusion-transformer-tft">here</a>)</p></li>
+<li><p><strong>future covariates</strong>: mandatory (if none are available, consider <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code>’s optional arguments <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> or <code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code> from <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html?highlight=tftmodel#temporal-fusion-transformer-tft">here</a>)</p></li>
 </ul>
 </li>
 </ul>
@@ -645,6 +753,7 @@ model.predict(*args, **kwargs, num_samples=1)
 
 <span class="c1"># we convert monthly number of passengers to average daily number of passengers per month</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">series</span> <span class="o">/</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_series</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="o">.</span><span class="n">days_in_month</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="c1"># Create training and validation sets:</span>
 <span class="n">training_cutoff</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19571201&#39;</span><span class="p">)</span>
@@ -660,6 +769,7 @@ model.predict(*args, **kwargs, num_samples=1)
 <span class="n">covariates</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 <span class="n">covariates</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="n">one_hot</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span>
 <span class="n">covariates</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;linear_increase&#39;</span><span class="p">]))</span>
+<span class="n">covariates</span> <span class="o">=</span> <span class="n">covariates</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="c1"># transform covariates (note: we fit the transformer on train split and can then transform the entire covariates series)</span>
 <span class="n">scaler_covs</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
@@ -672,7 +782,7 @@ model.predict(*args, **kwargs, num_samples=1)
 <section id="Create-a-model">
 <h3>Create a model<a class="headerlink" href="#Create-a-model" title="Permalink to this headline">¶</a></h3>
 <p>If you want to produce deterministic forecasts rather than quantile forecasts, you can use a PyTorch loss function (i.e., set <code class="docutils literal notranslate"><span class="pre">loss_fn=torch.nn.MSELoss()</span></code> and <code class="docutils literal notranslate"><span class="pre">likelihood=None</span></code>).</p>
-<p>The <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> can only be used if some future input is given. Optional parameters <code class="docutils literal notranslate"><span class="pre">add_cyclic_encoder</span></code> and <code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code> can be useful, especially if we don’t have any future input available. They generate endoded temporal data is used as future covariates.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> can only be used if some future input is given. Optional parameters <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> and <code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code> can be useful, especially if we don’t have any future input available. They generate endoded temporal data is used as future covariates.</p>
 <p>Since we already have future covariates defined in our example they are commented out.</p>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
@@ -694,7 +804,7 @@ model.predict(*args, **kwargs, num_samples=1)
                     <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
                     <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
                     <span class="n">add_relative_index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-                    <span class="n">add_cyclic_encoder</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                    <span class="n">add_encoders</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                     <span class="n">likelihood</span><span class="o">=</span><span class="n">QuantileRegression</span><span class="p">(</span><span class="n">quantiles</span><span class="o">=</span><span class="n">quantiles</span><span class="p">),</span>  <span class="c1"># QuantileRegression is set per default</span>
                     <span class="c1"># loss_fn=MSELoss(),</span>
                     <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
@@ -720,14 +830,14 @@ model.predict(*args, **kwargs, num_samples=1)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "cad4608ffaa94f4286983b8210fbf3de", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "fe7b9ff3dda44e418b3ca62eb7835520", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-
+Training loss: 0.0549
 </pre></div></div>
 </div>
 </section>
@@ -790,7 +900,7 @@ model.predict(*args, **kwargs, num_samples=1)
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "be4c626281e9485e836f0a6cb56517d0", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "307d0dd38ec74d7e89e980af4ef48363", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
@@ -821,7 +931,7 @@ model.predict(*args, **kwargs, num_samples=1)
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: 5.92%
+MAPE: 5.24%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -928,10 +1038,10 @@ MAPE: 5.92%
 <h3>Create a model with automatically generated future covariates and train it<a class="headerlink" href="#Create-a-model-with-automatically-generated-future-covariates-and-train-it" title="Permalink to this headline">¶</a></h3>
 <p>Since we don’t have future covariates defined, we need tell the model to generate future covariates itself.</p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">add_cyclic_encoder</span></code>: applies cyclic temporal encoding of repeating patterns (“hour”, “dayofweek”, “dayofmonth”, “month”, …)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code>: adds the scaled integer position relative to the prediction point for each encoder-decoder chunk (useful for non-time-indexed data)</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>: can add multiple encodings as past and / or future covariates from datetime attributes, cyclic repeating temporal patterns, index positions and customm functions for index encodings. You can even add a transformer that handles proper scaling of the training, validation and prediction data! Read more about it in the <code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> docs <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.tft_model.html#temporal-fusion-transformer-tft">from here</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">add_relative_index</span></code>: adds a scaled integer position relative to the prediction point for each encoder-decoder chunk (this might be useful if you really don’t want to use any future covariates. The position values remain constant over all chunks and do not add additional information).</p></li>
 </ul>
-<p>We use <code class="docutils literal notranslate"><span class="pre">add_cyclic_encoder='month'</span></code> to account for the 12-month seasonality.</p>
+<p>We use <code class="docutils literal notranslate"><span class="pre">add_encoders={'cyclic':</span> <span class="pre">{'future':</span> <span class="pre">['month']}}</span></code> to account for the 12-month seasonality as a future covariate..</p>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
@@ -940,7 +1050,7 @@ MAPE: 5.92%
 <span></span><span class="c1"># use the last 3 years as past input data</span>
 <span class="n">input_chunk_length_ice</span> <span class="o">=</span> <span class="mi">36</span>
 
-<span class="c1"># use `add_cyclic_encoder` as we don&#39;t have future covariates</span>
+<span class="c1"># use `add_encoders` as we don&#39;t have future covariates</span>
 <span class="n">my_model_ice</span> <span class="o">=</span> <span class="n">TFTModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length_ice</span><span class="p">,</span>
                         <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">forecast_horizon_ice</span><span class="p">,</span>
                         <span class="n">hidden_size</span><span class="o">=</span><span class="mi">32</span><span class="p">,</span>
@@ -948,7 +1058,7 @@ MAPE: 5.92%
                         <span class="n">batch_size</span><span class="o">=</span><span class="mi">16</span><span class="p">,</span>
                         <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
                         <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">,</span>
-                        <span class="n">add_cyclic_encoder</span><span class="o">=</span><span class="s1">&#39;month&#39;</span><span class="p">,</span>
+                        <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;cyclic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]}},</span>
                         <span class="n">add_relative_index</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                         <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">},</span>
                         <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
@@ -964,14 +1074,14 @@ MAPE: 5.92%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2fb6e01bf07f49589d22e79e3d6daaf7", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "04cf171092ad4ef88b3ec52ee3636aa8", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-
+Training loss: 0.1257
 </pre></div></div>
 </div>
 </section>
@@ -1027,7 +1137,7 @@ MAPE: 5.92%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9211535b631c4186b412b4ed71843e8b", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "b02a42ed4dcc4420809f54452f8b2ed7", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
@@ -1047,7 +1157,7 @@ MAPE: 5.92%
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: 6.11%
+MAPE: 4.26%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -1066,7 +1176,21 @@ MAPE: 6.11%
               
               
               <!-- Previous / next buttons -->
-<div class='prev-next-area'>
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="10-DeepTCN-examples.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">DeepTCN model</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="11-Kalman-filter-examples.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Filtering and predicting using the darts filters</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
 </div>
               
           </main>

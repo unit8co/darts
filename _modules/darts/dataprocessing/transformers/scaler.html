@@ -156,6 +156,7 @@
 <span class="sd">Scaler</span>
 <span class="sd">------</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">,</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">InvertibleDataTransformer</span><span class="p">,</span> <span class="n">FittableDataTransformer</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -175,6 +176,11 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Generic wrapper class for using scalers that implement `fit()`, `transform()` and</span>
 <span class="sd">        `inverse_transform()` methods (typically from scikit-learn) on `TimeSeries`.</span>
+
+<span class="sd">        When the scaler is applied on multivariate series, the scaling is done per-component.</span>
+<span class="sd">        When the series are stochastic, the scaling is done across all samples (for each given component).</span>
+<span class="sd">        The transformation is applied independently for each dimension (component) of the time series,</span>
+<span class="sd">        effectively merging all samples of a component in order to compute the transform.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -212,25 +218,36 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">transformer_instances</span> <span class="o">=</span> <span class="kc">None</span>
 
 <div class="viewcode-block" id="Scaler.ts_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.ts_transform">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">transformer</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">ts_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">transformer</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;component_mask&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">tr_out</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">Scaler</span><span class="o">.</span><span class="n">_reshape_in</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">))</span>
+
+        <span class="n">transformed_vals</span> <span class="o">=</span> <span class="n">Scaler</span><span class="o">.</span><span class="n">_reshape_out</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">tr_out</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-                                                <span class="n">values</span><span class="o">=</span><span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span>
-                                                                             <span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">))),</span>
+                                                <span class="n">values</span><span class="o">=</span><span class="n">transformed_vals</span><span class="p">,</span>
                                                 <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                                 <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Scaler.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">transformer</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;component_mask&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">tr_out</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">Scaler</span><span class="o">.</span><span class="n">_reshape_in</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">))</span>
+        <span class="n">inv_transformed_vals</span> <span class="o">=</span> <span class="n">Scaler</span><span class="o">.</span><span class="n">_reshape_out</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">tr_out</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">)</span>
+
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-                                                <span class="n">values</span><span class="o">=</span><span class="n">transformer</span><span class="o">.</span><span class="n">inverse_transform</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span>
-                                                                              <span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">))),</span>
+                                                <span class="n">values</span><span class="o">=</span><span class="n">inv_transformed_vals</span><span class="p">,</span>
                                                 <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                                                 <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Scaler.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">transformer</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
         <span class="c1"># fit_parameter will receive the transformer object instance</span>
-        <span class="n">scaler</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">series</span><span class="o">.</span><span class="n">width</span><span class="p">)))</span>
+        <span class="n">component_mask</span> <span class="o">=</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;component_mask&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">scaler</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">Scaler</span><span class="o">.</span><span class="n">_reshape_in</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span><span class="p">))</span>
         <span class="k">return</span> <span class="n">scaler</span></div>
 
     <span class="k">def</span> <span class="nf">_fit_iterator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]:</span>

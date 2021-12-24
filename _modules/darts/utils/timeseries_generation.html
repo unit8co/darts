@@ -165,8 +165,8 @@
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 <span class="kn">import</span> <span class="nn">holidays</span>
 
-<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">raise_if</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -680,7 +680,7 @@
 
     <span class="n">raise_if_not</span><span class="p">(</span>
         <span class="nb">hasattr</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">attribute</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span> <span class="s2">&quot;week_of_year&quot;</span><span class="p">]),</span>
-        <span class="s1">&#39;&quot;attribute&quot; needs to be an attribute of pd.DatetimeIndex.&#39;</span>
+        <span class="sa">f</span><span class="s1">&#39;attribute `</span><span class="si">{</span><span class="n">attribute</span><span class="si">}</span><span class="s1">` needs to be an attribute of pd.DatetimeIndex. &#39;</span>
         <span class="s1">&#39;See all available attributes in &#39;</span>
         <span class="s1">&#39;https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex&#39;</span><span class="p">,</span>
         <span class="n">logger</span><span class="p">,</span>
@@ -692,19 +692,19 @@
         <span class="s2">&quot;month&quot;</span><span class="p">:</span> <span class="mi">12</span><span class="p">,</span>
         <span class="s2">&quot;day&quot;</span><span class="p">:</span> <span class="mi">31</span><span class="p">,</span>
         <span class="s2">&quot;weekday&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
-        <span class="s2">&quot;dayofweek&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span>
-        <span class="s2">&quot;day_of_week&quot;</span><span class="p">:</span><span class="mi">7</span><span class="p">,</span>
+        <span class="s2">&quot;dayofweek&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
+        <span class="s2">&quot;day_of_week&quot;</span><span class="p">:</span> <span class="mi">7</span><span class="p">,</span>
         <span class="s2">&quot;hour&quot;</span><span class="p">:</span> <span class="mi">24</span><span class="p">,</span>
         <span class="s2">&quot;minute&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
         <span class="s2">&quot;second&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
         <span class="s2">&quot;microsecond&quot;</span><span class="p">:</span> <span class="mi">1000000</span><span class="p">,</span>
         <span class="s2">&quot;nanosecond&quot;</span><span class="p">:</span> <span class="mi">1000</span><span class="p">,</span>
         <span class="s2">&quot;quarter&quot;</span><span class="p">:</span> <span class="mi">4</span><span class="p">,</span>
-        <span class="s2">&quot;dayofyear&quot;</span><span class="p">:</span><span class="mi">365</span><span class="p">,</span>
-        <span class="s2">&quot;day_of_year&quot;</span><span class="p">:</span><span class="mi">365</span><span class="p">,</span>
-        <span class="s2">&quot;week&quot;</span><span class="p">:</span><span class="mi">52</span><span class="p">,</span>
-        <span class="s2">&quot;weekofyear&quot;</span><span class="p">:</span><span class="mi">52</span><span class="p">,</span>
-        <span class="s2">&quot;week_of_year&quot;</span><span class="p">:</span><span class="mi">52</span><span class="p">,</span>
+        <span class="s2">&quot;dayofyear&quot;</span><span class="p">:</span> <span class="mi">365</span><span class="p">,</span>
+        <span class="s2">&quot;day_of_year&quot;</span><span class="p">:</span> <span class="mi">365</span><span class="p">,</span>
+        <span class="s2">&quot;week&quot;</span><span class="p">:</span> <span class="mi">52</span><span class="p">,</span>
+        <span class="s2">&quot;weekofyear&quot;</span><span class="p">:</span> <span class="mi">52</span><span class="p">,</span>
+        <span class="s2">&quot;week_of_year&quot;</span><span class="p">:</span> <span class="mi">52</span><span class="p">,</span>
     <span class="p">}</span>
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span> <span class="s2">&quot;week_of_year&quot;</span><span class="p">]:</span>
@@ -715,8 +715,7 @@
     <span class="k">if</span> <span class="n">one_hot</span> <span class="ow">or</span> <span class="n">cyclic</span><span class="p">:</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">attribute</span> <span class="ow">in</span> <span class="n">num_values_dict</span><span class="p">,</span>
-            <span class="s2">&quot;Given datetime attribute not supported&quot;</span>
-            <span class="s2">&quot; with one-hot or cyclical encoding.&quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;Given datetime attribute `</span><span class="si">{</span><span class="n">attribute</span><span class="si">}</span><span class="s2">` not supported with one-hot or cyclical encoding. &quot;</span>
             <span class="sa">f</span><span class="s2">&quot;Supported datetime attribute: </span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="n">num_values_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>

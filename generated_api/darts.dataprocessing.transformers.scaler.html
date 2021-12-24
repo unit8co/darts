@@ -394,6 +394,16 @@
     </label>
     <ul>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Encoder Classes Main
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
        Horizon-Based Training Dataset
       </a>
@@ -506,6 +516,10 @@
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a></p>
 <p>Generic wrapper class for using scalers that implement <cite>fit()</cite>, <cite>transform()</cite> and
 <cite>inverse_transform()</cite> methods (typically from scikit-learn) on <cite>TimeSeries</cite>.</p>
+<p>When the scaler is applied on multivariate series, the scaling is done per-component.
+When the series are stochastic, the scaling is done across all samples (for each given component).
+The transformation is applied independently for each dimension (component) of the time series,
+effectively merging all samples of a component in order to compute the transform.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -536,7 +550,13 @@ data, this function takes care of parallelising the fitting of multiple series i
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> against which the transformer is fit.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_fit()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>ts_fit()</cite> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_fit()</cite> method</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
+the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -557,7 +577,13 @@ data, this function takes care of parallelising the fitting of multiple series i
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence</cite> of <cite>TimeSeries</cite> to transform.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>ts_transform()</cite> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_transform()</cite> method:</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
+the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -579,7 +605,13 @@ parallelising the transformation of multiple series in the sequence at the same 
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> which will be inverse-transformed.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_inverse_transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>ts_inverse_transform()</cite> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_inverse_transform()</cite> method</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
+the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -688,7 +720,7 @@ bottleneck and nullify parallelisation benefits.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.scaler.Scaler.ts_transform">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/scaler.html#Scaler.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.scaler.Scaler.ts_transform" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">transformer</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/scaler.html#Scaler.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.scaler.Scaler.ts_transform" title="Permalink to this definition">¶</a></dt>
 <dd><p>The function that will be applied to each <cite>TimeSeries</cite> object once the <cite>transform()</cite> function is called. The
 function must take as first argument a <cite>TimeSeries</cite> object, and return the transformed <cite>TimeSeries</cite> object.
 If more parameters are added as input in the derived classes, the <cite>_transform_iterator()</cite> should be

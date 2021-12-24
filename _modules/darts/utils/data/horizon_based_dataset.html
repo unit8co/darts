@@ -160,9 +160,10 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-<span class="kn">from</span> <span class="nn">...logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">...timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">.training_dataset</span> <span class="kn">import</span> <span class="n">PastCovariatesTrainingDataset</span><span class="p">,</span> <span class="n">CovariateType</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">.training_dataset</span> <span class="kn">import</span> <span class="n">PastCovariatesTrainingDataset</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">CovariateType</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -214,12 +215,14 @@
 <span class="sd">            before the end of the series. It is required that `min_lh &gt;= 1`.</span>
 <span class="sd">        lookback:</span>
 <span class="sd">            A integer interval for the length of the input in the emitted input and output splits, expressed as a</span>
-<span class="sd">            multiple of `output_chunk_length`. For instance, `lookback=3` will emit &quot;inputs&quot; of lengths `3 * output_chunk_length`.</span>
+<span class="sd">            multiple of `output_chunk_length`. For instance, `lookback=3` will emit &quot;inputs&quot; of lengths</span>
+<span class="sd">            `3 * output_chunk_length`.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span> <span class="o">=</span> <span class="p">[</span><span class="n">target_series</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target_series</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">target_series</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariates</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariates</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">covariate_type</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span> <span class="o">=</span> <span class="n">lh</span>
@@ -261,7 +264,7 @@
 
         <span class="c1"># optionally, load covariates</span>
         <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">cov_type</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span>
+        <span class="n">main_cov_type</span> <span class="o">=</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span>
 
         <span class="n">shift</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
         <span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">shift</span>
@@ -275,7 +278,7 @@
                                  <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
                                  <span class="n">end_of_output_idx</span><span class="o">=</span><span class="n">end_of_output_idx</span><span class="p">,</span>
                                  <span class="n">ts_covariate</span><span class="o">=</span><span class="n">ts_covariate</span><span class="p">,</span>
-                                 <span class="n">cov_type</span><span class="o">=</span><span class="n">cov_type</span><span class="p">)</span>
+                                 <span class="n">cov_type</span><span class="o">=</span><span class="n">main_cov_type</span><span class="p">)</span>
 
         <span class="c1"># extract sample target</span>
         <span class="n">future_target</span> <span class="o">=</span> <span class="n">target_vals</span><span class="p">[</span><span class="n">future_start</span><span class="p">:</span><span class="n">future_end</span><span class="p">]</span>

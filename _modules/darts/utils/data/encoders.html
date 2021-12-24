@@ -1,0 +1,1189 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.utils.data.encoders &#8212; darts  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.utils.data.encoders</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Encoder Classes Main</span>
+<span class="sd">--------------------</span>
+
+<span class="sd">Encoders can generate past and/or future covariate series by encoding the index of a TimeSeries `series`.</span>
+<span class="sd">Each encoder class has an `encode_train()` and `encode_inference()` to generate the encodings for training and</span>
+<span class="sd">inference.</span>
+
+<span class="sd">The encoders extract the index either from the target series or optional additional past/future covariates.</span>
+<span class="sd">If additional covariates are supplied to `encode_train()` or `encode_inference()`, the time index of those</span>
+<span class="sd">covariates are used for the encodings. This means that the input covariates must meet the same model-specific</span>
+<span class="sd">requirements as wihtout encoders.</span>
+
+<span class="sd">There are two main types of encoder classes: `SingleEncoder` and `SequentialEncoder`.</span>
+
+<span class="sd">*   SingleEncoder</span>
+<span class="sd">        The SingleEncoder classes carry the encoder logic for past and future covariates, and training and</span>
+<span class="sd">        inference datasets. They can be used as stand-alone encoders.</span>
+
+<span class="sd">        Each SingleEncoder has a dedicated subclass for generating past or future covariates. The naming convention</span>
+<span class="sd">        is `{X}{SingleEncoder}` where {X} is one of (Past, Future) and {SingleEncoder} is one of the SingleEncoder</span>
+<span class="sd">        classes described in the next section. An example:</span>
+
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            encoder = PastDatetimeAttributeEncoder(input_chunk_length=24, output_chunk_length=12, attribute=&#39;month&#39;)</span>
+
+<span class="sd">            past_covariates_train = encoder.encode_train(target=target, covariate=optional_past_covariates)</span>
+<span class="sd">            past_covariates_inf = encoder.encode_inference(n=12, target=target, covariate=optional_past_covariates)</span>
+
+<span class="sd">*   SequentialEncoder</span>
+<span class="sd">        Stores and controls multiple SingleEncoders for both past and/or future covariates all under one hood.</span>
+<span class="sd">        It provides the same functionality as SingleEncoders (`encode_train()` and `encode_inference()`).</span>
+<span class="sd">        It can be used both as stand-alone or as an all-in-one solution with Darts&#39; `TorchForecastingModel` models</span>
+<span class="sd">        through optional parameter `add_encoders`:</span>
+
+<span class="sd">        .. highlight:: python</span>
+<span class="sd">        .. code-block:: python</span>
+
+<span class="sd">            model = SomeTorchForecastingModel(..., add_encoders={...})</span>
+<span class="sd">        ..</span>
+
+<span class="sd">        If used at model creation, the SequentialEncoder will handle all past and future encoders autonomously.</span>
+<span class="sd">        The requirements for model parameter `add_encoders` are described in the next section or in</span>
+<span class="sd">        :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;`.</span>
+
+<span class="sd">SingleEncoder</span>
+<span class="sd">-------------</span>
+
+<span class="sd">The SingleEncoders from {X}{SingleEncoder} are:</span>
+
+<span class="sd">*   DatetimeAttributeEncoder</span>
+<span class="sd">        Adds scalar pd.DatatimeIndex attribute information derived from `series.time_index`.</span>
+<span class="sd">        Requires `series` to have a pd.DatetimeIndex.</span>
+
+<span class="sd">        attribute</span>
+<span class="sd">            An attribute of `pd.DatetimeIndex`: see all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">*   CyclicTemporalEncoder</span>
+<span class="sd">        Adds cyclic pd.DatetimeIndex attribute information deriveed from `series.time_index`.</span>
+<span class="sd">        Adds 2 columns, corresponding to sin and cos encodings, to uniquely describe the underlying attribute.</span>
+<span class="sd">        Requires `series` to have a pd.DatetimeIndex.</span>
+
+<span class="sd">        attribute</span>
+<span class="sd">            An attribute of `pd.DatetimeIndex` that follows a cyclic pattern. One of (&#39;month&#39;, &#39;day&#39;, &#39;weekday&#39;,</span>
+<span class="sd">            &#39;dayofweek&#39;, &#39;day_of_week&#39;, &#39;hour&#39;, &#39;minute&#39;, &#39;second&#39;, &#39;microsecond&#39;, &#39;nanosecond&#39;, &#39;quarter&#39;,</span>
+<span class="sd">            &#39;dayofyear&#39;, &#39;day_of_year&#39;, &#39;week&#39;, &#39;weekofyear&#39;, &#39;week_of_year&#39;).</span>
+<span class="sd">*   IntegerIndexEncoder</span>
+<span class="sd">        Adds absolute or relative index positions as integer values (positions) derived from `series` time index.</span>
+<span class="sd">        `series` can either have a pd.DatetimeIndex or an integer index.</span>
+
+<span class="sd">        attribute</span>
+<span class="sd">            Either &#39;absolute&#39; or &#39;relative&#39;.</span>
+<span class="sd">            &#39;absolute&#39; will generate position values ranging from 0 to inf where 0 is set at the start of `series`.</span>
+<span class="sd">            &#39;relative&#39; will generate position values relative to the forecasting/prediction point. Values range</span>
+<span class="sd">            from -inf to inf where 0 is set at the forecasting point.</span>
+<span class="sd">*   CallableIndexEncoder</span>
+<span class="sd">        Applies a user-defined callable to encode `series`&#39; index.</span>
+<span class="sd">        `series` can either have a pd.DatetimeIndex or an integer index.</span>
+
+<span class="sd">        attribute</span>
+<span class="sd">            a callable/function to encode the index.</span>
+<span class="sd">            For `series` with a pd.DatetimeIndex: `lambda index: (index.year - 1950) / 50`</span>
+<span class="sd">            For `series` with an integer index:`lambda index: index / 50`</span>
+
+<span class="sd">SequentialEncoder</span>
+<span class="sd">-----------------</span>
+
+<span class="sd">The SequentialEncoder combines the logic of all SingleEncoders from above and has additional benefits:</span>
+
+<span class="sd">*   use multiple encoders at once</span>
+<span class="sd">*   generate multiple attribute encodings at once</span>
+<span class="sd">*   generate both past and future at once</span>
+<span class="sd">*   supports transformers (Scaler)</span>
+<span class="sd">*   easy to use with TorchForecastingModels</span>
+
+<span class="sd">The model parameter `add_encoders` must be a Dict following of this convention:</span>
+
+<span class="sd">*   outer keys: `SingleEncoder` and Transformer tags:</span>
+
+<span class="sd">    *   &#39;datetime_attribute&#39; for `DatetimeAttributeEncoder`</span>
+<span class="sd">    *   &#39;cyclic&#39; for `CyclicEncoder`</span>
+<span class="sd">    *   &#39;position&#39; for `IntegerIndexEncoder`</span>
+<span class="sd">    *   &#39;custom&#39; for `CallableIndexEncoder`</span>
+<span class="sd">    *   &#39;transformer&#39; for a transformer</span>
+<span class="sd">*   inner keys: covariate type</span>
+
+<span class="sd">    *   &#39;past&#39; for past covariates</span>
+<span class="sd">    *   &#39;future&#39; for future covariates</span>
+<span class="sd">    *   (do not specify for &#39;transformer&#39;)</span>
+<span class="sd">*   inner key values:</span>
+
+<span class="sd">    *   list of attributes for `SingleEncoder`</span>
+<span class="sd">    *   transformer object for &#39;transformer&#39;</span>
+
+<span class="sd">Below is an example that illustrates a valid `add_encoders` dict for hourly data and how it can be used with a</span>
+<span class="sd">TorchForecastingModel (this is only meant to illustrate many features at once).</span>
+
+<span class="sd">.. highlight:: python</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    add_encoders = {</span>
+<span class="sd">        &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">        &#39;datetime_attribute&#39;: {&#39;past&#39;: [&#39;hour&#39;], &#39;future&#39;: [&#39;year&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">        &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">        &#39;custom&#39;: {&#39;past&#39;: [lambda index: (index.year - 1950) / 50]},</span>
+<span class="sd">        &#39;transformer&#39;: Scaler()</span>
+<span class="sd">    }</span>
+
+<span class="sd">    model = SomeTorchForecastingModel(..., add_encoders=add_encoders)</span>
+<span class="sd">..</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">copy</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Callable</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">DIMS</span>
+<span class="kn">from</span> <span class="nn">darts.utils.data.encoder_base</span> <span class="kn">import</span> <span class="p">(</span><span class="n">ReferenceIndexType</span><span class="p">,</span>
+                                           <span class="n">CovariateIndexGenerator</span><span class="p">,</span>
+                                           <span class="n">PastCovariateIndexGenerator</span><span class="p">,</span>
+                                           <span class="n">FutureCovariateIndexGenerator</span><span class="p">,</span>
+                                           <span class="n">Encoder</span><span class="p">,</span>
+                                           <span class="n">SingleEncoder</span><span class="p">,</span>
+                                           <span class="n">SequentialEncoderTransformer</span><span class="p">,</span>
+                                           <span class="n">SupportedIndex</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.utils.data.utils</span> <span class="kn">import</span> <span class="n">_index_diff</span>
+
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">FittableDataTransformer</span>
+
+<span class="n">SupportedTimeSeries</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span>
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+<span class="n">ENCODER_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;cyclic&#39;</span><span class="p">,</span> <span class="s1">&#39;datetime_attribute&#39;</span><span class="p">,</span> <span class="s1">&#39;position&#39;</span><span class="p">,</span> <span class="s1">&#39;custom&#39;</span><span class="p">]</span>
+<span class="n">FUTURE</span> <span class="o">=</span> <span class="s1">&#39;future&#39;</span>
+<span class="n">PAST</span> <span class="o">=</span> <span class="s1">&#39;past&#39;</span>
+<span class="n">VALID_TIME_PARAMS</span> <span class="o">=</span> <span class="p">[</span><span class="n">FUTURE</span><span class="p">,</span> <span class="n">PAST</span><span class="p">]</span>
+<span class="n">VALID_ENCODER_DTYPES</span> <span class="o">=</span> <span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">)</span>
+
+<span class="n">TRANSFORMER_KEYS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;transformer&#39;</span><span class="p">]</span>
+<span class="n">VALID_TRANSFORMER_DTYPES</span> <span class="o">=</span> <span class="n">FittableDataTransformer</span>
+<span class="n">INTEGER_INDEX_ATTRIBUTES</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;absolute&#39;</span><span class="p">,</span> <span class="s1">&#39;relative&#39;</span><span class="p">]</span>
+
+
+<div class="viewcode-block" id="CyclicTemporalEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.CyclicTemporalEncoder">[docs]</a><span class="k">class</span> <span class="nc">CyclicTemporalEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;CyclicTemporalEncoder: Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariateIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index_generator</span>
+<span class="sd">            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and</span>
+<span class="sd">            `generate_inference_series()`. Used to generate the index for encoders.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.</span>
+<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
+<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
+<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">index_generator</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+
+    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">,</span> <span class="n">cyclic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;CyclicTemporalEncoder should not be transformed. Returns two elements for sine and cosine waves.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PastCyclicEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.PastCyclicEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastCyclicEncoder</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Cyclic encoder for past covariates.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">attribute</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.</span>
+<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
+<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
+<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PastCyclicEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FutureCyclicEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.FutureCyclicEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureCyclicEncoder</span><span class="p">(</span><span class="n">CyclicTemporalEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Cyclic encoder for future covariates.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">attribute</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.</span>
+<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
+<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
+<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FutureCyclicEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="DatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.DatetimeAttributeEncoder">[docs]</a><span class="k">class</span> <span class="nc">DatetimeAttributeEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;DatetimeAttributeEncoder: Adds pd.DatatimeIndex attribute information derived from the index as scalars.</span>
+<span class="sd">    Requires the underlying TimeSeries to have a pd.DatetimeIndex</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariateIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index_generator</span>
+<span class="sd">            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and</span>
+<span class="sd">            `generate_inference_series()`. Used to generate the index for encoders.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.</span>
+<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
+<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
+<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">index_generator</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+
+    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;DatetimeAttributeEncoder accepts transformations&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PastDatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.PastDatetimeAttributeEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastDatetimeAttributeEncoder</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Datetime attribute encoder for past covariates.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">attribute</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.</span>
+<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
+<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
+<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PastDatetimeAttributeEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FutureDatetimeAttributeEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.FutureDatetimeAttributeEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureDatetimeAttributeEncoder</span><span class="p">(</span><span class="n">DatetimeAttributeEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Datetime attribute encoder for future covariates.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">attribute</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.</span>
+<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
+<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
+<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
+<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">FutureDatetimeAttributeEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="IntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.IntegerIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">IntegerIndexEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;IntegerIndexEncoder: Adds integer index value (position) derived from the underlying TimeSeries&#39; time index</span>
+<span class="sd">    for past and future covariates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariateIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index_generator</span>
+<span class="sd">            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and</span>
+<span class="sd">            `generate_inference_series()`. Used to generate the index for encoders.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            Either &#39;absolute&#39; or &#39;relative&#39;. If &#39;absolute&#39;, the generated encoded values will range from (0, inf)</span>
+<span class="sd">            and the train target series will be used as a reference to set the 0-index. If &#39;relative&#39;, the generated</span>
+<span class="sd">            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference</span>
+<span class="sd">            to evaluate the relative index positions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">attribute</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="n">INTEGER_INDEX_ATTRIBUTES</span><span class="p">,</span>
+                     <span class="sa">f</span><span class="s1">&#39;Encountered invalid encoder argument `</span><span class="si">{</span><span class="n">attribute</span><span class="si">}</span><span class="s1">` for encoder `position`. &#39;</span>
+                     <span class="sa">f</span><span class="s1">&#39;Attribute must be one of `(&quot;absolute&quot;, &quot;relative&quot;)`.&#39;</span><span class="p">,</span>
+                     <span class="n">logger</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">index_generator</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">reference_index</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]]]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">was_called</span> <span class="o">=</span> <span class="kc">False</span>
+
+    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`.</span>
+<span class="sd">        1)  for attribute==&#39;absolute&#39;, the reference point/index is one step before start of the train target series</span>
+<span class="sd">        2)  for attribute==&#39;relative&#39;, the reference point/index is the overall prediction/forecast index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+
+        <span class="c1"># load reference index from index_generators</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">was_called</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reference_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">index_generator</span><span class="o">.</span><span class="n">reference_index</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">was_called</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="n">current_start_value</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># extract reference index</span>
+        <span class="n">reference_index</span><span class="p">,</span> <span class="n">reference_value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">reference_index</span>
+
+        <span class="c1"># get the difference between last index and reference index for each case</span>
+        <span class="n">index_diff</span> <span class="o">=</span> <span class="n">_index_diff</span><span class="p">(</span><span class="bp">self</span><span class="o">=</span><span class="n">current_start_value</span><span class="p">,</span> <span class="n">other</span><span class="o">=</span><span class="n">reference_value</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">index</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+        <span class="c1"># set the start integer index value for the current index</span>
+        <span class="n">current_start_index</span> <span class="o">=</span> <span class="n">reference_index</span> <span class="o">-</span> <span class="n">index_diff</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">==</span> <span class="s1">&#39;absolute&#39;</span> <span class="k">else</span> <span class="o">-</span> <span class="n">index_diff</span>
+
+        <span class="n">encoded</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+                                                   <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">current_start_index</span><span class="p">,</span>
+                                                                    <span class="n">current_start_index</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">)),</span>
+                                                   <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">+</span> <span class="s1">&#39;_idx&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
+
+        <span class="c1"># update reference index for &#39;absolute&#39; case to avoid having to evaluate longer differences (cost-intensive)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">==</span> <span class="s1">&#39;absolute&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">reference_index</span> <span class="o">=</span> <span class="p">(</span><span class="n">current_start_index</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">encoded</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="n">encoded</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;IntegerIndexEncoder accepts transformations. Note that transforming &#39;relative&#39; IntegerIndexEncoder</span>
+<span class="sd">        will return an &#39;absolute&#39; index.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PastIntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.PastIntegerIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastIntegerIndexEncoder</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying</span>
+<span class="sd">    TimeSeries&#39; time index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            Either &#39;absolute&#39; or &#39;relative&#39;. If &#39;absolute&#39;, the generated encoded values will range from (0, inf)</span>
+<span class="sd">            and the train target series will be used as a reference to set the 0-index. If &#39;relative&#39;, the generated</span>
+<span class="sd">            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference</span>
+<span class="sd">            to evaluate the relative index positions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">reference_index_type</span> <span class="o">=</span> <span class="n">ReferenceIndexType</span><span class="o">.</span><span class="n">PREDICTION</span> <span class="k">if</span> <span class="n">attribute</span> <span class="o">==</span> <span class="s1">&#39;relative&#39;</span> <span class="k">else</span> <span class="n">ReferenceIndexType</span><span class="o">.</span><span class="n">START</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">PastIntegerIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                        <span class="n">output_chunk_length</span><span class="p">,</span>
+                                                        <span class="n">reference_index_type</span><span class="o">=</span><span class="n">reference_index_type</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FutureIntegerIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.FutureIntegerIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureIntegerIndexEncoder</span><span class="p">(</span><span class="n">IntegerIndexEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying</span>
+<span class="sd">    TimeSeries&#39; time index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="nb">str</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            Either &#39;absolute&#39; or &#39;relative&#39;. If &#39;absolute&#39;, the generated encoded values will range from (0, inf)</span>
+<span class="sd">            and the train target series will be used as a reference to set the 0-index. If &#39;relative&#39;, the generated</span>
+<span class="sd">            encoded values will range from (-inf, inf) and the train target series end time will be used as a reference</span>
+<span class="sd">            to evaluate the relative index positions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">reference_index_type</span> <span class="o">=</span> <span class="n">ReferenceIndexType</span><span class="o">.</span><span class="n">PREDICTION</span> <span class="k">if</span> <span class="n">attribute</span> <span class="o">==</span> <span class="s1">&#39;relative&#39;</span> <span class="k">else</span> <span class="n">ReferenceIndexType</span><span class="o">.</span><span class="n">START</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">FutureIntegerIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                          <span class="n">output_chunk_length</span><span class="p">,</span>
+                                                          <span class="n">reference_index_type</span><span class="o">=</span><span class="n">reference_index_type</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="CallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.CallableIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">CallableIndexEncoder</span><span class="p">(</span><span class="n">SingleEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;CallableIndexEncoder: Applies a user-defined callable to encode the underlying index for past and future</span>
+<span class="sd">    covariates.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index_generator</span><span class="p">:</span> <span class="n">CovariateIndexGenerator</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Callable</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        index_generator</span>
+<span class="sd">            An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and</span>
+<span class="sd">            `generate_inference_series()`. Used to generate the index for encoders.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input</span>
+<span class="sd">            and returns a np.ndarray of shape `(len(index),)`.</span>
+<span class="sd">            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:</span>
+<span class="sd">                `attribute = lambda index: (index.year - 1950) / 50]}`</span>
+<span class="sd">            And for pd.Int64Index or pd.RangeIndex:</span>
+<span class="sd">                `attribute = lambda index: (index - 1950) / 50]}`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">callable</span><span class="p">(</span><span class="n">attribute</span><span class="p">),</span>
+                     <span class="sa">f</span><span class="s1">&#39;Encountered invalid encoder argument `</span><span class="si">{</span><span class="n">attribute</span><span class="si">}</span><span class="s1">` for encoder `callable`. &#39;</span>
+                     <span class="sa">f</span><span class="s1">&#39;Attribute must be a callable that returns a `np.ndarray`.&#39;</span><span class="p">,</span>
+                     <span class="n">logger</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">index_generator</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">attribute</span> <span class="o">=</span> <span class="n">attribute</span>
+
+    <span class="k">def</span> <span class="nf">_encode</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">:</span> <span class="n">SupportedIndex</span><span class="p">,</span> <span class="n">dtype</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the user-defined callable to encode the index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">_encode</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">times</span><span class="o">=</span><span class="n">index</span><span class="p">,</span>
+                                                <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">attribute</span><span class="p">(</span><span class="n">index</span><span class="p">),</span>
+                                                <span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;custom&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">accept_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;CallableIndexEncoder accepts transformations.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="p">[</span><span class="kc">True</span><span class="p">]</span></div>
+
+
+<div class="viewcode-block" id="PastCallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.PastCallableIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">PastCallableIndexEncoder</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying</span>
+<span class="sd">    TimeSeries&#39; time index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input</span>
+<span class="sd">            and returns a np.ndarray of shape `(len(index),)`.</span>
+<span class="sd">            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:</span>
+<span class="sd">                `attribute = lambda index: (index.year - 1950) / 50}`</span>
+<span class="sd">            And for pd.Int64Index or pd.RangeIndex:</span>
+<span class="sd">                `attribute = lambda index: (index - 1950) / 50}`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">PastCallableIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">PastCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="FutureCallableIndexEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.FutureCallableIndexEncoder">[docs]</a><span class="k">class</span> <span class="nc">FutureCallableIndexEncoder</span><span class="p">(</span><span class="n">CallableIndexEncoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying</span>
+<span class="sd">    TimeSeries&#39; time index.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">attribute</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Callable</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        attribute</span>
+<span class="sd">            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input</span>
+<span class="sd">            and returns a np.ndarray of shape `(len(index),)`.</span>
+<span class="sd">            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:</span>
+<span class="sd">                `attribute = lambda index: (index.year - 1950) / 50]}`</span>
+<span class="sd">            And for pd.Int64Index or pd.RangeIndex:</span>
+<span class="sd">                `attribute = lambda index: (index - 1950) / 50]}`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">FutureCallableIndexEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">index_generator</span><span class="o">=</span><span class="n">FutureCovariateIndexGenerator</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="p">),</span>
+            <span class="n">attribute</span><span class="o">=</span><span class="n">attribute</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SequentialEncoder"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.SequentialEncoder">[docs]</a><span class="k">class</span> <span class="nc">SequentialEncoder</span><span class="p">(</span><span class="n">Encoder</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A `SequentialEncoder` object can store and control multiple past and future covariate encoders at once.</span>
+<span class="sd">    It provides the same functionality as single encoders (`encode_train()` and `encode_inference()`).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                 <span class="n">add_encoders</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span>
+                 <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                 <span class="n">takes_past_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+                 <span class="n">takes_future_covariates</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        SequentialEncoder automatically creates encoder objects from parameter `add_encoders` used when creating a</span>
+<span class="sd">        `TorchForecastingModel`.</span>
+
+<span class="sd">        *   Only kwarg `add_encoders` of type `Optional[Dict]` will be used to extract the encoders.</span>
+<span class="sd">            For example: `model = MyModel(..., add_encoders={...}, ...)`</span>
+
+<span class="sd">        The `add_encoders` dict must follow this convention:</span>
+<span class="sd">            `{encoder keyword: {temporal keyword: List[attributes]}, ..., transformer keyword: transformer object}`</span>
+<span class="sd">        Supported encoder keywords:</span>
+<span class="sd">            `&#39;cyclic&#39;` for cyclic temporal encoder. See the docs</span>
+<span class="sd">            :meth:`CyclicTemporalEncoder &lt;darts.utils.data.encoders.CyclicTemporalEncoder&gt;`;</span>
+<span class="sd">            `&#39;datetime_attribute&#39;` for adding scalar information of pd.DatetimeIndex attribute. See the docs</span>
+<span class="sd">            :meth:`DatetimeAttributeEncoder &lt;darts.utils.data.encoders.DatetimeAttributeEncoder&gt;`</span>
+<span class="sd">            `&#39;position&#39;` for integer index position encoder. See the docs</span>
+<span class="sd">            :meth:`IntegerIndexEncoder &lt;darts.utils.data.encoders.IntegerIndexEncoder&gt;`;</span>
+<span class="sd">            `&#39;custom&#39;` for encoding index with custom callables (functions). See the docs</span>
+<span class="sd">            :meth:`CallableIndexEncoder &lt;darts.utils.data.encoders.CallableIndexEncoder&gt;`;</span>
+<span class="sd">        Supported temporal keywords:</span>
+<span class="sd">            &#39;past&#39; for adding encoding as past covariates</span>
+<span class="sd">            &#39;future&#39; for adding encoding as future covariates</span>
+<span class="sd">        Supported attributes:</span>
+<span class="sd">            for attributes read the referred docs for the corresponding encoder from above</span>
+<span class="sd">        Supported transformers:</span>
+<span class="sd">            a transformer can be added with transformer keyword &#39;transformer&#39;. The transformer object must be an</span>
+<span class="sd">            instance of Darts&#39; :meth:`FittableDataTransformer</span>
+<span class="sd">            &lt;darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer&gt;` such as Scaler() or</span>
+<span class="sd">            BoxCox(). The transformers will be fitted on the training dataset when calling calling `model.fit()`.</span>
+<span class="sd">            The training, validation and inference datasets are then transformed equally.</span>
+
+<span class="sd">        An example of a valid `add_encoders` dict for hourly data:</span>
+<span class="sd">            from darts.dataprocessing.transformers import Scaler</span>
+<span class="sd">            add_encoders={</span>
+<span class="sd">                &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                &#39;datetime_attribute&#39;: {&#39;past&#39;: [&#39;hour&#39;], &#39;future&#39;: [&#39;year&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                &#39;custom&#39;: {&#39;past&#39;: [lambda index: (index.year - 1950) / 50]},</span>
+<span class="sd">                &#39;transformer&#39;: Scaler()</span>
+<span class="sd">            }</span>
+
+<span class="sd">        Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`</span>
+<span class="sd">        objects:</span>
+<span class="sd">        * The `encoder_id` is extracted as follows:</span>
+<span class="sd">            str(encoder_kw) + str(temporal_kw) -&gt; &#39;cyclic&#39; + &#39;past&#39; -&gt; `encoder_id` = &#39;cyclic_past&#39;</span>
+<span class="sd">            The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.</span>
+<span class="sd">        * The `attribute` is extracted from the values given by values under `temporal_kw`</span>
+<span class="sd">            `attribute` = &#39;month&#39;</span>
+<span class="sd">            ...</span>
+<span class="sd">            The `attribute` tells the `SingleEncoder` which attribute of the index to encode</span>
+
+<span class="sd">        New encoders can be added by appending them to the mapping property `SequentialEncoder.encoder_map()`</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            The parameters used at `TorchForecastingModel` model creation.</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the emitted past series.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the emitted future series.</span>
+<span class="sd">        takes_past_covariates</span>
+<span class="sd">            Whether or not the `TrainingDataset` takes past covariates</span>
+<span class="sd">        takes_future_covariates</span>
+<span class="sd">            Whether or not the `TrainingDataset` takes past covariates</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="nb">super</span><span class="p">(</span><span class="n">SequentialEncoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">params</span> <span class="o">=</span> <span class="n">add_encoders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">train_called</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoding_available</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">takes_past_covariates</span> <span class="o">=</span> <span class="n">takes_past_covariates</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">takes_future_covariates</span> <span class="o">=</span> <span class="n">takes_future_covariates</span>
+
+        <span class="c1"># encoders</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_past_encoders</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_future_encoders</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># transformer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_past_transformer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SequentialEncoderTransformer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_future_transformer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SequentialEncoderTransformer</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># setup encoders and transformer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_encoders</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_setup_transformer</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">params</span><span class="p">)</span>
+
+<div class="viewcode-block" id="SequentialEncoder.encode_train"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.SequentialEncoder.encode_train">[docs]</a>    <span class="k">def</span> <span class="nf">encode_train</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                     <span class="n">target</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
+                     <span class="n">past_covariate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SupportedTimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">future_covariate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SupportedTimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                     <span class="n">encode_past</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                     <span class="n">encode_future</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns encoded index for all past and/or future covariates for training.</span>
+<span class="sd">        Which covariates are generated depends on the parameters used at model creation.</span>
+<span class="sd">        </span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        target</span>
+<span class="sd">            The target TimeSeries used during training or passed to prediction as `series`</span>
+<span class="sd">        past_covariate</span>
+<span class="sd">            Optionally, the past covariates used for training.</span>
+<span class="sd">        future_covariate</span>
+<span class="sd">            Optionally, the future covariates used for training.</span>
+<span class="sd">        encode_past</span>
+<span class="sd">            Whether or not to apply encoders for past covariates</span>
+<span class="sd">        encode_future</span>
+<span class="sd">            Whether or not to apply encoders for future covariates</span>
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Tuple[past_covariate, future_covariate]</span>
+<span class="sd">            The past_covariate and/or future_covariate for training including the encodings.</span>
+<span class="sd">            If input {x}_covariate is None and no {x}_encoders are given, will return `None`</span>
+<span class="sd">            for the {x}_covariate.</span>
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        Warning</span>
+<span class="sd">            If model was created with `add_encoders` and there is suspicion of lazy loading.</span>
+<span class="sd">            The encodings/covariates are generated eagerly before starting training for all individual targets and</span>
+<span class="sd">            loaded into memory. Depending on the size of target data, this can create memory</span>
+<span class="sd">            issues. In case this applies, consider setting `add_encoders=None` at model</span>
+<span class="sd">            creation and build your encodings covariates manually for lazy loading.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">train_called</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="p">(</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="nb">list</span><span class="p">)):</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Fitting was called with `add_encoders` and suspicion of lazy loading. &quot;</span>
+                               <span class="s2">&quot;The encodings/covariates are generated pre-train for all individual targets and &quot;</span>
+                               <span class="s2">&quot;loaded into memory. Depending on the size of your data, this can create memory issues. &quot;</span>
+                               <span class="s2">&quot;In case this applies, consider setting `add_encoders=None` at model creation.&quot;</span><span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">train_called</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_launch_encoder</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                    <span class="n">past_covariate</span><span class="o">=</span><span class="n">past_covariate</span><span class="p">,</span>
+                                    <span class="n">future_covariate</span><span class="o">=</span><span class="n">future_covariate</span><span class="p">,</span>
+                                    <span class="n">n</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                    <span class="n">encode_past</span><span class="o">=</span><span class="n">encode_past</span><span class="p">,</span>
+                                    <span class="n">encode_future</span><span class="o">=</span><span class="n">encode_future</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="SequentialEncoder.encode_inference"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.encoders.html#darts.utils.data.encoders.SequentialEncoder.encode_inference">[docs]</a>    <span class="k">def</span> <span class="nf">encode_inference</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                         <span class="n">target</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
+                         <span class="n">past_covariate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SupportedTimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">future_covariate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SupportedTimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                         <span class="n">encode_past</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                         <span class="n">encode_future</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns encoded index for all past and/or future covariates for inference/prediction.</span>
+<span class="sd">        Which covariates are generated depends on the parameters used at model creation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n</span>
+<span class="sd">            The forecast horizon</span>
+<span class="sd">        target</span>
+<span class="sd">            The target TimeSeries used during training or passed to prediction as `series`</span>
+<span class="sd">        past_covariate</span>
+<span class="sd">            Optionally, the past covariates used for training.</span>
+<span class="sd">        future_covariate</span>
+<span class="sd">            Optionally, the future covariates used for training.</span>
+<span class="sd">        encode_past</span>
+<span class="sd">            Whether or not to apply encoders for past covariates</span>
+<span class="sd">        encode_future</span>
+<span class="sd">            Whether or not to apply encoders for future covariates</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Tuple[past_covariate, future_covariate]</span>
+<span class="sd">            The past_covariate and/or future_covariate for prediction/inference including the encodings.</span>
+<span class="sd">            If input {x}_covariate is None and no {x}_encoders are given, will return `None`</span>
+<span class="sd">            for the {x}_covariate.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_launch_encoder</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                    <span class="n">past_covariate</span><span class="o">=</span><span class="n">past_covariate</span><span class="p">,</span>
+                                    <span class="n">future_covariate</span><span class="o">=</span><span class="n">future_covariate</span><span class="p">,</span>
+                                    <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                                    <span class="n">encode_past</span><span class="o">=</span><span class="n">encode_past</span><span class="p">,</span>
+                                    <span class="n">encode_future</span><span class="o">=</span><span class="n">encode_future</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_launch_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                        <span class="n">past_covariate</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
+                        <span class="n">future_covariate</span><span class="p">:</span> <span class="n">SupportedTimeSeries</span><span class="p">,</span>
+                        <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                        <span class="n">encode_past</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                        <span class="n">encode_future</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Launches the encode sequence for past covariate and future covariate for either training or</span>
+<span class="sd">        inference/prediction.</span>
+
+<span class="sd">        If `n` is `None` it is a prediction, otherwise it is training.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">encoding_available</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_covariate</span>
+
+        <span class="n">target</span> <span class="o">=</span> <span class="p">[</span><span class="n">target</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">target</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_encoders</span> <span class="ow">and</span> <span class="n">encode_past</span><span class="p">:</span>
+            <span class="n">past_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encode_sequence</span><span class="p">(</span><span class="n">encoders</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">past_encoders</span><span class="p">,</span>
+                                                   <span class="n">transformer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">past_transformer</span><span class="p">,</span>
+                                                   <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                                   <span class="n">covariate</span><span class="o">=</span><span class="n">past_covariate</span><span class="p">,</span>
+                                                   <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_encoders</span> <span class="ow">and</span> <span class="n">encode_future</span><span class="p">:</span>
+            <span class="n">future_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_encode_sequence</span><span class="p">(</span><span class="n">encoders</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">future_encoders</span><span class="p">,</span>
+                                                     <span class="n">transformer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">future_transformer</span><span class="p">,</span>
+                                                     <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+                                                     <span class="n">covariate</span><span class="o">=</span><span class="n">future_covariate</span><span class="p">,</span>
+                                                     <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_covariate</span>
+
+    <span class="k">def</span> <span class="nf">_encode_sequence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+                         <span class="n">encoders</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">],</span>
+                         <span class="n">transformer</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SequentialEncoderTransformer</span><span class="p">],</span>
+                         <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
+                         <span class="n">covariate</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SupportedTimeSeries</span><span class="p">],</span>
+                         <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Sequentially encodes the index of all input target/covariate TimeSeries</span>
+
+<span class="sd">        If `n` is `None` it is a prediction and method `encoder.encode_inference()` is called.</span>
+<span class="sd">        Otherwise, it is a training case and `encoder.encode_train()` is called.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">encode_method</span> <span class="o">=</span> <span class="s1">&#39;encode_train&#39;</span> <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="s1">&#39;encode_inference&#39;</span>
+
+        <span class="n">encoded_sequence</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">covariate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">covariate</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">target</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">covariate</span> <span class="o">=</span> <span class="p">[</span><span class="n">covariate</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">covariate</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="k">else</span> <span class="n">covariate</span>
+
+        <span class="k">for</span> <span class="n">ts</span><span class="p">,</span> <span class="n">pc</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">covariate</span><span class="p">):</span>
+            <span class="n">encoded</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="nb">getattr</span><span class="p">(</span><span class="n">enc</span><span class="p">,</span> <span class="n">encode_method</span><span class="p">)(</span><span class="n">target</span><span class="o">=</span><span class="n">ts</span><span class="p">,</span>
+                                                               <span class="n">covariate</span><span class="o">=</span><span class="n">pc</span><span class="p">,</span>
+                                                               <span class="n">merge_covariate</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                                                               <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span> <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="n">encoders</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="n">DIMS</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="n">encoded_sequence</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_merge_covariate</span><span class="p">(</span><span class="n">encoded</span><span class="o">=</span><span class="n">encoded</span><span class="p">,</span> <span class="n">covariate</span><span class="o">=</span><span class="n">pc</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">transformer</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">encoded_sequence</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">encoded_sequence</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">encoded_sequence</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">future_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the future covariate encoder objects&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_future_encoders</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">past_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">SingleEncoder</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the past covariate encoder objects&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_past_encoders</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">past_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequentialEncoderTransformer</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the past transformer object&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_past_transformer</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">future_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SequentialEncoderTransformer</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Returns the future transformer object&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_future_transformer</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">encoder_map</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Mapping between encoder identifier string (from parameters at model creations) and the corresponding</span>
+<span class="sd">        future or past covariate encoder&quot;&quot;&quot;</span>
+        <span class="n">mapper</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;cyclic_past&#39;</span><span class="p">:</span> <span class="n">PastCyclicEncoder</span><span class="p">,</span>
+            <span class="s1">&#39;cyclic_future&#39;</span><span class="p">:</span> <span class="n">FutureCyclicEncoder</span><span class="p">,</span>
+            <span class="s1">&#39;datetime_attribute_past&#39;</span><span class="p">:</span> <span class="n">PastDatetimeAttributeEncoder</span><span class="p">,</span>
+            <span class="s1">&#39;datetime_attribute_future&#39;</span><span class="p">:</span> <span class="n">FutureDatetimeAttributeEncoder</span><span class="p">,</span>
+            <span class="s1">&#39;position_past&#39;</span><span class="p">:</span> <span class="n">PastIntegerIndexEncoder</span><span class="p">,</span>
+            <span class="s1">&#39;position_future&#39;</span><span class="p">:</span> <span class="n">FutureIntegerIndexEncoder</span><span class="p">,</span>
+            <span class="s1">&#39;custom_past&#39;</span><span class="p">:</span> <span class="n">PastCallableIndexEncoder</span><span class="p">,</span>
+            <span class="s1">&#39;custom_future&#39;</span><span class="p">:</span> <span class="n">FutureCallableIndexEncoder</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">mapper</span>
+
+    <span class="k">def</span> <span class="nf">_setup_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Sets up/Initializes all past and future encoders and an optional transformer from `add_encoder` parameter</span>
+<span class="sd">        used at model creation.</span>
+
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        params</span>
+<span class="sd">            Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:</span>
+<span class="sd">            * params={&#39;cyclic&#39;: {&#39;past&#39;: [&#39;month&#39;, &#39;dayofweek&#39;, ...], &#39;future&#39;: [same as for &#39;past&#39;]}}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">past_encoders</span><span class="p">,</span> <span class="n">future_encoders</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_input_encoders</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">past_encoders</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">future_encoders</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_past_encoders</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder_map</span><span class="p">[</span><span class="n">enc_id</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                        <span class="n">attr</span><span class="p">)</span> <span class="k">for</span> <span class="n">enc_id</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">past_encoders</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_future_encoders</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">encoder_map</span><span class="p">[</span><span class="n">enc_id</span><span class="p">](</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+                                                          <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+                                                          <span class="n">attr</span><span class="p">)</span> <span class="k">for</span> <span class="n">enc_id</span><span class="p">,</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">future_encoders</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">encoding_available</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="nf">_setup_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Sets up/Initializes an optional transformer from `add_encoder` parameter used at model creation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        params</span>
+<span class="sd">            Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:</span>
+<span class="sd">            * params={..., &#39;transformer&#39;: Scaler()}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">transformer</span><span class="p">,</span> <span class="n">transform_past_mask</span><span class="p">,</span> <span class="n">transform_future_mask</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_process_input_transformer</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">transform_past_mask</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_past_transformer</span> <span class="o">=</span> <span class="n">SequentialEncoderTransformer</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">transformer</span><span class="p">),</span> <span class="n">transform_past_mask</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">transform_future_mask</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_future_transformer</span> <span class="o">=</span> <span class="n">SequentialEncoderTransformer</span><span class="p">(</span><span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">transformer</span><span class="p">),</span> <span class="n">transform_future_mask</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_process_input_encoders</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">,</span> <span class="n">List</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Processes input and returns two lists of tuples `(encoder_id, attribute)` from relevant encoder</span>
+<span class="sd">        parameters at model creation.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        params</span>
+<span class="sd">            The `add_encoders` dict used at model creation. Must follow this convention:</span>
+<span class="sd">                `{encoder keyword: {temporal keyword: List[attributes]}}`</span>
+
+<span class="sd">            Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`</span>
+<span class="sd">            objects:</span>
+<span class="sd">            * The `encoder_id` is extracted as follows:</span>
+<span class="sd">                str(encoder_kw) + str(temporal_kw) -&gt; &#39;cyclic&#39; + &#39;past&#39; -&gt; `encoder_id` = &#39;cyclic_past&#39;</span>
+<span class="sd">                The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.</span>
+<span class="sd">            * The `attribute` is extracted from the values given by values under `temporal_kw`</span>
+<span class="sd">                `attribute` = &#39;month&#39;</span>
+<span class="sd">                ...</span>
+<span class="sd">                The `attribute` tells the `SingleEncoder` which attribute of the index to encode</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            1) if the outermost key is other than (`past`, `future`, `absolute`)</span>
+<span class="sd">            2) if the innermost values are other than type `str` or `Sequence`</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">params</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">[],</span> <span class="p">[]</span>
+
+        <span class="c1"># check input for invalid encoder types</span>
+        <span class="n">invalid_encoders</span> <span class="o">=</span> <span class="p">[</span><span class="n">enc</span> <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="n">params</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">enc</span> <span class="ow">in</span> <span class="n">ENCODER_KEYS</span> <span class="o">+</span> <span class="n">TRANSFORMER_KEYS</span><span class="p">]</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">invalid_encoders</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="sa">f</span><span class="s1">&#39;Encountered invalid encoder types `</span><span class="si">{</span><span class="n">invalid_encoders</span><span class="si">}</span><span class="s1">` in `add_encoders` parameter at model &#39;</span>
+                 <span class="sa">f</span><span class="s1">&#39;creation. Supported encoder types are: `</span><span class="si">{</span><span class="n">ENCODER_KEYS</span> <span class="o">+</span> <span class="n">TRANSFORMER_KEYS</span><span class="si">}</span><span class="s1">`.&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+
+        <span class="n">encoders</span> <span class="o">=</span> <span class="p">{</span><span class="n">enc</span><span class="p">:</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">enc</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="n">ENCODER_KEYS</span> <span class="k">if</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">enc</span><span class="p">,</span> <span class="kc">None</span><span class="p">)}</span>
+
+        <span class="c1"># check input for invalid temporal types</span>
+        <span class="n">invalid_time_params</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">t_types</span> <span class="ow">in</span> <span class="n">encoders</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">invalid_time_params</span> <span class="o">+=</span> <span class="p">[</span><span class="n">t_type</span> <span class="k">for</span> <span class="n">t_type</span> <span class="ow">in</span> <span class="n">t_types</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span> <span class="k">if</span> <span class="n">t_type</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">VALID_TIME_PARAMS</span><span class="p">]</span>
+
+        <span class="n">raise_if</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">invalid_time_params</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+                 <span class="sa">f</span><span class="s1">&#39;Encountered invalid temporal types `</span><span class="si">{</span><span class="n">invalid_time_params</span><span class="si">}</span><span class="s1">` in `add_encoders` parameter at model &#39;</span>
+                 <span class="sa">f</span><span class="s1">&#39;creation. Supported temporal types are: `</span><span class="si">{</span><span class="n">VALID_TIME_PARAMS</span><span class="si">}</span><span class="s1">`.&#39;</span><span class="p">,</span>
+                 <span class="n">logger</span><span class="p">)</span>
+
+        <span class="c1"># convert into tuples of (encoder string identifier, encoder attribute)</span>
+        <span class="n">past_encoders</span><span class="p">,</span> <span class="n">future_encoders</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(),</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">enc</span><span class="p">,</span> <span class="n">enc_params</span> <span class="ow">in</span> <span class="n">encoders</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">enc_time</span><span class="p">,</span> <span class="n">enc_attr</span> <span class="ow">in</span> <span class="n">enc_params</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+                <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">enc_attr</span><span class="p">,</span> <span class="n">VALID_ENCODER_DTYPES</span><span class="p">),</span>
+                             <span class="sa">f</span><span class="s1">&#39;Encountered value `</span><span class="si">{</span><span class="n">enc_attr</span><span class="si">}</span><span class="s1">` of invalid type `</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">enc_attr</span><span class="p">)</span><span class="si">}</span><span class="s1">` for encoder &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;`</span><span class="si">{</span><span class="n">enc</span><span class="si">}</span><span class="s1">` in `add_encoders` at model creation. Supported data types are: &#39;</span>
+                             <span class="sa">f</span><span class="s1">&#39;`</span><span class="si">{</span><span class="n">VALID_ENCODER_DTYPES</span><span class="si">}</span><span class="s1">`.&#39;</span><span class="p">,</span>
+                             <span class="n">logger</span><span class="p">)</span>
+                <span class="n">attrs</span> <span class="o">=</span> <span class="p">[</span><span class="n">enc_attr</span><span class="p">]</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">enc_attr</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">enc_attr</span>
+                <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="n">attrs</span><span class="p">:</span>
+                    <span class="n">encoder_id</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">([</span><span class="n">enc</span><span class="p">,</span> <span class="n">enc_time</span><span class="p">])</span>
+                    <span class="k">if</span> <span class="n">enc_time</span> <span class="o">==</span> <span class="n">PAST</span><span class="p">:</span>
+                        <span class="n">past_encoders</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">encoder_id</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="n">future_encoders</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">encoder_id</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span>
+
+        <span class="k">for</span> <span class="n">temp_enc</span><span class="p">,</span> <span class="n">takes_temp</span><span class="p">,</span> <span class="n">temp</span> <span class="ow">in</span> <span class="p">[(</span><span class="n">past_encoders</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">takes_past_covariates</span><span class="p">,</span> <span class="s1">&#39;past&#39;</span><span class="p">),</span>
+                                           <span class="p">(</span><span class="n">future_encoders</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">takes_future_covariates</span><span class="p">,</span> <span class="s1">&#39;future&#39;</span><span class="p">)]:</span>
+            <span class="k">if</span> <span class="n">temp_enc</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">takes_temp</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;Specified </span><span class="si">{</span><span class="n">temp</span><span class="si">}</span><span class="s1"> encoders in `add_encoders` at model creation but model does not &#39;</span>
+                               <span class="sa">f</span><span class="s1">&#39;accept </span><span class="si">{</span><span class="n">temp</span><span class="si">}</span><span class="s1"> covariates. </span><span class="si">{</span><span class="n">temp</span><span class="si">}</span><span class="s1"> encoders will be ignored.&#39;</span><span class="p">)</span>
+
+        <span class="n">past_encoders</span> <span class="o">=</span> <span class="n">past_encoders</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">takes_past_covariates</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="n">future_encoders</span> <span class="o">=</span> <span class="n">future_encoders</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">takes_future_covariates</span> <span class="k">else</span> <span class="p">[]</span>
+        <span class="k">return</span> <span class="n">past_encoders</span><span class="p">,</span> <span class="n">future_encoders</span>
+
+    <span class="k">def</span> <span class="nf">_process_input_transformer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Optional</span><span class="p">[</span><span class="n">FittableDataTransformer</span><span class="p">],</span> <span class="n">List</span><span class="p">,</span> <span class="n">List</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Processes input params used at model creation and returns tuple of one transformer object and two masks</span>
+<span class="sd">        that specify which past / future encoders accept being transformed.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        params</span>
+<span class="sd">            Dict from parameter `add_encoders` (kwargs) used at model creation. Relevant parameters are:</span>
+<span class="sd">            * params={&#39;transformer&#39;: Scaler()}</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">params</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">[],</span> <span class="p">[]</span>
+
+        <span class="n">transformer</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">TRANSFORMER_KEYS</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">transformer</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="p">[],</span> <span class="p">[]</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">transformer</span><span class="p">,</span> <span class="n">VALID_TRANSFORMER_DTYPES</span><span class="p">),</span>
+                     <span class="sa">f</span><span class="s1">&#39;Encountered `</span><span class="si">{</span><span class="n">TRANSFORMER_KEYS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s1">` of invalid type `</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">transformer</span><span class="p">)</span><span class="si">}</span><span class="s1">` &#39;</span>
+                     <span class="sa">f</span><span class="s1">&#39;in `add_encoders` at model creation. Transformer must be an instance of &#39;</span>
+                     <span class="sa">f</span><span class="s1">&#39;`</span><span class="si">{</span><span class="n">VALID_TRANSFORMER_DTYPES</span><span class="si">}</span><span class="s1">`.&#39;</span><span class="p">,</span>
+                     <span class="n">logger</span><span class="p">)</span>
+
+        <span class="n">transform_past_mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">transform</span> <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">past_encoders</span> <span class="k">for</span> <span class="n">transform</span> <span class="ow">in</span> <span class="n">enc</span><span class="o">.</span><span class="n">accept_transformer</span><span class="p">]</span>
+        <span class="n">transform_future_mask</span> <span class="o">=</span> <span class="p">[</span><span class="n">transform</span> <span class="k">for</span> <span class="n">enc</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">future_encoders</span> <span class="k">for</span> <span class="n">transform</span> <span class="ow">in</span> <span class="n">enc</span><span class="o">.</span><span class="n">accept_transformer</span><span class="p">]</span>
+        <span class="k">return</span> <span class="n">transformer</span><span class="p">,</span> <span class="n">transform_past_mask</span><span class="p">,</span> <span class="n">transform_future_mask</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Unit8 SA.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

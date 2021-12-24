@@ -54,6 +54,11 @@ Time Series Made Easy in Python
    :alt: Downloads
 
 
+.. image:: https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW
+   :target: https://codecov.io/gh/unit8co/darts
+   :alt: codecov
+
+
 **darts** is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using ``fit()`` and ``predict()`` functions,
@@ -339,7 +344,7 @@ The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on Github.
 
 Before working on a contribution (a new feature or a fix),
- `\ **check our contribution guidelines** <CONTRIBUTE.md>`_.
+ `\ **check our contribution guidelines** <CONTRIBUTING.md>`_.
 
 Installation Guide
 ------------------

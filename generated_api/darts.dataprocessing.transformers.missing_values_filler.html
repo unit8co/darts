@@ -394,6 +394,16 @@
     </label>
     <ul>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Encoder Classes Main
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
        Horizon-Based Training Dataset
       </a>
@@ -504,7 +514,7 @@
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller">
 <em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.missing_values_filler.</span></span><span class="sig-name descname"><span class="pre">MissingValuesFiller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'MissingValuesFiller'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/missing_values_filler.html#MissingValuesFiller"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer</span></code></a></p>
-<p>Data transformer to fill missing values from a (sequence of) TimeSeries</p>
+<p>Data transformer to fill missing values from a (sequence of) deterministic TimeSeries.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

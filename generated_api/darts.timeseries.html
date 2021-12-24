@@ -396,6 +396,16 @@
     </label>
     <ul>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Encoder Classes Main
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
        Horizon-Based Training Dataset
       </a>
@@ -1313,15 +1323,19 @@ If a timestamp is provided, it does not need to be an element of the time index 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.timeseries.TimeSeries.map">
 <span class="sig-name descname"><span class="pre">map</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fn</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">[</span></span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas._libs.tslibs.timestamps.Timestamp</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.number</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.map"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.map" title="Permalink to this definition">¶</a></dt>
-<dd><p>Applies the function <cite>fn</cite> elementwise to all values in this TimeSeries.
-Returns a new TimeSeries instance. If <cite>fn</cite> takes 1 argument it is simply applied elementwise.
-If it takes 2 arguments, it is applied elementwise on the (timestamp, value) tuples.</p>
-<p>At the moment this function works only on deterministic time series (i.e., made of 1 sample).</p>
+<dd><p>Applies the function <cite>fn</cite> to the underlying NumPy array containing this series’ values.
+Returns a new TimeSeries instance. If <cite>fn</cite> takes 1 argument it is simply applied on the backing array
+of shape (time, n_components, n_samples).
+If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where
+“ts” denotes a timestamp value, and “value[ts]” denote the array of values at this timestamp, of shape
+(n_components, n_samples).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>fn</strong> – Either a function which takes a value and returns a value ie. <cite>f(x) = y</cite>
-Or a function which takes a value and its timestamp and returns a value ie. <cite>f(timestamp, x) = y</cite>
-The type of <cite>timestamp</cite> is either <cite>pd.Timestamp</cite> (if the series is indexed with a DatetimeIndex),
+<dd class="field-odd"><p><strong>fn</strong> – Either a function which takes a NumPy array and returns a NumPy array of same shape;
+e.g., <cite>lambda x: x ** 2</cite>, <cite>lambda x: x / x.shape[0]</cite> or <cite>np.log</cite>.
+It can also be a function which takes a timestamp and array, and returns a new array of same shape;
+e.g., <cite>lambda ts, x: x / ts.days_in_month</cite>.
+The type of <cite>ts</cite> is either <cite>pd.Timestamp</cite> (if the series is indexed with a DatetimeIndex),
 or an integer otherwise (if the series is indexed with an Int64Index).</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -1914,6 +1928,24 @@ Leave it to True unless you know what you are doing.</p></li>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A new TimeSeries instance.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.timeseries.TimeSeries.with_values">
+<span class="sig-name descname"><span class="pre">with_values</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">values</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/timeseries.html#TimeSeries.with_values"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.timeseries.TimeSeries.with_values" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns a new TimeSeries, with the new specified values.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>values</strong> – A Numpy array with new values. It must have the same shape as the present
+series (time, components, samples)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>A new TimeSeries with the new values and same index</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>

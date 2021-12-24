@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Inference Dataset" href="darts.utils.data.inference_dataset.html" />
-    <link rel="prev" title="TimeSeries Datasets" href="darts.utils.data.html" />
+    <link rel="prev" title="Encoder Classes Main" href="darts.utils.data.encoders.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -393,6 +393,16 @@
      </i>
     </label>
     <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Encoder Classes Main
+      </a>
+     </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
        Horizon-Based Training Dataset
@@ -534,7 +544,8 @@ The joint slicing of the target and covariates is relying on the time axes of bo
 For example, <cite>(1, 3)</cite> will select forecast points uniformly between <cite>1*H</cite> and <cite>3*H</cite> points
 before the end of the series. It is required that <cite>min_lh &gt;= 1</cite>.</p></li>
 <li><p><strong>lookback</strong> – A integer interval for the length of the input in the emitted input and output splits, expressed as a
-multiple of <cite>output_chunk_length</cite>. For instance, <cite>lookback=3</cite> will emit “inputs” of lengths <cite>3 * output_chunk_length</cite>.</p></li>
+multiple of <cite>output_chunk_length</cite>. For instance, <cite>lookback=3</cite> will emit “inputs” of lengths
+<cite>3 * output_chunk_length</cite>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -563,11 +574,11 @@ multiple of <cite>output_chunk_length</cite>. For instance, <cite>lookback=3</ci
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.utils.data.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.utils.data.encoders.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">TimeSeries Datasets</p>
+            <p class="prev-next-title">Encoder Classes Main</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.utils.data.inference_dataset.html" title="next page">

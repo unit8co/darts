@@ -165,11 +165,11 @@
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
 <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelmax</span>
 <span class="kn">from</span> <span class="nn">statsmodels.tsa.seasonal</span> <span class="kn">import</span> <span class="n">seasonal_decompose</span>
-<span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="n">acf</span><span class="p">,</span> <span class="n">pacf</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="n">acf</span><span class="p">,</span> <span class="n">pacf</span><span class="p">,</span> <span class="n">grangercausalitytests</span><span class="p">,</span> <span class="n">adfuller</span><span class="p">,</span> <span class="n">kpss</span>
 
 <span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
-<span class="kn">from</span> <span class="nn">..logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
-<span class="kn">from</span> <span class="nn">..timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
 <span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">ModelMode</span>
 
@@ -408,6 +408,196 @@
     <span class="n">new_ts</span> <span class="o">=</span> <span class="n">remove_from_series</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">trend</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">new_ts</span></div>
 
+
+<div class="viewcode-block" id="stationarity_tests"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_tests">[docs]</a><span class="k">def</span> <span class="nf">stationarity_tests</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                       <span class="n">p_value_threshold_adfuller</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span><span class="p">,</span>
+                       <span class="n">p_value_threshold_kpss</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.05</span>
+                       <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented Dickey-Fuller statistical tests.</span>
+
+<span class="sd">    WARNING</span>
+<span class="sd">    Because Augmented Dickey-Fuller is testing null hypothesis that ts IS NOT stationary and Kwiatkowski-Phillips-Schmidt-Shin that</span>
+<span class="sd">    ts IS stationary, we can&#39;t really decide on the same p_value threshold for both tests in general.</span>
+<span class="sd">    It seems reasonable to keep them both at 0.05.</span>
+<span class="sd">    If other threshold has to be tested, they have to go in opposite direction (for example, p_value_threshold_adfuller = 0.01 and</span>
+<span class="sd">    p_value_threshold_kpss = 0.1).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ts</span>
+<span class="sd">        The TimeSeries we test.</span>
+<span class="sd">    p_value_threshold_adfuller</span>
+<span class="sd">        p_value threshold to reject stationarity for Augmented Dickey-Fuller test.</span>
+<span class="sd">    p_value_threshold_kpss</span>
+<span class="sd">        p_value threshold to reject non-stationarity for Kwiatkowski-Phillips-Schmidt-Shin test.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Boolean</span>
+<span class="sd">        If ts is stationary or not.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">adf_res</span> <span class="o">=</span> <span class="n">stationarity_test_adf</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+    <span class="n">kpss_res</span> <span class="o">=</span> <span class="n">stationarity_test_kpss</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="p">(</span><span class="n">adf_res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&lt;</span><span class="n">p_value_threshold_adfuller</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">kpss_res</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">&gt;</span><span class="n">p_value_threshold_kpss</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="stationarity_test_kpss"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_test_kpss">[docs]</a><span class="k">def</span> <span class="nf">stationarity_test_kpss</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                           <span class="n">regression</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span>
+                           <span class="n">nlags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span>
+                            <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series, using `statsmodels.tsa.stattools.kpss`.</span>
+<span class="sd">    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ts</span>
+<span class="sd">        The time series to test.</span>
+<span class="sd">    regression</span>
+<span class="sd">        The null hypothesis for the KPSS test.</span>
+<span class="sd">        “c” : The data is stationary around a constant (default).</span>
+<span class="sd">        “ct” : The data is stationary around a trend.</span>
+<span class="sd">    nlags</span>
+<span class="sd">       Indicates the number of lags to be used. If “auto” (default), lags is calculated using the data-dependent method of Hobijn et al. (1998). </span>
+<span class="sd">       See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to “legacy”, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A set of values:</span>
+<span class="sd">        kpss_stat: The test statistic.</span>
+<span class="sd">        pvalue: The p-value of the test. The p-value is interpolated from Table 1 in Kwiatkowski et al. (1992), </span>
+<span class="sd">        and a boundary point is returned if the test statistic is outside the table of critical values, that is, if the p-value is outside the interval (0.01, 0.1).</span>
+<span class="sd">        lags: The truncation lag parameter.</span>
+<span class="sd">        crit: The critical values at 10%, 5%, 2.5% and 1%. Based on Kwiatkowski et al. (1992).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">ts</span><span class="o">.</span><span class="n">_assert_deterministic</span><span class="p">()</span>
+    
+    <span class="k">return</span> <span class="n">kpss</span><span class="p">(</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">regression</span><span class="p">,</span>
+        <span class="n">nlags</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="stationarity_test_adf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.stationarity_test_adf">[docs]</a><span class="k">def</span> <span class="nf">stationarity_test_adf</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                          <span class="n">maxlag</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+                          <span class="n">regression</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;c&#39;</span><span class="p">,</span>
+                          <span class="n">autolag</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;AIC&#39;</span>
+                            <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides Augmented Dickey-Fuller unit root test for a time series, using `statsmodels.tsa.stattools.adfuller`.</span>
+<span class="sd">    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ts</span>
+<span class="sd">        The time series to test.</span>
+<span class="sd">    maxlag</span>
+<span class="sd">        Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.</span>
+<span class="sd">    regression</span>
+<span class="sd">        Constant and trend order to include in regression.</span>
+<span class="sd">        “c” : constant only (default).</span>
+<span class="sd">        “ct” : constant and trend.</span>
+<span class="sd">        “ctt” : constant, and linear and quadratic trend.</span>
+<span class="sd">        “n” : no constant, no trend.</span>
+<span class="sd">    autolag</span>
+<span class="sd">        Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.</span>
+<span class="sd">        If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding information criterion.</span>
+<span class="sd">        “t-stat” based choice of maxlag. Starts with maxlag and drops a lag until the t-statistic on the last lag length is significant using a 5%-sized test.</span>
+<span class="sd">        If None, then the number of included lags is set to maxlag.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    A set of values:</span>
+<span class="sd">        adf: The test statistic.</span>
+<span class="sd">        pvalue: MacKinnon’s approximate p-value based on MacKinnon (1994, 2010).</span>
+<span class="sd">        usedlag: The number of lags used.</span>
+<span class="sd">        nobs: The number of observations used for the ADF regression and calculation of the critical values.</span>
+<span class="sd">        critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on MacKinnon (2010).</span>
+<span class="sd">        icbest: The maximized information criterion if autolag is not None.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">ts</span><span class="o">.</span><span class="n">_assert_deterministic</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">adfuller</span><span class="p">(</span>
+        <span class="n">ts</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span>
+        <span class="n">maxlag</span><span class="p">,</span>
+        <span class="n">regression</span><span class="p">,</span>
+        <span class="n">autolag</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="granger_causality_tests"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.granger_causality_tests">[docs]</a><span class="k">def</span> <span class="nf">granger_causality_tests</span><span class="p">(</span><span class="n">ts_cause</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                            <span class="n">ts_effect</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+                            <span class="n">maxlag</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                            <span class="n">addconst</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+                            <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>
+                          <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Provides four tests for granger non causality of 2 time series using `statsmodels.tsa.stattools.grangercausalitytests`.</span>
+<span class="sd">    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html</span>
+
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ts_cause</span>
+<span class="sd">        A univariate deterministic time series. The statistical test determines if this time series </span>
+<span class="sd">        &#39;Granger causes&#39; the time series ts_effect (second parameter). Missing values are not supported.</span>
+<span class="sd">        if H_0 (non causality) is rejected (p near 0), then there is a &#39;granger causality&#39;.</span>
+<span class="sd">    ts_effect</span>
+<span class="sd">        Univariate time series &#39;Granger caused&#39; by ts_cause.</span>
+<span class="sd">    maxlag</span>
+<span class="sd">        If an integer, computes the test for all lags up to maxlag. </span>
+<span class="sd">        If an iterable, computes the tests only for the lags in maxlag.</span>
+<span class="sd">    addconst</span>
+<span class="sd">        Include a constant in the model.</span>
+<span class="sd">    verbose</span>
+<span class="sd">        Print results.</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    Dict</span>
+<span class="sd">        All test results, dictionary keys are the number of lags. For each lag the values are a tuple, </span>
+<span class="sd">        with the first element a dictionary with test statistic, pvalues, degrees of freedom, the second element are </span>
+<span class="sd">        the OLS estimation results for the restricted model, the unrestricted model and the restriction (contrast) </span>
+<span class="sd">        matrix for the parameter f_test.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">ts_cause</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+    <span class="n">ts_effect</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
+
+    <span class="n">ts_cause</span><span class="o">.</span><span class="n">_assert_deterministic</span><span class="p">()</span>
+    <span class="n">ts_effect</span><span class="o">.</span><span class="n">_assert_deterministic</span><span class="p">()</span>
+
+    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">ts_cause</span><span class="o">.</span><span class="n">freq</span> <span class="o">==</span> <span class="n">ts_effect</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+                <span class="s1">&#39;ts_cause and ts_effect must have the same frequency.&#39;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">ts_cause</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">ts_effect</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;ts_cause and ts_effect time series have different time index. We will slice-intersect ts_cause with ts_effect.&#39;</span><span class="p">)</span>
+    
+    <span class="n">ts_cause</span> <span class="o">=</span> <span class="n">ts_cause</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">ts_effect</span><span class="p">)</span>
+    <span class="n">ts_effect</span> <span class="o">=</span> <span class="n">ts_effect</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">ts_cause</span><span class="p">)</span>
+
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">stationarity_tests</span><span class="p">(</span><span class="n">ts_cause</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ts_cause doesn&#39;t seem to be stationary. Please review granger causality validity in your problem context.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">stationarity_tests</span><span class="p">(</span><span class="n">ts_effect</span><span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ts_effect doesn&#39;t seem to be stationary. Please review granger causality validity in your problem context.&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">grangercausalitytests</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">ts_effect</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">),</span> <span class="n">ts_cause</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span> 
+        <span class="n">maxlag</span><span class="p">,</span>
+        <span class="n">addconst</span><span class="p">,</span>
+        <span class="n">verbose</span>
+        <span class="p">)</span></div>
 
 <div class="viewcode-block" id="plot_acf"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.plot_acf">[docs]</a><span class="k">def</span> <span class="nf">plot_acf</span><span class="p">(</span><span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
              <span class="n">m</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>

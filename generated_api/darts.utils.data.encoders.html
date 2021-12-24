@@ -1,0 +1,1649 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Encoder Classes Main &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Horizon-Based Training Dataset" href="darts.utils.data.horizon_based_dataset.html" />
+    <link rel="prev" title="Encoder Base Classes" href="darts.utils.data.encoder_base.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Base Data Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mappers
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+    <label for="toctree-checkbox-6">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       Auto-ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.gradient_boosted_model.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
+       Facebook Prophet
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+  <label for="toctree-checkbox-8">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       Encoder Classes Main
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Utils for time series statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#">
+   Encoder Classes Main
+  </a>
+ </li>
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#singleencoder">
+   SingleEncoder
+  </a>
+ </li>
+ <li class="toc-h1 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#sequentialencoder">
+   SequentialEncoder
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.utils.data.encoders"></span><section id="encoder-classes-main">
+<h1>Encoder Classes Main<a class="headerlink" href="#encoder-classes-main" title="Permalink to this headline">¶</a></h1>
+<p>Encoders can generate past and/or future covariate series by encoding the index of a TimeSeries <cite>series</cite>.
+Each encoder class has an <cite>encode_train()</cite> and <cite>encode_inference()</cite> to generate the encodings for training and
+inference.</p>
+<p>The encoders extract the index either from the target series or optional additional past/future covariates.
+If additional covariates are supplied to <cite>encode_train()</cite> or <cite>encode_inference()</cite>, the time index of those
+covariates are used for the encodings. This means that the input covariates must meet the same model-specific
+requirements as wihtout encoders.</p>
+<p>There are two main types of encoder classes: <cite>SingleEncoder</cite> and <cite>SequentialEncoder</cite>.</p>
+<ul>
+<li><dl>
+<dt>SingleEncoder</dt><dd><p>The SingleEncoder classes carry the encoder logic for past and future covariates, and training and
+inference datasets. They can be used as stand-alone encoders.</p>
+<p>Each SingleEncoder has a dedicated subclass for generating past or future covariates. The naming convention
+is <cite>{X}{SingleEncoder}</cite> where {X} is one of (Past, Future) and {SingleEncoder} is one of the SingleEncoder
+classes described in the next section. An example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">encoder</span> <span class="o">=</span> <span class="n">PastDatetimeAttributeEncoder</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s1">&#39;month&#39;</span><span class="p">)</span>
+
+<span class="n">past_covariates_train</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode_train</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">covariate</span><span class="o">=</span><span class="n">optional_past_covariates</span><span class="p">)</span>
+<span class="n">past_covariates_inf</span> <span class="o">=</span> <span class="n">encoder</span><span class="o">.</span><span class="n">encode_inference</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span> <span class="n">covariate</span><span class="o">=</span><span class="n">optional_past_covariates</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>SequentialEncoder</dt><dd><p>Stores and controls multiple SingleEncoders for both past and/or future covariates all under one hood.
+It provides the same functionality as SingleEncoders (<cite>encode_train()</cite> and <cite>encode_inference()</cite>).
+It can be used both as stand-alone or as an all-in-one solution with Darts’ <cite>TorchForecastingModel</cite> models
+through optional parameter <cite>add_encoders</cite>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span><span class="o">...</span><span class="p">})</span>
+</pre></div>
+</div>
+<p>If used at model creation, the SequentialEncoder will handle all past and future encoders autonomously.
+The requirements for model parameter <cite>add_encoders</cite> are described in the next section or in
+<a class="reference internal" href="#darts.utils.data.encoders.SequentialEncoder" title="darts.utils.data.encoders.SequentialEncoder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SequentialEncoder</span></code></a>.</p>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="singleencoder">
+<h1>SingleEncoder<a class="headerlink" href="#singleencoder" title="Permalink to this headline">¶</a></h1>
+<p>The SingleEncoders from {X}{SingleEncoder} are:</p>
+<ul>
+<li><dl>
+<dt>DatetimeAttributeEncoder</dt><dd><p>Adds scalar pd.DatatimeIndex attribute information derived from <cite>series.time_index</cite>.
+Requires <cite>series</cite> to have a pd.DatetimeIndex.</p>
+<dl class="simple">
+<dt>attribute</dt><dd><p>An attribute of <cite>pd.DatetimeIndex</cite>: see all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>CyclicTemporalEncoder</dt><dd><p>Adds cyclic pd.DatetimeIndex attribute information deriveed from <cite>series.time_index</cite>.
+Adds 2 columns, corresponding to sin and cos encodings, to uniquely describe the underlying attribute.
+Requires <cite>series</cite> to have a pd.DatetimeIndex.</p>
+<dl class="simple">
+<dt>attribute</dt><dd><p>An attribute of <cite>pd.DatetimeIndex</cite> that follows a cyclic pattern. One of (‘month’, ‘day’, ‘weekday’,
+‘dayofweek’, ‘day_of_week’, ‘hour’, ‘minute’, ‘second’, ‘microsecond’, ‘nanosecond’, ‘quarter’,
+‘dayofyear’, ‘day_of_year’, ‘week’, ‘weekofyear’, ‘week_of_year’).</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>IntegerIndexEncoder</dt><dd><p>Adds absolute or relative index positions as integer values (positions) derived from <cite>series</cite> time index.
+<cite>series</cite> can either have a pd.DatetimeIndex or an integer index.</p>
+<dl class="simple">
+<dt>attribute</dt><dd><p>Either ‘absolute’ or ‘relative’.
+‘absolute’ will generate position values ranging from 0 to inf where 0 is set at the start of <cite>series</cite>.
+‘relative’ will generate position values relative to the forecasting/prediction point. Values range
+from -inf to inf where 0 is set at the forecasting point.</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+<li><dl>
+<dt>CallableIndexEncoder</dt><dd><p>Applies a user-defined callable to encode <cite>series</cite>’ index.
+<cite>series</cite> can either have a pd.DatetimeIndex or an integer index.</p>
+<dl class="simple">
+<dt>attribute</dt><dd><p>a callable/function to encode the index.
+For <cite>series</cite> with a pd.DatetimeIndex: <cite>lambda index: (index.year - 1950) / 50</cite>
+For <cite>series</cite> with an integer index:<cite>lambda index: index / 50</cite></p>
+</dd>
+</dl>
+</dd>
+</dl>
+</li>
+</ul>
+</section>
+<section id="sequentialencoder">
+<h1>SequentialEncoder<a class="headerlink" href="#sequentialencoder" title="Permalink to this headline">¶</a></h1>
+<p>The SequentialEncoder combines the logic of all SingleEncoders from above and has additional benefits:</p>
+<ul class="simple">
+<li><p>use multiple encoders at once</p></li>
+<li><p>generate multiple attribute encodings at once</p></li>
+<li><p>generate both past and future at once</p></li>
+<li><p>supports transformers (Scaler)</p></li>
+<li><p>easy to use with TorchForecastingModels</p></li>
+</ul>
+<p>The model parameter <cite>add_encoders</cite> must be a Dict following of this convention:</p>
+<ul class="simple">
+<li><p>outer keys: <cite>SingleEncoder</cite> and Transformer tags:</p>
+<ul>
+<li><p>‘datetime_attribute’ for <cite>DatetimeAttributeEncoder</cite></p></li>
+<li><p>‘cyclic’ for <cite>CyclicEncoder</cite></p></li>
+<li><p>‘position’ for <cite>IntegerIndexEncoder</cite></p></li>
+<li><p>‘custom’ for <cite>CallableIndexEncoder</cite></p></li>
+<li><p>‘transformer’ for a transformer</p></li>
+</ul>
+</li>
+<li><p>inner keys: covariate type</p>
+<ul>
+<li><p>‘past’ for past covariates</p></li>
+<li><p>‘future’ for future covariates</p></li>
+<li><p>(do not specify for ‘transformer’)</p></li>
+</ul>
+</li>
+<li><p>inner key values:</p>
+<ul>
+<li><p>list of attributes for <cite>SingleEncoder</cite></p></li>
+<li><p>transformer object for ‘transformer’</p></li>
+</ul>
+</li>
+</ul>
+<p>Below is an example that illustrates a valid <cite>add_encoders</cite> dict for hourly data and how it can be used with a
+TorchForecastingModel (this is only meant to illustrate many features at once).</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">add_encoders</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;cyclic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;datetime_attribute&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hour&#39;</span><span class="p">],</span> <span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;year&#39;</span><span class="p">,</span> <span class="s1">&#39;dayofweek&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;position&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;absolute&#39;</span><span class="p">],</span> <span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;relative&#39;</span><span class="p">]},</span>
+    <span class="s1">&#39;custom&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;past&#39;</span><span class="p">:</span> <span class="p">[</span><span class="k">lambda</span> <span class="n">index</span><span class="p">:</span> <span class="p">(</span><span class="n">index</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">1950</span><span class="p">)</span> <span class="o">/</span> <span class="mi">50</span><span class="p">]},</span>
+    <span class="s1">&#39;transformer&#39;</span><span class="p">:</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="p">}</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">SomeTorchForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">,</span> <span class="n">add_encoders</span><span class="o">=</span><span class="n">add_encoders</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">CallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><span class="pre">darts.utils.data.encoder_base.CovariateIndexGenerator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Callable</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#CallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
+<p>CallableIndexEncoder: Applies a user-defined callable to encode the underlying index for past and future
+covariates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index_generator</strong> – An instance of <cite>CovariateIndexGenerator</cite> with methods <cite>generate_train_series()</cite> and
+<cite>generate_inference_series()</cite>. Used to generate the index for encoders.</p></li>
+<li><p><strong>attribute</strong> – <p>A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)</cite> as input
+and returns a np.ndarray of shape <cite>(len(index),)</cite>.
+An example for a correct <cite>attribute</cite> for <cite>ìndex</cite> of type pd.DatetimeIndex:</p>
+<blockquote>
+<div><p><cite>attribute = lambda index: (index.year - 1950) / 50]}</cite></p>
+</div></blockquote>
+<dl class="simple">
+<dt>And for pd.Int64Index or pd.RangeIndex:</dt><dd><p><cite>attribute = lambda index: (index - 1950) / 50]}</cite></p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>CallableIndexEncoder accepts transformations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CallableIndexEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.CallableIndexEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">CyclicTemporalEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><span class="pre">darts.utils.data.encoder_base.CovariateIndexGenerator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#CyclicTemporalEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
+<p>CyclicTemporalEncoder: Cyclic index encoding for <cite>TimeSeries</cite> that have a time index of type <cite>pd.DatetimeIndex</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index_generator</strong> – An instance of <cite>CovariateIndexGenerator</cite> with methods <cite>generate_train_series()</cite> and
+<cite>generate_inference_series()</cite>. Used to generate the index for encoders.</p></li>
+<li><p><strong>attribute</strong> – The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
+Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”,
+“weekday”, “day”, “hour”, “minute”, “second”. See all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
+For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>CyclicTemporalEncoder should not be transformed. Returns two elements for sine and cosine waves.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">DatetimeAttributeEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><span class="pre">darts.utils.data.encoder_base.CovariateIndexGenerator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#DatetimeAttributeEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
+<p>DatetimeAttributeEncoder: Adds pd.DatatimeIndex attribute information derived from the index as scalars.
+Requires the underlying TimeSeries to have a pd.DatetimeIndex</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index_generator</strong> – An instance of <cite>CovariateIndexGenerator</cite> with methods <cite>generate_train_series()</cite> and
+<cite>generate_inference_series()</cite>. Used to generate the index for encoders.</p></li>
+<li><p><strong>attribute</strong> – The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”,
+“weekday”, “day”, “hour”, “minute”, “second”. See all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
+For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>DatetimeAttributeEncoder accepts transformations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.DatetimeAttributeEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.DatetimeAttributeEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureCallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#FutureCallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder" title="darts.utils.data.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CallableIndexEncoder</span></code></a></p>
+<p>IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying
+TimeSeries’ time index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – <p>A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)</cite> as input
+and returns a np.ndarray of shape <cite>(len(index),)</cite>.
+An example for a correct <cite>attribute</cite> for <cite>ìndex</cite> of type pd.DatetimeIndex:</p>
+<blockquote>
+<div><p><cite>attribute = lambda index: (index.year - 1950) / 50]}</cite></p>
+</div></blockquote>
+<dl class="simple">
+<dt>And for pd.Int64Index or pd.RangeIndex:</dt><dd><p><cite>attribute = lambda index: (index - 1950) / 50]}</cite></p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>CallableIndexEncoder accepts transformations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCallableIndexEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureCallableIndexEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureCyclicEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#FutureCyclicEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="darts.utils.data.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CyclicTemporalEncoder</span></code></a></p>
+<p>Cyclic encoder for future covariates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
+Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”,
+“weekday”, “day”, “hour”, “minute”, “second”. See all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
+For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>CyclicTemporalEncoder should not be transformed. Returns two elements for sine and cosine waves.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureCyclicEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureCyclicEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureDatetimeAttributeEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#FutureDatetimeAttributeEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder" title="darts.utils.data.encoders.DatetimeAttributeEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.DatetimeAttributeEncoder</span></code></a></p>
+<p>Datetime attribute encoder for future covariates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”,
+“weekday”, “day”, “hour”, “minute”, “second”. See all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
+For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>DatetimeAttributeEncoder accepts transformations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureDatetimeAttributeEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureDatetimeAttributeEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">FutureIntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#FutureIntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder" title="darts.utils.data.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.IntegerIndexEncoder</span></code></a></p>
+<p>IntegerIndexEncoder: Adds integer index value (position) for future covariates derived from the underlying
+TimeSeries’ time index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – Either ‘absolute’ or ‘relative’. If ‘absolute’, the generated encoded values will range from (0, inf)
+and the train target series will be used as a reference to set the 0-index. If ‘relative’, the generated
+encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
+to evaluate the relative index positions.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>IntegerIndexEncoder accepts transformations. Note that transforming ‘relative’ IntegerIndexEncoder
+will return an ‘absolute’ index.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.FutureIntegerIndexEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.FutureIntegerIndexEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">IntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><span class="pre">darts.utils.data.encoder_base.CovariateIndexGenerator</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#IntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
+<p>IntegerIndexEncoder: Adds integer index value (position) derived from the underlying TimeSeries’ time index
+for past and future covariates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>index_generator</strong> – An instance of <cite>CovariateIndexGenerator</cite> with methods <cite>generate_train_series()</cite> and
+<cite>generate_inference_series()</cite>. Used to generate the index for encoders.</p></li>
+<li><p><strong>attribute</strong> – Either ‘absolute’ or ‘relative’. If ‘absolute’, the generated encoded values will range from (0, inf)
+and the train target series will be used as a reference to set the 0-index. If ‘relative’, the generated
+encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
+to evaluate the relative index positions.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>IntegerIndexEncoder accepts transformations. Note that transforming ‘relative’ IntegerIndexEncoder
+will return an ‘absolute’ index.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.IntegerIndexEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.IntegerIndexEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">PastCallableIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#PastCallableIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder" title="darts.utils.data.encoders.CallableIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CallableIndexEncoder</span></code></a></p>
+<p>IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying
+TimeSeries’ time index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – <p>A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)</cite> as input
+and returns a np.ndarray of shape <cite>(len(index),)</cite>.
+An example for a correct <cite>attribute</cite> for <cite>ìndex</cite> of type pd.DatetimeIndex:</p>
+<blockquote>
+<div><p><cite>attribute = lambda index: (index.year - 1950) / 50}</cite></p>
+</div></blockquote>
+<dl class="simple">
+<dt>And for pd.Int64Index or pd.RangeIndex:</dt><dd><p><cite>attribute = lambda index: (index - 1950) / 50}</cite></p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>CallableIndexEncoder accepts transformations.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCallableIndexEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastCallableIndexEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">PastCyclicEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#PastCyclicEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="darts.utils.data.encoders.CyclicTemporalEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.CyclicTemporalEncoder</span></code></a></p>
+<p>Cyclic encoder for past covariates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – The attribute of the underlying pd.DatetimeIndex from  for which to apply cyclic encoding.
+Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”,
+“weekday”, “day”, “hour”, “minute”, “second”. See all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
+For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>CyclicTemporalEncoder should not be transformed. Returns two elements for sine and cosine waves.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastCyclicEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastCyclicEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">PastDatetimeAttributeEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#PastDatetimeAttributeEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder" title="darts.utils.data.encoders.DatetimeAttributeEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.DatetimeAttributeEncoder</span></code></a></p>
+<p>Datetime attribute encoder for past covariates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – The attribute of the underlying pd.DatetimeIndex from  for which to add scalar information.
+Must be an attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”,
+“weekday”, “day”, “hour”, “minute”, “second”. See all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.
+For more information, check out <a class="reference internal" href="darts.utils.timeseries_generation.html#darts.utils.timeseries_generation.datetime_attribute_timeseries" title="darts.utils.timeseries_generation.datetime_attribute_timeseries"><code class="xref py py-meth docutils literal notranslate"><span class="pre">datetime_attribute_timeseries()</span></code></a></p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>DatetimeAttributeEncoder accepts transformations</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastDatetimeAttributeEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastDatetimeAttributeEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">PastIntegerIndexEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#PastIntegerIndexEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder" title="darts.utils.data.encoders.IntegerIndexEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoders.IntegerIndexEncoder</span></code></a></p>
+<p>IntegerIndexEncoder: Adds integer index value (position) for past covariates derived from the underlying
+TimeSeries’ time index.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>attribute</strong> – Either ‘absolute’ or ‘relative’. If ‘absolute’, the generated encoded values will range from (0, inf)
+and the train target series will be used as a reference to set the 0-index. If ‘relative’, the generated
+encoded values will range from (-inf, inf) and the train target series end time will be used as a reference
+to evaluate the relative index positions.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">accept_transformer</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.accept_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>IntegerIndexEncoder accepts transformations. Note that transforming ‘relative’ IntegerIndexEncoder
+will return an ‘absolute’ index.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for inference/prediction.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for prediction: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.PastIntegerIndexEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">merge_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.utils.data.encoders.PastIntegerIndexEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for training.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>covariate</strong> – Optionally, the covariate used for training: past covariate if <cite>self.index_generator</cite> is instance of
+<cite>PastCovariateIndexGenerator</cite>, future covariate if <cite>self.index_generator</cite> is instance of
+<cite>FutureCovariateIndexGenerator</cite></p></li>
+<li><p><strong>merge_covariate</strong> – Whether or not to merge the encoded TimeSeries with <cite>covariate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">SequentialEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">add_encoders</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Dict</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">takes_past_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">takes_future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#SequentialEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.Encoder" title="darts.utils.data.encoder_base.Encoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.Encoder</span></code></a></p>
+<p>A <cite>SequentialEncoder</cite> object can store and control multiple past and future covariate encoders at once.
+It provides the same functionality as single encoders (<cite>encode_train()</cite> and <cite>encode_inference()</cite>).</p>
+<p>SequentialEncoder automatically creates encoder objects from parameter <cite>add_encoders</cite> used when creating a
+<cite>TorchForecastingModel</cite>.</p>
+<ul class="simple">
+<li><p>Only kwarg <cite>add_encoders</cite> of type <cite>Optional[Dict]</cite> will be used to extract the encoders.
+For example: <cite>model = MyModel(…, add_encoders={…}, …)</cite></p></li>
+</ul>
+<dl>
+<dt>The <cite>add_encoders</cite> dict must follow this convention:</dt><dd><p><cite>{encoder keyword: {temporal keyword: List[attributes]}, …, transformer keyword: transformer object}</cite></p>
+</dd>
+<dt>Supported encoder keywords:</dt><dd><p><cite>‘cyclic’</cite> for cyclic temporal encoder. See the docs
+<a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="darts.utils.data.encoders.CyclicTemporalEncoder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CyclicTemporalEncoder</span></code></a>;
+<cite>‘datetime_attribute’</cite> for adding scalar information of pd.DatetimeIndex attribute. See the docs
+<a class="reference internal" href="#darts.utils.data.encoders.DatetimeAttributeEncoder" title="darts.utils.data.encoders.DatetimeAttributeEncoder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">DatetimeAttributeEncoder</span></code></a>
+<cite>‘position’</cite> for integer index position encoder. See the docs
+<a class="reference internal" href="#darts.utils.data.encoders.IntegerIndexEncoder" title="darts.utils.data.encoders.IntegerIndexEncoder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">IntegerIndexEncoder</span></code></a>;
+<cite>‘custom’</cite> for encoding index with custom callables (functions). See the docs
+<a class="reference internal" href="#darts.utils.data.encoders.CallableIndexEncoder" title="darts.utils.data.encoders.CallableIndexEncoder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">CallableIndexEncoder</span></code></a>;</p>
+</dd>
+<dt>Supported temporal keywords:</dt><dd><p>‘past’ for adding encoding as past covariates
+‘future’ for adding encoding as future covariates</p>
+</dd>
+<dt>Supported attributes:</dt><dd><p>for attributes read the referred docs for the corresponding encoder from above</p>
+</dd>
+<dt>Supported transformers:</dt><dd><p>a transformer can be added with transformer keyword ‘transformer’. The transformer object must be an
+instance of Darts’ <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-meth docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a> such as Scaler() or
+BoxCox(). The transformers will be fitted on the training dataset when calling calling <cite>model.fit()</cite>.
+The training, validation and inference datasets are then transformed equally.</p>
+</dd>
+<dt>An example of a valid <cite>add_encoders</cite> dict for hourly data:</dt><dd><p>from darts.dataprocessing.transformers import Scaler
+add_encoders={</p>
+<blockquote>
+<div><p>‘cyclic’: {‘future’: [‘month’]},
+‘datetime_attribute’: {‘past’: [‘hour’], ‘future’: [‘year’, ‘dayofweek’]},
+‘position’: {‘past’: [‘absolute’], ‘future’: [‘relative’]},
+‘custom’: {‘past’: [lambda index: (index.year - 1950) / 50]},
+‘transformer’: Scaler()</p>
+</div></blockquote>
+<p>}</p>
+</dd>
+</dl>
+<p>Tuples of <cite>(encoder_id, attribute)</cite> are extracted from <cite>add_encoders</cite> to instantiate the <cite>SingleEncoder</cite>
+objects:
+* The <cite>encoder_id</cite> is extracted as follows:</p>
+<blockquote>
+<div><p>str(encoder_kw) + str(temporal_kw) -&gt; ‘cyclic’ + ‘past’ -&gt; <cite>encoder_id</cite> = ‘cyclic_past’
+The <cite>encoder_id</cite> is used to map the parameters with the corresponding <cite>SingleEncoder</cite> objects.</p>
+</div></blockquote>
+<ul class="simple">
+<li><dl class="simple">
+<dt>The <cite>attribute</cite> is extracted from the values given by values under <cite>temporal_kw</cite></dt><dd><p><cite>attribute</cite> = ‘month’
+…
+The <cite>attribute</cite> tells the <cite>SingleEncoder</cite> which attribute of the index to encode</p>
+</dd>
+</dl>
+</li>
+</ul>
+<p>New encoders can be added by appending them to the mapping property <cite>SequentialEncoder.encoder_map()</cite></p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>add_encoders</strong> – The parameters used at <cite>TorchForecastingModel</cite> model creation.</p></li>
+<li><p><strong>input_chunk_length</strong> – The length of the emitted past series.</p></li>
+<li><p><strong>output_chunk_length</strong> – The length of the emitted future series.</p></li>
+<li><p><strong>takes_past_covariates</strong> – Whether or not the <cite>TrainingDataset</cite> takes past covariates</p></li>
+<li><p><strong>takes_future_covariates</strong> – Whether or not the <cite>TrainingDataset</cite> takes past covariates</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.encode_inference">
+<span class="sig-name descname"><span class="pre">encode_inference</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_past</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_future</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#SequentialEncoder.encode_inference"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.encode_inference" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for all past and/or future covariates for inference/prediction.
+Which covariates are generated depends on the parameters used at model creation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>n</strong> – The forecast horizon</p></li>
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>past_covariate</strong> – Optionally, the past covariates used for training.</p></li>
+<li><p><strong>future_covariate</strong> – Optionally, the future covariates used for training.</p></li>
+<li><p><strong>encode_past</strong> – Whether or not to apply encoders for past covariates</p></li>
+<li><p><strong>encode_future</strong> – Whether or not to apply encoders for future covariates</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The past_covariate and/or future_covariate for prediction/inference including the encodings.
+If input {x}_covariate is None and no {x}_encoders are given, will return <cite>None</cite>
+for the {x}_covariate.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[past_covariate, future_covariate]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.encode_train">
+<span class="sig-name descname"><span class="pre">encode_train</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariate</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_past</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">encode_future</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#SequentialEncoder.encode_train"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.encode_train" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns encoded index for all past and/or future covariates for training.
+Which covariates are generated depends on the parameters used at model creation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>target</strong> – The target TimeSeries used during training or passed to prediction as <cite>series</cite></p></li>
+<li><p><strong>past_covariate</strong> – Optionally, the past covariates used for training.</p></li>
+<li><p><strong>future_covariate</strong> – Optionally, the future covariates used for training.</p></li>
+<li><p><strong>encode_past</strong> – Whether or not to apply encoders for past covariates</p></li>
+<li><p><strong>encode_future</strong> – Whether or not to apply encoders for future covariates</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>The past_covariate and/or future_covariate for training including the encodings.
+If input {x}_covariate is None and no {x}_encoders are given, will return <cite>None</cite>
+for the {x}_covariate.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Tuple[past_covariate, future_covariate]</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>Warning</strong> – If model was created with <cite>add_encoders</cite> and there is suspicion of lazy loading.
+    The encodings/covariates are generated eagerly before starting training for all individual targets and
+    loaded into memory. Depending on the size of target data, this can create memory
+    issues. In case this applies, consider setting <cite>add_encoders=None</cite> at model
+    creation and build your encodings covariates manually for lazy loading.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.encoder_map">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">encoder_map</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.encoder_map" title="Permalink to this definition">¶</a></dt>
+<dd><p>Mapping between encoder identifier string (from parameters at model creations) and the corresponding
+future or past covariate encoder</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.future_encoders">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">future_encoders</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.future_encoders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the future covariate encoder objects</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.future_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">future_transformer</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SequentialEncoderTransformer" title="darts.utils.data.encoder_base.SequentialEncoderTransformer"><span class="pre">darts.utils.data.encoder_base.SequentialEncoderTransformer</span></a></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.future_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the future transformer object</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.past_encoders">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">past_encoders</span></span><em class="property"><span class="pre">:</span> <span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></a><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.past_encoders" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the past covariate encoder objects</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.utils.data.encoders.SequentialEncoder.past_transformer">
+<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">past_transformer</span></span><em class="property"><span class="pre">:</span> <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SequentialEncoderTransformer" title="darts.utils.data.encoder_base.SequentialEncoderTransformer"><span class="pre">darts.utils.data.encoder_base.SequentialEncoderTransformer</span></a></em><a class="headerlink" href="#darts.utils.data.encoders.SequentialEncoder.past_transformer" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the past transformer object</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.utils.data.encoder_base.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Encoder Base Classes</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.utils.data.horizon_based_dataset.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Horizon-Based Training Dataset</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Unit8 SA.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

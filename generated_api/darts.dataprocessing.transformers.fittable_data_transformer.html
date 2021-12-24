@@ -394,6 +394,16 @@
     </label>
     <ul>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Encoder Classes Main
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
        Horizon-Based Training Dataset
       </a>
@@ -536,7 +546,13 @@ data, this function takes care of parallelising the fitting of multiple series i
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> against which the transformer is fit.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_fit()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>ts_fit()</cite> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_fit()</cite> method</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
+the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -557,7 +573,13 @@ data, this function takes care of parallelising the fitting of multiple series i
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence</cite> of <cite>TimeSeries</cite> to transform.</p></li>
 <li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for the <cite>ts_transform()</cite> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_transform()</cite> method:</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
+the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>

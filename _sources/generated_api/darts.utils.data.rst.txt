@@ -9,6 +9,8 @@
         :maxdepth: 1
         
         
+        darts.utils.data.encoder_base
+        darts.utils.data.encoders
         darts.utils.data.horizon_based_dataset
         darts.utils.data.inference_dataset
         darts.utils.data.sequential_dataset

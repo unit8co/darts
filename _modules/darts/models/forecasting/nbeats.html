@@ -628,6 +628,26 @@
 <span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
 <span class="sd">        n_epochs</span>
 <span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; Scaler() can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            `add_encoders`. An example showing some of `add_encoders` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;past&#39;: [&#39;hour&#39;], &#39;future&#39;: [&#39;year&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda index: (index.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
 <span class="sd">        optimizer_cls</span>
 <span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
 <span class="sd">        optimizer_kwargs</span>

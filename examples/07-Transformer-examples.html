@@ -223,6 +223,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="14-TFT-examples.html">
+   Temporal Fusion Transformer
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="11-Kalman-filter-examples.html">
    Filtering and predicting using the darts filters
   </a>
@@ -232,6 +239,13 @@
  <li class="toctree-l1">
   <a class="reference internal" href="12-GP-filter-examples.html">
    Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="13-Dynamic-Time-Warping-example.html">
+   Dynamic Time Warping (DTW)
   </a>
  </li>
 </ul>
@@ -600,7 +614,7 @@ div.rendered_html tbody tr:hover {
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
 <span></span><span class="c1"># Read data:</span>
-<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="c1"># Create training and validation sets:</span>
 <span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="s1">&#39;19590101&#39;</span><span class="p">))</span>
@@ -619,7 +633,7 @@ div.rendered_html tbody tr:hover {
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="s1">&#39;the </span><span class="se">\&#39;</span><span class="s1">air passengers</span><span class="se">\&#39;</span><span class="s1"> dataset has </span><span class="si">{}</span><span class="s1"> data points&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span></span><span class="s1">&#39;the </span><span class="se">\&#39;</span><span class="s1">air passengers</span><span class="se">\&#39;</span><span class="s1"> dataset has </span><span class="si">{}</span><span class="s1"> data points&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
@@ -639,7 +653,7 @@ div.rendered_html tbody tr:hover {
 </ul>
 <p>The goal is to perform one-step forecasting.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -647,25 +661,25 @@ div.rendered_html tbody tr:hover {
     <span class="n">input_chunk_length</span> <span class="o">=</span> <span class="mi">12</span><span class="p">,</span>
     <span class="n">output_chunk_length</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
     <span class="n">batch_size</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
-    <span class="n">n_epochs</span> <span class="o">=</span> <span class="mi">400</span><span class="p">,</span>
+    <span class="n">n_epochs</span> <span class="o">=</span> <span class="mi">200</span><span class="p">,</span>
     <span class="n">model_name</span> <span class="o">=</span> <span class="s1">&#39;air_transformer&#39;</span><span class="p">,</span>
-    <span class="n">log_tensorboard</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">nr_epochs_val_period</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-    <span class="n">d_model</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
-    <span class="n">nhead</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
-    <span class="n">num_encoder_layers</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-    <span class="n">num_decoder_layers</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
-    <span class="n">dim_feedforward</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+    <span class="n">d_model</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
+    <span class="n">nhead</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
+    <span class="n">num_encoder_layers</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">num_decoder_layers</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">dim_feedforward</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
     <span class="n">dropout</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
     <span class="n">activation</span> <span class="o">=</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
-    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -677,20 +691,20 @@ div.rendered_html tbody tr:hover {
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "241a70bfeb83402c8f113d9aa1a253dd", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2f9a2a1d3b8c4b33a99279fb2373d78b", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0027, validation loss: 0.0172, best val loss: 0.0067
+Training loss: 0.0046, validation loss: 0.0273, best val loss: 0.0126
 </pre></div></div>
 </div>
 <p>Let’s look at the predictions on the validation set.</p>
 <p>First, by using the “current” model - i.e., the model at the end of the training procedure:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -716,7 +730,7 @@ Training loss: 0.0027, validation loss: 0.0172, best val loss: 0.0067
 </div>
 <p>Then, by using the best model obtained over training, according to validation loss:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -725,24 +739,16 @@ Training loss: 0.0027, validation loss: 0.0172, best val loss: 0.0067
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-loading model_best_220.pth.tar
-</pre></div></div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_07-Transformer-examples_15_1.png" src="../_images/examples_07-Transformer-examples_15_1.png" />
+<img alt="../_images/examples_07-Transformer-examples_15_0.png" src="../_images/examples_07-Transformer-examples_15_0.png" />
 </div>
 </div>
 <p>Let’s backtest our <code class="docutils literal notranslate"><span class="pre">Transformer</span></code> model to evaluates its performance at a forecast horizon of 6 months:</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -754,22 +760,14 @@ loading model_best_220.pth.tar
 </pre></div>
 </div>
 </div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "4ea2cff2f9a147e0bf66e22b7c3c3cad", "version_major": 2, "version_minor": 0}</script></div>
-</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2fb9d97d905246dba0903dfa6b2e19b9", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -788,7 +786,7 @@ loading model_best_220.pth.tar
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE: 6.19%
+MAPE: 11.13%
 </pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
@@ -802,11 +800,11 @@ MAPE: 6.19%
 <h3>Monthly Sun spots Example<a class="headerlink" href="#Monthly-Sun-spots-Example" title="Permalink to this headline">¶</a></h3>
 <p>Now, let’s test the transformer architecture on a more complex dataset, the ‘monthly sunspots’.</p>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="n">series_sunspot</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span></span><span class="n">series_sunspot</span> <span class="o">=</span> <span class="n">SunspotsDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
 <span class="n">series_sunspot</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
 <span class="n">check_seasonality</span><span class="p">(</span><span class="n">series_sunspot</span><span class="p">,</span> <span class="n">max_lag</span><span class="o">=</span><span class="mi">240</span><span class="p">)</span>
@@ -828,16 +826,16 @@ MAPE: 6.19%
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="s1">&#39;the </span><span class="se">\&#39;</span><span class="s1">monthly sun spots</span><span class="se">\&#39;</span><span class="s1"> dataset has </span><span class="si">{}</span><span class="s1"> data points&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">df2</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+<span></span><span class="s1">&#39;the </span><span class="se">\&#39;</span><span class="s1">monthly sun spots</span><span class="se">\&#39;</span><span class="s1"> dataset has </span><span class="si">{}</span><span class="s1"> data points&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series_sunspot</span><span class="p">))</span>
 </pre></div>
 </div>
 </div>
 <div class="nboutput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
 </pre></div>
 </div>
 <div class="output_area docutils container">
@@ -847,7 +845,7 @@ MAPE: 6.19%
 </div>
 <p>First, let’s perform one-step ahead forecasting.</p>
 <div class="nbinput nblast docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -857,23 +855,23 @@ MAPE: 6.19%
     <span class="n">output_chunk_length</span> <span class="o">=</span> <span class="mi">36</span><span class="p">,</span>
     <span class="n">n_epochs</span> <span class="o">=</span> <span class="mi">20</span><span class="p">,</span>
     <span class="n">model_name</span> <span class="o">=</span> <span class="s1">&#39;sun_spots_transformer&#39;</span><span class="p">,</span>
-    <span class="n">log_tensorboard</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
     <span class="n">nr_epochs_val_period</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
-    <span class="n">d_model</span> <span class="o">=</span> <span class="mi">32</span><span class="p">,</span>
-    <span class="n">nhead</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-    <span class="n">num_encoder_layers</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
-    <span class="n">num_decoder_layers</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
-    <span class="n">dim_feedforward</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+    <span class="n">d_model</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
+    <span class="n">nhead</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
+    <span class="n">num_encoder_layers</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">num_decoder_layers</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="n">dim_feedforward</span> <span class="o">=</span> <span class="mi">128</span><span class="p">,</span>
     <span class="n">dropout</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
     <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
     <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="mf">1e-3</span><span class="p">},</span>
-    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span>
+    <span class="n">save_checkpoints</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+    <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span>
 <span class="p">)</span>
 </pre></div>
 </div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -885,18 +883,18 @@ MAPE: 6.19%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "87f9a4b59f92433b85969af1aceff3c5", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ccd2a30ded334bc2a68338f7a77bc6d0", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-Training loss: 0.0105, validation loss: 0.0253, best val loss: 0.0232
+Training loss: 0.0120, validation loss: 0.0261, best val loss: 0.0261
 </pre></div></div>
 </div>
 <div class="nbinput docutils container">
-<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
@@ -932,46 +930,13 @@ Training loss: 0.0105, validation loss: 0.0253, best val loss: 0.0232
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-loading model_best_10.pth.tar
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "78d78e419b494ebc9c4066666b75e1c2", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bf6fc5ed374e4a9489d38e35428fa957", "version_major": 2, "version_minor": 0}</script></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-
-Transformer MAPE: 67.35159696769936
-ETS MAPE: 593.7817328101518
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6c9ddc64cef3456ca178e1d7e99d9e49", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/examples_07-Transformer-examples_26_5.png" src="../_images/examples_07-Transformer-examples_26_5.png" />
-</div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "91b880b55864475a9c7ae356917f3f9f", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput nblast docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:

@@ -394,6 +394,16 @@
     </label>
     <ul>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Encoder Classes Main
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
        Horizon-Based Training Dataset
       </a>
@@ -588,8 +598,8 @@ Set to np.mean by default.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.varima.VARIMA.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/varima.html#VARIMA.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.varima.VARIMA.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fits/trains the model on the provided series</p>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/models/forecasting/varima.html#VARIMA.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.varima.VARIMA.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fits/trains the model on the provided series.</p>
 <p>Defines behavior that should happen when calling the <cite>fit()</cite> method for the forecasting models handling
 optional future covariates (exogenous variables).</p>
 <dl class="field-list simple">
@@ -597,7 +607,7 @@ optional future covariates (exogenous variables).</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> – The model will be trained to forecast this time series. Can be multivariate if the model supports it.</p></li>
 <li><p><strong>future_covariates</strong> – A time series of future-known covariates. This time series will not be forecasted, but can be used by
-some models as an input.</p></li>
+some models as an input. It must contain at least the same time steps/indices as the target <cite>series</cite>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -745,15 +755,16 @@ This function/property should be overridden if a value higher than 3 is required
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.varima.VARIMA.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/varima.html#VARIMA.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.varima.VARIMA.predict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.models.forecasting.varima.VARIMA.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Forecasts values for a certain number of time steps after the end of the series.</p>
 <p>If some future covariates were specified during the training, they must also be specified here.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>n</strong> – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
-<li><p><strong>future_covariates</strong> – The time series of future-known covariates which can be fed as input to the model. It must correspond to the
-covariate time series that has been used with the <cite>fit()</cite> method for training, and it must be of length <cite>n</cite>.</p></li>
+<li><p><strong>future_covariates</strong> – The time series of future-known covariates which can be fed as input to the model. It must correspond to
+the covariate time series that has been used with the <cite>fit()</cite> method for training, and it must contain at
+least the next <cite>n</cite> time steps/indices after the end of the training target series.</p></li>
 <li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
 </ul>

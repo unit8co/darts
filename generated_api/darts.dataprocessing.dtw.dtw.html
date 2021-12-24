@@ -221,7 +221,8 @@
 <span class="sig-name descname"><span class="pre">path</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">numpy.ndarray</span></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment.path"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.path" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
-<dd class="field-odd"><p>An array of indices [[i0,j0], [i1,j1], [i2,j2], …], where i indexes into series1 and j indexes into series2.
+<dd class="field-odd"><p>An array of indices [[i0,j0], [i1,j1], [i2,j2], …], where i indexes into series1
+and j indexes into series2.
 Indices are in monotonic order, path[n] &gt;= path[n-1]</p>
 </dd>
 <dt class="field-even">Return type</dt>
@@ -286,7 +287,8 @@ with lines between them indicating the alignment selected by the DTW algorithm.<
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.dtw.DTWAlignment.warped">
 <span class="sig-name descname"><span class="pre">warped</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">)</span> <span class="pre">-&gt;</span> <span class="pre">(&lt;class</span> <span class="pre">'darts.timeseries.TimeSeries'&gt;</span></em>, <em class="sig-param"><span class="pre">&lt;class</span> <span class="pre">'darts.timeseries.TimeSeries'&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#DTWAlignment.warped"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.DTWAlignment.warped" title="Permalink to this definition">¶</a></dt>
-<dd><p>Warps the two time series according to the warp path returned by .path(), which minimizes the pair-wise distance.
+<dd><p>Warps the two time series according to the warp path returned by .path(), which minimizes
+the pair-wise distance.
 This will bring two time series that are out-of-phase back into phase.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
@@ -312,10 +314,12 @@ This will bring two time series that are out-of-phase back into phase.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.dtw.dtw">
-<span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.dtw.</span></span><span class="sig-name descname"><span class="pre">dtw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">series1:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">series2:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">window:</span> <span class="pre">darts.dataprocessing.dtw.window.Window</span> <span class="pre">=</span> <span class="pre">&lt;darts.dataprocessing.dtw.window.NoWindow</span> <span class="pre">object&gt;,</span> <span class="pre">distance:</span> <span class="pre">Optional[Callable[[Union[numpy.ndarray,</span> <span class="pre">float],</span> <span class="pre">Union[numpy.ndarray,</span> <span class="pre">float]],</span> <span class="pre">float]]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">multi_grid_radius:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#darts.dataprocessing.dtw.dtw.DTWAlignment" title="darts.dataprocessing.dtw.dtw.DTWAlignment"><span class="pre">darts.dataprocessing.dtw.dtw.DTWAlignment</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#dtw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.dtw" title="Permalink to this definition">¶</a></dt>
-<dd><p>Determines the optimal alignment between two time series series1 and series2, according to the Dynamic Time Warping algorithm.
-The alignment minimizes the distance between pair-wise elements after warping. All elements in the two series are matched
-and are in strictly monotonically increasing order. Considers only the values in the series, ignoring the time axis.</p>
+<span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.dtw.dtw.</span></span><span class="sig-name descname"><span class="pre">dtw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">series1:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">series2:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">window:</span> <span class="pre">darts.dataprocessing.dtw.window.Window</span> <span class="pre">=</span> <span class="pre">&lt;darts.dataprocessing.dtw.window.NoWindow</span> <span class="pre">object&gt;,</span> <span class="pre">distance:</span> <span class="pre">Optional[Callable[[Union[numpy.ndarray,</span> <span class="pre">numpy.floating],</span> <span class="pre">Union[numpy.ndarray,</span> <span class="pre">numpy.floating]],</span> <span class="pre">float]]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">multi_grid_radius:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">-1</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#darts.dataprocessing.dtw.dtw.DTWAlignment" title="darts.dataprocessing.dtw.dtw.DTWAlignment"><span class="pre">darts.dataprocessing.dtw.dtw.DTWAlignment</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/dtw/dtw.html#dtw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.dtw.dtw.dtw" title="Permalink to this definition">¶</a></dt>
+<dd><p>Determines the optimal alignment between two time series series1 and series2,
+according to the Dynamic Time Warping algorithm.
+The alignment minimizes the distance between pair-wise elements after warping.
+All elements in the two series are matched and are in strictly monotonically increasing order.
+Considers only the values in the series, ignoring the time axis.</p>
 <p>Dynamic Time Warping can be applied to determine how closely two time series correspond,
 irrespective of phase, length or speed differences.</p>
 <dl class="field-list simple">
@@ -331,8 +335,8 @@ and returning the distance between them.</p>
 sum of the abs difference for multi-variate series.</p>
 </p></li>
 <li><p><strong>multi_grid_radius</strong> – <p>Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.
-Without constraints DTW runs in O(nxm) time where n,m are the size of the series. Exact evaluation with no constraints,
-will result in a performance warning on large datasets.</p>
+Without constraints DTW runs in O(nxm) time where n,m are the size of the series.
+Exact evaluation with no constraints, will result in a performance warning on large datasets.</p>
 <p>Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,
 which executes in linear time, vs quadratic time for exact evaluation.
 Increasing radius trades solution accuracy for performance.</p>

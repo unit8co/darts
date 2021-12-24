@@ -221,6 +221,13 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
+  <a class="reference internal" href="examples/14-TFT-examples.html">
+   Temporal Fusion Transformer
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
   <a class="reference internal" href="examples/11-Kalman-filter-examples.html">
    Filtering and predicting using the darts filters
   </a>
@@ -230,6 +237,13 @@
  <li class="toctree-l1">
   <a class="reference internal" href="examples/12-GP-filter-examples.html">
    Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="examples/13-Dynamic-Time-Warping-example.html">
+   Dynamic Time Warping (DTW)
   </a>
  </li>
 </ul>
@@ -303,6 +317,11 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#temporal-fusion-transformer-tft-model">
+   Temporal Fusion Transformer (TFT) Model
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#kalman-filter-model">
    Kalman Filter Model
   </a>
@@ -310,6 +329,11 @@
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#gaussian-process-filter-model">
    Gaussian Process Filter Model
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#dynamic-time-warping-dtw">
+   Dynamic Time Warping (DTW)
   </a>
  </li>
 </ul>
@@ -338,7 +362,7 @@
 <p>Here you will find some example notebooks to get more familiar with the API.</p>
 <section id="darts-intro">
 <h2>darts intro<a class="headerlink" href="#darts-intro" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook containing an intro to the usage of darts.</p>
+<p>Intro to darts example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/01-darts-intro.html">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a></li>
@@ -347,7 +371,7 @@
 </section>
 <section id="multiple-time-series-pre-trained-models-and-covariates">
 <h2>Multiple Time Series, Pre-trained Models and Covariates<a class="headerlink" href="#multiple-time-series-pre-trained-models-and-covariates" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing models trained on multiple time series, pre-trained models, and the usage of covariates.</p>
+<p>Example notebook on training with multiple time series, pre-trained models and using covariates:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/02-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
@@ -356,7 +380,7 @@
 </section>
 <section id="data-pre-processing">
 <h2>Data (pre) Processing<a class="headerlink" href="#data-pre-processing" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the data processing abilities of darts.</p>
+<p>Data processing example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/03-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
@@ -365,7 +389,7 @@
 </section>
 <section id="fast-fourier-transform">
 <h2>Fast Fourier Transform<a class="headerlink" href="#fast-fourier-transform" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the FFT model</p>
+<p>FFT model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/04-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
@@ -374,7 +398,7 @@
 </section>
 <section id="recurrent-neural-networks">
 <h2>Recurrent Neural Networks<a class="headerlink" href="#recurrent-neural-networks" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the RNN model</p>
+<p>RNN model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/05-RNN-examples.html">Recurrent Neural Networks Models</a></li>
@@ -383,7 +407,7 @@
 </section>
 <section id="temporal-convolutional-networks">
 <h2>Temporal Convolutional Networks<a class="headerlink" href="#temporal-convolutional-networks" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the TCN model</p>
+<p>TCN model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/06-TCN-examples.html">Temporal Convolutional Network</a></li>
@@ -392,7 +416,7 @@
 </section>
 <section id="transformer-model">
 <h2>Transformer Model<a class="headerlink" href="#transformer-model" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the Transformer model</p>
+<p>Transformer model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/07-Transformer-examples.html">Transformer Model</a></li>
@@ -401,7 +425,7 @@
 </section>
 <section id="n-beats-model">
 <h2>N-BEATS Model<a class="headerlink" href="#n-beats-model" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the N-BEATS model</p>
+<p>N-BEATS model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/08-NBEATS-examples.html">N-BEATS</a></li>
@@ -410,7 +434,7 @@
 </section>
 <section id="deepar-model">
 <h2>DeepAR Model<a class="headerlink" href="#deepar-model" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the DeepAR model</p>
+<p>DeepAR model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/09-DeepAR-examples.html">Probabilistic RNN</a></li>
@@ -419,16 +443,25 @@
 </section>
 <section id="deeptcn-model">
 <h2>DeepTCN Model<a class="headerlink" href="#deeptcn-model" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the DeepTCN model</p>
+<p>DeepTCN model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/10-DeepTCN-examples.html">DeepTCN model</a></li>
 </ul>
 </div>
 </section>
+<section id="temporal-fusion-transformer-tft-model">
+<h2>Temporal Fusion Transformer (TFT) Model<a class="headerlink" href="#temporal-fusion-transformer-tft-model" title="Permalink to this headline">¶</a></h2>
+<p>TFT model example notebook:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/14-TFT-examples.html">Temporal Fusion Transformer</a></li>
+</ul>
+</div>
+</section>
 <section id="kalman-filter-model">
 <h2>Kalman Filter Model<a class="headerlink" href="#kalman-filter-model" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the Kalman filter model</p>
+<p>Kalman filter model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/11-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
@@ -437,10 +470,19 @@
 </section>
 <section id="gaussian-process-filter-model">
 <h2>Gaussian Process Filter Model<a class="headerlink" href="#gaussian-process-filter-model" title="Permalink to this headline">¶</a></h2>
-<p>You will find below an example Jupyter notebook showcasing the usage of the Gaussian Process filter model</p>
+<p>Gaussian process filter model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="examples/12-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+</ul>
+</div>
+</section>
+<section id="dynamic-time-warping-dtw">
+<h2>Dynamic Time Warping (DTW)<a class="headerlink" href="#dynamic-time-warping-dtw" title="Permalink to this headline">¶</a></h2>
+<p>Dynamic time warping example notebook:</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="examples/13-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
 </ul>
 </div>
 </section>

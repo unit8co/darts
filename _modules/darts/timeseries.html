@@ -1765,6 +1765,31 @@
                                                                 <span class="n">times</span><span class="o">=</span><span class="n">idx</span><span class="p">,</span>
                                                                 <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">))</span></div>
 
+<div class="viewcode-block" id="TimeSeries.with_values"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.with_values">[docs]</a>    <span class="k">def</span> <span class="nf">with_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Returns a new TimeSeries, with the new specified values.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        values</span>
+<span class="sd">            A Numpy array with new values. It must have the same shape as the present </span>
+<span class="sd">            series (time, components, samples)</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        TimeSeries</span>
+<span class="sd">            A new TimeSeries with the new values and same index</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+                     <span class="s1">&#39;The new values must have the same shape (time, components, samples) as the present series. &#39;</span>
+                     <span class="s1">&#39;Received: </span><span class="si">{}</span><span class="s1">, expected: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+        <span class="n">new_xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">values</span><span class="p">,</span>
+                              <span class="n">dims</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span>
+                              <span class="n">coords</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
+
 <div class="viewcode-block" id="TimeSeries.stack"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.stack">[docs]</a>    <span class="k">def</span> <span class="nf">stack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Stacks another univariate or multivariate TimeSeries with the same time index on top of</span>
@@ -1936,18 +1961,21 @@
             <span class="n">fn</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Callable</span><span class="p">[[</span><span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">],</span>
                       <span class="n">Callable</span><span class="p">[[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">number</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="s1">&#39;TimeSeries&#39;</span><span class="p">:</span>  <span class="c1"># noqa: E501</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Applies the function `fn` elementwise to all values in this TimeSeries.</span>
-<span class="sd">        Returns a new TimeSeries instance. If `fn` takes 1 argument it is simply applied elementwise.</span>
-<span class="sd">        If it takes 2 arguments, it is applied elementwise on the (timestamp, value) tuples.</span>
-
-<span class="sd">        At the moment this function works only on deterministic time series (i.e., made of 1 sample).</span>
+<span class="sd">        Applies the function `fn` to the underlying NumPy array containing this series&#39; values.</span>
+<span class="sd">        Returns a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array</span>
+<span class="sd">        of shape (time, n_components, n_samples).</span>
+<span class="sd">        If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where</span>
+<span class="sd">        &quot;ts&quot; denotes a timestamp value, and &quot;value[ts]&quot; denote the array of values at this timestamp, of shape</span>
+<span class="sd">        (n_components, n_samples).</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        fn</span>
-<span class="sd">            Either a function which takes a value and returns a value ie. `f(x) = y`</span>
-<span class="sd">            Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`</span>
-<span class="sd">            The type of `timestamp` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),</span>
+<span class="sd">            Either a function which takes a NumPy array and returns a NumPy array of same shape; </span>
+<span class="sd">            e.g., `lambda x: x ** 2`, `lambda x: x / x.shape[0]` or `np.log`.</span>
+<span class="sd">            It can also be a function which takes a timestamp and array, and returns a new array of same shape;</span>
+<span class="sd">            e.g., `lambda ts, x: x / ts.days_in_month`.</span>
+<span class="sd">            The type of `ts` is either `pd.Timestamp` (if the series is indexed with a DatetimeIndex),</span>
 <span class="sd">            or an integer otherwise (if the series is indexed with an Int64Index).</span>
 
 <span class="sd">        Returns</span>
@@ -1972,18 +2000,28 @@
                 <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;inspect.signature(fn) failed. Try wrapping fn in a lambda, e.g. lambda x: fn(x)&quot;</span><span class="p">),</span>
                           <span class="n">logger</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">num_args</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># simple map function f(x)</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">applymap</span><span class="p">(</span><span class="n">fn</span><span class="p">)</span>
+        <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">num_args</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># apply fn on values directly</span>
+            <span class="n">new_xa</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">values</span><span class="p">)</span>
+            
         <span class="k">elif</span> <span class="n">num_args</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>  <span class="c1"># map function uses timestamp f(timestamp, x)</span>
-            <span class="k">def</span> <span class="nf">apply_fn_wrapper</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
-                <span class="n">timestamp</span> <span class="o">=</span> <span class="n">row</span><span class="o">.</span><span class="n">name</span>
-                <span class="k">return</span> <span class="n">row</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">fn</span><span class="p">(</span><span class="n">timestamp</span><span class="p">,</span> <span class="n">x</span><span class="p">))</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">apply_fn_wrapper</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># go over shortest amount of iterations, either over time steps or components and samples</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_timesteps</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_components</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">:</span>
+                <span class="n">new_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">vstack</span><span class="p">([</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="n">i</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:]),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_timesteps</span><span class="p">)</span>
+                <span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">new_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span>
+                    <span class="n">np</span><span class="o">.</span><span class="n">column_stack</span><span class="p">([</span><span class="n">fn</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="p">[:,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_samples</span><span class="p">)])</span>
+                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_components</span><span class="p">)</span>
+                <span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">new_xa</span><span class="o">.</span><span class="n">values</span> <span class="o">=</span> <span class="n">new_vals</span>
+            
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">df</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;fn must have either one or two arguments&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="TimeSeries.to_json"><a class="viewcode-back" href="../../generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.to_json">[docs]</a>    <span class="k">def</span> <span class="nf">to_json</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -2447,7 +2485,7 @@
                 <span class="n">raise_log</span><span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">(</span><span class="s1">&#39;Cannot divide by 0.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span> <span class="o">/</span> <span class="n">other</span><span class="p">)</span>
         <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="p">(</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
-            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">all_values</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
                 <span class="n">raise_log</span><span class="p">(</span><span class="ne">ZeroDivisionError</span><span class="p">(</span><span class="s1">&#39;Cannot divide by a TimeSeries with a value 0.&#39;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
             <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_combine_arrays</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="k">lambda</span> <span class="n">s1</span><span class="p">,</span> <span class="n">s2</span><span class="p">:</span> <span class="n">s1</span> <span class="o">/</span> <span class="n">s2</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>

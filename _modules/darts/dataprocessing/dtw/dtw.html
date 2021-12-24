@@ -153,26 +153,24 @@
                 
   <h1>Source code for darts.dataprocessing.dtw.dtw</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
-<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">import</span> <span class="nn">copy</span>
 
 <span class="kn">from</span> <span class="nn">.window</span> <span class="kn">import</span> <span class="n">Window</span><span class="p">,</span> <span class="n">CRWindow</span><span class="p">,</span> <span class="n">NoWindow</span>
 <span class="kn">from</span> <span class="nn">.cost_matrix</span> <span class="kn">import</span> <span class="n">CostMatrix</span>
-<span class="kn">from</span> <span class="nn">...timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">...logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
-<span class="n">SeriesValue</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">float</span><span class="p">]</span>
+<span class="n">SeriesValue</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">]</span>
 <span class="n">DistanceFunc</span> <span class="o">=</span> <span class="n">Callable</span><span class="p">[[</span><span class="n">SeriesValue</span><span class="p">,</span> <span class="n">SeriesValue</span><span class="p">],</span> <span class="nb">float</span><span class="p">]</span>
 
 
 <span class="c1"># CORE ALGORITHM</span>
-<span class="k">def</span> <span class="nf">_dtw_cost_matrix</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="n">DistanceFunc</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">Window</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
-    <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-    <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">_dtw_cost_matrix</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="n">DistanceFunc</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="n">Window</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
 
     <span class="n">dtw</span> <span class="o">=</span> <span class="n">CostMatrix</span><span class="o">.</span><span class="n">_from_window</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
 
@@ -181,9 +179,7 @@
 
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="ow">in</span> <span class="n">window</span><span class="p">:</span>
         <span class="n">cost</span> <span class="o">=</span> <span class="n">dist</span><span class="p">(</span><span class="n">x</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">y</span><span class="p">[</span><span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
-        <span class="n">min_cost_prev</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">dtw</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span>
-                            <span class="n">dtw</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span>
-                            <span class="n">dtw</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+        <span class="n">min_cost_prev</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">dtw</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">],</span> <span class="n">dtw</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">],</span> <span class="n">dtw</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
         <span class="n">dtw</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">cost</span> <span class="o">+</span> <span class="n">min_cost_prev</span>
 
     <span class="k">return</span> <span class="n">dtw</span>
@@ -225,10 +221,7 @@
     <span class="k">return</span> <span class="n">low_res</span>
 
 
-<span class="k">def</span> <span class="nf">_expand_window</span><span class="p">(</span><span class="n">low_res_path</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-                   <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                   <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                   <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CRWindow</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">_expand_window</span><span class="p">(</span><span class="n">low_res_path</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">m</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CRWindow</span><span class="p">:</span>
     <span class="n">high_res_grid</span> <span class="o">=</span> <span class="n">CRWindow</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">m</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">is_valid</span><span class="p">(</span><span class="n">cell</span><span class="p">):</span>
@@ -269,11 +262,9 @@
     <span class="k">return</span> <span class="n">high_res_grid</span>
 
 
-<span class="k">def</span> <span class="nf">_fast_dtw</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-              <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
-              <span class="n">dist</span><span class="p">:</span> <span class="n">DistanceFunc</span><span class="p">,</span>
-              <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-              <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CostMatrix</span><span class="p">:</span>
+<span class="k">def</span> <span class="nf">_fast_dtw</span><span class="p">(</span>
+    <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">dist</span><span class="p">:</span> <span class="n">DistanceFunc</span><span class="p">,</span> <span class="n">radius</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">depth</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CostMatrix</span><span class="p">:</span>
     <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
     <span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
     <span class="n">min_size</span> <span class="o">=</span> <span class="n">radius</span> <span class="o">+</span> <span class="mi">2</span>
@@ -304,10 +295,7 @@
     <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span>
     <span class="n">cost</span><span class="p">:</span> <span class="n">CostMatrix</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-                 <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-                 <span class="n">cost</span><span class="p">:</span> <span class="n">CostMatrix</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">cost</span><span class="p">:</span> <span class="n">CostMatrix</span><span class="p">):</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series1</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">m</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span>
@@ -322,11 +310,13 @@
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        np.ndarray of shape `(len(path), 2)`</span>
-<span class="sd">            An array of indices [[i0,j0], [i1,j1], [i2,j2], ...], where i indexes into series1 and j indexes into series2.</span>
+<span class="sd">            An array of indices [[i0,j0], [i1,j1], [i2,j2], ...], where i indexes into series1</span>
+<span class="sd">            and j indexes into series2.</span>
 <span class="sd">            Indices are in monotonic order, path[n] &gt;= path[n-1]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_path&quot;</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_path&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_path</span> <span class="o">=</span> <span class="n">_dtw_path</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cost</span><span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_path</span></div>
 
@@ -346,7 +336,8 @@
 <span class="sd">        float</span>
 <span class="sd">            The mean distance between pair-wise elements in the two series after warping.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_mean_distance&quot;</span><span class="p">):</span> <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_distance</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_mean_distance&quot;</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_mean_distance</span>
 
         <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">path</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_mean_distance</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">distance</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">path</span><span class="p">)</span>
@@ -354,7 +345,8 @@
 
 <div class="viewcode-block" id="DTWAlignment.warped"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.DTWAlignment.warped">[docs]</a>    <span class="k">def</span> <span class="nf">warped</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="p">(</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Warps the two time series according to the warp path returned by .path(), which minimizes the pair-wise distance.</span>
+<span class="sd">        Warps the two time series according to the warp path returned by .path(), which minimizes</span>
+<span class="sd">        the pair-wise distance.</span>
 <span class="sd">        This will bring two time series that are out-of-phase back into phase.</span>
 
 <span class="sd">        Returns</span>
@@ -397,7 +389,9 @@
             <span class="n">time_index</span> <span class="o">=</span> <span class="n">time_index</span><span class="o">.</span><span class="n">rename</span><span class="p">({</span><span class="n">time_dim1</span><span class="p">:</span> <span class="n">time_dim2</span><span class="p">})</span>
             <span class="n">warped_series2</span><span class="p">[</span><span class="n">time_dim2</span><span class="p">]</span> <span class="o">=</span> <span class="n">time_index</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">warped_series1</span><span class="p">),</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">warped_series2</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span><span class="n">warped_series1</span><span class="p">),</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_xarray</span><span class="p">(</span>
+            <span class="n">warped_series2</span>
+        <span class="p">)</span></div></div>
 
 
 <div class="viewcode-block" id="default_distance_multi"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.default_distance_multi">[docs]</a><span class="k">def</span> <span class="nf">default_distance_multi</span><span class="p">(</span><span class="n">x_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y_values</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
@@ -408,16 +402,19 @@
     <span class="k">return</span> <span class="nb">abs</span><span class="p">(</span><span class="n">x_value</span> <span class="o">-</span> <span class="n">y_value</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="dtw"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.dtw">[docs]</a><span class="k">def</span> <span class="nf">dtw</span><span class="p">(</span><span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
-        <span class="n">window</span><span class="p">:</span> <span class="n">Window</span> <span class="o">=</span> <span class="n">NoWindow</span><span class="p">(),</span>
-        <span class="n">distance</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DistanceFunc</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">multi_grid_radius</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span>
-        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DTWAlignment</span><span class="p">:</span>
+<div class="viewcode-block" id="dtw"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.dtw.dtw.html#darts.dataprocessing.dtw.dtw.dtw">[docs]</a><span class="k">def</span> <span class="nf">dtw</span><span class="p">(</span>
+    <span class="n">series1</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">series2</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">window</span><span class="p">:</span> <span class="n">Window</span> <span class="o">=</span> <span class="n">NoWindow</span><span class="p">(),</span>
+    <span class="n">distance</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">DistanceFunc</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">multi_grid_radius</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DTWAlignment</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Determines the optimal alignment between two time series series1 and series2, according to the Dynamic Time Warping algorithm.</span>
-<span class="sd">    The alignment minimizes the distance between pair-wise elements after warping. All elements in the two series are matched</span>
-<span class="sd">    and are in strictly monotonically increasing order. Considers only the values in the series, ignoring the time axis.</span>
+<span class="sd">    Determines the optimal alignment between two time series series1 and series2,</span>
+<span class="sd">    according to the Dynamic Time Warping algorithm.</span>
+<span class="sd">    The alignment minimizes the distance between pair-wise elements after warping.</span>
+<span class="sd">    All elements in the two series are matched and are in strictly monotonically increasing order.</span>
+<span class="sd">    Considers only the values in the series, ignoring the time axis.</span>
 
 <span class="sd">    Dynamic Time Warping can be applied to determine how closely two time series correspond,</span>
 <span class="sd">    irrespective of phase, length or speed differences.</span>
@@ -439,8 +436,8 @@
 <span class="sd">        sum of the abs difference for multi-variate series.</span>
 <span class="sd">    multi_grid_radius</span>
 <span class="sd">        Default radius of -1 results in an exact evaluation of the dynamic time warping algorithm.</span>
-<span class="sd">        Without constraints DTW runs in O(nxm) time where n,m are the size of the series. Exact evaluation with no constraints,</span>
-<span class="sd">        will result in a performance warning on large datasets.</span>
+<span class="sd">        Without constraints DTW runs in O(nxm) time where n,m are the size of the series.</span>
+<span class="sd">        Exact evaluation with no constraints, will result in a performance warning on large datasets.</span>
 
 <span class="sd">        Setting multi_grid_radius to a value other than -1, will enable the approximate multi-grid solver,</span>
 <span class="sd">        which executes in linear time, vs quadratic time for exact evaluation.</span>
@@ -452,15 +449,24 @@
 <span class="sd">        Helper object for getting warp path, mean_distance, distance and warped time series</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">if</span> <span class="n">multi_grid_radius</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span> <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="ow">is</span> <span class="n">NoWindow</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">series1</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span><span class="p">:</span>
-        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span><span class="s2">&quot;Exact evaluation will result in poor performance on large datasets.&quot;</span>
-                    <span class="s2">&quot; Consider enabling multi-grid or using a window.&quot;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">multi_grid_radius</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="ow">is</span> <span class="n">NoWindow</span>
+        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">series1</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span>
+    <span class="p">):</span>
+        <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="s2">&quot;Exact evaluation will result in poor performance on large datasets.&quot;</span>
+            <span class="s2">&quot; Consider enabling multi-grid or using a window.&quot;</span>
+        <span class="p">)</span>
 
     <span class="n">both_univariate</span> <span class="o">=</span> <span class="n">series1</span><span class="o">.</span><span class="n">is_univariate</span> <span class="ow">and</span> <span class="n">series2</span><span class="o">.</span><span class="n">is_univariate</span>
 
     <span class="k">if</span> <span class="n">distance</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">series1</span><span class="o">.</span><span class="n">n_components</span> <span class="o">==</span> <span class="n">series2</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
-                     <span class="s2">&quot;Expected series to have same number of components, or to supply custom distance function&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">series1</span><span class="o">.</span><span class="n">n_components</span> <span class="o">==</span> <span class="n">series2</span><span class="o">.</span><span class="n">n_components</span><span class="p">,</span>
+            <span class="s2">&quot;Expected series to have same number of components, or to supply custom distance function&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
 
         <span class="n">distance</span> <span class="o">=</span> <span class="n">default_distance_uni</span> <span class="k">if</span> <span class="n">both_univariate</span> <span class="k">else</span> <span class="n">default_distance_multi</span>
 
@@ -471,12 +477,20 @@
         <span class="n">values_x</span> <span class="o">=</span> <span class="n">series1</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
         <span class="n">values_y</span> <span class="o">=</span> <span class="n">series2</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="n">raise_if</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values_x</span><span class="p">)),</span> <span class="s2">&quot;Dynamic Time Warping does not support nan values. &quot;</span>
-                                         <span class="s2">&quot;You can use the module darts.utils.missing_values to fill them, &quot;</span>
-                                         <span class="s2">&quot;before passing them to dtw.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
-    <span class="n">raise_if</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values_y</span><span class="p">)),</span> <span class="s2">&quot;Dynamic Time Warping does not support nan values. &quot;</span>
-                                         <span class="s2">&quot;You can use the module darts.utils.missing_values to fill them,&quot;</span>
-                                         <span class="s2">&quot;before passing it into dtw&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values_x</span><span class="p">)),</span>
+        <span class="s2">&quot;Dynamic Time Warping does not support nan values. &quot;</span>
+        <span class="s2">&quot;You can use the module darts.utils.missing_values to fill them, &quot;</span>
+        <span class="s2">&quot;before passing them to dtw.&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">raise_if</span><span class="p">(</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">values_y</span><span class="p">)),</span>
+        <span class="s2">&quot;Dynamic Time Warping does not support nan values. &quot;</span>
+        <span class="s2">&quot;You can use the module darts.utils.missing_values to fill them,&quot;</span>
+        <span class="s2">&quot;before passing it into dtw&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="n">window</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">deepcopy</span><span class="p">(</span><span class="n">window</span><span class="p">)</span>
     <span class="n">window</span><span class="o">.</span><span class="n">init_size</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">values_x</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">values_y</span><span class="p">))</span>
@@ -484,7 +498,11 @@
     <span class="n">raise_if</span><span class="p">(</span><span class="n">multi_grid_radius</span> <span class="o">&lt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;Expected multi-grid radius to be positive or -1&quot;</span><span class="p">)</span>
 
     <span class="k">if</span> <span class="n">multi_grid_radius</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">NoWindow</span><span class="p">),</span> <span class="s2">&quot;Multi-grid solver does not currently support windows&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">window</span><span class="p">,</span> <span class="n">NoWindow</span><span class="p">),</span>
+            <span class="s2">&quot;Multi-grid solver does not currently support windows&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
         <span class="n">cost_matrix</span> <span class="o">=</span> <span class="n">_fast_dtw</span><span class="p">(</span><span class="n">values_x</span><span class="p">,</span> <span class="n">values_y</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">multi_grid_radius</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">cost_matrix</span> <span class="o">=</span> <span class="n">_dtw_cost_matrix</span><span class="p">(</span><span class="n">values_x</span><span class="p">,</span> <span class="n">values_y</span><span class="p">,</span> <span class="n">distance</span><span class="p">,</span> <span class="n">window</span><span class="p">)</span>

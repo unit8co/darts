@@ -169,12 +169,11 @@
 <span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
 <span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span><span class="p">,</span> <span class="n">Likelihood</span>
-<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span><span class="p">,</span> <span class="n">_generate_index</span>
 <span class="kn">from</span> <span class="nn">darts.utils.data</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">TrainingDataset</span><span class="p">,</span>
     <span class="n">MixedCovariatesSequentialDataset</span><span class="p">,</span>
     <span class="n">MixedCovariatesTrainingDataset</span><span class="p">,</span>
-    <span class="n">MixedCovariatesInferenceDataset</span>
+    <span class="n">MixedCovariatesInferenceDataset</span><span class="p">,</span>
 <span class="p">)</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">MixedCovariatesTorchModel</span><span class="p">,</span>
@@ -224,7 +223,8 @@
 <span class="sd">        variables_meta : Dict[str, Dict[str, List[str]]]</span>
 <span class="sd">            dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`</span>
 <span class="sd">        hidden_size : int</span>
-<span class="sd">            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT architecture.</span>
+<span class="sd">            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT</span>
+<span class="sd">            architecture.</span>
 <span class="sd">        lstm_layers : int</span>
 <span class="sd">            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).</span>
 <span class="sd">        num_attention_heads : int</span>
@@ -431,10 +431,10 @@
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_relative_index</span><span class="p">(</span><span class="n">encoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                <span class="n">decoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                <span class="n">dtype</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                                <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+                           <span class="n">decoder_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                           <span class="n">batch_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+                           <span class="n">dtype</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                           <span class="n">device</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Returns scaled time index relative to prediction point.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -442,7 +442,7 @@
         <span class="n">prediction_index</span> <span class="o">=</span> <span class="n">encoder_length</span> <span class="o">-</span> <span class="mi">1</span>
         <span class="n">index</span><span class="p">[:</span><span class="n">encoder_length</span><span class="p">]</span> <span class="o">=</span> <span class="n">index</span><span class="p">[:</span><span class="n">encoder_length</span><span class="p">]</span> <span class="o">/</span> <span class="n">prediction_index</span>
         <span class="n">index</span><span class="p">[</span><span class="n">encoder_length</span><span class="p">:]</span> <span class="o">=</span> <span class="n">index</span><span class="p">[</span><span class="n">encoder_length</span><span class="p">:]</span> <span class="o">/</span> <span class="n">prediction_index</span>
-        <span class="k">return</span> <span class="n">index</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">index</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">get_attention_mask_full</span><span class="p">(</span><span class="n">time_steps</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -667,11 +667,9 @@
                  <span class="n">full_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
                  <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
-                 <span class="n">add_cyclic_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">add_relative_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
                  <span class="n">loss_fn</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Likelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
                  <span class="o">**</span><span class="n">kwargs</span>
                  <span class="p">):</span>
@@ -687,8 +685,8 @@
 <span class="sd">        points before prediction time and future covariates known for `output_chunk_length` after prediction time).</span>
 
 <span class="sd">        The TFT applies multi-head attention queries on future inputs from mandatory `future_covariates`.</span>
-<span class="sd">        Specifying `add_cyclic_encoder` (read below) adds cyclic temporal encoding to the model and allows to use</span>
-<span class="sd">        the model without having to specify additional `future_covariates` for training and prediction.</span>
+<span class="sd">        Specifying future encoders with `add_encoders` (read below) can automatically generate future covariates</span>
+<span class="sd">        and allows to use the model without having to pass any `future_covariates` to `fit()` and `predict()`.</span>
 
 <span class="sd">        By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are</span>
 <span class="sd">        probabilistic; it is recommended to call ``predict()`` with ``num_samples &gt;&gt; 1`` to get meaningful results.</span>
@@ -696,32 +694,23 @@
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        input_chunk_length : int</span>
-<span class="sd">            encoder length; number of past time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">            Encoder length; number of past time steps that are fed to the forecasting module at prediction time.</span>
 <span class="sd">        output_chunk_length : int</span>
-<span class="sd">            decoder length; number of future time steps that are fed to the forecasting module at prediction time.</span>
+<span class="sd">            Decoder length; number of future time steps that are fed to the forecasting module at prediction time.</span>
 <span class="sd">        hidden_size : int</span>
-<span class="sd">            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT</span>
+<span class="sd">            Hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT</span>
 <span class="sd">            architecture.</span>
 <span class="sd">        lstm_layers : int</span>
-<span class="sd">            number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).</span>
+<span class="sd">            Number of layers for the Long Short Term Memory (LSTM) Encoder and Decoder (1 is a good default).</span>
 <span class="sd">        num_attention_heads : int</span>
-<span class="sd">            number of attention heads (4 is a good default)</span>
+<span class="sd">            Number of attention heads (4 is a good default)</span>
 <span class="sd">        full_attention : bool</span>
 <span class="sd">            If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,</span>
 <span class="sd">            only queries on future part. Defaults to `False`.</span>
 <span class="sd">        dropout : float</span>
 <span class="sd">            Fraction of neurons afected by Dropout.</span>
 <span class="sd">        hidden_continuous_size : int</span>
-<span class="sd">            default for hidden size for processing continuous variables</span>
-<span class="sd">        add_cyclic_encoder : optional str</span>
-<span class="sd">            If other than None, apply cycling encoding to an attribute of the time index and add it to the</span>
-<span class="sd">            `future_covariates`.</span>
-<span class="sd">            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`</span>
-<span class="sd">            Must be an attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;,</span>
-<span class="sd">            &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
-<span class="sd">            https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
-<span class="sd">            For more information, check out :meth:`datetime_attribute_timeseries()</span>
-<span class="sd">            &lt;darts.utils.timeseries_generation.datetime_attribute_timeseries&gt;`</span>
+<span class="sd">            Default for hidden size for processing continuous variables</span>
 <span class="sd">        add_relative_index : bool</span>
 <span class="sd">            Whether to add positional values to future covariates. Defaults to `False`.</span>
 <span class="sd">            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.</span>
@@ -734,8 +723,6 @@
 <span class="sd">        likelihood</span>
 <span class="sd">            The likelihood model to be used for probabilistic forecasts. By default the TFT uses</span>
 <span class="sd">            a ``QuantileRegression`` likelihood.</span>
-<span class="sd">        max_samples_per_ts</span>
-<span class="sd">            Optionally, a maximum number of training sample to generate per time series.</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Control the randomness of the weights initialization. Check this</span>
 <span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random-state&gt;`_ for more details.</span>
@@ -746,6 +733,26 @@
 <span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
 <span class="sd">        n_epochs</span>
 <span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; Scaler() can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            `add_encoders`. An example showing some of `add_encoders` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;past&#39;: [&#39;hour&#39;], &#39;future&#39;: [&#39;year&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda index: (index.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
 <span class="sd">        optimizer_cls</span>
 <span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
 <span class="sd">        optimizer_kwargs</span>
@@ -801,11 +808,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="o">=</span> <span class="n">full_attention</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="o">=</span> <span class="n">hidden_continuous_size</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="o">=</span> <span class="n">add_cyclic_encoder</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span> <span class="o">=</span> <span class="n">add_relative_index</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">loss_fn</span> <span class="o">=</span> <span class="n">loss_fn</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">max_sample_per_ts</span> <span class="o">=</span> <span class="n">max_samples_per_ts</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
@@ -881,14 +886,14 @@
         <span class="n">static_input</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="n">type_names</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">]:</span>
-                <span class="nb">vars</span> <span class="o">=</span> <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="n">input_var</span><span class="p">]</span>
-                <span class="n">reals_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+                <span class="n">vars_meta</span> <span class="o">=</span> <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;input&#39;</span><span class="p">][</span><span class="n">input_var</span><span class="p">]</span>
+                <span class="n">reals_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
                 <span class="k">if</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;past_target&#39;</span><span class="p">,</span> <span class="s1">&#39;past_covariate&#39;</span><span class="p">,</span> <span class="s1">&#39;historic_future_covariate&#39;</span><span class="p">]:</span>
-                    <span class="n">time_varying_encoder_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+                    <span class="n">time_varying_encoder_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
                 <span class="k">elif</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;future_covariate&#39;</span><span class="p">]:</span>
-                    <span class="n">time_varying_decoder_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+                    <span class="n">time_varying_decoder_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
                 <span class="k">elif</span> <span class="n">input_var</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;static_covariate&#39;</span><span class="p">]:</span>
-                    <span class="n">static_input</span> <span class="o">+=</span> <span class="nb">vars</span>
+                    <span class="n">static_input</span> <span class="o">+=</span> <span class="n">vars_meta</span>
 
         <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;reals_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">reals_input</span><span class="p">))</span>
         <span class="n">variables_meta</span><span class="p">[</span><span class="s1">&#39;model_config&#39;</span><span class="p">][</span><span class="s1">&#39;time_varying_encoder_input&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">time_varying_encoder_input</span><span class="p">))</span>
@@ -913,78 +918,22 @@
     <span class="k">def</span> <span class="nf">_build_train_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
                              <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
                              <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
-                             <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">MixedCovariatesSequentialDataset</span><span class="p">:</span>
+                             <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+                             <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MixedCovariatesSequentialDataset</span><span class="p">:</span>
 
-        <span class="n">raise_if</span><span class="p">(</span><span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span><span class="p">,</span>
+        <span class="n">raise_if</span><span class="p">(</span><span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span><span class="p">,</span>
                  <span class="s1">&#39;TFTModel requires future covariates. The model applies multi-head attention queries on future &#39;</span>
-                 <span class="s1">&#39;inputs. Consider specifying `add_cyclic_encoder` or setting `add_relative_index` to `True` &#39;</span>
-                 <span class="s1">&#39;at model creation (read TFT model docs for more information). These will automatically generate &#39;</span>
-                 <span class="s1">&#39;`future_covariates` from indexes.&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` &#39;</span>
+                 <span class="s1">&#39;to `True` at model creation (read TFT model docs for more information). &#39;</span>
+                 <span class="s1">&#39;These will automatically generate `future_covariates` from indexes.&#39;</span><span class="p">,</span>
                  <span class="n">logger</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_cyclic_encoder</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">MixedCovariatesSequentialDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
                                                 <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
                                                 <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
                                                 <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
                                                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
-                                                <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_sample_per_ts</span><span class="p">)</span>
-
-    <span class="k">def</span> <span class="nf">_add_cyclic_encoder</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                            <span class="n">target</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span>
-                            <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                            <span class="n">n</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
-        <span class="sd">&quot;&quot;&quot;adds cyclic encoding of time index to future covariates.</span>
-<span class="sd">        For training (when `n` is `None`) we can simply use the future covariates (if available) or target as</span>
-<span class="sd">        reference to extract the time index.</span>
-<span class="sd">        For prediction (`n` is given) we have to distinguish between two cases:</span>
-<span class="sd">            1)</span>
-<span class="sd">                if future covariates are given, we can use them as reference</span>
-<span class="sd">            2)</span>
-<span class="sd">                if future covariates are missing, we need to generate a time index that starts `input_chunk_length`</span>
-<span class="sd">                before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        target</span>
-<span class="sd">            past target TimeSeries</span>
-<span class="sd">        future_covariates</span>
-<span class="sd">            future covariates TimeSeries</span>
-<span class="sd">        n</span>
-<span class="sd">            prediciton length (only given for predictions)</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        Sequence[TimeSeries]</span>
-<span class="sd">            future covariates including cyclic encoded time index</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">if</span> <span class="n">n</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># training</span>
-            <span class="n">encode_ts</span> <span class="o">=</span> <span class="n">future_covariates</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">target</span>
-        <span class="k">else</span><span class="p">:</span>  <span class="c1"># prediction</span>
-            <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">encode_ts</span> <span class="o">=</span> <span class="n">future_covariates</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="n">encode_ts</span> <span class="o">=</span> <span class="p">[</span><span class="n">_generate_index</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">-</span> <span class="n">ts</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">-</span> <span class="mi">1</span><span class="p">),</span>
-                                             <span class="n">length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">+</span> <span class="nb">max</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">),</span>
-                                             <span class="n">freq</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">target</span><span class="p">]</span>
-
-        <span class="n">encoded_times</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> 
-                                          <span class="n">attribute</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span><span class="p">,</span> 
-                                          <span class="n">cyclic</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> 
-                                          <span class="n">dtype</span><span class="o">=</span><span class="n">target</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">dtype</span><span class="p">)</span> 
-            <span class="k">for</span> <span class="n">ts</span> <span class="ow">in</span> <span class="n">encode_ts</span>
-        <span class="p">]</span>
-
-        <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">encoded_times</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">future_covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">fc</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">et</span><span class="p">)</span> <span class="k">for</span> <span class="n">fc</span><span class="p">,</span> <span class="n">et</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">encoded_times</span><span class="p">)]</span>
-
-        <span class="k">return</span> <span class="n">future_covariates</span>
+                                                <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_verify_train_dataset_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_dataset</span><span class="p">:</span> <span class="n">TrainingDataset</span><span class="p">):</span>
         <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">MixedCovariatesTrainingDataset</span><span class="p">),</span>
@@ -995,9 +944,6 @@
                                  <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
                                  <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
                                  <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">MixedCovariatesInferenceDataset</span><span class="p">:</span>
-
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">add_cyclic_encoder</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">future_covariates</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_add_cyclic_encoder</span><span class="p">(</span><span class="n">target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">MixedCovariatesInferenceDataset</span><span class="p">(</span><span class="n">target_series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
                                                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -1010,11 +956,10 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">input_batch</span><span class="p">)</span>
 
 <div class="viewcode-block" id="TFTModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.tft_model.html#darts.models.forecasting.tft_model.TFTModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        since we have future covariates, the inference dataset for future input must be at least of length</span>
-<span class="sd">        `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than</span>
-<span class="sd">        `input_chunk_length`.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># since we have future covariates, the inference dataset for future input must be at least of length</span>
+        <span class="c1"># `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than</span>
+        <span class="c1"># `input_chunk_length`.</span>
+
         <span class="k">if</span> <span class="n">n</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">:</span>
             <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
@@ -1048,8 +993,8 @@
             <span class="o">=</span> <span class="n">input_batch</span>
 
         <span class="n">n_targets</span> <span class="o">=</span> <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span>
-        <span class="n">n_past_covs</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
-        <span class="n">n_future_covs</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span> <span class="k">if</span> <span class="ow">not</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">n_past_covs</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span> <span class="k">if</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="n">n_future_covs</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_component</span><span class="p">]</span> <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
 
         <span class="n">input_past</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">(</span>
             <span class="p">[</span><span class="n">ds</span> <span class="k">for</span> <span class="n">ds</span> <span class="ow">in</span> <span class="p">[</span><span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">]</span> <span class="k">if</span> <span class="n">ds</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">],</span>
