@@ -160,7 +160,7 @@ The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on Github.
 
 Before working on a contribution (a new feature or a fix),
- [**check our contribution guidelines**](CONTRIBUTE.md).
+ [**check our contribution guidelines**](CONTRIBUTING.md).
 
 
 ## Installation Guide
