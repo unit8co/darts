@@ -6,7 +6,6 @@ returns a `TimeSeries` that is a filtered version of `series`.
 """
 
 from abc import ABC, abstractmethod
-from typing import Optional, Union, Sequence
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_if_not
