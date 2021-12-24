@@ -32,8 +32,9 @@ class KalmanFilter(FilteringModel, ABC):
         `TimeSeries` describing the distribution of the output z (without noise), as inferred by the Kalman filter from
         sequentially observing z from `series`, and the dynamics of the linear system of order dim_x.
 
-        The method `KalmanFilter.fit()` is used to initialize the Kalman filter by estimating the state space model of the
-        a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID algorithm.
+        The method `KalmanFilter.fit()` is used to initialize the Kalman filter by estimating the state space model of 
+        the a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID 
+        algorithm.
 
         This implementation uses Kalman from the NFourSID package. More information can be found here:
         https://nfoursid.readthedocs.io/en/latest/source/kalman.html.
