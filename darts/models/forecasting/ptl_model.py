@@ -37,6 +37,8 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
 
         super(PLTorchForecastingModel, self).__init__()
 
+        self.epochs_trained = 0
+
         # Define the loss function
         self.criterion = loss_fn
 
@@ -67,19 +69,25 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
     def forward(self, *args, **kwargs) -> Any:
         super(PLTorchForecastingModel, self).forward(*args, **kwargs)
 
-    def training_step(self, train_batch, batch_idx) -> Any:
+    def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         output = self._produce_train_output(train_batch[:-1])
         target = train_batch[-1]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
         self.log('train_loss', loss, batch_size=train_batch[0].shape[0])
         return loss
 
-    def validation_step(self, val_batch, batch_idx) -> Any:
+    def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
         output = self._produce_train_output(val_batch[:-1])
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
         self.log('val_loss', loss, batch_size=val_batch[0].shape[0])
         return loss
+
+    def on_train_epoch_end(self) -> None:
+        self.epochs_trained += 1
+
+    def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
+        self.hparams['epochs_trained'] = self.epochs_trained
 
     def predict_step(self,
                      batch: Tuple,
@@ -301,8 +309,114 @@ class PLDualCovariatesTorchModel(PLTorchForecastingModel, ABC):
 
 
 class PLMixedCovariatesTorchModel(PLTorchForecastingModel, ABC):
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> Tensor:
-        raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
+    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+        """
+        Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to farecast
+        the next `n` target values per target variable.
+
+        Parameters:
+        ----------
+        n
+            prediction length
+        input_batch
+            (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
+        roll_size
+            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to
+            `self.output_chunk_length`
+        """
+
+        dim_component = 2
+        past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates \
+            = input_batch
+
+        n_targets = past_target.shape[dim_component]
+        n_past_covs = past_covariates.shape[dim_component] if past_covariates is not None else 0
+        n_future_covs = future_covariates.shape[dim_component] if future_covariates is not None else 0
+
+        input_past = torch.cat(
+            [ds for ds in [past_target, past_covariates, historic_future_covariates] if ds is not None],
+            dim=dim_component
+        )
+
+        input_future = future_covariates[:, :roll_size, :] if future_covariates is not None else None
+
+        out = self._produce_predict_output(
+            x=(past_target, past_covariates, historic_future_covariates, input_future)
+        )[:, self.first_prediction_index:, :]
+
+        batch_prediction = [out[:, :roll_size, :]]
+        prediction_length = roll_size
+
+        while prediction_length < n:
+            # we want the last prediction to end exactly at `n` into the future.
+            # this means we may have to truncate the previous prediction and step
+            # back the roll size for the last chunk
+            if prediction_length + self.output_chunk_length > n:
+                spillover_prediction_length = prediction_length + self.output_chunk_length - n
+                roll_size -= spillover_prediction_length
+                prediction_length -= spillover_prediction_length
+                batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
+
+            # ==========> PAST INPUT <==========
+            # roll over input series to contain latest target and covariate
+            input_past = torch.roll(input_past, -roll_size, 1)
+
+            # update target input to include next `roll_size` predictions
+            if self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, :n_targets] = out[:, :roll_size, :]
+            else:
+                input_past[:, :, :n_targets] = out[:, -self.input_chunk_length:, :]
+
+            # set left and right boundaries for extracting future elements
+            if self.input_chunk_length >= roll_size:
+                left_past, right_past = prediction_length - roll_size, prediction_length
+            else:
+                left_past, right_past = prediction_length - self.input_chunk_length, prediction_length
+
+            # update past covariates to include next `roll_size` future past covariates elements
+            if n_past_covs and self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
+            elif n_past_covs:
+                input_past[:, :, n_targets:n_targets + n_past_covs] = (
+                    future_past_covariates[:, left_past:right_past, :]
+                )
+
+            # update historic future covariates to include next `roll_size` future covariates elements
+            if n_future_covs and self.input_chunk_length >= roll_size:
+                input_past[:, -roll_size:, n_targets + n_past_covs:] = (
+                    future_covariates[:, left_past:right_past, :]
+                )
+            elif n_future_covs:
+                input_past[:, :, n_targets + n_past_covs:] = (
+                    future_covariates[:, left_past:right_past, :]
+                )
+
+            # ==========> FUTURE INPUT <==========
+            left_future, right_future = right_past, right_past + self.output_chunk_length
+            # update future covariates to include next `roll_size` future covariates elements
+            if n_future_covs:
+                input_future = future_covariates[:, left_future:right_future, :]
+
+            # convert back into separate datasets
+            input_past_target = input_past[:, :, :n_targets]
+            input_past_covs = input_past[:, :, n_targets:n_targets + n_past_covs] if n_past_covs else None
+            input_historic_future_covs = input_past[:, :, n_targets + n_past_covs:] if n_future_covs else None
+            input_future_covs = input_future if n_future_covs else None
+
+            # take only last part of the output sequence where needed
+            out = self._produce_predict_output(
+                x=(input_past_target, input_past_covs, input_historic_future_covs, input_future_covs)
+            )[:, self.first_prediction_index:, :]
+
+            batch_prediction.append(out)
+            prediction_length += self.output_chunk_length
+
+        # bring predictions into desired format and drop unnecessary values
+        batch_prediction = torch.cat(batch_prediction, dim=1)
+        batch_prediction = batch_prediction[:, :n, :]
+        return batch_prediction
 
 
 class PLSplitCovariatesTorchModel(PLTorchForecastingModel, ABC):

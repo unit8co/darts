@@ -173,7 +173,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.output_chunk_length = output_chunk_length
 
         self.n_epochs = n_epochs
-        self.total_epochs = 0  # 0 means it wasn't trained yet.
         self.batch_size = batch_size
 
         # by default models are deterministic (i.e. not probabilistic)
@@ -334,7 +333,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if not os.path.exists(_get_runs_folder(self.work_dir, self.model_name)):
             os.mkdir(_get_runs_folder(self.work_dir, self.model_name))
 
-        self.total_epochs = 0
+        self.epochs_trained = 0
         self.model = None
         self.trainer = None
         self.train_sample = None
@@ -647,51 +646,29 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
-        # setup trainer and extract optional ckpt_path to resume training
-        ckpt_path = self._setup_trainer(trainer, ckpt_path, verbose, epochs)
+        # setup trainer
+        self._setup_trainer(trainer, verbose, train_num_epochs)
 
         # Train model
         self._train(train_loader, val_loader, ckpt_path, train_num_epochs)
 
     def _setup_trainer(self,
                        trainer: pl.Trainer,
-                       ckpt_path: Optional[str],
                        verbose: bool,
-                       epochs: int = 0) -> Optional[str]:
+                       epochs: int = 0) -> None:
 
-        max_epochs = self.total_epochs + epochs
-
-        resume_checkpoint = None
         self.trainer_params['enable_model_summary'] = verbose
-        if not verbose:
-            self.trainer_params['progress_bar_refresh_rate'] = 0
+        self.trainer_params['enable_progress_bar'] = verbose
 
         # total epochs > 0 means model resumes training -> requires a checkpoint from which to resume training
-        if self.total_epochs > 0:
-            if trainer is None:
-                raise_if_not(self.save_checkpoints,
-                             'Resuming training with built-in trainer is only possible when `save_checkpoints` '
-                             'was set to `True` at model creation.',
-                             logger)
 
-                self.trainer_params['enable_model_summary'] = False
-                resume_checkpoint = os.path.join(
-                    _get_checkpoint_folder(self.work_dir, self.model_name),
-                    _get_checkpoint_fname(self.work_dir, self.model_name, best=False)
-                )
-            else:
-                raise_if(ckpt_path is None,
-                         'Model has been fit before with a custom `trainer`. To resume training you must pass '
-                         'parameter `ckpt_path` to fit().',
-                         logger)
-                resume_checkpoint = ckpt_path
+        if self.model.epochs_trained > 0 and trainer is None:
+            self.trainer_params['enable_model_summary'] = False
 
         self.trainer = self._init_trainer(
             trainer_params=self.trainer_params,
-            max_epochs=max_epochs
+            max_epochs=epochs
         ) if trainer is None else trainer
-
-        return resume_checkpoint
 
     def _train(self,
                train_loader: DataLoader,
@@ -717,8 +694,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             value >0 means we're retraining model
         """
         self.trainer.fit(self.model, train_loader, val_loader, ckpt_path=ckpt_path)
-        self.total_epochs += epochs
-        self.trainer_params['max_epochs'] = self.total_epochs
+        # self.epochs_trained += epochs
+        self.trainer_params['max_epochs'] = self.model.epochs_trained
 
     def predict(self,
                 n: int,
@@ -1038,22 +1015,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # model.trainer = TorchForecastingModel._init_trainer(model.trainer_params, resume_from_checkpoint=file_path)
         return model
 
-    def _get_learning_rate(self):
-        # TODO probably update for PL
-        for p in self.optimizer.param_groups:
-            return p['lr']
-
 
 def _raise_if_wrong_type(obj, exp_type, msg='expected type {}, got: {}'):
     raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
-
-
-def _cat_with_optional(tsr1: torch.Tensor, tsr2: Optional[torch.Tensor]):
-    if tsr2 is None:
-        return tsr1
-    else:
-        # dimensions are (batch, length, width), we concatenate along the widths.
-        return torch.cat([tsr1, tsr2], dim=2)
 
 
 """

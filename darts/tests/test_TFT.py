@@ -9,7 +9,7 @@ from ..logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from darts.models.forecasting.tft_model import TFTModel
+    from darts.models.forecasting.ptl_tft_model import TFTModel
     from darts.utils.likelihood_models import QuantileRegression
     from torch.nn import MSELoss
 
@@ -42,16 +42,16 @@ if TORCH_AVAILABLE:
             # model requires future covariates without cyclic encoding
             model = TFTModel(input_chunk_length=1, output_chunk_length=1)
             with self.assertRaises(ValueError):
-                model.fit(ts_time_index, verbose=False)
+                model.fit(ts_time_index, verbose=False, epochs=1)
 
             # should work with cyclic encoding for time index
             model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_encoders={'cyclic': {'future': 'hour'}})
-            model.fit(ts_time_index, verbose=False)
+            model.fit(ts_time_index, verbose=False, epochs=1)
 
             # should work with relative index both with time index and integer index
             model = TFTModel(input_chunk_length=1, output_chunk_length=1, add_relative_index=True)
-            model.fit(ts_time_index, verbose=False)
-            model.fit(ts_integer_index, verbose=False)
+            model.fit(ts_time_index, verbose=False, epochs=1)
+            model.fit(ts_integer_index, verbose=False, epochs=1)
 
         def test_prediction_shape(self):
             """checks whether prediction has same number of variable as input series and
