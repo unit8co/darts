@@ -89,6 +89,10 @@ class KalmanFilter(FilteringModel, ABC):
         covariates : Optional[TimeSeries]
             An optional series of inputs (control signal) that will also be used to infer the underlying state space model.
             This must be a deterministic series (containing one sample).
+        num_block_rows : Optional[int]
+            The number of block rows to use in the block Hankel matrices used in the N4SID algorithm. 
+            See the documentation of nfoursid.nfoursid.NFourSID for more information.
+            If not provided, the dimensionality of the state space model will be used, with a maximum of 10.
         """
         if covariates is not None:
             self._expect_covariates = True
