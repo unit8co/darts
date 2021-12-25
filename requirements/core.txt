@@ -8,7 +8,6 @@ ipython>=7.0.0
 tqdm>=4.60.0
 holidays>=0.11.1
 scikit-learn>=1.0.1
-filterpy>=1.4.5
 joblib>=0.16.0
 requests>=2.22.0
 lightgbm>=2.2.3
