@@ -140,11 +140,14 @@ class KalmanFilter(FilteringModel, ABC):
         covariates : Optional[TimeSeries]
             An optional series of inputs (control signal), necessary if the Kalman filter was initialized with covariates.
             This must be a deterministic series (containing one sample).
+        num_samples : int, default: 1
+            The number of samples to generate from the inferred distribution of the output z. If this is set to 1, the
+            output is a `TimeSeries` containing a single sample using the mean of the distribution.
 
         Returns
         -------
         TimeSeries
-            A stochastic `TimeSeries` of state values, of the same width as the input series.
+            A (stochastic) `TimeSeries` of the inferred output z, of the same width as the input series.
         """
         super().filter(series)
 
