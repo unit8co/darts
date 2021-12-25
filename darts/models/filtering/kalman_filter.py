@@ -179,9 +179,9 @@ class KalmanFilter(FilteringModel, ABC):
         # For each time step, we'll sample "n_samples" from a multivariate Gaussian
         # whose mean vector and covariance matrix come from the Kalman filter.
         if num_samples == 1:
-            sampled_states = np.zeros(((len(y_values)), self.dim_y, ))
+            sampled_states = np.zeros((len(y_values), self.dim_y, ))
         else:
-            sampled_states = np.zeros(((len(y_values)), self.dim_y, num_samples))
+            sampled_states = np.zeros((len(y_values), self.dim_y, num_samples))
 
         for i in range(len(y_values)):
             y = y_values[i, :].reshape(-1, 1)
