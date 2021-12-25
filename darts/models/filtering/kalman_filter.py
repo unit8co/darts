@@ -199,7 +199,8 @@ class KalmanFilter(FilteringModel, ABC):
             if num_samples == 1:
                 sampled_states[i, :] = mean_vec
             else:
-                # TODO: check formula for covariance matrix
+                # The measurement covariance matrix is given by the sum of the covariance matrix of the
+                # state estimate (transformed by C) and the covariance matrix of the measurement noise.
                 cov_matrix = kf.state_space.c @ kf.p_filtereds[-1] @ kf.state_space.c.T + kf.r
                 sampled_states[i, :, :] = np.random.multivariate_normal(mean_vec, cov_matrix, size=num_samples).T
 
