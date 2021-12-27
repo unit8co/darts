@@ -6,13 +6,11 @@ import xarray as xr
 import re
 from testfixtures import LogCapture
 
-from .base_test_class import DartsBaseTestClass
-from ..timeseries import TimeSeries
-from ..logging import raise_log, raise_if_not, time_log, get_logger
+from darts import TimeSeries
+from darts.logging import raise_log, raise_if_not, time_log, get_logger
 
 
 class LoggingTestCase(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         logging.disable(logging.NOTSET)
@@ -23,14 +21,12 @@ class LoggingTestCase(unittest.TestCase):
             logger = get_logger(__name__)
             logger.handlers = []
             try:
-                raise_log(Exception('test'), logger)
+                raise_log(Exception("test"), logger)
             except Exception:
                 exception_was_raised = True
 
         # testing correct log message
-        lc.check(
-            (__name__, 'ERROR', 'Exception: test')
-        )
+        lc.check((__name__, "ERROR", "Exception: test"))
 
         # checking whether exception was properly raised
         self.assertTrue(exception_was_raised)
@@ -47,9 +43,7 @@ class LoggingTestCase(unittest.TestCase):
                 exception_was_raised = True
 
         # testing correct log message
-        lc.check(
-            (__name__, 'ERROR', 'ValueError: test')
-        )
+        lc.check((__name__, "ERROR", "ValueError: test"))
 
         # checking whether exception was properly raised
         self.assertTrue(exception_was_raised)
@@ -58,31 +52,38 @@ class LoggingTestCase(unittest.TestCase):
         # test assert error log when trying to construct a TimeSeries that is too short
         empty_series = pd.DataFrame()
         with LogCapture() as lc:
-            get_logger('darts.timeseries').handlers = []
+            get_logger("darts.timeseries").handlers = []
             try:
                 TimeSeries(xr.DataArray(empty_series))
             except Exception:
                 pass
 
         lc.check(
-            ('darts.timeseries', 'ERROR', 'ValueError: The time series array must not be empty.')
+            (
+                "darts.timeseries",
+                "ERROR",
+                "ValueError: The time series array must not be empty.",
+            )
         )
 
     def test_timeseries_split_error_log(self):
         # test raised error log that occurs when trying to split TimeSeries at a point outside of the time index range
-        times = pd.date_range(start='2000-01-01', periods=3, freq='D')
+        times = pd.date_range(start="2000-01-01", periods=3, freq="D")
         values = np.array(range(3))
         ts = TimeSeries.from_times_and_values(times, values)
         with LogCapture() as lc:
-            get_logger('darts.timeseries').handlers = []
+            get_logger("darts.timeseries").handlers = []
             try:
-                ts.split_after(pd.Timestamp('2020-02-01'))
+                ts.split_after(pd.Timestamp("2020-02-01"))
             except Exception:
                 pass
 
         lc.check(
-            ('darts.timeseries', 'ERROR',
-             'ValueError: Timestamp must be between 2000-01-01 00:00:00 and 2000-01-03 00:00:00')
+            (
+                "darts.timeseries",
+                "ERROR",
+                "ValueError: Timestamp must be between 2000-01-01 00:00:00 and 2000-01-03 00:00:00",
+            )
         )
 
     def test_time_log(self):
@@ -99,4 +100,8 @@ class LoggingTestCase(unittest.TestCase):
             _my_timed_fn()
 
         logged_message = lc.records[-1].getMessage()
-        self.assertTrue(re.match("_my_timed_fn function ran for [0-9]+ milliseconds", logged_message))
+        self.assertTrue(
+            re.match(
+                "_my_timed_fn function ran for [0-9]+ milliseconds", logged_message
+            )
+        )

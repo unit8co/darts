@@ -6,8 +6,8 @@ Horizon-Based Training Dataset
 from typing import Union, Optional, Sequence, Tuple
 import numpy as np
 
-from ...logging import raise_if_not, get_logger
-from ...timeseries import TimeSeries
+from darts.logging import raise_if_not, get_logger
+from darts import TimeSeries
 from .training_dataset import PastCovariatesTrainingDataset
 from .utils import CovariateType
 

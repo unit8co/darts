@@ -1,7 +1,7 @@
 from typing import Iterable, Tuple
 from dataclasses import dataclass
 import numpy as np
-from ...logging import raise_if_not, raise_if
+from darts.logging import raise_if_not, raise_if
 from abc import ABC, abstractmethod
 from math import tan, atan
 import array

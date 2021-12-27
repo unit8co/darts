@@ -1,7 +1,6 @@
 import unittest
 import pandas as pd
 import numpy as np
-from math import log
 from copy import deepcopy
 
 from darts.dataprocessing.transformers import BoxCox, Mapper
@@ -29,11 +28,11 @@ class BoxCoxTestCase(unittest.TestCase):
             boxcox = BoxCox(lmbda=[0.2, 0.4, 0.5])
             boxcox.fit(self.multi_series)
 
-        boxcox = BoxCox(optim_method='mle')
+        boxcox = BoxCox(optim_method="mle")
         boxcox.fit(self.multi_series)
         lmbda1 = boxcox._fitted_params[0].tolist()
 
-        boxcox = BoxCox(optim_method='pearsonr')
+        boxcox = BoxCox(optim_method="pearsonr")
         boxcox.fit(self.multi_series)
         lmbda2 = boxcox._fitted_params[0].tolist()
 
@@ -46,30 +45,42 @@ class BoxCoxTestCase(unittest.TestCase):
         transformed1 = log_mapper.transform(self.sine_series)
         transformed2 = boxcox.fit(self.sine_series).transform(self.sine_series)
 
-        np.testing.assert_almost_equal(transformed1.all_values(copy=False), 
-                                       transformed2.all_values(copy=False), 
-                                       decimal=4)
+        np.testing.assert_almost_equal(
+            transformed1.all_values(copy=False),
+            transformed2.all_values(copy=False),
+            decimal=4,
+        )
 
     def test_boxcox_inverse(self):
         boxcox = BoxCox()
         transformed = boxcox.fit_transform(self.multi_series)
         back = boxcox.inverse_transform(transformed)
-        pd.testing.assert_frame_equal(self.multi_series.pd_dataframe(), back.pd_dataframe(), check_exact=False)
+        pd.testing.assert_frame_equal(
+            self.multi_series.pd_dataframe(), back.pd_dataframe(), check_exact=False
+        )
 
     def test_boxcox_multi_ts(self):
 
         test_cases = [
             ([[0.2, 0.4], [0.3, 0.6]]),  # full lambda
             (0.4),  # single value
-            None  # None
+            None,  # None
         ]
 
         for lmbda in test_cases:
             box_cox = BoxCox(lmbda=lmbda)
             transformed = box_cox.fit_transform([self.multi_series, self.multi_series])
             back = box_cox.inverse_transform(transformed)
-            pd.testing.assert_frame_equal(self.multi_series.pd_dataframe(), back[0].pd_dataframe(), check_exact=False)
-            pd.testing.assert_frame_equal(self.multi_series.pd_dataframe(), back[1].pd_dataframe(), check_exact=False)
+            pd.testing.assert_frame_equal(
+                self.multi_series.pd_dataframe(),
+                back[0].pd_dataframe(),
+                check_exact=False,
+            )
+            pd.testing.assert_frame_equal(
+                self.multi_series.pd_dataframe(),
+                back[1].pd_dataframe(),
+                check_exact=False,
+            )
 
     def test_boxcox_multiple_calls_to_fit(self):
         """
@@ -84,7 +95,9 @@ class BoxCoxTestCase(unittest.TestCase):
         box_cox.fit(self.lin_series)
         lambda2 = deepcopy(box_cox._fitted_params)[0].tolist()
 
-        self.assertNotEqual(lambda1, lambda2, "Lambdas should change when the transformer is retrained")
+        self.assertNotEqual(
+            lambda1, lambda2, "Lambdas should change when the transformer is retrained"
+        )
 
     def test_multivariate_stochastic_series(self):
         transformer = BoxCox()

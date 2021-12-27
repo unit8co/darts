@@ -5,8 +5,8 @@ Additional util functions
 import pandas as pd
 import numpy as np
 
-from ..timeseries import TimeSeries
-from ..logging import raise_log, get_logger, raise_if_not, raise_if
+from darts import TimeSeries
+from darts.logging import raise_log, get_logger, raise_if_not, raise_if
 from typing import List, Callable, TypeVar, Iterator, Tuple
 from IPython import get_ipython
 from tqdm import tqdm

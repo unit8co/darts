@@ -9,8 +9,8 @@ from abc import ABC, abstractmethod
 from torch.utils.data import Dataset
 from typing import Union, Sequence, Optional, Tuple
 
-from ...timeseries import TimeSeries
-from ...logging import raise_if_not
+from darts import TimeSeries
+from darts.logging import raise_if_not
 from .utils import CovariateType
 
 

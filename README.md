@@ -11,6 +11,7 @@
 ![GitHub Workflow Status](https://img.shields.io/github/workflow/status/unit8co/darts/darts%20release%20workflow/master)
 [![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![Downloads](https://pepy.tech/badge/darts)](https://pepy.tech/project/darts)
+[![codecov](https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW)](https://codecov.io/gh/unit8co/darts)
 
 **darts** is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
@@ -159,7 +160,7 @@ The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on Github.
 
 Before working on a contribution (a new feature or a fix),
- [**check our contribution guidelines**](CONTRIBUTE.md).
+ [**check our contribution guidelines**](CONTRIBUTING.md).
 
 
 ## Installation Guide
