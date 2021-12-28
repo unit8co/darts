@@ -892,7 +892,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 loss.backward()
                 self.optimizer.step()
                 total_loss += loss.item()
-            if self.lr_scheduler is not None:
+            if isinstance(self.lr_scheduler, torch.optim.lr_scheduler.ReduceLROnPlateau):
+                self.lr_scheduler.step(loss)
+            elif self.lr_scheduler is not None:
                 self.lr_scheduler.step()
 
             if tb_writer is not None:
