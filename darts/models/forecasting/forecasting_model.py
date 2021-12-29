@@ -231,6 +231,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                              retrain: bool = True,
                              overlap_end: bool = False,
                              last_points_only: bool = True,
+                             enable_mc_dropout: bool = False,
                              verbose: bool = False) -> Union[TimeSeries, List[TimeSeries]]:
 
         """
@@ -285,6 +286,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Whether to retain only the last point of each historical forecast.
             If set to True, the method returns a single `TimeSeries` containing the successive point forecasts.
             Otherwise returns a list of historical `TimeSeries` forecasts.
+        enable_mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models. 
+            This allows bayesian approximantion by capturing distributions over the learnt model.
         verbose
             Whether to print progress
         Returns
@@ -343,7 +347,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                              series=train,
                                              past_covariates=past_covariates,
                                              future_covariates=future_covariates,
-                                             num_samples=num_samples)
+                                             num_samples=num_samples, 
+                                             enable_mc_dropout= enable_mc_dropout)
 
             if last_points_only:
                 last_points_values.append(forecast.all_values()[-1])
@@ -377,6 +382,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
+                 enable_mc_dropout: bool = False
                  verbose: bool = False) -> Union[float, List[float]]:
 
         """
@@ -437,6 +443,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             A function used to combine the individual error scores obtained when `last_points_only` is set to False.
             If explicitely set to `None`, the method will return a list of the individual error scores instead.
             Set to np.mean by default.
+        enable_mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models. 
+            This allows bayesian approximantion by capturing distributions over the learnt model.
         verbose
             Whether to print progress
         Returns
@@ -454,6 +463,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                               retrain=retrain,
                                               overlap_end=overlap_end,
                                               last_points_only=last_points_only,
+                                              enable_mc_dropout=enable_mc_dropout,
                                               verbose=verbose)
 
         if last_points_only:
@@ -790,7 +800,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                num_samples: int = 1,
+                num_samples: int = 1, enable_mc_dropout: bool = False,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
@@ -844,9 +854,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                                  'have to be provided to `predict()`.'))
 
     def _predict_wrapper(self, n: int, series: TimeSeries, past_covariates: Optional[TimeSeries],
-                         future_covariates: Optional[TimeSeries], num_samples: int) -> TimeSeries:
+                         future_covariates: Optional[TimeSeries], num_samples: int, enable_mc_dropout: bool = False,) -> TimeSeries:
         return self.predict(n, series, past_covariates=past_covariates,
-                            future_covariates=future_covariates, num_samples=num_samples)
+                            future_covariates=future_covariates, num_samples=num_samples, enable_mc_dropout = enable_mc_dropout)
 
     def _fit_wrapper(self, series: TimeSeries, past_covariates: Optional[TimeSeries],
                      future_covariates: Optional[TimeSeries]):

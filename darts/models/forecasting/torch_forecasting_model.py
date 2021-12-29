@@ -55,6 +55,7 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  SplitCovariatesSequentialDataset)
 from darts.utils.data.encoders import SequentialEncoder
 
+from darts.utils.dropout_models import McCompatibleDropoutModule
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
@@ -195,6 +196,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = None
+        
 
         # by default models do not use encoders
         self.encoders = None
@@ -608,7 +610,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 n_jobs: int = 1,
                 roll_size: Optional[int] = None,
                 num_samples: int = 1,
-                num_loader_workers: int = 0
+                num_loader_workers: int = 0,
+                enable_mc_dropout: bool = False,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         Predicts values for a certain number of time steps after the end of the training series,
@@ -662,6 +665,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        enable_mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models. 
+            This allows bayesian approximantion by capturing distributions over the learnt model.
 
         Returns
         -------
@@ -669,7 +675,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             One or several time series containing the forecasts of `series`, or the forecast of the training series
             if `series` is not specified and the model has been trained on a single series.
         """
-        super().predict(n, series, past_covariates, future_covariates)
+        super().predict(n, series, past_covariates, future_covariates, enable_mc_dropout)
 
         if series is None:
             raise_if(self.training_series is None, "Input series has to be provided after fitting on multiple series.")
@@ -700,9 +706,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                 future_covariates=future_covariates)
 
         predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
-                                                roll_size=roll_size, num_samples=num_samples)
+                                                roll_size=roll_size, num_samples=num_samples, enable_mc_dropout=enable_mc_dropout)
         return predictions[0] if called_with_single_series else predictions
+    
+    
+    def __set_train_mode(self):
+        self.model.train()
+    
+    def __set_eval_mode(self, enable_mc_dropout = False):
+        self.model.eval()
 
+        for module in self.model.children():
+            if isinstance(module, McCompatibleDropoutModule):
+                module.set_dropout_status(enable_mc_dropout)
+                
     def predict_from_dataset(self,
                              n: int,
                              input_series_dataset: InferenceDataset,
@@ -711,7 +728,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              n_jobs: int = 1,
                              roll_size: Optional[int] = None,
                              num_samples: int = 1,
-                             num_loader_workers: int = 0
+                             num_loader_workers: int = 0,
+                             enable_mc_dropout: bool = False,
                              ) -> Sequence[TimeSeries]:
 
         """
@@ -747,6 +765,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        enable_mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models. 
+            This allows bayesian approximantion by capturing distributions over the learnt model.
 
         Returns
         -------
@@ -780,7 +801,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predictions = []
         iterator = _build_tqdm_iterator(pred_loader, verbose=verbose)
 
-        self.model.eval()
+        self.__set_eval_mode(enable_mc_dropout)
         with torch.no_grad():
             for batch_tuple in iterator:
                 batch_tuple = self._batch_to_device(batch_tuple)
@@ -883,7 +904,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             total_loss = 0
 
             for batch_idx, train_batch in enumerate(train_loader):
-                self.model.train()
+                self.__set_train_mode()
                 train_batch = self._batch_to_device(train_batch)
                 output = self._produce_train_output(train_batch[:-1])
                 target = train_batch[-1]  # By convention target is always the last element returned by datasets

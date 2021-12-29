@@ -13,6 +13,7 @@ from darts.timeseries import TimeSeries
 from darts.utils.torch import random_method
 from darts.utils.data import PastCovariatesShiftedDataset
 from darts.utils.likelihood_models import Likelihood
+from darts.utils.dropout_models import Dropout, TorchNativeDropout, McCompatibleDropout
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
@@ -122,7 +123,7 @@ class _TCNModule(nn.Module):
                  target_size: int,
                  nr_params: int,   
                  target_length: int,
-                 dropout: float):
+                 dropout_fn: Optional[Dropout]):
 
         """ PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
@@ -176,7 +177,7 @@ class _TCNModule(nn.Module):
         self.target_size = target_size
         self.nr_params = nr_params
         self.dilation_base = dilation_base
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout_fn = dropout_fn.dropout_function
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
@@ -192,7 +193,7 @@ class _TCNModule(nn.Module):
         self.res_blocks_list = []
         for i in range(num_layers):
             res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers, 
+                                       self.dropout_fn, weight_norm, i, num_layers, 
                                        self.input_size, target_size * nr_params)
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
@@ -221,7 +222,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                  num_layers: Optional[int] = None,
                  dilation_base: int = 2,
                  weight_norm: bool = False,
-                 dropout: float = 0.2,
+                 dropout_fn: Optional[Dropout] = None,
                  likelihood: Optional[Likelihood] = None,
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
@@ -249,8 +250,8 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
             The base of the exponent that will determine the dilation on every level.
         num_layers
             The number of convolutional layers.
-        dropout
-            The dropout rate for every convolutional layer.
+        dropout_fn
+            Optionally, the dropout layer used for every convolutional layer.
         likelihood
             Optionally, the likelihood model to be used for probabilistic forecasts.
             If no likelihood model is provided, forecasts will be deterministic.
@@ -332,7 +333,11 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
 
         kwargs['input_chunk_length'] = input_chunk_length
         kwargs['output_chunk_length'] = output_chunk_length
-
+        if(dropout_fn is None):
+            dropout_fn = TorchNativeDropout(0.0)
+        if isinstance(dropout_fn, McCompatibleDropout) and (likelihood is not None):
+            logger.warning("Enabling Likelihood and Monte Carlo Dropout makes model doubly stochastic, \
+                        the theoretical foundations for which are not clearly established, proceed with caution")
         super().__init__(likelihood=likelihood, **kwargs)
 
         self.input_chunk_length = input_chunk_length
@@ -341,7 +346,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         self.num_filters = num_filters
         self.num_layers = num_layers
         self.dilation_base = dilation_base
-        self.dropout = dropout
+        self.dropout_fn = dropout_fn
         self.weight_norm = weight_norm
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
@@ -349,7 +354,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
-
+        #print(self.dropout_fn)
         return _TCNModule(input_size=input_dim,
                           input_chunk_length=self.input_chunk_length,
                           target_size=output_dim,
@@ -359,7 +364,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                           num_layers=self.num_layers,
                           dilation_base=self.dilation_base,
                           target_length=self.output_chunk_length,
-                          dropout=self.dropout,
+                          dropout_fn=self._model_params[1]['dropout_fn'],
                           weight_norm=self.weight_norm)
 
     def _build_train_dataset(self,
@@ -374,6 +379,8 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                                             shift=self.output_chunk_length,
                                             max_samples_per_ts=max_samples_per_ts)
     
+
+        
     @random_method
     def _produce_predict_output(self, x):
         if self.likelihood:
