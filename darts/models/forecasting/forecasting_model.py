@@ -800,7 +800,8 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                num_samples: int = 1, enable_mc_dropout: bool = False,
+                num_samples: int = 1, 
+                enable_mc_dropout: bool = False,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
