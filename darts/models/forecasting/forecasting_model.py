@@ -382,7 +382,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                  last_points_only: bool = False,
                  metric: Callable[[TimeSeries, TimeSeries], float] = metrics.mape,
                  reduction: Union[Callable[[np.ndarray], float], None] = np.mean,
-                 enable_mc_dropout: bool = False
+                 enable_mc_dropout: bool = False,
                  verbose: bool = False) -> Union[float, List[float]]:
 
         """
