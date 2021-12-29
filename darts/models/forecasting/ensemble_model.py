@@ -90,14 +90,15 @@ class EnsembleModel(GlobalForecastingModel):
                                    series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                                    past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                                    future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                                   num_samples: int = 1):
+                                   num_samples: int = 1, enable_mc_dropout: bool = False):
         predictions = [
             model._predict_wrapper(
                 n=n,
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=num_samples
+                num_samples=num_samples, 
+                **{"enable_mc_dropout": enable_mc_dropout},
             ) for model in self.models]
 
         if self.is_single_series:
@@ -110,7 +111,8 @@ class EnsembleModel(GlobalForecastingModel):
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                num_samples: int = 1
+                num_samples: int = 1,
+                enable_mc_dropout: bool = False,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
 
         super().predict(n=n, series=series,
@@ -121,7 +123,8 @@ class EnsembleModel(GlobalForecastingModel):
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            num_samples=num_samples
+            num_samples=num_samples, 
+            enable_mc_dropout=enable_mc_dropout
         )
 
         if self.is_single_series:

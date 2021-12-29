@@ -148,7 +148,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
     def _predict_wrapper(self, n: int, series: TimeSeries,
                          past_covariates: Optional[TimeSeries],
                          future_covariates: Optional[TimeSeries],
-                         num_samples: int) -> TimeSeries:
+                         num_samples: int, **kwargs) -> TimeSeries:
         return self.predict(n, num_samples=num_samples)
 
     @property
@@ -347,7 +347,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                              series=train,
                                              past_covariates=past_covariates,
                                              future_covariates=future_covariates,
-                                             num_samples=num_samples)
+                                             num_samples=num_samples,
+                                             **{"enable_mc_dropout":enable_mc_dropout})
 
             if last_points_only:
                 last_points_values.append(forecast.all_values()[-1])
@@ -635,7 +636,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                        last_points_only=last_points_only)
             else:  # split mode
                 model._fit_wrapper(series, past_covariates, future_covariates)
-                pred = model._predict_wrapper(len(val_series), series, past_covariates, future_covariates, num_samples=1)
+                pred = model._predict_wrapper(len(val_series), series, past_covariates, future_covariates, num_samples=1, **{"enable_mc_dropout": False})  # since num_samples = 1 is only supported, disabling MC dropout
                 error = metric(pred, val_series)
 
             return error
@@ -853,7 +854,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                                  'have to be provided to `predict()`.'))
 
     def _predict_wrapper(self, n: int, series: TimeSeries, past_covariates: Optional[TimeSeries],
-                         future_covariates: Optional[TimeSeries], num_samples: int) -> TimeSeries:
+                         future_covariates: Optional[TimeSeries], num_samples: int, **kwargs) -> TimeSeries:
         return self.predict(n, series, past_covariates=past_covariates,
                             future_covariates=future_covariates, num_samples=num_samples)
 
@@ -986,7 +987,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
     def _predict_wrapper(self, n: int, series: TimeSeries,
                          past_covariates: Optional[TimeSeries],
                          future_covariates: Optional[TimeSeries],
-                         num_samples: int) -> TimeSeries:
+                         num_samples: int, **kwargs) -> TimeSeries:
         return self.predict(n, future_covariates=future_covariates, num_samples=num_samples)
 
 
@@ -1057,7 +1058,7 @@ class GlobalMCForecastingModel(GlobalForecastingModel, ABC):
                                  'have to be provided to `predict()`.'))
 
     def _predict_wrapper(self, n: int, series: TimeSeries, past_covariates: Optional[TimeSeries],
-                         future_covariates: Optional[TimeSeries], num_samples: int, enable_mc_dropout: bool = False,) -> TimeSeries:
+                         future_covariates: Optional[TimeSeries], num_samples: int, **kwargs) -> TimeSeries:
         return self.predict(n, series, past_covariates=past_covariates,
-                            future_covariates=future_covariates, num_samples=num_samples, enable_mc_dropout = enable_mc_dropout)
+                            future_covariates=future_covariates, num_samples=num_samples, enable_mc_dropout = kwargs["enable_mc_dropout"])
 

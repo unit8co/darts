@@ -364,7 +364,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
                           num_layers=self.num_layers,
                           dilation_base=self.dilation_base,
                           target_length=self.output_chunk_length,
-                          dropout_fn=self._model_params[1]['dropout_fn'],
+                          dropout_fn=self.dropout_fn,#_model_params[1]['dropout_fn'],
                           weight_norm=self.weight_norm)
 
     def _build_train_dataset(self,

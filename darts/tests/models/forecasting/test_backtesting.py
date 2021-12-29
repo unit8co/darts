@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 import random
 from itertools import product
-
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
 from darts.metrics import mape, r2_score
@@ -171,7 +170,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             )
             self.assertEqual(pred.width, 1)
             self.assertEqual(pred.end_time(), linear_series.end_time())
-
+            
             # multivariate model + multivariate series
             with self.assertRaises(ValueError):
                 tcn_model.backtest(
@@ -180,7 +179,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                     forecast_horizon=3,
                     verbose=False,
                 )
-
+            
             tcn_model = TCNModel(
                 input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1
             )
