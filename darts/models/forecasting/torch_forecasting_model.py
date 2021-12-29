@@ -58,7 +58,7 @@ from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.dropout_models import McCompatibleDropoutModule
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger, raise_log, raise_if
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.forecasting_model import GlobalMCForecastingModel
 
 DEFAULT_DARTS_FOLDER = '.darts'
 CHECKPOINTS_FOLDER = 'checkpoints'
@@ -75,7 +75,7 @@ def _get_runs_folder(work_dir, model_name):
     return os.path.join(work_dir, RUNS_FOLDER, model_name)
 
 
-class TorchForecastingModel(GlobalForecastingModel, ABC):
+class TorchForecastingModel(GlobalMCForecastingModel, ABC):
     # TODO: add is_stochastic & reset methods
     def __init__(self,
                  input_chunk_length: int,

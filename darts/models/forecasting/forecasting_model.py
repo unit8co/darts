@@ -347,8 +347,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                                              series=train,
                                              past_covariates=past_covariates,
                                              future_covariates=future_covariates,
-                                             num_samples=num_samples, 
-                                             enable_mc_dropout= enable_mc_dropout)
+                                             num_samples=num_samples)
 
             if last_points_only:
                 last_points_values.append(forecast.all_values()[-1])
@@ -800,8 +799,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                num_samples: int = 1, 
-                enable_mc_dropout: bool = False,
+                num_samples: int = 1,
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """ Forecasts values for a certain number of time steps after the end of the series.
 
@@ -855,9 +853,9 @@ class GlobalForecastingModel(ForecastingModel, ABC):
                                  'have to be provided to `predict()`.'))
 
     def _predict_wrapper(self, n: int, series: TimeSeries, past_covariates: Optional[TimeSeries],
-                         future_covariates: Optional[TimeSeries], num_samples: int, enable_mc_dropout: bool = False,) -> TimeSeries:
+                         future_covariates: Optional[TimeSeries], num_samples: int) -> TimeSeries:
         return self.predict(n, series, past_covariates=past_covariates,
-                            future_covariates=future_covariates, num_samples=num_samples, enable_mc_dropout = enable_mc_dropout)
+                            future_covariates=future_covariates, num_samples=num_samples)
 
     def _fit_wrapper(self, series: TimeSeries, past_covariates: Optional[TimeSeries],
                      future_covariates: Optional[TimeSeries]):
@@ -990,3 +988,76 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                          future_covariates: Optional[TimeSeries],
                          num_samples: int) -> TimeSeries:
         return self.predict(n, future_covariates=future_covariates, num_samples=num_samples)
+
+
+class GlobalMCForecastingModel(GlobalForecastingModel, ABC):
+    """ Forecasting model to support Monte Carlo Dropout parameters in prediction
+    """
+    @abstractmethod
+    def predict(self,
+                n: int,
+                series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                num_samples: int = 1, 
+                enable_mc_dropout: bool = False,
+                ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """ Forecasts values for a certain number of time steps after the end of the series.
+
+        If `fit()` has been called with only one `TimeSeries` as argument, then the `series` argument of this function
+        is optional, and it will simply produce the next `horizon` time steps forecast.
+        The `past_covariates` and `future_covariates` arguments also don't have to be provided again in this case.
+
+        If `fit()` has been called with `series` specified as a `Sequence[TimeSeries]`, the `series` argument must
+        be specified.
+
+        When the `series` argument is specified, this function will compute the next `n` time steps forecasts
+        for the simple series (or for each series in the sequence) given by `series`.
+
+        If multiple past or future covariates were specified during the training, some corresponding covariates must
+        also be specified here. For every input in `series` a matching (past and/or future) covariate time series
+        has to be provided.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series
+            The series whose future(s) we want to predict.
+        past_covariates
+            One past-observed covariate time series for every input time series in `series`. They must match the
+            past covariates that have been used with the `fit()` function for training in terms of dimension and type.
+        future_covariates
+            One future-known covariate time series for every input time series in `series`. They must match the
+            past covariates that have been used with the `fit()` function for training in terms of dimension and type.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
+        enable_mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models. 
+            This allows bayesian approximantion by capturing distributions over the learnt model.
+
+        Returns
+        -------
+        Union[TimeSeries, Sequence[TimeSeries]]
+            If `series` is not specified, this function returns a single time series containing the `n`
+            next points after then end of the training series.
+            If `series` is given and is a simple `TimeSeries`, this function returns the `n` next points
+            after the end of `series`.
+            If `series` is given and is a sequence of several time series, this function returns
+            a sequence where each element contains the corresponding `n` points forecasts.
+        """
+        if series is None and past_covariates is None and future_covariates is None:
+            super().predict(n, num_samples)
+        if self._expect_past_covariates and past_covariates is None:
+            raise_log(ValueError('The model has been trained with past covariates. Some matching past_covariates '
+                                 'have to be provided to `predict()`.'))
+        if self._expect_future_covariates and future_covariates is None:
+            raise_log(ValueError('The model has been trained with future covariates. Some matching future_covariates '
+                                 'have to be provided to `predict()`.'))
+
+    def _predict_wrapper(self, n: int, series: TimeSeries, past_covariates: Optional[TimeSeries],
+                         future_covariates: Optional[TimeSeries], num_samples: int, enable_mc_dropout: bool = False,) -> TimeSeries:
+        return self.predict(n, series, past_covariates=past_covariates,
+                            future_covariates=future_covariates, num_samples=num_samples, enable_mc_dropout = enable_mc_dropout)
+
