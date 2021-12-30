@@ -34,6 +34,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.
 * [Training Models on Multiple Time Series](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844)
 * [Using Past and Future Covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
 * [Temporal Convolutional Networks and Forecasting](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
+* [Probabilistic Forecasting](https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e)
 
 ## Quick Install
 
