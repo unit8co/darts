@@ -1,7 +1,5 @@
-"""
-Invertible Data Transformer
----------------------------
-"""
+# Invertible Data Transformer
+
 from typing import Union, Sequence, Iterator, Tuple, List
 from abc import abstractmethod
 from darts import TimeSeries

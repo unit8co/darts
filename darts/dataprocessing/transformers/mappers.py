@@ -1,6 +1,6 @@
 """
-Mappers
--------
+Mapper and InvertibleMapper
+---------------------------
 """
 import numpy as np
 import pandas as pd

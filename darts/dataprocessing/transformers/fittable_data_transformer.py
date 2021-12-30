@@ -1,7 +1,5 @@
-"""
-Fittable Data Transformer
--------------------------
-"""
+# Fittable Data Transformer
+
 from darts import TimeSeries
 from typing import Union, Sequence, Iterator, Tuple, List
 from darts.logging import get_logger
