@@ -18,12 +18,13 @@ It contains a variety of models, from classics such as ARIMA to deep neural netw
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models. The neural networks can be trained
+univariate and multivariate time series and models. The ML-based models can be trained
 on multiple time series, and some of the models offer probabilistic forecasts.
 
 ## Documentation
-* [Examples & Tutorials](https://unit8co.github.io/darts/examples.html)
-* [API Documentation](https://unit8co.github.io/darts/generated_api/darts.html)
+* [Quickstart](https://unit8co.github.io/darts/quickstart/00-quickstart.html)
+* [API Reference](https://unit8co.github.io/darts/generated_api/darts.html)
+* [Examples](https://unit8co.github.io/darts/examples.html)
 
 ##### High Level Introductions
 * [Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
@@ -36,7 +37,10 @@ on multiple time series, and some of the models offer probabilistic forecasts.
 
 ## Quick Install
 
-We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool ([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), [venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
+We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
+([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), 
+[venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with 
+or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
 Once your environment is set up you can install darts using pip:
 
@@ -160,7 +164,7 @@ The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on Github.
 
 Before working on a contribution (a new feature or a fix),
- [**check our contribution guidelines**](CONTRIBUTING.md).
+ [check our contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md).
 
 
 ## Installation Guide
