@@ -19,9 +19,10 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
                  name="Scaler",
                  n_jobs: int = 1,
                  verbose: bool = False):
-        """
-        Generic wrapper class for using scalers that implement `fit()`, `transform()` and
-        `inverse_transform()` methods (typically from scikit-learn) on `TimeSeries`.
+        """ Generic wrapper class for using scalers on time series.
+        
+        The underlying `scaler` has to implement the ``fit()``, ``transform()`` and
+        ``inverse_transform()`` methods (typically from scikit-learn).
 
         When the scaler is applied on multivariate series, the scaling is done per-component.
         When the series are stochastic, the scaling is done across all samples (for each given component).
@@ -31,22 +32,25 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         Parameters
         ----------
         scaler
-            The scaler to transform the data with. It must provide `fit()`, `transform()` and `inverse_transform()`
-            methods.
-            Default: `sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this will scale all the values
-            of a time series between 0 and 1.
-            In case the `Scaler` is applied to multiple `TimeSeries` objects, a deep-copy of the chosen scaler
-            will be instantiated, fitted, and stored, for each `TimeSeries`.
+            The scaler to transform the data with. It must provide ``fit()``,
+            ``transform()`` and ``inverse_transform()`` methods.
+            Default: :class:`sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this will scale all
+            the values of a time series between 0 and 1.
         name
             A specific name for the scaler
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
-            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+
+        Notes
+        -----
+        In case the :class:`Scaler` is applied to multiple ``TimeSeries`` objects, a deep-copy of the
+        chosen scaler will be instantiated, fitted, and stored, for each ``TimeSeries``.
         """
 
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
@@ -98,7 +102,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
 
     def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # generator which returns deep copies of the 'scaler' argument
-        new_scaler_gen = (deepcopy(self.transformer) for _ in range(len(series)))
+        new_scaler_gen = (deepcopy(self.transformer) for  in range(len(series)))
         return zip(series, new_scaler_gen)
 
     def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:

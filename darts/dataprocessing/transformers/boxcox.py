@@ -27,9 +27,9 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
                  optim_method='mle',
                  n_jobs: int = 1,
                  verbose: bool = False):
-        """
-        Box-Cox data transformer.
-        See https://otexts.com/fpp2/transformations.html#mathematical-transformations for more information.
+        """ Box-Cox data transformer.
+
+        See [1]_ for more information about Box-Cox transforms.
 
         The transformation is applied independently for each dimension (component) of the time series.
         For stochastic series, it is done jointly over all samples, effectively merging all samples of
@@ -40,23 +40,28 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         name
             A specific name for the transformer
         lmbda
-            If None given, will automatically find an optimal value of lmbda (for each dimension
-            of the time series, for each time series) using `scipy.stats.boxcox_normmax` with `method=optim_method`
-            If a single float is given, the same lmbda value will be used for all dimensions of the series, for all
-            the series.
-            Also allows to specify a different lmbda value for each dimension of the time series by passing
-            a sequence of values (or a sequence of sequence of values in case of multiple time series).
+            The parameter :math:`\lambda` of the Box-Cox transform. If a single float is given, the same 
+            :math:`\lambda` value will be used for all dimensions of the series, for all the series.
+            If a sequence is given, there is one value per component in the series. If a sequence of sequence
+            is given, there is one value per component for all series.
+            If `None` given, will automatically find an optimal value of :math:`\lambda` (for each dimension
+            of the time series, for each time series) using :func:`scipy.stats.boxcox_normmax`
+            with ``method=optim_method``.
         optim_method
             Specifies which method to use to find an optimal value for the lmbda parameter.
-            Either 'mle' or 'pearsonr'. Ignored if lmbda != None.
+            Either 'mle' or 'pearsonr'. Ignored if `lmbda` is not `None`.
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
-            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
-            Optionally, whether to print operations progress
+            Whether to print operations progress
+
+        References
+        ----------
+        .. [1] https://otexts.com/fpp2/transformations.html#mathematical-transformations
         """
 
         super().__init__(name=name,
@@ -125,7 +130,6 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         series_width = series.width if component_mask is None else sum(component_mask)
         transformed_vals = np.stack([boxcox(vals[:, i], lmbda=lmbda[i]) for i in range(series_width)], axis=1)
         return series.with_values(BoxCox._reshape_out(series, transformed_vals, component_mask=component_mask))
-
 
     @staticmethod
     def ts_inverse_transform(series: TimeSeries,
