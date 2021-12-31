@@ -102,7 +102,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
 
     def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # generator which returns deep copies of the 'scaler' argument
-        new_scaler_gen = (deepcopy(self.transformer) for  in range(len(series)))
+        new_scaler_gen = (deepcopy(self.transformer) for _ in range(len(series)))
         return zip(series, new_scaler_gen)
 
     def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
