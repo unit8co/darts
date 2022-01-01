@@ -43,6 +43,25 @@ class Mapper(BaseDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.dataprocessing.transformers import InvertibleMapper
+        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
+        >>> transformer = InvertibleMapper(np.log10, lambda x: 10**x)
+        >>> series_transformed = transformer.transform(series)
+        >>> print(series_transformed)
+        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
+        array([[[0.]],
+            [[1.]],
+            [[2.]],
+            [[3.]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3
+        * component  (component) <U1 '0'
+        Dimensions without coordinates: sample
         """
 
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
@@ -88,6 +107,36 @@ class InvertibleMapper(InvertibleDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.dataprocessing.transformers import Mapper
+        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
+        >>> transformer = Mapper(np.log10)
+        >>> series_transformed = transformer.transform(series)
+        >>> print(series_transformed)
+        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
+        array([[[0.]],
+            [[1.]],
+            [[2.]],
+            [[3.]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3
+        * component  (component) <U1 '0'
+        Dimensions without coordinates: sample
+        >>> series_restaured = transformer.inverse_transform(series_transformed)
+        >>> print(series_restaured)
+        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
+        array([[[   1.]],
+            [[  10.]],
+            [[ 100.]],
+            [[1000.]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3
+        * component  (component) <U1 '0'
+        Dimensions without coordinates: sample
         """
 
         super().__init__(name=name,

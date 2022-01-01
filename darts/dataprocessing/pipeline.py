@@ -39,7 +39,31 @@ class Pipeline:
             Whether to print progress of the operations.
             Note: this parameter will overwrite the value set in each single transformer. Leave this parameter set
             to `None` for keeping the transformers configurations.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
+        >>> from darts.dataprocessing.pipeline import Pipeline
+        >>> values = np.arange(start=0, stop=12.5, step=2.5)
+        >>> values[1:3] = np.nan
+        >>> series = series.from_values(values)
+        >>> pipeline = Pipeline([MissingValuesFiller(), Scaler()])
+        >>> series_transformed = pipeline.fit_transform(series)
+        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
+        array([[[0.  ]],
+            [[0.25]],
+            [[0.5 ]],
+            [[0.75]],
+            [[1.  ]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3 4
+        * component  (component) object '0'
+        Dimensions without coordinates: sample
         """
+
         raise_if_not(all((isinstance(t, BaseDataTransformer)) for t in transformers),
                      "transformers should be objects deriving from BaseDataTransformer", logger)
 

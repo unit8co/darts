@@ -51,6 +51,20 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         -----
         In case the :class:`Scaler` is applied to multiple ``TimeSeries`` objects, a deep-copy of the
         chosen scaler will be instantiated, fitted, and stored, for each ``TimeSeries``.
+
+        Examples
+        --------
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from sklearn.preprocessing import MinMaxScaler
+        >>> from darts.dataprocessing.transformers import Scaler
+        >>> series = AirPassengersDataset().load()
+        >>> scaler = MinMaxScaler(feature_range=(-1, 1))
+        >>> transformer = Scaler(scaler)
+        >>> series_transformed = transformer.fit_transform(series)
+        >>> print(min(series_transformed.values()))
+        [-1.]
+        >>> print(max(series_transformed.values()))
+        [2.]
         """
 
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
