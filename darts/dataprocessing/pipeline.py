@@ -19,7 +19,7 @@ class Pipeline:
                  verbose: bool = None,
                  n_jobs: int = None):
         """
-        Pipeline combines multiple data transformers chaining them together.
+        Pipeline to combine multiple data transformers, chaining them together.
 
         Parameters
         ----------
@@ -28,8 +28,8 @@ class Pipeline:
         copy
             If set makes a (deep) copy of each data transformer before adding them to the pipeline
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
-            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.

@@ -31,9 +31,11 @@ class AirPassengersDataset(DatasetLoaderCSV):
 
 class AusBeerDataset(DatasetLoaderCSV):
     """
-    Total quarterly beer production in Australia (in megalitres) from 1956:Q1 to 2008:Q3.
+    Total quarterly beer production in Australia (in megalitres) from 1956:Q1 to 2008:Q3 [1]_.
 
-    https://rdrr.io/cran/fpp/man/ausbeer.html
+    References
+    ----------
+    .. [1] https://rdrr.io/cran/fpp/man/ausbeer.html
     """
     def __init__(self):
         super().__init__(metadata=DatasetLoaderMetadata(
@@ -47,10 +49,13 @@ class AusBeerDataset(DatasetLoaderCSV):
 
 class EnergyDataset(DatasetLoaderCSV):
     """
-    Hourly energy dataset coming from
-    https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather
+    Hourly energy dataset coming from [1]_.
 
     Contains a time series with 28 hourly components between 2014-12-31 23:00:00 and 2018-12-31 22:00:00
+
+    References
+    ----------
+    .. [1] https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather
     """
     def __init__(self):
         super().__init__(metadata=DatasetLoaderMetadata(
@@ -84,8 +89,12 @@ class HeartRateDataset(DatasetLoaderCSV):
     The measurements (in units of beats per minute) occur at 0.5 second intervals, so that the length of
     each series is exactly 15 minutes.
 
-    This is the series1 here: http://ecg.mit.edu/time-series/
-    Using an integer time index.
+    This is the series1 in [1]_.
+    It uses an integer time index.
+
+    References
+    ----------
+    .. [1] http://ecg.mit.edu/time-series/
     """
 
     def __init__(self):
@@ -152,7 +161,11 @@ class SunspotsDataset(DatasetLoaderCSV):
     Monthly mean relative sunspot numbers from 1749 to 1983.
     Collected at Swiss Federal Observatory, Zurich until 1960, then Tokyo Astronomical Observatory.
 
-    https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots
+    Source: [1]_
+
+    References
+    ----------
+    .. [1] https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots
     """
 
     def __init__(self):
@@ -168,13 +181,14 @@ class SunspotsDataset(DatasetLoaderCSV):
 class TaylorDataset(DatasetLoaderCSV):
     """
     Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
-    Discussed in Taylor (2003) [1], and kindly provided by James W Taylor. Units: Megawatts
+    Discussed in Taylor (2003) [1]_, and kindly provided by James W Taylor [2]_. Units: Megawatts
     (Uses an integer time index).
 
-    https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor
+    References
+    ----------
+    .. [1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing. Journal of the Operational Research Society, 54, 799-805.
 
-    [1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.
-    Journal of the Operational Research Society, 54, 799-805.
+    .. [2] https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor
     """
 
     def __init__(self):
@@ -207,8 +221,11 @@ class USGasolineDataset(DatasetLoaderCSV):
     """
     Weekly U.S. Product Supplied of Finished Motor Gasoline between 1991-02-08 and 2021-04-30
 
-    Obtained from:
-    https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=wgfupus2&f=W
+    Obtained from [1]_.
+
+    References
+    ----------
+    .. [1] https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&s=wgfupus2&f=W
     """
 
     def __init__(self):
@@ -224,8 +241,11 @@ class USGasolineDataset(DatasetLoaderCSV):
 class WineDataset(DatasetLoaderCSV):
     """
     Australian total wine sales by wine makers in bottles <= 1 litre. Monthly between Jan 1980 and Aug 1994.
+    Source: [1]_
 
-    https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind
+    References
+    ----------
+    .. [1] https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind
     """
 
     def __init__(self):
@@ -241,8 +261,11 @@ class WineDataset(DatasetLoaderCSV):
 class WoolyDataset(DatasetLoaderCSV):
     """
     Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 -- Sep 1994.
+    Source: [1]_
 
-    https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq
+    References
+    ----------
+    .. [1] https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq
     """
 
     def __init__(self):
