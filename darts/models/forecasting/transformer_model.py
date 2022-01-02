@@ -266,7 +266,7 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'past': ['hour', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['absolute'], 'future': ['relative']},
                     'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()

@@ -54,7 +54,8 @@ autodoc_default_options = {
                        + 'TorchParametricProbabilisticForecastingModel,'
                        + 'min_train_series_length,uses_future_covariates,uses_past_covariates,'
                        + 'untrained_model,first_prediction_index,future_covariate_series,past_covariate_series,'
-                       + 'initialize_encoders'
+                       + 'initialize_encoders,register_datapipe_as_function,register_function,functions,'
+                       + 'SplitTimeSeriesSequence,randint'
 }
 
 # In order to also have the docstrings of __init__() methods included

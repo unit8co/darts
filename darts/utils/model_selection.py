@@ -71,7 +71,8 @@ class SplitTimeSeriesSequence(Sequence):
             if test_start_index < 0:
                 raise AttributeError("`test_size` is bigger then timeseries length")
 
-        else: # model-aware split
+        else:
+            # model-aware split
 
             # an example on how these are calculated:
             # test_size = 4
@@ -178,52 +179,47 @@ def train_test_split(
         lazy: bool = False
         ) -> Union[Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]]:
     """
-    Splits the dataset into training and test dataset. Supports splitting along the sample axis and time axis.
-
-    If the input type is single TimeSeries, then only splitting over time axis is available, thus ``input_size`` and
-    ``horizon`` have to be provided.
+    Splits the provided series into training and test series. 
+    
+    Supports splitting along the sample axis or time axis.
+    If the input type is single TimeSeries, then only splitting over time axis is available, thus `input_size` and
+    `horizon` have to be provided.
 
     When splitting over the time axis, splitter tries to greedy satisfy the requested test set size, i.e. when one of
-    the timeseries in sequence is too small, all samples will go to the test set and the exception will be raised.
+    the timeseries in the sequence is too small, all samples will go to the test set and the exception will be raised.
 
-
-    Time axis split with ``model-aware`` split type enabled tries to reclaim as much datapoints for training as
-    possible by partially overlapping test set with training set. This is possible because only forecasted part of
-    test set cannot be used for training. The formula to calculate last available timestep for training set is
+    Time axis split with ``'model-aware'`` split type enabled tries to reclaim as much datapoints for training as
+    possible by partially overlapping test set with training set. This is possible because only the forecasted part of
+    the test set cannot be used for training. The formula to calculate last available timestep for training set is
     following:
 
-        train end index = ts_length - self.horizon - test_size
+        ``train end index = ts_length - self.horizon - test_size``
 
     And the formula to calculate the first timestep of test dataset is following:
 
-        test start index = timeseries length - horizon - input_size - test_size + 1
+        ``test start index = timeseries length - horizon - input_size - test_size + 1``
 
     Parameters
     ----------
     data
         original dataset to split into training and test
-
     test_size
         size of the test set. If the value is between 0 and 1, parameter is treated as a split proportion. Otherwise
-        it is treated as a absolute number of samples from each timeseries that will be in the test set. [default = 0.25]
-
+        it is treated as a absolute number of samples from each timeseries that will be in the test set.
+        [default = 0.25]
     axis
-        Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if ``axis = 1``,
+        Axis to split the dataset on. When 0 (default) it is split on samples. Otherwise, if `axis = 1`,
         timeseries are split along time axis. Note that for single timeseries the default option is 1 (0 makes
         no sense). [default: 0 for sequence of timeseries, 1 for timeseries]
-
     input_size
         size of the input. Only valid with ``vertical_split_type == 'model-aware'``. [default: None]
-
     horizon
         forecast horizon. Only valid with ``vertical_split_type == 'model-aware'``. [default: None]
-
     vertical_split_type
-        can be either ``simple``, where the exact number from test size will be deducted from timeseries for test set and
-        remaining will go to training set; or ``model-aware``, where you have to provide ``input_size`` and ``horizon``
-        as well. Note, that second option is more efficient timestep-wise, since training and test sets will be
-        partially overlapping. [default: ``simple``]
-
+        can be either ``'simple'``, where the exact number from test size will be deducted from timeseries for test set
+        and remaining will go to training set; or ``'model-aware'``, where you have to provide `input_size` and
+        `horizon` as well. Note, that second option is more efficient timestep-wise, since training and test sets will
+        be partially overlapping. [default: ``'simple'``]
     lazy
         by default, train and test datasets are returned as a list of timeseries. This may be memory
         inefficient if dataset is large, so setting this flag allows instead to return a ``Sequence`` object
