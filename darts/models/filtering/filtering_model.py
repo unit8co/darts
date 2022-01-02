@@ -22,7 +22,7 @@ class FilteringModel(ABC):
         pass
 
     @abstractmethod
-    def filter(self,  series: TimeSeries) -> TimeSeries:
+    def filter(self, series: TimeSeries) -> TimeSeries:
         """ Filters a given series
 
         Parameters
