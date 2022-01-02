@@ -122,9 +122,9 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 
     add_encoders = {
         'cyclic': {'future': ['month']},
-        'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+        'datetime_attribute': {'past': ['hour', 'dayofweek']},
         'position': {'past': ['absolute'], 'future': ['relative']},
-        'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+        'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
         'transformer': Scaler()
     }
 
@@ -610,9 +610,9 @@ class SequentialEncoder(Encoder):
             from darts.dataprocessing.transformers import Scaler
             add_encoders={
                 'cyclic': {'future': ['month']},
-                'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                'datetime_attribute': {'past': ['hour', 'dayofweek']},
                 'position': {'past': ['absolute'], 'future': ['relative']},
-                'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                 'transformer': Scaler()
             }
 

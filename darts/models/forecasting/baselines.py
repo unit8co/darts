@@ -46,8 +46,8 @@ class NaiveSeasonal(ForecastingModel):
         """ Naive Seasonal Model
 
         This model always predicts the value of `K` time steps ago.
-        When :math:`K=1`, this model predicts the last value of the training set.
-        When :math:`K>1`, it repeats the last :math:`K` values of the training set.
+        When `K=1`, this model predicts the last value of the training set.
+        When `K>1`, it repeats the last `K` values of the training set.
 
         Parameters
         ----------

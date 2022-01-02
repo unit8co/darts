@@ -53,7 +53,8 @@ autodoc_default_options = {
                        + 'MixedCovariatesTorchModel,SplitCovariatesTorchModel,'
                        + 'TorchParametricProbabilisticForecastingModel,'
                        + 'min_train_series_length,uses_future_covariates,uses_past_covariates,'
-                       + 'untrained_model'
+                       + 'untrained_model,first_prediction_index,future_covariate_series,past_covariate_series,'
+                       + 'initialize_encoders'
 }
 
 # In order to also have the docstrings of __init__() methods included

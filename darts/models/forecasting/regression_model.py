@@ -11,10 +11,10 @@ A `RegressionModel` forecasts future values of a target series based on lagged v
 
 
 The regression models are learned in a supervised way, and they can wrap around any "scikit-learn like" regression model
-acting on tabular data having `fit()` and `predict()` functions.
+acting on tabular data having ``fit()`` and ``predict()`` methods.
 
-Darts also provides `LinearRegressionModel` and `RandomForest`, which are regression models wrapping around
-scikit-learn linear regression and random forest regression, respectively.
+Darts also provides :class:`LinearRegressionModel` and :class:`RandomForest`, which are regression models
+wrapping around scikit-learn linear regression and random forest regression, respectively.
 
 Behind the scenes this model is tabularizing the time series data to make it work with regression models.
 
@@ -22,7 +22,8 @@ The lags can be specified either using an integer - in which case it represents 
 to take into consideration, or as a list - in which case the lags have to be enumerated (strictly negative values
 denoting past lags and positive values including 0 denoting future lags).
 """
-from typing import Union, Sequence, Optional, Tuple, List, Dict
+
+from typing import Union, Sequence, Optional, Tuple, List
 import numpy as np
 
 from darts.timeseries import TimeSeries
@@ -79,7 +80,7 @@ class RegressionModel(GlobalForecastingModel):
                  lags_past_covariates: Union[int, List[int]] = None,
                  lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
                  model=None):
-        """Regression Model
+        """ Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
 
         Parameters
@@ -97,10 +98,10 @@ class RegressionModel(GlobalForecastingModel):
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
         model
-            Scikit-learn-like model with `fit()` and `predict()` methods. Also possible to use model that doesn't
+            Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
             will be used per component in the multivariate series.
-            If None, defaults to: `sklearn.linear_model.LinearRegression(n_jobs=-1)`
+            If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         """
 
         super().__init__()
@@ -309,7 +310,7 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
     ) -> None:
         """
-        Fits/trains the model using the provided list of features time series and the target time series.
+        Fit/train the model on one or multiple series.
 
         Parameters
         ----------
@@ -422,7 +423,8 @@ class RegressionModel(GlobalForecastingModel):
         num_samples: int = 1,
         **kwargs
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Forecasts values for `n` time steps after the end of the series.
+        """ Forecasts values for `n` time steps after the end of the series.
+
         Parameters
         ----------
         n : int

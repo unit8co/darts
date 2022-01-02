@@ -19,8 +19,7 @@ class LinearRegressionModel(RegressionModel):
                  lags_past_covariates: Union[int, List[int]] = None,
                  lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
                  **kwargs):
-        """
-        Simple wrapper for the linear regression model in scikit-learn, LinearRegression().
+        """ Linear regression model.
 
         Parameters
         ----------

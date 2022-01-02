@@ -27,28 +27,31 @@ class Theta(ForecastingModel):
                  seasonality_period: Optional[int] = None,
                  season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE):
         """
-        An implementation of the Theta method with configurable `theta` parameter.
-
-        See `Unmasking the Theta method <https://robjhyndman.com/papers/Theta.pdf>`_ paper.
+        An implementation of the Theta method with configurable `theta` parameter. See [1]_.
 
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
 
-        `season_mode` must be a SeasonalityMode Enum member.
-        You can access the Enum with `from darts import SeasonalityMode`.
+        `season_mode` must be a ``SeasonalityMode`` Enum member.
+        
+        You can access the Enum with ``from darts import SeasonalityMode``.
 
         Parameters
         ----------
         theta
             Value of the theta parameter. Defaults to 2. Cannot be set to 0.
-            If theta = 1, then the theta method restricts to a simple exponential smoothing (SES)
+            If `theta = 1`, then the theta method restricts to a simple exponential smoothing (SES)
         seasonality_period
             User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
-            calling `fit()`.
+            calling :func:`fit()`.
         season_mode
             Type of seasonality.
-            Either SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.ADDITIVE or SeasonalityMode.NONE.
-            Defaults to `SeasonalityMode.MULTIPLICATIVE`.
+            Either ``SeasonalityMode.MULTIPLICATIVE``, ``SeasonalityMode.ADDITIVE`` or ``SeasonalityMode.NONE``.
+            Defaults to ``SeasonalityMode.MULTIPLICATIVE``.
+
+        References
+        ----------
+        .. [1] `Unmasking the Theta method <https://robjhyndman.com/papers/Theta.pdf`
         """
 
         super().__init__()
@@ -157,16 +160,14 @@ class FourTheta(ForecastingModel):
         The training time series is de-seasonalized according to `seasonality_period`,
         or an inferred seasonality period.
 
-        `season_mode` must be a SeasonalityMode Enum member.
-        `model_mode` must be a ModelMode Enum member.
-        `trend_mode` must be a TrendMode Enum member.
-        You can access the different Enums with `from darts import SeasonalityMode, TrendMode, ModelMode`.
+        `season_mode` must be a ``SeasonalityMode`` Enum member.
+        `model_mode` must be a ``ModelMode`` Enum member.
+        `trend_mode` must be a ``TrendMode`` Enum member.
+
+        You can access the different Enums with ``from darts import SeasonalityMode, TrendMode, ModelMode``.
 
         When called with `theta = X`, `model_mode = Model.ADDITIVE` and `trend_mode = Trend.LINEAR`,
         this model is equivalent to calling `Theta(theta=X)`.
-        Even though this model is an improvement of `Theta`, `FourTheta` is a naive implementation of the algorithm.
-        Thus, a difference in performance can be observed.
-        `Theta` is recommended if the model is good enough for the application.
 
         Parameters
         ----------
@@ -189,6 +190,11 @@ class FourTheta(ForecastingModel):
             Defaults to `TrendMode.LINEAR`.
         normalization
             If `True`, the data is normalized so that the mean is 1. Defaults to `True`.
+
+        Notes
+        -----
+        Even though this model is an improvement of :class:`Theta`, it is a naive
+        implementation of the algorithm, which can potentially be slower.
         """
 
         super().__init__()
