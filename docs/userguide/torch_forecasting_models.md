@@ -80,25 +80,25 @@ When calling `predict()` and depending on your forecast horizon `n`, the model c
 Under the hood, Darts has 5 types of `{X}CovariatesModel` classes implemented to cover different combinations of the covariate types mentioned before:
 
 Class | past covariates | future past covariates | future covariates | historic future covariates
---- | :---: | :---: | :---: | :---:
-`PastCovariatesModel` | ✅ | ✅ |  |  |
-`FutureCovariatesModel` |  |  | ✅ |  |
-`DualCovariatesModel` |  |  | ✅ | ✅ |
-`MixedCovariatesModel` | ✅ | ✅ | ✅ | ✅ |
-`SplitCovariatesModel` | ✅ | ✅ | ✅ |  |
+--- | --- | --- | --- | ---
+`PastCovariatesModel` | ✅ | ✅ |  |
+`FutureCovariatesModel` |  |  | ✅ |
+`DualCovariatesModel` |  |  | ✅ | ✅
+`MixedCovariatesModel` | ✅ | ✅ | ✅ | ✅
+`SplitCovariatesModel` | ✅ | ✅ | ✅ |
 
 **Table 1: Darts' `{X}CovariatesModels` covariate support**
 
 Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate class names are abbreviated by the `X`-part):
 
 TFM | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
---- | :---: | :---: | :---: | :---: | :---:
-`RNNModel` |  |  | ✅ |  |  |
-`BlockRNNModel` | ✅ |  |  |  |  |
-`NBEATSModel` | ✅ |  |  |  |  |
-`TCNModel` | ✅ |  |  |  |  |
-`TransformerModel` | ✅ |  |  |  |  |
-`TFTModel` |  |  |  | ✅ |  |
+--- | --- | --- | --- | --- | ---
+`RNNModel` |  |  | ✅ |  |
+`BlockRNNModel` | ✅ |  |  |  |
+`NBEATSModel` | ✅ |  |  |  |
+`TCNModel` | ✅ |  |  |  |
+`TransformerModel` | ✅ |  |  |  |
+`TFTModel` |  |  |  | ✅ |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 

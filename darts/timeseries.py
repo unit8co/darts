@@ -1954,11 +1954,11 @@ class TimeSeries:
     def to_csv(self, *args, **kwargs):
         """
         Writes this deterministic series to a CSV file.
-        For a list of parameters, refer to the documentation of :func:`pandas.DataFrame.to_csv()`. [1]_
+        For a list of parameters, refer to the documentation of :func:`pandas.DataFrame.to_csv()` [1]_.
 
         References
         ----------
-        ..[1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
+        .. [1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
         """
         if not self.is_deterministic:
             raise_log(AssertionError('The pd_dataframe() method can only return DataFrames of deterministic '
@@ -1969,11 +1969,7 @@ class TimeSeries:
 
     def to_pickle(self, path: str, protocol: int = pickle.HIGHEST_PROTOCOL):
         """
-        Saves Timeseries object in pickle format.
-
-        **Note**: Xarray docs[1] suggest not using pickle as a long-term data storage.
-
-        ..[1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
+        Save this series in pickle format.
 
         Parameters
         ----------
@@ -1981,6 +1977,14 @@ class TimeSeries:
             path to a file where current object will be pickled
         protocol : integer, default highest
             pickling protocol. The default is best in most cases, use it only if having backward compatibility issues
+
+        Notes
+        -----
+        Xarray docs [1]_ suggest not using pickle as a long-term data storage.
+
+        References
+        ----------
+        .. [1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
         """
 
         with open(path, 'wb') as fh:
