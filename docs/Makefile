@@ -26,13 +26,13 @@ clean:
 
 copy-examples:
 	@echo "[Makefile] copying examples..."
-	@cp -r ../notebooks "$(SOURCEDIR)/examples"
+	@cp -r ../examples "$(SOURCEDIR)/examples"
 	@rm "$(SOURCEDIR)/examples/00-quickstart.ipynb"
 
 copy-quickstart:
 	@echo "[Makefile] copying quickstart notebook..."
 	@mkdir -p "$(SOURCEDIR)/quickstart"
-	@cp -r ../notebooks/00-quickstart.ipynb "$(SOURCEDIR)/quickstart/"
+	@cp -r ../examples/00-quickstart.ipynb "$(SOURCEDIR)/quickstart/"
 
 generate-readme:
 	@echo "[Makefile] generating README rst file..."

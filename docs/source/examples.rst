@@ -2,18 +2,9 @@
 Examples
 ========
 
-Here you will find some example notebooks to get more familiar with the API.
-
-
-darts intro
-===========
-
-Intro to darts example notebook:
-
-.. toctree::
-   :maxdepth: 1
-
-   examples/01-darts-intro.ipynb
+Here you will find some example notebooks to get more familiar with the Darts' API.
+All the notebooks are also available in ``ipynb`` format
+`directly on github<https://github.com/unit8co/darts/tree/master/examples>`.
 
 
 Multiple Time Series, Pre-trained Models and Covariates
