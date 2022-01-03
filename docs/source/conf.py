@@ -124,8 +124,10 @@ html_static_path = ['static']
 todo_include_todos = False
 
 
-# Ensure that otherwise excluded methods get included.
-include_private_methods = ["_fill_missing_dates", "_restore_xarray_from_frequency"]
+# Ensure that otherwise excluded methods get included:
+# e.g. include_private_methods = ['_fill_missing_dates', '_restore_xarray_from_frequency']
+include_private_methods = []
+
 def skip(app, what, name, obj, skip, options):
     if name in include_private_methods:
         return False

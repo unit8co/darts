@@ -243,7 +243,7 @@ class TimeSeries:
                  fillna_value: Optional[float] = None,
                  **kwargs, ) -> 'TimeSeries':
         """
-        Return a deterministic TimeSeries instance built from a single CSV file.
+        Build a deterministic TimeSeries instance built from a single CSV file.
         One column can be used to represent the time (if not present, the time index will be an Int64Index)
         and a list of columns `value_cols` can be used to indicate the values for this time series.
 
@@ -292,7 +292,7 @@ class TimeSeries:
                        freq: Optional[str] = None,
                        fillna_value: Optional[float] = None) -> 'TimeSeries':
         """
-        Return a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
+        Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
         One column (or the DataFrame index) has to represent the time,
         and a list of columns `value_cols` has to represent the values for this time series.
 
@@ -376,7 +376,7 @@ class TimeSeries:
                     freq: Optional[str] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
         """
-        Return a univariate and deterministic TimeSeries built from a pandas Series.
+        Build a univariate deterministic series from a pandas Series.
 
         The series must contain an index that is
         either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
@@ -420,7 +420,7 @@ class TimeSeries:
                               columns: Optional[pd._typing.Axes] = None,
                               fillna_value: Optional[float] = None) -> 'TimeSeries':
         """
-        Return a TimeSeries built from an index and value array.
+        Build a series from a time index and value array.
 
         Parameters
         ----------
@@ -480,7 +480,7 @@ class TimeSeries:
                     columns: Optional[pd._typing.Axes] = None,
                     fillna_value: Optional[float] = None) -> 'TimeSeries':
         """
-        Return a TimeSeries built from an array of values.
+        Build an integer-indexed series from an array of values.
         The series will have an integer index (Int64Index).
 
         Parameters
@@ -512,8 +512,8 @@ class TimeSeries:
     @classmethod
     def from_json(cls, json_str: str) -> 'TimeSeries':
         """
-        Converts the JSON String representation of a `TimeSeries` object (produced using `TimeSeries.to_json()`)
-        into a `TimeSeries` object
+        Build a series from the JSON String representation of a ``TimeSeries``
+        (produced using :func:`TimeSeries.to_json()`).
 
         At the moment this only supports deterministic time series (i.e., made of 1 sample).
 
@@ -533,11 +533,7 @@ class TimeSeries:
     @classmethod
     def from_pickle(cls, path: str) -> 'TimeSeries':
         """
-        Reads Timeseries object that was pickled.
-
-        **Note**: Xarray docs[1] suggest not using pickle as a long-term data storage.
-
-        ..[1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
+        Read a pickled ``TimeSeries``.
 
         Parameters
         ----------
@@ -548,6 +544,14 @@ class TimeSeries:
         -------
         TimeSeries
             timeseries object loaded from file
+
+        Notes
+        -----
+        Xarray docs [1]_ suggest not using pickle as a long-term data storage.
+
+        References
+        ----------
+        .. [1] http://xarray.pydata.org/en/stable/user-guide/io.html#pickle
         """
         with open(path, 'rb') as fh:
             return pickle.load(fh)
@@ -960,7 +964,7 @@ class TimeSeries:
 
     def values(self, copy=True, sample=0) -> np.ndarray:
         """
-        Return a 2-D array of dimension (time, component), containing this series' values for one sample.
+        Return a 2-D array of shape (time, component), containing this series' values for one `sample`.
 
         Parameters
         ----------
@@ -1005,7 +1009,8 @@ class TimeSeries:
 
     def univariate_values(self, copy=True, sample=0) -> np.ndarray:
         """
-        Return a 1-D Numpy array of dimension (time,), containing this univariate series' values for one sample.
+        Return a 1-D Numpy array of shape (time,),
+        containing this univariate series' values for one `sample`.
 
         Parameters
         ----------
@@ -1028,7 +1033,7 @@ class TimeSeries:
              size: Optional[int] = 5,
              axis: Optional[Union[int, str]] = 0) -> 'TimeSeries':
         """
-        Return a TimeSeries made of the first `size` points of the series.
+        Return a TimeSeries containing the first `size` points.
 
         Parameters
         ----------
@@ -1098,7 +1103,7 @@ class TimeSeries:
         Notes
         -----
         When concatenating along the `time` dimension, the current series marks the start date of
-        the resulting series, and the other series will have their date indices overwritten.
+        the resulting series, and the other series will have its time index ignored.
         """
         return concatenate(series=[self, other], axis=axis, ignore_time_axis=ignore_time_axes)
 
@@ -1109,7 +1114,8 @@ class TimeSeries:
 
     def gaps(self) -> pd.DataFrame:
         """
-        A function to compute and return gaps in the TimeSeries. Works only on deterministic time series.
+        A function to compute and return gaps in the TimeSeries.
+        Works only on deterministic time series.
 
         Returns
         -------
@@ -1338,7 +1344,7 @@ class TimeSeries:
 
     def slice_n_points_after(self, start_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
         """
-        Return a new TimeSeries, starting a `start_ts` and having at most `n` points.
+        Return a new TimeSeries, starting a `start_ts` (inclusive) and having at most `n` points.
 
         The provided timestamps will be included in the series.
 
@@ -1369,7 +1375,7 @@ class TimeSeries:
 
     def slice_n_points_before(self, end_ts: Union[pd.Timestamp, int], n: int) -> 'TimeSeries':
         """
-        Return a new TimeSeries, ending at `start_ts` and having at most `n` points.
+        Return a new TimeSeries, ending at `end_ts` (inclusive) and having at most `n` points.
 
         The provided timestamps will be included in the series.
 
@@ -1401,8 +1407,8 @@ class TimeSeries:
 
     def slice_intersect(self, other: 'TimeSeries') -> 'TimeSeries':
         """
-        Return a TimeSeries slice of this time series, where the time index has been intersected with the one
-        provided in argument.
+        Return a ``TimeSeries`` slice of this series, where the time index has been intersected with the one
+        of the `other` series.
         
         This method is in general *not* symmetric.
 
@@ -1421,7 +1427,7 @@ class TimeSeries:
 
     def strip(self) -> 'TimeSeries':
         """
-        Return a TimeSeries slice of this deterministic time series, where NaN-only entries at the beginning
+        Return a ``TimeSeries`` slice of this deterministic time series, where NaN-only entries at the beginning
         and the end of the series are removed. No entries after (and including) the first non-NaN entry and
         before (and including) the last non-NaN entry are removed.
 
@@ -1441,8 +1447,8 @@ class TimeSeries:
 
     def longest_contiguous_slice(self, max_gap_size: int = 0) -> 'TimeSeries':
         """
-        Return the largest TimeSeries slice of this deterministic time series that contains no gaps
-        (contigouse all-NaN rows) larger than `max_gap_size`.
+        Return the largest TimeSeries slice of this deterministic series that contains no gaps
+        (contiguous all-NaN values) larger than `max_gap_size`.
 
         This method is only applicable to deterministic series (i.e., having 1 sample).
 
@@ -1584,7 +1590,7 @@ class TimeSeries:
 
     def has_same_time_as(self, other: 'TimeSeries') -> bool:
         """
-        Checks whether this series and another one have the same time index.
+        Checks whether this series has the same time index as `other`.
 
         Parameters
         ----------
@@ -1670,7 +1676,7 @@ class TimeSeries:
 
     def with_values(self, values: np.ndarray) -> 'TimeSeries':
         """
-        Return a new TimeSeries, with the new specified values.
+        Return a new ``TimeSeries`` with new specified values.
 
         Parameters
         ----------
@@ -1733,8 +1739,8 @@ class TimeSeries:
 
     def univariate_component(self, index: Union[str, int]) -> 'TimeSeries':
         """
-        Retrieves one of the components of the current TimeSeries instance
-        and returns it as new univariate TimeSeries instance.
+        Retrieve one of the components of the series
+        and return it as new univariate ``TimeSeries`` instance.
 
         Parameters
         ----------
@@ -1817,7 +1823,7 @@ class TimeSeries:
 
     def resample(self, freq: str, method: str = 'pad') -> 'TimeSeries':
         """
-        Creates an reindexed time series with a given frequency.
+        Build a reindexed ``TimeSeries`` with a given frequency.
         Provided method is used to fill holes in reindexed TimeSeries, by default 'pad'.
 
         Parameters
@@ -1850,7 +1856,7 @@ class TimeSeries:
 
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
         """
-        Check whether a given timestamp or integer is withing the time interval of this time series.
+        Check whether a given timestamp or integer is within the time interval of this time series.
         If a timestamp is provided, it does not need to be an element of the time index of the series.
 
         Parameters
@@ -1870,6 +1876,7 @@ class TimeSeries:
                       Callable[[Union[pd.Timestamp, int], np.number], np.number]]) -> 'TimeSeries':  # noqa: E501
         """
         Applies the function `fn` to the underlying NumPy array containing this series' values.
+
         Return a new TimeSeries instance. If `fn` takes 1 argument it is simply applied on the backing array
         of shape (time, n_components, n_samples).
         If it takes 2 arguments, it is applied repeteadly on the (ts, value[ts]) tuples, where
@@ -1933,7 +1940,7 @@ class TimeSeries:
 
     def to_json(self) -> str:
         """
-        Converts the `TimeSeries` object to a JSON String
+        Return a JSON string representation of this deterministic series.
 
         At the moment this function works only on deterministic time series (i.e., made of 1 sample).
 
@@ -1945,11 +1952,12 @@ class TimeSeries:
         return self.pd_dataframe().to_json(orient='split', date_format='iso')
 
     def to_csv(self, *args, **kwargs):
-
         """
-        Writes deterministic time series to CSV file. For a list of parameters, refer to the documentation of
-        pandas.DataFrame.to_csv().[1]
+        Writes this deterministic series to a CSV file.
+        For a list of parameters, refer to the documentation of :func:`pandas.DataFrame.to_csv()`. [1]_
 
+        References
+        ----------
         ..[1] https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DataFrame.to_csv.html?highlight=to_csv
         """
         if not self.is_deterministic:
@@ -1985,8 +1993,9 @@ class TimeSeries:
              high_quantile: Optional[float] = 0.95,
              *args,
              **kwargs):
-        """
-        A wrapper method around `xarray.DataArray.plot()`.
+        """ Plot the series.
+
+        This is a wrapper method around :func:`xarray.DataArray.plot()`.
 
         Parameters
         ----------
@@ -2074,7 +2083,7 @@ class TimeSeries:
 
     def with_columns_renamed(self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]) -> 'TimeSeries':
         """
-        Changes ts column names and returns a new TimeSeries instance.
+        Return a new ``TimeSeries`` instance with new columns/components names.
 
         Parameters
         -------
@@ -2121,38 +2130,59 @@ class TimeSeries:
     """
     Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.
     """
-
     def mean(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.mean()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).mean(axis, skipna, level, numeric_only, **kwargs)
 
     def var(self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.var()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).var(axis, skipna, level, ddof, numeric_only, **kwargs)
 
     def std(self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.std()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).std(axis, skipna, level, ddof, numeric_only, **kwargs)
 
     def skew(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.skew()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).skew(axis, skipna, level, numeric_only, **kwargs)
 
     def kurtosis(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.kurtosis()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).kurtosis(axis, skipna, level, numeric_only, **kwargs)
 
     def min(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.min()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).min(axis, skipna, level, numeric_only, **kwargs)
 
     def max(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.max()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).max(axis, skipna, level, numeric_only, **kwargs)
 
     def sum(self, axis=None, skipna=None, level=None, numeric_only=None, min_count=0, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.sum()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).sum(axis, skipna, level, numeric_only, min_count, **kwargs)
 
     def median(self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.median()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).median(axis, skipna, level, numeric_only, **kwargs)
 
     def autocorr(self, lag=1) -> float:
+        """ Simple wrapper around :func:`pd.DataFrame.autocorr()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).autocorr(lag)
 
     def describe(self, percentiles=None, include=None, exclude=None) -> pd.DataFrame:
+        """ Simple wrapper around :func:`pd.DataFrame.describe()` for deterministic series.
+        """
         return self.pd_dataframe(copy=False).describe(percentiles, include, exclude)
 
     """
