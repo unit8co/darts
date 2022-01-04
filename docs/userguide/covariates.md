@@ -236,6 +236,6 @@ If you want to know more details about how covariates are used behind the scenes
 We have lots of great examples showcasing how to use covariates with Darts' forecasting models.
 Here are a few of those:
 
-- Past covariates with GFMs: https://unit8co.github.io/darts/examples/02-multi-time-series-and-covariates.html#Covariates-Series
-- Past and future covariates with TFTModel: https://unit8co.github.io/darts/examples/14-TFT-examples.html#Training
-- Past and future covariates with RegressionModels: https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993
+- [Past covariates with GFMs](https://unit8co.github.io/darts/examples/01-multi-time-series-and-covariates.html#Covariates-Series)
+- [Past and future covariates with TFTModel](https://unit8co.github.io/darts/examples/13-TFT-examples.html#Training)
+- [Past and future covariates with RegressionModels](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
