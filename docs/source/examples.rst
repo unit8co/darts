@@ -100,14 +100,14 @@ DeepTCN model example notebook:
    examples/09-DeepTCN-examples.ipynb
 
 Temporal Fusion Transformer (TFT) Model
-===================
+=======================================
 
 TFT model example notebook:
 
 .. toctree::
    :maxdepth: 1
 
-   examples/10-TFT-examples.ipynb
+   examples/13-TFT-examples.ipynb
 
 Kalman Filter Model
 ===================
@@ -117,7 +117,7 @@ Kalman filter model example notebook:
 .. toctree::
    :maxdepth: 1
 
-   examples/11-Kalman-filter-examples.ipynb
+   examples/10-Kalman-filter-examples.ipynb
 
 Gaussian Process Filter Model
 =============================
@@ -127,7 +127,7 @@ Gaussian process filter model example notebook:
 .. toctree::
    :maxdepth: 1
 
-   examples/12-GP-filter-examples.ipynb
+   examples/11-GP-filter-examples.ipynb
 
 Dynamic Time Warping (DTW)
 =============================
@@ -137,4 +137,4 @@ Dynamic time warping example notebook:
 .. toctree::
    :maxdepth: 1
 
-   examples/13-Dynamic-Time-Warping-example.ipynb
+   examples/12-Dynamic-Time-Warping-example.ipynb
