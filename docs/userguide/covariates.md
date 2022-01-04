@@ -122,21 +122,21 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
 Model | Past Covariates | Future Covariates
 --- | :---: | :---:
 **Local Forecasting Models (LFMs)** | |
-`ExponentialSmoothing` |  |  |  |
-`Theta` and `FourTheta` |   |  |  |
-`FFT` |  |  |  |
-`ARIMA` |  | ✅ |  |
-`VARIMA` |  | ✅ |  |
-`AutoARIMA` |  | ✅ |  |
-`Prophet` |  | ✅ |  |
-**Global Forecasting Models (GFMs)** | | |
-`RegressionModel`* | ✅ | ✅ |  |
-`RNNModel`** |  | ✅ |  |
-`BlockRNNModel`*** | ✅ |  |  |
-`NBEATSModel` | ✅ |   |   |
-`TCNModel` | ✅ |  |   |
-`TransformerModel` | ✅ |   |   |
-`TFTModel` | ✅ | ✅ |  |
+`ExponentialSmoothing` |  |
+`Theta` and `FourTheta` |   |
+`FFT` |  |
+`ARIMA` |  | ✅
+`VARIMA` |  | ✅
+`AutoARIMA` |  | ✅
+`Prophet` |  | ✅
+**Global Forecasting Models (GFMs)** | |
+`RegressionModel`* | ✅ | ✅
+`RNNModel`** |  | ✅
+`BlockRNNModel`*** | ✅ |
+`NBEATSModel` | ✅ |
+`TCNModel` | ✅ |
+`TransformerModel` | ✅ |
+`TFTModel` | ✅ | ✅
 
 #### Table 1: Darts' forecasting models and their covariate support
 

@@ -87,7 +87,7 @@ Class | past covariates | future past covariates | future covariates | historic 
 `MixedCovariatesModel` | ✅ | ✅ | ✅ | ✅
 `SplitCovariatesModel` | ✅ | ✅ | ✅ |
 
-**Table 1: Darts' `{X}CovariatesModels` covariate support**
+**Table 1: Darts' "{X}CovariatesModels" covariate support**
 
 Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate class names are abbreviated by the `X`-part):
 
