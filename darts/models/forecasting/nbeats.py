@@ -425,12 +425,12 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
                  **kwargs):
         """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
 
-        This is an implementation of the N-BEATS architecture, as outlined in this paper:
-        https://openreview.net/forum?id=r1ecqn4YwB
+        This is an implementation of the N-BEATS architecture, as outlined in [1]_.
 
         In addition to the univariate version presented in the paper, our implementation also
         supports multivariate series (and covariates) by flattening the model inputs to a 1-D series
-        and reshaping the outputs to a tensor of appropriate dimensions.
+        and reshaping the outputs to a tensor of appropriate dimensions. Furthermore, it also
+        supports producing probabilistic forecasts (by specifying a `likelihood` parameter).
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
 
@@ -468,7 +468,7 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             If no likelihood model is provided, forecasts will be deterministic.
         random_state
             Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
 
         batch_size
             Number of time series (input and output sequences) used in each training pass.
@@ -477,7 +477,7 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
-            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
@@ -488,16 +488,16 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['absolute'], 'future': ['relative']},
-                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
             ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
             for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
             will be used.
         lr_scheduler_cls
@@ -508,13 +508,13 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
         loss_fn
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: `torch.nn.MSELoss()`.
+            Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
             name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
             the same time by different processes to share the same model_name). E.g.,
-            2021-06-14_09:53:32_torch_model_run_44607.
+            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             (default: current working directory).
@@ -523,7 +523,7 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             `[work_dir]/.darts/runs/`.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
-            `TimeSeries` is passed to the `fit()` method).
+            ``TimeSeries`` is passed to the :func:`fit()` method).
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
@@ -532,9 +532,12 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             be discarded).
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :meth:`save_model()
-            <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
-            <TorchForeCastingModel.load_model()>`.
+            If set to `False`, the model can still be manually saved using :func:`save_model()`
+            and loaded using :func:`load_model()`.
+
+        References
+        ----------
+        .. [1] https://openreview.net/forum?id=r1ecqn4YwB
         """
 
         kwargs['input_chunk_length'] = input_chunk_length

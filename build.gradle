@@ -157,26 +157,13 @@ task checkExample(type: Exec) {
 // Documentation build
 void docSteps() {
     exec {
-        commandLine "make", "--directory", "./docs", "copy-examples"
+        commandLine "make", "--directory", "./docs", "build-all-docs"
     }
-    exec {
-        commandLine "make", "--directory", "./docs", "generate"
-    }
-    exec {
-        commandLine "make", "--directory", "./docs", "readme"
-    }
-    exec {
-        commandLine "make", "--directory", "./docs", "html"
-    }
-}
-
-task cleanDocs(type: Exec) {
-    commandLine "make", "--directory", "./docs", "clean"
 }
 
 task buildDocs() {
     dependsOn pip_core, pip_release, installLocally
-    dependsOn cleanDocs
+    // dependsOn cleanDocs
     doLast {
         docSteps()
     }

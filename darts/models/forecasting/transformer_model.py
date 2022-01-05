@@ -201,7 +201,8 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
                  random_state: Optional[Union[int, RandomState]] = None,
                  **kwargs):
 
-        """
+        """ Transformer model
+
         Transformer is a state-of-the-art deep learning model introduced in 2017. It is an encoder-decoder
         architecture whose core feature is the 'multi-head attention' mechanism, which is able to
         draw intra-dependencies within the input vector and within the output vector ('self-attention')
@@ -209,23 +210,9 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
         The multi-head attention mechanism is highly parallelizable, which makes the transformer architecture
         very suitable to be trained with GPUs.
 
-
-        The transformer architecture implemented here is based on the paper “Attention Is All You Need”:
-        Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and
-        Illia Polosukhin. 2017. Attention is all you need. In Advances in Neural Information Processing Systems,
-        pages 6000-6010.
-        (paper can be found at https://arxiv.org/abs/1706.03762)
+        The transformer architecture implemented here is based on [1]_.
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
-
-        Disclaimer:
-        This current implementation is fully functional and can already produce some good predictions. However,
-        it is still limited in how it uses the Transformer architecture because the `tgt` input of
-        `torch.nn.Transformer` is not utlized to its full extent. Currently, we simply pass the last value of the
-        `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
-        should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
-        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
-        added to it. Of course, the training of the model would have to be adapted accordingly.
 
         Parameters
         ----------
@@ -259,7 +246,7 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
             If no likelihood model is provided, forecasts will be deterministic.
         random_state
             Controls the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random-state>`_ for more details.
+            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
 
         batch_size
             Number of time series (input and output sequences) used in each training pass.
@@ -268,7 +255,7 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
-            will be used as index encoders. Additionally, a transformer such as Darts' Scaler() can be added to
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
@@ -279,16 +266,16 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
 
                 add_encoders={
                     'cyclic': {'future': ['month']},
-                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
                     'position': {'past': ['absolute'], 'future': ['relative']},
-                    'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
                     'transformer': Scaler()
                 }
             ..
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
             for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
             will be used.
         lr_scheduler_cls
@@ -299,13 +286,13 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
         loss_fn
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: `torch.nn.MSELoss()`.
+            Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
             name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
             the same time by different processes to share the same model_name). E.g.,
-            2021-06-14_09:53:32_torch_model_run_44607.
+            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             (default: current working directory).
@@ -314,7 +301,7 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
             `[work_dir]/.darts/runs/`.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
-            `TimeSeries` is passed to the `fit()` method).
+            ``TimeSeries`` is passed to the :func:`fit()` method).
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
@@ -323,9 +310,25 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
             be discarded).
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :meth:`save_model()
-            <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
-            <TorchForeCastingModel.load_model()>`.
+            If set to `False`, the model can still be manually saved using :func:`save_model()`
+            and loaded using :func:`load_model()`.
+
+        References
+        ----------
+        .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and
+        Illia Polosukhin, “Attention Is All You Need”, 2017. In Advances in Neural Information Processing Systems,
+        pages 6000-6010. https://arxiv.org/abs/1706.03762.
+
+        Notes
+        -----
+        Disclaimer:
+        This current implementation is fully functional and can already produce some good predictions. However,
+        it is still limited in how it uses the Transformer architecture because the `tgt` input of
+        `torch.nn.Transformer` is not utlized to its full extent. Currently, we simply pass the last value of the
+        `src` input to `tgt`. To get closer to the way the Transformer is usually used in language models, we
+        should allow the model to consume its own output as part of the `tgt` argument, such that when predicting
+        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
+        added to it. Of course, the training of the model would have to be adapted accordingly.
         """
 
         kwargs['input_chunk_length'] = input_chunk_length

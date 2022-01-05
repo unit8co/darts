@@ -1,4 +1,4 @@
-# Darts Performance Recommendations
+# Neural Networks Performance Recommendations
 
 This document recaps the main factors impacting the performance when
 training and using models. It mainly targets deep learning models in Darts.

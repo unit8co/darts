@@ -37,17 +37,17 @@ class Prophet(DualCovariatesForecastingModel):
             Optionally, a dict or list of dicts with custom seasonality/ies to add to the model.
             Each dict takes the following mandatory and optional data:
 
-            dict({
-                `'name': str` (name of the seasonality component),
+            .. highlight:: python
+            .. code-block:: python
 
-                `'seasonal_periods': int` (number of timesteps after which the seasonal cycle repeats),
-
-                `'fourier_order': int` (number of Fourier components to use),
-
-                `'prior_scale': Optional[float]` (optionally, a prior scale for this component),
-
-                `'mode': Optional[str]` (optionally, 'additive' or 'multiplicative')
+                dict({
+                'name': str  # (name of the seasonality component),
+                'seasonal_periods': int  # (nr of steps composing a season),
+                'fourier_order': int  # (number of Fourier components to use),
+                'prior_scale': Optional[float]  # (a prior scale for this component),
+                'mode': Optional[str]  # ('additive' or 'multiplicative')
                 })
+            ..
 
             An example for `seasonal_periods`: If you have hourly data (frequency='H') and your seasonal cycle repeats
             after 48 hours then set `seasonal_periods=48`.

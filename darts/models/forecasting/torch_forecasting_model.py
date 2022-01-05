@@ -114,7 +114,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., `{'lr': 1e-3}`
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
             for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
             will be used.
         lr_scheduler_cls
@@ -125,13 +125,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         loss_fn
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: `torch.nn.MSELoss()`.
+            Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string "YYYY-mm-dd_HH:MM:SS_torch_model_run_PID", where the initial part of the
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
             name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
             the same time by different processes to share the same model_name). E.g.,
-            2021-06-14_09:53:32_torch_model_run_44607.
+            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             (default: current working directory).
@@ -140,7 +140,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             `[work_dir]/.darts/runs/`.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
-            `TimeSeries` is passed to the `fit()` method).
+            ``TimeSeries`` is passed to the :func:`fit()` method).
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
@@ -149,9 +149,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             be discarded).
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :meth:`save_model()
-            <TorchForeCastingModel.save_model()>` and loaded using :meth:`load_model()
-            <TorchForeCastingModel.load_model()>`.
+            If set to `False`, the model can still be manually saved using :func:`save_model()`
+            and loaded using :func:`load_model()`.
         """
         super().__init__()
 
@@ -378,19 +377,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             epochs: int = 0,
             max_samples_per_ts: Optional[int] = None,
             num_loader_workers: int = 0) -> None:
-        """
-        The fit method for torch models. It wraps around `fit_from_dataset()`, constructing a default training
+        """ Fit/train the model on one or multiple series.
+
+
+        This method wraps around :func:`fit_from_dataset()`, constructing a default training
         dataset for this model. If you need more control on how the series are sliced for training, consider
-        calling `fit_from_dataset()` with a custom `darts.utils.data.TrainingDataset`.
+        calling :func:`fit_from_dataset()` with a custom :class:`darts.utils.data.TrainingDataset`.
 
         This function can be called several times to do some extra training. If `epochs` is specified, the model
         will be trained for some (extra) `epochs` epochs.
 
         Below, all possible parameters are documented, but not all models support all parameters. For instance,
-        all the `PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. Darts will
+        all the :class:`PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. Darts will
         complain if you try fitting a model with the wrong covariates argument.
 
-        When handling covariates, Darts tries to be "smart" and uses the time axes of the target and the covariates
+        When handling covariates, Darts will try to use the time axes of the target and the covariates
         to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
         are correct Darts will handle them correctly. It will also complain if their time span is not sufficient.
 
@@ -421,7 +422,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             series (taking only the most recent samples in each series). Leaving to None does not apply any
             upper bound.
         num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            Optionally, an integer specifying the `num_workers` to use in PyTorch ``DataLoader`` instances,
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
@@ -506,10 +507,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                          epochs: int = 0,
                          num_loader_workers: int = 0) -> None:
         """
-        This method allows for training with a specific `darts.utils.data.TrainingDataset` instance. These datasets
-        implement a PyTorch `Dataset`, and specify how the target and covariates are sliced for training. If you
-        are not sure which training dataset to use, consider calling `fit()` instead, which will create a default
-        training dataset appropriate for this model.
+        This method allows for training with a specific :class:`darts.utils.data.TrainingDataset` instance.
+        These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
+        for training. If you are not sure which training dataset to use, consider calling :func:`fit()` instead,
+        which will create a default training dataset appropriate for this model.
 
         This function can be called several times to do some extra training. If `epochs` is specified, the model
         will be trained for some (extra) `epochs` epochs.
@@ -517,18 +518,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         train_dataset
-            A training dataset with a type matching this model (e.g. `PastCovariatesTrainingDataset` for
-            `PastCovariatesTorchModel`s).
+            A training dataset with a type matching this model (e.g. :class:`PastCovariatesTrainingDataset` for
+            :class:`PastCovariatesTorchModel`).
         val_dataset
-            A training dataset with a type matching this model (e.g. `PastCovariatesTrainingDataset` for
-            `PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
+            A training dataset with a type matching this model (e.g. :class:`PastCovariatesTrainingDataset` for
+            :class:`PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
         verbose
             Optionally, whether to print progress.
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
         num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            Optionally, an integer specifying the `num_workers` to use in PyTorch ``DataLoader`` instances,
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
@@ -610,22 +611,23 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 num_samples: int = 1,
                 num_loader_workers: int = 0
                 ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """
-        Predicts values for a certain number of time steps after the end of the training series,
-        or after the end of the specified `series`.
+        """ Predict the `n` time step following the end of the training series, or of the specified `series`.
 
         Below, all possible parameters are documented, but not all models support all parameters. For instance,
-        all the `PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. Darts will
-        complain if you try calling `predict() on a model with the wrong covariates argument.
+        all the :class:`PastCovariatesTorchModel` support only `past_covariates` and not `future_covariates`. 
+        Darts will complain if you try calling :func:`predict()` on a model with the wrong covariates argument.
 
         Darts will also complain if the provided covariates do not have a sufficient time span.
         In general, not all models require the same covariates' time spans:
 
-        * Models relying on past covariates require the last `input_chunk_length` of the `past_covariates` points to be known at prediction time. For horizon values `n > output_chunk_length`, these models require at least the next `n - output_chunk_length` future values to be known as well.
+        * | Models relying on past covariates require the last `input_chunk_length` of the `past_covariates`
+          | points to be known at prediction time. For horizon values `n > output_chunk_length`, these models
+          | require at least the next `n - output_chunk_length` future values to be known as well.
+        * | Models relying on future covariates require the next `n` values to be known.
+          | In addition (for :class:`DualCovariatesTorchModel` and :class:`MixedCovariatesTorchModel`), they also
+          | require the "historic" values of these future covariates (over the past `input_chunk_length`).
 
-        * Models relying on future covariates require the next `n` values to be known. In addition (for `DualCovariatesTorchModel` and `MixedCovariatesTorchModel`), they also require the "historic" values of these future covariates (over the past `input_chunk_length`).
-
-        When handling covariates, Darts tries to be "smart" and uses the time axes of the target and the covariates
+        When handling covariates, Darts will try to use the time axes of the target and the covariates
         to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
         are correct Darts will handle them correctly. It will also complain if their time span is not sufficient.
 
@@ -634,31 +636,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n
             The number of time steps after the end of the training time series for which to produce predictions
         series
-            Optionally, one or several input `TimeSeries`, representing the history of the target series whose
+            Optionally, a series or sequence of series, representing the history of the target series whose
             future is to be predicted. If specified, the method returns the forecasts of these
             series. Otherwise, the method returns the forecast of the (single) training series.
         past_covariates
             Optionally, the past-observed covariates series needed as inputs for the model.
-            They must match the covariates used for training in terms of dimension and type.
+            They must match the covariates used for training in terms of dimension.
         future_covariates
             Optionally, the future-known covariates series needed as inputs for the model.
-            They must match the covariates used for training in terms of dimension and type.
+            They must match the covariates used for training in terms of dimension.
         batch_size
-            Size of batches during prediction. Defaults to the models `batch_size` value.
+            Size of batches during prediction. Defaults to the models' training `batch_size` value.
         verbose
             Optionally, whether to print progress.
         n_jobs
-            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
+            The number of jobs to run in parallel. `-1` means using all processors. Defaults to `1`.
         roll_size
-            For self-consuming predictions, i.e. `n > self.output_chunk_length`, determines how many
+            For self-consuming predictions, i.e. `n > output_chunk_length`, determines how many
             outputs of the model are fed back into it at every iteration of feeding the predicted target
             (and optionally future covariates) back into the model. If this parameter is not provided,
-            it will be set `self.output_chunk_length` by default.
+            it will be set `output_chunk_length` by default.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
         num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            Optionally, an integer specifying the `num_workers` to use in PyTorch ``DataLoader`` instances,
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
@@ -715,17 +717,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              ) -> Sequence[TimeSeries]:
 
         """
-        This method allows for predicting with a specific `darts.utils.data.InferenceDataset` instance. These datasets
-        implement a PyTorch `Dataset`, and specify how the target and covariates are sliced for inference.
-        In most cases, you'll rather want to call `predict()` instead, which will create an appropriate `InferenceDataset`
-        for you.
+        This method allows for predicting with a specific :class:`darts.utils.data.InferenceDataset` instance.
+        These datasets implement a PyTorch `Dataset`, and specify how the target and covariates are sliced
+        for inference. In most cases, you'll rather want to call :func:`predict()` instead, which will create an
+        appropriate :class:`InferenceDataset` for you.
 
         Parameters
         ----------
         n
             The number of time steps after the end of the training time series for which to produce predictions
         input_series_dataset
-            Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
+            Optionally, a series or sequence of series, representing the history of the target series' whose
             future is to be predicted. If specified, the method returns the forecasts of these
             series. Otherwise, the method returns the forecast of the (single) training series.
         batch_size
@@ -733,17 +735,17 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose
             Shows the progress bar for batch predicition. Off by default.
         n_jobs
-            The number of jobs to run in parallel. Defaults to `1`. `-1` means using all processors.
+            The number of jobs to run in parallel. `-1` means using all processors. Defaults to `1`.
         roll_size
-            For self-consuming predictions, i.e. `n > self.output_chunk_length`, determines how many
+            For self-consuming predictions, i.e. `n > output_chunk_length`, determines how many
             outputs of the model are fed back into it at every iteration of feeding the predicted target
             (and optionally future covariates) back into the model. If this parameter is not provided,
-            it will be set `self.output_chunk_length` by default.
+            it will be set `output_chunk_length` by default.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
         num_loader_workers
-            Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
+            Optionally, an integer specifying the `num_workers` to use in PyTorch ``DataLoader`` instances,
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
@@ -1051,15 +1053,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                              work_dir: str = None,
                              file_name: str = None,
                              best: bool = True) -> 'TorchForecastingModel':
-        """
-        Load the model from automatically saved checkpoints under '{work_dir}/checkpoints/{model_name}/'.
+        """ Load the model from the checkpoints saved automatically.
+        
+        The checkpoints are saved under ``{work_dir}/checkpoints/{model_name}/``.
         This method is used for models that were created with `save_checkpoints=True`.
-        If you manually saved your model, consider using :meth:`load_model() <TorchForeCastingModel.load_model()>` .
+        If you manually saved your model, consider using :func:`load_model()`.
 
-        If `file_name` is given, returns the model saved under '{work_dir}/checkpoints/{model_name}/{file_name}'
+        If `file_name` is given, returns the model saved under ``{work_dir}/checkpoints/{model_name}/{file_name}``
         
         If `file_name` is not given, will try to restore the best checkpoint (if `best` is `True`) or the most
-        recent checkpoint (if `best` is `False`cfrom '{work_dir}/checkpoints/{model_name}'.
+        recent checkpoint (if `best` is `False`) from ``{work_dir}/checkpoints/{model_name}``.
 
         Parameters
         ----------
@@ -1070,13 +1073,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_name
             The name of the checkpoint file. If not specified, use the most recent one.
         best
-            If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
-            is ignored when `file_name` is given.
+            If set, will retrieve the best model (according to validation loss) instead of the most recent one.
+            Ignored when `file_name` is given.
 
         Returns
         -------
         TorchForecastingModel
-            The corresponding trained `TorchForecastingModel`.
+            The (trained) model instance.
         """
 
         if work_dir is None:

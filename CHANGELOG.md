@@ -19,9 +19,9 @@ Darts is still in an early development phase and we cannot always guarantee back
   from darts.dataprocessing.transformers import Scaler
   add_encoders={
       'cyclic': {'future': ['month']},
-      'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+      'datetime_attribute': {'past': ['hour', 'dayofweek']},
       'position': {'past': ['absolute'], 'future': ['relative']},
-      'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+      'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
       'transformer': Scaler()
   }
   ```
@@ -30,7 +30,7 @@ Darts is still in an early development phase and we cannot always guarantee back
   even some custom mapping of the index (such as a function of the year). A `Scaler` will
   be applied to fit/transform all of these covariates both during training and inference.
 - The scalers can now also be applied on stochastic `TimeSeries`.
-- There is now a new argument `max_samples_per_ts` to the `fit()` method of Torch-based 
+- There is now a new argument `max_samples_per_ts` to the :func:`fit()` method of Torch-based 
   models, which can be used to limit the number of samples contained in the underlying
   training dataset, by taking (at most) the most recent `max_samples_per_ts` training samples
   per time series.
@@ -399,7 +399,7 @@ several time series.
 - A new `TimeSeriesInferenceDataset` base class.
 - An implementation `SimpleInferenceDataset` of `TimeSeriesInferenceDataset`.
 - All PyTorch models have a new `fit_from_dataset()` method which allows to directly fit the model from a specified
-`TrainingDataset` instance (instead of using a default instance when going via the `fit()` method).
+`TrainingDataset` instance (instead of using a default instance when going via the :func:`fit()` method).
 - A new explanatory notebooks for global models:
 https://github.com/unit8co/darts/blob/master/examples/02-multi-time-series-and-covariates.ipynb
 
