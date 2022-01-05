@@ -185,4 +185,4 @@ if PROPHET_AVAILABLE:
                 for val_i, pred_i in zip(
                     val.univariate_values(), pred.univariate_values()
                 ):
-                    self.assertAlmostEqual(val_i, pred_i, delta=0.05)
+                    self.assertAlmostEqual(val_i, pred_i, delta=0.1)
