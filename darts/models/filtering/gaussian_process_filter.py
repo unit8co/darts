@@ -59,8 +59,6 @@ class GaussianProcessFilter(FilteringModel):
             A stochastic ``TimeSeries`` sampled from the Gaussian Process, or its mean
             if `num_samples` is set to 1.
         """
-        raise_if_not(series.is_deterministic, 'The input series for the Gaussian Process filter must be '
-                                              'deterministic (observations).')
         super().filter(series)
 
         values = series.values(copy=False)

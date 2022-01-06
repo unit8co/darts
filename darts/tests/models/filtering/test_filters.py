@@ -1,13 +1,14 @@
 import numpy as np
 import pandas as pd
+from nfoursid import kalman, state_space
 from sklearn.gaussian_process.kernels import RBF, ExpSineSquared
 
-from darts.models import GaussianProcessFilter
-from darts.models.filtering.moving_average import MovingAverage
-from darts.models.filtering.kalman_filter import KalmanFilter
 from darts import TimeSeries
-from darts.utils import timeseries_generation as tg
+from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
+from darts.models.filtering.kalman_filter import KalmanFilter
+from darts.models.filtering.moving_average import MovingAverage
 from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 
 
 class FilterBaseTestClass(DartsBaseTestClass):
@@ -34,25 +35,87 @@ class KalmanFilterTestCase(FilterBaseTestClass):
         )
 
         kf = KalmanFilter(dim_x=1)
-        filtered_ts = kf.filter(
-            testing_signal_with_noise_ts, num_samples=1
-        ).univariate_values()
-
+        kf.fit(testing_signal_with_noise_ts)
+        filtered_ts = kf.filter(testing_signal_with_noise_ts, num_samples=1)
+        filtered_values = filtered_ts.univariate_values()
+        
         noise_distance = testing_signal_with_noise - testing_signal
-        prediction_distance = filtered_ts - testing_signal
-
+        prediction_distance = filtered_values - testing_signal
+        
         self.assertGreater(noise_distance.std(), prediction_distance.std())
+        self.assertEqual(filtered_ts.width, 1)
+        self.assertEqual(filtered_ts.n_samples, 1)
+
+    def test_kalman_covariates(self):
+        kf = KalmanFilter(dim_x=2)
+
+        series = tg.sine_timeseries(length=30, value_frequency=0.1)
+        covariates = -series.copy()
+
+        kf.fit(series, covariates=covariates)
+        prediction = kf.filter(series, covariates=covariates)
+
+        self.assertEqual(prediction.width, 1)
+        self.assertEqual(prediction.n_samples, 1)
+
+    def test_kalman_covariates_multivariate(self):
+        kf = KalmanFilter(dim_x=3)
+
+        sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
+        noise_ts = tg.gaussian_timeseries(length=30) * 0.1
+        series = sine_ts.stack(noise_ts)
+        
+        covariates = -series.copy()
+
+        kf.fit(series, covariates=covariates)
+        prediction = kf.filter(series, covariates=covariates)
+
+        self.assertEqual(kf.dim_u, 2)
+        self.assertEqual(prediction.width, 2)
+        self.assertEqual(prediction.n_samples, 1)
 
     def test_kalman_multivariate(self):
         kf = KalmanFilter(dim_x=3)
 
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
         noise_ts = tg.gaussian_timeseries(length=30) * 0.1
-        ts = sine_ts.stack(noise_ts)
+        series = sine_ts.stack(noise_ts)
 
-        prediction = kf.filter(ts)
+        kf.fit(series)
+        prediction = kf.filter(series)
 
-        self.assertEqual(prediction.width, 3)
+        self.assertEqual(prediction.width, 2)
+        self.assertEqual(prediction.n_samples, 1)
+
+    def test_kalman_samples(self):
+        kf = KalmanFilter(dim_x=1)
+
+        series = tg.sine_timeseries(length=30, value_frequency=0.1)
+
+        kf.fit(series)
+        prediction = kf.filter(series, num_samples=10)
+
+        self.assertEqual(prediction.width, 1)
+        self.assertEqual(prediction.n_samples, 10)
+
+    def test_kalman_given_kf(self):
+        nfoursid_ss = state_space.StateSpace(
+            a=np.eye(2),
+            b=np.ones((2, 1)),
+            c=np.ones((1, 2)),
+            d=np.ones((1, 1))
+        )
+        nfoursid_kf = kalman.Kalman(nfoursid_ss, np.ones((3, 3)) * 0.1)
+        kf = KalmanFilter(dim_x=1, kf=nfoursid_kf)
+
+        series = tg.sine_timeseries(length=30, value_frequency=0.1)
+
+        prediction = kf.filter(series, covariates=-series.copy())
+
+        self.assertEqual(kf.dim_u, 1)
+        self.assertEqual(kf.dim_x, 2)
+        self.assertEqual(prediction.width, 1)
+        self.assertEqual(prediction.n_samples, 1)
 
 
 class MovingAverageTestCase(FilterBaseTestClass):
@@ -132,6 +195,11 @@ class GaussianProcessFilterTestCase(FilterBaseTestClass):
 
 if __name__ == "__main__":
     KalmanFilterTestCase().test_kalman()
+    KalmanFilterTestCase().test_kalman_multivariate()
+    KalmanFilterTestCase().test_kalman_covariates()
+    KalmanFilterTestCase().test_kalman_covariates_multivariate()
+    KalmanFilterTestCase().test_kalman_samples()
+    KalmanFilterTestCase().test_kalman_given_kf()
     MovingAverageTestCase().test_moving_average_univariate()
     MovingAverageTestCase().test_moving_average_multivariate()
     GaussianProcessFilterTestCase().test_gaussian_process()
