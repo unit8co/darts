@@ -1,6 +1,6 @@
 """
-Encoder Classes Main
---------------------
+Time Axes Encoders
+------------------
 
 Encoders can generate past and/or future covariate series by encoding the index of a TimeSeries `series`.
 Each encoder class has an `encode_train()` and `encode_inference()` to generate the encodings for training and
@@ -24,10 +24,15 @@ There are two main types of encoder classes: `SingleEncoder` and `SequentialEnco
         .. highlight:: python
         .. code-block:: python
 
-            encoder = PastDatetimeAttributeEncoder(input_chunk_length=24, output_chunk_length=12, attribute='month')
+            encoder = PastDatetimeAttributeEncoder(input_chunk_length=24,
+                                                   output_chunk_length=12,
+                                                   attribute='month')
 
-            past_covariates_train = encoder.encode_train(target=target, covariate=optional_past_covariates)
-            past_covariates_inf = encoder.encode_inference(n=12, target=target, covariate=optional_past_covariates)
+            past_covariates_train = encoder.encode_train(target=target,
+                                                         covariate=optional_past_covariates)
+            past_covariates_inf = encoder.encode_inference(n=12,
+                                                           target=target,
+                                                           covariate=optional_past_covariates)
 
 *   SequentialEncoder
         Stores and controls multiple SingleEncoders for both past and/or future covariates all under one hood.
@@ -81,8 +86,8 @@ The SingleEncoders from {X}{SingleEncoder} are:
 
         attribute
             a callable/function to encode the index.
-            For `series` with a pd.DatetimeIndex: `lambda index: (index.year - 1950) / 50`
-            For `series` with an integer index:`lambda index: index / 50`
+            For `series` with a pd.DatetimeIndex: ``lambda index: (index.year - 1950) / 50``.
+            For `series` with an integer index: ``lambda index: index / 50``
 
 SequentialEncoder
 -----------------
@@ -122,9 +127,9 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 
     add_encoders = {
         'cyclic': {'future': ['month']},
-        'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+        'datetime_attribute': {'future': ['hour', 'dayofweek']},
         'position': {'past': ['absolute'], 'future': ['relative']},
-        'custom': {'past': [lambda index: (index.year - 1950) / 50]},
+        'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
         'transformer': Scaler()
     }
 
@@ -480,10 +485,9 @@ class CallableIndexEncoder(SingleEncoder):
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
-            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:
-                `attribute = lambda index: (index.year - 1950) / 50]}`
-            And for pd.Int64Index or pd.RangeIndex:
-                `attribute = lambda index: (index - 1950) / 50]}`
+            An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index - 1950) / 50``
         """
         raise_if_not(callable(attribute),
                      f'Encountered invalid encoder argument `{attribute}` for encoder `callable`. '
@@ -525,10 +529,9 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
-            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:
-                `attribute = lambda index: (index.year - 1950) / 50}`
-            And for pd.Int64Index or pd.RangeIndex:
-                `attribute = lambda index: (index - 1950) / 50}`
+            An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index - 1950) / 50``
         """
         super(PastCallableIndexEncoder, self).__init__(
             index_generator=PastCovariateIndexGenerator(input_chunk_length, output_chunk_length),
@@ -552,10 +555,9 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         attribute
             A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
-            An example for a correct `attribute` for `ìndex` of type pd.DatetimeIndex:
-                `attribute = lambda index: (index.year - 1950) / 50]}`
-            And for pd.Int64Index or pd.RangeIndex:
-                `attribute = lambda index: (index - 1950) / 50]}`
+            An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index - 1950) / 50``
         """
 
         super(FutureCallableIndexEncoder, self).__init__(
@@ -607,14 +609,18 @@ class SequentialEncoder(Encoder):
             The training, validation and inference datasets are then transformed equally.
 
         An example of a valid `add_encoders` dict for hourly data:
-            from darts.dataprocessing.transformers import Scaler
-            add_encoders={
-                'cyclic': {'future': ['month']},
-                'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
-                'position': {'past': ['absolute'], 'future': ['relative']},
-                'custom': {'past': [lambda index: (index.year - 1950) / 50]},
-                'transformer': Scaler()
-            }
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.dataprocessing.transformers import Scaler
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'past': ['hour'], 'future': ['year', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
 
         Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
         objects:

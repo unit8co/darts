@@ -1,7 +1,8 @@
 """
-Mappers
--------
+Mapper and InvertibleMapper
+---------------------------
 """
+
 import numpy as np
 import pandas as pd
 
@@ -10,7 +11,6 @@ from typing import Callable, Union, Sequence, List
 from darts.timeseries import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer, InvertibleDataTransformer
 from darts.logging import get_logger
-
 
 logger = get_logger(__name__)
 
@@ -22,23 +22,46 @@ class Mapper(BaseDataTransformer):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to apply a function to a (`Sequence` of) `TimeSeries` (similar to calling `series.map()`)
+        Data transformer to apply a custom function to a (sequence of) ``TimeSeries``
+        (similar to calling :func:`TimeSeries.map()` on each series).
+
+        The mapper takes care of parallelizing the operations on multiple series over
+        multiple processors.
 
         Parameters
         ----------
         fn
-            Either a function which takes a value and returns a value ie. f(x) = y
-            Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
+            Either a function which takes a value and returns a value ie. `f(x) = y`
+            Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`.
         name
-            A specific name for the transformer
+            A specific name for the transformer.
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
-            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.dataprocessing.transformers import InvertibleMapper
+        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
+        >>> transformer = InvertibleMapper(np.log10, lambda x: 10**x)
+        >>> series_transformed = transformer.transform(series)
+        >>> print(series_transformed)
+        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
+        array([[[0.]],
+            [[1.]],
+            [[2.]],
+            [[3.]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3
+        * component  (component) <U1 '0'
+        Dimensions without coordinates: sample
         """
 
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
@@ -62,20 +85,20 @@ class InvertibleMapper(InvertibleDataTransformer):
                  n_jobs: int = 1,
                  verbose: bool = False):
         """
-        Data transformer to apply a function and its inverse to a (`Sequence` of) `TimeSeries` (similar to calling
-        `series.map()`)
+        Data transformer to apply a custom function and its inverse to a (sequence of) ``TimeSeries``
+        (similar to calling :func:`TimeSeries.map()` on each series).
 
         Parameters
         ----------
         fn
-            Either a function which takes a value and returns a value ie. f(x) = y
-            Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
+            Either a function which takes a value and returns a value ie. `f(x) = y`
+            Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`.
         inverse_fn
-            Similarly to `fn`, either a function which takes a value and returns a value ie. f(x) = y
-            Or a function which takes a value and its timestamp and returns a value ie. f(timestamp, x) = y
-            `inverse_fn` should be such that `inverse_fn(fn(x)) == x`
+            Similarly to `fn`, either a function which takes a value and returns a value ie. `f(x) = y`
+            Or a function which takes a value and its timestamp and returns a value ie. `f(timestamp, x) = y`.
+            `inverse_fn` should be such that ``inverse_fn(fn(x)) == x``.
         name
-            A specific name for the transformer
+            A specific name for the transformer.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
             passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
@@ -84,6 +107,36 @@ class InvertibleMapper(InvertibleDataTransformer):
             required amount of time.
         verbose
             Optionally, whether to print operations progress
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.dataprocessing.transformers import Mapper
+        >>> series = TimeSeries.from_values(np.array([1e0, 1e1, 1e2, 1e3]))
+        >>> transformer = Mapper(np.log10)
+        >>> series_transformed = transformer.transform(series)
+        >>> print(series_transformed)
+        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
+        array([[[0.]],
+            [[1.]],
+            [[2.]],
+            [[3.]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3
+        * component  (component) <U1 '0'
+        Dimensions without coordinates: sample
+        >>> series_restaured = transformer.inverse_transform(series_transformed)
+        >>> print(series_restaured)
+        <TimeSeries (DataArray) (time: 4, component: 1, sample: 1)>
+        array([[[   1.]],
+            [[  10.]],
+            [[ 100.]],
+            [[1000.]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3
+        * component  (component) <U1 '0'
+        Dimensions without coordinates: sample
         """
 
         super().__init__(name=name,

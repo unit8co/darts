@@ -192,21 +192,13 @@ class FFT(ForecastingModel):
                  required_matches: Optional[set] = None,
                  trend: Optional[str] = None,
                  trend_poly_degree: int = 3):
-        """
+        """ Fast Fourier Transform Model
+
         This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering
         (controlled by the `nr_freqs_to_keep` argument) and  inverse FFT, combined with the option to detrend
         the data (controlled by the `trend` argument) and to crop the training sequence to full seasonal periods
-        Note that if the training series contains any NaNs (missing values), these will be filled using `darts.utils.missing_values.fill_missing_values()`.
-
-        Examples:
-
-        FFT(nr_freqs_to_keep=10)
-        - model that automatically detects the seasonal periods, uses the 10 most significant frequencies for
-        forecasting and expects no global trend to be present in the data
-
-        FFT(required_matches={`month`}, trend=`exp`)
-        - model that will assume the provided TimeSeries instances will have a monthly seasonality and an exponential
-        global trend, and it will not perform any frequency filtering
+        Note that if the training series contains any NaNs (missing values), these will be filled using
+        :func:`darts.utils.missing_values.fill_missing_values()`.
 
         Parameters
         ----------
@@ -220,9 +212,21 @@ class FFT(ForecastingModel):
             pd.Timestamp attributes that are relevant for the seasonality automatically.
         trend
             If set, indicates what kind of detrending will be applied before performing DFT.
-            Possible values: `poly` or `exp`, for polynomial trend, or exponential trend, respectively.
+            Possible values: 'poly' or 'exp', for polynomial trend, or exponential trend, respectively.
         trend_poly_degree
-            The degree of the polynomial that will be used for detrending, if `trend=`poly``.
+            The degree of the polynomial that will be used for detrending, if `trend='poly'`.
+
+        Examples
+        --------
+        Automatically detect the seasonal periods, uses the 10 most significant frequencies for
+        forecasting and expect no global trend to be present in the data:
+        
+        >>> FFT(nr_freqs_to_keep=10)
+
+        Assume the provided TimeSeries instances will have a monthly seasonality and an exponential
+        global trend, and do not perform any frequency filtering:
+        
+        >>> FFT(required_matches={'month'}, trend='exp')
         """
         super().__init__()
         self.nr_freqs_to_keep = nr_freqs_to_keep

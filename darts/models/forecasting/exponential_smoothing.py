@@ -27,15 +27,13 @@ class ExponentialSmoothing(ForecastingModel):
 
         This is a wrapper around
         `statsmodels  Holt-Winters' Exponential Smoothing
-        <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_.
+        <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html>`_;
+        we refer to this link for the original and more complete documentation of the parameters.
 
-        We refer to this link for the original and more complete documentation of the parameters.
+        `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with ``from darts import ModelMode``.
 
-        `model_mode` must be a ModelMode Enum member.
-        You can access the Enum with `from darts import ModelMode`.
-
-        `ExponentialSmoothing(trend=None, seasonal=None)` corresponds to a single exponential smoothing.
-        `ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)` corresponds to a Holt's exponential smoothing.
+        ``ExponentialSmoothing(trend=None, seasonal=None)`` corresponds to a single exponential smoothing.
+        ``ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)`` corresponds to a Holt's exponential smoothing.
 
         Please note that automatic `seasonal_period` selection (setting the `seasonal_periods` parameter equal to
         `None`) can sometimes lead to errors if the input time series is too short. In these cases we suggest to
@@ -44,19 +42,19 @@ class ExponentialSmoothing(ForecastingModel):
         Parameters
         ----------
         trend
-            Type of trend component. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
-            Defaults to `ModelMode.ADDITIVE`.
+            Type of trend component. Either ``ModelMode.ADDITIVE`` or ``ModelMode.MULTIPLICATIVE``.
+            Defaults to ``ModelMode.ADDITIVE``.
         damped
             Should the trend component be damped. Defaults to False.
         seasonal
-            Type of seasonal component. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
-            Defaults to `ModelMode.ADDITIVE`.
+            Type of seasonal component. Either ``ModelMode.ADDITIVE`` or ``ModelMode.MULTIPLICATIVE``.
+            Defaults to ``ModelMode.ADDITIVE``.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
-            data with a weekly cycle. If not set, inferred from frequency of `TimeSeries.`
+            data with a weekly cycle. If not set, inferred from frequency of the series.
         fit_kwargs
             Some optional keyword arguments that will be used to call
-            `statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
+            :func:`statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()`.
             See `the documentation
             <https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html>`_.
         """

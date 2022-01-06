@@ -1,6 +1,6 @@
 """
-Utils for time series statistics
---------------------------------
+Time Series Statistics
+----------------------
 """
 
 import math
@@ -138,12 +138,13 @@ def extract_trend_and_seasonality(ts: TimeSeries,
         The seasonality period to use.
     model
         The type of decomposition to use.
-        Must be `from darts import ModelMode, SeasonalityMode` Enum member.
-        Either MULTIPLICATIVE or ADDITIVE.
-        Defaults ModelMode.MULTIPLICATIVE.
+        Must be ``from darts import ModelMode, SeasonalityMode`` Enum member.
+        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.
+        Defaults ``ModelMode.MULTIPLICATIVE``.
 
     Returns
     -------
+    Tuple[TimeSeries, TimeSeries]
         A tuple of (trend, seasonal) time series.
     """
 
@@ -261,19 +262,21 @@ def stationarity_tests(ts: TimeSeries,
                        ) -> bool:
     
     """
-    Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented Dickey-Fuller statistical tests.
+    Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
+    Dickey-Fuller statistical tests.
 
     WARNING
-    Because Augmented Dickey-Fuller is testing null hypothesis that ts IS NOT stationary and Kwiatkowski-Phillips-Schmidt-Shin that
+    Because Augmented Dickey-Fuller is testing null hypothesis that ts IS NOT stationary and
+    Kwiatkowski-Phillips-Schmidt-Shin that
     ts IS stationary, we can't really decide on the same p_value threshold for both tests in general.
     It seems reasonable to keep them both at 0.05.
-    If other threshold has to be tested, they have to go in opposite direction (for example, p_value_threshold_adfuller = 0.01 and
-    p_value_threshold_kpss = 0.1).
+    If other threshold has to be tested, they have to go in opposite direction (for example,
+    p_value_threshold_adfuller = 0.01 and p_value_threshold_kpss = 0.1).
 
     Parameters
     ----------
     ts
-        The TimeSeries we test.
+        The TimeSeries to test.
     p_value_threshold_adfuller
         p_value threshold to reject stationarity for Augmented Dickey-Fuller test.
     p_value_threshold_kpss
@@ -281,22 +284,21 @@ def stationarity_tests(ts: TimeSeries,
 
     Returns
     -------
-    Boolean
+    bool
         If ts is stationary or not.
     """
     adf_res = stationarity_test_adf(ts)
     kpss_res = stationarity_test_kpss(ts)
 
-    return (adf_res[1]<p_value_threshold_adfuller) and (kpss_res[1]>p_value_threshold_kpss)
+    return (adf_res[1] < p_value_threshold_adfuller) and (kpss_res[1] > p_value_threshold_kpss)
 
 
 def stationarity_test_kpss(ts: TimeSeries,
                            regression: str = 'c',
-                           nlags: Union[str, int] = 'auto',
-                            ) -> set:
+                           nlags: Union[str, int] = 'auto') -> set:
     """
-    Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series, using `statsmodels.tsa.stattools.kpss`.
-    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html
+    Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
+    using :func:`statsmodels.tsa.stattools.kpss`. See [1]_.
 
 
     Parameters
@@ -313,12 +315,18 @@ def stationarity_test_kpss(ts: TimeSeries,
 
     Returns
     -------
-    A set of values:
-        kpss_stat: The test statistic.
-        pvalue: The p-value of the test. The p-value is interpolated from Table 1 in Kwiatkowski et al. (1992), 
-        and a boundary point is returned if the test statistic is outside the table of critical values, that is, if the p-value is outside the interval (0.01, 0.1).
-        lags: The truncation lag parameter.
-        crit: The critical values at 10%, 5%, 2.5% and 1%. Based on Kwiatkowski et al. (1992).
+    set
+        | kpss_stat: The test statistic.
+        | pvalue: The p-value of the test. The p-value is interpolated from Table 1 in [2]_, 
+        | and a boundary point is returned if the test statistic is outside the table of critical values,
+        | that is, if the p-value is outside the interval (0.01, 0.1).
+        | lags: The truncation lag parameter.
+        | crit: The critical values at 10%, 5%, 2.5% and 1%. Based on [2]_.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html
+    .. [2] Kwiatkowski et al. (1992)
     """
     ts._assert_univariate()
     ts._assert_deterministic()
@@ -333,12 +341,10 @@ def stationarity_test_kpss(ts: TimeSeries,
 def stationarity_test_adf(ts: TimeSeries,
                           maxlag: Union[None, int] = None,
                           regression: str = 'c',
-                          autolag: Union[None, str] = 'AIC'
-                            ) -> set:
-    
+                          autolag: Union[None, str] = 'AIC') -> set:
     """
-    Provides Augmented Dickey-Fuller unit root test for a time series, using `statsmodels.tsa.stattools.adfuller`.
-    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html
+    Provides Augmented Dickey-Fuller unit root test for a time series,
+    using :func:`statsmodels.tsa.stattools.adfuller`. See [1]_.
 
 
     Parameters
@@ -355,19 +361,25 @@ def stationarity_test_adf(ts: TimeSeries,
         “n” : no constant, no trend.
     autolag
         Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
-        If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding information criterion.
-        “t-stat” based choice of maxlag. Starts with maxlag and drops a lag until the t-statistic on the last lag length is significant using a 5%-sized test.
+        If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding
+        information criterion. “t-stat” based choice of maxlag. Starts with maxlag and drops a lag
+        until the t-statistic on the last lag length is significant using a 5%-sized test.
         If None, then the number of included lags is set to maxlag.
 
     Returns
     -------
-    A set of values:
-        adf: The test statistic.
-        pvalue: MacKinnon’s approximate p-value based on MacKinnon (1994, 2010).
-        usedlag: The number of lags used.
-        nobs: The number of observations used for the ADF regression and calculation of the critical values.
-        critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on MacKinnon (2010).
-        icbest: The maximized information criterion if autolag is not None.
+    set
+        | adf: The test statistic.
+        | pvalue: MacKinnon’s approximate p-value based on [2]_.
+        | usedlag: The number of lags used.
+        | nobs: The number of observations used for the ADF regression and calculation of the critical values.
+        | critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on [2]_.
+        | icbest: The maximized information criterion if autolag is not None.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html
+    .. [2] MacKinnon (1994, 2010)
     """
 
     ts._assert_univariate()
@@ -385,12 +397,11 @@ def granger_causality_tests(ts_cause: TimeSeries,
                             ts_effect: TimeSeries,
                             maxlag: int,
                             addconst: bool = True,
-                            verbose: bool = True
-                          ) -> None:
-    
+                            verbose: bool = True) -> None:
     """
-    Provides four tests for granger non causality of 2 time series using `statsmodels.tsa.stattools.grangercausalitytests`.
-    See https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html
+    Provides four tests for granger non causality of 2 time series using
+    :func:`statsmodels.tsa.stattools.grangercausalitytests`.
+    See [1]_.
 
 
     Parameters
@@ -408,6 +419,7 @@ def granger_causality_tests(ts_cause: TimeSeries,
         Include a constant in the model.
     verbose
         Print results.
+
     Returns
     -------
     Dict
@@ -415,6 +427,10 @@ def granger_causality_tests(ts_cause: TimeSeries,
         with the first element a dictionary with test statistic, pvalues, degrees of freedom, the second element are 
         the OLS estimation results for the restricted model, the unrestricted model and the restriction (contrast) 
         matrix for the parameter f_test.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html
     """
 
     ts_cause._assert_univariate()
@@ -525,8 +541,8 @@ def plot_pacf(ts: TimeSeries,
         The maximal lag order to consider.
     method : str, default: "ywadjusted"
         The method to be used for the PACF calculation.
-        - "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
-          denominator for acovf. Default.
+        - | "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
+          | denominator for acovf. Default.
         - "ywm" or "ywmle" : Yule-Walker without adjustment.
         - "ols" : regression of time series on lags of it and on constant.
         - "ols-inefficient" : regression of time series on lags using a single

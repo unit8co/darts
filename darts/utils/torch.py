@@ -2,6 +2,7 @@
 Utils for Pytorch and its usage
 -------------------------------
 """
+
 from typing import Callable, TypeVar, Any
 from inspect import signature
 from functools import wraps
