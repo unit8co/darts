@@ -88,7 +88,6 @@ class Theta(ForecastingModel):
         if self.season_period is None:
             max_lag = len(ts) // 2
             self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
-            logger.info('Theta model inferred seasonality of training series: {}'.format(self.season_period))
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
@@ -245,7 +244,6 @@ class FourTheta(ForecastingModel):
         if self.season_period is None:
             max_lag = len(series) // 2
             self.is_seasonal, self.season_period = check_seasonality(series, self.season_period, max_lag=max_lag)
-            logger.info('FourTheta model inferred seasonality of training series: {}'.format(self.season_period))
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1

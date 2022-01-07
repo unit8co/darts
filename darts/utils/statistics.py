@@ -69,7 +69,6 @@ def check_seasonality(ts: TimeSeries,
     candidates = argrelmax(r)[0]
 
     if len(candidates) == 0:
-        logger.info('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
         return False, 0
 
     if m is not None:
