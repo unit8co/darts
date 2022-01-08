@@ -28,7 +28,7 @@ class GaussianProcessFilter(FilteringModel):
         kernel : sklearn.gaussian_process.kernels.Kernel, default: None
             The kernel specifying the covariance function of the Gaussian Process. If None is passed,
             the default in scikit-learn is used. Note that the kernel hyperparameters are optimized
-            during fitting unless the bounds are marked as “fixed”.
+            during fitting unless the bounds are marked as 'fixed'.
         **kwargs
             Additional keyword arguments passed to ``sklearn.gaussian_process.GaussianProcessRegressor``.
         """

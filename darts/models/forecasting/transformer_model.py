@@ -332,7 +332,7 @@ class TransformerModel(
         References
         ----------
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and
-        Illia Polosukhin, “Attention Is All You Need”, 2017. In Advances in Neural Information Processing Systems,
+        Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
         pages 6000-6010. https://arxiv.org/abs/1706.03762.
 
         Notes

@@ -48,9 +48,9 @@ class ARIMA(DualCovariatesForecastingModel):
             The (P,D,Q,s) order of the seasonal component for the AR parameters,
             differences, MA parameters and periodicity
         trend: str
-            Parameter controlling the deterministic trend. ‘n‘ indicates no trend,
-            ‘c’ a constant term, ‘t’ linear trend in time, and ‘ct’ includes both.
-            Default is ‘c’ for models without integration, and no trend for models with integration.
+            Parameter controlling the deterministic trend. 'n' indicates no trend,
+            'c' a constant term, 't' linear trend in time, and 'ct' includes both.
+            Default is 'c' for models without integration, and no trend for models with integration.
         """
         super().__init__()
         self.order = p, d, q

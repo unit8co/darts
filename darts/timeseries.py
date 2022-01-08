@@ -2076,9 +2076,9 @@ class TimeSeries:
         method:
             Method to fill holes in reindexed TimeSeries (note this does not fill NaNs that already were present):
 
-            ‘pad’: propagate last valid observation forward to next valid
+            'pad': propagate last valid observation forward to next valid
 
-            ‘backfill’: use NEXT valid observation to fill.
+            'backfill': use NEXT valid observation to fill.
         Returns
         -------
         TimeSeries

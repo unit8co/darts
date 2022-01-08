@@ -39,9 +39,9 @@ class VARIMA(DualCovariatesForecastingModel):
         q : int
             The size of the moving average window (MA).
         trend: str
-            Parameter controlling the deterministic trend. ‘n‘ indicates no trend,
-            ‘c’ a constant term, ‘t’ linear trend in time, and ‘ct’ includes both.
-            Default is ‘c’ for models without integration, and no trend for models with integration.
+            Parameter controlling the deterministic trend. 'n' indicates no trend,
+            'c' a constant term, 't' linear trend in time, and 'ct' includes both.
+            Default is 'c' for models without integration, and no trend for models with integration.
         """
         super().__init__()
         self.p = p

@@ -23,7 +23,7 @@ logger = get_logger(__name__)
 
 # Note: for new metrics added to this module to be able to leverage the two decorators, it is required both having
 # the `actual_series` and `pred_series` parameters, and not having other ``Sequence`` as args (since these decorators
-# don't “unpack“ parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
+# don't "unpack" parameters different from `actual_series` and `pred_series`). In those cases, the new metric must take
 # care of dealing with Sequence[TimeSeries] and multivariate TimeSeries on its own (See mase() implementation).
 
 
