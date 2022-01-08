@@ -38,10 +38,10 @@ class KalmanFilterTestCase(FilterBaseTestClass):
         kf.fit(testing_signal_with_noise_ts)
         filtered_ts = kf.filter(testing_signal_with_noise_ts, num_samples=1)
         filtered_values = filtered_ts.univariate_values()
-        
+
         noise_distance = testing_signal_with_noise - testing_signal
         prediction_distance = filtered_values - testing_signal
-        
+
         self.assertGreater(noise_distance.std(), prediction_distance.std())
         self.assertEqual(filtered_ts.width, 1)
         self.assertEqual(filtered_ts.n_samples, 1)
@@ -64,7 +64,7 @@ class KalmanFilterTestCase(FilterBaseTestClass):
         sine_ts = tg.sine_timeseries(length=30, value_frequency=0.1)
         noise_ts = tg.gaussian_timeseries(length=30) * 0.1
         series = sine_ts.stack(noise_ts)
-        
+
         covariates = -series.copy()
 
         kf.fit(series, covariates=covariates)
@@ -100,10 +100,7 @@ class KalmanFilterTestCase(FilterBaseTestClass):
 
     def test_kalman_given_kf(self):
         nfoursid_ss = state_space.StateSpace(
-            a=np.eye(2),
-            b=np.ones((2, 1)),
-            c=np.ones((1, 2)),
-            d=np.ones((1, 1))
+            a=np.eye(2), b=np.ones((2, 1)), c=np.ones((1, 2)), d=np.ones((1, 1))
         )
         nfoursid_kf = kalman.Kalman(nfoursid_ss, np.ones((3, 3)) * 0.1)
         kf = KalmanFilter(dim_x=1, kf=nfoursid_kf)

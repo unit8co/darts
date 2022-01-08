@@ -18,12 +18,14 @@ logger = get_logger(__name__)
 
 
 class LightGBMModel(RegressionModel):
-    def __init__(self,
-                 lags: Union[int, list] = None,
-                 lags_past_covariates: Union[int, List[int]] = None,
-                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-                 **kwargs):
-        """ Light Gradient Boosted Model
+    def __init__(
+        self,
+        lags: Union[int, list] = None,
+        lags_past_covariates: Union[int, List[int]] = None,
+        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        **kwargs
+    ):
+        """Light Gradient Boosted Model
 
         Parameters
         ----------
@@ -48,25 +50,25 @@ class LightGBMModel(RegressionModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
-            model=lgb.LGBMRegressor(
-                **kwargs
-            )
+            model=lgb.LGBMRegressor(**kwargs),
         )
 
     def __str__(self):
-        return 'LGBModel(lags={}, lags_past={}, lags_future={})'.format(
+        return "LGBModel(lags={}, lags_past={}, lags_future={})".format(
             self.lags, self.lags_past_covariates, self.lags_future_covariates
         )
 
-    def fit(self,
-            series: Union[TimeSeries, Sequence[TimeSeries]],
-            past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-            max_samples_per_ts: Optional[int] = None,
-            **kwargs) -> None:
+    def fit(
+        self,
+        series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        max_samples_per_ts: Optional[int] = None,
+        **kwargs
+    ) -> None:
         """
         Fits/trains the model using the provided list of features time series and the target time series.
 
@@ -95,15 +97,17 @@ class LightGBMModel(RegressionModel):
 
         if val_series is not None:
 
-            kwargs['eval_set'] = self._create_lagged_data(
+            kwargs["eval_set"] = self._create_lagged_data(
                 target_series=val_series,
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
-                max_samples_per_ts=max_samples_per_ts
-                )
+                max_samples_per_ts=max_samples_per_ts,
+            )
 
-        super().fit(series=series,
-                    past_covariates=past_covariates,
-                    future_covariates=future_covariates,
-                    max_samples_per_ts=max_samples_per_ts,
-                    **kwargs)
+        super().fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+            max_samples_per_ts=max_samples_per_ts,
+            **kwargs
+        )

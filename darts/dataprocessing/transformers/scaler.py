@@ -4,7 +4,10 @@ Scaler
 """
 
 from typing import Sequence, Iterator, Any, Tuple
-from darts.dataprocessing.transformers import InvertibleDataTransformer, FittableDataTransformer
+from darts.dataprocessing.transformers import (
+    InvertibleDataTransformer,
+    FittableDataTransformer,
+)
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_log
 from sklearn.preprocessing import MinMaxScaler
@@ -14,13 +17,11 @@ logger = get_logger(__name__)
 
 
 class Scaler(InvertibleDataTransformer, FittableDataTransformer):
-    def __init__(self,
-                 scaler=None,
-                 name="Scaler",
-                 n_jobs: int = 1,
-                 verbose: bool = False):
-        """ Generic wrapper class for using scalers on time series.
-        
+    def __init__(
+        self, scaler=None, name="Scaler", n_jobs: int = 1, verbose: bool = False
+    ):
+        """Generic wrapper class for using scalers on time series.
+
         The underlying `scaler` has to implement the ``fit()``, ``transform()`` and
         ``inverse_transform()`` methods (typically from scikit-learn).
 
@@ -72,58 +73,86 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         if scaler is None:
             scaler = MinMaxScaler(feature_range=(0, 1))
 
-        if (not callable(getattr(scaler, "fit", None)) or not callable(getattr(scaler, "transform", None))
-                or not callable(getattr(scaler, "inverse_transform", None))):  # noqa W503
-            raise_log(ValueError(
-                      'The provided transformer object must have fit(), transform() and inverse_transform() methods'),
-                      logger)
+        if (
+            not callable(getattr(scaler, "fit", None))
+            or not callable(getattr(scaler, "transform", None))
+            or not callable(getattr(scaler, "inverse_transform", None))
+        ):
+            raise_log(
+                ValueError(
+                    "The provided transformer object must have fit(), transform() and inverse_transform() methods"
+                ),
+                logger,
+            )
 
         self.transformer = scaler
         self.transformer_instances = None
 
     @staticmethod
     def ts_transform(series: TimeSeries, transformer, **kwargs) -> TimeSeries:
-        component_mask = kwargs.get('component_mask', None)
+        component_mask = kwargs.get("component_mask", None)
 
-        tr_out = transformer.transform(Scaler._reshape_in(series, component_mask=component_mask))
+        tr_out = transformer.transform(
+            Scaler._reshape_in(series, component_mask=component_mask)
+        )
 
-        transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
+        transformed_vals = Scaler._reshape_out(
+            series, tr_out, component_mask=component_mask
+        )
 
-        return TimeSeries.from_times_and_values(times=series.time_index,
-                                                values=transformed_vals,
-                                                fill_missing_dates=False,
-                                                columns=series.columns)
+        return TimeSeries.from_times_and_values(
+            times=series.time_index,
+            values=transformed_vals,
+            fill_missing_dates=False,
+            columns=series.columns,
+        )
 
     @staticmethod
-    def ts_inverse_transform(series: TimeSeries, transformer, *args, **kwargs) -> TimeSeries:
-        component_mask = kwargs.get('component_mask', None)
+    def ts_inverse_transform(
+        series: TimeSeries, transformer, *args, **kwargs
+    ) -> TimeSeries:
+        component_mask = kwargs.get("component_mask", None)
 
-        tr_out = transformer.inverse_transform(Scaler._reshape_in(series, component_mask=component_mask))
-        inv_transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
+        tr_out = transformer.inverse_transform(
+            Scaler._reshape_in(series, component_mask=component_mask)
+        )
+        inv_transformed_vals = Scaler._reshape_out(
+            series, tr_out, component_mask=component_mask
+        )
 
-        return TimeSeries.from_times_and_values(times=series.time_index,
-                                                values=inv_transformed_vals,
-                                                fill_missing_dates=False,
-                                                columns=series.columns)
+        return TimeSeries.from_times_and_values(
+            times=series.time_index,
+            values=inv_transformed_vals,
+            fill_missing_dates=False,
+            columns=series.columns,
+        )
 
     @staticmethod
     def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:
         # fit_parameter will receive the transformer object instance
-        component_mask = kwargs.get('component_mask', None)
+        component_mask = kwargs.get("component_mask", None)
 
-        scaler = transformer.fit(Scaler._reshape_in(series, component_mask=component_mask))
+        scaler = transformer.fit(
+            Scaler._reshape_in(series, component_mask=component_mask)
+        )
         return scaler
 
-    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
+    def _fit_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries, Any]]:
         # generator which returns deep copies of the 'scaler' argument
         new_scaler_gen = (deepcopy(self.transformer) for _ in range(len(series)))
         return zip(series, new_scaler_gen)
 
-    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
+    def _transform_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries, Any]]:
         # since '_ts_fit()' returns the scaler objects, the 'fit()' call will save transformers instance into
         # self._fitted_params
         return zip(series, self._fitted_params)
 
-    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
+    def _inverse_transform_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries, Any]]:
         # the same self._fitted_params will be used also for the 'ts_inverse_transform()'
         return zip(series, self._fitted_params)

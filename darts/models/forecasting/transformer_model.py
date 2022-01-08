@@ -12,8 +12,10 @@ from typing import Optional, Union, Tuple
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.logging import get_logger
-from darts.models.forecasting.torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
-                                                              PastCovariatesTorchModel)
+from darts.models.forecasting.torch_forecasting_model import (
+    TorchParametricProbabilisticForecastingModel,
+    PastCovariatesTorchModel,
+)
 
 logger = get_logger(__name__)
 
@@ -22,7 +24,7 @@ logger = get_logger(__name__)
 # https://pytorch.org/tutorials/beginner/transformer_tutorial.html
 class _PositionalEncoding(nn.Module):
     def __init__(self, d_model, dropout=0.1, max_len=500):
-        """ An implementation of positional encoding as described in 'Attention is All you Need' by Vaswani et al. (2017)
+        """An implementation of positional encoding as described in 'Attention is All you Need' by Vaswani et al. (2017)
 
         Parameters
         ----------
@@ -50,35 +52,38 @@ class _PositionalEncoding(nn.Module):
 
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
+        div_term = torch.exp(
+            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
+        )
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0).transpose(0, 1)
-        self.register_buffer('pe', pe)
+        self.register_buffer("pe", pe)
 
     def forward(self, x):
-        x = x + self.pe[:x.size(0), :]
+        x = x + self.pe[: x.size(0), :]
         return self.dropout(x)
 
 
 class _TransformerModule(nn.Module):
-    def __init__(self,
-                 input_chunk_length: int,
-                 output_chunk_length: int,
-                 input_size: int,
-                 output_size: int,
-                 nr_params: int,
-                 d_model: int,
-                 nhead: int,
-                 num_encoder_layers: int,
-                 num_decoder_layers: int,
-                 dim_feedforward: int,
-                 dropout: float,
-                 activation: str,
-                 custom_encoder: Optional[nn.Module] = None,
-                 custom_decoder: Optional[nn.Module] = None,
-                 ):
-        """ PyTorch module implementing a Transformer to be used in `TransformerModel`.
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        input_size: int,
+        output_size: int,
+        nr_params: int,
+        d_model: int,
+        nhead: int,
+        num_encoder_layers: int,
+        num_decoder_layers: int,
+        dim_feedforward: int,
+        dropout: float,
+        activation: str,
+        custom_encoder: Optional[nn.Module] = None,
+        custom_decoder: Optional[nn.Module] = None,
+    ):
+        """PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
         PyTorch module implementing a simple encoder-decoder transformer architecture.
 
@@ -132,20 +137,26 @@ class _TransformerModule(nn.Module):
         self.target_length = output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
-        self.positional_encoding = _PositionalEncoding(d_model, dropout, input_chunk_length)
+        self.positional_encoding = _PositionalEncoding(
+            d_model, dropout, input_chunk_length
+        )
 
         # Defining the Transformer module
-        self.transformer = nn.Transformer(d_model=d_model,
-                                          nhead=nhead,
-                                          num_encoder_layers=num_encoder_layers,
-                                          num_decoder_layers=num_decoder_layers,
-                                          dim_feedforward=dim_feedforward,
-                                          dropout=dropout,
-                                          activation=activation,
-                                          custom_encoder=custom_encoder,
-                                          custom_decoder=custom_decoder)
+        self.transformer = nn.Transformer(
+            d_model=d_model,
+            nhead=nhead,
+            num_encoder_layers=num_encoder_layers,
+            num_decoder_layers=num_decoder_layers,
+            dim_feedforward=dim_feedforward,
+            dropout=dropout,
+            activation=activation,
+            custom_encoder=custom_encoder,
+            custom_decoder=custom_decoder,
+        )
 
-        self.decoder = nn.Linear(d_model, output_chunk_length * self.target_size * self.nr_params)
+        self.decoder = nn.Linear(
+            d_model, output_chunk_length * self.target_size * self.nr_params
+        )
 
     def _create_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
@@ -170,38 +181,43 @@ class _TransformerModule(nn.Module):
         tgt = self.encoder(tgt) * math.sqrt(self.input_size)
         tgt = self.positional_encoding(tgt)
 
-        x = self.transformer(src=src,
-                             tgt=tgt)
+        x = self.transformer(src=src, tgt=tgt)
         out = self.decoder(x)
 
         # Here we change the data format
         # from (1, batch_size, output_chunk_length * output_size)
         # to (batch_size, output_chunk_length, output_size, nr_params)
         predictions = out[0, :, :]
-        predictions = predictions.view(-1, self.target_length, self.target_size, self.nr_params)
+        predictions = predictions.view(
+            -1, self.target_length, self.target_size, self.nr_params
+        )
 
         return predictions
 
 
-class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
+class TransformerModel(
+    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
+):
     @random_method
-    def __init__(self,
-                 input_chunk_length: int,
-                 output_chunk_length: int,
-                 d_model: int = 64,
-                 nhead: int = 4,
-                 num_encoder_layers: int = 3,
-                 num_decoder_layers: int = 3,
-                 dim_feedforward: int = 512,
-                 dropout: float = 0.1,
-                 activation: str = "relu",
-                 custom_encoder: Optional[nn.Module] = None,
-                 custom_decoder: Optional[nn.Module] = None,
-                 likelihood: Optional[Likelihood] = None,
-                 random_state: Optional[Union[int, RandomState]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        d_model: int = 64,
+        nhead: int = 4,
+        num_encoder_layers: int = 3,
+        num_decoder_layers: int = 3,
+        dim_feedforward: int = 512,
+        dropout: float = 0.1,
+        activation: str = "relu",
+        custom_encoder: Optional[nn.Module] = None,
+        custom_decoder: Optional[nn.Module] = None,
+        likelihood: Optional[Likelihood] = None,
+        random_state: Optional[Union[int, RandomState]] = None,
+        **kwargs
+    ):
 
-        """ Transformer model
+        """Transformer model
 
         Transformer is a state-of-the-art deep learning model introduced in 2017. It is an encoder-decoder
         architecture whose core feature is the 'multi-head attention' mechanism, which is able to
@@ -331,8 +347,8 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
         added to it. Of course, the training of the model would have to be adapted accordingly.
         """
 
-        kwargs['input_chunk_length'] = input_chunk_length
-        kwargs['output_chunk_length'] = output_chunk_length
+        kwargs["input_chunk_length"] = input_chunk_length
+        kwargs["output_chunk_length"] = output_chunk_length
         super().__init__(likelihood=likelihood, **kwargs)
 
         self.input_chunk_length = input_chunk_length
@@ -349,24 +365,28 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        input_dim = train_sample[0].shape[1] + (
+            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        )
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        return _TransformerModule(input_chunk_length=self.input_chunk_length,
-                                  output_chunk_length=self.output_chunk_length,
-                                  input_size=input_dim,
-                                  output_size=output_dim,
-                                  nr_params=nr_params,
-                                  d_model=self.d_model,
-                                  nhead=self.nhead,
-                                  num_encoder_layers=self.num_encoder_layers,
-                                  num_decoder_layers=self.num_decoder_layers,
-                                  dim_feedforward=self.dim_feedforward,
-                                  dropout=self.dropout,
-                                  activation=self.activation,
-                                  custom_encoder=self.custom_encoder,
-                                  custom_decoder=self.custom_decoder)
+        return _TransformerModule(
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            input_size=input_dim,
+            output_size=output_dim,
+            nr_params=nr_params,
+            d_model=self.d_model,
+            nhead=self.nhead,
+            num_encoder_layers=self.num_encoder_layers,
+            num_decoder_layers=self.num_decoder_layers,
+            dim_feedforward=self.dim_feedforward,
+            dropout=self.dropout,
+            activation=self.activation,
+            custom_encoder=self.custom_encoder,
+            custom_decoder=self.custom_decoder,
+        )
 
     @random_method
     def _produce_predict_output(self, x):
@@ -375,4 +395,3 @@ class TransformerModel(TorchParametricProbabilisticForecastingModel, PastCovaria
             return self.likelihood.sample(output)
         else:
             return self.model(x).squeeze(dim=-1)
-
