@@ -89,7 +89,7 @@ class ExponentialSmoothing(ForecastingModel):
         hw_model = hw.ExponentialSmoothing(series.values(),
                                            trend=self.trend.value,
                                            damped_trend=self.damped,
-                                           seasonal=self.seasonal.value,
+                                           seasonal=self.seasonal.value if self.seasonal else None,
                                            seasonal_periods=seasonal_periods_param,
                                            freq=series.freq if series.has_datetime_index else None,
                                            dates=series.time_index if series.has_datetime_index else None)
