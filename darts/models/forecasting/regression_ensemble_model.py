@@ -42,7 +42,9 @@ class RegressionEnsembleModel(EnsembleModel):
         """
         super().__init__(forecasting_models)
         if regression_model is None:
-            regression_model = LinearRegressionModel(lags=None, lags_future_covariates=[0], fit_intercept=False)
+            regression_model = LinearRegressionModel(lags=None,
+                                                     lags_future_covariates=[0],
+                                                     fit_intercept=False)
         elif isinstance(regression_model, RegressionModel):
             regression_model = regression_model
         else:
