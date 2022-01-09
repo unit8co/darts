@@ -26,11 +26,6 @@ class EnsembleModel(GlobalForecastingModel):
         List of forecasting models whose predictions to ensemble
     """
     def __init__(self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]):
-        raise_if(any([m._fit_called for m in models]),
-                 "Cannot instantiate EnsembleModel with trained/fitted models. "
-                 "Consider resetting all models with `my_model.untrained_model()`",
-                 logger)
-
         raise_if_not(isinstance(models, list) and models,
                      "Cannot instantiate EnsembleModel with an empty list of models",
                      logger)
@@ -42,6 +37,12 @@ class EnsembleModel(GlobalForecastingModel):
         raise_if_not(is_local_ensemble or self.is_global_ensemble,
                      "All models must either be GlobalForecastingModel instances, or none of them should be.",
                      logger)
+
+        raise_if(any([m._fit_called for m in models]),
+                 "Cannot instantiate EnsembleModel with trained/fitted models. "
+                 "Consider resetting all models with `my_model.untrained_model()`",
+                 logger)
+
         super().__init__()
         self.models = models
         self.is_single_series = None
