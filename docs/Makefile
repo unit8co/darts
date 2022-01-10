@@ -33,6 +33,7 @@ copy-quickstart:
 	@echo "[Makefile] copying quickstart notebook..."
 	@mkdir -p "$(SOURCEDIR)/quickstart"
 	@cp -r ../examples/00-quickstart.ipynb "$(SOURCEDIR)/quickstart/"
+	@cp -r ../examples/static "$(SOURCEDIR)/quickstart/"
 
 generate-readme:
 	@echo "[Makefile] generating README rst file..."
