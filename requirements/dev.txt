@@ -5,4 +5,4 @@ pytest-cov
 
 # linters
 flake8
-black
+black[jupyter]
