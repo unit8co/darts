@@ -37,8 +37,6 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
 
         super(PLTorchForecastingModel, self).__init__()
 
-        self.epochs_trained = 0
-
         # Define the loss function
         self.criterion = loss_fn
 
@@ -51,8 +49,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         # by default models are deterministic (i.e. not probabilistic)
         self.likelihood = None
 
-        # TODO: make better
-        # initialize prediction settings
+        # initialize prediction parameters
         self.pred_n: Optional[int] = None
         self.pred_num_samples: Optional[int] = None
         self.pred_roll_size: Optional[int] = None
@@ -70,6 +67,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         super(PLTorchForecastingModel, self).forward(*args, **kwargs)
 
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
+        """performs the training step"""
         output = self._produce_train_output(train_batch[:-1])
         target = train_batch[-1]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
@@ -77,17 +75,12 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
+        """performs the validation step"""
         output = self._produce_train_output(val_batch[:-1])
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
         self.log('val_loss', loss, batch_size=val_batch[0].shape[0])
         return loss
-
-    def on_train_epoch_end(self) -> None:
-        self.epochs_trained += 1
-
-    def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
-        self.hparams['epochs_trained'] = self.epochs_trained
 
     def predict_step(self,
                      batch: Tuple,
@@ -145,19 +138,26 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         batch_predictions = batch_predictions.cpu().detach().numpy()
         return batch_predictions, batch_input_series
 
+    def set_predict_parameters(self,
+                               n: Optional[int] = None,
+                               num_samples: Optional[int] = None,
+                               roll_size: Optional[int] = None,
+                               batch_size: Optional[int] = None) -> None:
+        """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
+        self.pred_n = n
+        self.pred_num_samples = num_samples
+        self.pred_roll_size = roll_size
+        self.pred_batch_size = batch_size
+
     def on_predict_end(self) -> None:
         """reset all prediction-relevant parameters"""
-        self.pred_n = None
-        self.pred_num_samples = None
-        self.pred_roll_size = None
-        self.pred_batch_size = None
+        self.set_predict_parameters()
 
     def _compute_loss(self, output, target):
         return self.criterion(output, target)
 
     def configure_optimizers(self):
         """sets up optimizers"""
-
         # TODO: i think we can move this to to pl.Trainer(). and could probably be simplified
 
         # A utility function to create optimizer and lr scheduler from desired classes

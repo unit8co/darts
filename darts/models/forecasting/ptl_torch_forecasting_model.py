@@ -182,6 +182,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.add_encoders = add_encoders
         self.encoders = None
 
+        # get model name and work dir
         if model_name is None:
             current_time = datetime.datetime.now().strftime("%Y-%m-%d_%H.%M.%S.%f")
             model_name = current_time + "_torch_model_run_" + str(os.getpid())
@@ -189,20 +190,28 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model_name = model_name
         self.work_dir = work_dir
 
+        # setup model save dirs
         self.save_checkpoints = save_checkpoints
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         log_folder = _get_logs_folder(self.work_dir, self.model_name)
         checkpoint_exists = os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
 
+        # setup model save dirs
         if checkpoint_exists and save_checkpoints:
-            if force_reset:
-                self.reset_model()
-            else:
-                raise AttributeError("You already have model data for the '{}' name. Either load model to continue"
-                                     " training or use `force_reset=True` to initialize anyway to start"
-                                     " training from scratch and remove all the model data".format(self.model_name)
-                                     )
+            raise_if_not(
+                force_reset,
+                "You already have model data for the '{}' name. Either load model to continue"
+                " training or use `force_reset=True` to initialize anyway to start"
+                " training from scratch and remove all the model data".format(self.model_name),
+                logger
+            )
+            self._reset_model_dirs()
+        elif save_checkpoints:
+            self._create_save_dirs()
+        else:
+            pass
 
+        # check torch device
         raise_if_not(torch_device_str in [None, 'cuda:0', 'cpu'],
                      f'unknown torch_device_str `{torch_device_str}`. Must be one of `(None, "cuda:0", "cpu")`',
                      logger)
@@ -231,6 +240,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             version='logs'
         ) if log_tensorboard else False
 
+        # setup trainer parameters from model creation parameters
         self.trainer_params = {
             'accelerator': accelerator,
             'logger': model_logger,
@@ -240,24 +250,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             'callbacks': [cb for cb in [checkpoint_callback] if cb is not None]
         }
 
+        # update trainer parameters with user defined `pl_trainer_kwargs`
         if pl_trainer_kwargs is not None:
-            self.n_epochs = pl_trainer_kwargs.get('max_epochs', self.n_epochs)
-            self.trainer_params['callbacks'] += pl_trainer_kwargs.pop('callbacks', [])
-            self.trainer_params = dict(self.trainer_params, **pl_trainer_kwargs)
+            pl_trainer_kwargs_copy = {key: val for key, val in pl_trainer_kwargs.items()}
+            self.n_epochs = pl_trainer_kwargs_copy.get('max_epochs', self.n_epochs)
+            self.trainer_params['callbacks'] += pl_trainer_kwargs_copy.pop('callbacks', [])
+            self.trainer_params = dict(self.trainer_params, **pl_trainer_kwargs_copy)
 
         # set up pytorch lightning trainer
         self.trainer = None
-
-    @staticmethod
-    def _init_trainer(trainer_params: Dict,
-                      resume_from_checkpoint: Optional[str] = None,
-                      max_epochs: Optional[int] = None) -> pl.Trainer:
-
-        trainer_params_copy = {param: val for param, val in trainer_params.items()}
-        if max_epochs is not None:
-            trainer_params_copy['max_epochs'] = max_epochs
-
-        return pl.Trainer(**trainer_params_copy, resume_from_checkpoint=resume_from_checkpoint)
+        self.load_ckpt_path = None
 
     @staticmethod
     def _extract_torch_model_params(**kwargs):
@@ -278,13 +280,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             'random_state',
             'pl_trainer_kwargs'
         ]
-
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
     @staticmethod
     def _extract_pl_module_params(**kwargs):
-        """extract params from model creation to set up pl.LightningModule (the actual torch.nn.Module)"""
-
+        """Extract params from model creation to set up pl.LightningModule (the actual torch.nn.Module)"""
         get_params = [
             'loss_fn',
             'likelihood',
@@ -295,57 +295,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ]
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
-    @property
-    def min_train_series_length(self) -> int:
-        """
-        Class property defining the minimum required length for the training series;
-        overriding the default value of 3 of ForecastingModel
-        """
-        return self.input_chunk_length + self.output_chunk_length
-
-    def _batch_collate_fn(self, batch: List[Tuple]) -> Tuple:
-        """
-        Returns a batch Tuple from a list of samples
-        """
-        aggregated = []
-        first_sample = batch[0]
-        for i in range(len(first_sample)):
-            elem = first_sample[i]
-            if isinstance(elem, np.ndarray):
-                aggregated.append(
-                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
-                )
-            elif elem is None:
-                aggregated.append(None)
-            elif isinstance(elem, TimeSeries):
-                aggregated.append([sample[i] for sample in batch])
-        return tuple(aggregated)
-
-    def reset_model(self):
-        """ Resets the model object and removes all the stored data - model, checkpoints and training history.
-        """
-
-        shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
-
-        # create work dir and model dir
+    def _create_save_dirs(self):
+        """Create work dir and model dir"""
         if not os.path.exists(self.work_dir):
             os.mkdir(self.work_dir)
         if not os.path.exists(_get_runs_folder(self.work_dir, self.model_name)):
             os.mkdir(_get_runs_folder(self.work_dir, self.model_name))
 
-        self.epochs_trained = 0
+    def _reset_model_dirs(self):
+        """Resets the model object and removes all stored data - model, checkpoints, loggers and training history.
+        """
+        shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
+
+        self._create_save_dirs()
+
         self.model = None
         self.trainer = None
         self.train_sample = None
 
     def _init_model(self) -> None:
-        """
-        Init self.model and self.trainer based on examples of input/output tensors (to get the sizes right):
-
-        model
-            the pytorch-lightning module of this class
-        trainer
-            the pytorch-lightning trainer for this model
+        """Initializes model and trainer based on examples of input/output tensors (to get the sizes right):
         """
         # the tensors have shape (chunk_length, nr_dimensions)
         self.model = self._create_model(self.train_sample)
@@ -369,11 +338,34 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  logger)
 
         self.trainer_params['precision'] = precision
-        # self.trainer = self._init_trainer(self.trainer_params)
 
-        # we need to save the initialized TorchForecastingModel as pytorch-lightning only saves module checkpoints
+        # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
         if self.save_checkpoints:
             self.save_model(os.path.join(_get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME))
+
+    def _setup_trainer(self,
+                       trainer: Optional[pl.Trainer],
+                       verbose: bool,
+                       epochs: int = 0) -> None:
+        """Sets up the PyTorch-Lightning trainer for training or prediction."""
+
+        self.trainer_params['enable_model_summary'] = verbose if self.model.current_epoch == 0 else False
+        self.trainer_params['enable_progress_bar'] = verbose
+
+        self.trainer = self._init_trainer(
+            trainer_params=self.trainer_params,
+            max_epochs=epochs
+        ) if trainer is None else trainer
+
+    @staticmethod
+    def _init_trainer(trainer_params: Dict,
+                      max_epochs: Optional[int] = None) -> pl.Trainer:
+        """Initializes the PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
+        trainer_params_copy = {param: val for param, val in trainer_params.items()}
+        if max_epochs is not None:
+            trainer_params_copy['max_epochs'] = max_epochs
+
+        return pl.Trainer(**trainer_params_copy)
 
     @abstractmethod
     def _create_model(self, train_sample: Tuple[Tensor]) -> torch.nn.Module:
@@ -442,7 +434,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
             trainer: Optional[pl.Trainer] = None,
-            ckpt_path: Optional[str] = None,
             verbose: bool = False,
             epochs: int = 0,
             max_samples_per_ts: Optional[int] = None,
@@ -479,15 +470,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_future_covariates
             Optionally, the future covariates corresponding to the validation series (must match `covariates`)
         trainer
-            Optionally, a custom pytorch-lightning Trainer object to perform training and prediction
-        ckpt_path:
-            Optionally, the path to the checkpoint from which training should be resumed. This is only required if
-            using a custom `trainer` and model has been trained before (resume training).
+            Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom `trainer` will
+            override Darts' default trainer.?
         verbose
-            Optionally, whether to print model summary and progress bar.
+            Optionally, whether to print model summary and progress bar. Only effective if `trainer` is `None`.
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
-            was provided to the model constructor.
+            was provided to the model constructor. Only effective if `trainer` is `None`.
         max_samples_per_ts
             Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
             by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
@@ -550,13 +539,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info('Train dataset contains {} samples.'.format(len(train_dataset)))
 
-        self.fit_from_dataset(train_dataset, val_dataset, trainer, ckpt_path, verbose, epochs, num_loader_workers)
+        self.fit_from_dataset(train_dataset, val_dataset, trainer, verbose, epochs, num_loader_workers)
 
     def fit_from_dataset(self,
                          train_dataset: TrainingDataset,
                          val_dataset: Optional[TrainingDataset] = None,
                          trainer: Optional[pl.Trainer] = None,
-                         ckpt_path: Optional[str] = None,
                          verbose: bool = False,
                          epochs: int = 0,
                          num_loader_workers: int = 0) -> None:
@@ -578,15 +566,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             A training dataset with a type matching this model (e.g. `PastCovariatesTrainingDataset` for
             `PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).
         trainer
-            Optionally, a custom pytorch-lightning Trainer object to perform training and prediction
-        ckpt_path:
-            Optionally, the path to the checkpoint from which training should be resumed. This is only required if
-            using a custom `trainer` and model has been trained before (resume training).
+            Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
+            override Darts' default trainer.
         verbose
-            Optionally, whether to print model summary and progress bar.
+            Optionally, whether to print model summary and progress bar. Only effective if `trainer` is `None`.
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
-            was provided to the model constructor.
+            was provided to the model constructor. Only effective if `trainer` is `None`.
         num_loader_workers
             Optionally, an integer specifying the ``num_workers`` to use in PyTorch ``DataLoader`` instances,
             both for the training and validation loaders (if any).
@@ -649,32 +635,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # setup trainer
         self._setup_trainer(trainer, verbose, train_num_epochs)
 
+        # TODO: multiple training without loading from checkpoint is not trivial (I believe PyTorch-Lightning is still
+        #  working on that, see https://github.com/PyTorchLightning/pytorch-lightning/issues/9636)
+        if verbose and self.model.current_epoch > 0 and not self.load_ckpt_path:
+            logger.warn('Attempting to retrain the model without resuming from a checkpoint. This is currently '
+                        'discouraged. Consider setting `save_checkpoints` to `True` and specying `model_name` at model '
+                        f'creation. Then call `model = {self.__class__.__name__}.load_from_checkpoint(model_name, '
+                        'best=False)` before `model.fit()` with `epochs=epochs_last + current_epochs`.')
+
         # Train model
-        self._train(train_loader, val_loader, ckpt_path, train_num_epochs)
-
-    def _setup_trainer(self,
-                       trainer: pl.Trainer,
-                       verbose: bool,
-                       epochs: int = 0) -> None:
-
-        self.trainer_params['enable_model_summary'] = verbose
-        self.trainer_params['enable_progress_bar'] = verbose
-
-        # total epochs > 0 means model resumes training -> requires a checkpoint from which to resume training
-
-        if self.model.epochs_trained > 0 and trainer is None:
-            self.trainer_params['enable_model_summary'] = False
-
-        self.trainer = self._init_trainer(
-            trainer_params=self.trainer_params,
-            max_epochs=epochs
-        ) if trainer is None else trainer
+        self._train(train_loader, val_loader)
 
     def _train(self,
                train_loader: DataLoader,
-               val_loader: Optional[DataLoader],
-               ckpt_path: Optional[str],
-               epochs: int = 0) -> None:
+               val_loader: Optional[DataLoader]) -> None:
         """
         Performs the actual training
 
@@ -684,24 +658,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             the training data loader feeding the training data and targets
         val_loader
             optionally, a validation set loader
-        trainer
-            Optionally, a custom pytorch-lightning Trainer object to perform training and prediction
-        ckpt_path:
-            Optionally, the path to the checkpoint from which training should be resumed.
-        verbose
-            Optionally, whether to print model summary and progress bar.
-        epochs
-            value >0 means we're retraining model
         """
-        self.trainer.fit(self.model, train_loader, val_loader, ckpt_path=ckpt_path)
-        # self.epochs_trained += epochs
-        self.trainer_params['max_epochs'] = self.model.epochs_trained
+
+        # if model was loaded from checkpoint (when `load_ckpt_path is not None`) and model.fit() is called,
+        # we resume training
+        ckpt_path = self.load_ckpt_path
+        self.load_ckpt_path = None
+
+        self.trainer.fit(
+            self.model,
+            train_dataloaders=train_loader,
+            val_dataloaders=val_loader,
+            ckpt_path=ckpt_path
+        )
 
     def predict(self,
                 n: int,
                 series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+                trainer: Optional[pl.Trainer] = None,
                 batch_size: Optional[int] = None,
                 verbose: bool = False,
                 n_jobs: int = 1,
@@ -742,6 +718,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         future_covariates
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
+        trainer
+            Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom `trainer` will
+            override Darts' default trainer.
         batch_size
             Size of batches during prediction. Defaults to the models `batch_size` value.
         verbose
@@ -798,14 +777,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                                 past_covariates=past_covariates,
                                                 future_covariates=future_covariates)
 
-        predictions = self.predict_from_dataset(n, dataset, verbose=verbose, batch_size=batch_size, n_jobs=n_jobs,
-                                                roll_size=roll_size, num_samples=num_samples)
+        predictions = self.predict_from_dataset(n, dataset, trainer=trainer, verbose=verbose, batch_size=batch_size,
+                                                n_jobs=n_jobs, roll_size=roll_size, num_samples=num_samples)
 
         return predictions[0] if called_with_single_series else predictions
 
     def predict_from_dataset(self,
                              n: int,
                              input_series_dataset: InferenceDataset,
+                             trainer: Optional[pl.Trainer] = None,
                              batch_size: Optional[int] = None,
                              verbose: bool = False,
                              n_jobs: int = 1,
@@ -824,6 +804,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ----------
         n
             The number of time steps after the end of the training time series for which to produce predictions
+        trainer
+            Optionally, a custom PyTorch-Lightning Trainer object to perform prediction.  Using a custom `trainer` will
+            override Darts' default trainer.
         input_series_dataset
             Optionally, one or several input `TimeSeries`, representing the history of the target series' whose
             future is to be predicted. If specified, the method returns the forecasts of these
@@ -870,11 +853,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
 
-        # TODO: improve
-        self.model.pred_n = n
-        self.model.pred_num_samples = num_samples
-        self.model.pred_roll_size = roll_size
-        self.model.pred_batch_size = batch_size
+        # set prediction parameters
+        self.model.set_predict_parameters(n=n, num_samples=num_samples, roll_size=roll_size, batch_size=batch_size)
 
         pred_loader = DataLoader(input_series_dataset,
                                  batch_size=batch_size,
@@ -884,7 +864,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                  drop_last=False,
                                  collate_fn=self._batch_collate_fn)
 
-        batch_predictions, batch_input_series = self.trainer.predict(self.model, pred_loader)[0]
+        # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
+        trainer = trainer if trainer is not None else self.trainer
+        self._setup_trainer(trainer=trainer, verbose=verbose, epochs=self.n_epochs)
+
+        # if model checkpoint was loaded without calling fit afterwards (when `load_ckpt_path is not None`),
+        # trainer needs to be instantiated here
+        ckpt_path = self.load_ckpt_path
+        self.load_ckpt_path = None
+
+        batch_predictions, batch_input_series = self.trainer.predict(self.model, pred_loader, ckpt_path=ckpt_path)[0]
 
         # create `TimeSeries` objects from prediction tensors
         ts_forecasts = Parallel(n_jobs=n_jobs)(
@@ -905,7 +894,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         pass
 
     def initialize_encoders(self) -> SequentialEncoder:
-
+        """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter `add_encoders`
+        used at model creation"""
         input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates = \
             self._model_encoder_settings
 
@@ -921,6 +911,33 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Returns the index of the first predicted within the output of self.model.
         """
         return 0
+
+    @property
+    def min_train_series_length(self) -> int:
+        """
+        Class property defining the minimum required length for the training series;
+        overriding the default value of 3 of ForecastingModel
+        """
+        return self.input_chunk_length + self.output_chunk_length
+
+    @staticmethod
+    def _batch_collate_fn(batch: List[Tuple]) -> Tuple:
+        """
+        Returns a batch Tuple from a list of samples
+        """
+        aggregated = []
+        first_sample = batch[0]
+        for i in range(len(first_sample)):
+            elem = first_sample[i]
+            if isinstance(elem, np.ndarray):
+                aggregated.append(
+                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
+                )
+            elif elem is None:
+                aggregated.append(None)
+            elif isinstance(elem, TimeSeries):
+                aggregated.append([sample[i] for sample in batch])
+        return tuple(aggregated)
 
     def save_model(self, path: str) -> None:
         """Saves the model under a given path. The path should end with '.pth.tar'
@@ -1012,7 +1029,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info('loading {}'.format(file_name))
 
         model.model = model.model.load_from_checkpoint(file_path)
-        # model.trainer = TorchForecastingModel._init_trainer(model.trainer_params, resume_from_checkpoint=file_path)
+        model.load_ckpt_path = file_path
         return model
 
 
