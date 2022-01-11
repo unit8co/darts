@@ -52,6 +52,14 @@ class EnsembleModel(GlobalForecastingModel):
             "All models must either be GlobalForecastingModel instances, or none of them should be.",
             logger,
         )
+
+        raise_if(
+            any([m._fit_called for m in models]),
+            "Cannot instantiate EnsembleModel with trained/fitted models. "
+            "Consider resetting all models with `my_model.untrained_model()`",
+            logger,
+        )
+
         super().__init__()
         self.models = models
         self.is_single_series = None
