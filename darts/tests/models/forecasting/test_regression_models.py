@@ -186,19 +186,11 @@ if TORCH_AVAILABLE:
                 lags_future_covariates=self.lags_future_covariates_1,
             )
 
-            input_chunk_length = -model_instance.min_lag
-            training_output_chunk_length = max(model_instance.max_lag + 1, 1)
-
-            training_dataset = MixedCovariatesSequentialDataset(
+            training_samples, training_labels = model_instance._create_lagged_data(
                 target_series=self.target_series,
                 past_covariates=self.past_covariates,
                 future_covariates=self.future_covariates,
-                input_chunk_length=input_chunk_length,
-                output_chunk_length=training_output_chunk_length,
-            )
-
-            training_samples, training_labels = model_instance._get_training_data(
-                training_dataset=training_dataset
+                max_samples_per_ts=None
             )
 
             # checking number of dimensions
