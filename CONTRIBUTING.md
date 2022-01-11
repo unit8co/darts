@@ -39,7 +39,8 @@ and discuss it with some of the core team.
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
-5. Create a new branch:
+5. Set up [automatic code formatting](#code-formatting)
+6. Create a new branch:
     * Branch off from the **master** branch.
     * Prefix the branch with the type of update you are making:
         * `feature/`
@@ -47,9 +48,20 @@ and discuss it with some of the core team.
         * `refactor/`
         * …
     * Work on your update
-6. Check that your code passes all the tests and design new unit tests if needed: `./gradlew unitTest_all`.
-7. Verify your tests coverage by running `./gradlew coverageTest`
+7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew unitTest_all`.
+8. Verify your tests coverage by running `./gradlew coverageTest`
     * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested 
     lines with `./coverage.sh xml`
-8. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
-9. Create a pull request from your new branch into the **master** branch.
+9. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
+10. Create a pull request from your new branch into the **master** branch.
+
+
+### Code Formatting
+
+Darts uses [Black](https://black.readthedocs.io/en/stable/index.html) with default values for automatic code formatting.
+As part of the checks on pull requests, it is checked whether the code still adheres to the style of Black.
+To ensure you don't need to worry about formatting when contributing, it is recommended to set up at least one of the following:
+- [Black integration in your editor](https://black.readthedocs.io/en/stable/integrations/editors.html)
+- [Black integration in Git](https://black.readthedocs.io/en/stable/integrations/source_version_control.html):
+    1. Install the pre-commit hook using `pre-commit install`
+    2. Black will automatically format all files before committing
