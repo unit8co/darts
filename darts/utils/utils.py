@@ -5,8 +5,8 @@ Additional util functions
 import pandas as pd
 import numpy as np
 
-from ..timeseries import TimeSeries
-from ..logging import raise_log, get_logger, raise_if_not, raise_if
+from darts import TimeSeries
+from darts.logging import raise_log, get_logger, raise_if_not, raise_if
 from typing import List, Callable, TypeVar, Iterator, Tuple
 from IPython import get_ipython
 from tqdm import tqdm
@@ -43,14 +43,17 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     """
     Trims all series in the provided list, if necessary, so that the returned time series have
     a common span (corresponding to largest time sub-interval common to all series).
+
     Parameters
     ----------
     series
         The list of series to consider.
+
     Raises
     ------
     ValueError
         If no common time sub-interval exists
+
     Returns
     -------
     List[TimeSeries]
@@ -69,6 +72,7 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
 def _build_tqdm_iterator(iterable, verbose, **kwargs):
     """
     Build an iterable, possibly using tqdm (either in notebook or regular mode)
+
     Parameters
     ----------
     iterable
@@ -114,13 +118,16 @@ def _with_sanity_checks(*sanity_check_methods: str) -> Callable[[Callable[[A, B]
     Decorator allowing to specify some sanity check method(s) to be used on a class method.
     The decorator guarantees that args and kwargs from the method to sanitize will be available in the
     sanity check methods as specified in the sanitized method's signature, irrespective of how it was called.
+
     Parameters
     ----------
     *sanity_check_methods
         one or more sanity check methods that will be called with all the parameter of the decorated method.
+
     Returns
     -------
     A Callable corresponding to the decorated method.
+    
     Examples
     --------
     class Model:

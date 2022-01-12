@@ -56,11 +56,8 @@ from darts.utils.data.sequential_dataset import (PastCovariatesSequentialDataset
                                                  SplitCovariatesSequentialDataset)
 from darts.utils.data.encoders import SequentialEncoder
 
-from darts.logging import raise_if_not, get_logger, raise_log, raise_if
+from darts.logging import raise_if_not, get_logger, raise_log, raise_if, suppress_lightning_warnings
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-
-import warnings
-warnings.filterwarnings("ignore", ".*does not have many workers which may be a bottleneck.*")
 
 DEFAULT_DARTS_FOLDER = 'darts_logs'
 CHECKPOINTS_FOLDER = 'checkpoints'
@@ -113,7 +110,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                  save_checkpoints: bool = False,
                  add_encoders: Optional[Dict] = None,
                  random_state: Optional[int] = None,
-                 pl_trainer_kwargs: Optional[Dict] = None):
+                 pl_trainer_kwargs: Optional[Dict] = None,
+                 show_warnings: bool = False):
 
         """ Pytorch-based Forecasting Model.
 
@@ -163,6 +161,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             pl.seed_everything(random_state, workers=True)
 
         super().__init__()
+        suppress_lightning_warnings(suppress_all=not show_warnings)
 
         # We will fill these dynamically, upon first call of fit_from_dataset():
         self.model = None

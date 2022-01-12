@@ -4,7 +4,63 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.14.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.15.0...master)
+
+## [0.15.0](https://github.com/unit8co/darts/tree/0.15.0) (2021-12-24)
+### For users of the library:
+
+**Added**:
+- On-the-fly encoding of position and calendar information in Torch-based models.
+  Torch-based models now accept an option `add_encoders` parameter, specifying how to
+  use certain calendar and position information as past and/or future covariates on the-fly.
+  
+  Example:
+  ```
+  from darts.dataprocessing.transformers import Scaler
+  add_encoders={
+      'cyclic': {'future': ['month']},
+      'datetime_attribute': {'past': ['hour', 'dayofweek']},
+      'position': {'past': ['absolute'], 'future': ['relative']},
+      'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+      'transformer': Scaler()
+  }
+  ```
+  This will add a cyclic encoding of the month as future covariates, add some datetime
+  attributes as past and future covariates, an absolute/relative position (index), and
+  even some custom mapping of the index (such as a function of the year). A `Scaler` will
+  be applied to fit/transform all of these covariates both during training and inference.
+- The scalers can now also be applied on stochastic `TimeSeries`.
+- There is now a new argument `max_samples_per_ts` to the :func:`fit()` method of Torch-based 
+  models, which can be used to limit the number of samples contained in the underlying
+  training dataset, by taking (at most) the most recent `max_samples_per_ts` training samples
+  per time series.
+- All local forecasting models that support covariates (Prophet, ARIMA, VARIMA, AutoARIMA) 
+  now handle covariate slicing themselves; this means that you don't need to make sure your
+  covariates have the exact right time span. As long as they contain the right time span, the
+  models will slice them for you.
+- `TimeSeries.map()` and mappers data transformers now work on stochastic `TimeSeries`.
+- Granger causality function: `utils.statistics.granger_causality_tests` can test if one
+  univariate `TimeSeries` "granger causes" another.
+- New stationarity tests for univariate `TimeSeries`: `darts.utils.statistics.stationarity_tests`,
+  `darts.utils.statistics.stationarity_test_adf` and `darts.utils.statistics.stationarity_test_kpss`.
+- New test coverage badge 🦄
+
+
+**Fixed**:
+- Fixed various issues in different notebooks.
+- Fixed a bug handling frequencies in Prophet model.
+- Fixed an issue causing `PastCovariatesTorchModels` (such as `NBEATSModel`) prediction 
+  to fail when `n > output_chunk_length` AND `n` not being a multiple of `output_chunk_length`.
+- Fixed an issue in backtesting which was causing untrained models
+  not to be trained on the initial window when `retrain=False`.
+- Fixed an issue causing `residuals()` to fail for Torch-based models.
+
+### For developers of the library:
+- Updated the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md)
+- The unit tests have been re-organised with submodules following that of the library.
+- All relative import paths have been removed and replaced by absolute paths.
+- pytest and pytest-cov are now used to run tests and compute coverage.
+
 
 ## [0.14.0](https://github.com/unit8co/darts/tree/0.14.0) (2021-11-28)
 ### For users of the library:
@@ -343,7 +399,7 @@ several time series.
 - A new `TimeSeriesInferenceDataset` base class.
 - An implementation `SimpleInferenceDataset` of `TimeSeriesInferenceDataset`.
 - All PyTorch models have a new `fit_from_dataset()` method which allows to directly fit the model from a specified
-`TrainingDataset` instance (instead of using a default instance when going via the `fit()` method).
+`TrainingDataset` instance (instead of using a default instance when going via the :func:`fit()` method).
 - A new explanatory notebooks for global models:
 https://github.com/unit8co/darts/blob/master/examples/02-multi-time-series-and-covariates.ipynb
 

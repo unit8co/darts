@@ -19,7 +19,7 @@ class Pipeline:
                  verbose: bool = None,
                  n_jobs: int = None):
         """
-        Pipeline combines multiple data transformers chaining them together.
+        Pipeline to combine multiple data transformers, chaining them together.
 
         Parameters
         ----------
@@ -28,8 +28,8 @@ class Pipeline:
         copy
             If set makes a (deep) copy of each data transformer before adding them to the pipeline
         n_jobs
-            The number of jobs to run in parallel. Parallel jobs are created only when a `Sequence[TimeSeries]` is
-            passed as input to a method, parallelising operations regarding different `TimeSeries`. Defaults to `1`
+            The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
+            passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
             (sequential). Setting the parameter to `-1` means using all the available processors.
             Note: for a small amount of data, the parallelisation overhead could end up increasing the total
             required amount of time.
@@ -39,7 +39,31 @@ class Pipeline:
             Whether to print progress of the operations.
             Note: this parameter will overwrite the value set in each single transformer. Leave this parameter set
             to `None` for keeping the transformers configurations.
+
+        Examples
+        --------
+        >>> import numpy as np
+        >>> from darts import TimeSeries
+        >>> from darts.datasets import AirPassengersDataset
+        >>> from darts.dataprocessing.transformers import Scaler, MissingValuesFiller
+        >>> from darts.dataprocessing.pipeline import Pipeline
+        >>> values = np.arange(start=0, stop=12.5, step=2.5)
+        >>> values[1:3] = np.nan
+        >>> series = series.from_values(values)
+        >>> pipeline = Pipeline([MissingValuesFiller(), Scaler()])
+        >>> series_transformed = pipeline.fit_transform(series)
+        <TimeSeries (DataArray) (time: 5, component: 1, sample: 1)>
+        array([[[0.  ]],
+            [[0.25]],
+            [[0.5 ]],
+            [[0.75]],
+            [[1.  ]]])
+        Coordinates:
+        * time       (time) int64 0 1 2 3 4
+        * component  (component) object '0'
+        Dimensions without coordinates: sample
         """
+
         raise_if_not(all((isinstance(t, BaseDataTransformer)) for t in transformers),
                      "transformers should be objects deriving from BaseDataTransformer", logger)
 

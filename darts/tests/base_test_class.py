@@ -4,11 +4,10 @@ import unittest
 import shutil
 
 # Print something for all tests taking longer than this
-DURATION_THRESHOLD = 2.
+DURATION_THRESHOLD = 2.0
 
 
 class DartsBaseTestClass(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls):
         cls.tic = time.time()
@@ -17,8 +16,8 @@ class DartsBaseTestClass(unittest.TestCase):
     def tearDown(self):
         duration = time.time() - self.tic
         if duration >= DURATION_THRESHOLD:
-            print('Test {} finished after {:.2f} s.'.format(self.id(), duration))
+            print("Test {} finished after {:.2f} s.".format(self.id(), duration))
         try:
-            shutil.rmtree('.darts')
-        except:
+            shutil.rmtree(".darts")
+        except FileNotFoundError:
             pass

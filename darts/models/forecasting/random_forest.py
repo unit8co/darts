@@ -5,7 +5,7 @@ Random Forest
 A forecasting model using a random forest regression. It uses some of the target series' lags, as well as optionally
 some covariate series' lags in order to obtain a forecast.
 
-See [1] for a reference around random forests.
+See [1]_ for a reference around random forests.
 
 The implementations is wrapped around `RandomForestRegressor
 <https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor>`_.
@@ -30,7 +30,7 @@ class RandomForest(RegressionModel):
                  n_estimators: Optional[int] = 100,
                  max_depth: Optional[int] = None,
                  **kwargs):
-        """Random Forest
+        """Random Forest Model
 
         Parameters
         ----------

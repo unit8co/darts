@@ -27,7 +27,8 @@ class ARIMA(DualCovariatesForecastingModel):
                  trend: Optional[str] = None,
                  random_state: int = 0):
         """ ARIMA
-        ARIMA-type models extensible with exogenous variables and seasonal components.
+        ARIMA-type models extensible with exogenous variables (future covariates)
+        and seasonal components.
 
         Parameters
         ----------
@@ -44,7 +45,7 @@ class ARIMA(DualCovariatesForecastingModel):
         trend: str
             Parameter controlling the deterministic trend. ‘n‘ indicates no trend,
             ‘c’ a constant term, ‘t’ linear trend in time, and ‘ct’ includes both.
-             Default is ‘c’ for models without integration, and no trend for models with integration.
+            Default is ‘c’ for models without integration, and no trend for models with integration.
         """
         super().__init__()
         self.order = p, d, q

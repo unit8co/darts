@@ -16,7 +16,7 @@ try:
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning('Torch not available. TFT tests will be skipped.')
-    TORCH_AVAILABLE = False
+    TORCH_AVAILABLE = False§
     TFTModel, QuantileRegression, MSELoss = None, None, None
 
 

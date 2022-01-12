@@ -19,7 +19,7 @@ class GaussianProcessFilter(FilteringModel):
                  kernel: Optional[Kernel] = None,
                  **kwargs):
         """
-        This model uses the `GaussianProcessRegressor` of scikit-learn to fit a Gaussian Process to the
+        This model uses the ``GaussianProcessRegressor`` of scikit-learn to fit a Gaussian Process to the
         supplied TimeSeries. This can then be used to obtain samples from the
         Gaussian Process at the times of the TimeSeries.
 
@@ -32,7 +32,7 @@ class GaussianProcessFilter(FilteringModel):
             the default in scikit-learn is used. Note that the kernel hyperparameters are optimized
             during fitting unless the bounds are marked as “fixed”.
         **kwargs
-            Additional keyword arguments passed to `sklearn.gaussian_process.GaussianProcessRegressor`.
+            Additional keyword arguments passed to ``sklearn.gaussian_process.GaussianProcessRegressor``.
         """
         super().__init__()
         self.model = GaussianProcessRegressor(kernel=kernel, **kwargs)
@@ -46,21 +46,19 @@ class GaussianProcessFilter(FilteringModel):
 
         Parameters
         ----------
-        series : TimeSeries
+        series
             The series of observations used to infer the values according to the specified Gaussian Process.
             This must be a deterministic series (containing one sample).
         num_samples: int, default: 1
             Number of times a prediction is sampled from the Gaussian Process. If set to 1,
-            instead the mean values will be returned.
+            the mean values will be returned instead.
 
         Returns
         -------
         TimeSeries
-            A stochastic `TimeSeries` sampled from the Gaussian Process, or its mean
+            A stochastic ``TimeSeries`` sampled from the Gaussian Process, or its mean
             if `num_samples` is set to 1.
         """
-        raise_if_not(series.is_deterministic, 'The input series for the Gaussian Process filter must be '
-                                              'deterministic (observations).')
         super().filter(series)
 
         values = series.values(copy=False)

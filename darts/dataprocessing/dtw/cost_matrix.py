@@ -21,16 +21,20 @@ class CostMatrix(ABC):
     m: int
 
     @abstractmethod
-    def fill(self, value: np.float): pass
+    def fill(self, value: float):
+        pass
 
     @abstractmethod
-    def __getitem__(self, item): pass
+    def __getitem__(self, item):
+        pass
 
     @abstractmethod
-    def __setitem__(self, key, value): pass
+    def __setitem__(self, key, value):
+        pass
 
     @abstractmethod
-    def __iter__(self): pass
+    def __iter__(self):
+        pass
 
     @abstractmethod
     def to_dense(self) -> np.ndarray:
@@ -57,7 +61,7 @@ class CostMatrix(ABC):
         -------
         CostMatrix
         """
-        density = len(window) / ((window.n+1)*(window.m+1))
+        density = len(window) / ((window.n + 1) * (window.m + 1))
 
         # In the future it might be worth implementing
         # a sparse cost matrix based on column_index/column_length
@@ -72,7 +76,7 @@ class DenseCostMatrix(np.ndarray, CostMatrix):
     def __new__(self, n, m):
         self.n = n
         self.m = m
-        return super().__new__(self, (n+1, m+1), np.float)
+        return super().__new__(self, (n + 1, m + 1), float)
 
     def to_dense(self) -> np.ndarray:
         return self[1:, 1:]
@@ -88,18 +92,18 @@ class SparseCostMatrix(CostMatrix):
         self.n = window.n
         self.m = window.m
         self.window = window
-        self.offsets = np.empty(self.n+2, dtype=int)
+        self.offsets = np.empty(self.n + 2, dtype=int)
         self.column_ranges = window.column_ranges
         self.offsets[0] = 0
         np.cumsum(window.column_lengths(), out=self.offsets[1:])
 
         len = self.offsets[-1]
 
-        self.offsets = array.array('i', self.offsets)
-        self.dense = array.array('f', repeat(np.inf, len))
+        self.offsets = array.array("i", self.offsets)
+        self.dense = array.array("f", repeat(np.inf, len))
 
     def fill(self, value):
-        if value != np.inf: # should already be cleared to np.inf
+        if value != np.inf:  # should already be cleared to np.inf
             for i in range(len(self.dense)):
                 self.dense[i] = value
 
@@ -112,22 +116,23 @@ class SparseCostMatrix(CostMatrix):
             lengths = self.window.column_lengths()
 
             # TODO express only in terms of numpy operations
-            for i in range(1, self.n+1):
-                start = self.window.column_ranges[i*2 + 0]-1
-                end = self.window.column_ranges[i*2 + 1]-1
+            for i in range(1, self.n + 1):
+                start = self.window.column_ranges[i * 2 + 0] - 1
+                end = self.window.column_ranges[i * 2 + 1] - 1
                 len = lengths[i]
                 offset = self.offsets[i]
 
-                matrix[i-1][start:end] = self.dense[offset:offset + len]
+                matrix[i - 1][start:end] = self.dense[offset : offset + len]
         else:
-            for i in range(1, self.n+1):
+            for i in range(1, self.n + 1):
                 column_start = self.offsets[i]
 
-                for j in range(1, self.m+1):
+                for j in range(1, self.m + 1):
                     column_idx = self.window.column_index(i)
-                    if column_idx == -1: continue
+                    if column_idx == -1:
+                        continue
 
-                    matrix[i-1,j-1] = self.dense[column_start + column_idx]
+                    matrix[i - 1, j - 1] = self.dense[column_start + column_idx]
 
         return matrix
 
@@ -137,7 +142,8 @@ class SparseCostMatrix(CostMatrix):
 
         start = self.column_ranges[i * 2 + 0]
         end = self.column_ranges[i * 2 + 1]
-        if start <= j < end: return self.dense[self.offsets[i] + j - start]
+        if start <= j < end:
+            return self.dense[self.offsets[i] + j - start]
         return np.inf
 
     def __setitem__(self, elem, value):

@@ -1,3 +1,4 @@
+import warnings
 import logging
 import time
 import os
@@ -179,3 +180,9 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
     else:
         return_value = function(*args)
     return return_value
+
+
+def suppress_lightning_warnings(suppress_all: bool = False):
+    warnings.filterwarnings("ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*")
+    if suppress_all:
+        warnings.filterwarnings("ignore", ".*does not have many workers which may be a bottleneck.*")

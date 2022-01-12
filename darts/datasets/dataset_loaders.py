@@ -8,7 +8,7 @@ import pandas as pd
 import numpy as np
 import requests
 
-from ..timeseries import TimeSeries
+from darts import TimeSeries
 
 
 @dataclass

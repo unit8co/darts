@@ -55,6 +55,13 @@ jobs:
         run: |
           ./gradlew "test_${{matrix.flavour}}"
 
+      - name: "8. Codecov upload"
+        if: ${{ matrix.flavour == 'all' }}
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+          files: ./coverage.xml
+
   docs:
     runs-on: ubuntu-latest
     steps:
@@ -102,7 +109,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        example-name: [04-FFT-examples.ipynb, 05-RNN-examples.ipynb, 01-darts-intro.ipynb, 03-data-processing.ipynb, 02-multi-time-series-and-covariates.ipynb]
+        example-name: [03-FFT-examples.ipynb, 04-RNN-examples.ipynb, 00-quickstart.ipynb, 02-data-processing.ipynb, 01-multi-time-series-and-covariates.ipynb]
     steps:
       - name: "1. Clone repository"
         uses: actions/checkout@v2

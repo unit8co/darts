@@ -8,7 +8,7 @@ returns a `TimeSeries` that is a filtered version of `series`.
 from abc import ABC, abstractmethod
 
 from darts.timeseries import TimeSeries
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not
 
 logger = get_logger(__name__)
 
@@ -22,7 +22,7 @@ class FilteringModel(ABC):
         pass
 
     @abstractmethod
-    def filter(self,  series: TimeSeries) -> TimeSeries:
+    def filter(self, series: TimeSeries) -> TimeSeries:
         """ Filters a given series
 
         Parameters
@@ -35,4 +35,5 @@ class FilteringModel(ABC):
         TimeSeries
             A time series containing the filtered values.
         """
-        pass
+        raise_if_not(series.is_deterministic, 'The input series must be '
+                                              'deterministic (observations).')
