@@ -298,7 +298,7 @@ class RegressionModel(GlobalForecastingModel):
         # combine samples from all series
         X = np.concatenate(Xs, axis=0)
         y = np.concatenate(ys, axis=0)
-        return X[::-1], y[::-1]
+        return X, y
 
     def _fit_model(self, target_series, past_covariates, future_covariates, max_samples_per_ts, **kwargs):
         """

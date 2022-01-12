@@ -206,12 +206,12 @@ if TORCH_AVAILABLE:
                 + len(self.lags_future_covariates_1),
             )
 
-            # checking first row order lags | lags_past_cov | lags_future_cov
+            # checking column order lags | lags_past_cov | lags_future_cov
             self.assertListEqual(
-                list(training_samples[-1, :]),
+                list(training_samples[0, :]),
                 [0, 2, 4, 51, 51.5, 53, 53.5, 104, 105, 108],
             )
-            self.assertEqual(training_labels[-1], 5)
+            self.assertEqual(training_labels[0], 5)
 
         def test_prediction_data_creation(self):
             model_instance = RegressionModel(
