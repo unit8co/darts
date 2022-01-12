@@ -18,14 +18,19 @@ from darts.models.forecasting.varima import VARIMA
 try:
     from darts.models.forecasting.auto_arima import AutoARIMA
 except ModuleNotFoundError:
-    logger.warning("Support for AutoARIMA is not available. To enable it, install u8darts[pmdarima] or u8darts[all].")
+    logger.warning(
+        "Support for AutoARIMA is not available."
+        "To enable it, install u8darts[pmdarima] or u8darts[all]."
+    )
 
 try:
     from darts.models.forecasting.prophet_model import Prophet
 except ModuleNotFoundError:
-    logger.warning('Support for Facebook Prophet is not available. '
-                   'To enable it, install "darts", "u8darts[prophet]" or "u8darts[all]" (with pip);'
-                   'or "u8darts-all" (with conda).')
+    logger.warning(
+        "Support for Facebook Prophet is not available. "
+        'To enable it, install "darts", "u8darts[prophet]" or "u8darts[all]" (with pip);'
+        'or "u8darts-all" (with conda).'
+    )
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
@@ -36,28 +41,37 @@ try:
     from darts.models.forecasting.tft_model import TFTModel
 
 except ModuleNotFoundError:
-    logger.warning('Support for Torch based models not available. '
-                   'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
-                   'or "u8darts-torch" or "u8darts-all" (with conda).')
+    logger.warning(
+        "Support for Torch based models not available. "
+        'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
+        'or "u8darts-torch" or "u8darts-all" (with conda).'
+    )
 
 # Regression & RegressionEnsemble:
 try:
     from darts.models.forecasting.linear_regression_model import LinearRegressionModel
     from darts.models.forecasting.random_forest import RandomForest
     from darts.models.forecasting.regression_model import RegressionModel
-    from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
+    from darts.models.forecasting.regression_ensemble_model import (
+        RegressionEnsembleModel,
+    )
 except ModuleNotFoundError:
-    logger.warning('Support for Regression based models (incl. RegressionEnsembleModel) not available, '
-                   'as they depend on PyTorch Datasets. '
-                   'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
-                   'or "u8darts-torch" or "u8darts-all" (with conda).')
+    logger.warning(
+        "Support for Regression based models (incl. RegressionEnsembleModel) not available, "
+        "as they depend on PyTorch Datasets. "
+        'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
+        'or "u8darts-torch" or "u8darts-all" (with conda).'
+    )
 
 try:
     from darts.models.forecasting.gradient_boosted_model import LightGBMModel
 except ModuleNotFoundError:
-    logger.warning("Support for LightGBM not available. To enable LightGBM support in Darts, follow the detailed "
-                   "install instructions for LightGBM in the README: "
-                   "https://github.com/unit8co/darts/blob/master/README.md")
+    logger.warning(
+        "Support for LightGBM not available."
+        "To enable LightGBM support in Darts, follow the detailed "
+        "install instructions for LightGBM in the README: "
+        "https://github.com/unit8co/darts/blob/master/README.md"
+    )
 
 # Ensembling
 from darts.models.forecasting.ensemble_model import EnsembleModel

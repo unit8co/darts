@@ -14,13 +14,14 @@ logger = get_logger(__name__)
 
 
 class InvertibleDataTransformer(BaseDataTransformer):
+    def __init__(
+        self,
+        name: str = "InvertibleDataTransformer",
+        n_jobs: int = 1,
+        verbose: bool = False,
+    ):
 
-    def __init__(self,
-                 name: str = "InvertibleDataTransformer",
-                 n_jobs: int = 1,
-                 verbose: bool = False):
-
-        """ Abstract class for invertible transformers.
+        """Abstract class for invertible transformers.
 
         All the deriving classes have to implement the static methods
         :func:`ts_transform()` and :func:`ts_inverse_transform()`.
@@ -52,7 +53,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
     @staticmethod
     @abstractmethod
     def ts_inverse_transform(series: TimeSeries) -> TimeSeries:
-        """ The function that will be applied to each series when :func:`inverse_transform` is called.
+        """The function that will be applied to each series when :func:`inverse_transform` is called.
 
         The function must take as first argument a ``TimeSeries`` object, and return the transformed
         ``TimeSeries`` object. Additional parameters can be added if necessary, but in this case,
@@ -75,8 +76,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
         """
         pass
 
-    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
-        """ Return an `Iterator` object with tuples of inputs for each single call to :func:`ts_inverse_transform()`.
+    def _inverse_transform_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries]]:
+        """Return an `Iterator` object with tuples of inputs for each single call to :func:`ts_inverse_transform()`.
 
         Additional `args` and `kwargs` from :func:`inverse_transform()` (that don't change across the calls to
         :func:`ts_inverse_transform()`) are already forwarded, and thus don't need to be included in this generator.
@@ -118,11 +121,10 @@ class InvertibleDataTransformer(BaseDataTransformer):
         """
         return zip(series)
 
-    def inverse_transform(self,
-                          series: Union[TimeSeries, Sequence[TimeSeries]],
-                          *args,
-                          **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
-        """ Inverse-transform a (sequence of) series.
+    def inverse_transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
+        """Inverse-transform a (sequence of) series.
 
         In case a sequence is passed as input data, this function takes care of
         parallelising the transformation of multiple series in the sequence at the same time.
@@ -146,7 +148,11 @@ class InvertibleDataTransformer(BaseDataTransformer):
             Inverse transformed data.
         """
         if hasattr(self, "_fit_called"):
-            raise_if_not(self._fit_called, "fit() must have been called before inverse_transform()", logger)
+            raise_if_not(
+                self._fit_called,
+                "fit() must have been called before inverse_transform()",
+                logger,
+            )
 
         desc = "Inverse ({})".format(self._name)
 
@@ -155,12 +161,21 @@ class InvertibleDataTransformer(BaseDataTransformer):
         else:
             data = series
 
-        input_iterator = _build_tqdm_iterator(self._inverse_transform_iterator(data),
-                                              verbose=self._verbose,
-                                              desc=desc,
-                                              total=len(data))
+        input_iterator = _build_tqdm_iterator(
+            self._inverse_transform_iterator(data),
+            verbose=self._verbose,
+            desc=desc,
+            total=len(data),
+        )
 
-        transformed_data = _parallel_apply(input_iterator, self.__class__.ts_inverse_transform,
-                                           self._n_jobs, args, kwargs)
+        transformed_data = _parallel_apply(
+            input_iterator,
+            self.__class__.ts_inverse_transform,
+            self._n_jobs,
+            args,
+            kwargs,
+        )
 
-        return transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
+        return (
+            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
+        )

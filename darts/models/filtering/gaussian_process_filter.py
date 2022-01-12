@@ -15,9 +15,7 @@ from darts.models.filtering.filtering_model import FilteringModel
 
 
 class GaussianProcessFilter(FilteringModel):
-    def __init__(self,
-                 kernel: Optional[Kernel] = None,
-                 **kwargs):
+    def __init__(self, kernel: Optional[Kernel] = None, **kwargs):
         """
         This model uses the ``GaussianProcessRegressor`` of scikit-learn to fit a Gaussian Process to the
         supplied TimeSeries. This can then be used to obtain samples from the
@@ -30,16 +28,14 @@ class GaussianProcessFilter(FilteringModel):
         kernel : sklearn.gaussian_process.kernels.Kernel, default: None
             The kernel specifying the covariance function of the Gaussian Process. If None is passed,
             the default in scikit-learn is used. Note that the kernel hyperparameters are optimized
-            during fitting unless the bounds are marked as “fixed”.
+            during fitting unless the bounds are marked as 'fixed'.
         **kwargs
             Additional keyword arguments passed to ``sklearn.gaussian_process.GaussianProcessRegressor``.
         """
         super().__init__()
         self.model = GaussianProcessRegressor(kernel=kernel, **kwargs)
 
-    def filter(self,
-               series: TimeSeries,
-               num_samples: int = 1) -> TimeSeries:
+    def filter(self, series: TimeSeries, num_samples: int = 1) -> TimeSeries:
         """
         Fits the Gaussian Process on the observations and returns samples from the Gaussian Process,
         or its mean values if `num_samples` is set to 1.
@@ -75,5 +71,5 @@ class GaussianProcessFilter(FilteringModel):
             filtered_values = self.model.predict(times)
         else:
             filtered_values = self.model.sample_y(times, n_samples=num_samples)
-        
+
         return TimeSeries.from_times_and_values(series.time_index, filtered_values)

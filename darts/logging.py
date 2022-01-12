@@ -23,13 +23,19 @@ def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     stderr_handler = logging.StreamHandler()
-    formatter = logging.Formatter('[%(asctime)s] %(levelname)s | %(name)s | %(message)s')
+    formatter = logging.Formatter(
+        "[%(asctime)s] %(levelname)s | %(name)s | %(message)s"
+    )
     stderr_handler.setFormatter(formatter)
     logger.addHandler(stderr_handler)
     return logger
 
 
-def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
+def raise_if_not(
+    condition: bool,
+    message: str = "",
+    logger: logging.Logger = get_logger("main_logger"),
+):
     """
     Checks provided boolean condition and raises a ValueError if it evaluates to False.
     It logs the error to the provided logger before raising it.
@@ -49,12 +55,16 @@ def raise_if_not(condition: bool, message: str = "", logger: logging.Logger = ge
         if `condition` is not satisfied
     """
 
-    if (not condition):
+    if not condition:
         logger.error("ValueError: " + message)
         raise ValueError(message)
 
 
-def raise_if(condition: bool, message: str = "", logger: logging.Logger = get_logger('main_logger')):
+def raise_if(
+    condition: bool,
+    message: str = "",
+    logger: logging.Logger = get_logger("main_logger"),
+):
     """
     Checks provided boolean condition and raises a ValueError if it evaluates to True.
     It logs the error to the provided logger before raising it.
@@ -76,7 +86,7 @@ def raise_if(condition: bool, message: str = "", logger: logging.Logger = get_lo
     raise_if_not(not condition, message, logger)
 
 
-def raise_log(exception: Exception, logger: logging.Logger = get_logger('main_logger')):
+def raise_log(exception: Exception, logger: logging.Logger = get_logger("main_logger")):
     """
     Can be used to replace "raise" when throwing an exception to ensure the logging
     of the exception. After logging it, the exception is raised.
@@ -101,7 +111,7 @@ def raise_log(exception: Exception, logger: logging.Logger = get_logger('main_lo
     raise exception
 
 
-def time_log(logger: logging.Logger = get_logger('main_logger')):
+def time_log(logger: logging.Logger = get_logger("main_logger")):
     """
     A decorator function that logs the runtime of the function it is decorating
     to the logger object that is taken as an argument.
@@ -120,7 +130,9 @@ def time_log(logger: logging.Logger = get_logger('main_logger')):
             result = method(*args, **kwargs)
             end_time = time.time()
             duration = int((end_time - start_time) * 1000)
-            logger.info(method.__name__ + " function ran for {} milliseconds".format(duration))
+            logger.info(
+                method.__name__ + " function ran for {} milliseconds".format(duration)
+            )
             return result
 
         return timed
@@ -140,6 +152,7 @@ class SuppressStdoutStderr(object):
     source:
     https://stackoverflow.com/questions/11130156/suppress-stdout-stderr-print-from-python-functions
     """
+
     def __init__(self):
         # Open a pair of null files
         self.null_fds = [os.open(os.devnull, os.O_RDWR) for x in range(2)]
@@ -173,7 +186,7 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
     :param *args: Arguments passed to 'function'.
     :return: Outputs of 'function'.
     """
-    if (logger.level >= suppression_threshold_level):
+    if logger.level >= suppression_threshold_level:
         with SuppressStdoutStderr():
             return_value = function(*args)
     else:

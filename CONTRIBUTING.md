@@ -19,7 +19,7 @@ and discuss it with some of the core team.
 * Make it hard for users to make mistakes (e.g., future data leakage).
 * `TimeSeries` is the main data type used to interface with Darts because:
     * We do not want users to have to worry about the specifics of Numpy, Torch etc 
-    (users shouldn’t have to know what’s used behind the scenes if they don’t want to).
+    (users shouldn't have to know what's used behind the scenes if they don't want to).
     * `TimeSeries` objects provide guarantees that the data represent a well-formed time series.
 * It is in general OK to propose breaking changes, if these changes are really genuinely improving the API.
 * Embrace functional principles as much as possible (immutability, using pure functions).
