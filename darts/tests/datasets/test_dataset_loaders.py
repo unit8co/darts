@@ -2,35 +2,47 @@ import os
 
 from darts import TimeSeries
 from darts.datasets import (
-    AirPassengersDataset, AusBeerDataset, EnergyDataset,
-    HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
-    SunspotsDataset, TaylorDataset, TemperatureDataset,
-    USGasolineDataset, WineDataset, WoolyDataset,
-    GasRateCO2Dataset, MonthlyMilkIncompleteDataset
+    AirPassengersDataset,
+    AusBeerDataset,
+    EnergyDataset,
+    HeartRateDataset,
+    IceCreamHeaterDataset,
+    MonthlyMilkDataset,
+    SunspotsDataset,
+    TaylorDataset,
+    TemperatureDataset,
+    USGasolineDataset,
+    WineDataset,
+    WoolyDataset,
+    GasRateCO2Dataset,
+    MonthlyMilkIncompleteDataset,
 )
 from darts.datasets.dataset_loaders import (
     DatasetLoadingException,
     DatasetLoaderCSV,
     DatasetLoaderMetadata,
-    DatasetLoader
+    DatasetLoader,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 
 datasets = [
-    AirPassengersDataset, AusBeerDataset, EnergyDataset,
-    HeartRateDataset, IceCreamHeaterDataset, MonthlyMilkDataset,
-    SunspotsDataset, TaylorDataset, TemperatureDataset,
-    USGasolineDataset, WineDataset, WoolyDataset,
-    GasRateCO2Dataset, MonthlyMilkIncompleteDataset
+    AirPassengersDataset,
+    AusBeerDataset,
+    EnergyDataset,
+    HeartRateDataset,
+    IceCreamHeaterDataset,
+    MonthlyMilkDataset,
+    SunspotsDataset,
+    TaylorDataset,
+    TemperatureDataset,
+    USGasolineDataset,
+    WineDataset,
+    WoolyDataset,
+    GasRateCO2Dataset,
+    MonthlyMilkIncompleteDataset,
 ]
 
-width_datasets = [
-    1, 1, 28,
-    1, 2, 1,
-    1, 1, 1,
-    1, 1, 1,
-    2, 1
-]
+width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
@@ -38,7 +50,7 @@ wrong_hash_dataset = DatasetLoaderCSV(
         uri="https://raw.githubusercontent.com/unit8co/darts/master/datasets/data/AirPassengers.csv",
         hash="will fail",
         header_time="Month",
-        format_time="%Y-%m"
+        format_time="%Y-%m",
     )
 )
 
@@ -48,7 +60,7 @@ wrong_url_dataset = DatasetLoaderCSV(
         uri="https://AirPassengers.csv",
         hash="167ffa96204a2b47339c21eea25baf32",
         header_time="Month",
-        format_time="%Y-%m"
+        format_time="%Y-%m",
     )
 )
 

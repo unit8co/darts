@@ -9,18 +9,26 @@ import pandas as pd
 from typing import Callable, Union, Sequence, List
 
 from darts.timeseries import TimeSeries
-from darts.dataprocessing.transformers import BaseDataTransformer, InvertibleDataTransformer
+from darts.dataprocessing.transformers import (
+    BaseDataTransformer,
+    InvertibleDataTransformer,
+)
 from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
 
 class Mapper(BaseDataTransformer):
-    def __init__(self,
-                 fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
-                 name: str = "Mapper",
-                 n_jobs: int = 1,
-                 verbose: bool = False):
+    def __init__(
+        self,
+        fn: Union[
+            Callable[[np.number], np.number],
+            Callable[[pd.Timestamp, np.number], np.number],
+        ],
+        name: str = "Mapper",
+        n_jobs: int = 1,
+        verbose: bool = False,
+    ):
         """
         Data transformer to apply a custom function to a (sequence of) ``TimeSeries``
         (similar to calling :func:`TimeSeries.map()` on each series).
@@ -71,19 +79,27 @@ class Mapper(BaseDataTransformer):
     def ts_transform(series: TimeSeries, fn) -> TimeSeries:
         return series.map(fn)
 
-    def transform(self,
-                  series: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args, **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
+    def transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         return super().transform(series, *args, fn=self._fn)
 
 
 class InvertibleMapper(InvertibleDataTransformer):
-    def __init__(self,
-                 fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
-                 inverse_fn: Union[Callable[[np.number], np.number], Callable[[pd.Timestamp, np.number], np.number]],
-                 name: str = "InvertibleMapper",
-                 n_jobs: int = 1,
-                 verbose: bool = False):
+    def __init__(
+        self,
+        fn: Union[
+            Callable[[np.number], np.number],
+            Callable[[pd.Timestamp, np.number], np.number],
+        ],
+        inverse_fn: Union[
+            Callable[[np.number], np.number],
+            Callable[[pd.Timestamp, np.number], np.number],
+        ],
+        name: str = "InvertibleMapper",
+        n_jobs: int = 1,
+        verbose: bool = False,
+    ):
         """
         Data transformer to apply a custom function and its inverse to a (sequence of) ``TimeSeries``
         (similar to calling :func:`TimeSeries.map()` on each series).
@@ -139,32 +155,40 @@ class InvertibleMapper(InvertibleDataTransformer):
         Dimensions without coordinates: sample
         """
 
-        super().__init__(name=name,
-                         n_jobs=n_jobs,
-                         verbose=verbose)
+        super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
         self._fn = fn
         self._inverse_fn = inverse_fn
 
     @staticmethod
-    def ts_transform(series: TimeSeries,
-                     fn: Union[Callable[[np.number], np.number],
-                               Callable[[pd.Timestamp, np.number], np.number]]) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries,
+        fn: Union[
+            Callable[[np.number], np.number],
+            Callable[[pd.Timestamp, np.number], np.number],
+        ],
+    ) -> TimeSeries:
         return series.map(fn)
 
     @staticmethod
-    def ts_inverse_transform(series: TimeSeries,
-                             inverse_fn: Union[Callable[[np.number], np.number],
-                                               Callable[[pd.Timestamp, np.number], np.number]]) -> TimeSeries:
+    def ts_inverse_transform(
+        series: TimeSeries,
+        inverse_fn: Union[
+            Callable[[np.number], np.number],
+            Callable[[pd.Timestamp, np.number], np.number],
+        ],
+    ) -> TimeSeries:
         return series.map(inverse_fn)
 
-    def transform(self,
-                  series: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args, **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
+    def transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         # adding the fn param
         return super().transform(series, self._fn, *args, **kwargs)
 
-    def inverse_transform(self,
-                          series: Union[TimeSeries, Sequence[TimeSeries]],
-                          *args, **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
+    def inverse_transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         # adding the inverse_fn param
-        return super().inverse_transform(series, inverse_fn=self._inverse_fn, *args, **kwargs)
+        return super().inverse_transform(
+            series, inverse_fn=self._inverse_fn, *args, **kwargs
+        )
