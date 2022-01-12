@@ -332,8 +332,8 @@ def stationarity_test_kpss(
         The time series to test.
     regression
         The null hypothesis for the KPSS test.
-        “c” : The data is stationary around a constant (default).
-        “ct” : The data is stationary around a trend.
+        "c" : The data is stationary around a constant (default).
+        "ct" : The data is stationary around a trend.
     nlags
        Indicates the number of lags to be used. If “auto” (default), lags is calculated using the data-dependent method of Hobijn et al. (1998).
        See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to “legacy”, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
@@ -378,14 +378,14 @@ def stationarity_test_adf(
         Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.
     regression
         Constant and trend order to include in regression.
-        “c” : constant only (default).
-        “ct” : constant and trend.
-        “ctt” : constant, and linear and quadratic trend.
-        “n” : no constant, no trend.
+        "c" : constant only (default).
+        "ct" : constant and trend.
+        "ctt" : constant, and linear and quadratic trend.
+        "n" : no constant, no trend.
     autolag
         Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
-        If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding
-        information criterion. “t-stat” based choice of maxlag. Starts with maxlag and drops a lag
+        If "AIC" (default) or "BIC", then the number of lags is chosen to minimize the corresponding
+        information criterion. "t-stat" based choice of maxlag. Starts with maxlag and drops a lag
         until the t-statistic on the last lag length is significant using a 5%-sized test.
         If None, then the number of included lags is set to maxlag.
 
@@ -393,7 +393,7 @@ def stationarity_test_adf(
     -------
     set
         | adf: The test statistic.
-        | pvalue: MacKinnon’s approximate p-value based on [2]_.
+        | pvalue: MacKinnon's approximate p-value based on [2]_.
         | usedlag: The number of lags used.
         | nobs: The number of observations used for the ADF regression and calculation of the critical values.
         | critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on [2]_.
