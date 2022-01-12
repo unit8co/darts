@@ -15,12 +15,14 @@ logger = get_logger(__name__)
 
 
 class HorizonBasedDataset(PastCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 output_chunk_length: int = 12,
-                 lh: Tuple[int, int] = (1, 3),
-                 lookback: int = 3) -> None:
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        output_chunk_length: int = 12,
+        lh: Tuple[int, int] = (1, 3),
+        lookback: int = 3,
+    ) -> None:
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_target) arrays,
         in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
@@ -66,8 +68,12 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         super().__init__()
 
-        self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
-        self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.target_series = (
+            [target_series] if isinstance(target_series, TimeSeries) else target_series
+        )
+        self.covariates = (
+            [covariates] if isinstance(covariates, TimeSeries) else covariates
+        )
         self.covariate_type = CovariateType.PAST
 
         self.output_chunk_length = output_chunk_length
@@ -75,12 +81,16 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         self.lookback = lookback
 
         # Checks
-        raise_if_not(self.max_lh >= self.min_lh >= 1,
-                     'The lh parameter should be an int tuple (min_lh, max_lh), '
-                     'with 1 <= min_lh <= max_lh')
-        raise_if_not(covariates is None or len(self.target_series) == len(self.covariates),
-                     'The provided sequence of target series must have the same length as '
-                     'the provided sequence of covariate series.')
+        raise_if_not(
+            self.max_lh >= self.min_lh >= 1,
+            "The lh parameter should be an int tuple (min_lh, max_lh), "
+            "with 1 <= min_lh <= max_lh",
+        )
+        raise_if_not(
+            covariates is None or len(self.target_series) == len(self.covariates),
+            "The provided sequence of target series must have the same length as "
+            "the provided sequence of covariate series.",
+        )
 
         self.nr_samples_per_ts = (self.max_lh - self.min_lh) * self.output_chunk_length
         self.total_nr_samples = len(self.target_series) * self.nr_samples_per_ts
@@ -91,40 +101,57 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         # determine the index of the time series.
         ts_idx = idx // self.nr_samples_per_ts
         ts_target = self.target_series[ts_idx]
         target_vals = ts_target.values(copy=False)
 
-        raise_if_not(len(target_vals) >= (self.lookback + self.max_lh) * self.output_chunk_length,
-                     'The dataset contains some input/target series that are shorter than '
-                     '`(lookback + max_lh) * H` ({}-th series)'.format(ts_idx))
+        raise_if_not(
+            len(target_vals)
+            >= (self.lookback + self.max_lh) * self.output_chunk_length,
+            "The dataset contains some input/target series that are shorter than "
+            "`(lookback + max_lh) * H` ({}-th series)".format(ts_idx),
+        )
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.nr_samples_per_ts)
         lh_idx = idx - (ts_idx * self.nr_samples_per_ts)
 
         # determine the index at the end of the output chunk
-        end_of_output_idx = len(ts_target) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)
+        end_of_output_idx = len(ts_target) - (
+            (self.min_lh - 1) * self.output_chunk_length + lh_idx
+        )
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        main_cov_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
+        main_cov_type = (
+            CovariateType.NONE if self.covariates is None else CovariateType.PAST
+        )
 
         shift = self.lookback * self.output_chunk_length
         input_chunk_length = shift
 
         # get all indices for the current sample
-        past_start, past_end, future_start, future_end, cov_start, cov_end = \
-            self._memory_indexer(ts_idx=ts_idx,
-                                 ts_target=ts_target,
-                                 shift=shift,
-                                 input_chunk_length=input_chunk_length,
-                                 output_chunk_length=self.output_chunk_length,
-                                 end_of_output_idx=end_of_output_idx,
-                                 ts_covariate=ts_covariate,
-                                 cov_type=main_cov_type)
+        (
+            past_start,
+            past_end,
+            future_start,
+            future_end,
+            cov_start,
+            cov_end,
+        ) = self._memory_indexer(
+            ts_idx=ts_idx,
+            ts_target=ts_target,
+            shift=shift,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            end_of_output_idx=end_of_output_idx,
+            ts_covariate=ts_covariate,
+            cov_type=main_cov_type,
+        )
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
@@ -133,14 +160,18 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         # optionally, extract sample covariates
         covariate = None
         if self.covariates is not None:
-            raise_if_not(cov_end <= len(ts_covariate),
-                         f"The dataset contains 'past' covariates that don't extend far enough into the future. "
-                         f"({idx}-th sample)")
+            raise_if_not(
+                cov_end <= len(ts_covariate),
+                f"The dataset contains 'past' covariates that don't extend far enough into the future. "
+                f"({idx}-th sample)",
+            )
 
             covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
 
-            raise_if_not(len(covariate) == len(past_target),
-                         f"The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
-                         f"input (or output) chunk relative to the target series.")
+            raise_if_not(
+                len(covariate) == len(past_target),
+                f"The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
+                f"input (or output) chunk relative to the target series.",
+            )
 
         return past_target, covariate, future_target

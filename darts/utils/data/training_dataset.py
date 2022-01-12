@@ -67,15 +67,17 @@ class TrainingDataset(ABC, Dataset):
     def __getitem__(self, idx: int):
         pass
 
-    def _memory_indexer(self,
-                        ts_idx: int,
-                        ts_target: TimeSeries,
-                        shift: int,
-                        input_chunk_length: int,
-                        output_chunk_length: int,
-                        end_of_output_idx: int,
-                        ts_covariate: TimeSeries,
-                        cov_type: CovariateType = CovariateType.NONE) -> SampleIndexType:
+    def _memory_indexer(
+        self,
+        ts_idx: int,
+        ts_target: TimeSeries,
+        shift: int,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        end_of_output_idx: int,
+        ts_covariate: TimeSeries,
+        cov_type: CovariateType = CovariateType.NONE,
+    ) -> SampleIndexType:
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
         sample `i` from `ts_idx`.
 
@@ -115,10 +117,16 @@ class TrainingDataset(ABC, Dataset):
             start_of_input_idx = start_of_output_idx - shift
 
             # select forecast point and target period, using the previously computed indexes
-            future_start, future_end = start_of_output_idx, start_of_output_idx + output_chunk_length
+            future_start, future_end = (
+                start_of_output_idx,
+                start_of_output_idx + output_chunk_length,
+            )
 
             # select input period; look at the `input_chunk_length` points after start of input
-            past_start, past_end = start_of_input_idx, start_of_input_idx + input_chunk_length
+            past_start, past_end = (
+                start_of_input_idx,
+                start_of_input_idx + input_chunk_length,
+            )
 
             if cov_type is not CovariateType.NONE:
                 # not CovariateType.Future -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
@@ -132,9 +140,12 @@ class TrainingDataset(ABC, Dataset):
                 start_time = ts_target.time_index[start]
                 end_time = ts_target.time_index[end - 1]
 
-                raise_if_not(start_time in ts_covariate.time_index and end_time in ts_covariate.time_index,
-                             f'Missing covariates; could not find {cov_type.value} covariates in index value range: '
-                             f'{start_time} - {end_time}.')
+                raise_if_not(
+                    start_time in ts_covariate.time_index
+                    and end_time in ts_covariate.time_index,
+                    f"Missing covariates; could not find {cov_type.value} covariates in index value range: "
+                    f"{start_time} - {end_time}.",
+                )
 
                 # extract the index position (index) from index value
                 cov_start = ts_covariate.time_index.get_loc(start_time)
@@ -142,17 +153,17 @@ class TrainingDataset(ABC, Dataset):
 
             # store position of initial sample and all relevant sub set indices
             self._index_memory[ts_idx] = {
-                'end_of_output_idx': end_of_output_idx,
-                'past_target': (past_start, past_end),
-                'future_target': (future_start, future_end),
-                'covariate': (cov_start, cov_end),
+                "end_of_output_idx": end_of_output_idx,
+                "past_target": (past_start, past_end),
+                "future_target": (future_start, future_end),
+                "covariate": (cov_start, cov_end),
             }
         else:
             # load position of initial sample and its sub set indices
-            end_of_output_idx_last = self._index_memory[ts_idx]['end_of_output_idx']
-            past_start, past_end = self._index_memory[ts_idx]['past_target']
-            future_start, future_end = self._index_memory[ts_idx]['future_target']
-            cov_start, cov_end = self._index_memory[ts_idx]['covariate']
+            end_of_output_idx_last = self._index_memory[ts_idx]["end_of_output_idx"]
+            past_start, past_end = self._index_memory[ts_idx]["past_target"]
+            future_start, future_end = self._index_memory[ts_idx]["future_target"]
+            cov_start, cov_end = self._index_memory[ts_idx]["covariate"]
 
             # evaluate how much the new sample needs to be shifted, and shift all indexes
             idx_shift = end_of_output_idx - end_of_output_idx_last
@@ -176,7 +187,9 @@ class PastCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         pass
 
 
@@ -190,7 +203,9 @@ class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
         pass
 
 
@@ -204,7 +219,9 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         pass
 
 
@@ -218,8 +235,15 @@ class MixedCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray],
-                                             Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
         pass
 
 
@@ -233,5 +257,7 @@ class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx: int
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         pass
