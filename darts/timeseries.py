@@ -1468,7 +1468,9 @@ class TimeSeries:
         max_slice_start = None
         max_slice_end = None
         for index, row in relevant_gaps.iterrows():
-            size = row['gap_start'] - self._freq - curr_slice_start
+            # evaluate size of the current slice. the slice ends one time step before row['gap_start']
+            curr_slice_end = row['gap_start'] - self.freq
+            size = curr_slice_end - curr_slice_start
             if size > max_size:
                 max_size = size
                 max_slice_start = curr_slice_start
