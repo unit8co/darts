@@ -336,7 +336,7 @@ def stationarity_test_kpss(
         'ct' : The data is stationary around a trend.
     nlags
        Indicates the number of lags to be used. If 'auto' (default), lags is calculated using the data-dependent method of Hobijn et al. (1998).
-       See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to “legacy”, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
+       See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to 'legacy', uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
 
     Returns
     -------
