@@ -29,7 +29,9 @@ def missing_values_ratio(series: TimeSeries) -> float:
     return series.pd_dataframe().isnull().sum().mean() / len(series)
 
 
-def fill_missing_values(series: TimeSeries, fill: Union[str, float] = 'auto', **interpolate_kwargs) -> TimeSeries:
+def fill_missing_values(
+    series: TimeSeries, fill: Union[str, float] = "auto", **interpolate_kwargs
+) -> TimeSeries:
     """
     Fills missing values in the provided time series
 
@@ -51,19 +53,25 @@ def fill_missing_values(series: TimeSeries, fill: Union[str, float] = 'auto', **
     TimeSeries
         A new TimeSeries with all missing values filled according to the rules above.
     """
-    raise_if_not(isinstance(fill, str) or isinstance(fill, float),
-                 "`fill` should either be a string or a float",
-                 logger)
-    raise_if(isinstance(fill, str) and fill != 'auto',
-             "invalid string for `fill`: can only be set to 'auto'",
-             logger)
+    raise_if_not(
+        isinstance(fill, str) or isinstance(fill, float),
+        "`fill` should either be a string or a float",
+        logger,
+    )
+    raise_if(
+        isinstance(fill, str) and fill != "auto",
+        "invalid string for `fill`: can only be set to 'auto'",
+        logger,
+    )
 
-    if fill == 'auto':
+    if fill == "auto":
         return _auto_fill(series, **interpolate_kwargs)
     return _const_fill(series, fill)
 
 
-def extract_subseries(series: TimeSeries, min_gap_size: Optional[int] = 1) -> List[TimeSeries]:
+def extract_subseries(
+    series: TimeSeries, min_gap_size: Optional[int] = 1
+) -> List[TimeSeries]:
     """
     Partitions the series into a sequence of sub-series by using significant gaps of missing values
 
@@ -89,9 +97,9 @@ def extract_subseries(series: TimeSeries, min_gap_size: Optional[int] = 1) -> Li
         return [series]
 
     # Get start/end times of sub-series without gaps of missing values
-    gaps_df = series.gaps().query(f'gap_size>={min_gap_size}')
-    start_times = [series.start_time()] + (gaps_df['gap_end'] + freq).to_list()
-    end_times = (gaps_df['gap_start'] - freq).to_list() + [series.end_time() + freq]
+    gaps_df = series.gaps().query(f"gap_size>={min_gap_size}")
+    start_times = [series.start_time()] + (gaps_df["gap_end"] + freq).to_list()
+    end_times = (gaps_df["gap_start"] - freq).to_list() + [series.end_time() + freq]
 
     subseries = []
     for start, end in zip(start_times, end_times):
@@ -117,10 +125,12 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
         A TimeSeries, `series` with all missing values set to `fill`.
     """
 
-    return TimeSeries.from_times_and_values(series.time_index,
-                                            series.pd_dataframe().fillna(value=fill),
-                                            freq = series.freq,
-                                            columns = series.columns)
+    return TimeSeries.from_times_and_values(
+        series.time_index,
+        series.pd_dataframe().fillna(value=fill),
+        freq=series.freq,
+        columns=series.columns,
+    )
 
 
 def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
@@ -146,8 +156,8 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
     series_temp = series.pd_dataframe()
 
     # pandas interpolate wrapper, with chosen `method`
-    if 'limit_direction' not in interpolate_kwargs:
-        interpolate_kwargs['limit_direction'] = 'both'
-    interpolate_kwargs['inplace'] = True
+    if "limit_direction" not in interpolate_kwargs:
+        interpolate_kwargs["limit_direction"] = "both"
+    interpolate_kwargs["inplace"] = True
     series_temp.interpolate(**interpolate_kwargs)
     return TimeSeries.from_dataframe(series_temp, freq=series.freq)

@@ -15,16 +15,18 @@ logger = get_logger(__name__)
 
 
 class FittableDataTransformer(BaseDataTransformer):
-    def __init__(self,
-                 name: str = "FittableDataTransformer",
-                 n_jobs: int = 1,
-                 verbose: bool = False):
+    def __init__(
+        self,
+        name: str = "FittableDataTransformer",
+        n_jobs: int = 1,
+        verbose: bool = False,
+    ):
 
-        """ Base class for fittable transformers.
-        
+        """Base class for fittable transformers.
+
         All the deriving classes have to implement the static methods
-        :func:`ts_transform()` and :func:`ts_fit()`. The fitting and transformation functions must 
-        be passed during the transformer's initialization. This class takes care of parallelizing 
+        :func:`ts_transform()` and :func:`ts_fit()`. The fitting and transformation functions must
+        be passed during the transformer's initialization. This class takes care of parallelizing
         operations involving multiple ``TimeSeries`` when possible.
 
         Parameters
@@ -55,7 +57,7 @@ class FittableDataTransformer(BaseDataTransformer):
     @staticmethod
     @abstractmethod
     def ts_fit(series: TimeSeries) -> TimeSeries:
-        """ The function that will be applied to each series when :func:`fit` is called.
+        """The function that will be applied to each series when :func:`fit` is called.
 
         The function must take as first argument a ``TimeSeries`` object, and return an object containing information
         regarding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will
@@ -81,7 +83,9 @@ class FittableDataTransformer(BaseDataTransformer):
         """
         pass
 
-    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
+    def _fit_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries]]:
         """
         Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_fit()`.
         Additional `args` and `kwargs` from :func:`fit()` (that don't change across the calls to :func:`ts_fit()`)
@@ -127,8 +131,10 @@ class FittableDataTransformer(BaseDataTransformer):
         """
         return zip(series)
 
-    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs) -> 'FittableDataTransformer':
-        """ Fit the transformer to the provided series or sequence of series.
+    def fit(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> "FittableDataTransformer":
+        """Fit the transformer to the provided series or sequence of series.
 
         Fit the data and store the fitting parameters into ``self._fitted_params``. If a sequence is passed as input
         data, this function takes care of parallelising the fitting of multiple series in the sequence at the same time
@@ -161,21 +167,20 @@ class FittableDataTransformer(BaseDataTransformer):
         else:
             data = series
 
-        input_iterator = _build_tqdm_iterator(self._fit_iterator(data),
-                                              verbose=self._verbose,
-                                              desc=desc,
-                                              total=len(data))
+        input_iterator = _build_tqdm_iterator(
+            self._fit_iterator(data), verbose=self._verbose, desc=desc, total=len(data)
+        )
 
-        self._fitted_params = _parallel_apply(input_iterator, self.__class__.ts_fit,
-                                              self._n_jobs, args, kwargs)
+        self._fitted_params = _parallel_apply(
+            input_iterator, self.__class__.ts_fit, self._n_jobs, args, kwargs
+        )
 
         return self
 
-    def fit_transform(self,
-                      series: Union[TimeSeries, Sequence[TimeSeries]],
-                      *args,
-                      **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
-        """ Fit the transformer to the (sequence of) series and return the transformed input.
+    def fit_transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
+        """Fit the transformer to the (sequence of) series and return the transformed input.
 
         Parameters
         ----------
@@ -195,5 +200,7 @@ class FittableDataTransformer(BaseDataTransformer):
         Union[TimeSeries, Sequence[TimeSeries]]
             Transformed data.
         """
-        component_mask = kwargs.get('component_mask', None)
-        return self.fit(series, component_mask=component_mask).transform(series, *args, **kwargs)
+        component_mask = kwargs.get("component_mask", None)
+        return self.fit(series, component_mask=component_mask).transform(
+            series, *args, **kwargs
+        )

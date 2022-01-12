@@ -58,7 +58,7 @@ def train_test_split(features, target, split_ts):
     return (train_features, train_target, test_features, test_target)
 
 
-# Regression models rely on torch for the Datasets
+# Regression models rely on PyTorch for the Datasets
 if TORCH_AVAILABLE:
 
     class RegressionModelsTestCase(DartsBaseTestClass):
@@ -647,7 +647,7 @@ if TORCH_AVAILABLE:
         )
         # @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
         def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
-            """test whether these evaluation set parameters are passed to LGBRegressor """
+            """Test whether these evaluation set parameters are passed to LGBRegressor"""
             model = LightGBMModel(lags=4, lags_past_covariates=2)
             split_index = 450
             model.fit(

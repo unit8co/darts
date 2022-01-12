@@ -23,13 +23,15 @@ logger = get_logger(__name__)
 
 
 class RandomForest(RegressionModel):
-    def __init__(self,
-                 lags: Union[int, list] = None,
-                 lags_past_covariates: Union[int, List[int]] = None,
-                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-                 n_estimators: Optional[int] = 100,
-                 max_depth: Optional[int] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        lags: Union[int, list] = None,
+        lags_past_covariates: Union[int, List[int]] = None,
+        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        n_estimators: Optional[int] = 100,
+        max_depth: Optional[int] = None,
+        **kwargs,
+    ):
         """Random Forest Model
 
         Parameters
@@ -64,11 +66,14 @@ class RandomForest(RegressionModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
-            model=RandomForestRegressor(**kwargs)
+            model=RandomForestRegressor(**kwargs),
         )
 
     def __str__(self):
-        return (f"RandomForest(lags={self.lags}, lags_past_covariates={self.lags_past_covariates}, "
-                f"lags_historical_covariates={self.lags_historical_covariates}, "
-                f"lags_future_covariates={self.lags_future_covariates}, "
-                f"n_estimators={self.n_estimators}, max_depth={self.max_depth}")
+        return (
+            f"RandomForest(lags={self.lags}, "
+            f"lags_past_covariates={self.lags_past_covariates}, "
+            f"lags_historical_covariates={self.lags_historical_covariates}, "
+            f"lags_future_covariates={self.lags_future_covariates}, "
+            f"n_estimators={self.n_estimators}, max_depth={self.max_depth})"
+        )

@@ -15,24 +15,28 @@ from darts.utils.data import PastCovariatesShiftedDataset
 from darts.utils.likelihood_models import Likelihood
 
 from darts.logging import raise_if_not, get_logger
-from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (
+    TorchParametricProbabilisticForecastingModel,
+    PastCovariatesTorchModel,
+)
 
 logger = get_logger(__name__)
 
 
 class _ResidualBlock(nn.Module):
-
-    def __init__(self,
-                 num_filters: int,
-                 kernel_size: int,
-                 dilation_base: int,
-                 dropout_fn,
-                 weight_norm: bool,
-                 nr_blocks_below: int,
-                 num_layers: int,
-                 input_size: int,
-                 target_size: int):
-        """ PyTorch module implementing a residual block module used in `_TCNModule`.
+    def __init__(
+        self,
+        num_filters: int,
+        kernel_size: int,
+        dilation_base: int,
+        dropout_fn,
+        weight_norm: bool,
+        nr_blocks_below: int,
+        num_layers: int,
+        input_size: int,
+        target_size: int,
+    ):
+        """PyTorch module implementing a residual block module used in `_TCNModule`.
 
         Parameters
         ----------
@@ -79,10 +83,22 @@ class _ResidualBlock(nn.Module):
 
         input_dim = input_size if nr_blocks_below == 0 else num_filters
         output_dim = target_size if nr_blocks_below == num_layers - 1 else num_filters
-        self.conv1 = nn.Conv1d(input_dim, num_filters, kernel_size, dilation=(dilation_base ** nr_blocks_below))
-        self.conv2 = nn.Conv1d(num_filters, output_dim, kernel_size, dilation=(dilation_base ** nr_blocks_below))
+        self.conv1 = nn.Conv1d(
+            input_dim,
+            num_filters,
+            kernel_size,
+            dilation=(dilation_base ** nr_blocks_below),
+        )
+        self.conv2 = nn.Conv1d(
+            num_filters,
+            output_dim,
+            kernel_size,
+            dilation=(dilation_base ** nr_blocks_below),
+        )
         if weight_norm:
-            self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
+            self.conv1, self.conv2 = nn.utils.weight_norm(
+                self.conv1
+            ), nn.utils.weight_norm(self.conv2)
 
         if input_dim != output_dim:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
@@ -91,7 +107,9 @@ class _ResidualBlock(nn.Module):
         residual = x
 
         # first step
-        left_padding = (self.dilation_base ** self.nr_blocks_below) * (self.kernel_size - 1)
+        left_padding = (self.dilation_base ** self.nr_blocks_below) * (
+            self.kernel_size - 1
+        )
         x = F.pad(x, (left_padding, 0))
         x = self.dropout_fn(F.relu(self.conv1(x)))
 
@@ -111,20 +129,22 @@ class _ResidualBlock(nn.Module):
 
 
 class _TCNModule(nn.Module):
-    def __init__(self,
-                 input_size: int,
-                 input_chunk_length: int,
-                 kernel_size: int,
-                 num_filters: int,
-                 num_layers: Optional[int],
-                 dilation_base: int,
-                 weight_norm: bool,
-                 target_size: int,
-                 nr_params: int,   
-                 target_length: int,
-                 dropout: float):
+    def __init__(
+        self,
+        input_size: int,
+        input_chunk_length: int,
+        kernel_size: int,
+        num_filters: int,
+        num_layers: Optional[int],
+        dilation_base: int,
+        weight_norm: bool,
+        target_size: int,
+        nr_params: int,
+        target_length: int,
+        dropout: float,
+    ):
 
-        """ PyTorch module implementing a dilated TCN module used in `TCNModel`.
+        """PyTorch module implementing a dilated TCN module used in `TCNModel`.
 
 
         Parameters
@@ -180,8 +200,16 @@ class _TCNModule(nn.Module):
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
-            num_layers = math.ceil(math.log((input_chunk_length - 1) * (dilation_base - 1) / (kernel_size - 1) / 2 + 1,
-                                            dilation_base))
+            num_layers = math.ceil(
+                math.log(
+                    (input_chunk_length - 1)
+                    * (dilation_base - 1)
+                    / (kernel_size - 1)
+                    / 2
+                    + 1,
+                    dilation_base,
+                )
+            )
             logger.info("Number of layers chosen: " + str(num_layers))
         elif num_layers is None:
             num_layers = math.ceil((input_chunk_length - 1) / (kernel_size - 1) / 2)
@@ -191,9 +219,17 @@ class _TCNModule(nn.Module):
         # Building TCN module
         self.res_blocks_list = []
         for i in range(num_layers):
-            res_block = _ResidualBlock(num_filters, kernel_size, dilation_base,
-                                       self.dropout, weight_norm, i, num_layers, 
-                                       self.input_size, target_size * nr_params)
+            res_block = _ResidualBlock(
+                num_filters,
+                kernel_size,
+                dilation_base,
+                self.dropout,
+                weight_norm,
+                i,
+                num_layers,
+                self.input_size,
+                target_size * nr_params,
+            )
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
@@ -206,27 +242,31 @@ class _TCNModule(nn.Module):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(batch_size, self.input_chunk_length, self.target_size, self.nr_params)
+        x = x.view(
+            batch_size, self.input_chunk_length, self.target_size, self.nr_params
+        )
 
         return x
 
 
 class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
     @random_method
-    def __init__(self,
-                 input_chunk_length: int,
-                 output_chunk_length: int,
-                 kernel_size: int = 3,
-                 num_filters: int = 3,
-                 num_layers: Optional[int] = None,
-                 dilation_base: int = 2,
-                 weight_norm: bool = False,
-                 dropout: float = 0.2,
-                 likelihood: Optional[Likelihood] = None,
-                 random_state: Optional[Union[int, RandomState]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        kernel_size: int = 3,
+        num_filters: int = 3,
+        num_layers: Optional[int] = None,
+        dilation_base: int = 2,
+        weight_norm: bool = False,
+        dropout: float = 0.2,
+        likelihood: Optional[Likelihood] = None,
+        random_state: Optional[Union[int, RandomState]] = None,
+        **kwargs
+    ):
 
-        """ Temporal Convolutional Network Model (TCN).
+        """Temporal Convolutional Network Model (TCN).
 
         This is an implementation of a dilated TCN used for forecasting, inspired from [1]_.
 
@@ -327,13 +367,19 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         .. [1] https://arxiv.org/abs/1803.01271
         """
 
-        raise_if_not(kernel_size < input_chunk_length,
-                     "The kernel size must be strictly smaller than the input length.", logger)
-        raise_if_not(output_chunk_length < input_chunk_length,
-                     "The output length must be strictly smaller than the input length", logger)
+        raise_if_not(
+            kernel_size < input_chunk_length,
+            "The kernel size must be strictly smaller than the input length.",
+            logger,
+        )
+        raise_if_not(
+            output_chunk_length < input_chunk_length,
+            "The output length must be strictly smaller than the input length",
+            logger,
+        )
 
-        kwargs['input_chunk_length'] = input_chunk_length
-        kwargs['output_chunk_length'] = output_chunk_length
+        kwargs["input_chunk_length"] = input_chunk_length
+        kwargs["output_chunk_length"] = output_chunk_length
 
         super().__init__(likelihood=likelihood, **kwargs)
 
@@ -348,34 +394,42 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        input_dim = train_sample[0].shape[1] + (
+            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        )
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        return _TCNModule(input_size=input_dim,
-                          input_chunk_length=self.input_chunk_length,
-                          target_size=output_dim,
-                          nr_params=nr_params,
-                          kernel_size=self.kernel_size,
-                          num_filters=self.num_filters,
-                          num_layers=self.num_layers,
-                          dilation_base=self.dilation_base,
-                          target_length=self.output_chunk_length,
-                          dropout=self.dropout,
-                          weight_norm=self.weight_norm)
+        return _TCNModule(
+            input_size=input_dim,
+            input_chunk_length=self.input_chunk_length,
+            target_size=output_dim,
+            nr_params=nr_params,
+            kernel_size=self.kernel_size,
+            num_filters=self.num_filters,
+            num_layers=self.num_layers,
+            dilation_base=self.dilation_base,
+            target_length=self.output_chunk_length,
+            dropout=self.dropout,
+            weight_norm=self.weight_norm,
+        )
 
-    def _build_train_dataset(self,
-                             target: Sequence[TimeSeries],
-                             past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]],
-                             max_samples_per_ts: Optional[int]) -> PastCovariatesShiftedDataset:
+    def _build_train_dataset(
+        self,
+        target: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]],
+        future_covariates: Optional[Sequence[TimeSeries]],
+        max_samples_per_ts: Optional[int],
+    ) -> PastCovariatesShiftedDataset:
 
-        return PastCovariatesShiftedDataset(target_series=target,
-                                            covariates=past_covariates,
-                                            length=self.input_chunk_length,
-                                            shift=self.output_chunk_length,
-                                            max_samples_per_ts=max_samples_per_ts)
-    
+        return PastCovariatesShiftedDataset(
+            target_series=target,
+            covariates=past_covariates,
+            length=self.input_chunk_length,
+            shift=self.output_chunk_length,
+            max_samples_per_ts=max_samples_per_ts,
+        )
+
     @random_method
     def _produce_predict_output(self, x):
         if self.likelihood:

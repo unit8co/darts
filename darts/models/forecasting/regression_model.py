@@ -38,15 +38,15 @@ from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
 logger = get_logger(__name__)
 
 
-def _shift_matrices(past_matrix: Optional[np.ndarray],
-                    future_matrix: np.ndarray) -> Tuple[np.ndarray, Optional[np.ndarray]]:
+def _shift_matrices(
+    past_matrix: Optional[np.ndarray], future_matrix: np.ndarray
+) -> Tuple[np.ndarray, Optional[np.ndarray]]:
     """
     Given two matrices, consumes the first column of the past_matrix (if available), and moves the first column of
     the future_matrix to the end of the past_matrix. This can be seen as a time shift, sending the new past value
     to the past_matrix. `None` will be returned in case a matrix is empty after performing the operation.
     """
-    raise_if(future_matrix is None,
-             "Future matrix to be shifted cannot be None")
+    raise_if(future_matrix is None, "Future matrix to be shifted cannot be None")
 
     new_past_matrix = []
 
@@ -63,24 +63,37 @@ def _shift_matrices(past_matrix: Optional[np.ndarray],
     return new_past_matrix, future_matrix
 
 
-def _update_min_max(current_min: Union[int, None], current_max: Union[int, None],
-                    new_values: Sequence[int]) -> Tuple[int, int]:
+def _update_min_max(
+    current_min: Union[int, None],
+    current_max: Union[int, None],
+    new_values: Sequence[int],
+) -> Tuple[int, int]:
     """
     Helper function that, given min, max and some values, updates min and max. Min and max can be set to None, if not
     set yet.
     """
-    new_min = min(min(new_values), current_min) if current_min is not None else min(new_values)
-    new_max = max(max(new_values), current_max) if current_max is not None else max(new_values)
+    new_min = (
+        min(min(new_values), current_min)
+        if current_min is not None
+        else min(new_values)
+    )
+    new_max = (
+        max(max(new_values), current_max)
+        if current_max is not None
+        else max(new_values)
+    )
     return new_min, new_max
 
 
 class RegressionModel(GlobalForecastingModel):
-    def __init__(self,
-                 lags: Union[int, list] = None,
-                 lags_past_covariates: Union[int, List[int]] = None,
-                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-                 model=None):
-        """ Regression Model
+    def __init__(
+        self,
+        lags: Union[int, list] = None,
+        lags_past_covariates: Union[int, List[int]] = None,
+        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        model=None,
+    ):
+        """Regression Model
         Can be used to fit any scikit-learn-like regressor class to predict the target time series from lagged values.
 
         Parameters
@@ -119,75 +132,101 @@ class RegressionModel(GlobalForecastingModel):
             self.model = LinearRegression(n_jobs=-1)
 
         if not callable(getattr(self.model, "fit", None)):
-            raise_log(Exception("Provided model object must have a fit() method", logger))
+            raise_log(
+                Exception("Provided model object must have a fit() method", logger)
+            )
         if not callable(getattr(self.model, "predict", None)):
-            raise_log(Exception("Provided model object must have a predict() method", logger))
+            raise_log(
+                Exception("Provided model object must have a predict() method", logger)
+            )
 
         # lags checks and processing to arrays
-        raise_if((lags is None) and (lags_future_covariates is None) and (lags_past_covariates is None),
-                 "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.")
+        raise_if(
+            (lags is None)
+            and (lags_future_covariates is None)
+            and (lags_past_covariates is None),
+            "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
+        )
 
         lags_type_checks = [
-            (lags, 'lags'),
-            (lags_past_covariates, 'lags_past_covariates'),
+            (lags, "lags"),
+            (lags_past_covariates, "lags_past_covariates"),
         ]
 
         # checking types
         for _lags, lags_name in lags_type_checks:
-            raise_if_not(isinstance(_lags, (int, list)) or _lags is None,
-                         f"`{lags_name}` must be of type int or list. Given: {type(_lags)}.")
+            raise_if_not(
+                isinstance(_lags, (int, list)) or _lags is None,
+                f"`{lags_name}` must be of type int or list. Given: {type(_lags)}.",
+            )
 
-            raise_if(isinstance(lags, bool),
-                     f"`{lags_name}` must be of type int or list, not bool.")
+            raise_if(
+                isinstance(lags, bool),
+                f"`{lags_name}` must be of type int or list, not bool.",
+            )
 
-        raise_if_not(isinstance(lags_future_covariates, (tuple, list)) or lags_future_covariates is None,
-                     f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.")
+        raise_if_not(
+            isinstance(lags_future_covariates, (tuple, list))
+            or lags_future_covariates is None,
+            f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.",
+        )
 
-        raise_if(isinstance(lags_future_covariates, bool),
-                 "`lags_future_covariates` must be of type int or list, not bool.")
+        raise_if(
+            isinstance(lags_future_covariates, bool),
+            "`lags_future_covariates` must be of type int or list, not bool.",
+        )
 
         if isinstance(lags_future_covariates, tuple):
             raise_if_not(
-                len(lags_future_covariates) == 2 and isinstance(lags_future_covariates[0], int)
+                len(lags_future_covariates) == 2
+                and isinstance(lags_future_covariates[0], int)
                 and isinstance(lags_future_covariates[1], int),
-                "`lags_future_covariates` tuple must be of length 2, and must contain two integers"
+                "`lags_future_covariates` tuple must be of length 2, and must contain two integers",
             )
-            raise_if(isinstance(lags_future_covariates[0], bool) or isinstance(lags_future_covariates[1], bool),
-                     "`lags_future_covariates` tuple must contain intergers, not bool")
+            raise_if(
+                isinstance(lags_future_covariates[0], bool)
+                or isinstance(lags_future_covariates[1], bool),
+                "`lags_future_covariates` tuple must contain intergers, not bool",
+            )
 
         if isinstance(lags, int):
-            raise_if_not(
-                lags > 0,
-                f"`lags` must be strictly positive. Given: {lags}.")
+            raise_if_not(lags > 0, f"`lags` must be strictly positive. Given: {lags}.")
             # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
             self.lags = list(range(-lags, 0))
 
         elif isinstance(lags, list):
             for lag in lags:
-                raise_if(not isinstance(lag, int) or (lag >= 0),
-                         f"Every element of `lags` must be a strictly negative integer. Given: {lags}.")
+                raise_if(
+                    not isinstance(lag, int) or (lag >= 0),
+                    f"Every element of `lags` must be a strictly negative integer. Given: {lags}.",
+                )
             self.lags = sorted(lags)
 
         if isinstance(lags_past_covariates, int):
             raise_if_not(
                 lags_past_covariates > 0,
-                f"`lags_past_covariates` must be an integer > 0. Given: {lags_past_covariates}.")
+                f"`lags_past_covariates` must be an integer > 0. Given: {lags_past_covariates}.",
+            )
             self.lags_past_covariates = list(range(-lags_past_covariates, 0))
 
         elif isinstance(lags_past_covariates, list):
             for lag in lags_past_covariates:
                 raise_if(
                     not isinstance(lag, int) or (lag >= 0),
-                    f"Every element of `lags_covariates` must be an integer < 0. Given: {lags_past_covariates}.")
+                    f"Every element of `lags_covariates` must be an integer < 0. Given: {lags_past_covariates}.",
+                )
             self.lags_past_covariates = sorted(lags_past_covariates)
 
         if isinstance(lags_future_covariates, tuple):
             raise_if_not(
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"`lags_past_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.")
+                f"`lags_past_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
+            )
 
             if lags_future_covariates[0] is not None and lags_future_covariates[0] > 0:
-                self.lags_historical_covariates = list(range(-lags_future_covariates[0], 0))
+                self.lags_historical_covariates = list(
+                    range(-lags_future_covariates[0], 0)
+                )
             if lags_future_covariates[1] is not None and lags_future_covariates[1] > 0:
                 self.lags_future_covariates = list(range(0, lags_future_covariates[1]))
 
@@ -195,11 +234,16 @@ class RegressionModel(GlobalForecastingModel):
             for lag in lags_future_covariates:
                 raise_if(
                     not isinstance(lag, int) or isinstance(lag, bool),
-                    f"Every element of `lags_future_covariates` must be an integer. Given: {lags_future_covariates}.")
+                    f"Every element of `lags_future_covariates` must be an integer. Given: {lags_future_covariates}.",
+                )
 
             lags_future_covariates = np.array(sorted(lags_future_covariates))
-            self.lags_historical_covariates = list(lags_future_covariates[lags_future_covariates < 0])
-            self.lags_future_covariates = list(lags_future_covariates[lags_future_covariates >= 0])
+            self.lags_historical_covariates = list(
+                lags_future_covariates[lags_future_covariates < 0]
+            )
+            self.lags_future_covariates = list(
+                lags_future_covariates[lags_future_covariates >= 0]
+            )
 
             if len(self.lags_historical_covariates) == 0:
                 self.lags_historical_covariates = None
@@ -212,19 +256,19 @@ class RegressionModel(GlobalForecastingModel):
 
         if lags is not None:
             # min (index 0) and max (index -1) are enough since the array is already sorted
-            self.min_lag, self.max_lag = _update_min_max(self.min_lag, self.max_lag, [self.lags[0], self.lags[-1]])
+            self.min_lag, self.max_lag = _update_min_max(
+                self.min_lag, self.max_lag, [self.lags[0], self.lags[-1]]
+            )
 
         lags = [
             self.lags_past_covariates,
             self.lags_historical_covariates,
-            self.lags_future_covariates
+            self.lags_future_covariates,
         ]
         for lag in lags:
             if lag is not None:
                 self.min_lag, self.max_lag = _update_min_max(
-                    self.min_lag,
-                    self.max_lag,
-                    [lag[0], lag[-1]]
+                    self.min_lag, self.max_lag, [lag[0], lag[-1]]
                 )
 
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
@@ -247,14 +291,20 @@ class RegressionModel(GlobalForecastingModel):
         training_samples = []
         training_labels = []
 
-        for past_target, past_covariate, historic_future_covariate, future_covariate, future_target in training_dataset:
+        for (
+            past_target,
+            past_covariate,
+            historic_future_covariate,
+            future_covariate,
+            future_target,
+        ) in training_dataset:
             row = []
             if self.lags is not None:
                 row.append(past_target[self.lags].reshape(1, -1))
             covariates = [
                 (past_covariate, self.lags_past_covariates),
                 (historic_future_covariate, self.lags_historical_covariates),
-                (future_covariate, self.lags_future_covariates)
+                (future_covariate, self.lags_future_covariates),
             ]
             for covariate, lags in covariates:
                 if lags is not None:
@@ -267,7 +317,9 @@ class RegressionModel(GlobalForecastingModel):
         training_labels = np.concatenate(training_labels, axis=0)
         return training_samples, training_labels
 
-    def _create_lagged_data(self, target_series, past_covariates, future_covariates, max_samples_per_ts):
+    def _create_lagged_data(
+        self, target_series, past_covariates, future_covariates, max_samples_per_ts
+    ):
         """
         Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
         max_samples_per_ts.
@@ -282,19 +334,29 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             input_chunk_length=max(0, -self.min_lag),
-            output_chunk_length=max(1, self.max_lag + 1),  # max lag + 1 since we need to access that index
-            max_samples_per_ts=max_samples_per_ts
+            output_chunk_length=max(
+                1, self.max_lag + 1
+            ),  # max lag + 1 since we need to access that index
+            max_samples_per_ts=max_samples_per_ts,
         )
 
         return self._get_training_data(training_dataset=training_dataset)
 
-    def _fit_model(self, target_series, past_covariates, future_covariates, max_samples_per_ts, **kwargs):
+    def _fit_model(
+        self,
+        target_series,
+        past_covariates,
+        future_covariates,
+        max_samples_per_ts,
+        **kwargs,
+    ):
         """
         Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
         adding validation data), keeping the sanity checks on series performed by fit().
         """
         training_samples, training_labels = self._create_lagged_data(
-            target_series, past_covariates, future_covariates, max_samples_per_ts)
+            target_series, past_covariates, future_covariates, max_samples_per_ts
+        )
 
         # if training_labels is of shape (n_samples, 1) we flatten it to have shape (n_samples,)
         if len(training_labels.shape) == 2 and training_labels.shape[1] == 1:
@@ -307,7 +369,7 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Fit/train the model on one or multiple series.
@@ -330,28 +392,42 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs : dict, optional
             Additional keyword arguments passed to the `fit` method of the model.
         """
-        super().fit(series=series, past_covariates=past_covariates, future_covariates=future_covariates)
+        super().fit(
+            series=series,
+            past_covariates=past_covariates,
+            future_covariates=future_covariates,
+        )
 
         raise_if(
             past_covariates is not None and self.lags_past_covariates is None,
-            "`past_covariates` not None in `fit()` method call, but `lags_past_covariates` is None in constructor")
+            "`past_covariates` not None in `fit()` method call, but `lags_past_covariates` is None in constructor",
+        )
 
         raise_if(
             past_covariates is None and self.lags_past_covariates is not None,
             "`past_covariates` is None in `fit()` method call, but `lags_past_covariates` is not None in"
-            "constructor.")
+            "constructor.",
+        )
 
         raise_if(
-            future_covariates is not None and (self.lags_historical_covariates is None
-                                               and self.lags_future_covariates is None),
+            future_covariates is not None
+            and (
+                self.lags_historical_covariates is None
+                and self.lags_future_covariates is None
+            ),
             "`future_covariates` not None in `fit()` method call, but `lags_future_covariates` is None in "
-            "constructor.")
+            "constructor.",
+        )
 
         raise_if(
-            future_covariates is None and (self.lags_future_covariates is not None
-                                           or self.lags_historical_covariates is not None),
+            future_covariates is None
+            and (
+                self.lags_future_covariates is not None
+                or self.lags_historical_covariates is not None
+            ),
             "`future_covariates` is None in `fit()` method call, but `lags_future_covariates` is not None in"
-            "constructor.")
+            "constructor.",
+        )
 
         # saving the input dim, so that we can perform the dim check at prediction time
         series_dim = series.width if isinstance(series, TimeSeries) else series[0].width
@@ -369,12 +445,11 @@ class RegressionModel(GlobalForecastingModel):
         if not series[0].is_univariate:
             self.model = MultiOutputRegressor(self.model, n_jobs=1)
 
-        self._fit_model(series, past_covariates, future_covariates, max_samples_per_ts, **kwargs)
+        self._fit_model(
+            series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
+        )
 
-    def _get_prediction_data(
-        self,
-        prediction_dataset: MixedCovariatesInferenceDataset
-    ):
+    def _get_prediction_data(self, prediction_dataset: MixedCovariatesInferenceDataset):
         """
         Helper function which turns a MixedCovariatesInferenceDataset into 5 matrices. The matrices simply contain all
         the samples stacked in the first dimension.
@@ -385,8 +460,14 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates_matrix = []
         future_past_covariates_matrix = []
 
-        for (past_target, past_covariates, historic_future_covariates, future_covariates,
-             future_past_covariates, _) in prediction_dataset:
+        for (
+            past_target,
+            past_covariates,
+            historic_future_covariates,
+            future_covariates,
+            future_past_covariates,
+            _,
+        ) in prediction_dataset:
 
             target_matrix.append(past_target)
 
@@ -403,16 +484,17 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates_matrix,
             historic_future_covariates_matrix,
             future_covariates_matrix,
-            future_past_covariates_matrix
+            future_past_covariates_matrix,
         ]
 
         for i in range(len(covariates_matrices)):
-            covariates_matrices[i] = None if len(covariates_matrices[i]) == 0 else np.asarray(covariates_matrices[i])
+            covariates_matrices[i] = (
+                None
+                if len(covariates_matrices[i]) == 0
+                else np.asarray(covariates_matrices[i])
+            )
 
-        return (
-            np.asarray(target_matrix),
-            *covariates_matrices
-        )
+        return (np.asarray(target_matrix), *covariates_matrices)
 
     def predict(
         self,
@@ -421,9 +503,9 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         num_samples: int = 1,
-        **kwargs
+        **kwargs,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """ Forecasts values for `n` time steps after the end of the series.
+        """Forecasts values for `n` time steps after the end of the series.
 
         Parameters
         ----------
@@ -465,7 +547,9 @@ class RegressionModel(GlobalForecastingModel):
             called_with_single_series = True
             series = [series]
             past_covariates = [past_covariates] if past_covariates is not None else None
-            future_covariates = [future_covariates] if future_covariates is not None else None
+            future_covariates = (
+                [future_covariates] if future_covariates is not None else None
+            )
 
         # check that the input sizes match
         series_dim = series[0].width
@@ -487,22 +571,27 @@ class RegressionModel(GlobalForecastingModel):
 
         if future_covariates is not None:
             for sample in range(len(series)):
-                last_req_ts = series[sample].end_time() + (max(n + self.max_lag, n)) * series[sample].freq
+                last_req_ts = (
+                    series[sample].end_time()
+                    + (max(n + self.max_lag, n)) * series[sample].freq
+                )
                 raise_if_not(
                     future_covariates[sample].end_time() >= last_req_ts,
                     "When forecasting future values for a horizon n and lags_future_covariates >= 0, future_covariates"
                     "are requires to be at least `n + max_lags`, with `max_lag` being the furthest lag in the future"
                     f"For the {sample}-th sample, last future covariate timestamp is"
-                    f"{future_covariates[sample].end_time()}, whereas it should be at least {last_req_ts}."
+                    f"{future_covariates[sample].end_time()}, whereas it should be at least {last_req_ts}.",
                 )
 
         inference_dataset = MixedCovariatesInferenceDataset(
             target_series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
-            n=max(n + self.max_lag, n),  # required for retrieving enough future covariates
+            n=max(
+                n + self.max_lag, n
+            ),  # required for retrieving enough future covariates
             input_chunk_length=max(0, -self.min_lag),
-            output_chunk_length=1
+            output_chunk_length=1,
         )
 
         # all matrices have dimensions (n_series, time, n_components)
@@ -511,7 +600,7 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates_matrix,
             historic_future_covariates_matrix,
             future_covariates_matrix,
-            future_past_covariates_matrix
+            future_past_covariates_matrix,
         ) = self._get_prediction_data(inference_dataset)
 
         predictions = []
@@ -533,7 +622,7 @@ class RegressionModel(GlobalForecastingModel):
             covariates_matrices = [
                 (past_covariates_matrix, self.lags_past_covariates),
                 (historic_future_covariates_matrix, self.lags_historical_covariates),
-                (future_covariates_matrix, self.lags_future_covariates)
+                (future_covariates_matrix, self.lags_future_covariates),
             ]
 
             for covariate_matrix, lags in covariates_matrices:
@@ -551,23 +640,38 @@ class RegressionModel(GlobalForecastingModel):
             if i < n - 1:
                 # discard oldest target
                 if target_matrix is not None:
-                    target_matrix = target_matrix[:, 1:] if target_matrix.shape[1] > 1 else None
+                    target_matrix = (
+                        target_matrix[:, 1:] if target_matrix.shape[1] > 1 else None
+                    )
                     # adding new prediction to the target series
                     if target_matrix is None:
                         target_matrix = np.asarray(prediction)
                     else:
-                        target_matrix = np.concatenate([target_matrix, prediction], axis=1)
+                        target_matrix = np.concatenate(
+                            [target_matrix, prediction], axis=1
+                        )
 
                 # discarding oldest covariate
                 if past_covariates_matrix is not None:
-                    past_covariates_matrix, future_past_covariates_matrix = _shift_matrices(
-                        past_covariates_matrix, future_past_covariates_matrix)
+                    (
+                        past_covariates_matrix,
+                        future_past_covariates_matrix,
+                    ) = _shift_matrices(
+                        past_covariates_matrix, future_past_covariates_matrix
+                    )
                 if historic_future_covariates_matrix is not None:
-                    historic_future_covariates_matrix, future_covariates_matrix = _shift_matrices(
-                        historic_future_covariates_matrix, future_covariates_matrix)
+                    (
+                        historic_future_covariates_matrix,
+                        future_covariates_matrix,
+                    ) = _shift_matrices(
+                        historic_future_covariates_matrix, future_covariates_matrix
+                    )
 
         predictions = np.concatenate(predictions, axis=1)
-        predictions = [self._build_forecast_series(row, input_tgt) for row, input_tgt in zip(predictions, series)]
+        predictions = [
+            self._build_forecast_series(row, input_tgt)
+            for row, input_tgt in zip(predictions, series)
+        ]
 
         return predictions[0] if called_with_single_series else predictions
 
