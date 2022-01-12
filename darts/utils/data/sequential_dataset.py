@@ -8,21 +8,25 @@ import numpy as np
 
 from darts import TimeSeries
 from .utils import CovariateType
-from .training_dataset import (PastCovariatesTrainingDataset,
-                               FutureCovariatesTrainingDataset,
-                               DualCovariatesTrainingDataset,
-                               MixedCovariatesTrainingDataset,
-                               SplitCovariatesTrainingDataset)
+from .training_dataset import (
+    PastCovariatesTrainingDataset,
+    FutureCovariatesTrainingDataset,
+    DualCovariatesTrainingDataset,
+    MixedCovariatesTrainingDataset,
+    SplitCovariatesTrainingDataset,
+)
 from .shifted_dataset import GenericShiftedDataset
 
 
 class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        input_chunk_length: int = 12,
+        output_chunk_length: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
@@ -63,14 +67,16 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
 
         super().__init__()
 
-        self.ds = GenericShiftedDataset(target_series=target_series,
-                                        covariates=covariates,
-                                        input_chunk_length=input_chunk_length,
-                                        output_chunk_length=output_chunk_length,
-                                        shift=input_chunk_length,
-                                        shift_covariates=False,
-                                        max_samples_per_ts=max_samples_per_ts,
-                                        covariate_type=CovariateType.PAST)
+        self.ds = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            shift=input_chunk_length,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.PAST,
+        )
 
     def __len__(self):
         return len(self.ds)
@@ -80,12 +86,14 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
 
 
 class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        input_chunk_length: int = 12,
+        output_chunk_length: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
@@ -126,14 +134,16 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
 
         super().__init__()
 
-        self.ds = GenericShiftedDataset(target_series=target_series,
-                                        covariates=covariates,
-                                        input_chunk_length=input_chunk_length,
-                                        output_chunk_length=output_chunk_length,
-                                        shift=input_chunk_length,
-                                        shift_covariates=True,
-                                        max_samples_per_ts=max_samples_per_ts,
-                                        covariate_type=CovariateType.FUTURE)
+        self.ds = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            shift=input_chunk_length,
+            shift_covariates=True,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.FUTURE,
+        )
 
     def __len__(self):
         return len(self.ds)
@@ -143,12 +153,14 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
 
 
 class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        input_chunk_length: int = 12,
+        output_chunk_length: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of
         (past_target, historic_future_covariates, future_covariates, future_target).
@@ -191,42 +203,50 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
         super().__init__()
 
         # This dataset is in charge of historical future covariates
-        self.ds_past = GenericShiftedDataset(target_series=target_series,
-                                             covariates=covariates,
-                                             input_chunk_length=input_chunk_length,
-                                             output_chunk_length=output_chunk_length,
-                                             shift=input_chunk_length,
-                                             shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts,
-                                             covariate_type=CovariateType.HISTORIC_FUTURE)
+        self.ds_past = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            shift=input_chunk_length,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.HISTORIC_FUTURE,
+        )
 
         # This dataset is in charge of serving future covariates
-        self.ds_future = GenericShiftedDataset(target_series=target_series,
-                                               covariates=covariates,
-                                               input_chunk_length=input_chunk_length,
-                                               output_chunk_length=output_chunk_length,
-                                               shift=input_chunk_length,
-                                               shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts,
-                                               covariate_type=CovariateType.FUTURE)
+        self.ds_future = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            shift=input_chunk_length,
+            shift_covariates=True,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.FUTURE,
+        )
 
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         past_target, past_covariate, future_target = self.ds_past[idx]
         _, future_covariate, _ = self.ds_future[idx]
         return past_target, past_covariate, future_covariate, future_target
 
 
 class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        input_chunk_length: int = 12,
+        output_chunk_length: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of
         (past_target, past_covariates, historic_future_covariates, future_covariates, future_target).
@@ -269,41 +289,60 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         super().__init__()
 
         # This dataset is in charge of serving past covariates
-        self.ds_past = GenericShiftedDataset(target_series=target_series,
-                                             covariates=past_covariates,
-                                             input_chunk_length=input_chunk_length,
-                                             output_chunk_length=output_chunk_length,
-                                             shift=input_chunk_length,
-                                             shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts,
-                                             covariate_type=CovariateType.PAST)
+        self.ds_past = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=past_covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            shift=input_chunk_length,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.PAST,
+        )
 
         # This dataset is in charge of serving historical and future future covariates
-        self.ds_dual = DualCovariatesSequentialDataset(target_series=target_series,
-                                                       covariates=future_covariates,
-                                                       input_chunk_length=input_chunk_length,
-                                                       output_chunk_length=output_chunk_length,
-                                                       max_samples_per_ts=max_samples_per_ts)
+        self.ds_dual = DualCovariatesSequentialDataset(
+            target_series=target_series,
+            covariates=future_covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            max_samples_per_ts=max_samples_per_ts,
+        )
 
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray],
-                                        Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
 
         past_target, past_covariate, future_target = self.ds_past[idx]
         _, historic_future_covariate, future_covariate, _ = self.ds_dual[idx]
-        return past_target, past_covariate, historic_future_covariate, future_covariate, future_target
+        return (
+            past_target,
+            past_covariate,
+            historic_future_covariate,
+            future_covariate,
+            future_target,
+        )
 
 
 class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        input_chunk_length: int = 12,
+        output_chunk_length: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
@@ -347,29 +386,35 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         super().__init__()
 
         # This dataset is in charge of serving past covariates
-        self.ds_past = GenericShiftedDataset(target_series=target_series,
-                                             covariates=past_covariates,
-                                             input_chunk_length=input_chunk_length,
-                                             output_chunk_length=output_chunk_length,
-                                             shift=input_chunk_length,
-                                             shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts,
-                                             covariate_type=CovariateType.PAST)
+        self.ds_past = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=past_covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            shift=input_chunk_length,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.PAST,
+        )
 
         # This dataset is in charge of serving future covariates
-        self.ds_future = GenericShiftedDataset(target_series=target_series,
-                                               covariates=future_covariates,
-                                               input_chunk_length=input_chunk_length,
-                                               output_chunk_length=output_chunk_length,
-                                               shift=input_chunk_length,
-                                               shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts,
-                                               covariate_type=CovariateType.FUTURE)
+        self.ds_future = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=future_covariates,
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            shift=input_chunk_length,
+            shift_covariates=True,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.FUTURE,
+        )
 
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         past_target, past_covariate, future_target = self.ds_past[idx]
         _, future_covariate, _ = self.ds_future[idx]
         return past_target, past_covariate, future_covariate, future_target
