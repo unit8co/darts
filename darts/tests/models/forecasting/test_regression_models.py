@@ -190,7 +190,7 @@ if TORCH_AVAILABLE:
                 target_series=self.target_series,
                 past_covariates=self.past_covariates,
                 future_covariates=self.future_covariates,
-                max_samples_per_ts=None
+                max_samples_per_ts=None,
             )
 
             # checking number of dimensions
@@ -639,7 +639,7 @@ if TORCH_AVAILABLE:
         )
         # @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
         def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
-            """test whether these evaluation set parameters are passed to LGBRegressor """
+            """test whether these evaluation set parameters are passed to LGBRegressor"""
             model = LightGBMModel(lags=4, lags_past_covariates=2)
             split_index = 450
             model.fit(
