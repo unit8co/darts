@@ -37,7 +37,8 @@ class DatasetLoader(ABC):
     Class that downloads a dataset and caches it locally.
     Assumes that the file can be downloaded (i.e. publicly available via an URI)
     """
-    _DEFAULT_DIRECTORY = Path(os.path.join(Path.home(), Path('.darts/datasets/')))
+
+    _DEFAULT_DIRECTORY = Path(os.path.join(Path.home(), Path(".darts/datasets/")))
 
     def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path = None):
         self._metadata: DatasetLoaderMetadata = metadata
@@ -79,13 +80,17 @@ class DatasetLoader(ABC):
         -------
         """
         if not self._is_already_downloaded():
-            raise DatasetLoadingException(f"Checking md5 checksum of a absent file: {self._get_path_dataset()}")
+            raise DatasetLoadingException(
+                f"Checking md5 checksum of a absent file: {self._get_path_dataset()}"
+            )
 
         with open(self._get_path_dataset(), "rb") as f:
             md5_hash = hashlib.md5(f.read()).hexdigest()
             if md5_hash != self._metadata.hash:
-                raise DatasetLoadingException(f"Expected hash for {self._get_path_dataset()}: {self._metadata.hash}"
-                                              f", got: {md5_hash}")
+                raise DatasetLoadingException(
+                    f"Expected hash for {self._get_path_dataset()}: {self._metadata.hash}"
+                    f", got: {md5_hash}"
+                )
 
     def _download_dataset(self):
         """
@@ -105,10 +110,14 @@ class DatasetLoader(ABC):
             with open(self._get_path_dataset(), "wb") as f:
                 f.write(request.content)
         except Exception as e:
-            raise DatasetLoadingException("Could not download the dataset. Reason:" + e.__repr__()) from None
+            raise DatasetLoadingException(
+                "Could not download the dataset. Reason:" + e.__repr__()
+            ) from None
 
     @abstractmethod
-    def _load_from_disk(self, path_to_file: Path, metadata: DatasetLoaderMetadata) -> TimeSeries:
+    def _load_from_disk(
+        self, path_to_file: Path, metadata: DatasetLoaderMetadata
+    ) -> TimeSeries:
         """
         Given a Path to the file and a DataLoaderMetadata object, return a TimeSeries
         One can assume that the file exists and its MD5 checksum has been verified before this function is called
@@ -135,7 +144,9 @@ class DatasetLoader(ABC):
 
     def _format_time_column(self, df):
         df[self._metadata.header_time] = pd.to_datetime(
-            df[self._metadata.header_time], format=self._metadata.format_time, errors="raise"
+            df[self._metadata.header_time],
+            format=self._metadata.format_time,
+            errors="raise",
         )
         return df
 
@@ -144,11 +155,13 @@ class DatasetLoaderCSV(DatasetLoader):
     def __init__(self, metadata: DatasetLoaderMetadata, root_path: Path = None):
         super().__init__(metadata, root_path)
 
-    def _load_from_disk(self, path_to_file: Path, metadata: DatasetLoaderMetadata) -> TimeSeries:
+    def _load_from_disk(
+        self, path_to_file: Path, metadata: DatasetLoaderMetadata
+    ) -> TimeSeries:
         df = pd.read_csv(path_to_file)
         if metadata.header_time is not None:
             df = self._format_time_column(df)
-            return TimeSeries.from_dataframe(df=df, 
-                                             time_col=metadata.header_time, 
-                                             freq=metadata.freq)
+            return TimeSeries.from_dataframe(
+                df=df, time_col=metadata.header_time, freq=metadata.freq
+            )
         return TimeSeries.from_dataframe(df)

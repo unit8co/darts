@@ -12,9 +12,7 @@ class MovingAverage(FilteringModel):
     A simple moving average filter. Works on deterministic series (made of 1 sample).
     """
 
-    def __init__(self,
-                 window: int,
-                 centered: bool = True):
+    def __init__(self, window: int, centered: bool = True):
         """
         Parameters
         ----------
@@ -46,7 +44,9 @@ class MovingAverage(FilteringModel):
         TimeSeries
             A time series containing the average values
         """
-        filtered_df = series.pd_dataframe(copy=False).rolling(window=self.window,
-                                                              min_periods=1,
-                                                              center=self.centered).mean()
+        filtered_df = (
+            series.pd_dataframe(copy=False)
+            .rolling(window=self.window, min_periods=1, center=self.centered)
+            .mean()
+        )
         return TimeSeries.from_dataframe(filtered_df)
