@@ -14,12 +14,14 @@ logger = get_logger(__name__)
 
 
 class LinearRegressionModel(RegressionModel):
-    def __init__(self,
-                 lags: Union[int, list] = None,
-                 lags_past_covariates: Union[int, List[int]] = None,
-                 lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-                 **kwargs):
-        """ Linear regression model.
+    def __init__(
+        self,
+        lags: Union[int, list] = None,
+        lags_past_covariates: Union[int, List[int]] = None,
+        lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        **kwargs,
+    ):
+        """Linear regression model.
 
         Parameters
         ----------
@@ -43,9 +45,13 @@ class LinearRegressionModel(RegressionModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
-            model=LinearRegression(**kwargs))
+            model=LinearRegression(**kwargs),
+        )
 
     def __str__(self):
-        return (f"LinearRegression(lags={self.lags}, lags_past_covariates={self.lags_past_covariates}, "
-                f"lags_historical_covariates={self.lags_historical_covariates}, "
-                f"lags_future_covariates={self.lags_future_covariates}")
+        return (
+            f"LinearRegression(lags={self.lags}, "
+            f"lags_past_covariates={self.lags_past_covariates}, "
+            f"lags_historical_covariates={self.lags_historical_covariates}, "
+            f"lags_future_covariates={self.lags_future_covariates})"
+        )

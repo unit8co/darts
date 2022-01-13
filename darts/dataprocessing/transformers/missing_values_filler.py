@@ -13,12 +13,14 @@ logger = get_logger(__name__)
 
 
 class MissingValuesFiller(BaseDataTransformer):
-    def __init__(self,
-                 fill: Union[str, float] = 'auto',
-                 name: str = "MissingValuesFiller",
-                 n_jobs: int = 1,
-                 verbose: bool = False):
-        """ Data transformer to fill missing values from a (sequence of) deterministic ``TimeSeries``.
+    def __init__(
+        self,
+        fill: Union[str, float] = "auto",
+        name: str = "MissingValuesFiller",
+        n_jobs: int = 1,
+        verbose: bool = False,
+    ):
+        """Data transformer to fill missing values from a (sequence of) deterministic ``TimeSeries``.
 
         Parameters
         ----------
@@ -63,22 +65,28 @@ class MissingValuesFiller(BaseDataTransformer):
         * component  (component) object '0'
         Dimensions without coordinates: sample
         """
-        raise_if_not(isinstance(fill, str) or isinstance(fill, float),
-                     "`fill` should either be a string or a float",
-                     logger)
-        raise_if(isinstance(fill, str) and fill != 'auto',
-                 "invalid string for `fill`: can only be set to 'auto'",
-                 logger)
+        raise_if_not(
+            isinstance(fill, str) or isinstance(fill, float),
+            "`fill` should either be a string or a float",
+            logger,
+        )
+        raise_if(
+            isinstance(fill, str) and fill != "auto",
+            "invalid string for `fill`: can only be set to 'auto'",
+            logger,
+        )
 
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
         self._fill = fill
 
     @staticmethod
-    def ts_transform(series: TimeSeries, fill: Union[str, float], **kwargs) -> TimeSeries:
+    def ts_transform(
+        series: TimeSeries, fill: Union[str, float], **kwargs
+    ) -> TimeSeries:
         return fill_missing_values(series, fill, **kwargs)
 
-    def transform(self,
-                  series: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args, **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
+    def transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         # adding the fill param
         return super().transform(series, self._fill, *args, **kwargs)

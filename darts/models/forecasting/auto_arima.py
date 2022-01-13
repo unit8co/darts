@@ -15,7 +15,7 @@ logger = get_logger(__name__)
 
 class AutoARIMA(DualCovariatesForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
-        """ Auto-ARIMA
+        """Auto-ARIMA
 
         This implementation is a thin wrapper around `pmdarima AutoARIMA model
         <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_,
@@ -39,20 +39,25 @@ class AutoARIMA(DualCovariatesForecastingModel):
         self.trend = self.model.trend
 
     def __str__(self):
-        return 'Auto-ARIMA'
+        return "Auto-ARIMA"
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         series = self.training_series
-        self.model.fit(series.values(),
-                       X=future_covariates.values() if future_covariates else None)
+        self.model.fit(
+            series.values(), X=future_covariates.values() if future_covariates else None
+        )
 
-    def _predict(self, n: int,
-                 future_covariates: Optional[TimeSeries] = None,
-                 num_samples: int = 1):
+    def _predict(
+        self,
+        n: int,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+    ):
         super()._predict(n, future_covariates, num_samples)
-        forecast = self.model.predict(n_periods=n,
-                                      X=future_covariates.values() if future_covariates else None)
+        forecast = self.model.predict(
+            n_periods=n, X=future_covariates.values() if future_covariates else None
+        )
         return self._build_forecast_series(forecast)
 
     @property
@@ -60,7 +65,9 @@ class AutoARIMA(DualCovariatesForecastingModel):
         return 30
 
     def _supports_range_index(self) -> bool:
-        raise_if(self.trend and self.trend != "c",
-                 "'trend' is not None. Range indexing is not supported in that case.",
-                 logger)
+        raise_if(
+            self.trend and self.trend != "c",
+            "'trend' is not None. Range indexing is not supported in that case.",
+            logger,
+        )
         return True

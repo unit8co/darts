@@ -14,16 +14,17 @@ logger = get_logger(__name__)
 
 
 class FilteringModel(ABC):
-    """ The base class for filtering models. It defines the *minimal* behavior that all filtering models
-        have to support. The filtering models are all "local" models; meaning they act on one time series alone.
+    """The base class for filtering models. It defines the *minimal* behavior that all filtering models
+    have to support. The filtering models are all "local" models; meaning they act on one time series alone.
     """
+
     @abstractmethod
     def __init__(self):
         pass
 
     @abstractmethod
     def filter(self, series: TimeSeries) -> TimeSeries:
-        """ Filters a given series
+        """Filters a given series
 
         Parameters
         ----------
@@ -35,5 +36,7 @@ class FilteringModel(ABC):
         TimeSeries
             A time series containing the filtered values.
         """
-        raise_if_not(series.is_deterministic, 'The input series must be '
-                                              'deterministic (observations).')
+        raise_if_not(
+            series.is_deterministic,
+            "The input series must be deterministic (observations).",
+        )
