@@ -2,4 +2,3 @@
 .. automodule:: darts.dataprocessing.dtw.cost_matrix
    :members:
    :undoc-members:
-   :show-inheritance:

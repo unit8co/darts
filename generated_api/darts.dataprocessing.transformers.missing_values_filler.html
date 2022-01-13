@@ -37,7 +37,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Scaler" href="darts.dataprocessing.transformers.scaler.html" />
-    <link rel="prev" title="Mappers" href="darts.dataprocessing.transformers.mappers.html" />
+    <link rel="prev" title="Mapper and InvertibleMapper" href="darts.dataprocessing.transformers.mappers.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -77,6 +77,18 @@
     <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../README.html">
   Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
  </a>
 </li>
 
@@ -156,7 +168,7 @@
     <ul class="current">
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -166,17 +178,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3 current active">
@@ -400,7 +412,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +459,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -512,66 +524,126 @@
 <h1>Missing Values Filler<a class="headerlink" href="#missing-values-filler" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.missing_values_filler.</span></span><span class="sig-name descname"><span class="pre">MissingValuesFiller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'MissingValuesFiller'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/missing_values_filler.html#MissingValuesFiller"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.missing_values_filler.</span></span><span class="sig-name descname"><span class="pre">MissingValuesFiller</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'MissingValuesFiller'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/missing_values_filler.html#MissingValuesFiller"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer</span></code></a></p>
-<p>Data transformer to fill missing values from a (sequence of) deterministic TimeSeries.</p>
+<p>Data transformer to fill missing values from a (sequence of) deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>fill</strong> – The value used to replace the missing values.
-If set to ‘auto’, will auto-fill missing values using the <cite>pandas.Dataframe.interpolate()</cite> method.</p></li>
-<li><p><strong>name</strong> – A specific name for the transformer</p></li>
-<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
-passed as input to a method, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+<li><p><strong>fill</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The value used to replace the missing values.
+If set to ‘auto’, will auto-fill missing values using the <code class="xref py py-func docutils literal notranslate"><span class="pre">pd.Dataframe.interpolate()</span></code> method.</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – A specific name for the transformer</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input to a method, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
 Note: for a small amount of data, the parallelisation overhead could end up increasing the total
 required amount of time.</p></li>
-<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">MissingValuesFiller</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">step</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">values</span><span class="p">[</span><span class="mi">5</span><span class="p">:</span><span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_values</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">transformer</span> <span class="o">=</span> <span class="n">MissingValuesFiller</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series_filled</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series_filled</span><span class="p">)</span>
+<span class="go">&lt;TimeSeries (DataArray) (time: 10, component: 1, sample: 1)&gt;</span>
+<span class="go">array([[[0. ]],</span>
+<span class="go">    [[0.1]],</span>
+<span class="go">    [[0.2]],</span>
+<span class="go">    [[0.3]],</span>
+<span class="go">    [[0.4]],</span>
+<span class="go">    [[0.5]],</span>
+<span class="go">    [[0.6]],</span>
+<span class="go">    [[0.7]],</span>
+<span class="go">    [[0.8]],</span>
+<span class="go">    [[0.9]]])</span>
+<span class="go">Coordinates:</span>
+<span class="go">* time       (time) int64 0 1 2 3 4 5 6 7 8 9</span>
+<span class="go">* component  (component) object &#39;0&#39;</span>
+<span class="go">Dimensions without coordinates: sample</span>
+</pre></div>
+</div>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.name" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_n_jobs" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_verbose" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, fill, **kwargs)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.name">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.name" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns: Name of data transformer.
-:rtype: str</p>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the data transformer.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_n_jobs">
-<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_n_jobs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the number of cores that will be used by the transformer while processing multiple <cite>TimeSeries</cite>. Set to
-<cite>-1</cite> for using all the available cores.</p>
+<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>value</strong> – New n_jobs value</p>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – New n_jobs value.  Set to <cite>-1</cite> for using all the available cores.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_verbose">
-<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_verbose" title="Permalink to this definition">¶</a></dt>
-<dd><p>Setter for the verbosity status. <cite>True</cite> for enabling the detailed report about scaler’s operation progress,
-<cite>False</cite> for no additional information</p>
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity status.</p>
+<p><cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>value</strong> – New verbosity status</p>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – New verbosity status</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/missing_values_filler.html#MissingValuesFiller.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transform the data. In case a <cite>Sequence</cite> is passed as input data, this function takes care of
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/missing_values_filler.html#MissingValuesFiller.transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform a (sequence of) of series.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> is passed as input data, this function takes care of
 parallelising the transformation of multiple series in the sequence at the same time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence</cite> of <cite>TimeSeries</cite> which will be transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for each <cite>ts_transform()</cite> method call</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for each <cite>ts_transform()</cite> method call</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -585,20 +657,26 @@ parallelising the transformation of multiple series in the sequence at the same 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/missing_values_filler.html#MissingValuesFiller.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>The function that will be applied to each <cite>TimeSeries</cite> object once the <cite>transform()</cite> function is called. The
-function must take as first argument a <cite>TimeSeries</cite> object, and return the transformed <cite>TimeSeries</cite> object.
-If more parameters are added as input in the derived classes, the <cite>_transform_iterator()</cite> should be
-redefined accordingly, to yield the necessary arguments to this function (See <cite>_transform_iterator()</cite> for
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/missing_values_filler.html#MissingValuesFiller.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform" title="darts.dataprocessing.transformers.missing_values_filler.MissingValuesFiller.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+object. If more parameters are added as input in the derived classes, the <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> should be
+redefined accordingly, to yield the necessary arguments to this function (See <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> for
 further details).</p>
 <p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
-<p>Note: this method is designed to be a static method instead of instance methods to allow an efficient
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance method to allow an efficient
 parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
 methods would imply copying the instance’s data through multiple processes, which can easily introduce a
 bottleneck and nullify parallelisation benefits.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> which will be transformed.</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -617,7 +695,7 @@ bottleneck and nullify parallelisation benefits.</p>
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Mappers</p>
+            <p class="prev-next-title">Mapper and InvertibleMapper</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.dataprocessing.transformers.scaler.html" title="next page">
@@ -641,13 +719,13 @@ bottleneck and nullify parallelisation benefits.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

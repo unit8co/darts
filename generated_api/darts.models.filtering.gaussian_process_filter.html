@@ -80,6 +80,18 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
 <li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
@@ -156,7 +168,7 @@
     <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -166,17 +178,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -400,7 +412,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +459,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -512,9 +524,9 @@
 <h1>Gaussian Processes<a class="headerlink" href="#gaussian-processes" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.filtering.gaussian_process_filter.GaussianProcessFilter">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.models.filtering.gaussian_process_filter.</span></span><span class="sig-name descname"><span class="pre">GaussianProcessFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">sklearn.gaussian_process.kernels.Kernel</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/gaussian_process_filter.html#GaussianProcessFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.gaussian_process_filter.GaussianProcessFilter" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.filtering.gaussian_process_filter.</span></span><span class="sig-name descname"><span class="pre">GaussianProcessFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kernel</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/gaussian_process_filter.html#GaussianProcessFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.gaussian_process_filter.GaussianProcessFilter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.filtering.filtering_model.html#darts.models.filtering.filtering_model.FilteringModel" title="darts.models.filtering.filtering_model.FilteringModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.filtering.filtering_model.FilteringModel</span></code></a></p>
-<p>This model uses the <cite>GaussianProcessRegressor</cite> of scikit-learn to fit a Gaussian Process to the
+<p>This model uses the <code class="docutils literal notranslate"><span class="pre">GaussianProcessRegressor</span></code> of scikit-learn to fit a Gaussian Process to the
 supplied TimeSeries. This can then be used to obtain samples from the
 Gaussian Process at the times of the TimeSeries.</p>
 <p>It can for instance be used to fill in missing (NaN) values from a TimeSeries.</p>
@@ -523,27 +535,39 @@ Gaussian Process at the times of the TimeSeries.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>kernel</strong> (<em>sklearn.gaussian_process.kernels.Kernel</em><em>, </em><em>default: None</em>) – The kernel specifying the covariance function of the Gaussian Process. If None is passed,
 the default in scikit-learn is used. Note that the kernel hyperparameters are optimized
-during fitting unless the bounds are marked as “fixed”.</p></li>
-<li><p><strong>**kwargs</strong> – Additional keyword arguments passed to <cite>sklearn.gaussian_process.GaussianProcessRegressor</cite>.</p></li>
+during fitting unless the bounds are marked as ‘fixed’.</p></li>
+<li><p><strong>**kwargs</strong> – Additional keyword arguments passed to <code class="docutils literal notranslate"><span class="pre">sklearn.gaussian_process.GaussianProcessRegressor</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.filtering.gaussian_process_filter.GaussianProcessFilter.filter" title="darts.models.filtering.gaussian_process_filter.GaussianProcessFilter.filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter</span></code></a>(series[, num_samples])</p></td>
+<td><p>Fits the Gaussian Process on the observations and returns samples from the Gaussian Process, or its mean values if <cite>num_samples</cite> is set to 1.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.filtering.gaussian_process_filter.GaussianProcessFilter.filter">
-<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/models/filtering/gaussian_process_filter.html#GaussianProcessFilter.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.gaussian_process_filter.GaussianProcessFilter.filter" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/gaussian_process_filter.html#GaussianProcessFilter.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.gaussian_process_filter.GaussianProcessFilter.filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fits the Gaussian Process on the observations and returns samples from the Gaussian Process,
 or its mean values if <cite>num_samples</cite> is set to 1.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The series of observations used to infer the values according to the specified Gaussian Process.
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The series of observations used to infer the values according to the specified Gaussian Process.
 This must be a deterministic series (containing one sample).</p></li>
 <li><p><strong>num_samples</strong> (<em>int</em><em>, </em><em>default: 1</em>) – Number of times a prediction is sampled from the Gaussian Process. If set to 1,
-instead the mean values will be returned.</p></li>
+the mean values will be returned instead.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A stochastic <cite>TimeSeries</cite> sampled from the Gaussian Process, or its mean
+<dd class="field-even"><p>A stochastic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> sampled from the Gaussian Process, or its mean
 if <cite>num_samples</cite> is set to 1.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -590,13 +614,13 @@ if <cite>num_samples</cite> is set to 1.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

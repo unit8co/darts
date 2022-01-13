@@ -80,6 +80,18 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
 <li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
@@ -156,7 +168,7 @@
     <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -166,17 +178,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -400,7 +412,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +459,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -511,18 +523,28 @@
   <span class="target" id="module-darts.datasets"></span><section id="datasets">
 <h1>Datasets<a class="headerlink" href="#datasets" title="Permalink to this headline">¶</a></h1>
 <p>A few popular time series datasets</p>
-<blockquote>
-<div><div class="toctree-wrapper compound">
+<div class="toctree-wrapper compound">
 </div>
-</div></blockquote>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.AirPassengersDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">AirPassengersDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#AirPassengersDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.AirPassengersDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">AirPassengersDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#AirPassengersDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.AirPassengersDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Monthly Air Passengers Dataset, from 1949 to 1960.</p>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.AirPassengersDataset.load" title="darts.datasets.AirPassengersDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.AirPassengersDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.AirPassengersDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.AirPassengersDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -542,13 +564,30 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.AusBeerDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">AusBeerDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#AusBeerDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.AusBeerDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">AusBeerDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#AusBeerDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.AusBeerDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
-<p>Total quarterly beer production in Australia (in megalitres) from 1956:Q1 to 2008:Q3.</p>
-<p><a class="reference external" href="https://rdrr.io/cran/fpp/man/ausbeer.html">https://rdrr.io/cran/fpp/man/ausbeer.html</a></p>
+<p>Total quarterly beer production in Australia (in megalitres) from 1956:Q1 to 2008:Q3 <a class="reference internal" href="#r58abd249d9bc-1" id="id1">[1]</a>.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r58abd249d9bc-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://rdrr.io/cran/fpp/man/ausbeer.html">https://rdrr.io/cran/fpp/man/ausbeer.html</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.AusBeerDataset.load" title="darts.datasets.AusBeerDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.AusBeerDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.AusBeerDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.AusBeerDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -568,14 +607,31 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.EnergyDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">EnergyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#EnergyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.EnergyDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">EnergyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#EnergyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.EnergyDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
-<p>Hourly energy dataset coming from
-<a class="reference external" href="https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather">https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather</a></p>
+<p>Hourly energy dataset coming from <a class="reference internal" href="#rf60cd4cd05a4-1" id="id2">[1]</a>.</p>
 <p>Contains a time series with 28 hourly components between 2014-12-31 23:00:00 and 2018-12-31 22:00:00</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rf60cd4cd05a4-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather">https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.EnergyDataset.load" title="darts.datasets.EnergyDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.EnergyDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.EnergyDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.EnergyDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -595,13 +651,25 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.GasRateCO2Dataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">GasRateCO2Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#GasRateCO2Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">GasRateCO2Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#GasRateCO2Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Gas Rate CO2 dataset
 Two components, length 296 (integer time index)</p>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.GasRateCO2Dataset.load" title="darts.datasets.GasRateCO2Dataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.GasRateCO2Dataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.GasRateCO2Dataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -621,16 +689,34 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.HeartRateDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">HeartRateDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#HeartRateDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.HeartRateDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">HeartRateDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#HeartRateDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.HeartRateDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>The series contains 1800 evenly-spaced measurements of instantaneous heart rate from a single subject.
 The measurements (in units of beats per minute) occur at 0.5 second intervals, so that the length of
 each series is exactly 15 minutes.</p>
-<p>This is the series1 here: <a class="reference external" href="http://ecg.mit.edu/time-series/">http://ecg.mit.edu/time-series/</a>
-Using an integer time index.</p>
+<p>This is the series1 in <a class="reference internal" href="#r82ce515681e6-1" id="id3">[1]</a>.
+It uses an integer time index.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r82ce515681e6-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="http://ecg.mit.edu/time-series/">http://ecg.mit.edu/time-series/</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.HeartRateDataset.load" title="darts.datasets.HeartRateDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.HeartRateDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.HeartRateDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.HeartRateDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -650,12 +736,24 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.IceCreamHeaterDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">IceCreamHeaterDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#IceCreamHeaterDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.IceCreamHeaterDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">IceCreamHeaterDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#IceCreamHeaterDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.IceCreamHeaterDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Monthly sales of heaters and ice cream between January 2004 and June 2020.</p>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.IceCreamHeaterDataset.load" title="darts.datasets.IceCreamHeaterDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.IceCreamHeaterDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.IceCreamHeaterDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.IceCreamHeaterDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -675,12 +773,24 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.MonthlyMilkDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">MonthlyMilkDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">MonthlyMilkDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Monthly production of milk (in pounds per cow) between January 1962 and December 1975</p>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.MonthlyMilkDataset.load" title="darts.datasets.MonthlyMilkDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.MonthlyMilkDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.MonthlyMilkDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.MonthlyMilkDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -700,13 +810,25 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.MonthlyMilkIncompleteDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">MonthlyMilkIncompleteDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkIncompleteDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkIncompleteDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">MonthlyMilkIncompleteDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#MonthlyMilkIncompleteDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.MonthlyMilkIncompleteDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Monthly production of milk (in pounds per cow) between January 1962 and December 1975.
 Has some missing values.</p>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.MonthlyMilkIncompleteDataset.load" title="darts.datasets.MonthlyMilkIncompleteDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.MonthlyMilkIncompleteDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.MonthlyMilkIncompleteDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.MonthlyMilkIncompleteDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -726,15 +848,33 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.SunspotsDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">SunspotsDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#SunspotsDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.SunspotsDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">SunspotsDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#SunspotsDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.SunspotsDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Monthly Sunspot Numbers, 1749 - 1983</p>
 <p>Monthly mean relative sunspot numbers from 1749 to 1983.
 Collected at Swiss Federal Observatory, Zurich until 1960, then Tokyo Astronomical Observatory.</p>
-<p><a class="reference external" href="https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots">https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots</a></p>
+<p>Source: <a class="reference internal" href="#r499f295e2372-1" id="id4">[1]</a></p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r499f295e2372-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots">https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.SunspotsDataset.load" title="darts.datasets.SunspotsDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.SunspotsDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.SunspotsDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.SunspotsDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -754,17 +894,35 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.TaylorDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TaylorDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TaylorDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TaylorDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TaylorDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TaylorDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TaylorDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
-Discussed in Taylor (2003) [1], and kindly provided by James W Taylor. Units: Megawatts
+Discussed in Taylor (2003) <a class="reference internal" href="#r0041d9a8a6dc-1" id="id5">[1]</a>, and kindly provided by James W Taylor <a class="reference internal" href="#r0041d9a8a6dc-2" id="id6">[2]</a>. Units: Megawatts
 (Uses an integer time index).</p>
-<p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor">https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor</a></p>
-<p>[1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.
-Journal of the Operational Research Society, 54, 799-805.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r0041d9a8a6dc-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
+<dd><p>Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing. Journal of the Operational Research Society, 54, 799-805.</p>
+</dd>
+<dt class="label" id="r0041d9a8a6dc-2"><span class="brackets"><a class="fn-backref" href="#id6">2</a></span></dt>
+<dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor">https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.TaylorDataset.load" title="darts.datasets.TaylorDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.TaylorDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.TaylorDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.TaylorDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -784,12 +942,24 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.TemperatureDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TemperatureDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TemperatureDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TemperatureDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TemperatureDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TemperatureDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TemperatureDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Daily temperature in Melbourne between 1981 and 1990</p>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.TemperatureDataset.load" title="darts.datasets.TemperatureDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.TemperatureDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.TemperatureDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.TemperatureDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -809,14 +979,31 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.USGasolineDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">USGasolineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#USGasolineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.USGasolineDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">USGasolineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#USGasolineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.USGasolineDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Weekly U.S. Product Supplied of Finished Motor Gasoline between 1991-02-08 and 2021-04-30</p>
-<p>Obtained from:
-<a class="reference external" href="https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W">https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W</a></p>
+<p>Obtained from <a class="reference internal" href="#r82273ef589c5-1" id="id7">[1]</a>.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r82273ef589c5-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W">https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.USGasolineDataset.load" title="darts.datasets.USGasolineDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.USGasolineDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.USGasolineDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.USGasolineDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -836,13 +1023,31 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.WineDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WineDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WineDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
-<p>Australian total wine sales by wine makers in bottles &lt;= 1 litre. Monthly between Jan 1980 and Aug 1994.</p>
-<p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind</a></p>
+<p>Australian total wine sales by wine makers in bottles &lt;= 1 litre. Monthly between Jan 1980 and Aug 1994.
+Source: <a class="reference internal" href="#r186e955f2024-1" id="id8">[1]</a></p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r186e955f2024-1"><span class="brackets"><a class="fn-backref" href="#id8">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.WineDataset.load" title="darts.datasets.WineDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.WineDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.WineDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.WineDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -862,13 +1067,31 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.WoolyDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WoolyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WoolyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WoolyDataset" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WoolyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WoolyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WoolyDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
-<p>Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 – Sep 1994.</p>
-<p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq</a></p>
+<p>Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 – Sep 1994.
+Source: <a class="reference internal" href="#r3f37309b76f8-1" id="id9">[1]</a></p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r3f37309b76f8-1"><span class="brackets"><a class="fn-backref" href="#id9">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.WoolyDataset.load" title="darts.datasets.WoolyDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.datasets.WoolyDataset.load">
-<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.datasets.WoolyDataset.load" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.WoolyDataset.load" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the dataset in memory, as a TimeSeries.
 Downloads the dataset if it is not present already</p>
 <dl class="field-list simple">
@@ -922,13 +1145,13 @@ Downloads the dataset if it is not present already</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

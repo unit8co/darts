@@ -80,6 +80,18 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
 <li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
@@ -156,7 +168,7 @@
     <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -166,17 +178,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -400,7 +412,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +459,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -512,56 +524,90 @@
 <h1>Kalman Filter<a class="headerlink" href="#kalman-filter" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.filtering.kalman_filter.KalmanFilter">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.models.filtering.kalman_filter.</span></span><span class="sig-name descname"><span class="pre">KalmanFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim_x</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x_init</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.array</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">P</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.array</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Q</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.array</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">R</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.array</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">H</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.array</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">F</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.array</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kf</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">filterpy.kalman.kalman_filter.KalmanFilter</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/kalman_filter.html#KalmanFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.kalman_filter.KalmanFilter" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.filtering.kalman_filter.</span></span><span class="sig-name descname"><span class="pre">KalmanFilter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dim_x</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/kalman_filter.html#KalmanFilter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.kalman_filter.KalmanFilter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.filtering.filtering_model.html#darts.models.filtering.filtering_model.FilteringModel" title="darts.models.filtering.filtering_model.FilteringModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.filtering.filtering_model.FilteringModel</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
-<p>This model implements a Kalman filter over a time series (without control signal).</p>
+<p>This model implements a Kalman filter over a time series.</p>
 <p>The key method is <cite>KalmanFilter.filter()</cite>.
 It considers the provided time series as containing (possibly noisy) observations z obtained from a
 (possibly noisy) linear dynamical system with hidden state x. The function <cite>filter(series)</cite> returns a new
-<cite>TimeSeries</cite> describing the distribution of the state x, as inferred by the Kalman filter from
-sequentially observing z from <cite>series</cite>.
-Depending on the use case, this can be used to de-noise a series or infer the underlying hidden state of the
-data generating process (assuming notably that the dynamical system generating the data is known, as captured
-by the <cite>F</cite> matrix.).</p>
-<p>This implementation wraps around filterpy.kalman.KalmanFilter, so more information the parameters can be found
-here: <a class="reference external" href="https://filterpy.readthedocs.io/en/latest/kalman/KalmanFilter.html">https://filterpy.readthedocs.io/en/latest/kalman/KalmanFilter.html</a></p>
-<p>The dimensionality of the measurements z is automatically inferred upon calling <cite>filter()</cite>.
-This implementation doesn’t include control signal.</p>
+<cite>TimeSeries</cite> describing the distribution of the output z (without noise), as inferred by the Kalman filter from
+sequentially observing z from <cite>series</cite>, and the dynamics of the linear system of order dim_x.</p>
+<p>The method <cite>KalmanFilter.fit()</cite> is used to initialize the Kalman filter by estimating the state space model of
+a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID
+algorithm.</p>
+<p>This implementation uses Kalman from the NFourSID package. More information can be found here:
+<a class="reference external" href="https://nfoursid.readthedocs.io/en/latest/source/kalman.html">https://nfoursid.readthedocs.io/en/latest/source/kalman.html</a>.</p>
+<p>The dimensionality of the measurements z and optional control signal (covariates) u is automatically inferred upon
+calling <cite>filter()</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>dim_x</strong> (<em>int</em>) – Size of the Kalman filter state vector. It determines the dimensionality of the <cite>TimeSeries</cite>
-returned by the <cite>filter()</cite> function.</p></li>
-<li><p><strong>x_init</strong> (<em>ndarray</em><em> (</em><em>dim_x</em><em>, </em><em>1</em><em>)</em><em>, </em><em>default:</em><em> [</em><em>0</em><em>, </em><em>0</em><em>, </em><em>...</em><em>, </em><em>0</em><em>]</em>) – Initial state; will be updated at each time step.</p></li>
-<li><p><strong>P</strong> (<em>ndarray</em><em> (</em><em>dim_x</em><em>, </em><em>dim_x</em><em>)</em><em>, </em><em>default: identity matrix</em>) – initial covariance matrix; will be update at each time step</p></li>
-<li><p><strong>Q</strong> (<em>ndarray</em><em> (</em><em>dim_x</em><em>, </em><em>dim_x</em><em>)</em><em>, </em><em>default: identity matrix</em>) – Process noise covariance matrix</p></li>
-<li><p><strong>R</strong> (<em>ndarray</em><em> (</em><em>dim_z</em><em>, </em><em>dim_z</em><em>)</em><em>, </em><em>default: identity matrix</em>) – Measurement noise covariance matrix. <cite>dim_z</cite> must match the dimensionality (width) of the <cite>TimeSeries</cite>
-used with <cite>filter()</cite>.</p></li>
-<li><p><strong>H</strong> (<em>ndarray</em><em> (</em><em>dim_z</em><em>, </em><em>dim_x</em><em>)</em><em>, </em><em>default: all-ones matrix</em>) – measurement function; describes how the measurement z is obtained from the state vector x</p></li>
-<li><p><strong>F</strong> (<em>ndarray</em><em> (</em><em>dim_x</em><em>, </em><em>dim_x</em><em>)</em><em>, </em><em>default: identity matrix</em>) – State transition matrix; describes how the state evolves from one time step to the next
-in the underlying dynamical system.</p></li>
-<li><p><strong>kf</strong> (<em>filterpy.kalman.KalmanFilter</em>) – Optionally, an instance of <cite>filterpy.kalman.KalmanFilter</cite>.
-If this is provided, the other parameters are ignored. This instance will be copied for every
+<li><p><strong>dim_x</strong> (<em>int</em>) – Size of the Kalman filter state vector.</p></li>
+<li><p><strong>kf</strong> (<em>nfoursid.kalman.Kalman</em>) – Optionally, an instance of <cite>nfoursid.kalman.Kalman</cite>.
+If this is provided, the parameter dim_x is ignored. This instance will be copied for every
 call to <cite>filter()</cite>, so the state is not carried over from one time series to another across several
 calls to <cite>filter()</cite>.
-The various dimensionality in the filter must match those in the <cite>TimeSeries</cite> used when calling <cite>filter()</cite>.</p></li>
+The various dimensionalities of the filter must match those of the <cite>TimeSeries</cite> used when calling <cite>filter()</cite>.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.filtering.kalman_filter.KalmanFilter.filter" title="darts.models.filtering.kalman_filter.KalmanFilter.filter"><code class="xref py py-obj docutils literal notranslate"><span class="pre">filter</span></code></a>(series[, covariates, num_samples])</p></td>
+<td><p>Sequentially applies the Kalman filter on the provided series of observations.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.filtering.kalman_filter.KalmanFilter.fit" title="darts.models.filtering.kalman_filter.KalmanFilter.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series[, covariates, num_block_rows])</p></td>
+<td><p>Initializes the Kalman filter using the N4SID algorithm.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.filtering.kalman_filter.KalmanFilter.filter">
-<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/kalman_filter.html#KalmanFilter.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.kalman_filter.KalmanFilter.filter" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">filter</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/kalman_filter.html#KalmanFilter.filter"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.kalman_filter.KalmanFilter.filter" title="Permalink to this definition">¶</a></dt>
 <dd><p>Sequentially applies the Kalman filter on the provided series of observations.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The series of observations used to infer the state values according to the specified Kalman process.
-This must be a deterministic series (containing one sample).</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The series of outputs (observations) used to infer the underlying outputs according to the specified Kalman process.
+This must be a deterministic series (containing one sample).</p></li>
+<li><p><strong>covariates</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – An optional series of inputs (control signal), necessary if the Kalman filter was initialized with covariates.
+This must be a deterministic series (containing one sample).</p></li>
+<li><p><strong>num_samples</strong> (<em>int</em><em>, </em><em>default: 1</em>) – The number of samples to generate from the inferred distribution of the output z. If this is set to 1, the
+output is a <cite>TimeSeries</cite> containing a single sample using the mean of the distribution.</p></li>
+</ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A stochastic <cite>TimeSeries</cite> of state values, of dimension <cite>dim_x</cite>.</p>
+<dd class="field-even"><p>A (stochastic) <cite>TimeSeries</cite> of the inferred output z, of the same width as the input series.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.models.filtering.kalman_filter.KalmanFilter.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_block_rows</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/filtering/kalman_filter.html#KalmanFilter.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.filtering.kalman_filter.KalmanFilter.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Initializes the Kalman filter using the N4SID algorithm.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The series of outputs (observations) used to infer the underlying state space model.
+This must be a deterministic series (containing one sample).</p></li>
+<li><p><strong>covariates</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – An optional series of inputs (control signal) that will also be used to infer the underlying state space model.
+This must be a deterministic series (containing one sample).</p></li>
+<li><p><strong>num_block_rows</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – The number of block rows to use in the block Hankel matrices used in the N4SID algorithm.
+See the documentation of nfoursid.nfoursid.NFourSID for more information.
+If not provided, the dimensionality of the state space model will be used, with a maximum of 10.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -604,13 +650,13 @@ This must be a deterministic series (containing one sample).</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

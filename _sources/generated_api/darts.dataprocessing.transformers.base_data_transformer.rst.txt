@@ -2,4 +2,3 @@
 .. automodule:: darts.dataprocessing.transformers.base_data_transformer
    :members:
    :undoc-members:
-   :show-inheritance:

@@ -2,4 +2,3 @@
 .. automodule:: darts.utils.data.encoder_base
    :members:
    :undoc-members:
-   :show-inheritance:

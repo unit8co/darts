@@ -80,6 +80,18 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
 <li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
@@ -156,7 +168,7 @@
     <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -166,17 +178,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -400,7 +412,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +459,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -512,46 +524,72 @@
 <h1>Exponential Smoothing<a class="headerlink" href="#exponential-smoothing" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.exponential_smoothing.</span></span><span class="sig-name descname"><span class="pre">ExponentialSmoothing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.exponential_smoothing.</span></span><span class="sig-name descname"><span class="pre">ExponentialSmoothing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">damped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">fit_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.ForecastingModel</span></code></p>
 <p>Exponential Smoothing</p>
 <p>This is a wrapper around
-<a class="reference external" href="https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html">statsmodels  Holt-Winters’ Exponential Smoothing</a>.</p>
-<p>We refer to this link for the original and more complete documentation of the parameters.</p>
-<p><cite>model_mode</cite> must be a ModelMode Enum member.
-You can access the Enum with <cite>from darts import ModelMode</cite>.</p>
-<p><cite>ExponentialSmoothing(trend=None, seasonal=None)</cite> corresponds to a single exponential smoothing.
-<cite>ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)</cite> corresponds to a Holt’s exponential smoothing.</p>
+<a class="reference external" href="https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html">statsmodels  Holt-Winters’ Exponential Smoothing</a>;
+we refer to this link for the original and more complete documentation of the parameters.</p>
+<p><cite>model_mode</cite> must be a <code class="docutils literal notranslate"><span class="pre">ModelMode</span></code> Enum member. You can access the Enum with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">ModelMode</span></code>.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing(trend=None,</span> <span class="pre">seasonal=None)</span></code> corresponds to a single exponential smoothing.
+<code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing(trend=ModelMode.ADDITIVE,</span> <span class="pre">seasonal=None)</span></code> corresponds to a Holt’s exponential smoothing.</p>
 <p>Please note that automatic <cite>seasonal_period</cite> selection (setting the <cite>seasonal_periods</cite> parameter equal to
 <cite>None</cite>) can sometimes lead to errors if the input time series is too short. In these cases we suggest to
 manually set the <cite>seasonal_periods</cite> parameter to a positive integer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>trend</strong> – Type of trend component. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
-Defaults to <cite>ModelMode.ADDITIVE</cite>.</p></li>
-<li><p><strong>damped</strong> – Should the trend component be damped. Defaults to False.</p></li>
-<li><p><strong>seasonal</strong> – Type of seasonal component. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
-Defaults to <cite>ModelMode.ADDITIVE</cite>.</p></li>
-<li><p><strong>seasonal_periods</strong> – The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
-data with a weekly cycle. If not set, inferred from frequency of <cite>TimeSeries.</cite></p></li>
+<li><p><strong>trend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – Type of trend component. Either <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code>.</p></li>
+<li><p><strong>damped</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Should the trend component be damped. Defaults to False.</p></li>
+<li><p><strong>seasonal</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – Type of seasonal component. Either <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.
+Defaults to <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code>.</p></li>
+<li><p><strong>seasonal_periods</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
+data with a weekly cycle. If not set, inferred from frequency of the series.</p></li>
 <li><p><strong>fit_kwargs</strong> – Some optional keyword arguments that will be used to call
-<cite>statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()</cite>.
+<code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.holtwinters.ExponentialSmoothing.fit()</span></code>.
 See <a class="reference external" href="https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.fit.html">the documentation</a>.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.backtest" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
+<td><p>Compute error values that the model would have produced when used on <cite>series</cite>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.fit" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<td><p>Fit/train the model on the provided series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.gridsearch" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.historical_forecasts" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<td><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples])</p></td>
+<td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.residuals" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
+<td><p>Compute the residuals produced by this model on a univariate time series.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.backtest">
-<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">series:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">past_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">future_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">num_samples:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">start:</span> <span class="pre">Union[pandas._libs.tslibs.timestamps.Timestamp,</span> <span class="pre">float,</span> <span class="pre">int]</span> <span class="pre">=</span> <span class="pre">0.5,</span> <span class="pre">forecast_horizon:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">stride:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">retrain:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">True,</span> <span class="pre">overlap_end:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">last_points_only:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">metric:</span> <span class="pre">Callable[[darts.timeseries.TimeSeries,</span> <span class="pre">darts.timeseries.TimeSeries],</span> <span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mape&gt;,</span> <span class="pre">reduction:</span> <span class="pre">Optional[Callable[[numpy.ndarray],</span> <span class="pre">float]]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mean&gt;,</span> <span class="pre">verbose:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.backtest" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes error scores between the historical forecasts the model would have produced
-with an expanding training window over <cite>series</cite> and the actual values.
-To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.backtest" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute error values that the model would have produced when
+used on <cite>series</cite>.</p>
+<p>It repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
 the training set, emits a forecast of length equal to forecast_horizon, and then moves the end of the
 training set forward by <cite>stride</cite> time steps. A metric (given by the <cite>metric</cite> function) is then evaluated
 on the forecast and the actual values. Finally, the method returns a <cite>reduction</cite> (the mean by default)
 of all these metric scores.</p>
-<p>By default, this method will use each historical forecast (whole) to compute error scores.
+<p>By default, this method uses each historical forecast (whole) to compute error scores.
 If <cite>last_points_only</cite> is set to True, it will use only the last point of each historical
 forecast. In this case, no reduction is used.</p>
 <p>By default, this method always re-trains the models on the entire available history,
@@ -563,31 +601,30 @@ newly expanded input sequence will be fed to the model to produce the new output
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts</p></li>
-<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
-<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
-<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The target time series to use to successively train and evaluate the historical forecasts</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
+<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
-<li><p><strong>start</strong> – The first prediction time, at which a prediction is computed for a future time.
-This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
-In the case of <cite>float</cite>, the parameter will be treated as the proportion of the time series
+<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The first prediction time, at which a prediction is computed for a future time.
+This parameter supports 3 different types: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>.
+In the case of <code class="docutils literal notranslate"><span class="pre">float</span></code>, the parameter will be treated as the proportion of the time series
 that should lie before the first prediction point.
-In the case of <cite>int</cite>, the parameter will be treated as an integer index to the time index of
-<cite>training_series</cite> that will be used as first prediction time.
-In case of <cite>pandas.Timestamp</cite>, this time stamp will be used to determine the first prediction time
+In the case of <code class="docutils literal notranslate"><span class="pre">int</span></code>, the parameter will be treated as an integer index to the time index of
+<cite>series</cite> that will be used as first prediction time.
+In case of <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>, this time stamp will be used to determine the first prediction time
 directly.</p></li>
-<li><p><strong>forecast_horizon</strong> – The forecast horizon for the point prediction</p></li>
-<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
-<li><p><strong>retrain</strong> – Whether to retrain the model for every prediction or not. Currently only <cite>TorchForecastingModel</cite>
-instances such as <cite>BlockRNNModel</cite>, <cite>RNNModel</cite>, <cite>TCNModel</cite>, <cite>NBEATSModel</cite> and <cite>TransformerModel</cite> support
-setting <cite>retrain</cite> to <cite>False</cite>.</p></li>
-<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
-<li><p><strong>last_points_only</strong> – Whether to use the whole historical forecasts or only the last point of each forecast to compute the error</p></li>
-<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
-<li><p><strong>reduction</strong> – A function used to combine the individual error scores obtained when <cite>last_points_only</cite> is set to False.
+<li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecast horizon for the point prediction.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between two consecutive training sets.</p></li>
+<li><p><strong>retrain</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to retrain the model for every prediction or not. Not all models support setting
+<cite>retrain</cite> to <cite>False</cite>. Notably, this is supported by neural networks based models.</p></li>
+<li><p><strong>overlap_end</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the whole historical forecasts or only the last point of each forecast to compute the error</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – A function that takes two <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances as inputs and returns an error value.</p></li>
+<li><p><strong>reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – A function used to combine the individual error scores obtained when <cite>last_points_only</cite> is set to False.
 If explicitely set to <cite>None</cite>, the method will return a list of the individual error scores instead.
-Set to np.mean by default.</p></li>
-<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+Set to <code class="docutils literal notranslate"><span class="pre">np.mean</span></code> by default.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -601,32 +638,32 @@ Set to np.mean by default.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Trains the model on the provided univariate series.</p>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit/train the model on the provided series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – A target time series. The model will be trained to forecast this time series.</p>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – A target time series. The model will be trained to forecast this time series.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.gridsearch">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">parameters:</span> <span class="pre">dict,</span> <span class="pre">series:</span> <span class="pre">darts.timeseries.TimeSeries,</span> <span class="pre">past_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">future_covariates:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">forecast_horizon:</span> <span class="pre">Optional[int]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">stride:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">start:</span> <span class="pre">Union[pandas._libs.tslibs.timestamps.Timestamp,</span> <span class="pre">float,</span> <span class="pre">int]</span> <span class="pre">=</span> <span class="pre">0.5,</span> <span class="pre">last_points_only:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">val_series:</span> <span class="pre">Optional[darts.timeseries.TimeSeries]</span> <span class="pre">=</span> <span class="pre">None,</span> <span class="pre">use_fitted_values:</span> <span class="pre">bool</span> <span class="pre">=</span> <span class="pre">False,</span> <span class="pre">metric:</span> <span class="pre">Callable[[darts.timeseries.TimeSeries,</span> <span class="pre">darts.timeseries.TimeSeries],</span> <span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mape&gt;,</span> <span class="pre">reduction:</span> <span class="pre">Callable[[numpy.ndarray],</span> <span class="pre">float]</span> <span class="pre">=</span> <span class="pre">&lt;function</span> <span class="pre">mean&gt;,</span> <span class="pre">verbose=False,</span> <span class="pre">n_jobs:</span> <span class="pre">int</span> <span class="pre">=</span> <span class="pre">1,</span> <span class="pre">n_random_samples:</span> <span class="pre">Optional[Union[int,</span> <span class="pre">float]]</span> <span class="pre">=</span> <span class="pre">None</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">darts.models.forecasting.forecasting_model.ForecastingModel</span><span class="p"><span class="pre">,</span> </span><span class="pre">Dict</span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.gridsearch" title="Permalink to this definition">¶</a></dt>
-<dd><p>A function for finding the best hyper-parameters among a given set.
-This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dd><p>Find the best hyper-parameters among a given set using a grid search.</p>
+<p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
 provided in the <cite>parameters</cite> dictionary by instantiating the <cite>model_class</cite> subclass
-of ForecastingModel with each combination, and returning the best-performing model with regards
+of ForecastingModel with each combination, and returning the best-performing model with regard
 to the <cite>metric</cite> function. The <cite>metric</cite> function is expected to return an error value,
 thus the model resulting in the smallest <cite>metric</cite> output will be chosen.</p>
 <p>The relationship of the training data and test data depends on the mode of operation.</p>
 <p>Expanding window mode (activated when <cite>forecast_horizon</cite> is passed):
 For every hyperparameter combination, the model is repeatedly trained and evaluated on different
-splits of <cite>training_series</cite> and <cite>target_series</cite>. This process is accomplished by using
-the <cite>backtest</cite> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
-that are compared against the ground truth values of <cite>training_series</cite> or <cite>target_series</cite>, if
-specified. Note that the model is retrained for every single prediction, thus this mode is slower.</p>
+splits of <cite>series</cite>. This process is accomplished by using
+the <a class="reference internal" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.backtest" title="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
+that are compared against the ground truth values of <cite>series</cite>.
+Note that the model is retrained for every single prediction, thus this mode is slower.</p>
 <p>Split window mode (activated when <cite>val_series</cite> is passed):
 This mode will be used when the <cite>val_series</cite> argument is passed.
 For every hyper-parameter combination, the model is trained on <cite>series</cite> and
@@ -639,47 +676,47 @@ member. The fitted values are the result of the fit of the model on <cite>series
 fitted values can be a quick way to assess the model, but one cannot see if the model is overfitting the series.</p>
 <p>Derived classes must ensure that a single instance of a model will not share parameters with the other
 instances, e.g., saving models in the same path. Otherwise, an unexpected behavior can arise while running
-several models in parallel (when <cite>n_jobs != 1</cite>). If this cannot be avoided, then gridsearch should be redefined,
-forcing <cite>n_jobs = 1</cite>.</p>
-<p>Currently this method only supports deterministic predictions (i.e. <cite>num_samples == 1</cite>).</p>
+several models in parallel (when <code class="docutils literal notranslate"><span class="pre">n_jobs</span> <span class="pre">!=</span> <span class="pre">1</span></code>). If this cannot be avoided, then gridsearch
+should be redefined, forcing <code class="docutils literal notranslate"><span class="pre">n_jobs</span> <span class="pre">=</span> <span class="pre">1</span></code>.</p>
+<p>Currently this method only supports deterministic predictions (i.e. when models’ predictions
+have only 1 sample).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model_class</strong> – The ForecastingModel subclass to be tuned for ‘series’.</p></li>
-<li><p><strong>parameters</strong> – A dictionary containing as keys hyperparameter names, and as values lists of values for the
+<li><p><strong>parameters</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code>) – A dictionary containing as keys hyperparameter names, and as values lists of values for the
 respective hyperparameter.</p></li>
-<li><p><strong>series</strong> – The TimeSeries instance used as input and target for training.</p></li>
-<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
-<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
-<li><p><strong>forecast_horizon</strong> – The integer value of the forecasting horizon used in expanding window mode.</p></li>
-<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions. Only used in expanding window mode.</p></li>
-<li><p><strong>start</strong> – The <cite>int</cite>, <cite>float</cite> or <cite>pandas.Timestamp</cite> that represents the starting point in the time index
-of <cite>training_series</cite> from which predictions will be made to evaluate the model.
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries instance used as input and target for training.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
+<li><p><strong>forecast_horizon</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The integer value of the forecasting horizon. Activates expanding window mode.</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between two consecutive predictions. Only used in expanding window mode.</p></li>
+<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The <code class="docutils literal notranslate"><span class="pre">int</span></code>, <code class="docutils literal notranslate"><span class="pre">float</span></code> or <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code> that represents the starting point in the time index
+of <cite>series</cite> from which predictions will be made to evaluate the model.
 For a detailed description of how the different data types are interpreted, please see the documentation
 for <cite>ForecastingModel.backtest</cite>.</p></li>
-<li><p><strong>last_points_only</strong> – Whether to use the whole forecasts or only the last point of each forecast to compute the error</p></li>
-<li><p><strong>val_series</strong> – The TimeSeries instance used for validation in split mode. If provided, this series must start right after
+<li><p><strong>last_points_only</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to use the whole forecasts or only the last point of each forecast to compute the error</p></li>
+<li><p><strong>val_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – The TimeSeries instance used for validation in split mode. If provided, this series must start right after
 the end of <cite>series</cite>; so that a proper comparison of the forecast can be made.</p></li>
-<li><p><strong>use_fitted_values</strong> – If <cite>True</cite>, uses the comparison with the fitted values.
-Raises an error if <cite>fitted_values</cite> is not an attribute of <cite>model_class</cite>.</p></li>
-<li><p><strong>metric</strong> – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
-<li><p><strong>reduction</strong> – A reduction function (mapping array to float) describing how to aggregate the errors obtained
+<li><p><strong>use_fitted_values</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <cite>True</cite>, uses the comparison with the fitted values.
+Raises an error if <code class="docutils literal notranslate"><span class="pre">fitted_values</span></code> is not an attribute of <cite>model_class</cite>.</p></li>
+<li><p><strong>metric</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – A function that takes two TimeSeries instances as inputs and returns a float error value.</p></li>
+<li><p><strong>reduction</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>[[<code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – A reduction function (mapping array to float) describing how to aggregate the errors obtained
 on the different validation series when backtesting. By default it’ll compute the mean of errors.</p></li>
 <li><p><strong>verbose</strong> – Whether to print progress.</p></li>
-<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when there are two or more parameters
 combinations to evaluate. Each job will instantiate, train, and evaluate a different instance of the model.
 Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite> means using all the available cores.</p></li>
-<li><p><strong>n_random_samples</strong> – The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform
+<li><p><strong>n_random_samples</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The number/ratio of hyperparameter combinations to select from the full parameter grid. This will perform
 a random search instead of using the full grid.
-If an integer, <cite>n_random_samples</cite> is the number of parameter combinations selected from the full grid and must
-be between <cite>0</cite> and the total number of parameter combinations.
-If a float, <cite>n_random_samples</cite> is the ratio of parameter combinations selected from the full grid and must be
-between <cite>0</cite> and <cite>1</cite>.
-Defaults to <cite>None</cite> for which random selection will be ignored.</p></li>
+If an integer, <cite>n_random_samples</cite> is the number of parameter combinations selected from the full grid and
+must be between <cite>0</cite> and the total number of parameter combinations.
+If a float, <cite>n_random_samples</cite> is the ratio of parameter combinations selected from the full grid and must
+be between <cite>0</cite> and <cite>1</cite>. Defaults to <cite>None</cite>, for which random selection will be ignored.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A tuple containing an untrained ‘model_class’ instance created from the best-performing hyper-parameters,
+<dd class="field-even"><p>A tuple containing an untrained <cite>model_class</cite> instance created from the best-performing hyper-parameters,
 along with a dictionary containing these best hyper-parameters.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -690,51 +727,50 @@ along with a dictionary containing these best hyper-parameters.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas._libs.tslibs.timestamps.Timestamp</span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.historical_forecasts" title="Permalink to this definition">¶</a></dt>
-<dd><p>Computes the historical forecasts the model would have produced with an expanding training window
-and (by default) returns a time series created from the last point of each of these individual forecasts.
-To this end, it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
-current model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p>
+<p>This method uses an expanding training window;
+it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
+model on the training set, emits a forecast of length equal to forecast_horizon, and then moves
 the end of the training set forward by <cite>stride</cite> time steps.</p>
 <p>By default, this method will return a single time series made up of the last point of each
-historical forecast. This time series will thus have a frequency of <cite>series.freq * stride</cite>.
-If <cite>last_points_only</cite> is set to False, it will instead return a list of the historical forecasts.</p>
+historical forecast. This time series will thus have a frequency of <code class="docutils literal notranslate"><span class="pre">series.freq</span> <span class="pre">*</span> <span class="pre">stride</span></code>.
+If <cite>last_points_only</cite> is set to False, it will instead return a list of the
+historical forecasts series.</p>
 <p>By default, this method always re-trains the models on the entire available history,
 corresponding to an expanding window strategy.
-If <cite>retrain</cite> is set to False (useful for models for which training might be time-consuming, such as
-deep learning models), the model will only be trained on the initial training window
-(up to <cite>start</cite> time stamp), and only if it has not been trained before. Then, at every iteration, the
-newly expanded input sequence will be fed to the model to produce the new output.</p>
+If <cite>retrain</cite> is set to False, the model will only be trained on the initial training window
+(up to <cite>start</cite> time stamp), and only if it has not been trained before. This is not
+supported by all models.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The target time series to use to successively train and evaluate the historical forecasts.</p></li>
-<li><p><strong>past_covariates</strong> – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
-<li><p><strong>future_covariates</strong> – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
-<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The target time series to use to successively train and evaluate the historical forecasts.</p></li>
+<li><p><strong>past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional past-observed covariate series. This applies only if the model supports past covariates.</p></li>
+<li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
+<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
-<li><p><strong>start</strong> – The first point of time at which a prediction is computed for a future time.
-This parameter supports 3 different data types: <cite>float</cite>, <cite>int</cite> and <cite>pandas.Timestamp</cite>.
-In the case of <cite>float</cite>, the parameter will be treated as the proportion of the time series
+<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The first point of time at which a prediction is computed for a future time.
+This parameter supports 3 different data types: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>.
+In the case of <code class="docutils literal notranslate"><span class="pre">float</span></code>, the parameter will be treated as the proportion of the time series
 that should lie before the first prediction point.
-In the case of <cite>int</cite>, the parameter will be treated as an integer index to the time index of
+In the case of <code class="docutils literal notranslate"><span class="pre">int</span></code>, the parameter will be treated as an integer index to the time index of
 <cite>series</cite> that will be used as first prediction time.
-In case of <cite>pandas.Timestamp</cite>, this time stamp will be used to determine the first prediction time
+In case of <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>, this time stamp will be used to determine the first prediction time
 directly.</p></li>
-<li><p><strong>forecast_horizon</strong> – The forecast horizon for the predictions</p></li>
-<li><p><strong>stride</strong> – The number of time steps between two consecutive predictions.</p></li>
-<li><p><strong>retrain</strong> – Whether to retrain the model for every prediction or not. Currently only <cite>TorchForecastingModel</cite>
-instances such as <cite>BlockRNNModel</cite>, <cite>RNNModel</cite>, <cite>TCNModel</cite>, <cite>NBEATSModel</cite> and <cite>TransformerModel</cite> support
-setting <cite>retrain</cite> to <cite>False</cite>.</p></li>
-<li><p><strong>overlap_end</strong> – Whether the returned forecasts can go beyond the series’ end or not</p></li>
-<li><p><strong>last_points_only</strong> – Whether to retain only the last point of each historical forecast.
-If set to True, the method returns a single <cite>TimeSeries</cite> containing the successive point forecasts.
-Otherwise returns a list of historical <cite>TimeSeries</cite> forecasts.</p></li>
-<li><p><strong>verbose</strong> – Whether to print progress</p></li>
+<li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecast horizon for the predictions</p></li>
+<li><p><strong>stride</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of time steps between two consecutive predictions.</p></li>
+<li><p><strong>retrain</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to retrain the model for every prediction or not. Not all models support setting
+<cite>retrain</cite> to <cite>False</cite>. Notably, this is supported by neural networks based models.</p></li>
+<li><p><strong>overlap_end</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether the returned forecasts can go beyond the series’ end or not</p></li>
+<li><p><strong>last_points_only</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to retain only the last point of each historical forecast.
+If set to True, the method returns a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> containing the successive point forecasts.
+Otherwise returns a list of historical <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> forecasts.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>By default, a single TimeSeries instance created from the last point of each individual forecast.
+<dd class="field-even"><p>By default, a single <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instance created from the last point of each individual forecast.
 If <cite>last_points_only</cite> is set to False, a list of the historical forecasts.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
@@ -743,17 +779,10 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dl>
 </dd></dl>
 
-<dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.min_train_series_length">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">min_train_series_length</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.min_train_series_length" title="Permalink to this definition">¶</a></dt>
-<dd><p>Class property defining the minimum required length for the training series.
-This function/property should be overridden if a value higher than 3 is required.</p>
-</dd></dl>
-
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict">
 <span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Forecasts values for <cite>n</cite> time steps after the end of the series.</p>
+<dd><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -773,24 +802,25 @@ for deterministic models.</p></li>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.residuals" title="Permalink to this definition">¶</a></dt>
-<dd><p>A function for computing the residuals produced by the current model on a univariate time series.</p>
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.residuals" title="Permalink to this definition">¶</a></dt>
+<dd><p>Compute the residuals produced by this model on a univariate time series.</p>
 <p>This function computes the difference between the actual observations from <cite>series</cite>
 and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
 For every index <cite>i</cite> in <cite>series</cite>, <cite>p[i]</cite> is computed by training the model on
-<cite>series[:(i - forecast_horizon)]</cite> and forecasting <cite>forecast_horizon</cite> into the future.
+<code class="docutils literal notranslate"><span class="pre">series[:(i</span> <span class="pre">-</span> <span class="pre">forecast_horizon)]</span></code> and forecasting <cite>forecast_horizon</cite> into the future.
 (<cite>p[i]</cite> will be set to the last value of the predicted series.)
 The vector of residuals will be shorter than <cite>series</cite> due to the minimum
 training series length required by the model and the gap introduced by <cite>forecast_horizon</cite>.
-Most commonly, unless otherwise specified, the term “residuals” implies a value for <cite>forecast_horizon</cite> of 1.</p>
+Most commonly, the term “residuals” implies a value for <cite>forecast_horizon</cite> of 1; but
+this can be configured.</p>
 <p>This method works only on univariate series and does not currently support covariates. It uses the median
-prediction (when dealing with stochastic forecasts having num_samples &gt; 1).</p>
+prediction (when dealing with stochastic forecasts).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – The univariate TimeSeries instance which the residuals will be computed for.</p></li>
-<li><p><strong>forecast_horizon</strong> – The forecasting horizon used to predict each fitted value.</p></li>
-<li><p><strong>verbose</strong> – Whether to print progress.</p></li>
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The univariate TimeSeries instance which the residuals will be computed for.</p></li>
+<li><p><strong>forecast_horizon</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The forecasting horizon used to predict each fitted value.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print progress.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -801,21 +831,6 @@ prediction (when dealing with stochastic forecasts having num_samples &gt; 1).</
 </dd>
 </dl>
 </dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.untrained_model">
-<span class="sig-name descname"><span class="pre">untrained_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.untrained_model" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_future_covariates">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">uses_future_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_future_covariates" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_past_covariates">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">uses_past_covariates</span></span><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.uses_past_covariates" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
 
 </dd></dl>
 
@@ -855,13 +870,13 @@ prediction (when dealing with stochastic forecasts having num_samples &gt; 1).</
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

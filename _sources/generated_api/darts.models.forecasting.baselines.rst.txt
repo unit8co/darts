@@ -2,4 +2,3 @@
 .. automodule:: darts.models.forecasting.baselines
    :members:
    :undoc-members:
-   :show-inheritance:

@@ -2,4 +2,3 @@
 .. automodule:: darts.dataprocessing.pipeline
    :members:
    :undoc-members:
-   :show-inheritance:

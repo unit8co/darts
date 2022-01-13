@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Utils for time series statistics &#8212; darts  documentation</title>
+    <title>Time Series Statistics &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -77,6 +77,18 @@
     <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../README.html">
   Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
  </a>
 </li>
 
@@ -156,7 +168,7 @@
     <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -166,17 +178,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -400,7 +412,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +459,7 @@
    </li>
    <li class="toctree-l2 current active">
     <a class="current reference internal" href="#">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -508,21 +520,21 @@
               
               <div>
                 
-  <span class="target" id="module-darts.utils.statistics"></span><section id="utils-for-time-series-statistics">
-<h1>Utils for time series statistics<a class="headerlink" href="#utils-for-time-series-statistics" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-darts.utils.statistics"></span><section id="time-series-statistics">
+<h1>Time Series Statistics<a class="headerlink" href="#time-series-statistics" title="Permalink to this headline">¶</a></h1>
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.check_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">check_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#check_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.check_seasonality" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">check_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#check_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.check_seasonality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Checks whether the TimeSeries <cite>ts</cite> is seasonal with period <cite>m</cite> or not.</p>
 <p>If <cite>m</cite> is None, we work under the assumption that there is a unique seasonality period, which is inferred
 from the Auto-correlation Function (ACF).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The time series to check for seasonality.</p></li>
-<li><p><strong>m</strong> – The seasonality period to check.</p></li>
-<li><p><strong>max_lag</strong> – The maximal lag allowed in the ACF.</p></li>
-<li><p><strong>alpha</strong> – The desired confidence level (default 5%).</p></li>
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to check for seasonality.</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The seasonality period to check.</p></li>
+<li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag allowed in the ACF.</p></li>
+<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The desired confidence level (default 5%).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -537,44 +549,45 @@ and <cite>m</cite> is the seasonality period.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.extract_trend_and_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">extract_trend_and_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><span class="pre">darts.utils.utils.SeasonalityMode</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><span class="pre">darts.utils.utils.ModelMode</span></a><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">extract_trend_and_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Extracts trend and seasonality from a TimeSeries instance using <cite>statsmodels.seasonal_decompose</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The series to decompose</p></li>
-<li><p><strong>freq</strong> – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use.
-Must be <cite>from darts import ModelMode, SeasonalityMode</cite> Enum member.
-Either MULTIPLICATIVE or ADDITIVE.
-Defaults ModelMode.MULTIPLICATIVE.</p></li>
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The series to decompose</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The seasonality period to use.</p></li>
+<li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – The type of decomposition to use.
+Must be <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">ModelMode,</span> <span class="pre">SeasonalityMode</span></code> Enum member.
+Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
+Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p></p>
+<dd class="field-even"><p>A tuple of (trend, seasonal) time series.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>A tuple of (trend, seasonal) time series.</p>
+<dd class="field-odd"><p>Tuple[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.granger_causality_tests">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">granger_causality_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts_cause</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_effect</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addconst</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#granger_causality_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.granger_causality_tests" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides four tests for granger non causality of 2 time series using <cite>statsmodels.tsa.stattools.grangercausalitytests</cite>.
-See <a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html</a></p>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">granger_causality_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts_cause</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_effect</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addconst</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#granger_causality_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.granger_causality_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides four tests for granger non causality of 2 time series using
+<code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.grangercausalitytests()</span></code>.
+See <a class="reference internal" href="#r11379780e7c2-1" id="id1">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts_cause</strong> – A univariate deterministic time series. The statistical test determines if this time series
+<li><p><strong>ts_cause</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – A univariate deterministic time series. The statistical test determines if this time series
 ‘Granger causes’ the time series ts_effect (second parameter). Missing values are not supported.
 if H_0 (non causality) is rejected (p near 0), then there is a ‘granger causality’.</p></li>
-<li><p><strong>ts_effect</strong> – Univariate time series ‘Granger caused’ by ts_cause.</p></li>
-<li><p><strong>maxlag</strong> – If an integer, computes the test for all lags up to maxlag.
+<li><p><strong>ts_effect</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Univariate time series ‘Granger caused’ by ts_cause.</p></li>
+<li><p><strong>maxlag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – If an integer, computes the test for all lags up to maxlag.
 If an iterable, computes the tests only for the lags in maxlag.</p></li>
-<li><p><strong>addconst</strong> – Include a constant in the model.</p></li>
-<li><p><strong>verbose</strong> – Print results.</p></li>
+<li><p><strong>addconst</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Include a constant in the model.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Print results.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -587,11 +600,17 @@ matrix for the parameter f_test.</p>
 <dd class="field-odd"><p>Dict</p>
 </dd>
 </dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r11379780e7c2-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_acf">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_acf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">matplotlib.pyplot.axis</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_acf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_acf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_acf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.
 This function uses the <a class="reference external" href="https://github.com/statsmodels/statsmodels">Statsmodels module</a>.</p>
 <dl class="field-list simple">
@@ -610,12 +629,15 @@ If set to False, the confidence interval can be used to test for randomness
 <li><p><strong>axis</strong> (<em>plt.axis</em><em>, </em><em>optional</em>) – Optionally, an axis object to plot the ACF on.</p></li>
 </ul>
 </dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_hist">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">matplotlib.pyplot.axis</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_hist" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_hist</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">density</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">title</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_hist"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_hist" title="Permalink to this definition">¶</a></dt>
 <dd><p>This function plots the histogram of values in a TimeSeries instance or an array-like.</p>
 <p>All types of TimeSeries are supported (uni-, multivariate, deterministic, stochastic).
 Depending on the number of components in <cite>data</cite>, up to four histograms can be plotted on one figure.
@@ -624,21 +646,24 @@ All stochastic samples will be displayed with the corresponding component.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>data</strong> – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
-<li><p><strong>bins</strong> – Optionally, either an integer value for the number of bins to be displayed
+<li><p><strong>data</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>]) – TimeSeries instance or an array-like from which to plot the histogram.</p></li>
+<li><p><strong>bins</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, either an integer value for the number of bins to be displayed
 or an array-like of floats determining the position of bins.</p></li>
-<li><p><strong>density</strong> – bool, if <cite>density</cite> is set to True, the bin counts will be converted to probability density</p></li>
-<li><p><strong>title</strong> – The title of the figure to be displayed</p></li>
-<li><p><strong>fig_size</strong> – The size of the figure to be displayed.</p></li>
-<li><p><strong>ax</strong> – Optionally, an axis object to plot the histogram on.</p></li>
+<li><p><strong>density</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – bool, if <cite>density</cite> is set to True, the bin counts will be converted to probability density</p></li>
+<li><p><strong>title</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The title of the figure to be displayed</p></li>
+<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – The size of the figure to be displayed.</p></li>
+<li><p><strong>ax</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the histogram on.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_pacf">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_pacf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'ywadjusted'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">matplotlib.pyplot.axis</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_pacf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_pacf" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_pacf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ywadjusted'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_pacf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_pacf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the Partial ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.
 This function uses the <a class="reference external" href="https://github.com/statsmodels/statsmodels">Statsmodels module</a>.</p>
 <dl class="field-list simple">
@@ -648,9 +673,11 @@ This function uses the <a class="reference external" href="https://github.com/st
 <li><p><strong>m</strong> (<em>int</em><em>, </em><em>optional</em>) – Optionally, a time lag to highlight on the plot.</p></li>
 <li><p><strong>max_lag</strong> (<em>int</em><em>, </em><em>default: 24</em>) – The maximal lag order to consider.</p></li>
 <li><p><strong>method</strong> (<em>str</em><em>, </em><em>default: &quot;ywadjusted&quot;</em>) – <p>The method to be used for the PACF calculation.
-- “yw” or “ywadjusted” : Yule-Walker with sample-size adjustment in</p>
+- | “yw” or “ywadjusted” : Yule-Walker with sample-size adjustment in</p>
 <blockquote>
-<div><p>denominator for acovf. Default.</p>
+<div><div class="line-block">
+<div class="line">denominator for acovf. Default.</div>
+</div>
 </div></blockquote>
 <ul>
 <li><p>”ywm” or “ywmle” : Yule-Walker without adjustment.</p></li>
@@ -670,12 +697,15 @@ correction.</p></li>
 <li><p><strong>axis</strong> (<em>plt.axis</em><em>, </em><em>optional</em>) – Optionally, an axis object to plot the ACF on.</p></li>
 </ul>
 </dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_residuals_analysis">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_residuals_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residuals</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_nan</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_residuals_analysis</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">residuals</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_bins</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">20</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_nan</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_residuals_analysis"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_residuals_analysis" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots data relevant to residuals.</p>
 <p>This function takes a univariate TimeSeries instance of residuals and plots their values,
 their distribution and their ACF.
@@ -685,25 +715,28 @@ be interpolated.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>residuals</strong> – Univariate TimeSeries instance representing residuals.</p></li>
-<li><p><strong>num_bins</strong> – Optionally, an integer value determining the number of bins in the histogram.</p></li>
-<li><p><strong>fill_nan</strong> – A boolean value indicating whether NaN values should be filled in the residuals.</p></li>
+<li><p><strong>residuals</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – Univariate TimeSeries instance representing residuals.</p></li>
+<li><p><strong>num_bins</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer value determining the number of bins in the histogram.</p></li>
+<li><p><strong>fill_nan</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – A boolean value indicating whether NaN values should be filled in the residuals.</p></li>
 </ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_from_series">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><span class="pre">darts.utils.utils.SeasonalityMode</span></a><span class="p"><span class="pre">,</span> </span><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><span class="pre">darts.utils.utils.ModelMode</span></a><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_from_series" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_from_series</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">other</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_from_series"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_from_series" title="Permalink to this definition">¶</a></dt>
 <dd><p>Removes the TimeSeries <cite>other</cite> from the TimeSeries <cite>ts</cite> as specified by <cite>model</cite>.
 Use e.g. to remove an additive or multiplicative trend from a series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to be modified.</p></li>
-<li><p><strong>other</strong> – The TimeSeries to remove.</p></li>
-<li><p><strong>model</strong> – The type of model considered.
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to be modified.</p></li>
+<li><p><strong>other</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to remove.</p></li>
+<li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>, <a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – The type of model considered.
 Must be <cite>from darts import ModelMode, SeasonalityMode</cite> Enums member.
 Either MULTIPLICATIVE or ADDITIVE.</p></li>
 </ul>
@@ -719,14 +752,14 @@ Either MULTIPLICATIVE or ADDITIVE.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><span class="pre">darts.utils.utils.SeasonalityMode</span></a></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a seasonality of order <cite>frequency</cite> using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to adjust.</p></li>
-<li><p><strong>freq</strong> – The seasonality period to use.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use.
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to adjust.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The seasonality period to use.</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>) – The type of decomposition to use.
 Must be a <cite>from darts import SeasonalityMode</cite> Enum member.
 Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
 Defaults SeasonalityMode.MULTIPLICATIVE.</p></li>
@@ -743,13 +776,13 @@ Defaults SeasonalityMode.MULTIPLICATIVE.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_trend">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><span class="pre">darts.utils.utils.ModelMode</span></a></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a trend using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries to adjust.</p></li>
-<li><p><strong>model</strong> – The type of decomposition to use.
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to adjust.</p></li>
+<li><p><strong>model</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>) – The type of decomposition to use.
 Must be <cite>from darts import ModelMode</cite> Enum member.
 Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
 Defaults to modelMode.MULTIPLICATIVE.</p></li>
@@ -766,91 +799,119 @@ Defaults to modelMode.MULTIPLICATIVE.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_adf">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_adf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autolag</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">None</span><span class="p"><span class="pre">,</span> </span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'AIC'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_adf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_adf" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides Augmented Dickey-Fuller unit root test for a time series, using <cite>statsmodels.tsa.stattools.adfuller</cite>.
-See <a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html</a></p>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_adf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autolag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AIC'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_adf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_adf" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides Augmented Dickey-Fuller unit root test for a time series,
+using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.adfuller()</span></code>. See <a class="reference internal" href="#ref511d402b22-1" id="id3">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The time series to test.</p></li>
-<li><p><strong>maxlag</strong> – Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.</p></li>
-<li><p><strong>regression</strong> – Constant and trend order to include in regression.
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to test.</p></li>
+<li><p><strong>maxlag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.</p></li>
+<li><p><strong>regression</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Constant and trend order to include in regression.
 “c” : constant only (default).
 “ct” : constant and trend.
 “ctt” : constant, and linear and quadratic trend.
 “n” : no constant, no trend.</p></li>
-<li><p><strong>autolag</strong> – Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
-If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding information criterion.
-“t-stat” based choice of maxlag. Starts with maxlag and drops a lag until the t-statistic on the last lag length is significant using a 5%-sized test.
+<li><p><strong>autolag</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
+If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding
+information criterion. “t-stat” based choice of maxlag. Starts with maxlag and drops a lag
+until the t-statistic on the last lag length is significant using a 5%-sized test.
 If None, then the number of included lags is set to maxlag.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>adf: The test statistic.
-pvalue: MacKinnon’s approximate p-value based on MacKinnon (1994, 2010).
-usedlag: The number of lags used.
-nobs: The number of observations used for the ADF regression and calculation of the critical values.
-critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on MacKinnon (2010).
-icbest: The maximized information criterion if autolag is not None.</p>
+<dd class="field-even"><p><div class="line-block">
+<div class="line">adf: The test statistic.</div>
+<div class="line">pvalue: MacKinnon’s approximate p-value based on <a class="reference internal" href="#ref511d402b22-2" id="id4">[2]</a>.</div>
+<div class="line">usedlag: The number of lags used.</div>
+<div class="line">nobs: The number of observations used for the ADF regression and calculation of the critical values.</div>
+<div class="line">critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on <a class="reference internal" href="#ref511d402b22-2" id="id5">[2]</a>.</div>
+<div class="line">icbest: The maximized information criterion if autolag is not None.</div>
+</div>
+</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>A set of values</p>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="ref511d402b22-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html</a></p>
+</dd>
+<dt class="label" id="ref511d402b22-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id5">2</a>)</span></dt>
+<dd><p>MacKinnon (1994, 2010)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_kpss">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_kpss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlags</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">set</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_kpss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_kpss" title="Permalink to this definition">¶</a></dt>
-<dd><p>Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series, using <cite>statsmodels.tsa.stattools.kpss</cite>.
-See <a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html</a></p>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_kpss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_kpss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_kpss" title="Permalink to this definition">¶</a></dt>
+<dd><p>Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
+using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.kpss()</span></code>. See <a class="reference internal" href="#r8df52d521c0a-1" id="id6">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The time series to test.</p></li>
-<li><p><strong>regression</strong> – The null hypothesis for the KPSS test.
-“c” : The data is stationary around a constant (default).
-“ct” : The data is stationary around a trend.</p></li>
-<li><p><strong>nlags</strong> – Indicates the number of lags to be used. If “auto” (default), lags is calculated using the data-dependent method of Hobijn et al. (1998).
-See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to “legacy”, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The time series to test.</p></li>
+<li><p><strong>regression</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The null hypothesis for the KPSS test.
+‘c’ : The data is stationary around a constant (default).
+‘ct’ : The data is stationary around a trend.</p></li>
+<li><p><strong>nlags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Indicates the number of lags to be used. If ‘auto’ (default), lags is calculated using the data-dependent method of Hobijn et al. (1998).
+See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to ‘legacy’, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>kpss_stat: The test statistic.
-pvalue: The p-value of the test. The p-value is interpolated from Table 1 in Kwiatkowski et al. (1992),
-and a boundary point is returned if the test statistic is outside the table of critical values, that is, if the p-value is outside the interval (0.01, 0.1).
-lags: The truncation lag parameter.
-crit: The critical values at 10%, 5%, 2.5% and 1%. Based on Kwiatkowski et al. (1992).</p>
+<dd class="field-even"><p><div class="line-block">
+<div class="line">kpss_stat: The test statistic.</div>
+<div class="line">pvalue: The p-value of the test. The p-value is interpolated from Table 1 in <a class="reference internal" href="#r8df52d521c0a-2" id="id7">[2]</a>,</div>
+<div class="line">and a boundary point is returned if the test statistic is outside the table of critical values,</div>
+<div class="line">that is, if the p-value is outside the interval (0.01, 0.1).</div>
+<div class="line">lags: The truncation lag parameter.</div>
+<div class="line">crit: The critical values at 10%, 5%, 2.5% and 1%. Based on <a class="reference internal" href="#r8df52d521c0a-2" id="id8">[2]</a>.</div>
+</div>
+</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>A set of values</p>
+<dd class="field-odd"><p>set</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r8df52d521c0a-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html</a></p>
+</dd>
+<dt class="label" id="r8df52d521c0a-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id7">1</a>,<a href="#id8">2</a>)</span></dt>
+<dd><p>Kwiatkowski et al. (1992)</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_tests">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_adfuller</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_kpss</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">float</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_tests" title="Permalink to this definition">¶</a></dt>
-<dd><p>Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented Dickey-Fuller statistical tests.</p>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_adfuller</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">p_value_threshold_kpss</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_tests" title="Permalink to this definition">¶</a></dt>
+<dd><p>Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
+Dickey-Fuller statistical tests.</p>
 <p>WARNING
-Because Augmented Dickey-Fuller is testing null hypothesis that ts IS NOT stationary and Kwiatkowski-Phillips-Schmidt-Shin that
+Because Augmented Dickey-Fuller is testing null hypothesis that ts IS NOT stationary and
+Kwiatkowski-Phillips-Schmidt-Shin that
 ts IS stationary, we can’t really decide on the same p_value threshold for both tests in general.
 It seems reasonable to keep them both at 0.05.
-If other threshold has to be tested, they have to go in opposite direction (for example, p_value_threshold_adfuller = 0.01 and
-p_value_threshold_kpss = 0.1).</p>
+If other threshold has to be tested, they have to go in opposite direction (for example,
+p_value_threshold_adfuller = 0.01 and p_value_threshold_kpss = 0.1).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> – The TimeSeries we test.</p></li>
-<li><p><strong>p_value_threshold_adfuller</strong> – p_value threshold to reject stationarity for Augmented Dickey-Fuller test.</p></li>
-<li><p><strong>p_value_threshold_kpss</strong> – p_value threshold to reject non-stationarity for Kwiatkowski-Phillips-Schmidt-Shin test.</p></li>
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to test.</p></li>
+<li><p><strong>p_value_threshold_adfuller</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – p_value threshold to reject stationarity for Augmented Dickey-Fuller test.</p></li>
+<li><p><strong>p_value_threshold_kpss</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – p_value threshold to reject non-stationarity for Kwiatkowski-Phillips-Schmidt-Shin test.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>If ts is stationary or not.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Boolean</p>
+<dd class="field-odd"><p>bool</p>
 </dd>
 </dl>
 </dd></dl>
@@ -891,13 +952,13 @@ p_value_threshold_kpss = 0.1).</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

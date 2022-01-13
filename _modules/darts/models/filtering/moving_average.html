@@ -78,6 +78,18 @@
 </li>
 
 <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
   API Reference
  </a>
@@ -166,9 +178,7 @@
 <span class="sd">    A simple moving average filter. Works on deterministic series (made of 1 sample).</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                 <span class="n">centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">window</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">centered</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -182,12 +192,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">window</span> <span class="o">=</span> <span class="n">window</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">centered</span> <span class="o">=</span> <span class="n">centered</span>
 
-<div class="viewcode-block" id="MovingAverage.filter"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.moving_average.html#darts.models.filtering.moving_average.MovingAverage.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">):</span>
+<div class="viewcode-block" id="MovingAverage.filter"><a class="viewcode-back" href="../../../../generated_api/darts.models.filtering.moving_average.html#darts.models.filtering.moving_average.MovingAverage.filter">[docs]</a>    <span class="k">def</span> <span class="nf">filter</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Computes a moving average of this series&#39; values and returns a new TimeSeries.</span>
 <span class="sd">        The returned series has the same length and time axis as `series`. (Note that this might create border effects).</span>
 
-<span class="sd">        Behind the scenes the moving average is computed using `pandas.DataFrame.rolling()` on the underlying</span>
+<span class="sd">        Behind the scenes the moving average is computed using :func:`pandas.DataFrame.rolling()` on the underlying</span>
 <span class="sd">        DataFrame.</span>
 
 <span class="sd">        Parameters</span>
@@ -195,14 +205,16 @@
 <span class="sd">        series</span>
 <span class="sd">            The a deterministic series to average</span>
 
-<span class="sd">         Returns</span>
+<span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        TimeSeries</span>
 <span class="sd">            A time series containing the average values</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">filtered_df</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span>
-                                                              <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
-                                                              <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">centered</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="n">filtered_df</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">centered</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">)</span></div></div>
 </pre></div>
 
@@ -225,13 +237,13 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

@@ -1,0 +1,625 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Darts Covariates &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="darts" href="../generated_api/darts.html" />
+    <link rel="prev" title="Neural Networks Performance Recommendations" href="performance.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="torch_forecasting_models.html">
+   In-depth look at Torch Forecasting Models
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="performance.html">
+   Neural Networks Performance Recommendations
+  </a>
+ </li>
+</ul>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Darts Covariates
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#summary-tl-dr">
+   Summary - TL;DR
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#content-of-this-document">
+   Content of this document
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#introduction-what-are-covariates-in-darts">
+   1. Introduction - What are covariates (in Darts)?
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#using-covariates-with-darts-forecasting-models">
+   2. Using Covariates With Darts’ Forecasting Models
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#forecasting-model-covariate-support">
+   2.1. Forecasting Model Covariate Support
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#local-forecasting-models-lfms">
+     Local Forecasting Models (LFMs):
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#global-forecasting-models-gfms">
+     Global Forecasting Models (GFMs)
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#table-1-darts-forecasting-models-and-their-covariate-support">
+       Table 1: Darts’ forecasting models and their covariate support
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#quick-guide-on-how-to-use-covariates-with-darts-forecasting-models">
+   2.2. Quick guide on how to use covariates with Darts’ forecasting models
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models">
+   2.3. Covariate time span requirements for Local and Global Forecasting Models
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id5">
+     Local Forecasting Models (LFMs):
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id6">
+     Global Forecasting Models (GFMs):
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#examples">
+   2.4. Examples
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <section id="darts-covariates">
+<h1>Darts Covariates<a class="headerlink" href="#darts-covariates" title="Permalink to this headline">¶</a></h1>
+<p>This document was written for darts version 0.15.0.</p>
+<section id="summary-tl-dr">
+<h2>Summary - TL;DR<a class="headerlink" href="#summary-tl-dr" title="Permalink to this headline">¶</a></h2>
+<p>In Darts, <strong>covariates</strong> refer to external data that can be used as inputs to models to help improve forecasts.
+In the context of forecasting models, the <strong>target</strong> is the series to be forecasted/predicted, and the
+covariates themselves are not predicted. We distinguish three kinds of covariates:</p>
+<ul class="simple">
+<li><p><strong>past covariates</strong> are (by definition) covariates known only into the past (e.g. measurements)</p></li>
+<li><p><strong>future covariates</strong> are (by definition) covariates known into the future (e.g., weather forecasts)</p></li>
+<li><p><strong>static covariates</strong> are (by definition) covariates constant over time. They are not yet supported in Darts, but we are working on it!</p></li>
+</ul>
+<p>Models in Darts accept <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and/or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> in their <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods, depending on their capabilities (some models accept no covariates at all). Both target and covariates must be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object. The models will raise an error if covariates were used that are not supported.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># create one of Darts&#39; forecasting models</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SomeForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1"># fitting model with past and future covariates</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>
+          <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates_train</span><span class="p">,</span>
+          <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates_train</span><span class="p">)</span>
+
+<span class="c1"># predict the next n=12 steps</span>
+<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+              <span class="n">series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>  <span class="c1"># only required for Global Forecasting Models</span>
+              <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates_pred</span><span class="p">,</span>
+              <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates_pred</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>If you have several covariate variables that you want to use as past (or future) covariates, you have to <code class="docutils literal notranslate"><span class="pre">stack()</span></code> all of them into a single <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> (or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>) object.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># stack two TimeSeries with stack()</span>
+<span class="n">past_covariates</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">other_past_covariates</span><span class="p">)</span>
+
+<span class="c1"># or with concatenate()</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span>
+<span class="n">past_covariates</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">other_past_covariates</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Darts’ forecasting models expect one past and/or future covariate series per target series. If you use multiple target series with one of Darts’ Global Forecasting Models, you must supply the same number of dedicated covariates to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># fit using multiple (two) target series</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="p">[</span><span class="n">target</span><span class="p">,</span> <span class="n">target_2</span><span class="p">],</span>
+          <span class="n">past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">past_covariates_2</span><span class="p">],</span>
+          <span class="c1"># optional future_covariates,</span>
+          <span class="p">)</span>
+
+<span class="c1"># you must give the specific target and covariate series that you want to predict</span>
+<span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+              <span class="n">series</span><span class="o">=</span><span class="n">target_2</span><span class="p">,</span>
+              <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates_2</span><span class="p">,</span>
+              <span class="c1"># optional future_covariates,</span>
+              <span class="p">)</span>
+</pre></div>
+</div>
+<p>If you train a model using <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>, you’ll have to provide these <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> also at prediction time to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. This applies to <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> too, with a nuance that <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> have to extend far enough into the future at prediction time (all the way to the forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>). This can be seen in the graph below. <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> needs to include at least the same time steps as <code class="docutils literal notranslate"><span class="pre">target</span></code>, and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> must include at least the same time span plus additional <code class="docutils literal notranslate"><span class="pre">n</span></code> forecast horizon time steps.</p>
+<p><strong>*You can use the same `*_covariates` for both training and prediction, given that they contain the required time spans.*</strong></p>
+<a class="reference external image-reference" href="./images/covariates/top_level.png"><img alt="figure0" src="../_images/top_level.png" /></a>
+<p><strong>Figure 1: Top level summary of how forecasting models work with target and covariates for a prediction with forecast horizon n=2</strong></p>
+<p>There are some extra nuances that might be good to know. For instance, deep learning models in Darts
+can (in general) forecast <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> points at a time. However it is still possible for models
+trained with past covariates to make forecasts for some horizon <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code> if the <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>
+are known far enough into the future. In such cases, the forecasts are obtained by consuming future values
+of the past covariates, and using auto-regression on the target series. If you want to know more details, read on.</p>
+</section>
+<hr class="docutils" />
+<section id="content-of-this-document">
+<h2>Content of this document<a class="headerlink" href="#content-of-this-document" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="#1-introduction---what-are-covariates-in-darts">Section 1</a> Gives an introduction to covariates in Darts</p>
+<p><a class="reference external" href="#2-using-covariates-with-darts-forecasting-models">Section 2</a> Explains everything you need to know about how to use covariates with Darts’ Forecasting Models</p>
+<ul class="simple">
+<li><p>covariate support for each forecasting model</p></li>
+<li><p>quick guide on how to use covariates with Darts’ forecasting models</p></li>
+<li><p>time span requirements for covariates</p></li>
+<li><p>examples</p></li>
+</ul>
+</section>
+<hr class="docutils" />
+<section id="introduction-what-are-covariates-in-darts">
+<h2>1. Introduction - What are covariates (in Darts)?<a class="headerlink" href="#introduction-what-are-covariates-in-darts" title="Permalink to this headline">¶</a></h2>
+<p>Covariates provide additional information/context that can be useful to improve the prediction of the <code class="docutils literal notranslate"><span class="pre">target</span></code> series. The <code class="docutils literal notranslate"><span class="pre">target</span></code> series is the variable we wish to predict the future for. We do not predict the covariates themselves, only use them for prediction of the <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
+<p>Covariates can hold information about the past (upto and including present time) or future. This is always relative to the prediction point (in time) after which we want to forecast the future.
+In Darts, we refer to these two types as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>. Darts’ forecasting models have different support modes for <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code>. Some do not support covariates at all, others support either past or future covariates and some support both (more on that in <a class="reference external" href="#21-forecasting-model-covariate-support">section 2.1.</a>).</p>
+<p>Let’s have a look at some examples of past and future covariates:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>: typically measurements (past data) or temporal attributes</p>
+<ul>
+<li><p>daily average <strong>measured</strong> temperatures (known only in the past)</p></li>
+<li><p>day of week, month, year, …</p></li>
+</ul>
+</li>
+<li><p><code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>: typically forecasts (future known data) or temporal attributes</p>
+<ul>
+<li><p>daily average <strong>forecasted</strong> temperatures (known in the future)</p></li>
+<li><p>day of week, month, year, …</p></li>
+</ul>
+</li>
+</ul>
+<p>Temporal attributes are powerful because they are known in advance and can help models capture trends and / or seasonal patterns of the <code class="docutils literal notranslate"><span class="pre">target</span></code> series.</p>
+<p>Here’s a simple rule-of-thumb to know if your series are past or future covariates:</p>
+<p><em>If the values are known in advance, they are future covariates (or can be used as past covariates). If they are not, they **must*</em> be past covariates.*</p>
+<p>You might imagine cases where you want to train a model supporting only <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> (such as <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, see Table 1). In this case, you could use for instance say, the <strong>forecasted</strong> temperature as a past covariate for the model <em>even though you also have access to temperature forecasts in the future</em>. Knowing such “future values of past covariates” can allow you to make forecasts further into the future (for Darts’ deep learning models with forecast horizons <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>). Similarly most models consuming future covariates can also use “historic values of future covariates”.</p>
+<p>Side note: if you don’t have future values (e.g. of measured temperatures), nothing prevents you from applying one of Darts’ forecasting models to forecast future temperatures, and then use this as <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>. Darts is not attempting to forecast the covariates for you, as this would introduce an extra “hidden” modeling step, which we think is best left to the users.</p>
+</section>
+<section id="using-covariates-with-darts-forecasting-models">
+<h2>2. Using Covariates With Darts’ Forecasting Models<a class="headerlink" href="#using-covariates-with-darts-forecasting-models" title="Permalink to this headline">¶</a></h2>
+</section>
+<section id="forecasting-model-covariate-support">
+<h2>2.1. Forecasting Model Covariate Support<a class="headerlink" href="#forecasting-model-covariate-support" title="Permalink to this headline">¶</a></h2>
+<p>Darts’ forecasting models accept optional <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and / or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> in their <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> methods, depending on their capabilities. Table 1 shows the supported covariate types for each model. The models will raise an error if covariates were used that are not supported.</p>
+<section id="local-forecasting-models-lfms">
+<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#local-forecasting-models-lfms" title="Permalink to this headline">¶</a></h3>
+<p>LFMs are models that can be trained on a single target series only. In Darts most models in this category tend to be simpler statistical models (such as ETS or ARIMA). LFMs accept only a single <code class="docutils literal notranslate"><span class="pre">target</span></code> (and covariate) time series and usually train on the entire series you supplied when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> at once. They can also predict in one go for any number of predictions <code class="docutils literal notranslate"><span class="pre">n</span></code> after the end of the training series.</p>
+</section>
+<section id="global-forecasting-models-gfms">
+<h3>Global Forecasting Models (GFMs)<a class="headerlink" href="#global-forecasting-models-gfms" title="Permalink to this headline">¶</a></h3>
+<p>GFMs are broadly speaking “machine learning based” models, which denote PyTorch-based (deep learning) models as well as RegressionModels. Global models can all be trained on multiple <code class="docutils literal notranslate"><span class="pre">target</span></code> (and covariate) time series. Different to LFMs, the GFMs train and predict on fixed-length sub-samples (chunks) of the input data.</p>
+<hr class="docutils" />
+<table class="table">
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Model</p></th>
+<th class="head"><p>Past Covariates</p></th>
+<th class="head"><p>Future Covariates</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><strong>Local Forecasting Models (LFMs)</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ARIMA</span></code></p></td>
+<td></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARIMA</span></code></p></td>
+<td></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AutoARIMA</span></code></p></td>
+<td></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
+<td></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><strong>Global Forecasting Models (GFMs)</strong></p></td>
+<td></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>*</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code>**</p></td>
+<td></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code><a href="#id1"><span class="problematic" id="id2">**</span></a><a href="#id3"><span class="problematic" id="id4">*</span></a></p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+</tbody>
+</table>
+<section id="table-1-darts-forecasting-models-and-their-covariate-support">
+<h4>Table 1: Darts’ forecasting models and their covariate support<a class="headerlink" href="#table-1-darts-forecasting-models-and-their-covariate-support" title="Permalink to this headline">¶</a></h4>
+<p><code class="docutils literal notranslate"><span class="pre">*</span></code> <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> including <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>, <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>. <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> is a
+special kind of GFM which can use arbitrary lags on covariates (past and/or future)
+and past targets to do predictions.</p>
+<p><code class="docutils literal notranslate"><span class="pre">**</span></code> <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code>; equivalent to DeepAR in its probabilistic version</p>
+<p><code class="docutils literal notranslate"><span class="pre">***</span></code> <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> including <code class="docutils literal notranslate"><span class="pre">LSTM</span></code> and <code class="docutils literal notranslate"><span class="pre">GRU</span></code></p>
+</section>
+</section>
+</section>
+<hr class="docutils" />
+<section id="quick-guide-on-how-to-use-covariates-with-darts-forecasting-models">
+<h2>2.2. Quick guide on how to use covariates with Darts’ forecasting models<a class="headerlink" href="#quick-guide-on-how-to-use-covariates-with-darts-forecasting-models" title="Permalink to this headline">¶</a></h2>
+<p>It is very simple to use covariates with Darts’ forecasting models. There are just some requirements they have to fulfill.</p>
+<p>Just like the <code class="docutils literal notranslate"><span class="pre">target</span></code> series, each of your past and / or future covariates series must be a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object. When you train your model with <code class="docutils literal notranslate"><span class="pre">fit()</span></code> using past and /or future covariates, you have to supply the same types of covariates to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. Depending on the choice of your model and how long your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> is, there might be different time span requirements for your covariates. You can find these requirements in the next <a class="reference external" href="#23-covariate-time-span-requirements-for-local-and-global-forecasting-models">section 2.3.</a>.</p>
+<p><strong>*You can even use the same `*_covariates` for fitting and prediction if they contain the required time spans. This is because Darts will “intelligently” slice them for you based on the target time axis.*</strong></p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># create one of Darts&#39; forecasting model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">SomeForecastingModel</span><span class="p">(</span><span class="o">...</span><span class="p">)</span>
+
+<span class="c1"># fit the model</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">target</span><span class="p">,</span>
+          <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariate</span><span class="p">,</span>
+          <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+
+<span class="c1"># make a prediction with the same covariate types</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="n">series</span><span class="o">=</span><span class="n">target</span><span class="p">,</span>  <span class="c1"># this is only required for GFMs</span>
+                     <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                     <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>To use multiple past and / or future covariates with your <code class="docutils literal notranslate"><span class="pre">target</span></code>, you have to stack them all together into a single dedicated <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># stack() time series</span>
+<span class="n">past_covariates</span> <span class="o">=</span> <span class="n">past_covariates</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">past_covariates2</span><span class="p">)</span>
+
+<span class="c1"># or concatenate()</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">concatenate</span>
+<span class="n">past_covariates</span> <span class="o">=</span> <span class="n">concatenate</span><span class="p">([</span><span class="n">past_covariates</span><span class="p">,</span> <span class="n">past_covariates2</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>GFMs can be trained on multiple <code class="docutils literal notranslate"><span class="pre">target</span></code> series. You have to supply one covariate TimeSeries per <code class="docutils literal notranslate"><span class="pre">target</span></code> TimeSeries you use with <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. At prediction time you have to specify which <code class="docutils literal notranslate"><span class="pre">target</span></code> series you want to predict and supply the corresponding covariates:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+
+<span class="c1"># multiple time series</span>
+<span class="n">all_targets</span> <span class="o">=</span> <span class="p">[</span><span class="n">target1</span><span class="p">,</span> <span class="n">target2</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+<span class="n">all_past_covariates</span> <span class="o">=</span> <span class="p">[</span><span class="n">past_covariates1</span><span class="p">,</span> <span class="n">past_covariates2</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span>
+
+<span class="c1"># create a GFM model, train and predict</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">all_targets</span><span class="p">,</span>
+          <span class="n">past_covariates</span><span class="o">=</span><span class="n">all_past_covarites</span><span class="p">)</span>
+
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                     <span class="n">series</span><span class="o">=</span><span class="n">all_targets</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                     <span class="n">past_covariates</span><span class="o">=</span><span class="n">all_past_covariates</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+</pre></div>
+</div>
+</section>
+<section id="covariate-time-span-requirements-for-local-and-global-forecasting-models">
+<h2>2.3. Covariate time span requirements for Local and Global Forecasting Models<a class="headerlink" href="#covariate-time-span-requirements-for-local-and-global-forecasting-models" title="Permalink to this headline">¶</a></h2>
+<p>There are differences in how Darts’ “Local” and “Global” Forecasting Models perform training and prediction. Specifically, how they extract/work with the data supplied during fit() and predict().</p>
+<p>Depending on the model you use and how long your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> is, there might be different time span requirements for your covariates.</p>
+<section id="id5">
+<h3>Local Forecasting Models (LFMs):<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<p>LFMs usually train on the entire <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> series (if supported) you supplied when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> at once. They can also predict in one go for forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> after the end of the <code class="docutils literal notranslate"><span class="pre">target</span></code>.</p>
+<p><em>Time span requirements to use the same future covariates series for both ``fit()`` and ``predict()``:</em></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>: <strong>at least</strong> the same time span as <code class="docutils literal notranslate"><span class="pre">target</span></code> plus the next <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps after the end of <code class="docutils literal notranslate"><span class="pre">target</span></code></p></li>
+</ul>
+</section>
+<section id="id6">
+<h3>Global Forecasting Models (GFMs):<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>GFMs train and predict on fixed-length chunks (sub-samples) of the <code class="docutils literal notranslate"><span class="pre">target</span></code> and <code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> series (if supported). Each chunk contains an input chunk - representing the sample’s past - and an output chunk - the sample’s future. The length of these chunks has to be specified at model creation with parameters <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> (one notable exception is <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> which always uses an <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> of 1).</p>
+<p>Depending on your forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code>, the model can either predict in one go, or auto-regressively, by predicting on multiple chunks in the future. That is the reason why when predicting with <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> you have to supply additional “future values of your <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>“.</p>
+<p><em>Time span requirements to use the same past and / or covariates series for both ``fit()`` and ``predict()``:</em></p>
+<ul class="simple">
+<li><p>with <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&lt;=</span> <span class="pre">output_chunk_length</span></code>:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>: <strong>at least</strong> the same time span as <code class="docutils literal notranslate"><span class="pre">target</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>: <strong>at least</strong> the same time span as <code class="docutils literal notranslate"><span class="pre">target</span></code> plus the next <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> time steps after the end of <code class="docutils literal notranslate"><span class="pre">target</span></code></p></li>
+</ul>
+</li>
+<li><p>with <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>:</p>
+<ul>
+<li><p><code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>: <strong>at least</strong> the same time span as <code class="docutils literal notranslate"><span class="pre">target</span></code> plus the next <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">-</span> <span class="pre">output_chunk_length</span></code> time steps after the end of <code class="docutils literal notranslate"><span class="pre">target</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>: <strong>at least</strong> the same time span as <code class="docutils literal notranslate"><span class="pre">target</span></code> plus the next <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps after the end of <code class="docutils literal notranslate"><span class="pre">target</span></code></p></li>
+</ul>
+</li>
+</ul>
+<p>If you want to know more details about how covariates are used behind the scenes in Global Forecasting Models, read our <a class="reference external" href="https://github.com/unit8co/darts/blob/master/doc/torch_forecasting_models.md">guide on Torch Forecasting Models</a> (PyTorch based GFMs). It gives a step-by-step explanation of the training and prediction process using one of our Torch Forecasting Models.</p>
+</section>
+</section>
+<section id="examples">
+<h2>2.4. Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>We have lots of great examples showcasing how to use covariates with Darts’ forecasting models.
+Here are a few of those:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/01-multi-time-series-and-covariates.html#Covariates-Series">Past covariates with GFMs</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples/13-TFT-examples.html#Training">Past and future covariates with TFTModel</a></p></li>
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">Past and future covariates with RegressionModels</a></p></li>
+</ul>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="performance.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Neural Networks Performance Recommendations</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="../generated_api/darts.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">darts</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

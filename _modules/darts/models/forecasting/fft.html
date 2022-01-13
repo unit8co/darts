@@ -78,6 +78,18 @@
 </li>
 
 <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
   API Reference
  </a>
@@ -170,9 +182,13 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">seasonality_period</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                                   <span class="n">period_error_margin</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">max_seasonality_order</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Checks whether the given series has a given seasonality.</span>
+<span class="k">def</span> <span class="nf">_check_approximate_seasonality</span><span class="p">(</span>
+    <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">seasonality_period</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">period_error_margin</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="n">max_seasonality_order</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checks whether the given series has a given seasonality.</span>
 
 <span class="sd">    Analyzes the given TimeSeries instance for seasonality of the given period</span>
 <span class="sd">    while taking into account potential noise of the autocorrelation function.</span>
@@ -201,11 +217,15 @@
     <span class="n">frac</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="mi">4</span>
 
     <span class="c1"># return False if there are not enough entries in the TimeSeries instance</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">seasonality_period</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">frac</span><span class="p">)):</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">seasonality_period</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">frac</span><span class="p">):</span>
         <span class="k">return</span> <span class="kc">False</span>
 
     <span class="c1"># compute relevant autocorrelation values</span>
-    <span class="n">r</span> <span class="o">=</span> <span class="n">acf</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="n">nlags</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">seasonality_period</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">frac</span><span class="p">)),</span> <span class="n">fft</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+    <span class="n">r</span> <span class="o">=</span> <span class="n">acf</span><span class="p">(</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span>
+        <span class="n">nlags</span><span class="o">=</span><span class="nb">int</span><span class="p">(</span><span class="n">seasonality_period</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">frac</span><span class="p">)),</span>
+        <span class="n">fft</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span>
 
     <span class="c1"># compute the approximate autocorrelation value for the given period</span>
     <span class="n">left_bound</span> <span class="o">=</span> <span class="n">seasonality_period</span> <span class="o">-</span> <span class="n">period_error_margin</span>
@@ -214,14 +234,18 @@
     <span class="n">approximated_period_ac</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">approximation_interval</span><span class="p">])</span>
 
     <span class="c1"># compute the number of ac values larger than the approximated ac value for the given period</span>
-    <span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">frac</span> <span class="o">*</span> <span class="n">seasonality_period</span><span class="p">),</span> <span class="n">left_bound</span><span class="p">))</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">right_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">)))</span>
-    <span class="n">order</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ac_value</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">ac_value</span> <span class="o">&gt;</span> <span class="n">approximated_period_ac</span><span class="p">),</span> <span class="n">r</span><span class="p">[</span><span class="n">indices</span><span class="p">]))</span>
+    <span class="n">indices</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">frac</span> <span class="o">*</span> <span class="n">seasonality_period</span><span class="p">),</span> <span class="n">left_bound</span><span class="p">))</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span>
+        <span class="nb">range</span><span class="p">(</span><span class="n">right_bound</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">))</span>
+    <span class="p">)</span>
+    <span class="n">order</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span>
+        <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ac_value</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">ac_value</span> <span class="o">&gt;</span> <span class="n">approximated_period_ac</span><span class="p">),</span> <span class="n">r</span><span class="p">[</span><span class="n">indices</span><span class="p">])</span>
+    <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">order</span> <span class="o">&lt;=</span> <span class="n">max_seasonality_order</span>
 
 
 <span class="k">def</span> <span class="nf">_find_relevant_timestamp_attributes</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">set</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Finds pd.Timestamp attributes relevant for seasonality.</span>
+    <span class="sd">&quot;&quot;&quot;Finds pd.Timestamp attributes relevant for seasonality.</span>
 
 <span class="sd">    Analyzes the given TimeSeries instance for relevant pd.Timestamp attributes</span>
 <span class="sd">    in terms of the autocorrelation of their length within the series with the</span>
@@ -239,46 +263,51 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">relevant_attributes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
 
-    <span class="k">if</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="ow">in</span> <span class="p">{</span><span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">MonthBegin</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">MonthEnd</span><span class="p">}):</span>
+    <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="ow">in</span> <span class="p">{</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">MonthBegin</span><span class="p">,</span>
+        <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">MonthEnd</span><span class="p">,</span>
+    <span class="p">}:</span>
         <span class="c1"># check for yearly seasonality</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;month&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">Day</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;month&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">Day</span><span class="p">:</span>
         <span class="c1"># check for yearly seasonality</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">365</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="s1">&#39;day&#39;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">365</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">20</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;day&quot;</span><span class="p">})</span>
         <span class="c1"># check for monthly seasonality</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;day&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;day&quot;</span><span class="p">)</span>
         <span class="c1"># check for weekly seasonality</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;weekday&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">Hour</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;weekday&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">Hour</span><span class="p">:</span>
         <span class="c1"># check for yearly seasonality</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">8760</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;month&#39;</span><span class="p">,</span> <span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="s1">&#39;hour&#39;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">8760</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">100</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;month&quot;</span><span class="p">,</span> <span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;hour&quot;</span><span class="p">})</span>
         <span class="c1"># check for monthly seasonality</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">730</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;day&#39;</span><span class="p">,</span> <span class="s1">&#39;hour&#39;</span><span class="p">})</span>
+        <span class="k">elif</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">730</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">30</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;day&quot;</span><span class="p">,</span> <span class="s2">&quot;hour&quot;</span><span class="p">})</span>
         <span class="c1"># check for weekly seasonality</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">168</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;weekday&#39;</span><span class="p">,</span> <span class="s1">&#39;hour&#39;</span><span class="p">})</span>
+        <span class="k">elif</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">168</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">10</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;weekday&quot;</span><span class="p">,</span> <span class="s2">&quot;hour&quot;</span><span class="p">})</span>
         <span class="c1"># check for daily seasonality</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;hour&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">Minute</span><span class="p">):</span>
+        <span class="k">elif</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;hour&quot;</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span> <span class="o">==</span> <span class="n">pd</span><span class="o">.</span><span class="n">tseries</span><span class="o">.</span><span class="n">offsets</span><span class="o">.</span><span class="n">Minute</span><span class="p">:</span>
         <span class="c1"># check for daily seasonality</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="s1">&#39;minute&#39;</span><span class="p">})</span>
+        <span class="k">if</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">1440</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">update</span><span class="p">({</span><span class="s2">&quot;hour&quot;</span><span class="p">,</span> <span class="s2">&quot;minute&quot;</span><span class="p">})</span>
         <span class="c1"># check for hourly seasonality</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">)):</span>
-            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s1">&#39;minute&#39;</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="n">_check_approximate_seasonality</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="n">relevant_attributes</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="s2">&quot;minute&quot;</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">relevant_attributes</span>
 
 
-<span class="k">def</span> <span class="nf">_compare_timestamps_on_attributes</span><span class="p">(</span><span class="n">ts_1</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">ts_2</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">required_matches</span><span class="p">:</span> <span class="nb">set</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Compares pd.Timestamp instances on attributes.</span>
+<span class="k">def</span> <span class="nf">_compare_timestamps_on_attributes</span><span class="p">(</span>
+    <span class="n">ts_1</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">ts_2</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="n">required_matches</span><span class="p">:</span> <span class="nb">set</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Compares pd.Timestamp instances on attributes.</span>
 
 <span class="sd">    Compares two timestamps according two a given set of attributes (such as minute, hour, day, etc.).</span>
 <span class="sd">    It returns True if and only if the two timestamps are matching in all given attributes.</span>
@@ -297,11 +326,15 @@
 <span class="sd">    bool</span>
 <span class="sd">        True if and only if `ts_1` and `ts_2` match in all attributes given in `required_matches`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ts_1</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ts_2</span><span class="p">,</span> <span class="n">attr</span><span class="p">),</span> <span class="n">required_matches</span><span class="p">))</span>
+    <span class="k">return</span> <span class="nb">all</span><span class="p">(</span>
+        <span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ts_1</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="o">==</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">ts_2</span><span class="p">,</span> <span class="n">attr</span><span class="p">),</span> <span class="n">required_matches</span><span class="p">)</span>
+    <span class="p">)</span>
 
 
-<span class="k">def</span> <span class="nf">_crop_to_match_seasons</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">required_matches</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Crops TimeSeries instance to contain full periods.</span>
+<span class="k">def</span> <span class="nf">_crop_to_match_seasons</span><span class="p">(</span>
+    <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">required_matches</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Crops TimeSeries instance to contain full periods.</span>
 
 <span class="sd">    Crops a given TimeSeries `series` that will be used as a training set in such</span>
 <span class="sd">    a way that its first entry has a timestamp that matches the first timestamp</span>
@@ -321,7 +354,7 @@
 <span class="sd">    TimeSeries</span>
 <span class="sd">        New TimeSeries instance that is cropped as described above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">required_matches</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">required_matches</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">required_matches</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">required_matches</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">series</span>
 
     <span class="n">first_ts</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -330,37 +363,33 @@
 
     <span class="c1"># start at first timestamp of given series and move forward until a matching timestamp is found</span>
     <span class="n">curr_ts</span> <span class="o">=</span> <span class="n">first_ts</span>
-    <span class="k">while</span> <span class="p">(</span><span class="n">curr_ts</span> <span class="o">&lt;</span> <span class="n">pred_ts</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">freq</span><span class="p">):</span>
+    <span class="k">while</span> <span class="n">curr_ts</span> <span class="o">&lt;</span> <span class="n">pred_ts</span> <span class="o">-</span> <span class="mi">4</span> <span class="o">*</span> <span class="n">freq</span><span class="p">:</span>
         <span class="n">curr_ts</span> <span class="o">+=</span> <span class="n">freq</span>
         <span class="k">if</span> <span class="n">_compare_timestamps_on_attributes</span><span class="p">(</span><span class="n">pred_ts</span><span class="p">,</span> <span class="n">curr_ts</span><span class="p">,</span> <span class="n">required_matches</span><span class="p">):</span>
             <span class="n">new_series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_before</span><span class="p">(</span><span class="n">curr_ts</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">new_series</span>
 
-    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;No matching timestamp could be found, returning original TimeSeries.&quot;</span><span class="p">)</span>
+    <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+        <span class="s2">&quot;No matching timestamp could be found, returning original TimeSeries.&quot;</span>
+    <span class="p">)</span>
     <span class="k">return</span> <span class="n">series</span>
 
 
 <div class="viewcode-block" id="FFT"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT">[docs]</a><span class="k">class</span> <span class="nc">FFT</span><span class="p">(</span><span class="n">ForecastingModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">nr_freqs_to_keep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
-                 <span class="n">required_matches</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">trend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">trend_poly_degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">nr_freqs_to_keep</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span>
+        <span class="n">required_matches</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">set</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">trend</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">trend_poly_degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Fast Fourier Transform Model</span>
+
 <span class="sd">        This model performs forecasting on a TimeSeries instance using FFT, subsequent frequency filtering</span>
 <span class="sd">        (controlled by the `nr_freqs_to_keep` argument) and  inverse FFT, combined with the option to detrend</span>
 <span class="sd">        the data (controlled by the `trend` argument) and to crop the training sequence to full seasonal periods</span>
-<span class="sd">        Note that if the training series contains any NaNs (missing values), these will be filled using `darts.utils.missing_values.fill_missing_values()`.</span>
-
-<span class="sd">        Examples:</span>
-
-<span class="sd">        FFT(nr_freqs_to_keep=10)</span>
-<span class="sd">        - model that automatically detects the seasonal periods, uses the 10 most significant frequencies for</span>
-<span class="sd">        forecasting and expects no global trend to be present in the data</span>
-
-<span class="sd">        FFT(required_matches={`month`}, trend=`exp`)</span>
-<span class="sd">        - model that will assume the provided TimeSeries instances will have a monthly seasonality and an exponential</span>
-<span class="sd">        global trend, and it will not perform any frequency filtering</span>
+<span class="sd">        Note that if the training series contains any NaNs (missing values), these will be filled using</span>
+<span class="sd">        :func:`darts.utils.missing_values.fill_missing_values()`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -374,9 +403,21 @@
 <span class="sd">            pd.Timestamp attributes that are relevant for the seasonality automatically.</span>
 <span class="sd">        trend</span>
 <span class="sd">            If set, indicates what kind of detrending will be applied before performing DFT.</span>
-<span class="sd">            Possible values: `poly` or `exp`, for polynomial trend, or exponential trend, respectively.</span>
+<span class="sd">            Possible values: &#39;poly&#39; or &#39;exp&#39;, for polynomial trend, or exponential trend, respectively.</span>
 <span class="sd">        trend_poly_degree</span>
-<span class="sd">            The degree of the polynomial that will be used for detrending, if `trend=`poly``.</span>
+<span class="sd">            The degree of the polynomial that will be used for detrending, if `trend=&#39;poly&#39;`.</span>
+
+<span class="sd">        Examples</span>
+<span class="sd">        --------</span>
+<span class="sd">        Automatically detect the seasonal periods, uses the 10 most significant frequencies for</span>
+<span class="sd">        forecasting and expect no global trend to be present in the data:</span>
+
+<span class="sd">        &gt;&gt;&gt; FFT(nr_freqs_to_keep=10)</span>
+
+<span class="sd">        Assume the provided TimeSeries instances will have a monthly seasonality and an exponential</span>
+<span class="sd">        global trend, and do not perform any frequency filtering:</span>
+
+<span class="sd">        &gt;&gt;&gt; FFT(required_matches={&#39;month&#39;}, trend=&#39;exp&#39;)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_freqs_to_keep</span> <span class="o">=</span> <span class="n">nr_freqs_to_keep</span>
@@ -385,7 +426,13 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">trend_poly_degree</span> <span class="o">=</span> <span class="n">trend_poly_degree</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="s1">&#39;FFT(nr_freqs_to_keep=&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_freqs_to_keep</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;, trend=&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;)&#39;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="s2">&quot;FFT(nr_freqs_to_keep=&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nr_freqs_to_keep</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;, trend=&quot;</span>
+            <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span><span class="p">)</span>
+            <span class="o">+</span> <span class="s2">&quot;)&quot;</span>
+        <span class="p">)</span>
 
 <div class="viewcode-block" id="FFT.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">):</span>
         <span class="n">series</span> <span class="o">=</span> <span class="n">fill_missing_values</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
@@ -393,25 +440,39 @@
         <span class="n">series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span>
 
         <span class="c1"># determine trend</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">==</span> <span class="s1">&#39;poly&#39;</span><span class="p">):</span>
-            <span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_poly_degree</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">==</span> <span class="s2">&quot;poly&quot;</span><span class="p">:</span>
+            <span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span>
+                <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">(),</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_poly_degree</span>
+            <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">poly1d</span><span class="p">(</span><span class="n">trend_coefficients</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">==</span> <span class="s1">&#39;exp&#39;</span><span class="p">):</span>
-            <span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="mi">1</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend</span> <span class="o">==</span> <span class="s2">&quot;exp&quot;</span><span class="p">:</span>
+            <span class="n">trend_coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">polyfit</span><span class="p">(</span>
+                <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)),</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()),</span> <span class="mi">1</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span>
+                <span class="n">trend_coefficients</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="mi">0</span>
 
         <span class="c1"># subtract trend</span>
-        <span class="n">detrended_values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)))</span>
-        <span class="n">detrended_series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">detrended_values</span><span class="p">)</span>
+        <span class="n">detrended_values</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span><span class="p">(</span>
+            <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">))</span>
+        <span class="p">)</span>
+        <span class="n">detrended_series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">detrended_values</span>
+        <span class="p">)</span>
 
         <span class="c1"># crop training set to match the seasonality of the first prediction point</span>
-        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">required_matches</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
-            <span class="n">curr_required_matches</span> <span class="o">=</span> <span class="n">_find_relevant_timestamp_attributes</span><span class="p">(</span><span class="n">detrended_series</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_matches</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">curr_required_matches</span> <span class="o">=</span> <span class="n">_find_relevant_timestamp_attributes</span><span class="p">(</span>
+                <span class="n">detrended_series</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">curr_required_matches</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">required_matches</span>
-        <span class="n">cropped_series</span> <span class="o">=</span> <span class="n">_crop_to_match_seasons</span><span class="p">(</span><span class="n">detrended_series</span><span class="p">,</span> <span class="n">required_matches</span><span class="o">=</span><span class="n">curr_required_matches</span><span class="p">)</span>
+        <span class="n">cropped_series</span> <span class="o">=</span> <span class="n">_crop_to_match_seasons</span><span class="p">(</span>
+            <span class="n">detrended_series</span><span class="p">,</span> <span class="n">required_matches</span><span class="o">=</span><span class="n">curr_required_matches</span>
+        <span class="p">)</span>
 
         <span class="c1"># perform dft</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">fft</span><span class="p">(</span><span class="n">cropped_series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">())</span>
@@ -419,23 +480,29 @@
         <span class="c1"># get indices of `nr_freqs_to_keep` (if a correct value was provied) frequencies with the highest amplitudes</span>
         <span class="c1"># by partitioning around the element with sorted index -nr_freqs_to_keep instead of sorting the whole array</span>
         <span class="n">first_n</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_freqs_to_keep</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">first_n</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">first_n</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">first_n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="n">first_n</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">first_n</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">first_n</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">):</span>
             <span class="n">first_n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">filtered_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argpartition</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">),</span> <span class="o">-</span><span class="n">first_n</span><span class="p">)[</span><span class="o">-</span><span class="n">first_n</span><span class="p">:]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">filtered_indices</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argpartition</span><span class="p">(</span><span class="nb">abs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">),</span> <span class="o">-</span><span class="n">first_n</span><span class="p">)[</span>
+            <span class="o">-</span><span class="n">first_n</span><span class="p">:</span>
+        <span class="p">]</span>
 
         <span class="c1"># set all other values in the frequency domain to 0</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fft_values_filtered</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">complex_</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fft_values_filtered</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">filtered_indices</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">filtered_indices</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fft_values_filtered</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">filtered_indices</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fft_values</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">filtered_indices</span>
+        <span class="p">]</span>
 
         <span class="c1"># precompute all possible predicted values using inverse dft</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">predicted_values</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">fft</span><span class="o">.</span><span class="n">ifft</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fft_values_filtered</span><span class="p">)</span><span class="o">.</span><span class="n">real</span></div>
 
-<div class="viewcode-block" id="FFT.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-                <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="FFT.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.fft.html#darts.models.forecasting.fft.FFT.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
-        <span class="n">trend_forecast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)])</span>
-        <span class="n">periodic_forecast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">predicted_values</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predicted_values</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)])</span>
+        <span class="n">trend_forecast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_function</span><span class="p">(</span><span class="n">i</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="p">))</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+        <span class="p">)</span>
+        <span class="n">periodic_forecast</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">predicted_values</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">predicted_values</span><span class="p">)]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">)]</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_forecast_series</span><span class="p">(</span><span class="n">periodic_forecast</span> <span class="o">+</span> <span class="n">trend_forecast</span><span class="p">)</span></div></div>
 </pre></div>
 
@@ -458,13 +525,13 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

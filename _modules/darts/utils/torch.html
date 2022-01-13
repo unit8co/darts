@@ -78,6 +78,18 @@
 </li>
 
 <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../../../generated_api/darts.html">
   API Reference
  </a>
@@ -156,6 +168,7 @@
 <span class="sd">Utils for Pytorch and its usage</span>
 <span class="sd">-------------------------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">TypeVar</span><span class="p">,</span> <span class="n">Any</span>
 <span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
 <span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">wraps</span>
@@ -166,7 +179,7 @@
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span>
 
-<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s1">&#39;T&#39;</span><span class="p">)</span>
+<span class="n">T</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;T&quot;</span><span class="p">)</span>
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">MAX_TORCH_SEED_VALUE</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">&lt;&lt;</span> <span class="mi">31</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># to accommodate 32-bit architectures</span>
@@ -174,7 +187,7 @@
 
 
 <span class="k">def</span> <span class="nf">_is_method</span><span class="p">(</span><span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot; Check if the specified function is a method.</span>
+    <span class="sd">&quot;&quot;&quot;Check if the specified function is a method.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -188,13 +201,13 @@
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">spec</span> <span class="o">=</span> <span class="n">signature</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">parameters</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
-        <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;self&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">list</span><span class="p">(</span><span class="n">spec</span><span class="o">.</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;self&quot;</span><span class="p">:</span>
             <span class="k">return</span> <span class="kc">True</span>
     <span class="k">return</span> <span class="kc">False</span>
 
 
 <div class="viewcode-block" id="random_method"><a class="viewcode-back" href="../../../generated_api/darts.utils.torch.html#darts.utils.torch.random_method">[docs]</a><span class="k">def</span> <span class="nf">random_method</span><span class="p">(</span><span class="n">decorated</span><span class="p">:</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">T</span><span class="p">]:</span>
-    <span class="sd">&quot;&quot;&quot; Decorator usable on any method within a class that will provide an isolated torch random context.</span>
+    <span class="sd">&quot;&quot;&quot;Decorator usable on any method within a class that will provide an isolated torch random context.</span>
 
 <span class="sd">    The decorator will store a `_random_instance` property on the object in order to persist successive calls to the RNG</span>
 
@@ -205,18 +218,23 @@
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1"># check that @random_method has been applied to a method.</span>
-    <span class="n">raise_if_not</span><span class="p">(</span><span class="n">_is_method</span><span class="p">(</span><span class="n">decorated</span><span class="p">),</span> <span class="s2">&quot;@random_method can only be used on methods.&quot;</span><span class="p">,</span> <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span>
+        <span class="n">_is_method</span><span class="p">(</span><span class="n">decorated</span><span class="p">),</span> <span class="s2">&quot;@random_method can only be used on methods.&quot;</span><span class="p">,</span> <span class="n">logger</span>
+    <span class="p">)</span>
 
     <span class="nd">@wraps</span><span class="p">(</span><span class="n">decorated</span><span class="p">)</span>
     <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">T</span><span class="p">:</span>
         <span class="k">if</span> <span class="s2">&quot;random_state&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">])</span>
         <span class="k">elif</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;_random_instance&quot;</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">MAX_NUMPY_SEED_VALUE</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span> <span class="o">=</span> <span class="n">check_random_state</span><span class="p">(</span>
+                <span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">MAX_NUMPY_SEED_VALUE</span><span class="p">)</span>
+            <span class="p">)</span>
 
         <span class="k">with</span> <span class="n">fork_rng</span><span class="p">():</span>
             <span class="n">manual_seed</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_random_instance</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">high</span><span class="o">=</span><span class="n">MAX_TORCH_SEED_VALUE</span><span class="p">))</span>
             <span class="k">return</span> <span class="n">decorated</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
     <span class="k">return</span> <span class="n">decorator</span></div>
 </pre></div>
 
@@ -239,13 +257,13 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

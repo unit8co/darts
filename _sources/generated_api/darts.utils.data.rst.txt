@@ -1,9 +1,7 @@
 
 
+
 .. automodule:: darts.utils.data
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
     .. toctree::
         :maxdepth: 1

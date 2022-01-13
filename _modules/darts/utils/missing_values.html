@@ -78,6 +78,18 @@
 </li>
 
 <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../../../generated_api/darts.html">
   API Reference
  </a>
@@ -183,7 +195,9 @@
     <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">isnull</span><span class="p">()</span><span class="o">.</span><span class="n">sum</span><span class="p">()</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">series</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="fill_missing_values"><a class="viewcode-back" href="../../../generated_api/darts.utils.missing_values.html#darts.utils.missing_values.fill_missing_values">[docs]</a><span class="k">def</span> <span class="nf">fill_missing_values</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">fill</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span> <span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+<div class="viewcode-block" id="fill_missing_values"><a class="viewcode-back" href="../../../generated_api/darts.utils.missing_values.html#darts.utils.missing_values.fill_missing_values">[docs]</a><span class="k">def</span> <span class="nf">fill_missing_values</span><span class="p">(</span>
+    <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">fill</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">interpolate_kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Fills missing values in the provided time series</span>
 
@@ -205,19 +219,25 @@
 <span class="sd">    TimeSeries</span>
 <span class="sd">        A new TimeSeries with all missing values filled according to the rules above.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span>
-                 <span class="s2">&quot;`fill` should either be a string or a float&quot;</span><span class="p">,</span>
-                 <span class="n">logger</span><span class="p">)</span>
-    <span class="n">raise_if</span><span class="p">(</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fill</span> <span class="o">!=</span> <span class="s1">&#39;auto&#39;</span><span class="p">,</span>
-             <span class="s2">&quot;invalid string for `fill`: can only be set to &#39;auto&#39;&quot;</span><span class="p">,</span>
-             <span class="n">logger</span><span class="p">)</span>
+    <span class="n">raise_if_not</span><span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">float</span><span class="p">),</span>
+        <span class="s2">&quot;`fill` should either be a string or a float&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">raise_if</span><span class="p">(</span>
+        <span class="nb">isinstance</span><span class="p">(</span><span class="n">fill</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">fill</span> <span class="o">!=</span> <span class="s2">&quot;auto&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;invalid string for `fill`: can only be set to &#39;auto&#39;&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
+    <span class="p">)</span>
 
-    <span class="k">if</span> <span class="n">fill</span> <span class="o">==</span> <span class="s1">&#39;auto&#39;</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">fill</span> <span class="o">==</span> <span class="s2">&quot;auto&quot;</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">_auto_fill</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">_const_fill</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">fill</span><span class="p">)</span></div>
 
 
-<div class="viewcode-block" id="extract_subseries"><a class="viewcode-back" href="../../../generated_api/darts.utils.missing_values.html#darts.utils.missing_values.extract_subseries">[docs]</a><span class="k">def</span> <span class="nf">extract_subseries</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">min_gap_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+<div class="viewcode-block" id="extract_subseries"><a class="viewcode-back" href="../../../generated_api/darts.utils.missing_values.html#darts.utils.missing_values.extract_subseries">[docs]</a><span class="k">def</span> <span class="nf">extract_subseries</span><span class="p">(</span>
+    <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">min_gap_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Partitions the series into a sequence of sub-series by using significant gaps of missing values</span>
 
@@ -243,9 +263,9 @@
         <span class="k">return</span> <span class="p">[</span><span class="n">series</span><span class="p">]</span>
 
     <span class="c1"># Get start/end times of sub-series without gaps of missing values</span>
-    <span class="n">gaps_df</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">gaps</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;gap_size&gt;=</span><span class="si">{</span><span class="n">min_gap_size</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
-    <span class="n">start_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()]</span> <span class="o">+</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s1">&#39;gap_end&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
-    <span class="n">end_times</span> <span class="o">=</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s1">&#39;gap_start&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">freq</span><span class="p">]</span>
+    <span class="n">gaps_df</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">gaps</span><span class="p">()</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;gap_size&gt;=</span><span class="si">{</span><span class="n">min_gap_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">start_times</span> <span class="o">=</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">start_time</span><span class="p">()]</span> <span class="o">+</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s2">&quot;gap_end&quot;</span><span class="p">]</span> <span class="o">+</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span>
+    <span class="n">end_times</span> <span class="o">=</span> <span class="p">(</span><span class="n">gaps_df</span><span class="p">[</span><span class="s2">&quot;gap_start&quot;</span><span class="p">]</span> <span class="o">-</span> <span class="n">freq</span><span class="p">)</span><span class="o">.</span><span class="n">to_list</span><span class="p">()</span> <span class="o">+</span> <span class="p">[</span><span class="n">series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">+</span> <span class="n">freq</span><span class="p">]</span>
 
     <span class="n">subseries</span> <span class="o">=</span> <span class="p">[]</span>
     <span class="k">for</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">start_times</span><span class="p">,</span> <span class="n">end_times</span><span class="p">):</span>
@@ -271,10 +291,12 @@
 <span class="sd">        A TimeSeries, `series` with all missing values set to `fill`.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-                                            <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">),</span>
-                                            <span class="n">freq</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
-                                            <span class="n">columns</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
+        <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">fill</span><span class="p">),</span>
+        <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span>
+        <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+    <span class="p">)</span>
 
 
 <span class="k">def</span> <span class="nf">_auto_fill</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
@@ -300,9 +322,9 @@
     <span class="n">series_temp</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">pd_dataframe</span><span class="p">()</span>
 
     <span class="c1"># pandas interpolate wrapper, with chosen `method`</span>
-    <span class="k">if</span> <span class="s1">&#39;limit_direction&#39;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">interpolate_kwargs</span><span class="p">:</span>
-        <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s1">&#39;limit_direction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;both&#39;</span>
-    <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s1">&#39;inplace&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">if</span> <span class="s2">&quot;limit_direction&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">interpolate_kwargs</span><span class="p">:</span>
+        <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s2">&quot;limit_direction&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;both&quot;</span>
+    <span class="n">interpolate_kwargs</span><span class="p">[</span><span class="s2">&quot;inplace&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
     <span class="n">series_temp</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="o">**</span><span class="n">interpolate_kwargs</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">series_temp</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
 </pre></div>
@@ -326,13 +348,13 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

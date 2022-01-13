@@ -2,4 +2,3 @@
 .. automodule:: darts.timeseries
    :members:
    :undoc-members:
-   :show-inheritance:

@@ -34,10 +34,12 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Fittable Data Transformer" href="darts.dataprocessing.transformers.fittable_data_transformer.html" />
-    <link rel="prev" title="Base Data Transformer" href="darts.dataprocessing.transformers.base_data_transformer.html" />
+    <link rel="next" title="Fittable Data Transformer Base Class" href="darts.dataprocessing.transformers.fittable_data_transformer.html" />
+    <link rel="prev" title="Data Transformer Base Class" href="darts.dataprocessing.transformers.base_data_transformer.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -77,6 +79,18 @@
     <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../README.html">
   Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
  </a>
 </li>
 
@@ -156,7 +170,7 @@
     <ul class="current">
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3 current active">
@@ -166,17 +180,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -400,7 +414,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +461,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -512,49 +526,124 @@
 <h1>Box-Cox Transformer<a class="headerlink" href="#box-cox-transformer" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.boxcox.</span></span><span class="sig-name descname"><span class="pre">BoxCox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">str</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'BoxCox'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optim_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mle'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.boxcox.</span></span><span class="sig-name descname"><span class="pre">BoxCox</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BoxCox'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optim_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'mle'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a>, <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer</span></code></a></p>
-<p>Box-Cox data transformer.
-See <a class="reference external" href="https://otexts.com/fpp2/transformations.html#mathematical-transformations">https://otexts.com/fpp2/transformations.html#mathematical-transformations</a> for more information.</p>
+<p>Box-Cox data transformer.</p>
+<p>See <a class="reference internal" href="#rae9aa76a73ab-1" id="id1">[1]</a> for more information about Box-Cox transforms.</p>
 <p>The transformation is applied independently for each dimension (component) of the time series.
 For stochastic series, it is done jointly over all samples, effectively merging all samples of
 a component in order to compute the transform.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>name</strong> – A specific name for the transformer</p></li>
-<li><p><strong>lmbda</strong> – If None given, will automatically find an optimal value of lmbda (for each dimension
-of the time series, for each time series) using <cite>scipy.stats.boxcox_normmax</cite> with <cite>method=optim_method</cite>
-If a single float is given, the same lmbda value will be used for all dimensions of the series, for all
-the series.
-Also allows to specify a different lmbda value for each dimension of the time series by passing
-a sequence of values (or a sequence of sequence of values in case of multiple time series).</p></li>
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – A specific name for the transformer</p></li>
+<li><p><strong>lmbda</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The parameter <span class="math notranslate nohighlight">\(\lambda\)</span> of the Box-Cox transform. If a single float is given, the same
+<span class="math notranslate nohighlight">\(\lambda\)</span> value will be used for all dimensions of the series, for all the series.
+If a sequence is given, there is one value per component in the series. If a sequence of sequence
+is given, there is one value per component for all series.
+If <cite>None</cite> given, will automatically find an optimal value of <span class="math notranslate nohighlight">\(\lambda\)</span> (for each dimension
+of the time series, for each time series) using <code class="xref py py-func docutils literal notranslate"><span class="pre">scipy.stats.boxcox_normmax()</span></code>
+with <code class="docutils literal notranslate"><span class="pre">method=optim_method</span></code>.</p></li>
 <li><p><strong>optim_method</strong> – Specifies which method to use to find an optimal value for the lmbda parameter.
-Either ‘mle’ or ‘pearsonr’. Ignored if lmbda != None.</p></li>
-<li><p><strong>n_jobs</strong> – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
-passed as input to a method, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+Either ‘mle’ or ‘pearsonr’. Ignored if <cite>lmbda</cite> is not <cite>None</cite>.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code> is
+passed as input, parallelising operations regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. Defaults to <cite>1</cite>
 (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
 Note: for a small amount of data, the parallelisation overhead could end up increasing the total
 required amount of time.</p></li>
-<li><p><strong>verbose</strong> – Optionally, whether to print operations progress</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Whether to print operations progress</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">BoxCox</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">transformer</span> <span class="o">=</span> <span class="n">BoxCox</span><span class="p">(</span><span class="n">lmbda</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">series_transformed</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">series_transformed</span><span class="o">.</span><span class="n">head</span><span class="p">())</span>
+<span class="go">&lt;TimeSeries (DataArray) (Month: 5, component: 1, sample: 1)&gt;</span>
+<span class="go">array([[[7.84735157]],</span>
+<span class="go">    [[7.98214351]],</span>
+<span class="go">    [[8.2765364 ]],</span>
+<span class="go">    [[8.21563229]],</span>
+<span class="go">    [[8.04749318]]])</span>
+<span class="go">Coordinates:</span>
+<span class="go">* Month      (Month) datetime64[ns] 1949-01-01 1949-02-01 ... 1949-05-01</span>
+<span class="go">* component  (component) object &#39;#Passengers&#39;</span>
+<span class="go">Dimensions without coordinates: sample</span>
+</pre></div>
+</div>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rae9aa76a73ab-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://otexts.com/fpp2/transformations.html#mathematical-transformations">https://otexts.com/fpp2/transformations.html#mathematical-transformations</a></p>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.name" title="darts.dataprocessing.transformers.boxcox.BoxCox.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series, **kwargs)</p></td>
+<td><p>Fit the transformer to the provided series or sequence of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the (sequence of) series and return the transformed input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">inverse_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Inverse-transform a (sequence of) series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.set_n_jobs" title="darts.dataprocessing.transformers.boxcox.BoxCox.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.set_verbose" title="darts.dataprocessing.transformers.boxcox.BoxCox.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series, lmbda, method, *args, **kwargs)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_inverse_transform</span></code></a>(series, lmbda, **kwargs)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, lmbda, **kwargs)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit the data and stores the fitting parameters into <cite>self._fitted_params</cite>. If a <cite>Sequence</cite> is passed as input
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the provided series or sequence of series.</p>
+<p>Fit the data and store the fitting parameters into <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>. If a sequence is passed as input
 data, this function takes care of parallelising the fitting of multiple series in the sequence at the same time
-(in this case ‘self._fitted_params’ will contain an array of fitted params, one for each <cite>TimeSeries</cite>).</p>
+(in this case <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code> will contain an array of fitted params, one for each series).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> against which the transformer is fit.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_fit()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_fit()</cite> method</p>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to fit the transformer on.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p>
 <dl class="simple">
-<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
-the underlying <cite>series</cite> the Scaler should consider.</p>
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
 </dd>
 </dl>
 </p></li>
@@ -571,17 +660,17 @@ the underlying <cite>series</cite> the Scaler should consider.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.fit_transform">
-<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Fit the transformer with the (<cite>Sequence</cite> of) <cite>TimeSeries</cite> and returns the transformed input</p>
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the (sequence of) series and return the transformed input.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence</cite> of <cite>TimeSeries</cite> to transform.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_transform()</cite> method:</p>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series to transform.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method:</p>
 <dl class="simple">
-<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
-the underlying <cite>series</cite> the Scaler should consider.</p>
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
 </dd>
 </dl>
 </p></li>
@@ -598,18 +687,19 @@ the underlying <cite>series</cite> the Scaler should consider.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform">
-<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Inverse-transform the data. In case a <cite>Sequence</cite> is passed as input data, this function takes care of
+<span class="sig-name descname"><span class="pre">inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Inverse-transform a (sequence of) series.</p>
+<p>In case a sequence is passed as input data, this function takes care of
 parallelising the transformation of multiple series in the sequence at the same time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence[TimeSeries]</cite> which will be inverse-transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for the <cite>ts_inverse_transform()</cite> method</p></li>
-<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <cite>ts_inverse_transform()</cite> method</p>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series be inverse-transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_inverse_transform()</span></code></a> method</p>
 <dl class="simple">
-<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <cite>series.n_components</cite> that specifies which components of
-the underlying <cite>series</cite> the Scaler should consider.</p>
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies
+which components of the underlying <cite>series</cite> the Scaler should consider.</p>
 </dd>
 </dl>
 </p></li>
@@ -626,46 +716,46 @@ the underlying <cite>series</cite> the Scaler should consider.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.name">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.name" title="Permalink to this definition">¶</a></dt>
-<dd><p>returns: Name of data transformer.
-:rtype: str</p>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the data transformer.</p>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.set_n_jobs">
-<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">int</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.set_n_jobs" title="Permalink to this definition">¶</a></dt>
-<dd><p>Sets the number of cores that will be used by the transformer while processing multiple <cite>TimeSeries</cite>. Set to
-<cite>-1</cite> for using all the available cores.</p>
+<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>value</strong> – New n_jobs value</p>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – New n_jobs value.  Set to <cite>-1</cite> for using all the available cores.</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.set_verbose">
-<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.set_verbose" title="Permalink to this definition">¶</a></dt>
-<dd><p>Setter for the verbosity status. <cite>True</cite> for enabling the detailed report about scaler’s operation progress,
-<cite>False</cite> for no additional information</p>
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity status.</p>
+<p><cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>value</strong> – New verbosity status</p>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – New verbosity status</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.transform">
-<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">,</span> </span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>Transform the data. In case a <cite>Sequence</cite> is passed as input data, this function takes care of
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform a (sequence of) of series.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> is passed as input data, this function takes care of
 parallelising the transformation of multiple series in the sequence at the same time.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> – <cite>TimeSeries</cite> or <cite>Sequence</cite> of <cite>TimeSeries</cite> which will be transformed.</p></li>
-<li><p><strong>args</strong> – Additional positional arguments for each <cite>ts_transform()</cite> method call</p></li>
-<li><p><strong>kwargs</strong> – Additional keyword arguments for each <cite>ts_transform()</cite> method call</p></li>
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -679,62 +769,80 @@ parallelising the transformation of multiple series in the sequence at the same 
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">ts_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.series.Series</span><span class="p"><span class="pre">]</span></span></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit" title="Permalink to this definition">¶</a></dt>
-<dd><p>Function that will be applied to each <cite>TimeSeries</cite> object once the <cite>fit()</cite> function is called.
-The function must take as first argument a <cite>TimeSeries</cite> object, and return an object containing information
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.fit" title="darts.dataprocessing.transformers.boxcox.BoxCox.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return an object containing information
 regarding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will
-be stored in <cite>self._fitted_params</cite>, which can be later used during the transformation step.</p>
+be stored in <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>, which can be later used during the transformation step.</p>
 <p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
-<p>If more parameters are added as input in the derived classes, the <cite>_fit_iterator()</cite>
+<p>If more parameters are added as input in the derived classes, <code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code>
 should be redefined accordingly, to yield the necessary arguments to this function (See
-<cite>_fit_iterator()</cite> for further details)</p>
-<p>Note: this method is designed to be a static method instead of instance methods to allow an efficient
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code> for further details)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> against which the scaler will be fit.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance methods to allow an efficient
 parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
 methods would imply copying the instance’s data through multiple processes, which can easily introduce a
 bottleneck and nullify parallelisation benefits.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> against which the scaler will be fit.</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>], <code class="xref py py-class docutils literal notranslate"><span class="pre">Series</span></code>]</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.series.Series</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>The function that will be applied to each <cite>TimeSeries</cite> object once the <cite>inverse_transform()</cite> function is called.
-The function must take as first argument a <cite>TimeSeries</cite> object, and return the transformed <cite>TimeSeries</cite> object.
-Additional parameters can be added if necessary, but in this case, the <cite>_inverse_transform_iterator()</cite> should be
-redefined accordingly, to yield the necessary arguments to this function (See <cite>_inverse_transform_iterator()</cite>
-for further details)</p>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_inverse_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_inverse_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_inverse_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.inverse_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">inverse_transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed
+<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object. Additional parameters can be added if necessary, but in this case,
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_inverse_transform_iterator()</span></code> should be redefined accordingly, to yield the necessary
+arguments to this function (See <code class="xref py py-func docutils literal notranslate"><span class="pre">_inverse_transform_iterator()</span></code> for further details)</p>
 <p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
-<p>Note: this method is designed to be a static method instead of instance methods to allow an efficient
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – TimeSeries which will be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance methods to allow an efficient
 parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
 methods would imply copying the instance’s data through multiple processes, which can easily introduce a
 bottleneck and nullify parallelisation benefits.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – TimeSeries which will be transformed.</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform">
-<em class="property"><span class="pre">static</span> </em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Union</span><span class="p"><span class="pre">[</span></span><span class="pre">Sequence</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">,</span> </span><span class="pre">pandas.core.series.Series</span><span class="p"><span class="pre">]</span></span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><span class="pre">darts.timeseries.TimeSeries</span></a></span></span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="Permalink to this definition">¶</a></dt>
-<dd><p>The function that will be applied to each <cite>TimeSeries</cite> object once the <cite>transform()</cite> function is called. The
-function must take as first argument a <cite>TimeSeries</cite> object, and return the transformed <cite>TimeSeries</cite> object.
-If more parameters are added as input in the derived classes, the <cite>_transform_iterator()</cite> should be
-redefined accordingly, to yield the necessary arguments to this function (See <cite>_transform_iterator()</cite> for
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmbda</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/boxcox.html#BoxCox.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.boxcox.BoxCox.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.boxcox.BoxCox.transform" title="darts.dataprocessing.transformers.boxcox.BoxCox.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+object. If more parameters are added as input in the derived classes, the <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> should be
+redefined accordingly, to yield the necessary arguments to this function (See <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> for
 further details).</p>
 <p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
-<p>Note: this method is designed to be a static method instead of instance methods to allow an efficient
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance method to allow an efficient
 parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
 methods would imply copying the instance’s data through multiple processes, which can easily introduce a
 bottleneck and nullify parallelisation benefits.</p>
 <dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> which will be transformed.</p>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
@@ -753,13 +861,13 @@ bottleneck and nullify parallelisation benefits.</p>
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Base Data Transformer</p>
+            <p class="prev-next-title">Data Transformer Base Class</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.dataprocessing.transformers.fittable_data_transformer.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Fittable Data Transformer</p>
+        <p class="prev-next-title">Fittable Data Transformer Base Class</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
@@ -777,13 +885,13 @@ bottleneck and nullify parallelisation benefits.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

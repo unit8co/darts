@@ -36,7 +36,7 @@
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Introduction to darts" href="examples/01-darts-intro.html" />
+    <link rel="next" title="Multiple Time Series, Pre-trained Models and Covariates" href="examples/01-multi-time-series-and-covariates.html" />
     <link rel="prev" title="Timeseries" href="generated_api/darts.timeseries.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -77,6 +77,18 @@
     <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="README.html">
   Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="userguide.html">
+  User Guide
  </a>
 </li>
 
@@ -135,26 +147,14 @@
   <div class="bd-toc-item active">
     <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/01-darts-intro.html">
-   Introduction to
-   <code class="docutils literal notranslate">
-    <span class="pre">
-     darts
-    </span>
-   </code>
-  </a>
- </li>
-</ul>
-<ul class="nav bd-sidenav">
- <li class="toctree-l1">
-  <a class="reference internal" href="examples/02-multi-time-series-and-covariates.html">
+  <a class="reference internal" href="examples/01-multi-time-series-and-covariates.html">
    Multiple Time Series, Pre-trained Models and Covariates
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/03-data-processing.html">
+  <a class="reference internal" href="examples/02-data-processing.html">
    Data (pre) processing using
    <code class="docutils literal notranslate">
     <span class="pre">
@@ -172,77 +172,77 @@
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/04-FFT-examples.html">
+  <a class="reference internal" href="examples/03-FFT-examples.html">
    Fast Fourier Transform Forecasting Model (FFT)
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/05-RNN-examples.html">
+  <a class="reference internal" href="examples/04-RNN-examples.html">
    Recurrent Neural Networks Models
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/06-TCN-examples.html">
+  <a class="reference internal" href="examples/05-TCN-examples.html">
    Temporal Convolutional Network
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/07-Transformer-examples.html">
+  <a class="reference internal" href="examples/06-Transformer-examples.html">
    Transformer Model
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/08-NBEATS-examples.html">
+  <a class="reference internal" href="examples/07-NBEATS-examples.html">
    N-BEATS
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/09-DeepAR-examples.html">
+  <a class="reference internal" href="examples/08-DeepAR-examples.html">
    Probabilistic RNN
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/10-DeepTCN-examples.html">
+  <a class="reference internal" href="examples/09-DeepTCN-examples.html">
    DeepTCN model
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/14-TFT-examples.html">
+  <a class="reference internal" href="examples/13-TFT-examples.html">
    Temporal Fusion Transformer
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/11-Kalman-filter-examples.html">
+  <a class="reference internal" href="examples/10-Kalman-filter-examples.html">
    Filtering and predicting using the darts filters
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/12-GP-filter-examples.html">
+  <a class="reference internal" href="examples/11-GP-filter-examples.html">
    Filtering and predicting using the Gaussian Process filter
   </a>
  </li>
 </ul>
 <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="examples/13-Dynamic-Time-Warping-example.html">
+  <a class="reference internal" href="examples/12-Dynamic-Time-Warping-example.html">
    Dynamic Time Warping (DTW)
   </a>
  </li>
@@ -266,11 +266,6 @@
 
 <nav id="bd-toc-nav">
     <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#darts-intro">
-   darts intro
-  </a>
- </li>
  <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#multiple-time-series-pre-trained-models-and-covariates">
    Multiple Time Series, Pre-trained Models and Covariates
@@ -359,22 +354,15 @@
                 
   <section id="examples">
 <h1>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h1>
-<p>Here you will find some example notebooks to get more familiar with the API.</p>
-<section id="darts-intro">
-<h2>darts intro<a class="headerlink" href="#darts-intro" title="Permalink to this headline">¶</a></h2>
-<p>Intro to darts example notebook:</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/01-darts-intro.html">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></a></li>
-</ul>
-</div>
-</section>
+<p>Here you will find some example notebooks to get more familiar with the Darts’ API.
+All the notebooks are also available in <code class="docutils literal notranslate"><span class="pre">ipynb</span></code> format
+<a class="reference external" href="https://github.com/unit8co/darts/tree/master/examples">directly on github</a>.</p>
 <section id="multiple-time-series-pre-trained-models-and-covariates">
 <h2>Multiple Time Series, Pre-trained Models and Covariates<a class="headerlink" href="#multiple-time-series-pre-trained-models-and-covariates" title="Permalink to this headline">¶</a></h2>
 <p>Example notebook on training with multiple time series, pre-trained models and using covariates:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/02-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/01-multi-time-series-and-covariates.html">Multiple Time Series, Pre-trained Models and Covariates</a></li>
 </ul>
 </div>
 </section>
@@ -383,7 +371,7 @@
 <p>Data processing example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/03-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/02-data-processing.html">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></a></li>
 </ul>
 </div>
 </section>
@@ -392,7 +380,7 @@
 <p>FFT model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/04-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/03-FFT-examples.html">Fast Fourier Transform Forecasting Model (FFT)</a></li>
 </ul>
 </div>
 </section>
@@ -401,7 +389,7 @@
 <p>RNN model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/05-RNN-examples.html">Recurrent Neural Networks Models</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/04-RNN-examples.html">Recurrent Neural Networks Models</a></li>
 </ul>
 </div>
 </section>
@@ -410,7 +398,7 @@
 <p>TCN model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/06-TCN-examples.html">Temporal Convolutional Network</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/05-TCN-examples.html">Temporal Convolutional Network</a></li>
 </ul>
 </div>
 </section>
@@ -419,7 +407,7 @@
 <p>Transformer model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/07-Transformer-examples.html">Transformer Model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/06-Transformer-examples.html">Transformer Model</a></li>
 </ul>
 </div>
 </section>
@@ -428,7 +416,7 @@
 <p>N-BEATS model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/08-NBEATS-examples.html">N-BEATS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/07-NBEATS-examples.html">N-BEATS</a></li>
 </ul>
 </div>
 </section>
@@ -437,7 +425,7 @@
 <p>DeepAR model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/09-DeepAR-examples.html">Probabilistic RNN</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/08-DeepAR-examples.html">Probabilistic RNN</a></li>
 </ul>
 </div>
 </section>
@@ -446,7 +434,7 @@
 <p>DeepTCN model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/10-DeepTCN-examples.html">DeepTCN model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/09-DeepTCN-examples.html">DeepTCN model</a></li>
 </ul>
 </div>
 </section>
@@ -455,7 +443,7 @@
 <p>TFT model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/14-TFT-examples.html">Temporal Fusion Transformer</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/13-TFT-examples.html">Temporal Fusion Transformer</a></li>
 </ul>
 </div>
 </section>
@@ -464,7 +452,7 @@
 <p>Kalman filter model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/11-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/10-Kalman-filter-examples.html">Filtering and predicting using the darts filters</a></li>
 </ul>
 </div>
 </section>
@@ -473,7 +461,7 @@
 <p>Gaussian process filter model example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/12-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/11-GP-filter-examples.html">Filtering and predicting using the Gaussian Process filter</a></li>
 </ul>
 </div>
 </section>
@@ -482,7 +470,7 @@
 <p>Dynamic time warping example notebook:</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="examples/13-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="examples/12-Dynamic-Time-Warping-example.html">Dynamic Time Warping (DTW)</a></li>
 </ul>
 </div>
 </section>
@@ -501,10 +489,10 @@
             <p class="prev-next-title">Timeseries</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="examples/01-darts-intro.html" title="next page">
+    <a class='right-next' id="next-link" href="examples/01-multi-time-series-and-covariates.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Introduction to <code class="docutils literal notranslate"><span class="pre">darts</span></code></p>
+        <p class="prev-next-title">Multiple Time Series, Pre-trained Models and Covariates</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
@@ -522,13 +510,13 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

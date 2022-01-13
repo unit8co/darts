@@ -59,20 +59,26 @@ Time Series Made Easy in Python
    :alt: codecov
 
 
+.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
+   :alt: Code style: black
+
+
 **darts** is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using ``fit()`` and ``predict()`` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models. The neural networks can be trained
+univariate and multivariate time series and models. The ML-based models can be trained
 on multiple time series, and some of the models offer probabilistic forecasts.
 
 Documentation
 -------------
 
 
-* `Examples & Tutorials <https://unit8co.github.io/darts/examples.html>`_
-* `API Documentation <https://unit8co.github.io/darts/generated_api/darts.html>`_
+* `Quickstart <https://unit8co.github.io/darts/quickstart/00-quickstart.html>`_
+* `API Reference <https://unit8co.github.io/darts/generated_api/darts.html>`_
+* `Examples <https://unit8co.github.io/darts/examples.html>`_
 
 High Level Introductions
 """"""""""""""""""""""""
@@ -88,11 +94,15 @@ Articles on Selected Topics
 * `Training Models on Multiple Time Series <https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844>`_
 * `Using Past and Future Covariates <https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993>`_
 * `Temporal Convolutional Networks and Forecasting <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
+* `Probabilistic Forecasting <https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e>`_
 
 Quick Install
 -------------
 
-We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool (\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ , `venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
+We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
+(\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ , 
+`venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with 
+or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
 
 Once your environment is set up you can install darts using pip:
 
@@ -344,7 +354,7 @@ The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on Github.
 
 Before working on a contribution (a new feature or a fix),
- `\ **check our contribution guidelines** <CONTRIBUTING.md>`_.
+ `check our contribution guidelines <https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md>`_.
 
 Installation Guide
 ------------------

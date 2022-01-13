@@ -2,4 +2,3 @@
 .. automodule:: darts.utils.model_selection
    :members:
    :undoc-members:
-   :show-inheritance:

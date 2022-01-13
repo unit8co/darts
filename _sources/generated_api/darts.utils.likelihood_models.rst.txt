@@ -2,4 +2,3 @@
 .. automodule:: darts.utils.likelihood_models
    :members:
    :undoc-members:
-   :show-inheritance:

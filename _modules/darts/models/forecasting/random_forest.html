@@ -78,6 +78,18 @@
 </li>
 
 <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
   API Reference
  </a>
@@ -159,7 +171,7 @@
 <span class="sd">A forecasting model using a random forest regression. It uses some of the target series&#39; lags, as well as optionally</span>
 <span class="sd">some covariate series&#39; lags in order to obtain a forecast.</span>
 
-<span class="sd">See [1] for a reference around random forests.</span>
+<span class="sd">See [1]_ for a reference around random forests.</span>
 
 <span class="sd">The implementations is wrapped around `RandomForestRegressor</span>
 <span class="sd">&lt;https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestRegressor.html#sklearn.ensemble.RandomForestRegressor&gt;`_.</span>
@@ -177,14 +189,16 @@
 
 
 <div class="viewcode-block" id="RandomForest"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.random_forest.html#darts.models.forecasting.random_forest.RandomForest">[docs]</a><span class="k">class</span> <span class="nc">RandomForest</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
-                 <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="n">n_estimators</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
-                 <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-                 <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Random Forest</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_estimators</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="n">max_depth</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Random Forest Model</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -218,14 +232,17 @@
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
             <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
             <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">RandomForestRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">RandomForestRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="p">(</span><span class="sa">f</span><span class="s2">&quot;RandomForest(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">, lags_past_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_past_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;lags_historical_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_historical_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;lags_future_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_future_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
-                <span class="sa">f</span><span class="s2">&quot;n_estimators=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_estimators</span><span class="si">}</span><span class="s2">, max_depth=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;RandomForest(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;lags_past_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_past_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;lags_historical_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_historical_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;lags_future_covariates=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags_future_covariates</span><span class="si">}</span><span class="s2">, &quot;</span>
+            <span class="sa">f</span><span class="s2">&quot;n_estimators=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">n_estimators</span><span class="si">}</span><span class="s2">, max_depth=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">max_depth</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>
@@ -247,13 +264,13 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

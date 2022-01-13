@@ -2,4 +2,3 @@
 .. automodule:: darts.utils.data.sequential_dataset
    :members:
    :undoc-members:
-   :show-inheritance:

@@ -80,6 +80,18 @@
  </a>
 </li>
 
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
 <li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="darts.html">
   API Reference
@@ -156,7 +168,7 @@
     <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -166,17 +178,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -400,7 +412,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -447,7 +459,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -512,128 +524,53 @@
 <h1>Training Datasets Base Classes<a class="headerlink" href="#training-datasets-base-classes" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.training_dataset.DualCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#DualCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.utils.data.dataset.T_co</span></code>]</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#DualCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a DualCovariatesTorchModel training dataset. It contains 4-tuples of
 <cite>(past_target, historic_future_covariates, future_covariates, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.DualCovariatesTrainingDataset.functions">
-<span class="sig-name descname"><span class="pre">functions</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'concat':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.combining.ConcaterMapDataPipe'&gt;,</span> <span class="pre">False),</span> <span class="pre">'map':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.callable.MapperMapDataPipe'&gt;,</span> <span class="pre">False)}</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset.functions" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.DualCovariatesTrainingDataset.register_datapipe_as_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_datapipe_as_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls_to_register</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_df_api_tracing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset.register_datapipe_as_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.DualCovariatesTrainingDataset.register_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset.register_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.training_dataset.FutureCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#FutureCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.utils.data.dataset.T_co</span></code>]</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#FutureCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a FutureCovariatesTorchModel training dataset. It contains 3-tuples of
 <cite>(past_target, future_covariate, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.FutureCovariatesTrainingDataset.functions">
-<span class="sig-name descname"><span class="pre">functions</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'concat':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.combining.ConcaterMapDataPipe'&gt;,</span> <span class="pre">False),</span> <span class="pre">'map':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.callable.MapperMapDataPipe'&gt;,</span> <span class="pre">False)}</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset.functions" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.FutureCovariatesTrainingDataset.register_datapipe_as_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_datapipe_as_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls_to_register</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_df_api_tracing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset.register_datapipe_as_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.FutureCovariatesTrainingDataset.register_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset.register_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.training_dataset.MixedCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#MixedCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.utils.data.dataset.T_co</span></code>]</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#MixedCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a MixedCovariatesTorchModel training dataset. It contains 5-tuples of
 <cite>(past_target, past_covariates, historic_future_covariates, future_covariates, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.MixedCovariatesTrainingDataset.functions">
-<span class="sig-name descname"><span class="pre">functions</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'concat':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.combining.ConcaterMapDataPipe'&gt;,</span> <span class="pre">False),</span> <span class="pre">'map':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.callable.MapperMapDataPipe'&gt;,</span> <span class="pre">False)}</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset.functions" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.MixedCovariatesTrainingDataset.register_datapipe_as_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_datapipe_as_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls_to_register</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_df_api_tracing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset.register_datapipe_as_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.MixedCovariatesTrainingDataset.register_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset.register_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.training_dataset.PastCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#PastCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.utils.data.dataset.T_co</span></code>]</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#PastCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a PastCovariatesTorchModel training dataset. It contains 3-tuples of
 <cite>(past_target, past_covariate, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.PastCovariatesTrainingDataset.functions">
-<span class="sig-name descname"><span class="pre">functions</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'concat':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.combining.ConcaterMapDataPipe'&gt;,</span> <span class="pre">False),</span> <span class="pre">'map':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.callable.MapperMapDataPipe'&gt;,</span> <span class="pre">False)}</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.PastCovariatesTrainingDataset.functions" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.PastCovariatesTrainingDataset.register_datapipe_as_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_datapipe_as_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls_to_register</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_df_api_tracing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.PastCovariatesTrainingDataset.register_datapipe_as_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.PastCovariatesTrainingDataset.register_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.PastCovariatesTrainingDataset.register_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.training_dataset.SplitCovariatesTrainingDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#SplitCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.utils.data.dataset.T_co</span></code>]</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#SplitCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a SplitCovariatesTorchModel training dataset. It contains 4-tuples of
 <cite>(past_target, past_covariates, future_covariates, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.SplitCovariatesTrainingDataset.functions">
-<span class="sig-name descname"><span class="pre">functions</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'concat':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.combining.ConcaterMapDataPipe'&gt;,</span> <span class="pre">False),</span> <span class="pre">'map':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.callable.MapperMapDataPipe'&gt;,</span> <span class="pre">False)}</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset.functions" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.SplitCovariatesTrainingDataset.register_datapipe_as_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_datapipe_as_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls_to_register</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_df_api_tracing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset.register_datapipe_as_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.SplitCovariatesTrainingDataset.register_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset.register_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.data.training_dataset.TrainingDataset">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">TrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#TrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.TrainingDataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">Generic</span></code>[<code class="xref py py-obj docutils literal notranslate"><span class="pre">torch.utils.data.dataset.T_co</span></code>]</p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">TrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#TrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.TrainingDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">torch.utils.data.dataset.Dataset</span></code></p>
 <p>Super-class for all training datasets for torch models in Darts. These include</p>
 <ul class="simple">
 <li><dl class="simple">
@@ -681,21 +618,6 @@ provide the <cite>__getitem__()</cite> method.</p>
 <p>It contains <cite>np.ndarray</cite> (and not <cite>TimeSeries</cite>), because training requires the values only,
 and so we can get big performance gains when slicing by returning only numpy views of the data
 underlying the <cite>TimeSeries</cite>.</p>
-<dl class="py attribute">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.TrainingDataset.functions">
-<span class="sig-name descname"><span class="pre">functions</span></span><em class="property"><span class="pre">:</span> <span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span> </span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"> <span class="pre">=</span> <span class="pre">{'concat':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.combining.ConcaterMapDataPipe'&gt;,</span> <span class="pre">False),</span> <span class="pre">'map':</span> <span class="pre">functools.partial(&lt;function</span> <span class="pre">Dataset.register_datapipe_as_function.&lt;locals&gt;.class_function&gt;,</span> <span class="pre">&lt;class</span> <span class="pre">'torch.utils.data.datapipes.map.callable.MapperMapDataPipe'&gt;,</span> <span class="pre">False)}</span></em><a class="headerlink" href="#darts.utils.data.training_dataset.TrainingDataset.functions" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.TrainingDataset.register_datapipe_as_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_datapipe_as_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cls_to_register</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">enable_df_api_tracing</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.TrainingDataset.register_datapipe_as_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.utils.data.training_dataset.TrainingDataset.register_function">
-<em class="property"><span class="pre">classmethod</span> </em><span class="sig-name descname"><span class="pre">register_function</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">function_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">function</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.data.training_dataset.TrainingDataset.register_function" title="Permalink to this definition">¶</a></dt>
-<dd></dd></dl>
-
 </dd></dl>
 
 </section>
@@ -734,13 +656,13 @@ underlying the <cite>TimeSeries</cite>.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

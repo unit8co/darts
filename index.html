@@ -80,6 +80,18 @@
 </li>
 
 <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="generated_api/darts.html">
   API Reference
  </a>
@@ -199,7 +211,7 @@
     </a>
    </li>
    <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id2">
+    <a class="reference internal nav-link" href="#id3">
      Installation Guide
     </a>
     <ul class="nav section-nav flex-column">
@@ -219,7 +231,7 @@
         </a>
        </li>
        <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#id3">
+        <a class="reference internal nav-link" href="#id4">
          Documentation
         </a>
        </li>
@@ -275,18 +287,20 @@
 <a class="reference external image-reference" href="https://pepy.tech/project/u8darts"><img alt="Downloads" src="https://pepy.tech/badge/u8darts" /></a>
 <a class="reference external image-reference" href="https://pepy.tech/project/darts"><img alt="Downloads" src="https://pepy.tech/badge/darts" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/unit8co/darts"><img alt="codecov" src="https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW" /></a>
+<a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
 <p><strong>darts</strong> is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
 and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models. The neural networks can be trained
+univariate and multivariate time series and models. The ML-based models can be trained
 on multiple time series, and some of the models offer probabilistic forecasts.</p>
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples.html">Examples &amp; Tutorials</a></p></li>
-<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.html">API Documentation</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html">Quickstart</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.html">API Reference</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/examples.html">Examples</a></p></li>
 </ul>
 <section id="high-level-introductions">
 <h3>High Level Introductions<a class="headerlink" href="#high-level-introductions" title="Permalink to this headline">¶</a></h3>
@@ -301,12 +315,16 @@ on multiple time series, and some of the models offer probabilistic forecasts.</
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844">Training Models on Multiple Time Series</a></p></li>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">Using Past and Future Covariates</a></p></li>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">Temporal Convolutional Networks and Forecasting</a></p></li>
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e">Probabilistic Forecasting</a></p></li>
 </ul>
 </section>
 </section>
 <section id="quick-install">
 <h2>Quick Install<a class="headerlink" href="#quick-install" title="Permalink to this headline">¶</a></h2>
-<p>We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool (<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>, <a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
+<p>We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
+(<span class="raw-html-m2r"><a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a></span>,
+<a class="reference external" href="https://docs.python.org/3/library/venv.html">venv</a>, <a class="reference external" href="https://virtualenv.pypa.io/en/latest/">virtualenv</a> with
+or without <a class="reference external" href="https://virtualenvwrapper.readthedocs.io/en/latest/">virtualenvwrapper</a>).</p>
 <p>Once your environment is set up you can install darts using pip:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">darts</span>
 </pre></div>
@@ -549,12 +567,12 @@ inquiries.</p>
 <p>The development is ongoing, and there are many new features that we want to add.
 We welcome pull requests and issues on Github.</p>
 <dl class="simple">
-<dt>Before working on a contribution (a new feature or a fix),</dt><dd><p><a class="reference external" href="CONTRIBUTING.md">**check our contribution guidelines**</a>.</p>
+<dt>Before working on a contribution (a new feature or a fix),</dt><dd><p><a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">check our contribution guidelines</a>.</p>
 </dd>
 </dl>
 </section>
-<section id="id2">
-<h2>Installation Guide<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h2>
+<section id="id3">
+<h2>Installation Guide<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
 <p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">prophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
 A Conda environment is thus recommended because it will handle all of those in one go.</p>
 <p>Currently only the x86_64 architecture with Python 3.7-3.9
@@ -632,8 +650,8 @@ To run the example notebooks without installing our libraries natively on your m
 </div>
 <p>To run the tests for specific flavours of the library, replace <code class="docutils literal notranslate"><span class="pre">_all</span></code> with <code class="docutils literal notranslate"><span class="pre">_core</span></code>, <code class="docutils literal notranslate"><span class="pre">_prophet</span></code>, <code class="docutils literal notranslate"><span class="pre">_pmdarima</span></code> or <code class="docutils literal notranslate"><span class="pre">_torch</span></code>.</p>
 </section>
-<section id="id3">
-<h4>Documentation<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h4>
+<section id="id4">
+<h4>Documentation<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
 <p>To build documentation locally just run</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew buildDocs
 </pre></div>
@@ -656,6 +674,10 @@ To run the example notebooks without installing our libraries natively on your m
       <span class="n">primaryClass</span><span class="o">=</span><span class="p">{</span><span class="n">cs</span><span class="o">.</span><span class="n">LG</span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
 </div>
 <div class="toctree-wrapper compound">
 </div>
@@ -701,13 +723,13 @@ To run the example notebooks without installing our libraries natively on your m
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

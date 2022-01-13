@@ -1,9 +1,7 @@
 
 
+
 .. automodule:: darts.models.filtering
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
     .. toctree::
         :maxdepth: 1

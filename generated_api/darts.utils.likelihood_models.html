@@ -34,7 +34,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
-    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -79,6 +79,18 @@
     <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../README.html">
   Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
  </a>
 </li>
 
@@ -158,7 +170,7 @@
     <ul>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
-       Base Data Transformer
+       Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
@@ -168,17 +180,17 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
-       Fittable Data Transformer
+       Fittable Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
-       Invertible Data Transformer
+       Invertible Data Transformer Base Class
       </a>
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
-       Mappers
+       Mapper and InvertibleMapper
       </a>
      </li>
      <li class="toctree-l3">
@@ -402,7 +414,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.utils.data.encoders.html">
-       Encoder Classes Main
+       Time Axes Encoders
       </a>
      </li>
      <li class="toctree-l3">
@@ -449,7 +461,7 @@
    </li>
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.statistics.html">
-     Utils for time series statistics
+     Time Series Statistics
     </a>
    </li>
    <li class="toctree-l2">
@@ -536,7 +548,7 @@ errors will be raised during training. You can refer to the individual likelihoo
 to see what is the support. Similarly, the prior parameters also have to lie in some pre-defined domains.</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BernoulliLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">BernoulliLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BernoulliLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">BernoulliLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BernoulliLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Bernoulli distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Bernoulli_distribution">https://en.wikipedia.org/wiki/Bernoulli_distribution</a></p>
@@ -553,32 +565,69 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.BernoulliLikelihood.num_parameters" title="darts.utils.likelihood_models.BernoulliLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.BernoulliLikelihood.compute_loss" title="darts.utils.likelihood_models.BernoulliLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.BernoulliLikelihood.sample" title="darts.utils.likelihood_models.BernoulliLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BernoulliLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BernoulliLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BernoulliLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BernoulliLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BernoulliLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BernoulliLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BetaLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">BetaLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BetaLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">BetaLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BetaLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Beta distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Beta_distribution">https://en.wikipedia.org/wiki/Beta_distribution</a></p>
@@ -596,32 +645,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.BetaLikelihood.num_parameters" title="darts.utils.likelihood_models.BetaLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.BetaLikelihood.compute_loss" title="darts.utils.likelihood_models.BetaLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.BetaLikelihood.sample" title="darts.utils.likelihood_models.BetaLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BetaLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BetaLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.BetaLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BetaLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#BetaLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.BetaLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.CauchyLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">CauchyLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_xzero</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#CauchyLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">CauchyLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_xzero</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_gamma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#CauchyLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Cauchy Distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Cauchy_distribution">https://en.wikipedia.org/wiki/Cauchy_distribution</a></p>
@@ -642,32 +728,69 @@ requires a large value for <cite>num_samples</cite> for sampling predictions.</p
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.CauchyLikelihood.num_parameters" title="darts.utils.likelihood_models.CauchyLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.CauchyLikelihood.compute_loss" title="darts.utils.likelihood_models.CauchyLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.CauchyLikelihood.sample" title="darts.utils.likelihood_models.CauchyLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.CauchyLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.CauchyLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.CauchyLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#CauchyLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#CauchyLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.CauchyLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ContinuousBernoulliLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">ContinuousBernoulliLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ContinuousBernoulliLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">ContinuousBernoulliLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ContinuousBernoulliLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Continuous Bernoulli distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution">https://en.wikipedia.org/wiki/Continuous_Bernoulli_distribution</a></p>
@@ -684,32 +807,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.num_parameters" title="darts.utils.likelihood_models.ContinuousBernoulliLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.compute_loss" title="darts.utils.likelihood_models.ContinuousBernoulliLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.sample" title="darts.utils.likelihood_models.ContinuousBernoulliLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ContinuousBernoulliLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ContinuousBernoulliLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ContinuousBernoulliLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ContinuousBernoulliLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ContinuousBernoulliLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ContinuousBernoulliLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.DirichletLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">DirichletLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alphas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#DirichletLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">DirichletLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alphas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#DirichletLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Dirichlet distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Dirichlet_distribution">https://en.wikipedia.org/wiki/Dirichlet_distribution</a></p>
@@ -727,32 +887,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.DirichletLikelihood.num_parameters" title="darts.utils.likelihood_models.DirichletLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.DirichletLikelihood.compute_loss" title="darts.utils.likelihood_models.DirichletLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.DirichletLikelihood.sample" title="darts.utils.likelihood_models.DirichletLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.DirichletLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.DirichletLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.DirichletLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#DirichletLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#DirichletLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.DirichletLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ExponentialLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">ExponentialLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ExponentialLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">ExponentialLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ExponentialLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Exponential distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Exponential_distribution">https://en.wikipedia.org/wiki/Exponential_distribution</a></p>
@@ -769,32 +966,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.ExponentialLikelihood.num_parameters" title="darts.utils.likelihood_models.ExponentialLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.ExponentialLikelihood.compute_loss" title="darts.utils.likelihood_models.ExponentialLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.ExponentialLikelihood.sample" title="darts.utils.likelihood_models.ExponentialLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ExponentialLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ExponentialLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.ExponentialLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ExponentialLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#ExponentialLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.ExponentialLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GammaLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GammaLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GammaLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GammaLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GammaLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Gamma distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Gamma_distribution">https://en.wikipedia.org/wiki/Gamma_distribution</a></p>
@@ -812,32 +1046,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GammaLikelihood.num_parameters" title="darts.utils.likelihood_models.GammaLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GammaLikelihood.compute_loss" title="darts.utils.likelihood_models.GammaLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GammaLikelihood.sample" title="darts.utils.likelihood_models.GammaLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GammaLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GammaLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GammaLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GammaLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GammaLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GammaLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GaussianLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GaussianLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GaussianLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GaussianLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GaussianLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Univariate Gaussian distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Normal_distribution">https://en.wikipedia.org/wiki/Normal_distribution</a></p>
@@ -855,32 +1126,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GaussianLikelihood.num_parameters" title="darts.utils.likelihood_models.GaussianLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GaussianLikelihood.compute_loss" title="darts.utils.likelihood_models.GaussianLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GaussianLikelihood.sample" title="darts.utils.likelihood_models.GaussianLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GaussianLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GaussianLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GaussianLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GaussianLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GaussianLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GaussianLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GeometricLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GeometricLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GeometricLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GeometricLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GeometricLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GeometricLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GeometricLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Geometric distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Geometric_distribution">https://en.wikipedia.org/wiki/Geometric_distribution</a></p>
@@ -897,18 +1205,50 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GeometricLikelihood.num_parameters" title="darts.utils.likelihood_models.GeometricLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GeometricLikelihood.compute_loss" title="darts.utils.likelihood_models.GeometricLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GeometricLikelihood.sample" title="darts.utils.likelihood_models.GeometricLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GeometricLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GeometricLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GeometricLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GeometricLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GeometricLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GeometricLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -922,7 +1262,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GumbelLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GumbelLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GumbelLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GumbelLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">GumbelLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_beta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#GumbelLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.GumbelLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Gumbel distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Gumbel_distribution">https://en.wikipedia.org/wiki/Gumbel_distribution</a></p>
@@ -940,18 +1280,50 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GumbelLikelihood.num_parameters" title="darts.utils.likelihood_models.GumbelLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GumbelLikelihood.compute_loss" title="darts.utils.likelihood_models.GumbelLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.GumbelLikelihood.sample" title="darts.utils.likelihood_models.GumbelLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GumbelLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GumbelLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.GumbelLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.GumbelLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GumbelLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.GumbelLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -965,7 +1337,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.HalfNormalLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">HalfNormalLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#HalfNormalLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">HalfNormalLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#HalfNormalLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Half-normal distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Half-normal_distribution">https://en.wikipedia.org/wiki/Half-normal_distribution</a></p>
@@ -982,32 +1354,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.HalfNormalLikelihood.num_parameters" title="darts.utils.likelihood_models.HalfNormalLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.HalfNormalLikelihood.compute_loss" title="darts.utils.likelihood_models.HalfNormalLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.HalfNormalLikelihood.sample" title="darts.utils.likelihood_models.HalfNormalLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.HalfNormalLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.HalfNormalLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.HalfNormalLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#HalfNormalLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#HalfNormalLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.HalfNormalLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LaplaceLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">LaplaceLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LaplaceLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LaplaceLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">LaplaceLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_b</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LaplaceLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LaplaceLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Laplace distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Laplace_distribution">https://en.wikipedia.org/wiki/Laplace_distribution</a></p>
@@ -1025,18 +1434,50 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.LaplaceLikelihood.num_parameters" title="darts.utils.likelihood_models.LaplaceLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.LaplaceLikelihood.compute_loss" title="darts.utils.likelihood_models.LaplaceLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.LaplaceLikelihood.sample" title="darts.utils.likelihood_models.LaplaceLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LaplaceLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.LaplaceLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.LaplaceLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LaplaceLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.LaplaceLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.LaplaceLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1050,35 +1491,72 @@ and the parameters given in <cite>model_output</cite>.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.Likelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">Likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#Likelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">Likelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#Likelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a likelihood model.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.Likelihood.num_parameters" title="darts.utils.likelihood_models.Likelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.Likelihood.compute_loss" title="darts.utils.likelihood_models.Likelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.Likelihood.sample" title="darts.utils.likelihood_models.Likelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.Likelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#Likelihood.compute_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#Likelihood.compute_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.Likelihood.num_parameters">
-<em class="property"><span class="pre">abstract</span> <span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.Likelihood.sample">
-<em class="property"><span class="pre">abstract</span> </em><span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#Likelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood.sample" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#Likelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.Likelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LogNormalLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">LogNormalLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LogNormalLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">LogNormalLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_mu</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_sigma</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LogNormalLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Log-normal distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Log-normal_distribution">https://en.wikipedia.org/wiki/Log-normal_distribution</a></p>
@@ -1096,32 +1574,69 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.LogNormalLikelihood.num_parameters" title="darts.utils.likelihood_models.LogNormalLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.LogNormalLikelihood.compute_loss" title="darts.utils.likelihood_models.LogNormalLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.LogNormalLikelihood.sample" title="darts.utils.likelihood_models.LogNormalLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LogNormalLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LogNormalLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.LogNormalLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LogNormalLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#LogNormalLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.LogNormalLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.NegativeBinomialLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">NegativeBinomialLikelihood</span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#NegativeBinomialLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">NegativeBinomialLikelihood</span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#NegativeBinomialLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Negative Binomial distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Negative_binomial_distribution">https://en.wikipedia.org/wiki/Negative_binomial_distribution</a></p>
@@ -1133,23 +1648,55 @@ and the parameters given in <cite>model_output</cite>.</p>
 </ul>
 <p>Behind the scenes the distribution is reparameterized so that the actual outputs of the
 network are in terms of the mean <span class="math notranslate nohighlight">\(\mu\)</span> and shape <span class="math notranslate nohighlight">\(\alpha\)</span>.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.num_parameters" title="darts.utils.likelihood_models.NegativeBinomialLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.compute_loss" title="darts.utils.likelihood_models.NegativeBinomialLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.sample" title="darts.utils.likelihood_models.NegativeBinomialLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.NegativeBinomialLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.NegativeBinomialLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.NegativeBinomialLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#NegativeBinomialLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#NegativeBinomialLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.NegativeBinomialLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
 </dd></dl>
@@ -1158,7 +1705,7 @@ and the parameters given in <cite>model_output</cite>.</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.PoissonLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">PoissonLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#PoissonLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">PoissonLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_lambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#PoissonLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Poisson distribution. Can typically be used to model event counts during time intervals, when the events
 happen independently of the time since the last event.</p>
@@ -1176,50 +1723,110 @@ happen independently of the time since the last event.</p>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.PoissonLikelihood.num_parameters" title="darts.utils.likelihood_models.PoissonLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.PoissonLikelihood.compute_loss" title="darts.utils.likelihood_models.PoissonLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.PoissonLikelihood.sample" title="darts.utils.likelihood_models.PoissonLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.PoissonLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.PoissonLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.PoissonLikelihood.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#PoissonLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#PoissonLikelihood.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.PoissonLikelihood.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Samples a prediction from the probability distributions defined by the specific likelihood model
 and the parameters given in <cite>model_output</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.QuantileRegression">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">QuantileRegression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">List</span><span class="p"><span class="pre">[</span></span><span class="pre">float</span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">QuantileRegression</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">quantiles</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>The “likelihood” corresponding to quantile regression.
 It uses the Quantile Loss Metric for custom quantiles centered around q=0.5.</p>
 <p>This class can be used as any other Likelihood objects even though it is not
 representing the likelihood of a well defined distribution.</p>
-<dl class="simple">
-<dt>quantiles</dt><dd><p>list of quantiles</p>
-</dd>
-</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.QuantileRegression.num_parameters" title="darts.utils.likelihood_models.QuantileRegression.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.QuantileRegression.compute_loss" title="darts.utils.likelihood_models.QuantileRegression.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.QuantileRegression.sample" title="darts.utils.likelihood_models.QuantileRegression.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Select a quantile (for each batch example) and return this quantile (over time and components).</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.QuantileRegression.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression.compute_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression.compute_loss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model_output</strong> – must be of shape (batch_size, n_timesteps, n_target_variables, n_quantiles)</p></li>
-<li><p><strong>target</strong> – must be of shape (n_samples, n_timesteps, n_target_variables)</p></li>
+<li><p><strong>model_output</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – must be of shape (batch_size, n_timesteps, n_target_variables, n_quantiles)</p></li>
+<li><p><strong>target</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code>) – must be of shape (n_samples, n_timesteps, n_target_variables)</p></li>
 </ul>
 </dd>
 </dl>
@@ -1227,23 +1834,33 @@ representing the likelihood of a well defined distribution.</p>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.QuantileRegression.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.QuantileRegression.sample">
-<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">torch.Tensor</span></span></span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression.sample" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression.sample" title="Permalink to this definition">¶</a></dt>
 <dd><p>Select a quantile (for each batch example) and return this quantile (over time and components).</p>
 <p>model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">Tensor</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 </dd></dl>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.WeibullLikelihood">
-<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">WeibullLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#WeibullLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.WeibullLikelihood" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.likelihood_models.</span></span><span class="sig-name descname"><span class="pre">WeibullLikelihood</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">prior_strength</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#WeibullLikelihood"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.WeibullLikelihood" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.likelihood_models.Likelihood</span></code></a></p>
 <p>Weibull distribution.</p>
 <p><a class="reference external" href="https://en.wikipedia.org/wiki/Weibull_distribution">https://en.wikipedia.org/wiki/Weibull_distribution</a></p>
@@ -1258,18 +1875,50 @@ target value.</p>
 <dd class="field-odd"><p><strong>prior_strength</strong> – strength of the loss regularisation induced by the prior</p>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.WeibullLikelihood.num_parameters" title="darts.utils.likelihood_models.WeibullLikelihood.num_parameters"><code class="xref py py-obj docutils literal notranslate"><span class="pre">num_parameters</span></code></a></p></td>
+<td><p>Returns the number of parameters that define the probability distribution for one single target value.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.WeibullLikelihood.compute_loss" title="darts.utils.likelihood_models.WeibullLikelihood.compute_loss"><code class="xref py py-obj docutils literal notranslate"><span class="pre">compute_loss</span></code></a>(model_output, target)</p></td>
+<td><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.WeibullLikelihood.sample" title="darts.utils.likelihood_models.WeibullLikelihood.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
+<td><p>Samples a prediction from the probability distributions defined by the specific likelihood model and the parameters given in <cite>model_output</cite>.</p></td>
+</tr>
+</tbody>
+</table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.WeibullLikelihood.compute_loss">
-<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">torch.Tensor</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.WeibullLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">compute_loss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.utils.likelihood_models.WeibullLikelihood.compute_loss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Computes a loss from a <cite>model_output</cite>, which represents the parameters of a given probability
 distribution for every ground truth value in <cite>target</cite>, and the <cite>target</cite> itself.</p>
 </dd></dl>
 
 <dl class="py property">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.WeibullLikelihood.num_parameters">
-<em class="property"><span class="pre">property</span> </em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="pre">:</span> <span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.WeibullLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_parameters</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.utils.likelihood_models.WeibullLikelihood.num_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the number of parameters that define the probability distribution for one single
 target value.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
@@ -1317,13 +1966,13 @@ and the parameters given in <cite>model_output</cite>.</p>
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

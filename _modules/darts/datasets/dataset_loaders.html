@@ -78,6 +78,18 @@
 </li>
 
 <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../../../generated_api/darts.html">
   API Reference
  </a>
@@ -191,7 +203,8 @@
 <span class="sd">    Class that downloads a dataset and caches it locally.</span>
 <span class="sd">    Assumes that the file can be downloaded (i.e. publicly available via an URI)</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">_DEFAULT_DIRECTORY</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="n">Path</span><span class="p">(</span><span class="s1">&#39;.darts/datasets/&#39;</span><span class="p">)))</span>
+
+    <span class="n">_DEFAULT_DIRECTORY</span> <span class="o">=</span> <span class="n">Path</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">(),</span> <span class="n">Path</span><span class="p">(</span><span class="s2">&quot;.darts/datasets/&quot;</span><span class="p">)))</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span> <span class="o">=</span> <span class="n">metadata</span>
@@ -233,13 +246,17 @@
 <span class="sd">        -------</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_is_already_downloaded</span><span class="p">():</span>
-            <span class="k">raise</span> <span class="n">DatasetLoadingException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Checking md5 checksum of a absent file: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">DatasetLoadingException</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Checking md5 checksum of a absent file: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
 
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">(),</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="n">md5_hash</span> <span class="o">=</span> <span class="n">hashlib</span><span class="o">.</span><span class="n">md5</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">())</span><span class="o">.</span><span class="n">hexdigest</span><span class="p">()</span>
             <span class="k">if</span> <span class="n">md5_hash</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">hash</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="n">DatasetLoadingException</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Expected hash for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">hash</span><span class="si">}</span><span class="s2">&quot;</span>
-                                              <span class="sa">f</span><span class="s2">&quot;, got: </span><span class="si">{</span><span class="n">md5_hash</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="n">DatasetLoadingException</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Expected hash for </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">()</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">hash</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="sa">f</span><span class="s2">&quot;, got: </span><span class="si">{</span><span class="n">md5_hash</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_download_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
@@ -259,10 +276,14 @@
             <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_get_path_dataset</span><span class="p">(),</span> <span class="s2">&quot;wb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
                 <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">DatasetLoadingException</span><span class="p">(</span><span class="s2">&quot;Could not download the dataset. Reason:&quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">())</span> <span class="kn">from</span> <span class="bp">None</span>
+            <span class="k">raise</span> <span class="n">DatasetLoadingException</span><span class="p">(</span>
+                <span class="s2">&quot;Could not download the dataset. Reason:&quot;</span> <span class="o">+</span> <span class="n">e</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span>
+            <span class="p">)</span> <span class="kn">from</span> <span class="bp">None</span>
 
     <span class="nd">@abstractmethod</span>
-    <span class="k">def</span> <span class="nf">_load_from_disk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_load_from_disk</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path_to_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Given a Path to the file and a DataLoaderMetadata object, return a TimeSeries</span>
 <span class="sd">        One can assume that the file exists and its MD5 checksum has been verified before this function is called</span>
@@ -289,7 +310,9 @@
 
     <span class="k">def</span> <span class="nf">_format_time_column</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">):</span>
         <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">header_time</span><span class="p">]</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span>
-            <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">header_time</span><span class="p">],</span> <span class="nb">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">format_time</span><span class="p">,</span> <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span>
+            <span class="n">df</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">header_time</span><span class="p">],</span>
+            <span class="nb">format</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">_metadata</span><span class="o">.</span><span class="n">format_time</span><span class="p">,</span>
+            <span class="n">errors</span><span class="o">=</span><span class="s2">&quot;raise&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">df</span></div>
 
@@ -298,13 +321,15 @@
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">:</span> <span class="n">Path</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">metadata</span><span class="p">,</span> <span class="n">root_path</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_load_from_disk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path_to_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">_load_from_disk</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">path_to_file</span><span class="p">:</span> <span class="n">Path</span><span class="p">,</span> <span class="n">metadata</span><span class="p">:</span> <span class="n">DatasetLoaderMetadata</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">path_to_file</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">metadata</span><span class="o">.</span><span class="n">header_time</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_format_time_column</span><span class="p">(</span><span class="n">df</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> 
-                                             <span class="n">time_col</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">header_time</span><span class="p">,</span> 
-                                             <span class="n">freq</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
+                <span class="n">df</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">time_col</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">header_time</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">metadata</span><span class="o">.</span><span class="n">freq</span>
+            <span class="p">)</span>
         <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">df</span><span class="p">)</span></div>
 </pre></div>
 
@@ -327,13 +352,13 @@
     
     <div class="footer-item">
       <p class="copyright">
-    &copy; Copyright 2021, Unit8 SA.<br>
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
 </p>
     </div>
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
 </p>
     </div>
     

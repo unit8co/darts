@@ -1,0 +1,1274 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Multiple Time Series, Pre-trained Models and Covariates &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Data (pre) processing using DataTransformer and Pipeline" href="02-data-processing.html" />
+    <link rel="prev" title="Examples" href="../examples.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Multiple Time Series, Pre-trained Models and Covariates
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="02-data-processing.html">
+   Data (pre) processing using
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     DataTransformer
+    </span>
+   </code>
+   and
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     Pipeline
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="03-FFT-examples.html">
+   Fast Fourier Transform Forecasting Model (FFT)
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="04-RNN-examples.html">
+   Recurrent Neural Networks Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="05-TCN-examples.html">
+   Temporal Convolutional Network
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="06-Transformer-examples.html">
+   Transformer Model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="07-NBEATS-examples.html">
+   N-BEATS
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="08-DeepAR-examples.html">
+   Probabilistic RNN
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="09-DeepTCN-examples.html">
+   DeepTCN model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="13-TFT-examples.html">
+   Temporal Fusion Transformer
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="10-Kalman-filter-examples.html">
+   Filtering and predicting using the darts filters
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="11-GP-filter-examples.html">
+   Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="12-Dynamic-Time-Warping-example.html">
+   Dynamic Time Warping (DTW)
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Read-Data">
+   Read Data
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Preprocessing">
+   Preprocessing
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Train-/-Validation-split">
+   Train / Validation split
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Global-Forecasting-Models">
+     Global Forecasting Models
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Example-with-One-Series">
+   Example with One Series
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Training-Process-(behind-the-scenes)">
+   Training Process (behind the scenes)
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Training-a-Model-on-Multiple-Time-Series">
+     Training a Model on Multiple Time Series
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Training-on-Both-Air-Traffic-and-Milk-Series">
+   Training on Both Air Traffic and Milk Series
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Producing-Forecasts-After-the-End-of-a-Series">
+   Producing Forecasts After the End of a Series
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Wait…-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??">
+     Wait… does this mean that milk consumption helps to predict air traffic??
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Covariates-Series">
+     Covariates Series
+    </a>
+    <ul class="nav section-nav flex-column">
+     <li class="toc-h4 nav-item toc-entry">
+      <a class="reference internal nav-link" href="#Building-Covariates">
+       Building Covariates
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Training-with-Covariates">
+   Training with Covariates
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Forecasting-with-Covariates">
+   Forecasting with Covariates
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Backtesting-with-Covariates">
+   Backtesting with Covariates
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#A-few-more-words-on-past-covariates,-future-covariates-and-other-conditioning">
+   A few more words on past covariates, future covariates and other conditioning
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<section id="Multiple-Time-Series,-Pre-trained-Models-and-Covariates">
+<h1>Multiple Time Series, Pre-trained Models and Covariates<a class="headerlink" href="#Multiple-Time-Series,-Pre-trained-Models-and-Covariates" title="Permalink to this headline">¶</a></h1>
+<p>This notebook serves as a tutorial for:</p>
+<ul class="simple">
+<li><p>Training a single model on multiple time series</p></li>
+<li><p>Using a pre-trained model to obtain forecasts for any time series unseen during training</p></li>
+<li><p>Training and using a model using covariates</p></li>
+</ul>
+<p>First, some necessary imports:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># fix python path if working locally</span>
+<span class="kn">from</span> <span class="nn">utils</span> <span class="kn">import</span> <span class="n">fix_pythonpath_if_working_locally</span>
+
+<span class="n">fix_pythonpath_if_working_locally</span><span class="p">()</span>
+
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">gaussian_timeseries</span><span class="p">,</span>
+    <span class="n">linear_timeseries</span><span class="p">,</span>
+    <span class="n">sine_timeseries</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">RNNModel</span><span class="p">,</span>
+    <span class="n">TCNModel</span><span class="p">,</span>
+    <span class="n">TransformerModel</span><span class="p">,</span>
+    <span class="n">NBEATSModel</span><span class="p">,</span>
+    <span class="n">BlockRNNModel</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">mape</span><span class="p">,</span> <span class="n">smape</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="kn">import</span> <span class="n">datetime_attribute_timeseries</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span><span class="p">,</span> <span class="n">MonthlyMilkDataset</span>
+
+<span class="c1"># for reproducibility</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<section id="Read-Data">
+<h2>Read Data<a class="headerlink" href="#Read-Data" title="Permalink to this headline">¶</a></h2>
+<p>Let’s start by reading two time series - one containing the monthly number of air passengers, and another containing the monthly milk production per cow. These time series have not much to do with each other, except that they both have a monthly frequency with a marked yearly periodicity and upward trend, and (completely coincidentaly) they contain values of a comparable order of magnitude.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">series_air</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">series_milk</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+<span class="n">series_air</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Number of air passengers&quot;</span><span class="p">)</span>
+<span class="n">series_milk</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;Pounds of milk produced per cow&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_3_0.png" src="../_images/examples_01-multi-time-series-and-covariates_3_0.png" />
+</div>
+</div>
+</section>
+<section id="Preprocessing">
+<h2>Preprocessing<a class="headerlink" href="#Preprocessing" title="Permalink to this headline">¶</a></h2>
+<p>Usually neural networks tend to work better on normalised/standardised data. Here we’ll use the <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> class to normalise both of our time series between 0 and 1:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">scaler_air</span><span class="p">,</span> <span class="n">scaler_milk</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(),</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">series_air_scaled</span> <span class="o">=</span> <span class="n">scaler_air</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_air</span><span class="p">)</span>
+<span class="n">series_milk_scaled</span> <span class="o">=</span> <span class="n">scaler_milk</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">series_milk</span><span class="p">)</span>
+
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;air&quot;</span><span class="p">)</span>
+<span class="n">series_milk_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;milk&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_5_0.png" src="../_images/examples_01-multi-time-series-and-covariates_5_0.png" />
+</div>
+</div>
+</section>
+<section id="Train-/-Validation-split">
+<h2>Train / Validation split<a class="headerlink" href="#Train-/-Validation-split" title="Permalink to this headline">¶</a></h2>
+<p>Let’s keep the last 36 months of both series as validation:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">train_air</span><span class="p">,</span> <span class="n">val_air</span> <span class="o">=</span> <span class="n">series_air_scaled</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series_air_scaled</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+<span class="n">train_milk</span><span class="p">,</span> <span class="n">val_milk</span> <span class="o">=</span> <span class="n">series_milk_scaled</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series_milk_scaled</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+</pre></div>
+</div>
+</div>
+<section id="Global-Forecasting-Models">
+<h3>Global Forecasting Models<a class="headerlink" href="#Global-Forecasting-Models" title="Permalink to this headline">¶</a></h3>
+<p>Darts contains many forecasting models, but not all of them can be trained on several time series. The models that support training on multiple series are called <em>global</em> models. At the time of writing, there are 5 global models:</p>
+<ul class="simple">
+<li><p>BlockRNNModel</p></li>
+<li><p>RNNModel</p></li>
+<li><p>Temporal Convolutional Networks (TCNs)</p></li>
+<li><p>N-Beats</p></li>
+<li><p>Transformer model</p></li>
+</ul>
+<p>In the following, we will distinguish two sorts of time series:</p>
+<ul class="simple">
+<li><p>The <strong>target time series</strong> is the time series we are interested to forecast (given its history)</p></li>
+<li><p>A <strong>covariate time series</strong> is a time series which may help in the forecasting of the target series, but that we are not interested in forecasting. It’s sometimes also called <em>external data</em>.</p></li>
+</ul>
+<p>We further differentiate covariates series, depending on whether they can be known in advance or not:</p>
+<ul class="simple">
+<li><p><strong>Past Covariates</strong> denote time series whose past values are known at prediction time. These are usually things that have to be measured or observed.</p></li>
+<li><p><strong>Future Covariates</strong> denote time series whose future values are already known at prediction time for the span of the forecast horizon. These can for instance represent known future holidays, or weather forecasts.</p></li>
+</ul>
+<p>Some models use only past covariates, others use only future covariates, and some models might use both. We will dive deeper in this topic in some other notebook, but for now it is enough to know this:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> and <code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code> all use <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> uses <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>.</p></li>
+</ul>
+<p>All of the global models listed above support training on multiple series. In addition, they also all support <em>multivariate series</em>. This means that they can seamlessly be used with time series of more than one dimension; the target series can contain one (as is often the case) or several dimensions. A time series with several dimensions is really just a regular time series where the values at each time stamps are vectors instead of scalars.</p>
+<p>As an example, the 4 models supporting <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> follow a “block” architecture. They contain a neural network that takes chunks of time series in input, and outputs chunks of (predicted) future time series values. The input dimensionality is the number of dimensions (components) of the target series, plus the number of components of all the covariates - stacked together. The output dimensionality is simply the number of dimensions of the target series: <img alt="image0" src="../_images/seq_dataset_one_ts.png" /></p>
+<p>The <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> works differently, in a recurrent fashion (which is also why they support future covariates). The good news is that as a user, we don’t have to worry too much about the different model types and input/output dimensionalities. The dimensionalities are automatically inferred for us by the model based on the training data, and the support for past or future covariates is simply handled by the <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> or <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> arguments.</p>
+<p>We’ll still have to specify two important parameters when building our models:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>: this is the length of the lookback window of the model; so each output will be computed by the model by reading the previous <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> points.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>: this is the length of the outputs (forecasts) produced by the internal model. However, the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> method of the “outer” Darts model (e.g., the one of <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, etc) can be called for a longer time horizon. In these cases, if <code class="docutils literal notranslate"><span class="pre">predict()</span></code> is called for a horizon longer than <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>, the internal model will simply be called repeatedly, feeding on its own previous outputs in an auto-regressive fashion. If <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>
+are used it requires these covariates to be known for long enough in advance.</p></li>
+</ul>
+</section>
+</section>
+<section id="Example-with-One-Series">
+<h2>Example with One Series<a class="headerlink" href="#Example-with-One-Series" title="Permalink to this headline">¶</a></h2>
+<p>Let’s look at a first example. We’ll build an N-BEATS model that has a lookback window of 24 points (<code class="docutils literal notranslate"><span class="pre">input_chunk_length=24</span></code>) and predicts the next 12 points (<code class="docutils literal notranslate"><span class="pre">output_chunk_length=12</span></code>). We chose these values so it’ll make our model produce successive predictions for one year at a time, looking at the past two years.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_air</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>This model can be used like any other Darts forecasting model, beeing fit on a single time series:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2021-08-01 12:58:54,271] INFO | darts.models.torch_forecasting_model | Train dataset contains 73 samples.
+[2021-08-01 12:58:54,271] INFO | darts.models.torch_forecasting_model | Train dataset contains 73 samples.
+[2021-08-01 12:58:54,329] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 12:58:54,329] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f21dc37badc8430ebc9f9bee6a3a08f7", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Training loss: 0.0002
+</pre></div></div>
+</div>
+<p>And like any other Darts forecasting models, we can then get a forecast by calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. Note that below, we are calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a horizon of 36, which is longer than the model internal <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> of 12. That’s not a problem here - as explained above, in such a case the internal model will simply be called auto-regressively on its own outputs. In this case, it will be called three times so that the three 12-points outputs make up the final 36-points forecast -
+but all of this is done transparently behind the scenes.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model_air</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">)</span>
+
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">pred</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MAPE = 8.91%
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_13_1.png" src="../_images/examples_01-multi-time-series-and-covariates_13_1.png" />
+</div>
+</div>
+</section>
+<section id="Training-Process-(behind-the-scenes)">
+<h2>Training Process (behind the scenes)<a class="headerlink" href="#Training-Process-(behind-the-scenes)" title="Permalink to this headline">¶</a></h2>
+<p>So what happened when we called <code class="docutils literal notranslate"><span class="pre">model_air.fit()</span></code> above?</p>
+<p>In order to train the internal neural network, Darts first makes a dataset of inputs/outputs examples from the provided time series (in this case: <code class="docutils literal notranslate"><span class="pre">series_air_scaled</span></code>). There are several ways this can be done and Darts contains a few different dataset implementations in the <code class="docutils literal notranslate"><span class="pre">darts.utils.data</span></code> package.</p>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> will instantiate a <code class="docutils literal notranslate"><span class="pre">darts.utils.data.PastCovariatesSequentialDataset</span></code>, which simply builds all the consecutive pairs of input/output sub-sequences (of lengths <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>) existing in the series).</p>
+<p>For an example series of length 14, with <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code>, it looks as follows: <img alt="image0" src="../_images/seq_dataset_one_ts.png" /></p>
+<p>For such a dataset, a series of length <code class="docutils literal notranslate"><span class="pre">N</span></code> would result in a “training set” of <code class="docutils literal notranslate"><span class="pre">N</span> <span class="pre">-</span> <span class="pre">input_chunk_length</span> <span class="pre">-</span> <span class="pre">output_chunk_length</span> <span class="pre">+</span> <span class="pre">1</span></code> samples. In the toy example above, we have <code class="docutils literal notranslate"><span class="pre">N=14</span></code>, <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code>, so the number of samples used for training would be K = 9. In this context, a training <em>epoch</em> consists in complete pass (possibly consisting of several mini-batches) over all the samples.</p>
+<p>Note that different models are susceptible to use different datasets by default. For instance, <code class="docutils literal notranslate"><span class="pre">darts.utils.data.HorizonBasedDataset</span></code> is inspired by the <a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a> and produces samples that are “close” to the end of the series, possibly even ignoring the beginning of the series.</p>
+<p>If you have the need to control the way training samples are produced from <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances, you can implement your own training dataset by inheriting the abstract <code class="docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code> class. Darts datasets are inheriting from torch <code class="docutils literal notranslate"><span class="pre">Dataset</span></code>, which means it’s easy to implement lazy versions that do not load all data in memory at once. Once you have your own instance of a dataset, you can directly call the <code class="docutils literal notranslate"><span class="pre">fit_from_dataset()</span></code> method, which is supported by all global
+forecasting models.</p>
+<section id="Training-a-Model-on-Multiple-Time-Series">
+<h3>Training a Model on Multiple Time Series<a class="headerlink" href="#Training-a-Model-on-Multiple-Time-Series" title="Permalink to this headline">¶</a></h3>
+<p>All this machinery can be seamlessly used with multiple time series. Here’s how a sequential dataset with <code class="docutils literal notranslate"><span class="pre">input_chunk_length=4</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=2</span></code> looks for two series of lengths N and M:</p>
+<p><img alt="image1" src="../_images/seq_dataset_multi_ts.png" /></p>
+<p>Note a few things here:</p>
+<ul class="simple">
+<li><p>The different series do not need to have the same length, or even to share the same time stamps.</p></li>
+<li><p>In fact, they don’t even need to have the same frequency.</p></li>
+<li><p>The total number of samples in the training dataset will be the union of all the training samples contained in each series; so a training epoch will now span all samples from all series.</p></li>
+</ul>
+</section>
+</section>
+<section id="Training-on-Both-Air-Traffic-and-Milk-Series">
+<h2>Training on Both Air Traffic and Milk Series<a class="headerlink" href="#Training-on-Both-Air-Traffic-and-Milk-Series" title="Permalink to this headline">¶</a></h2>
+<p>Let’s look at another example where we fit another model instance on our two time series (air passengers and milk production). Since using two series of (roughly) the same length (roughly) doubles the training dataset size, we will use half of the number of epochs:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_air_milk</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">n_epochs</span><span class="o">=</span><span class="mi">100</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Then, fitting the model on two (or more) series is as simple as giving a list of series (instead of a single series) in argument to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_air_milk</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2021-08-01 13:00:37,731] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
+[2021-08-01 13:00:37,731] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
+[2021-08-01 13:00:37,835] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 13:00:37,835] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d2a2da1a663947589780a490bc734d9f", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Training loss: 0.0008
+</pre></div></div>
+</div>
+</section>
+<section id="Producing-Forecasts-After-the-End-of-a-Series">
+<h2>Producing Forecasts After the End of a Series<a class="headerlink" href="#Producing-Forecasts-After-the-End-of-a-Series" title="Permalink to this headline">¶</a></h2>
+<p>Now, importantly, when computing the forecasts we have to specify which time series we want to forecast the future for.</p>
+<p>We didn’t have this constraint earlier. When fitting models on one series only, the model remembers this series internally, and if <code class="docutils literal notranslate"><span class="pre">predict()</span></code> is called without the <code class="docutils literal notranslate"><span class="pre">series</span></code> argument, it returns a forecast for the (unique) training series. This does not work anymore as soon as a model is fit on more than one series - in this case the <code class="docutils literal notranslate"><span class="pre">series</span></code> argument of <code class="docutils literal notranslate"><span class="pre">predict()</span></code> becomes mandatory.</p>
+<p>So, let’s say we want to predict future of air traffic. In this case we specify <code class="docutils literal notranslate"><span class="pre">series=train_air</span></code> to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function in order to say we want to get a forecast for what comes after <code class="docutils literal notranslate"><span class="pre">train_air</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pred</span> <span class="o">=</span> <span class="n">model_air_milk</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train_air</span><span class="p">)</span>
+
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">pred</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MAPE = 5.83%
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_20_1.png" src="../_images/examples_01-multi-time-series-and-covariates_20_1.png" />
+</div>
+</div>
+<section id="Wait…-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??">
+<h3>Wait… does this mean that milk consumption helps to predict air traffic??<a class="headerlink" href="#Wait…-does-this-mean-that-milk-consumption-helps-to-predict-air-traffic??" title="Permalink to this headline">¶</a></h3>
+<p>Well, in this particular instance with this model, it seems to be the case (at least in terms of MAPE error). This is not so weird if you think about it, though. Air traffic is heavily characterized by the yearly seasonality and upward trend. The milk series exhibits these two traits as well, and in this case it’s probably helping the model to capture them.</p>
+<p>Note that this points towards the possibility of <em>pre-training</em> forecasting models; training models once and for all and later using them to forecast series that are not in the train set. With our toy model we can really forecast the future values of any other series, even series never seen during training. For the sake of example, let’s say we want to forecast the future of some arbitrary sine wave series:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">any_series</span> <span class="o">=</span> <span class="n">sine_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;M&quot;</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model_air_milk</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">any_series</span><span class="p">)</span>
+
+<span class="n">any_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;&quot;any series, really&quot;&#39;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_22_0.png" src="../_images/examples_01-multi-time-series-and-covariates_22_0.png" />
+</div>
+</div>
+<p>This forecast isn’t good (the sine doesn’t even have a yearly seasonality), but you get the idea.</p>
+<p>Similar to what is supported by the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function, we can also give a list of series in argument to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function, in which case it will return a list of forecast series. For example, we can get the forecasts for both the air traffic and the milk series in one go as follows:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pred_list</span> <span class="o">=</span> <span class="n">model_air_milk</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">])</span>
+<span class="k">for</span> <span class="n">series</span><span class="p">,</span> <span class="n">label</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">pred_list</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;air passengers&quot;</span><span class="p">,</span> <span class="s2">&quot;milk production&quot;</span><span class="p">]):</span>
+    <span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s2">&quot;forecast </span><span class="si">{</span><span class="n">label</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_24_0.png" src="../_images/examples_01-multi-time-series-and-covariates_24_0.png" />
+</div>
+</div>
+<p>The two series returned correspond to the forecasts after then end of <code class="docutils literal notranslate"><span class="pre">train_air</span></code> and <code class="docutils literal notranslate"><span class="pre">train_milk</span></code>, respectively.</p>
+</section>
+<section id="Covariates-Series">
+<h3>Covariates Series<a class="headerlink" href="#Covariates-Series" title="Permalink to this headline">¶</a></h3>
+<p>Until now, we have only been playing with models that only use the history of the <em>target</em> series to predict its future. However, as explained above, the global Darts models also support the use of <em>covariates</em> time series. These are time series of “external data”, which we are not necessarily interested in predicting, but which we would still like to feed as input of our models because they can contain valuable information.</p>
+<section id="Building-Covariates">
+<h4>Building Covariates<a class="headerlink" href="#Building-Covariates" title="Permalink to this headline">¶</a></h4>
+<p>Let’s see a simple example with our air and milk series, where we’ll try to use the year and month-of-the-year as covariates:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># build year and month series:</span>
+<span class="n">air_year</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;year&quot;</span><span class="p">)</span>
+<span class="n">air_month</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;month&quot;</span><span class="p">)</span>
+
+<span class="n">milk_year</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_milk_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;year&quot;</span><span class="p">)</span>
+<span class="n">milk_month</span> <span class="o">=</span> <span class="n">datetime_attribute_timeseries</span><span class="p">(</span><span class="n">series_milk_scaled</span><span class="p">,</span> <span class="n">attribute</span><span class="o">=</span><span class="s2">&quot;month&quot;</span><span class="p">)</span>
+
+<span class="c1"># stack year and month to obtain series of 2 dimensions (year and month):</span>
+<span class="n">air_covariates</span> <span class="o">=</span> <span class="n">air_year</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">air_month</span><span class="p">)</span>
+<span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">milk_year</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">milk_month</span><span class="p">)</span>
+
+<span class="c1"># scale them between 0 and 1:</span>
+<span class="n">scaler_dt_air</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">air_covariates</span> <span class="o">=</span> <span class="n">scaler_dt_air</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">air_covariates</span><span class="p">)</span>
+
+<span class="n">scaler_dt_milk</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">milk_covariates</span> <span class="o">=</span> <span class="n">scaler_dt_milk</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">milk_covariates</span><span class="p">)</span>
+
+<span class="c1"># split in train/validation sets:</span>
+<span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">air_val_covariates</span> <span class="o">=</span> <span class="n">air_covariates</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">air_covariates</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+<span class="n">milk_train_covariates</span><span class="p">,</span> <span class="n">milk_val_covariates</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="n">milk_covariates</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span>
+    <span class="n">milk_covariates</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:],</span>
+<span class="p">)</span>
+
+<span class="c1"># plot the covariates:</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">air_covariates</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Air traffic covariates (year and month)&quot;</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+<span class="n">milk_covariates</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Milk production covariates (year and month)&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_27_0.png" src="../_images/examples_01-multi-time-series-and-covariates_27_0.png" />
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_27_1.png" src="../_images/examples_01-multi-time-series-and-covariates_27_1.png" />
+</div>
+</div>
+<p>Good, so for each target series (air and milk), we have built a covariates series having the same time axis and containing the year and the month.</p>
+<p>Note that here the covariates series are <strong>multivariate time series</strong>: they contain two dimensions - one dimension for the year and one for the month.</p>
+</section>
+</section>
+</section>
+<section id="Training-with-Covariates">
+<h2>Training with Covariates<a class="headerlink" href="#Training-with-Covariates" title="Permalink to this headline">¶</a></h2>
+<p>Let’s revisit our example again, this time with covariates. We will build a <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> here:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_cov</span> <span class="o">=</span> <span class="n">BlockRNNModel</span><span class="p">(</span>
+    <span class="n">model</span><span class="o">=</span><span class="s2">&quot;LSTM&quot;</span><span class="p">,</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">300</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<p>Now, to train the model with covariates, it is as simple as providing the covariates (in form of a list matching the target series) as <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> argument to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function. The argument is named <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> to remind us that the model can use future values of these covariates in order to make a prediction.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">model_cov</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">train_air</span><span class="p">,</span> <span class="n">train_milk</span><span class="p">],</span>
+    <span class="n">past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_train_covariates</span><span class="p">,</span> <span class="n">milk_train_covariates</span><span class="p">],</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2021-08-01 13:02:19,888] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
+[2021-08-01 13:02:19,888] INFO | darts.models.torch_forecasting_model | Train dataset contains 194 samples.
+[2021-08-01 13:02:19,893] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+[2021-08-01 13:02:19,893] INFO | darts.models.torch_forecasting_model | Time series values are 64-bits; casting model to float64. If training is too slow you can try casting your data to 32-bits.
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a2574da8260d4202856be2bf2b4c6fe5", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Training loss: 0.0025
+</pre></div></div>
+</div>
+</section>
+<section id="Forecasting-with-Covariates">
+<h2>Forecasting with Covariates<a class="headerlink" href="#Forecasting-with-Covariates" title="Permalink to this headline">¶</a></h2>
+<p>similarly, getting a forecast is now only a matter of specifying the <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> argument to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">pred_cov</span> <span class="o">=</span> <span class="n">model_cov</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train_air</span><span class="p">,</span> <span class="n">past_covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">)</span>
+
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_33_0.png" src="../_images/examples_01-multi-time-series-and-covariates_33_0.png" />
+</div>
+</div>
+<p>Note that here we called <code class="docutils literal notranslate"><span class="pre">predict()</span></code> with a forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> that is larger than the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> we trained our model with. We were able to do this because even though <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> uses past covariates, in this case these covariates are also known into the future, so Darts is able to compute the forecasts auto-regressively for <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps in the future.</p>
+</section>
+<section id="Backtesting-with-Covariates">
+<h2>Backtesting with Covariates<a class="headerlink" href="#Backtesting-with-Covariates" title="Permalink to this headline">¶</a></h2>
+<p>We can also backtest the model using covariates. Say for instance we are interested in evaluating the running accuracy with a horizon of 12 months, starting at 75% of the air series:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">backtest_cov</span> <span class="o">=</span> <span class="n">model_cov</span><span class="o">.</span><span class="n">historical_forecasts</span><span class="p">(</span>
+    <span class="n">series_air_scaled</span><span class="p">,</span>
+    <span class="n">past_covariates</span><span class="o">=</span><span class="n">air_covariates</span><span class="p">,</span>
+    <span class="n">start</span><span class="o">=</span><span class="mf">0.6</span><span class="p">,</span>
+    <span class="n">forecast_horizon</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">stride</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+    <span class="n">retrain</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">series_air_scaled</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">backtest_cov</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;forecast&quot;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;MAPE (using covariates) = </span><span class="si">{:.2f}</span><span class="s2">%&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">mape</span><span class="p">(</span><span class="n">series_air_scaled</span><span class="p">,</span> <span class="n">backtest_cov</span><span class="p">)))</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f6adea5dd5db46fca378559da214ab51", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+MAPE (using covariates) = 8.41%
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_01-multi-time-series-and-covariates_35_2.png" src="../_images/examples_01-multi-time-series-and-covariates_35_2.png" />
+</div>
+</div>
+</section>
+<section id="A-few-more-words-on-past-covariates,-future-covariates-and-other-conditioning">
+<h2>A few more words on past covariates, future covariates and other conditioning<a class="headerlink" href="#A-few-more-words-on-past-covariates,-future-covariates-and-other-conditioning" title="Permalink to this headline">¶</a></h2>
+<p>At the moment Darts supports covariates that are themselves time series. These covariates are used as model inputs, but are never themselves subject to prediction. The covariates do not necessarily have to be aligned with the target series (e.g. they do not need to start at the same time). Darts will use the actual time values of the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> time axes in order to jointly slice the targets and covariates correctly, both for training and inference. Of course the covariates still need to
+have a sufficient span, otherwise Darts will complain.</p>
+<p>As explained above, <code class="docutils literal notranslate"><span class="pre">TCNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>, <code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code> use past covariates (they will complain if you try using <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>). If these past covariates happen to also be known into the future, then these models are also able to produce forecasts for <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code> (as shown above for <code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code>) in an auto-regressive way.</p>
+<p>By contrast, <code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> uses future covariates (it will complain if you try specifying <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code>). This means that prediction with this model requires the covariates (at least) <code class="docutils literal notranslate"><span class="pre">n</span></code> time steps into the future after prediction time.</p>
+<p>Past and future covariates (as well as the way they are consummed by the different models) an important but non-trivial topic, and we plan to dedicate a future notebook (or article) to explain this further.</p>
+<p>At the time of writing, Darts does not support covariates that are not time series - such as for instance class label informations or other conditioning variables. One trivial (although likely suboptimal) way to go around this is to build time series filled with constant values encoding the class labels. Supporting more general types of conditioning is a future feature on the Darts development roadmap.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="../examples.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Examples</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="02-data-processing.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

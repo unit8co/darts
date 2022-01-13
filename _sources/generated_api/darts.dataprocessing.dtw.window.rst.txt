@@ -2,4 +2,3 @@
 .. automodule:: darts.dataprocessing.dtw.window
    :members:
    :undoc-members:
-   :show-inheritance:
