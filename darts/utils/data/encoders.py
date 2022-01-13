@@ -682,6 +682,7 @@ class SequentialEncoder(Encoder):
 
         Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
         objects:
+
         * The `encoder_id` is extracted as follows:
             str(encoder_kw) + str(temporal_kw) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
             The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.
@@ -1010,6 +1011,7 @@ class SequentialEncoder(Encoder):
 
             Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
             objects:
+
             * The `encoder_id` is extracted as follows:
                 str(encoder_kw) + str(temporal_kw) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
                 The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.
