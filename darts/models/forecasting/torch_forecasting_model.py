@@ -408,9 +408,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
-    ) -> None:
+    ):
         """Fit/train the model on one or multiple series.
-
 
         This method wraps around :func:`fit_from_dataset()`, constructing a default training
         dataset for this model. If you need more control on how the series are sliced for training, consider
@@ -458,6 +457,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+
+        Returns
+        -------
+        self
+            Fitted model.
         """
         super().fit(
             series=series,
@@ -539,7 +543,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info("Train dataset contains {} samples.".format(len(train_dataset)))
 
-        self.fit_from_dataset(
+        return self.fit_from_dataset(
             train_dataset, val_dataset, verbose, epochs, num_loader_workers
         )
 
@@ -577,9 +581,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         epochs: int = 0,
         num_loader_workers: int = 0,
-    ) -> None:
+    ):
         """
-        This method allows for training with a specific :class:`darts.utils.data.TrainingDataset` instance.
+        Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
         These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
         for training. If you are not sure which training dataset to use, consider calling :func:`fit()` instead,
         which will create a default training dataset appropriate for this model.
@@ -605,6 +609,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+
+        Returns
+        -------
+        self
+            Fitted model.
         """
 
         self._verify_train_dataset_type(train_dataset)
@@ -688,6 +697,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if tb_writer is not None:
             tb_writer.flush()
             tb_writer.close()
+
+        return self
 
     @random_method
     def predict(

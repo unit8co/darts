@@ -118,12 +118,12 @@ class Theta(ForecastingModel):
             new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
 
         # SES part of the decomposition.
-        self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
+        self.model = hw.SimpleExpSmoothing(new_ts.values(copy=False)).fit()
 
         # Linear Regression part of the decomposition. We select the degree one coefficient.
         b_theta = np.polyfit(
             np.array([i for i in range(0, self.length)]),
-            (1.0 - self.theta) * new_ts.values(),
+            (1.0 - self.theta) * new_ts.values(copy=False),
             1,
         )[0]
 
@@ -132,10 +132,12 @@ class Theta(ForecastingModel):
 
         self.alpha = self.model.params["smoothing_level"]
         if self.alpha == 0.0:
-            self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(
+            self.model = hw.SimpleExpSmoothing(new_ts.values(copy=False)).fit(
                 initial_level=ALPHA_START
             )
             self.alpha = self.model.params["smoothing_level"]
+
+        return self
 
     def predict(self, n: int, num_samples: int = 1) -> "TimeSeries":
         super().predict(n, num_samples)
@@ -349,13 +351,15 @@ class FourTheta(ForecastingModel):
             self.fitted_values = self.wses * theta2_in + self.wdrift * theta0_in
         if self.is_seasonal:
             if self.season_mode is SeasonalityMode.ADDITIVE:
-                self.fitted_values += self.seasonality.univariate_values()
+                self.fitted_values += self.seasonality.univariate_values(copy=False)
             elif self.season_mode is SeasonalityMode.MULTIPLICATIVE:
-                self.fitted_values *= self.seasonality.univariate_values()
+                self.fitted_values *= self.seasonality.univariate_values(copy=False)
         # Fitted values are the results of the fit of the model on the train series. A good fit of the model
         # will lead to fitted_values similar to ts. But one cannot see if it overfits.
         if self.normalization:
             self.fitted_values *= self.mean
+
+        return self
 
     def predict(self, n: int, num_samples: int = 1) -> "TimeSeries":
         super().predict(n, num_samples)
@@ -430,7 +434,7 @@ class FourTheta(ForecastingModel):
 
         if thetas is None:
             thetas = [1, 2, 3]
-        if (ts.values() <= 0).any():
+        if (ts.values(copy=False) <= 0).any():
             drift_mode = [TrendMode.LINEAR]
             model_mode = [ModelMode.ADDITIVE]
             season_mode = [SeasonalityMode.ADDITIVE]

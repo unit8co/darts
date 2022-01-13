@@ -47,6 +47,7 @@ class AutoARIMA(DualCovariatesForecastingModel):
         self.model.fit(
             series.values(), X=future_covariates.values() if future_covariates else None
         )
+        return self
 
     def _predict(
         self,

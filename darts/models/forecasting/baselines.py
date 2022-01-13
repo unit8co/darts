@@ -35,6 +35,7 @@ class NaiveMean(ForecastingModel):
     def fit(self, series: TimeSeries):
         super().fit(series)
         self.mean_val = np.mean(series.univariate_values())
+        return self
 
     def predict(self, n: int, num_samples: int = 1):
         super().predict(n, num_samples)
@@ -74,6 +75,7 @@ class NaiveSeasonal(ForecastingModel):
             logger,
         )
         self.last_k_vals = series.univariate_values()[-self.K :]
+        return self
 
     def predict(self, n: int, num_samples: int = 1):
         super().predict(n, num_samples)
@@ -98,6 +100,7 @@ class NaiveDrift(ForecastingModel):
     def fit(self, series: TimeSeries):
         super().fit(series)
         series = self.training_series
+        return self
 
     def predict(self, n: int, num_samples: int = 1):
         super().predict(n, num_samples)
@@ -127,7 +130,7 @@ class NaiveEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> None:
+    ):
 
         super().fit(
             series=series,
@@ -144,6 +147,8 @@ class NaiveEnsembleModel(EnsembleModel):
                 model.fit(**kwargs)
             else:
                 model.fit(series=series)
+
+        return self
 
     def ensemble(
         self,
