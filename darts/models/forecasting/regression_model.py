@@ -25,13 +25,13 @@ denoting past lags and positive values including 0 denoting future lags).
 
 from typing import Union, Sequence, Optional, Tuple, List
 import numpy as np
+import pandas as pd
 
 from darts.timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputRegressor
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.logging import raise_if, raise_if_not, get_logger, raise_log
-from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
 from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
 
 
@@ -282,65 +282,94 @@ class RegressionModel(GlobalForecastingModel):
 
         return last_valid_pred_time
 
-    def _get_training_data(self, training_dataset: MixedCovariatesSequentialDataset):
-        """
-        Helper function turning a MixedCovariatesSequentialDataset into training matrices X and y, like required by
-        sklearn models.
-        """
-
-        training_samples = []
-        training_labels = []
-
-        for (
-            past_target,
-            past_covariate,
-            historic_future_covariate,
-            future_covariate,
-            future_target,
-        ) in training_dataset:
-            row = []
-            if self.lags is not None:
-                row.append(past_target[self.lags].reshape(1, -1))
-            covariates = [
-                (past_covariate, self.lags_past_covariates),
-                (historic_future_covariate, self.lags_historical_covariates),
-                (future_covariate, self.lags_future_covariates),
-            ]
-            for covariate, lags in covariates:
-                if lags is not None:
-                    row.append(covariate[lags].reshape(1, -1))
-
-            training_samples.append(np.concatenate(row, axis=1))
-            training_labels.append(future_target[0].reshape(1, -1))
-
-        training_samples = np.concatenate(training_samples, axis=0)
-        training_labels = np.concatenate(training_labels, axis=0)
-        return training_samples, training_labels
-
     def _create_lagged_data(
         self, target_series, past_covariates, future_covariates, max_samples_per_ts
     ):
         """
         Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
         max_samples_per_ts.
+
+        X has the following structure:
+        lags_target | lags_past_covariates | lags_future_covariates
+
+        Where each lags_X has the following structure (lags_X=[-2,-1] and X has 2 components):
+        lag_-2_comp_1_X | lag_-2_comp_2_X | lag_-1_comp_1_X | lag_-1_comp_2_X
         """
 
-        # setting proper input and output chunk length. We need to find all necessary lags in the dataset. Thus, we
-        # need an input chunk length that contains the oldest past lag (min_lag), and we need to find the most future
-        # lag in the future_covariates as well. In case no future covariate are required, we still need an output
-        # chunk length of 1 for having the prediction target value.
-        training_dataset = MixedCovariatesSequentialDataset(
-            target_series=target_series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            input_chunk_length=max(0, -self.min_lag),
-            output_chunk_length=max(
-                1, self.max_lag + 1
-            ),  # max lag + 1 since we need to access that index
-            max_samples_per_ts=max_samples_per_ts,
+        target_series = (
+            [target_series] if isinstance(target_series, TimeSeries) else target_series
+        )
+        past_covariates = (
+            [past_covariates]
+            if isinstance(past_covariates, TimeSeries)
+            else past_covariates
+        )
+        future_covariates = (
+            [future_covariates]
+            if isinstance(future_covariates, TimeSeries)
+            else future_covariates
         )
 
-        return self._get_training_data(training_dataset=training_dataset)
+        Xs, ys = [], []
+        # iterate over series
+        for idx, target_ts in enumerate(target_series):
+            covariates = [
+                (past_covariates[idx].pd_dataframe(), self.lags_past_covariates)
+                if past_covariates
+                else (None, None),
+                (
+                    future_covariates[idx].pd_dataframe(),
+                    (
+                        self.lags_historical_covariates
+                        if self.lags_historical_covariates
+                        else []
+                    )
+                    + (
+                        self.lags_future_covariates
+                        if self.lags_future_covariates
+                        else []
+                    ),
+                )
+                if future_covariates
+                else (None, None),
+            ]
+
+            df_X = []
+            df_y = target_ts.pd_dataframe()
+
+            # target lags
+            if self.lags:
+                for lag in self.lags:
+                    df_X.append(df_y.shift(-lag))
+
+            # covariate lags
+            for df_cov, lags in covariates:
+                if lags:
+                    for lag in lags:
+                        df_X.append(df_cov.shift(-lag))
+
+            # combine lags
+            df_X = pd.concat(df_X, axis=1)
+            df_X_y = pd.concat([df_X, df_y], axis=1)
+            X_y = df_X_y.dropna().values
+
+            # keep most recent max_samples_per_ts samples
+            if max_samples_per_ts:
+                X_y = X_y[-max_samples_per_ts:]
+
+            raise_if(
+                X_y.shape[0] == 0,
+                f"Unable to build any training samples; target and covariate series overlap too little.",
+            )
+
+            X, y = np.split(X_y, [df_X.shape[1]], axis=1)
+            Xs.append(X)
+            ys.append(y)
+
+        # combine samples from all series
+        X = np.concatenate(Xs, axis=0)
+        y = np.concatenate(ys, axis=0)
+        return X, y
 
     def _fit_model(
         self,
