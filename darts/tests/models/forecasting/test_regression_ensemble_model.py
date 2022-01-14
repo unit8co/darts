@@ -33,7 +33,7 @@ except ImportError:
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
-    RANDOM_SEED = 3
+    RANDOM_SEED = 112
 
     sine_series = tg.sine_timeseries(
         value_frequency=(1 / 5), value_y_offset=10, length=50
@@ -237,11 +237,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
             ),
-            RegressionModel(lags=1, lags_past_covariates=[-1]),
+            RegressionModel(lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-        self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 10)
+        self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 3)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_ensemble_models_denoising_multi_input(self):
@@ -264,9 +264,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
             ),
-            RegressionModel(lags=1, lags_past_covariates=[-1]),
-            RegressionModel(lags=1, lags_past_covariates=[-1]),
+            RegressionModel(lags_past_covariates=[-1]),
+            RegressionModel(lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-        self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 10)
+        self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 3)
