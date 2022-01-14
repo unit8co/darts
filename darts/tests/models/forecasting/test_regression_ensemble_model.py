@@ -33,7 +33,7 @@ except ImportError:
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
-    RANDOM_SEED = 112
+    RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(
         value_frequency=(1 / 5), value_y_offset=10, length=50
