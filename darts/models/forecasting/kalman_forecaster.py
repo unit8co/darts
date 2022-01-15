@@ -25,24 +25,15 @@ logger = get_logger(__name__)
 
 class KalmanForecaster(DualCovariatesForecastingModel):
     def __init__(self, dim_x: int = 1, kf: Optional[Kalman] = None):
-        """Kalman Forecaster
-        This model implements a Kalman filter over a time series.
+        """Kalman filter Forecaster
 
-        The key method is `KalmanFilter.filter()`.
-        It considers the provided time series as containing (possibly noisy) observations z obtained from a
-        (possibly noisy) linear dynamical system with hidden state x. The function `filter(series)` returns a new
-        `TimeSeries` describing the distribution of the output z (without noise), as inferred by the Kalman filter from
-        sequentially observing z from `series`, and the dynamics of the linear system of order dim_x.
+        This model uses a Kalman filter to produce forecasts. It uses a
+        :class:`darts.models.filtering.kalman_filter.KalmanFilter` object
+        and treats future values as missing values.
 
-        The method `KalmanFilter.fit()` is used to initialize the Kalman filter by estimating the state space model of
-        a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID
-        algorithm.
-
-        This implementation uses Kalman from the NFourSID package. More information can be found here:
-        https://nfoursid.readthedocs.io/en/latest/source/kalman.html.
-
-        The dimensionality of the measurements z and optional control signal (covariates) u is automatically inferred
-        upon calling `filter()`.
+        The model can optionally receive a :class:`nfoursid.kalman.Kalman`
+        object specifying the Kalman filter, or, if not specified, the filter
+        will be trained using the N4SID system identification algorithm.
 
         Parameters
         ----------
@@ -51,10 +42,12 @@ class KalmanForecaster(DualCovariatesForecastingModel):
         kf : nfoursid.kalman.Kalman
             Optionally, an instance of `nfoursid.kalman.Kalman`.
             If this is provided, the parameter dim_x is ignored. This instance will be copied for every
-            call to `filter()`, so the state is not carried over from one time series to another across several
-            calls to `filter()`.
+            call to `predict()`, so the state is not carried over from one time series to another across several
+            calls to `predict()`.
             The various dimensionalities of the filter must match those of the `TimeSeries` used when
-            calling `filter()`.
+            calling `predict()`.
+            If this is specified, it is still necessary to call `fit()` before calling `predict()`,
+            although this will have no effect on the Kalman filter.
         """
         super().__init__()
         self.dim_x = dim_x
