@@ -16,13 +16,15 @@ logger = get_logger(__name__)
 
 
 class ExponentialSmoothing(ForecastingModel):
-    def __init__(self,
-                 trend: Optional[ModelMode] = ModelMode.ADDITIVE,
-                 damped: Optional[bool] = False,
-                 seasonal: Optional[ModelMode] = SeasonalityMode.ADDITIVE,
-                 seasonal_periods: Optional[int] = None,
-                 random_state: int = 0,
-                 **fit_kwargs):
+    def __init__(
+        self,
+        trend: Optional[ModelMode] = ModelMode.ADDITIVE,
+        damped: Optional[bool] = False,
+        seasonal: Optional[ModelMode] = SeasonalityMode.ADDITIVE,
+        seasonal_periods: Optional[int] = None,
+        random_state: int = 0,
+        **fit_kwargs,
+    ):
         """ Exponential Smoothing
 
         This is a wrapper around
@@ -69,8 +71,10 @@ class ExponentialSmoothing(ForecastingModel):
         np.random.seed(random_state)
 
     def __str__(self):
-        return (f"ExponentialSmoothing(trend={self.trend}, damped={self.damped}, "
-                f"seasonal={self.seasonal}, seasonal_periods={self.seasonal_periods}")
+        return (
+            f"ExponentialSmoothing(trend={self.trend}, damped={self.damped}, "
+            f"seasonal={self.seasonal}, seasonal_periods={self.seasonal_periods}"
+        )
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -79,20 +83,24 @@ class ExponentialSmoothing(ForecastingModel):
         # if the model was initially created with `self.seasonal_periods=None`, make sure that
         # the model will try to automatically infer the index, otherwise it should use the
         # provided `seasonal_periods` value
-        seasonal_periods_param = None if self.infer_seasonal_periods else self.seasonal_periods
+        seasonal_periods_param = (
+            None if self.infer_seasonal_periods else self.seasonal_periods
+        )
 
         # set the seasonal periods paramter to a default value if it was not provided explicitly
         # and if it cannot be inferred due to the lack of a datetime index
         if self.seasonal_periods is None and series.has_range_index:
             seasonal_periods_param = 12
 
-        hw_model = hw.ExponentialSmoothing(series.values(),
-                                           trend=self.trend.value,
-                                           damped_trend=self.damped,
-                                           seasonal=self.seasonal.value if self.seasonal else None,
-                                           seasonal_periods=seasonal_periods_param,
-                                           freq=series.freq if series.has_datetime_index else None,
-                                           dates=series.time_index if series.has_datetime_index else None)
+        hw_model = hw.ExponentialSmoothing(
+            series.values(),
+            trend=self.trend.value,
+            damped_trend=self.damped,
+            seasonal=self.seasonal.value if self.seasonal else None,
+            seasonal_periods=seasonal_periods_param,
+            freq=series.freq if series.has_datetime_index else None,
+            dates=series.time_index if series.has_datetime_index else None,
+        )
         hw_results = hw_model.fit(**self.fit_kwargs)
         self.model = hw_results
 
@@ -105,7 +113,9 @@ class ExponentialSmoothing(ForecastingModel):
         if num_samples == 1:
             forecast = self.model.forecast(n)
         else:
-            forecast = np.expand_dims(self.model.simulate(n, repetitions=num_samples), axis=1)
+            forecast = np.expand_dims(
+                self.model.simulate(n, repetitions=num_samples), axis=1
+            )
 
         return self._build_forecast_series(forecast)
 
@@ -114,6 +124,6 @@ class ExponentialSmoothing(ForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        if (self.seasonal_periods is not None and self.seasonal_periods > 1):
+        if self.seasonal_periods is not None and self.seasonal_periods > 1:
             return 2 * self.seasonal_periods
         return 3
