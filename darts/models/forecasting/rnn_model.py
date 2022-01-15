@@ -5,18 +5,17 @@ Recurrent Neural Networks
 
 import torch.nn as nn
 import torch
-from numpy.random import RandomState
 from typing import Sequence, Optional, Union, Tuple
 from darts.timeseries import TimeSeries
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule as TorchParametricProbabilisticForecastingModel,
+    PLParametricProbabilisticForecastingModule,
+    PLDualCovariatesModule,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     DualCovariatesTorchModel,
 )
-from darts.utils.torch import random_method
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
 from darts.utils.likelihood_models import Likelihood
 
@@ -24,7 +23,7 @@ logger = get_logger(__name__)
 
 
 # TODO add batch norm
-class _RNNModule(nn.Module):
+class _RNNModule(PLParametricProbabilisticForecastingModule, PLDualCovariatesModule):
     def __init__(
         self,
         name: str,
@@ -34,6 +33,7 @@ class _RNNModule(nn.Module):
         target_size: int,
         nr_params: int,
         dropout: float = 0.0,
+        **kwargs
     ):
 
         """PyTorch module implementing an RNN to be used in `RNNModel`.
@@ -73,7 +73,9 @@ class _RNNModule(nn.Module):
             However, this module always returns the whole Tensor.
         """
 
-        super(_RNNModule, self).__init__()
+        super(_RNNModule, self).__init__(**kwargs)
+        # TODO: This is required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         # Defining parameters
         self.target_size = target_size
@@ -104,9 +106,83 @@ class _RNNModule(nn.Module):
         # returns outputs for all inputs, only the last one is needed for prediction time
         return predictions, last_hidden_state
 
+    def _produce_train_output(self, input_batch: Tuple):
+        past_target, historic_future_covariates, future_covariates = input_batch
+        # For the RNN we concatenate the past_target with the future_covariates
+        # (they have the same length because we enforce a Shift dataset for RNNs)
+        model_input = (
+            torch.cat([past_target, future_covariates], dim=2)
+            if future_covariates is not None
+            else past_target
+        )
+        return self.model(model_input)[0]
 
-class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel):
-    @random_method
+    def _produce_predict_output(self, x, last_hidden_state=None):
+        output, hidden = self.model(x, last_hidden_state)
+        if self.likelihood:
+            return self.likelihood.sample(output), hidden
+        else:
+            return output.squeeze(dim=-1), hidden
+
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
+        """
+        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
+        """
+        past_target, historic_future_covariates, future_covariates = input_batch
+
+        if historic_future_covariates is not None:
+            # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
+            all_covariates = torch.cat(
+                [historic_future_covariates[:, 1:, :], future_covariates], dim=1
+            )
+            cov_past, cov_future = (
+                all_covariates[:, : past_target.shape[1], :],
+                all_covariates[:, past_target.shape[1] :, :],
+            )
+            input_series = torch.cat([past_target, cov_past], dim=2)
+        else:
+            input_series = past_target
+            cov_future = None
+
+        batch_prediction = []
+        out, last_hidden_state = self._produce_predict_output(input_series)
+        batch_prediction.append(out[:, -1:, :])
+        prediction_length = 1
+
+        while prediction_length < n:
+
+            # create new input to model from last prediction and current covariates, if available
+            new_input = (
+                torch.cat(
+                    [
+                        out[:, -1:, :],
+                        cov_future[:, prediction_length - 1 : prediction_length, :],
+                    ],
+                    dim=2,
+                )
+                if cov_future is not None
+                else out[:, -1:, :]
+            )
+
+            # feed new input to model, including the last hidden state from the previous iteration
+            out, last_hidden_state = self._produce_predict_output(
+                new_input, last_hidden_state
+            )
+
+            # append prediction to batch prediction array, increase counter
+            batch_prediction.append(out[:, -1:, :])
+            prediction_length += 1
+
+        # bring predictions into desired format and drop unnecessary values
+        batch_prediction = torch.cat(batch_prediction, dim=1)
+        batch_prediction = batch_prediction[:, :n, :]
+
+        return batch_prediction
+
+
+class RNNModel(DualCovariatesTorchModel):
     def __init__(
         self,
         model: Union[str, nn.Module] = "RNN",
@@ -116,7 +192,6 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         dropout: float = 0.0,
         training_length: int = 24,
         likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
         **kwargs
     ):
 
@@ -237,9 +312,17 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
             and loaded using :func:`load_model()`.
         """
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = 1
-        super().__init__(likelihood=likelihood, **kwargs)
+        torch_model_params = self._extract_torch_model_params(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=1,
+            **kwargs,
+        )
+        super().__init__(**torch_model_params)
+
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(
+            likelihood=likelihood, **kwargs
+        )
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:
@@ -276,6 +359,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
                 hidden_dim=self.hidden_dim,
                 dropout=self.dropout,
                 num_layers=self.n_rnn_layers,
+                **self.pl_module_params,
             )
         else:
             model = self.rnn_type_or_module(
@@ -286,6 +370,7 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
                 hidden_dim=self.hidden_dim,
                 dropout=self.dropout,
                 num_layers=self.n_rnn_layers,
+                **self.pl_module_params,
             )
         return model
 
@@ -314,79 +399,3 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
             train_dataset.ds_past.shift == 1,
             "RNNModel requires a shifted training dataset with shift=1.",
         )
-
-    def _produce_train_output(self, input_batch: Tuple):
-        past_target, historic_future_covariates, future_covariates = input_batch
-        # For the RNN we concatenate the past_target with the future_covariates
-        # (they have the same length because we enforce a Shift dataset for RNNs)
-        model_input = (
-            torch.cat([past_target, future_covariates], dim=2)
-            if future_covariates is not None
-            else past_target
-        )
-        return self.model(model_input)[0]
-
-    @random_method
-    def _produce_predict_output(self, x, last_hidden_state=None):
-        output, hidden = self.model(x, last_hidden_state)
-        if self.likelihood:
-            return self.likelihood.sample(output), hidden
-        else:
-            return output.squeeze(dim=-1), hidden
-
-    def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
-    ) -> torch.Tensor:
-        """
-        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
-        """
-        past_target, historic_future_covariates, future_covariates = input_batch
-
-        if historic_future_covariates is not None:
-            # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
-            all_covariates = torch.cat(
-                [historic_future_covariates[:, 1:, :], future_covariates], dim=1
-            )
-            cov_past, cov_future = (
-                all_covariates[:, : past_target.shape[1], :],
-                all_covariates[:, past_target.shape[1] :, :],
-            )
-            input_series = torch.cat([past_target, cov_past], dim=2)
-        else:
-            input_series = past_target
-            cov_future = None
-
-        batch_prediction = []
-        out, last_hidden_state = self._produce_predict_output(input_series)
-        batch_prediction.append(out[:, -1:, :])
-        prediction_length = 1
-
-        while prediction_length < n:
-
-            # create new input to model from last prediction and current covariates, if available
-            new_input = (
-                torch.cat(
-                    [
-                        out[:, -1:, :],
-                        cov_future[:, prediction_length - 1 : prediction_length, :],
-                    ],
-                    dim=2,
-                )
-                if cov_future is not None
-                else out[:, -1:, :]
-            )
-
-            # feed new input to model, including the last hidden state from the previous iteration
-            out, last_hidden_state = self._produce_predict_output(
-                new_input, last_hidden_state
-            )
-
-            # append prediction to batch prediction array, increase counter
-            batch_prediction.append(out[:, -1:, :])
-            prediction_length += 1
-
-        # bring predictions into desired format and drop unnecessary values
-        batch_prediction = torch.cat(batch_prediction, dim=1)
-        batch_prediction = batch_prediction[:, :n, :]
-
-        return batch_prediction

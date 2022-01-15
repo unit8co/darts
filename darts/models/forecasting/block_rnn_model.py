@@ -5,14 +5,15 @@ Block Recurrent Neural Networks
 
 import torch.nn as nn
 import torch
-from numpy.random import RandomState
+
 from typing import List, Optional, Union, Tuple
 
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger
-from darts.utils.torch import random_method
+
 from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule as TorchParametricProbabilisticForecastingModel,
+    PLParametricProbabilisticForecastingModule,
+    PLPastCovariatesModule,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     PastCovariatesTorchModel,
@@ -22,18 +23,22 @@ logger = get_logger(__name__)
 
 
 # TODO add batch norm
-class _BlockRNNModule(nn.Module):
+class _BlockRNNModule(
+    PLParametricProbabilisticForecastingModule, PLPastCovariatesModule
+):
     def __init__(
         self,
         name: str,
         input_size: int,
         hidden_dim: int,
         num_layers: int,
+        input_chunk_length: int,
         output_chunk_length: int,
         target_size: int,
         nr_params: int,
         num_layers_out_fc: Optional[List] = None,
         dropout: float = 0.0,
+        **kwargs,
     ):
 
         """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
@@ -82,7 +87,14 @@ class _BlockRNNModule(nn.Module):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_BlockRNNModule, self).__init__()
+        super(_BlockRNNModule, self).__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            **kwargs,
+        )
+
+        # TODO: This is required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         # Defining parameters
         self.hidden_dim = hidden_dim
@@ -128,11 +140,15 @@ class _BlockRNNModule(nn.Module):
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
 
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self(x)
+            return self.likelihood.sample(output)
+        else:
+            return self(x).squeeze(dim=-1)
 
-class BlockRNNModel(
-    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
-):
-    @random_method
+
+class BlockRNNModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -143,8 +159,7 @@ class BlockRNNModel(
         hidden_fc_sizes: Optional[List] = None,
         dropout: float = 0.0,
         likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
-        **kwargs
+        **kwargs,
     ):
 
         """Block Recurrent Neural Network Model (RNNs).
@@ -253,9 +268,17 @@ class BlockRNNModel(
             and loaded using :func:`load_model()`.
         """
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+        torch_model_params = self._extract_torch_model_params(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            **kwargs,
+        )
+        super().__init__(**torch_model_params)
+
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(
+            likelihood=likelihood, **kwargs
+        )
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:
@@ -295,18 +318,12 @@ class BlockRNNModel(
                 nr_params=nr_params,
                 hidden_dim=self.hidden_size,
                 num_layers=self.n_rnn_layers,
+                input_chunk_length=self.input_chunk_length,
                 output_chunk_length=self.output_chunk_length,
                 num_layers_out_fc=hidden_fc_sizes,
                 dropout=self.dropout,
+                **self.pl_module_params,
             )
         else:
             model = self.rnn_type_or_module
         return model
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)

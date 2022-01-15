@@ -25,6 +25,7 @@ if TORCH_AVAILABLE:
         module = _BlockRNNModule(
             "RNN",
             input_size=1,
+            input_chunk_length=1,
             output_chunk_length=1,
             hidden_dim=25,
             target_size=1,
@@ -64,6 +65,7 @@ if TORCH_AVAILABLE:
                 n_epochs=3,
                 model_name="unittest-model-lstm",
                 save_checkpoints=True,
+                force_reset=True,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
@@ -73,7 +75,7 @@ if TORCH_AVAILABLE:
             pred2 = model_loaded.predict(n=6)
 
             # Two models with the same parameters should deterministically yield the same output
-            self.assertEqual(sum(pred1.values() - pred2.values()), 0.0)
+            self.assertLess(sum(pred1.values() - pred2.values()), 1e-9)
 
             # Another random model should not
             model3 = BlockRNNModel(

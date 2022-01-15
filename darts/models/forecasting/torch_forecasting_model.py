@@ -352,6 +352,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _extract_pl_module_params(**kwargs):
         """Extract params from model creation to set up pl.LightningModule (the actual torch.nn.Module)"""
         get_params = [
+            "input_chunk_length",
+            "output_chunk_length",
             "loss_fn",
             "likelihood",
             "optimizer_cls",

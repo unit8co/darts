@@ -29,6 +29,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
     @abstractmethod
     def __init__(
         self,
+        input_chunk_length: Optional[int] = None,
+        output_chunk_length: Optional[int] = None,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
@@ -68,6 +70,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """
 
         super(PLForecastingModule, self).__init__()
+
+        raise_if(
+            input_chunk_length is None or output_chunk_length is None,
+            "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`",
+            logger,
+        )
+
+        self.input_chunk_length = input_chunk_length
+        self.output_chunk_length = output_chunk_length
 
         # Define the loss function
         self.criterion = loss_fn
@@ -276,7 +287,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             if past_covariate is not None
             else past_target
         )
-        return self.model(inpt)
+        return self(inpt)
 
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
@@ -369,7 +380,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         return batch_prediction
 
     def _produce_predict_output(self, x):
-        return self.model(x)
+        return self(x)
 
 
 class PLFutureCovariatesModule(PLForecastingModule, ABC):

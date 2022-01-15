@@ -100,7 +100,12 @@ class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesMo
             all parameters for Darts' :class:`PLForecastingModule`.
         """
 
-        super(_TFTModule, self).__init__(likelihood=likelihood, **kwargs)
+        super(_TFTModule, self).__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            likelihood=likelihood,
+            **kwargs,
+        )
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
