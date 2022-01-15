@@ -1,5 +1,5 @@
 """
-This file contains abstract classes for deterministic and probabilistic pytorch-lightning modules
+This file contains abstract classes for deterministic and probabilistic PyTorch Lightning modules
 """
 
 import numpy as np
@@ -25,7 +25,7 @@ logger = get_logger(__name__)
 
 
 # TODO: better names
-class PLTorchForecastingModel(pl.LightningModule, ABC):
+class PLForecastingModule(pl.LightningModule, ABC):
     @abstractmethod
     def __init__(
         self,
@@ -36,7 +36,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         lr_scheduler_kwargs: Optional[Dict] = None,
     ) -> None:
         """
-        Pytorch Lightning-based Forecasting Module.
+        PyTorch Lightning-based Forecasting Module.
 
         This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
         When subclassing this class, please make sure to add the following methods with the given signatures:
@@ -67,7 +67,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
             Optionally, some keyword arguments for the PyTorch optimizer.
         """
 
-        super(PLTorchForecastingModel, self).__init__()
+        super(PLForecastingModule, self).__init__()
 
         # Define the loss function
         self.criterion = loss_fn
@@ -98,7 +98,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
 
     @abstractmethod
     def forward(self, *args, **kwargs) -> Any:
-        super(PLTorchForecastingModel, self).forward(*args, **kwargs)
+        super(PLForecastingModule, self).forward(*args, **kwargs)
 
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
@@ -267,7 +267,7 @@ class PLTorchForecastingModel(pl.LightningModule, ABC):
         return tuple(tiled_input_data)
 
 
-class PLPastCovariatesTorchModel(PLTorchForecastingModel, ABC):
+class PLPastCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(self, input_batch: Tuple):
         past_target, past_covariate = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
@@ -372,14 +372,14 @@ class PLPastCovariatesTorchModel(PLTorchForecastingModel, ABC):
         return self.model(x)
 
 
-class PLFutureCovariatesTorchModel(PLTorchForecastingModel, ABC):
+class PLFutureCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
 
-class PLDualCovariatesTorchModel(PLTorchForecastingModel, ABC):
+class PLDualCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> Tensor:
@@ -388,7 +388,7 @@ class PLDualCovariatesTorchModel(PLTorchForecastingModel, ABC):
         )
 
 
-class PLMixedCovariatesTorchModel(PLTorchForecastingModel, ABC):
+class PLMixedCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> torch.Tensor:
@@ -539,7 +539,7 @@ class PLMixedCovariatesTorchModel(PLTorchForecastingModel, ABC):
         return batch_prediction
 
 
-class PLSplitCovariatesTorchModel(PLTorchForecastingModel, ABC):
+class PLSplitCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> Tensor:
@@ -547,7 +547,7 @@ class PLSplitCovariatesTorchModel(PLTorchForecastingModel, ABC):
 
 
 # TODO: I think we could actually integrate probabilistic support already in the parent class and remove it from here?
-class PLTorchParametricProbabilisticForecastingModel(PLTorchForecastingModel, ABC):
+class PLParametricProbabilisticForecastingModule(PLForecastingModule, ABC):
     def __init__(self, likelihood: Optional[Likelihood] = None, **kwargs):
         """Pytorch Parametric Probabilistic Forecasting Model.
 

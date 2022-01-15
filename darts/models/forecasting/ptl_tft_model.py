@@ -11,7 +11,7 @@ import torch
 from torch import nn
 
 from darts import TimeSeries
-from darts.utils.torch import random_method
+
 from darts.logging import get_logger, raise_if_not, raise_if
 from darts.utils.likelihood_models import QuantileRegression, Likelihood
 from darts.utils.data import (
@@ -20,9 +20,9 @@ from darts.utils.data import (
     MixedCovariatesTrainingDataset,
     MixedCovariatesInferenceDataset,
 )
-from darts.models.forecasting.ptl_model import (
-    PLTorchParametricProbabilisticForecastingModel,
-    PLMixedCovariatesTorchModel,
+from darts.models.forecasting.pl_forecasting_module import (
+    PLParametricProbabilisticForecastingModule,
+    PLMixedCovariatesModule,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
@@ -42,9 +42,7 @@ MixedCovariatesTrainTensorType = Tuple[
 ]
 
 
-class _TFTModule(
-    PLTorchParametricProbabilisticForecastingModel, PLMixedCovariatesTorchModel
-):
+class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesModule):
     def __init__(
         self,
         output_dim: Tuple[int, int],
@@ -98,6 +96,8 @@ class _TFTModule(
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
             a ``QuantileRegression`` likelihood.
+        kwargs
+            all parameters for Darts' :class:`PLForecastingModule`.
         """
 
         super(_TFTModule, self).__init__(likelihood=likelihood, **kwargs)

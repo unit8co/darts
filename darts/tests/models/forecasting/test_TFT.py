@@ -9,7 +9,7 @@ from darts.logging import get_logger
 logger = get_logger(__name__)
 
 try:
-    from darts.models.forecasting.ptl_tft_model import TFTModel
+    from darts.models.forecasting.tft_model import TFTModel
     from darts.utils.likelihood_models import QuantileRegression
     from torch.nn import MSELoss
 
