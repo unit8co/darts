@@ -28,6 +28,9 @@ class KalmanFilter(FilteringModel, ABC):
         `TimeSeries` describing the distribution of the output z (without noise), as inferred by the Kalman filter from
         sequentially observing z from `series`, and the dynamics of the linear system of order dim_x.
 
+        This filter also supports missing values in the observation series, in which case the underlying
+        Kalman filter will carry on using its mean estimate.
+
         The method `KalmanFilter.fit()` is used to initialize the Kalman filter by estimating the state space model of
         a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID
         algorithm.
