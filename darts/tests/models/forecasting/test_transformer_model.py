@@ -52,6 +52,7 @@ if TORCH_AVAILABLE:
                 n_epochs=2,
                 model_name="unittest-model-transformer",
                 save_checkpoints=True,
+                force_reset=True,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(

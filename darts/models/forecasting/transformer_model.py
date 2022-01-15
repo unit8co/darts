@@ -13,7 +13,8 @@ from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.logging import get_logger
 from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule as TorchParametricProbabilisticForecastingModel,
+    PLParametricProbabilisticForecastingModule,
+    PLPastCovariatesModule,
 )
 from darts.models.forecasting.torch_forecasting_model import (
     PastCovariatesTorchModel,
@@ -67,7 +68,9 @@ class _PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class _TransformerModule(nn.Module):
+class _TransformerModule(
+    PLParametricProbabilisticForecastingModule, PLPastCovariatesModule
+):
     def __init__(
         self,
         input_chunk_length: int,
@@ -84,6 +87,7 @@ class _TransformerModule(nn.Module):
         activation: str,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
+        **kwargs
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
@@ -131,7 +135,14 @@ class _TransformerModule(nn.Module):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_TransformerModule, self).__init__()
+        super(_TransformerModule, self).__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            **kwargs,
+        )
+
+        # TODO: This is required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         self.input_size = input_size
         self.target_size = output_size
@@ -196,11 +207,15 @@ class _TransformerModule(nn.Module):
 
         return predictions
 
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self(x)
+            return self.likelihood.sample(output)
+        else:
+            return self(x).squeeze(dim=-1)
 
-class TransformerModel(
-    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
-):
-    @random_method
+
+class TransformerModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -215,7 +230,6 @@ class TransformerModel(
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
         **kwargs
     ):
 
@@ -349,9 +363,17 @@ class TransformerModel(
         added to it. Of course, the training of the model would have to be adapted accordingly.
         """
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+        torch_model_params = self._extract_torch_model_params(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            **kwargs,
+        )
+        super().__init__(**torch_model_params)
+
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(
+            likelihood=likelihood, **kwargs
+        )
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -388,12 +410,5 @@ class TransformerModel(
             activation=self.activation,
             custom_encoder=self.custom_encoder,
             custom_decoder=self.custom_decoder,
+            **self.pl_module_params,
         )
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)
