@@ -35,8 +35,8 @@ class KalmanFilter(FilteringModel, ABC):
         This implementation uses Kalman from the NFourSID package. More information can be found here:
         https://nfoursid.readthedocs.io/en/latest/source/kalman.html.
 
-        The dimensionality of the measurements z and optional control signal (covariates) u is automatically inferred upon
-        calling `filter()`.
+        The dimensionality of the measurements z and optional control signal (covariates) u is automatically inferred
+        upon calling `filter()`.
 
         Parameters
         ----------
@@ -47,7 +47,8 @@ class KalmanFilter(FilteringModel, ABC):
             If this is provided, the parameter dim_x is ignored. This instance will be copied for every
             call to `filter()`, so the state is not carried over from one time series to another across several
             calls to `filter()`.
-            The various dimensionalities of the filter must match those of the `TimeSeries` used when calling `filter()`.
+            The various dimensionalities of the filter must match those of the `TimeSeries` used when
+            calling `filter()`.
         """
         # TODO: Add support for x_init. Needs reimplementation of NFourSID.
 
@@ -85,7 +86,8 @@ class KalmanFilter(FilteringModel, ABC):
             The series of outputs (observations) used to infer the underlying state space model.
             This must be a deterministic series (containing one sample).
         covariates : Optional[TimeSeries]
-            An optional series of inputs (control signal) that will also be used to infer the underlying state space model.
+            An optional series of inputs (control signal) that will also be used to infer the underlying
+            state space model.
             This must be a deterministic series (containing one sample).
         num_block_rows : Optional[int]
             The number of block rows to use in the block Hankel matrices used in the N4SID algorithm.
@@ -102,7 +104,7 @@ class KalmanFilter(FilteringModel, ABC):
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
         self.dim_y = series.width
-        outputs = series.pd_dataframe()
+        outputs = series.pd_dataframe(copy=False)
         outputs.columns = [f"y_{i}" for i in outputs.columns]
 
         if covariates is not None:
@@ -142,10 +144,12 @@ class KalmanFilter(FilteringModel, ABC):
         Parameters
         ----------
         series : TimeSeries
-            The series of outputs (observations) used to infer the underlying outputs according to the specified Kalman process.
+            The series of outputs (observations) used to infer the underlying outputs according to the specified
+            Kalman process.
             This must be a deterministic series (containing one sample).
         covariates : Optional[TimeSeries]
-            An optional series of inputs (control signal), necessary if the Kalman filter was initialized with covariates.
+            An optional series of inputs (control signal), necessary if the Kalman filter was
+            initialized with covariates.
             This must be a deterministic series (containing one sample).
         num_samples : int, default: 1
             The number of samples to generate from the inferred distribution of the output z. If this is set to 1, the
