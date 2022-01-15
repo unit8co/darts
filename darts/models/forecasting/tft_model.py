@@ -482,11 +482,15 @@ class _TFTModule(nn.Module):
 
         # LSTM
         # calculate initial state
-        input_hidden = self.static_context_hidden_encoder_grn(static_embedding).expand(
-            self.lstm_layers, -1, -1
+        input_hidden = (
+            self.static_context_hidden_encoder_grn(static_embedding)
+            .expand(self.lstm_layers, -1, -1)
+            .contiguous()
         )
-        input_cell = self.static_context_cell_encoder_grn(static_embedding).expand(
-            self.lstm_layers, -1, -1
+        input_cell = (
+            self.static_context_cell_encoder_grn(static_embedding)
+            .expand(self.lstm_layers, -1, -1)
+            .contiguous()
         )
 
         # run local lstm encoder
