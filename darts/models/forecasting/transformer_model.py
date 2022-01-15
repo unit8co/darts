@@ -3,14 +3,12 @@ Transformer Model
 -----------------
 """
 
-from numpy.random import RandomState
 import math
 import torch
 import torch.nn as nn
-from typing import Optional, Union, Tuple
+from typing import Optional, Tuple
 
 from darts.utils.likelihood_models import Likelihood
-from darts.utils.torch import random_method
 from darts.logging import get_logger
 from darts.models.forecasting.pl_forecasting_module import (
     PLParametricProbabilisticForecastingModule,
