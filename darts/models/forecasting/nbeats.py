@@ -14,11 +14,10 @@ from darts.logging import get_logger, raise_log, raise_if_not
 from darts.utils.torch import random_method
 from darts.utils.likelihood_models import Likelihood
 from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule as TorchParametricProbabilisticForecastingModel,
+    PLParametricProbabilisticForecastingModule,
+    PLPastCovariatesModule,
 )
-from darts.models.forecasting.torch_forecasting_model import (
-    PastCovariatesTorchModel,
-)
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -302,7 +301,7 @@ class _Stack(nn.Module):
         return stack_residual, stack_forecast
 
 
-class _NBEATSModule(nn.Module):
+class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesModule):
     def __init__(
         self,
         input_dim: int,
@@ -317,6 +316,7 @@ class _NBEATSModule(nn.Module):
         layer_widths: List[int],
         expansion_coefficient_dim: int,
         trend_polynomial_degree: int,
+        **kwargs
     ):
         """PyTorch module implementing the N-BEATS architecture.
 
@@ -364,7 +364,14 @@ class _NBEATSModule(nn.Module):
             Tensor containing the output of the NBEATS module.
 
         """
-        super(_NBEATSModule, self).__init__()
+        super(_NBEATSModule, self).__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            **kwargs,
+        )
+
+        # TODO: This is required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -456,11 +463,15 @@ class _NBEATSModule(nn.Module):
 
         return y
 
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self(x)
+            return self.likelihood.sample(output)
+        else:
+            return self(x).squeeze(dim=-1)
 
-class NBEATSModel(
-    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
-):
-    @random_method
+
+class NBEATSModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -473,7 +484,6 @@ class NBEATSModel(
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
         likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
         **kwargs
     ):
         """Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -593,9 +603,17 @@ class NBEATSModel(
         .. [1] https://openreview.net/forum?id=r1ecqn4YwB
         """
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+        torch_model_params = self._extract_torch_model_params(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            **kwargs,
+        )
+        super().__init__(**torch_model_params)
+
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(
+            likelihood=likelihood, **kwargs
+        )
 
         raise_if_not(
             isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
@@ -641,12 +659,5 @@ class NBEATSModel(
             layer_widths=self.layer_widths,
             expansion_coefficient_dim=self.expansion_coefficient_dim,
             trend_polynomial_degree=self.trend_polynomial_degree,
+            **self.pl_module_params,
         )
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)

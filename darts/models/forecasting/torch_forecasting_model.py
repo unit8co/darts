@@ -370,12 +370,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if not os.path.exists(_get_runs_folder(self.work_dir, self.model_name)):
             os.mkdir(_get_runs_folder(self.work_dir, self.model_name))
 
-    def reset_model(self):
-        """Resets the model object and removes all stored data - model, checkpoints, loggers and training history."""
+    def _remove_save_dirs(self):
         shutil.rmtree(
             _get_runs_folder(self.work_dir, self.model_name), ignore_errors=True
         )
 
+    def reset_model(self):
+        """Resets the model object and removes all stored data - model, checkpoints, loggers and training history."""
+        self._remove_save_dirs()
         self._create_save_dirs()
 
         self.model = None
