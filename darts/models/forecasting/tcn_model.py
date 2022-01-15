@@ -7,20 +7,17 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from numpy.random import RandomState
-from typing import Optional, Union, Sequence, Tuple
+from typing import Optional, Sequence, Tuple
 from darts.timeseries import TimeSeries
-from darts.utils.torch import random_method
 from darts.utils.data import PastCovariatesShiftedDataset
 from darts.utils.likelihood_models import Likelihood
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule as TorchParametricProbabilisticForecastingModel,
+    PLParametricProbabilisticForecastingModule,
+    PLPastCovariatesModule,
 )
-from darts.models.forecasting.torch_forecasting_model import (
-    PastCovariatesTorchModel,
-)
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -130,7 +127,7 @@ class _ResidualBlock(nn.Module):
         return x
 
 
-class _TCNModule(nn.Module):
+class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesModule):
     def __init__(
         self,
         input_size: int,
@@ -144,6 +141,7 @@ class _TCNModule(nn.Module):
         nr_params: int,
         target_length: int,
         dropout: float,
+        **kwargs
     ):
 
         """PyTorch module implementing a dilated TCN module used in `TCNModel`.
@@ -187,7 +185,14 @@ class _TCNModule(nn.Module):
             leading up to the first prediction, all in chronological order.
         """
 
-        super(_TCNModule, self).__init__()
+        super(_TCNModule, self).__init__(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=target_length,
+            **kwargs,
+        )
+
+        # TODO: This is required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         # Defining parameters
         self.input_size = input_size
@@ -250,9 +255,19 @@ class _TCNModule(nn.Module):
 
         return x
 
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self(x)
+            return self.likelihood.sample(output)
+        else:
+            return self(x).squeeze(dim=-1)
 
-class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
-    @random_method
+    @property
+    def first_prediction_index(self) -> int:
+        return -self.output_chunk_length
+
+
+class TCNModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -264,7 +279,6 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
         weight_norm: bool = False,
         dropout: float = 0.2,
         likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
         **kwargs
     ):
 
@@ -380,10 +394,17 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
             logger,
         )
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
+        torch_model_params = self._extract_torch_model_params(
+            input_chunk_length=input_chunk_length,
+            output_chunk_length=output_chunk_length,
+            **kwargs,
+        )
+        super().__init__(**torch_model_params)
 
-        super().__init__(likelihood=likelihood, **kwargs)
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(
+            likelihood=likelihood, **kwargs
+        )
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -414,6 +435,7 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
             target_length=self.output_chunk_length,
             dropout=self.dropout,
             weight_norm=self.weight_norm,
+            **self.pl_module_params,
         )
 
     def _build_train_dataset(
@@ -431,15 +453,3 @@ class TCNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorch
             shift=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
         )
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)
-
-    @property
-    def first_prediction_index(self) -> int:
-        return -self.output_chunk_length

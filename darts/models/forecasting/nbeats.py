@@ -6,12 +6,10 @@ N-BEATS
 from typing import NewType, Union, List, Optional, Tuple
 from enum import Enum
 import numpy as np
-from numpy.random import RandomState
 import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_log, raise_if_not
-from darts.utils.torch import random_method
 from darts.utils.likelihood_models import Likelihood
 from darts.models.forecasting.pl_forecasting_module import (
     PLParametricProbabilisticForecastingModule,
