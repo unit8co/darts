@@ -314,11 +314,14 @@ class RegressionModel(GlobalForecastingModel):
         # iterate over series
         for idx, target_ts in enumerate(target_series):
             covariates = [
-                (past_covariates[idx].pd_dataframe(), self.lags_past_covariates)
+                (
+                    past_covariates[idx].pd_dataframe(copy=False),
+                    self.lags_past_covariates,
+                )
                 if past_covariates
                 else (None, None),
                 (
-                    future_covariates[idx].pd_dataframe(),
+                    future_covariates[idx].pd_dataframe(copy=False),
                     (
                         self.lags_historical_covariates
                         if self.lags_historical_covariates
@@ -335,7 +338,7 @@ class RegressionModel(GlobalForecastingModel):
             ]
 
             df_X = []
-            df_y = target_ts.pd_dataframe()
+            df_y = target_ts.pd_dataframe(copy=False)
 
             # target lags
             if self.lags:
