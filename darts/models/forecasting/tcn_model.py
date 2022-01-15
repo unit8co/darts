@@ -15,8 +15,11 @@ from darts.utils.data import PastCovariatesShiftedDataset
 from darts.utils.likelihood_models import Likelihood
 
 from darts.logging import raise_if_not, get_logger
+from darts.models.forecasting.ptl_model import (
+    PLTorchParametricProbabilisticForecastingModel as TorchParametricProbabilisticForecastingModel,
+)
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
+    # TorchParametricProbabilisticForecastingModel,
     PastCovariatesTorchModel,
 )
 

@@ -12,8 +12,11 @@ from typing import Optional, Union, Tuple
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.logging import get_logger
+from darts.models.forecasting.ptl_model import (
+    PLTorchParametricProbabilisticForecastingModel as TorchParametricProbabilisticForecastingModel,
+)
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
+    # TorchParametricProbabilisticForecastingModel,
     PastCovariatesTorchModel,
 )
 

@@ -10,8 +10,11 @@ from typing import Sequence, Optional, Union, Tuple
 from darts.timeseries import TimeSeries
 
 from darts.logging import raise_if_not, get_logger
+from darts.models.forecasting.ptl_model import (
+    PLTorchParametricProbabilisticForecastingModel as TorchParametricProbabilisticForecastingModel,
+)
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
+    # TorchParametricProbabilisticForecastingModel,
     DualCovariatesTorchModel,
 )
 from darts.utils.torch import random_method

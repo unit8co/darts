@@ -13,8 +13,11 @@ import torch.nn as nn
 from darts.logging import get_logger, raise_log, raise_if_not
 from darts.utils.torch import random_method
 from darts.utils.likelihood_models import Likelihood
+from darts.models.forecasting.ptl_model import (
+    PLTorchParametricProbabilisticForecastingModel as TorchParametricProbabilisticForecastingModel,
+)
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
+    # TorchParametricProbabilisticForecastingModel,
     PastCovariatesTorchModel,
 )
 

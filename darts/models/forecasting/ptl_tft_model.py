@@ -24,7 +24,7 @@ from darts.models.forecasting.ptl_model import (
     PLTorchParametricProbabilisticForecastingModel,
     PLMixedCovariatesTorchModel,
 )
-from darts.models.forecasting.ptl_torch_forecasting_model import (
+from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
 )
 from darts.models.forecasting.tft_submodels import (

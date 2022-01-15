@@ -21,9 +21,12 @@ from darts.utils.data import (
     MixedCovariatesTrainingDataset,
     MixedCovariatesInferenceDataset,
 )
+from darts.models.forecasting.ptl_model import (
+    PLTorchParametricProbabilisticForecastingModel as TorchParametricProbabilisticForecastingModel,
+)
 from darts.models.forecasting.torch_forecasting_model import (
     MixedCovariatesTorchModel,
-    TorchParametricProbabilisticForecastingModel,
+    # TorchParametricProbabilisticForecastingModel,
 )
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
