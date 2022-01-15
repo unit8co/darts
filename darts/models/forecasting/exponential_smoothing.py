@@ -10,7 +10,7 @@ import numpy as np
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
-from darts.utils.utils import ModelMode
+from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 
@@ -19,7 +19,7 @@ class ExponentialSmoothing(ForecastingModel):
     def __init__(self,
                  trend: Optional[ModelMode] = ModelMode.ADDITIVE,
                  damped: Optional[bool] = False,
-                 seasonal: Optional[ModelMode] = ModelMode.ADDITIVE,
+                 seasonal: Optional[ModelMode] = SeasonalityMode.ADDITIVE,
                  seasonal_periods: Optional[int] = None,
                  random_state: int = 0,
                  **fit_kwargs):
@@ -32,8 +32,8 @@ class ExponentialSmoothing(ForecastingModel):
 
         `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with ``from darts import ModelMode``.
 
-        ``ExponentialSmoothing(trend=None, seasonal=None)`` corresponds to a single exponential smoothing.
-        ``ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)`` corresponds to a Holt's exponential smoothing.
+        ``ExponentialSmoothing(trend=ModelMode.NONE, seasonal=SeasonalityMode.NONE)`` corresponds to a single exponential smoothing.
+        ``ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.NONE)`` corresponds to a Holt's exponential smoothing.
 
         Please note that automatic `seasonal_period` selection (setting the `seasonal_periods` parameter equal to
         `None`) can sometimes lead to errors if the input time series is too short. In these cases we suggest to
@@ -42,13 +42,13 @@ class ExponentialSmoothing(ForecastingModel):
         Parameters
         ----------
         trend
-            Type of trend component. Either ``ModelMode.ADDITIVE`` or ``ModelMode.MULTIPLICATIVE``.
+            Type of trend component. Either ``ModelMode.ADDITIVE``, ``ModelMode.MULTIPLICATIVE``, ``ModelMode.NONE``.
             Defaults to ``ModelMode.ADDITIVE``.
         damped
             Should the trend component be damped. Defaults to False.
         seasonal
-            Type of seasonal component. Either ``ModelMode.ADDITIVE`` or ``ModelMode.MULTIPLICATIVE``.
-            Defaults to ``ModelMode.ADDITIVE``.
+            Type of seasonal component. Either ``SeasonalityMode.ADDITIVE``, ``SeasonalityMode.MULTIPLICATIVE``, or ``SeasonalityMode.NONE``.
+            Defaults to ``SeasonalityMode.ADDITIVE``.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
