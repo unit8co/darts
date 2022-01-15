@@ -119,14 +119,8 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_models_runnability(self):
         for model, _ in models:
-            model.fit(self.ts_gaussian)
-            prediction = model.predict(self.forecasting_horizon)
-            self.assertTrue(len(prediction) == self.forecasting_horizon)
-
-    def test_fit_return(self):
-        for model, _ in models:
-            # fit() should return the estimator so that calling predict() does not crash
             model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
+            self.assertTrue(len(prediction) == self.forecasting_horizon)
 
     def test_models_performance(self):
         # for every model, check whether its errors do not exceed the given bounds
