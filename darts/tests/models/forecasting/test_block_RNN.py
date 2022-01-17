@@ -75,6 +75,9 @@ if TORCH_AVAILABLE:
             pred2 = model_loaded.predict(n=6)
 
             # Two models with the same parameters should deterministically yield the same output
+            # TODO for PTL: reloading the model does not yield identical prediction results. I assume it has to do with
+            #  the random seed that we set up at model creation and which doesn't get loaded properly when loading a
+            #  model from checkpoint.
             self.assertEqual(sum(pred1.values() - pred2.values()), 0.0)
 
             # Another random model should not

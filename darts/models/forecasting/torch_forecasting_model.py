@@ -352,8 +352,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _extract_pl_module_params(**kwargs):
         """Extract params from model creation to set up pl.LightningModule (the actual torch.nn.Module)"""
         get_params = [
-            "input_chunk_length",
-            "output_chunk_length",
             "loss_fn",
             "likelihood",
             "optimizer_cls",
@@ -1229,7 +1227,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model = TorchForecastingModel.load_model(base_model_path)
 
         # load pytorch lightning module from checkpoint
-        # if file_name is none, find most recent file in savepath that is a checkpoint
+        # if file_name is None, find most recent file in savepath that is a checkpoint
         if file_name is None:
             file_name = _get_checkpoint_fname(work_dir, model_name, best=best)
 
@@ -1239,6 +1237,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model.model = model.model.load_from_checkpoint(file_path)
         model.load_ckpt_path = file_path
         return model
+
+    @property
+    def epochs_trained(self) -> int:
+        return self.model.current_epoch + 1 if self.model.current_epoch > 0 else 0
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):

@@ -73,7 +73,10 @@ class _RNNModule(PLParametricProbabilisticForecastingModule, PLDualCovariatesMod
             However, this module always returns the whole Tensor.
         """
 
-        super(_RNNModule, self).__init__(**kwargs)
+        # RNNModule doesn't really need input and output_chunk_length for PLModule
+        super(_RNNModule, self).__init__(
+            input_chunk_length=0, output_chunk_length=0, **kwargs
+        )
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
@@ -115,10 +118,10 @@ class _RNNModule(PLParametricProbabilisticForecastingModule, PLDualCovariatesMod
             if future_covariates is not None
             else past_target
         )
-        return self.model(model_input)[0]
+        return self(model_input)[0]
 
     def _produce_predict_output(self, x, last_hidden_state=None):
-        output, hidden = self.model(x, last_hidden_state)
+        output, hidden = self(x, last_hidden_state)
         if self.likelihood:
             return self.likelihood.sample(output), hidden
         else:
@@ -312,16 +315,23 @@ class RNNModel(DualCovariatesTorchModel):
             and loaded using :func:`load_model()`.
         """
 
+        # ignore user defined output_chunk_length
+        kwargs_copy = {
+            kwarg: val
+            for kwarg, val in kwargs.items()
+            if not kwarg == "output_chunk_length"
+        }
+
         torch_model_params = self._extract_torch_model_params(
             input_chunk_length=input_chunk_length,
             output_chunk_length=1,
-            **kwargs,
+            **kwargs_copy,
         )
         super().__init__(**torch_model_params)
 
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(
-            likelihood=likelihood, **kwargs
+            likelihood=likelihood, **kwargs_copy
         )
 
         # check we got right model type specified:

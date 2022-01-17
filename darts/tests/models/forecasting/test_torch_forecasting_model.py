@@ -101,15 +101,19 @@ if TORCH_AVAILABLE:
             model_manual_save.fit(series, epochs=1)
             model_auto_save.fit(series, epochs=1)
 
-            checkpoints_dir = os.path.join(self.temp_work_dir, "checkpoints")
+            model_dir = os.path.join(self.temp_work_dir)
 
             # check that file was not created with manual save
-            self.assertFalse(os.path.exists(os.path.join(checkpoints_dir, manual_name)))
+            self.assertFalse(
+                os.path.exists(os.path.join(model_dir, manual_name, "checkpoints"))
+            )
             # check that file was created with automatic save
-            self.assertTrue(os.path.exists(os.path.join(checkpoints_dir, auto_name)))
+            self.assertTrue(
+                os.path.exists(os.path.join(model_dir, auto_name, "checkpoints"))
+            )
 
             # create manually saved model checkpoints folder
-            checkpoint_path_manual = os.path.join(checkpoints_dir, manual_name)
+            checkpoint_path_manual = os.path.join(model_dir, manual_name)
             os.mkdir(checkpoint_path_manual)
 
             # save manually saved model
@@ -121,6 +125,9 @@ if TORCH_AVAILABLE:
             self.assertTrue(os.path.exists(model_path_manual))
 
             # load manual save model and compare with automatic model results
+            # TODO for PTL: reloading the model does not yield identical prediction results. I assume it has to do with
+            #  the random seed that we set up at model creation and which doesn't get loaded properly when loading a
+            #  model from file.
             model_manual_save = RNNModel.load_model(model_path_manual)
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save.predict(n=4)
@@ -128,7 +135,7 @@ if TORCH_AVAILABLE:
 
             # load automatically saved model with manual load_model() and load_from_checkpoint()
             model_path_automatic = os.path.join(
-                checkpoints_dir, auto_name, checkpoint_file_name
+                model_dir, auto_name, checkpoint_file_name
             )
             model_auto_save1 = RNNModel.load_model(model_path_automatic)
 
@@ -212,7 +219,11 @@ if TORCH_AVAILABLE:
             )
             patch_reset_model.assert_called_once()
 
-        # n_epochs=20, fit|epochs=None, total_epochs=0 - train for 20 epochs
+        # TODO for PTL: currently we (have to (?)) reset the PTL trainer every time fit() is called which resets
+        #  the model.model.current_epoch attribute -> is there a way to continue training the model from memory???
+        #  this will make tests below fail.
+
+        # n_epochs=20, fit|epochs=None, epochs_trained=0 - train for 20 epochs
         def test_train_from_0_n_epochs_20_no_fit_epochs(self):
             model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
@@ -221,9 +232,9 @@ if TORCH_AVAILABLE:
             series = TimeSeries.from_series(pd_series)
             model1.fit(series)
 
-            self.assertEqual(model1.total_epochs, 20)
+            self.assertEqual(20, model1.epochs_trained)
 
-        # n_epochs = 20, fit|epochs=None, total_epochs=20 - train for another 20 epochs
+        # n_epochs = 20, fit|epochs=None, epochs_trained=20 - train for another 20 epochs
         def test_train_from_20_n_epochs_40_no_fit_epochs(self):
             model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
@@ -231,12 +242,12 @@ if TORCH_AVAILABLE:
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
             model1.fit(series)
-            self.assertEqual(model1.total_epochs, 20)
+            self.assertEqual(20, model1.epochs_trained)
 
             model1.fit(series)
-            self.assertEqual(model1.total_epochs, 40)
+            self.assertEqual(40, model1.epochs_trained)
 
-        # n_epochs = 20, fit|epochs=None, total_epochs=10 - train for another 20 epochs
+        # n_epochs = 20, fit|epochs=None, epochs_trained=10 - train for another 20 epochs
         def test_train_from_10_n_epochs_20_no_fit_epochs(self):
             model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
@@ -245,12 +256,12 @@ if TORCH_AVAILABLE:
             series = TimeSeries.from_series(pd_series)
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
             model1.fit(series, epochs=10)
-            self.assertEqual(model1.total_epochs, 10)
+            self.assertEqual(10, model1.epochs_trained)
 
             model1.fit(series)
-            self.assertEqual(model1.total_epochs, 30)
+            self.assertEqual(30, model1.epochs_trained)
 
-        # n_epochs = 20, fit|epochs=15, total_epochs=0 - train for 15 epochs
+        # n_epochs = 20, fit|epochs=15, epochs_trained=0 - train for 15 epochs
         def test_train_from_0_n_epochs_20_fit_15_epochs(self):
             model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
@@ -258,9 +269,9 @@ if TORCH_AVAILABLE:
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
             model1.fit(series, epochs=15)
-            self.assertEqual(model1.total_epochs, 15)
+            self.assertEqual(15, model1.epochs_trained)
 
-        # n_epochs = 20, fit|epochs=15, total_epochs=10 - train for 15 epochs
+        # n_epochs = 20, fit|epochs=15, epochs_trained=10 - train for 15 epochs
         def test_train_from_10_n_epochs_20_fit_15_epochs(self):
             model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
@@ -269,7 +280,7 @@ if TORCH_AVAILABLE:
             series = TimeSeries.from_series(pd_series)
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
             model1.fit(series, epochs=10)
-            self.assertEqual(model1.total_epochs, 10)
+            self.assertEqual(10, model1.epochs_trained)
 
             model1.fit(series, epochs=15)
-            self.assertEqual(model1.total_epochs, 25)
+            self.assertEqual(25, model1.epochs_trained)

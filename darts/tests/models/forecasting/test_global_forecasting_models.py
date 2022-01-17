@@ -354,7 +354,9 @@ if TORCH_AVAILABLE:
                     past_covariates=[self.covariates] * len(targets),
                     batch_size=batch_size,
                 )
-
+                # TODO for PTL: this fails for small batch sizes where not every target series can be predicted in one
+                #  batch -> probably happens either in how PTL extracts batches (compared to our original TQDM Iterator)
+                #  or in PLForecastingModule.predict_step()
                 for i in range(len(targets)):
                     self.assertLess(
                         sum(sum((preds[i] - preds_default[i]).values())), epsilon
@@ -435,12 +437,10 @@ if TORCH_AVAILABLE:
                     "Model {} produces different predictions with different number of jobs",
                 )
 
-        @patch("darts.models.forecasting.torch_forecasting_model.torch.save")
         @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train"
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
         )
-        @patch("darts.models.forecasting.torch_forecasting_model.shutil.rmtree")
-        def test_fit_with_constr_epochs(self, rmtree_patch, train_patch, save_patch):
+        def test_fit_with_constr_epochs(self, init_trainer):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
@@ -448,14 +448,14 @@ if TORCH_AVAILABLE:
                 multiple_ts = [self.ts_pass_train] * 10
                 model.fit(multiple_ts)
 
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs["n_epochs"])
+                init_trainer.assert_called_with(
+                    max_epochs=kwargs["n_epochs"], trainer_params=ANY
+                )
 
-        @patch("darts.models.forecasting.torch_forecasting_model.torch.save")
         @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train"
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
         )
-        @patch("darts.models.forecasting.torch_forecasting_model.shutil.rmtree")
-        def test_fit_with_fit_epochs(self, rmtree_patch, train_patch, save_patch):
+        def test_fit_with_fit_epochs(self, init_trainer):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
@@ -464,23 +464,17 @@ if TORCH_AVAILABLE:
                 epochs = 42
 
                 model.fit(multiple_ts, epochs=epochs)
-
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
                 model.total_epochs = epochs
                 # continue training
                 model.fit(multiple_ts, epochs=epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
-
-        @patch("darts.models.forecasting.torch_forecasting_model.torch.save")
         @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train"
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
         )
-        @patch("darts.models.forecasting.torch_forecasting_model.shutil.rmtree")
-        def test_fit_from_dataset_with_epochs(
-            self, rmtree_patch, train_patch, save_patch
-        ):
+        def test_fit_from_dataset_with_epochs(self, init_trainer):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
@@ -495,14 +489,11 @@ if TORCH_AVAILABLE:
                 epochs = 42
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
-
-                model.total_epochs = epochs
                 # continue training
                 model.fit_from_dataset(train_dataset, epochs=epochs)
-
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
         def test_sample_smaller_than_batch_size(self):
             """
