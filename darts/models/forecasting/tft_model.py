@@ -348,7 +348,7 @@ class _TFTModule(nn.Module):
         input dimensions: (n_samples, n_time_steps, n_variables)
         """
 
-        dim_samples, dim_time, dim_variable, dim_loss = 0, 1, 2, 3
+        dim_samples, dim_time, dim_variable, _ = 0, 1, 2, 3
         past_target, past_covariates, historic_future_covariates, future_covariates = x
 
         batch_size = past_target.shape[dim_samples]
@@ -450,12 +450,13 @@ class _TFTModule(nn.Module):
                 device=past_target.device,
             )
 
-            # this is only to interpret the output
-            static_covariate_var = torch.zeros(
-                (past_target.shape[0], 0),
-                dtype=past_target.dtype,
-                device=past_target.device,
-            )
+            # # TODO: implement below when static covariates are supported
+            # # this is only to interpret the output
+            # static_covariate_var = torch.zeros(
+            #     (past_target.shape[0], 0),
+            #     dtype=past_target.dtype,
+            #     device=past_target.device,
+            # )
 
         if future_covariates is None and static_covariates is None:
             raise NotImplementedError("make zero tensor if future covariates is None")
