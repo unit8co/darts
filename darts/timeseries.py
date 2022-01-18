@@ -23,7 +23,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union, TextIO, Sequence
+from typing import Tuple, Optional, Callable, Any, List, Union, Sequence
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset

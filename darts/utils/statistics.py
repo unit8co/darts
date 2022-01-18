@@ -13,7 +13,6 @@ from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf, pacf, grangercausalitytests, adfuller, kpss
 
-from warnings import warn
 from darts.logging import raise_log, get_logger, raise_if_not, raise_if
 from darts import TimeSeries
 from .missing_values import fill_missing_values
