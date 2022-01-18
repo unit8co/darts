@@ -185,8 +185,8 @@ class GaussianLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Normal_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: mean :math:`\\mu \in \mathbb{R}`, standard deviation :math:`\\sigma > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: mean :math:`\\mu \\in \\mathbb{R}`, standard deviation :math:`\\sigma > 0`.
 
         Parameters
         ----------
@@ -243,7 +243,7 @@ class PoissonLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Poisson_distribution
 
         - Univariate discrete distribution
-        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
+        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
         - Parameter: rate :math:`\\lambda > 0`.
 
         Parameters
@@ -295,8 +295,8 @@ class NegativeBinomialLikelihood(Likelihood):
         It does not support priors.
 
         - Univariate discrete distribution.
-        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
-        - Parameters: number of failures :math:`r > 0`, success probability :math:`p \in (0, 1)`.
+        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
+        - Parameters: number of failures :math:`r > 0`, success probability :math:`p \\in (0, 1)`.
 
         Behind the scenes the distribution is reparameterized so that the actual outputs of the
         network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.
@@ -344,8 +344,8 @@ class BernoulliLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Bernoulli_distribution
 
         - Univariate discrete distribution.
-        - Support: :math:`\{0, 1\}`.
-        - Parameter: probability :math:`p \in (0, 1)`.
+        - Support: :math:`\\{0, 1\\}`.
+        - Parameter: probability :math:`p \\in (0, 1)`.
 
         Parameters
         ----------
@@ -440,8 +440,8 @@ class CauchyLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Cauchy_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: location :math:`x_0 \in \mathbb{R}`, scale :math:`\gamma > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: location :math:`x_0 \\in \\mathbb{R}`, scale :math:`\\gamma > 0`.
 
         Due to its fat tails, this distribution is typically harder to estimate,
         and your mileage may vary. Also be aware that it typically
@@ -499,7 +499,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
 
         - Univariate continuous distribution.
         - Support: open interval :math:`(0, 1)`.
-        - Parameter: shape :math:`\\lambda \in (0,1)`
+        - Parameter: shape :math:`\\lambda \\in (0,1)`
 
         Parameters
         ----------
@@ -545,7 +545,7 @@ class DirichletLikelihood(Likelihood):
 
         - Multivariate continuous distribution, modeling all components of a time series jointly.
         - Support: The :math:`K`-dimensional simplex for series of dimension :math:`K`, i.e.,
-          :math:`x_1, ..., x_K \\text{ with } x_i \in (0,1),\\; \\sum_i^K{x_i}=1`.
+          :math:`x_1, ..., x_K \\text{ with } x_i \\in (0,1),\\; \\sum_i^K{x_i}=1`.
         - Parameter: concentrations :math:`\\alpha_1, ..., \\alpha_K` with :math:`\\alpha_i > 0`.
 
         Parameters
@@ -592,7 +592,7 @@ class ExponentialLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Exponential_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameter: rate :math:`\\lambda > 0`.
 
         Parameters
@@ -637,7 +637,7 @@ class GammaLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Gamma_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameters: shape :math:`\\alpha > 0` and rate :math:`\\beta > 0`.
 
         Parameters
@@ -687,8 +687,8 @@ class GeometricLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Geometric_distribution
 
         - Univariate discrete distribution
-        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
-        - Parameter: success probability :math:`p \in (0, 1)`.
+        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
+        - Parameter: success probability :math:`p \\in (0, 1)`.
 
         Parameters
         ----------
@@ -732,8 +732,8 @@ class GumbelLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Gumbel_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`\\beta > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: location :math:`\\mu \\in \\mathbb{R}` and scale :math:`\\beta > 0`.
 
         Parameters
         ----------
@@ -781,7 +781,7 @@ class HalfNormalLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Half-normal_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameter: rate :math:`\\sigma > 0`.
 
         Parameters
@@ -826,8 +826,8 @@ class LaplaceLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Laplace_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`b > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: location :math:`\\mu \\in \\mathbb{R}` and scale :math:`b > 0`.
 
         Parameters
         ----------
@@ -875,8 +875,8 @@ class LogNormalLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Log-normal_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}_{>0}`.
-        - Parameters: :math:`\\mu \in \mathbb{R}` and :math:`\\sigma > 0`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
+        - Parameters: :math:`\\mu \\in \\mathbb{R}` and :math:`\\sigma > 0`.
 
         Parameters
         ----------
@@ -924,7 +924,7 @@ class WeibullLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Weibull_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameters: scale :math:`\\lambda > 0` and concentration :math:`k > 0`.
 
         It does not support priors.
