@@ -2594,7 +2594,7 @@ class TimeSeries:
 
         raise_if(
             len(xa) <= 2,
-            f"Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
+            "Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
             logger,
         )
 

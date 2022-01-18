@@ -473,11 +473,11 @@ def granger_causality_tests(
 
     if not stationarity_tests(ts_cause):
         logger.warning(
-            f"ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
+            "ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
         )
     if not stationarity_tests(ts_effect):
         logger.warning(
-            f"ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
+            "ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
         )
 
     return grangercausalitytests(
