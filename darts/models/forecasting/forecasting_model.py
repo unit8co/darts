@@ -27,7 +27,10 @@ from darts.utils import (
     _historical_forecasts_general_checks,
     _parallel_apply,
 )
-from darts.utils.timeseries_generation import _generate_index
+from darts.utils.timeseries_generation import (
+    _generate_new_dates,
+    _build_forecast_series,
+)
 import inspect
 
 from darts import metrics
@@ -185,12 +188,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         input_series = (
             input_series if input_series is not None else self.training_series
         )
-
-        last = input_series.end_time()
-        start = (
-            last + input_series.freq if input_series.has_datetime_index else last + 1
-        )
-        return _generate_index(start=start, freq=input_series.freq, length=n)
+        return _generate_new_dates(n=n, input_series=input_series)
 
     def _build_forecast_series(
         self,
@@ -204,28 +202,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         input_series = (
             input_series if input_series is not None else self.training_series
         )
-        time_index_length = (
-            len(points_preds)
-            if isinstance(points_preds, np.ndarray)
-            else len(points_preds[0])
-        )
-        time_index = self._generate_new_dates(
-            time_index_length, input_series=input_series
-        )
-        if isinstance(points_preds, np.ndarray):
-            return TimeSeries.from_times_and_values(
-                time_index,
-                points_preds,
-                freq=input_series.freq_str,
-                columns=input_series.columns,
-            )
-
-        return TimeSeries.from_times_and_values(
-            time_index,
-            np.stack(points_preds, axis=2),
-            freq=input_series.freq_str,
-            columns=input_series.columns,
-        )
+        return _build_forecast_series(points_preds, input_series)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function

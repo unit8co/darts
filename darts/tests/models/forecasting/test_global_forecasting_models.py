@@ -354,9 +354,6 @@ if TORCH_AVAILABLE:
                     past_covariates=[self.covariates] * len(targets),
                     batch_size=batch_size,
                 )
-                # TODO for PTL: this fails for small batch sizes where not every target series can be predicted in one
-                #  batch -> probably happens either in how PTL extracts batches (compared to our original TQDM Iterator)
-                #  or in PLForecastingModule.predict_step()
                 for i in range(len(targets)):
                     self.assertLess(
                         sum(sum((preds[i] - preds_default[i]).values())), epsilon

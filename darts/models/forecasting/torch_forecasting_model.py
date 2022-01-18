@@ -23,7 +23,6 @@ import datetime
 import numpy as np
 from glob import glob
 from abc import ABC, abstractmethod
-from joblib import Parallel, delayed
 from typing import Optional, Dict, Tuple, Union, Sequence, List
 
 import torch
@@ -1042,7 +1041,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # set prediction parameters
         self.model.set_predict_parameters(
-            n=n, num_samples=num_samples, roll_size=roll_size, batch_size=batch_size
+            n=n,
+            num_samples=num_samples,
+            roll_size=roll_size,
+            batch_size=batch_size,
+            n_jobs=n_jobs,
         )
 
         pred_loader = DataLoader(
@@ -1064,19 +1067,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         ckpt_path = self.load_ckpt_path
         self.load_ckpt_path = None
 
-        batch_predictions, batch_input_series = self.trainer.predict(
-            self.model, pred_loader, ckpt_path=ckpt_path
-        )[0]
-
-        # create `TimeSeries` objects from prediction tensors
-        ts_forecasts = Parallel(n_jobs=n_jobs)(
-            delayed(self._build_forecast_series)(
-                [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
-                input_series,
-            )
-            for batch_idx, input_series in enumerate(batch_input_series)
-        )
-        return ts_forecasts
+        # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
+        predictions = self.trainer.predict(self.model, pred_loader, ckpt_path=ckpt_path)
+        # flatten and return
+        return [ts for batch in predictions for ts in batch]
 
     @property
     @abstractmethod

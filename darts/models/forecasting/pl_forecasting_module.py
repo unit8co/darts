@@ -1,19 +1,16 @@
 """
-This file contains abstract classes for deterministic and probabilistic PyTorch Lightning modules
+This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
 """
 
-import numpy as np
-import pandas as pd
-
 from joblib import Parallel, delayed
-from typing import Any, Optional, Dict, Tuple, Union, Sequence
+from typing import Any, Optional, Dict, Tuple, Sequence
 from abc import ABC, abstractmethod
 import torch
 from torch import Tensor
 import torch.nn as nn
 
 from darts.timeseries import TimeSeries
-from darts.utils.timeseries_generation import _generate_index
+from darts.utils.timeseries_generation import _build_forecast_series
 
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import get_logger, raise_log, raise_if
@@ -99,6 +96,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_num_samples: Optional[int] = None
         self.pred_roll_size: Optional[int] = None
         self.pred_batch_size: Optional[int] = None
+        self.pred_n_jobs: Optional[int] = None
 
     @property
     def first_prediction_index(self) -> int:
@@ -194,7 +192,15 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # concatenate the batch of samples, to form self.pred_num_samples samples
         batch_predictions = torch.cat(batch_predictions, dim=0)
         batch_predictions = batch_predictions.cpu().detach().numpy()
-        return batch_predictions, batch_input_series
+
+        ts_forecasts = Parallel(n_jobs=self.pred_n_jobs)(
+            delayed(_build_forecast_series)(
+                [batch_prediction[batch_idx] for batch_prediction in batch_predictions],
+                input_series,
+            )
+            for batch_idx, input_series in enumerate(batch_input_series)
+        )
+        return ts_forecasts
 
     def set_predict_parameters(
         self,
@@ -202,12 +208,14 @@ class PLForecastingModule(pl.LightningModule, ABC):
         num_samples: Optional[int] = None,
         roll_size: Optional[int] = None,
         batch_size: Optional[int] = None,
+        n_jobs: Optional[int] = None,
     ) -> None:
         """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
         self.pred_n = n
         self.pred_num_samples = num_samples
         self.pred_roll_size = roll_size
         self.pred_batch_size = batch_size
+        self.pred_n_jobs = n_jobs
 
     def on_predict_end(self) -> None:
         """reset all prediction-relevant parameters"""
