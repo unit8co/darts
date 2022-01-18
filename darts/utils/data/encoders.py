@@ -1032,7 +1032,7 @@ class SequentialEncoder(Encoder):
 
         # check input for invalid encoder types
         invalid_encoders = [
-            enc for enc in params if not enc in ENCODER_KEYS + TRANSFORMER_KEYS
+            enc for enc in params if enc not in ENCODER_KEYS + TRANSFORMER_KEYS
         ]
         raise_if(
             len(invalid_encoders) > 0,

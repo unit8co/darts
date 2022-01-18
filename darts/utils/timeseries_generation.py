@@ -632,7 +632,7 @@ def datetime_attribute_timeseries(
         "week_of_year": 52,
     }
 
-    if not attribute in ["week", "weekofyear", "week_of_year"]:
+    if attribute not in ["week", "weekofyear", "week_of_year"]:
         values = getattr(time_index, attribute)
     else:
         values = (
