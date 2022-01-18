@@ -470,7 +470,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates, future_covariates=future_covariates
         )
 
-        wrap_fn = lambda ts: [ts] if isinstance(ts, TimeSeries) else ts
+        def wrap_fn(
+            ts: Union[TimeSeries, Sequence[TimeSeries]]
+        ) -> Sequence[TimeSeries]:
+            return [ts] if isinstance(ts, TimeSeries) else ts
+
         series = wrap_fn(series)
         past_covariates = wrap_fn(past_covariates)
         future_covariates = wrap_fn(future_covariates)
