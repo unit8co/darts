@@ -2,7 +2,7 @@
 Timeseries
 ----------
 
-``TimeSeries`` is the main class in `darts`. 
+``TimeSeries`` is the main class in `darts`.
 It represents a univariate or multivariate time series, deterministic or stochastic.
 
 The values are stored in an array of shape `(time, dimensions, samples)`, where
@@ -186,7 +186,7 @@ class TimeSeries:
             self._freq = 1
             self._freq_str = None
 
-    """ 
+    """
     Factory Methods
     ===============
     """
@@ -759,7 +759,7 @@ class TimeSeries:
         """The duration of this time series (as a time delta or int)."""
         return self._time_index[-1] - self._time_index[0]
 
-    """ 
+    """
     Some asserts
     =============
     """
