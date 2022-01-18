@@ -150,7 +150,6 @@ class SparseCostMatrix(CostMatrix):
         i, j = elem
 
         start = self.column_ranges[i * 2 + 0]
-        end = self.column_ranges[i * 2 + 1]
 
         self.dense[self.offsets[i] + j - start] = value
 

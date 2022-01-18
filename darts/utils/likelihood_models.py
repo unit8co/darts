@@ -51,7 +51,6 @@ from torch.distributions import (
     Laplace as _Laplace,
     Beta as _Beta,
     Exponential as _Exponential,
-    MultivariateNormal as _MultivariateNormal,
     Dirichlet as _Dirichlet,
     Geometric as _Geometric,
     Cauchy as _Cauchy,
@@ -1108,12 +1107,11 @@ class QuantileRegression(Likelihood):
         return None
 
 
-if False:
-    """TODO
-    To make it work, we'll have to change our models so they optionally accept an absolute
-    number of parameters, instead of num_parameters per component.
-    """
+""" TODO
+To make it work, we'll have to change our models so they optionally accept an absolute
+number of parameters, instead of num_parameters per component.
 
+from torch.distributions import MultivariateNormal as _MultivariateNormal
     class MultivariateNormal(Likelihood):
         def __init__(
             self, dim: int, prior_mu=None, prior_covmat=None, prior_strength=1.0
@@ -1172,3 +1170,4 @@ if False:
             covmat[tril_indices[0], tril_indices[1]] = covmat_coefs
             covmat[tril_indices[1], tril_indices[0]] = covmat_coefs
             covmat[range(self.dim), range(self.dim)] = 1.0
+"""
