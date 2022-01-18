@@ -348,7 +348,7 @@ class _TFTModule(nn.Module):
         input dimensions: (n_samples, n_time_steps, n_variables)
         """
 
-        dim_samples, dim_time, dim_variable, _ = 0, 1, 2, 3
+        dim_samples, dim_time, dim_variable = 0, 1, 2
         past_target, past_covariates, historic_future_covariates, future_covariates = x
 
         batch_size = past_target.shape[dim_samples]
