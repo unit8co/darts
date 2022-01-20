@@ -70,9 +70,6 @@ def check_seasonality(
     candidates = argrelmax(r)[0]
 
     if len(candidates) == 0:
-        logger.info(
-            "The ACF has no local maximum for m < max_lag = {}.".format(max_lag)
-        )
         return False, 0
 
     if m is not None:
@@ -505,28 +502,32 @@ def plot_acf(
 ) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+    Uses :func:`statsmodels.tsa.stattools.acf` [1]_
 
     Parameters
     ----------
-    ts : TimeSeries
+    ts
         The TimeSeries whose ACF should be plotted.
-    m : int, optional
+    m
         Optionally, a time lag to highlight on the plot.
-    max_lag : int, default: 24
+    max_lag
         The maximal lag order to consider.
-    alpha : float, default: 0.05
+    alpha
         The confidence interval to display.
-    bartlett_confint : bool, default: True
+    bartlett_confint
         The boolean value indicating whether the confidence interval should be
         calculated using Bartlett's formula. If set to True, the confidence interval
         can be used in the model identification stage for fitting ARIMA models.
         If set to False, the confidence interval can be used to test for randomness
         (i.e. there is no time dependence in the data) of the data.
-    fig_size : tuple of int, default: (10, 5)
+    fig_size
         The size of the figure to be displayed.
-    axis : plt.axis, optional
+    axis
         Optionally, an axis object to plot the ACF on.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html
     """
 
     ts._assert_univariate()
@@ -587,17 +588,17 @@ def plot_pacf(
 ) -> None:
     """
     Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+    Uses :func:`statsmodels.tsa.stattools.pacf` [1]_
 
     Parameters
     ----------
-    ts : TimeSeries
+    ts
         The TimeSeries whose ACF should be plotted.
-    m : int, optional
+    m
         Optionally, a time lag to highlight on the plot.
-    max_lag : int, default: 24
+    max_lag
         The maximal lag order to consider.
-    method : str, default: "ywadjusted"
+    method
         The method to be used for the PACF calculation.
         - | "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
           | denominator for acovf. Default.
@@ -611,12 +612,16 @@ def plot_pacf(
           correction.
         - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
           correction.
-    alpha : float, default: 0.05
+    alpha
         The confidence interval to display.
-    fig_size : tuple of int, default: (10, 5)
+    fig_size
         The size of the figure to be displayed.
-    axis : plt.axis, optional
+    axis
         Optionally, an axis object to plot the ACF on.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html
     """
 
     ts._assert_univariate()
@@ -762,7 +767,7 @@ def plot_residuals_analysis(
         Univariate TimeSeries instance representing residuals.
     num_bins
         Optionally, an integer value determining the number of bins in the histogram.
-    fill_nan:
+    fill_nan
         A boolean value indicating whether NaN values should be filled in the residuals.
     """
 
