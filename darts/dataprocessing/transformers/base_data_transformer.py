@@ -109,8 +109,8 @@ class BaseDataTransformer(ABC):
     ) -> Iterator[Tuple[TimeSeries]]:
         """
         Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_transform()`.
-        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to :func:`ts_transform()`)
-        are already forwarded, and thus don't need to be included in this generator.
+        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to
+        :func:`ts_transform()`) are already forwarded, and thus don't need to be included in this generator.
 
         The basic implementation of this method returns ``zip(series)``, i.e., a generator of single-valued tuples,
         each containing one ``TimeSeries`` object.

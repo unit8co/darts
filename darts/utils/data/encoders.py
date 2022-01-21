@@ -178,10 +178,10 @@ INTEGER_INDEX_ATTRIBUTES = ["absolute", "relative"]
 
 
 class CyclicTemporalEncoder(SingleEncoder):
-    """CyclicTemporalEncoder: Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`."""
-
     def __init__(self, index_generator: CovariateIndexGenerator, attribute: str):
         """
+        Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.
+
         Parameters
         ----------
         index_generator
@@ -1032,7 +1032,7 @@ class SequentialEncoder(Encoder):
 
         # check input for invalid encoder types
         invalid_encoders = [
-            enc for enc in params if not enc in ENCODER_KEYS + TRANSFORMER_KEYS
+            enc for enc in params if enc not in ENCODER_KEYS + TRANSFORMER_KEYS
         ]
         raise_if(
             len(invalid_encoders) > 0,

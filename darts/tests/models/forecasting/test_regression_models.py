@@ -21,7 +21,6 @@ try:
         LinearRegressionModel,
         LightGBMModel,
     )
-    from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
     from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
     from darts.models.forecasting.regression_model import (
         _shift_matrices,
