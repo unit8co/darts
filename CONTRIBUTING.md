@@ -48,7 +48,7 @@ and discuss it with some of the core team.
         * `refactor/`
         * …
     * Work on your update
-7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew unitTest_all`.
+7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew test_all`.
 8. Verify your tests coverage by running `./gradlew coverageTest`
     * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested 
     lines with `./coverage.sh xml`
