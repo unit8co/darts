@@ -30,8 +30,8 @@ logger = get_logger(__name__)
 def multi_ts_support(func):
     """
     This decorator further adapts the metrics that took as input two univariate/multivariate ``TimeSeries`` instances,
-    adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric for
-    ``TimeSeries`` with the same indices, and returns a float value that is computed as a function of all the
+    adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric
+    for ``TimeSeries`` with the same indices, and returns a float value that is computed as a function of all the
     pairwise metrics using a `inter_reduction` subroutine passed as argument to the metric function.
 
     If a 'Sequence[TimeSeries]' is passed as input, this decorator provides also parallelisation of the metric
