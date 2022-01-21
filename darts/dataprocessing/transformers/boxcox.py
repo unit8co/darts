@@ -44,11 +44,11 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         name
             A specific name for the transformer
         lmbda
-            The parameter :math:`\lambda` of the Box-Cox transform. If a single float is given, the same
-            :math:`\lambda` value will be used for all dimensions of the series, for all the series.
+            The parameter :math:`\\lambda` of the Box-Cox transform. If a single float is given, the same
+            :math:`\\lambda` value will be used for all dimensions of the series, for all the series.
             If a sequence is given, there is one value per component in the series. If a sequence of sequence
             is given, there is one value per component for all series.
-            If `None` given, will automatically find an optimal value of :math:`\lambda` (for each dimension
+            If `None` given, will automatically find an optimal value of :math:`\\lambda` (for each dimension
             of the time series, for each time series) using :func:`scipy.stats.boxcox_normmax`
             with ``method=optim_method``.
         optim_method
