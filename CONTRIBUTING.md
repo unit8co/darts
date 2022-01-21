@@ -65,3 +65,4 @@ To ensure you don't need to worry about formatting when contributing, it is reco
 - [Black integration in Git](https://black.readthedocs.io/en/stable/integrations/source_version_control.html):
     1. Install the pre-commit hook using `pre-commit install`
     2. Black will automatically format all files before committing
+    3. This will also enable flake8 linting
