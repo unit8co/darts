@@ -44,7 +44,7 @@ class ExponentialSmoothing(ForecastingModel):
         Parameters
         ----------
         trend
-            Type of trend component. Either ``ModelMode.ADDITIVE``, ``ModelMode.MULTIPLICATIVE``, ``ModelMode.NONE``.
+            Type of trend component. Either ``ModelMode.ADDITIVE``, ``ModelMode.MULTIPLICATIVE``, ``ModelMode.NONE`` or ``None``.
             Defaults to ``ModelMode.ADDITIVE``.
         damped
             Should the trend component be damped. Defaults to False.
