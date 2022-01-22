@@ -1,5 +1,3 @@
-from typing import Iterable, Tuple
-from dataclasses import dataclass
 import numpy as np
 from darts.logging import raise_if_not, raise_if
 from abc import ABC, abstractmethod
@@ -92,27 +90,28 @@ class NoWindow(Window):
     Window covers the entire grid,
     meaning every possible alignment between series1 and series2 is considered.
     """
+
     def __len__(self):
-        return self.n*self.m + 1 # include (0,0) element
+        return self.n * self.m + 1  # include (0,0) element
 
     def column_index(self, elem: (int, int)):
-        return elem[1]-1
+        return elem[1] - 1
 
     def column_length(self, column: int) -> int:
         return self.m
 
     def column_lengths(self) -> np.ndarray:
-        result = np.empty((self.n+1))
+        result = np.empty((self.n + 1))
         result.fill(self.m)
         result[0] = 1
 
     def __iter__(self):
-        for i in range(1, self.n+1):
-            for j in range(1, self.m+1):
+        for i in range(1, self.n + 1):
+            for j in range(1, self.m + 1):
                 yield i, j
 
 
-def gtz(value): # greater than zero
+def gtz(value):  # greater than zero
     return value if value > 0 else 0
 
 
@@ -144,7 +143,10 @@ class CRWindow:
         self.m = m
 
         if ranges is not None:
-            raise_if_not(ranges.shape == (n, 2), f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)")
+            raise_if_not(
+                ranges.shape == (n, 2),
+                f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)",
+            )
 
             ranges = np.insert(ranges, 0, [0, 1], axis=0)
             start = ranges[:, 0]
@@ -160,15 +162,15 @@ class CRWindow:
             ranges = ranges.flatten()
         else:
             ranges = np.zeros((n + 1) * 2, dtype=int)
-            ranges[0::2] = self.m #start
-            ranges[1::2] = 0 #end
-            ranges = array.array('i', ranges)
+            ranges[0::2] = self.m  # start
+            ranges[1::2] = 0  # end
+            ranges = array.array("i", ranges)
 
             ranges[0] = 0
             ranges[1] = 1
             self.length = 1
 
-        self.column_ranges = array.array('i', ranges)
+        self.column_ranges = array.array("i", ranges)
 
     def add_range(self, column: int, start: int, end: int):
         """
@@ -188,11 +190,11 @@ class CRWindow:
 
         if start < 1 or start > self.m:
             raise IndexError(f"Start must be >=1 and <=m, got {start}")
-        if end < 1 or end > self.m+1:
+        if end < 1 or end > self.m + 1:
             raise IndexError(f"End must be >=1 and <=m+1, got {end}")
 
-        start_idx = column*2 + 0
-        end_idx = column*2 + 1
+        start_idx = column * 2 + 0
+        end_idx = column * 2 + 1
 
         orig_start = self.column_ranges[start_idx]
         orig_end = self.column_ranges[end_idx]
@@ -216,7 +218,7 @@ class CRWindow:
             Tuple of grid cell index (column, row)
         """
 
-        self.add_range(elem[0], elem[1], elem[1]+1)
+        self.add_range(elem[0], elem[1], elem[1] + 1)
 
     def column_length(self, column: int) -> int:
         start, end = self.column_ranges[column]
@@ -225,19 +227,21 @@ class CRWindow:
     def column_index(self, elem: (int, int)) -> int:
         i, j = elem
 
-        start,end = self.column_ranges[i]
-        if j < start or j >= end: return -1
-        else: return j - start
+        start, end = self.column_ranges[i]
+        if j < start or j >= end:
+            return -1
+        else:
+            return j - start
 
-    def __contains__(self, elem: (int,int)) -> bool:
+    def __contains__(self, elem: (int, int)) -> bool:
         i, j = elem
         start, end = self.column_ranges[i]
         return start <= j < end
 
     def __iter__(self):
-        for i in range(1, self.n+1):
-            start = self.column_ranges[i*2 + 0]
-            end = self.column_ranges[i*2 + 1]
+        for i in range(1, self.n + 1):
+            start = self.column_ranges[i * 2 + 0]
+            end = self.column_ranges[i * 2 + 1]
 
             for j in range(start, end):
                 yield i, j
@@ -287,8 +291,11 @@ class Itakura(CRWindow):
         self.m = m
 
         max_slope = self.max_slope
-        diagonal_slope = m/n # rise over run
-        raise_if_not(max_slope > diagonal_slope, f"Itakura slope {max_slope} must be greater than {diagonal_slope} to form valid parallelogram.")
+        diagonal_slope = m / n  # rise over run
+        raise_if_not(
+            max_slope > diagonal_slope,
+            f"Itakura slope {max_slope} must be greater than {diagonal_slope} to form valid parallelogram.",
+        )
 
         max_slope_angle = atan(max_slope)
         diagonal_slope_angle = atan(diagonal_slope)
@@ -305,27 +312,29 @@ class Itakura(CRWindow):
 
         ranges = np.zeros((self.n, 2), dtype=float)
 
-        shallow_bottom = int(np.round((m - n*max_slope) / (min_slope - max_slope))+1)
+        shallow_bottom = int(
+            np.round((m - n * max_slope) / (min_slope - max_slope)) + 1
+        )
         ranges[:shallow_bottom, 0] = np.arange(shallow_bottom)
-        ranges[shallow_bottom:, 0] = np.arange(n-shallow_bottom)+1
+        ranges[shallow_bottom:, 0] = np.arange(n - shallow_bottom) + 1
 
         ranges[:shallow_bottom, 0] *= min_slope
         ranges[shallow_bottom:, 0] *= max_slope
-        ranges[shallow_bottom:, 0] += ranges[shallow_bottom-1, 0]
+        ranges[shallow_bottom:, 0] += ranges[shallow_bottom - 1, 0]
 
-        steep_top = int(np.round((m - n*min_slope) / (max_slope - min_slope)))
-        ranges[:steep_top, 1] = np.arange(steep_top)+1
-        ranges[steep_top:, 1] = np.arange(n-steep_top)+1
+        steep_top = int(np.round((m - n * min_slope) / (max_slope - min_slope)))
+        ranges[:steep_top, 1] = np.arange(steep_top) + 1
+        ranges[steep_top:, 1] = np.arange(n - steep_top) + 1
 
         ranges[:steep_top:, 1] *= max_slope
         ranges[steep_top:, 1] *= min_slope
-        ranges[steep_top:, 1] += ranges[steep_top-1, 1]
+        ranges[steep_top:, 1] += ranges[steep_top - 1, 1]
 
         np.floor(ranges[:, 0], out=ranges[:, 0])
         np.ceil(ranges[:, 1], out=ranges[:, 1])
 
         ranges = np.maximum([0, 1], ranges)
-        ranges = np.minimum([self.m-1, self.m], ranges)
+        ranges = np.minimum([self.m - 1, self.m], ranges)
         ranges = ranges.astype(int)
         ranges[0][0] = 0
 
@@ -337,6 +346,7 @@ class SakoeChiba(CRWindow):
     Forms a diagonal window where window_size controls the maximum allowed shift between the two series.
     If both time-series have the same time axis, window_size corresponds to the maximum number of time periods
     """
+
     def __init__(self, window_size: int):
         self.window_size = window_size
 
@@ -344,15 +354,18 @@ class SakoeChiba(CRWindow):
         self.n = n
         self.m = m
 
-        diff = abs(n-m)
-        raise_if_not(diff < self.window_size, f"Window size must at least cover size difference ({diff})")
+        diff = abs(n - m)
+        raise_if_not(
+            diff < self.window_size,
+            f"Window size must at least cover size difference ({diff})",
+        )
 
         ranges = np.repeat(np.arange(n), 2)
-        ranges[0::2] -= self.window_size,
+        ranges[0::2] -= (self.window_size,)
         ranges[1::2] += self.window_size
 
         ranges[0::2] = np.maximum(0, ranges[0::2])
-        ranges[1::2] = np.minimum(self.m, ranges[1::2]+1)
+        ranges[1::2] = np.minimum(self.m, ranges[1::2] + 1)
         ranges = np.reshape(ranges, (-1, 2))
 
         super().__init__(n, m, ranges)

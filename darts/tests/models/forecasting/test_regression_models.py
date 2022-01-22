@@ -21,7 +21,6 @@ try:
         LinearRegressionModel,
         LightGBMModel,
     )
-    from darts.utils.data.sequential_dataset import MixedCovariatesSequentialDataset
     from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
     from darts.models.forecasting.regression_model import (
         _shift_matrices,
@@ -58,7 +57,7 @@ def train_test_split(features, target, split_ts):
     return (train_features, train_target, test_features, test_target)
 
 
-# Regression models rely on torch for the Datasets
+# Regression models rely on PyTorch for the Datasets
 if TORCH_AVAILABLE:
 
     class RegressionModelsTestCase(DartsBaseTestClass):
@@ -186,19 +185,11 @@ if TORCH_AVAILABLE:
                 lags_future_covariates=self.lags_future_covariates_1,
             )
 
-            input_chunk_length = -model_instance.min_lag
-            training_output_chunk_length = max(model_instance.max_lag + 1, 1)
-
-            training_dataset = MixedCovariatesSequentialDataset(
+            training_samples, training_labels = model_instance._create_lagged_data(
                 target_series=self.target_series,
                 past_covariates=self.past_covariates,
                 future_covariates=self.future_covariates,
-                input_chunk_length=input_chunk_length,
-                output_chunk_length=training_output_chunk_length,
-            )
-
-            training_samples, training_labels = model_instance._get_training_data(
-                training_dataset=training_dataset
+                max_samples_per_ts=None,
             )
 
             # checking number of dimensions
@@ -214,12 +205,12 @@ if TORCH_AVAILABLE:
                 + len(self.lags_future_covariates_1),
             )
 
-            # checking first row order lags | lags_past_cov | lags_future_cov
+            # checking column order lags | lags_past_cov | lags_future_cov
             self.assertListEqual(
-                list(training_samples[-1, :]),
+                list(training_samples[0, :]),
                 [0, 2, 4, 51, 51.5, 53, 53.5, 104, 105, 108],
             )
-            self.assertEqual(training_labels[-1], 5)
+            self.assertEqual(training_labels[0], 5)
 
         def test_prediction_data_creation(self):
             model_instance = RegressionModel(
@@ -647,7 +638,7 @@ if TORCH_AVAILABLE:
         )
         # @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
         def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
-            """test whether these evaluation set parameters are passed to LGBRegressor """
+            """Test whether these evaluation set parameters are passed to LGBRegressor"""
             model = LightGBMModel(lags=4, lags_past_covariates=2)
             split_index = 450
             model.fit(

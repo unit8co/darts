@@ -13,7 +13,6 @@ from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf, pacf, grangercausalitytests, adfuller, kpss
 
-from warnings import warn
 from darts.logging import raise_log, get_logger, raise_if_not, raise_if
 from darts import TimeSeries
 from .missing_values import fill_missing_values
@@ -22,10 +21,9 @@ from .utils import SeasonalityMode, ModelMode
 logger = get_logger(__name__)
 
 
-def check_seasonality(ts: TimeSeries,
-                      m: Optional[int] = None,
-                      max_lag: int = 24,
-                      alpha: float = 0.05):
+def check_seasonality(
+    ts: TimeSeries, m: Optional[int] = None, max_lag: int = 24, alpha: float = 0.05
+):
     """
     Checks whether the TimeSeries `ts` is seasonal with period `m` or not.
 
@@ -53,23 +51,24 @@ def check_seasonality(ts: TimeSeries,
     ts._assert_univariate()
 
     if m is not None and (m < 2 or not isinstance(m, int)):
-        raise_log(ValueError('m must be an integer greater than 1.'), logger)
+        raise_log(ValueError("m must be an integer greater than 1."), logger)
 
     if m is not None and m > max_lag:
-        raise_log(ValueError('max_lag must be greater than or equal to m.'), logger)
+        raise_log(ValueError("max_lag must be greater than or equal to m."), logger)
 
     n_unique = np.unique(ts.values()).shape[0]
 
     if n_unique == 1:  # Check for non-constant TimeSeries
         return False, 0
 
-    r = acf(ts.values(), nlags=max_lag, fft=False)  # In case user wants to check for seasonality higher than 24 steps.
+    r = acf(
+        ts.values(), nlags=max_lag, fft=False
+    )  # In case user wants to check for seasonality higher than 24 steps.
 
     # Finds local maxima of Auto-Correlation Function
     candidates = argrelmax(r)[0]
 
     if len(candidates) == 0:
-        logger.info('The ACF has no local maximum for m < max_lag = {}.'.format(max_lag))
         return False, 0
 
     if m is not None:
@@ -96,9 +95,7 @@ def check_seasonality(ts: TimeSeries,
     return False, 0
 
 
-def _bartlett_formula(r: np.ndarray,
-                      m: int,
-                      length: int) -> float:
+def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
     """
     Computes the standard error of `r` at order `m` with respect to `length` according to Bartlett's formula.
 
@@ -120,13 +117,14 @@ def _bartlett_formula(r: np.ndarray,
     if m == 1:
         return math.sqrt(1 / length)
     else:
-        return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[:m - 1]))) / length)
+        return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[: m - 1]))) / length)
 
 
-def extract_trend_and_seasonality(ts: TimeSeries,
-                                  freq: int = None,
-                                  model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE) -> \
-        Tuple[TimeSeries, TimeSeries]:
+def extract_trend_and_seasonality(
+    ts: TimeSeries,
+    freq: int = None,
+    model: Union[SeasonalityMode, ModelMode] = ModelMode.MULTIPLICATIVE,
+) -> Tuple[TimeSeries, TimeSeries]:
     """
     Extracts trend and seasonality from a TimeSeries instance using `statsmodels.seasonal_decompose`.
 
@@ -149,11 +147,19 @@ def extract_trend_and_seasonality(ts: TimeSeries,
     """
 
     ts._assert_univariate()
-    raise_if_not(model in ModelMode or model in SeasonalityMode,
-                 "Unknown value for model_mode: {}.".format(model), logger)
-    raise_if_not(model is not SeasonalityMode.NONE, "The model must be either MULTIPLICATIVE or ADDITIVE.")
+    raise_if_not(
+        model in ModelMode or model in SeasonalityMode,
+        "Unknown value for model_mode: {}.".format(model),
+        logger,
+    )
+    raise_if_not(
+        model is not SeasonalityMode.NONE,
+        "The model must be either MULTIPLICATIVE or ADDITIVE.",
+    )
 
-    decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model.value, extrapolate_trend='freq')
+    decomp = seasonal_decompose(
+        ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq"
+    )
 
     season = TimeSeries.from_times_and_values(ts.time_index, decomp.seasonal)
     trend = TimeSeries.from_times_and_values(ts.time_index, decomp.trend)
@@ -161,9 +167,9 @@ def extract_trend_and_seasonality(ts: TimeSeries,
     return trend, season
 
 
-def remove_from_series(ts: TimeSeries,
-                       other: TimeSeries,
-                       model: Union[SeasonalityMode, ModelMode]) -> TimeSeries:
+def remove_from_series(
+    ts: TimeSeries, other: TimeSeries, model: Union[SeasonalityMode, ModelMode]
+) -> TimeSeries:
     """
     Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
     Use e.g. to remove an additive or multiplicative trend from a series.
@@ -186,21 +192,32 @@ def remove_from_series(ts: TimeSeries,
     """
 
     ts._assert_univariate()
-    raise_if_not(model in ModelMode or model in SeasonalityMode,
-                 "Unknown value for model_mode: {}.".format(model), logger)
+    raise_if_not(
+        model in ModelMode or model in SeasonalityMode,
+        "Unknown value for model_mode: {}.".format(model),
+        logger,
+    )
 
-    if model.value == 'multiplicative':
+    if model.value == "multiplicative":
         new_ts = ts / other
-    elif model.value == 'additive':
+    elif model.value == "additive":
         new_ts = ts - other
     else:
-        raise_log(ValueError('Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}'.format(model)))
+        raise_log(
+            ValueError(
+                "Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}".format(
+                    model
+                )
+            )
+        )
     return new_ts
 
 
-def remove_seasonality(ts: TimeSeries,
-                       freq: int = None,
-                       model: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE) -> TimeSeries:
+def remove_seasonality(
+    ts: TimeSeries,
+    freq: int = None,
+    model: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
+) -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.
 
@@ -222,15 +239,19 @@ def remove_seasonality(ts: TimeSeries,
     """
 
     ts._assert_univariate()
-    raise_if_not(model is not SeasonalityMode.NONE, "The model must be either MULTIPLICATIVE or ADDITIVE.")
+    raise_if_not(
+        model is not SeasonalityMode.NONE,
+        "The model must be either MULTIPLICATIVE or ADDITIVE.",
+    )
 
     _, seasonality = extract_trend_and_seasonality(ts, freq, model)
     new_ts = remove_from_series(ts, seasonality, model)
     return new_ts
 
 
-def remove_trend(ts: TimeSeries,
-                 model: ModelMode = ModelMode.MULTIPLICATIVE) -> TimeSeries:
+def remove_trend(
+    ts: TimeSeries, model: ModelMode = ModelMode.MULTIPLICATIVE
+) -> TimeSeries:
     """
     Adjusts the TimeSeries `ts` for a trend using the `model` decomposition.
 
@@ -256,11 +277,12 @@ def remove_trend(ts: TimeSeries,
     return new_ts
 
 
-def stationarity_tests(ts: TimeSeries,
-                       p_value_threshold_adfuller: float = 0.05,
-                       p_value_threshold_kpss: float = 0.05
-                       ) -> bool:
-    
+def stationarity_tests(
+    ts: TimeSeries,
+    p_value_threshold_adfuller: float = 0.05,
+    p_value_threshold_kpss: float = 0.05,
+) -> bool:
+
     """
     Double test on stationarity using both Kwiatkowski-Phillips-Schmidt-Shin and Augmented
     Dickey-Fuller statistical tests.
@@ -290,12 +312,14 @@ def stationarity_tests(ts: TimeSeries,
     adf_res = stationarity_test_adf(ts)
     kpss_res = stationarity_test_kpss(ts)
 
-    return (adf_res[1] < p_value_threshold_adfuller) and (kpss_res[1] > p_value_threshold_kpss)
+    return (adf_res[1] < p_value_threshold_adfuller) and (
+        kpss_res[1] > p_value_threshold_kpss
+    )
 
 
-def stationarity_test_kpss(ts: TimeSeries,
-                           regression: str = 'c',
-                           nlags: Union[str, int] = 'auto') -> set:
+def stationarity_test_kpss(
+    ts: TimeSeries, regression: str = "c", nlags: Union[str, int] = "auto"
+) -> set:
     """
     Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
     using :func:`statsmodels.tsa.stattools.kpss`. See [1]_.
@@ -307,17 +331,18 @@ def stationarity_test_kpss(ts: TimeSeries,
         The time series to test.
     regression
         The null hypothesis for the KPSS test.
-        “c” : The data is stationary around a constant (default).
-        “ct” : The data is stationary around a trend.
+        'c' : The data is stationary around a constant (default).
+        'ct' : The data is stationary around a trend.
     nlags
-       Indicates the number of lags to be used. If “auto” (default), lags is calculated using the data-dependent method of Hobijn et al. (1998). 
-       See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to “legacy”, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
+       Indicates the number of lags to be used. If 'auto' (default), lags is calculated using the data-dependent method
+       of Hobijn et al. (1998). See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to 'legacy',
+       uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
 
     Returns
     -------
     set
         | kpss_stat: The test statistic.
-        | pvalue: The p-value of the test. The p-value is interpolated from Table 1 in [2]_, 
+        | pvalue: The p-value of the test. The p-value is interpolated from Table 1 in [2]_,
         | and a boundary point is returned if the test statistic is outside the table of critical values,
         | that is, if the p-value is outside the interval (0.01, 0.1).
         | lags: The truncation lag parameter.
@@ -330,18 +355,16 @@ def stationarity_test_kpss(ts: TimeSeries,
     """
     ts._assert_univariate()
     ts._assert_deterministic()
-    
-    return kpss(
-        ts.values(copy=False),
-        regression,
-        nlags
-    )
+
+    return kpss(ts.values(copy=False), regression, nlags)
 
 
-def stationarity_test_adf(ts: TimeSeries,
-                          maxlag: Union[None, int] = None,
-                          regression: str = 'c',
-                          autolag: Union[None, str] = 'AIC') -> set:
+def stationarity_test_adf(
+    ts: TimeSeries,
+    maxlag: Union[None, int] = None,
+    regression: str = "c",
+    autolag: Union[None, str] = "AIC",
+) -> set:
     """
     Provides Augmented Dickey-Fuller unit root test for a time series,
     using :func:`statsmodels.tsa.stattools.adfuller`. See [1]_.
@@ -355,14 +378,14 @@ def stationarity_test_adf(ts: TimeSeries,
         Maximum lag which is included in test, default value of 12*(nobs/100)^{1/4} is used when None.
     regression
         Constant and trend order to include in regression.
-        “c” : constant only (default).
-        “ct” : constant and trend.
-        “ctt” : constant, and linear and quadratic trend.
-        “n” : no constant, no trend.
+        "c" : constant only (default).
+        "ct" : constant and trend.
+        "ctt" : constant, and linear and quadratic trend.
+        "n" : no constant, no trend.
     autolag
         Method to use when automatically determining the lag length among the values 0, 1, …, maxlag.
-        If “AIC” (default) or “BIC”, then the number of lags is chosen to minimize the corresponding
-        information criterion. “t-stat” based choice of maxlag. Starts with maxlag and drops a lag
+        If "AIC" (default) or "BIC", then the number of lags is chosen to minimize the corresponding
+        information criterion. "t-stat" based choice of maxlag. Starts with maxlag and drops a lag
         until the t-statistic on the last lag length is significant using a 5%-sized test.
         If None, then the number of included lags is set to maxlag.
 
@@ -370,7 +393,7 @@ def stationarity_test_adf(ts: TimeSeries,
     -------
     set
         | adf: The test statistic.
-        | pvalue: MacKinnon’s approximate p-value based on [2]_.
+        | pvalue: MacKinnon's approximate p-value based on [2]_.
         | usedlag: The number of lags used.
         | nobs: The number of observations used for the ADF regression and calculation of the critical values.
         | critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on [2]_.
@@ -385,19 +408,16 @@ def stationarity_test_adf(ts: TimeSeries,
     ts._assert_univariate()
     ts._assert_deterministic()
 
-    return adfuller(
-        ts.values(copy=False),
-        maxlag,
-        regression,
-        autolag
-    )
+    return adfuller(ts.values(copy=False), maxlag, regression, autolag)
 
 
-def granger_causality_tests(ts_cause: TimeSeries,
-                            ts_effect: TimeSeries,
-                            maxlag: int,
-                            addconst: bool = True,
-                            verbose: bool = True) -> None:
+def granger_causality_tests(
+    ts_cause: TimeSeries,
+    ts_effect: TimeSeries,
+    maxlag: int,
+    addconst: bool = True,
+    verbose: bool = True,
+) -> None:
     """
     Provides four tests for granger non causality of 2 time series using
     :func:`statsmodels.tsa.stattools.grangercausalitytests`.
@@ -407,13 +427,13 @@ def granger_causality_tests(ts_cause: TimeSeries,
     Parameters
     ----------
     ts_cause
-        A univariate deterministic time series. The statistical test determines if this time series 
+        A univariate deterministic time series. The statistical test determines if this time series
         'Granger causes' the time series ts_effect (second parameter). Missing values are not supported.
         if H_0 (non causality) is rejected (p near 0), then there is a 'granger causality'.
     ts_effect
         Univariate time series 'Granger caused' by ts_cause.
     maxlag
-        If an integer, computes the test for all lags up to maxlag. 
+        If an integer, computes the test for all lags up to maxlag.
         If an iterable, computes the tests only for the lags in maxlag.
     addconst
         Include a constant in the model.
@@ -423,9 +443,9 @@ def granger_causality_tests(ts_cause: TimeSeries,
     Returns
     -------
     Dict
-        All test results, dictionary keys are the number of lags. For each lag the values are a tuple, 
-        with the first element a dictionary with test statistic, pvalues, degrees of freedom, the second element are 
-        the OLS estimation results for the restricted model, the unrestricted model and the restriction (contrast) 
+        All test results, dictionary keys are the number of lags. For each lag the values are a tuple,
+        with the first element a dictionary with test statistic, pvalues, degrees of freedom, the second element are
+        the OLS estimation results for the restricted model, the unrestricted model and the restriction (contrast)
         matrix for the parameter f_test.
 
     References
@@ -439,107 +459,147 @@ def granger_causality_tests(ts_cause: TimeSeries,
     ts_cause._assert_deterministic()
     ts_effect._assert_deterministic()
 
-    raise_if_not(ts_cause.freq == ts_effect.freq,
-                'ts_cause and ts_effect must have the same frequency.')
+    raise_if_not(
+        ts_cause.freq == ts_effect.freq,
+        "ts_cause and ts_effect must have the same frequency.",
+    )
 
     if not ts_cause.has_same_time_as(ts_effect):
-        logger.warning('ts_cause and ts_effect time series have different time index. We will slice-intersect ts_cause with ts_effect.')
-    
+        logger.warning(
+            "ts_cause and ts_effect time series have different time index. "
+            "We will slice-intersect ts_cause with ts_effect."
+        )
+
     ts_cause = ts_cause.slice_intersect(ts_effect)
     ts_effect = ts_effect.slice_intersect(ts_cause)
 
-
     if not stationarity_tests(ts_cause):
-        logger.warning(f"ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context.")
+        logger.warning(
+            "ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
+        )
     if not stationarity_tests(ts_effect):
-        logger.warning(f"ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context.")
-
-    return grangercausalitytests(
-        np.concatenate((ts_effect.values(copy=False), ts_cause.values(copy=False)), axis=1), 
-        maxlag,
-        addconst,
-        verbose
+        logger.warning(
+            "ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
         )
 
-def plot_acf(ts: TimeSeries,
-             m: Optional[int] = None,
-             max_lag: int = 24,
-             alpha: float = 0.05,
-             bartlett_confint: bool = True,
-             fig_size: Tuple[int, int] = (10, 5),
-             axis: Optional[plt.axis] = None) -> None:
+    return grangercausalitytests(
+        np.concatenate(
+            (ts_effect.values(copy=False), ts_cause.values(copy=False)), axis=1
+        ),
+        maxlag,
+        addconst,
+        verbose,
+    )
+
+
+def plot_acf(
+    ts: TimeSeries,
+    m: Optional[int] = None,
+    max_lag: int = 24,
+    alpha: float = 0.05,
+    bartlett_confint: bool = True,
+    fig_size: Tuple[int, int] = (10, 5),
+    axis: Optional[plt.axis] = None,
+) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+    Uses :func:`statsmodels.tsa.stattools.acf` [1]_
 
     Parameters
     ----------
-    ts : TimeSeries
+    ts
         The TimeSeries whose ACF should be plotted.
-    m : int, optional
+    m
         Optionally, a time lag to highlight on the plot.
-    max_lag : int, default: 24
+    max_lag
         The maximal lag order to consider.
-    alpha : float, default: 0.05
+    alpha
         The confidence interval to display.
-    bartlett_confint : bool, default: True
+    bartlett_confint
         The boolean value indicating whether the confidence interval should be
         calculated using Bartlett's formula. If set to True, the confidence interval
         can be used in the model identification stage for fitting ARIMA models.
         If set to False, the confidence interval can be used to test for randomness
         (i.e. there is no time dependence in the data) of the data.
-    fig_size : tuple of int, default: (10, 5)
+    fig_size
         The size of the figure to be displayed.
-    axis : plt.axis, optional
+    axis
         Optionally, an axis object to plot the ACF on.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html
     """
 
     ts._assert_univariate()
-    raise_if(max_lag is None or not (1 <= max_lag < len(ts)),
-             'max_lag must be greater than or equal to 1 and less than len(ts).')
-    raise_if(m is not None and not (0 <= m <= max_lag),
-             'm must be greater than or equal to 0 and less than or equal to max_lag.')
-    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
+    raise_if(
+        max_lag is None or not (1 <= max_lag < len(ts)),
+        "max_lag must be greater than or equal to 1 and less than len(ts).",
+    )
+    raise_if(
+        m is not None and not (0 <= m <= max_lag),
+        "m must be greater than or equal to 0 and less than or equal to max_lag.",
+    )
+    raise_if(
+        alpha is None or not (0 < alpha < 1),
+        "alpha must be greater than 0 and less than 1.",
+    )
 
-    r, confint = acf(ts.values(), nlags=max_lag, fft=False, alpha=alpha, bartlett_confint=bartlett_confint)
+    r, confint = acf(
+        ts.values(),
+        nlags=max_lag,
+        fft=False,
+        alpha=alpha,
+        bartlett_confint=bartlett_confint,
+    )
 
     if axis is None:
         plt.figure(figsize=fig_size)
         axis = plt
 
     for i in range(len(r)):
-        axis.plot((i, i),
-                  (0, r[i]),
-                  color=('#b512b8' if m is not None and i == m else 'black'),
-                  lw=(1 if m is not None and i == m else .5))
+        axis.plot(
+            (i, i),
+            (0, r[i]),
+            color=("#b512b8" if m is not None and i == m else "black"),
+            lw=(1 if m is not None and i == m else 0.5),
+        )
 
     # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
-    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
-    axis.plot((0, max_lag + 1), (0, 0), color='black')
+    axis.fill_between(
+        np.arange(1, max_lag + 1),
+        upp_band,
+        [-x for x in upp_band],
+        color="#003DFD",
+        alpha=0.25,
+    )
+    axis.plot((0, max_lag + 1), (0, 0), color="black")
 
 
-def plot_pacf(ts: TimeSeries,
-              m: Optional[int] = None,
-              max_lag: int = 24,
-              method: str = "ywadjusted",
-              alpha: float = 0.05,
-              fig_size: Tuple[int, int] = (10, 5),
-              axis: Optional[plt.axis] = None) -> None:
+def plot_pacf(
+    ts: TimeSeries,
+    m: Optional[int] = None,
+    max_lag: int = 24,
+    method: str = "ywadjusted",
+    alpha: float = 0.05,
+    fig_size: Tuple[int, int] = (10, 5),
+    axis: Optional[plt.axis] = None,
+) -> None:
     """
     Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+    Uses :func:`statsmodels.tsa.stattools.pacf` [1]_
 
     Parameters
     ----------
-    ts : TimeSeries
+    ts
         The TimeSeries whose ACF should be plotted.
-    m : int, optional
+    m
         Optionally, a time lag to highlight on the plot.
-    max_lag : int, default: 24
+    max_lag
         The maximal lag order to consider.
-    method : str, default: "ywadjusted"
+    method
         The method to be used for the PACF calculation.
         - | "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
           | denominator for acovf. Default.
@@ -553,20 +613,31 @@ def plot_pacf(ts: TimeSeries,
           correction.
         - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
           correction.
-    alpha : float, default: 0.05
+    alpha
         The confidence interval to display.
-    fig_size : tuple of int, default: (10, 5)
+    fig_size
         The size of the figure to be displayed.
-    axis : plt.axis, optional
+    axis
         Optionally, an axis object to plot the ACF on.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html
     """
 
     ts._assert_univariate()
-    raise_if(max_lag is None or not (1 <= max_lag < len(ts)//2),
-             'max_lag must be greater than or equal to 1 and less than len(ts)//2.')
-    raise_if(m is not None and not (0 <= m <= max_lag),
-             'm must be greater than or equal to 0 and less than or equal to max_lag.')
-    raise_if(alpha is None or not (0 < alpha < 1), 'alpha must be greater than 0 and less than 1.')
+    raise_if(
+        max_lag is None or not (1 <= max_lag < len(ts) // 2),
+        "max_lag must be greater than or equal to 1 and less than len(ts)//2.",
+    )
+    raise_if(
+        m is not None and not (0 <= m <= max_lag),
+        "m must be greater than or equal to 0 and less than or equal to max_lag.",
+    )
+    raise_if(
+        alpha is None or not (0 < alpha < 1),
+        "alpha must be greater than 0 and less than 1.",
+    )
 
     r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)
 
@@ -575,25 +646,35 @@ def plot_pacf(ts: TimeSeries,
         axis = plt
 
     for i in range(len(r)):
-        axis.plot((i, i),
-                  (0, r[i]),
-                  color=('#b512b8' if m is not None and i == m else 'black'),
-                  lw=(1 if m is not None and i == m else .5))
+        axis.plot(
+            (i, i),
+            (0, r[i]),
+            color=("#b512b8" if m is not None and i == m else "black"),
+            lw=(1 if m is not None and i == m else 0.5),
+        )
 
     # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
-    axis.fill_between(np.arange(1, max_lag + 1), upp_band, [-x for x in upp_band], color='#003DFD', alpha=.25)
-    axis.plot((0, max_lag + 1), (0, 0), color='black')
+    axis.fill_between(
+        np.arange(1, max_lag + 1),
+        upp_band,
+        [-x for x in upp_band],
+        color="#003DFD",
+        alpha=0.25,
+    )
+    axis.plot((0, max_lag + 1), (0, 0), color="black")
 
 
-def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
-              bins: Optional[Union[int, np.ndarray, List[float]]] = None,
-              density: bool = False,
-              title: Optional[str] = None,
-              fig_size: Optional[Tuple[int, int]] = None,
-              ax: Optional[plt.axis] = None) -> None:
-    """ This function plots the histogram of values in a TimeSeries instance or an array-like.
+def plot_hist(
+    data: Union[TimeSeries, List[float], np.ndarray],
+    bins: Optional[Union[int, np.ndarray, List[float]]] = None,
+    density: bool = False,
+    title: Optional[str] = None,
+    fig_size: Optional[Tuple[int, int]] = None,
+    ax: Optional[plt.axis] = None,
+) -> None:
+    """This function plots the histogram of values in a TimeSeries instance or an array-like.
 
     All types of TimeSeries are supported (uni-, multivariate, deterministic, stochastic).
     Depending on the number of components in `data`, up to four histograms can be plotted on one figure.
@@ -622,24 +703,28 @@ def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
 
     if isinstance(data, TimeSeries):
         if len(data.components) > n_plots_max:
-            logger.warning("TimeSeries contains more than 4 components. Only the first 4 components will be displayed.")
+            logger.warning(
+                "TimeSeries contains more than 4 components. Only the first 4 components will be displayed."
+            )
 
         components = list(data.components[:n_plots_max])
-        values = data[components].all_values(copy=False).flatten(order='F')
+        values = data[components].all_values(copy=False).flatten(order="F")
     else:
         values = data if isinstance(data, np.ndarray) else np.array(data)
         if len(values.shape) > 1:
-            logger.warning("Input array-like data with `dim>1d` will be flattened and displayed in one histogram.")
+            logger.warning(
+                "Input array-like data with `dim>1d` will be flattened and displayed in one histogram."
+            )
 
-        components = ['Data']
-        values = values.flatten(order='F')
+        components = ["Data"]
+        values = values.flatten(order="F")
 
     # compute the number of columns and rows for subplots depending on shape of input data
     n_components = len(components)
     n_cols = 1 if n_components == 1 else 2
     n_rows = math.ceil(n_components / n_cols)
 
-    title = 'Histogram' if title is None else title
+    title = "Histogram" if title is None else title
     if ax is None:
         fig = plt.figure(constrained_layout=True, figsize=fig_size)
         gs = fig.add_gridspec(n_rows, n_cols)
@@ -647,22 +732,29 @@ def plot_hist(data: Union[TimeSeries, List[float], np.ndarray],
         ax_all = [fig.add_subplot(gs[i]) for i in range(n_components)]
     else:
         if n_components > 1:
-            logger.warning("Only the first component is plotted when calling plot_hist() with a given `ax`")
+            logger.warning(
+                "Only the first component is plotted when calling plot_hist() with a given `ax`"
+            )
         ax.set_title(title)
         ax_all = [ax]
 
     n_entries = len(values) // n_components
     for i, label, ax_i in zip(range(n_components), components, ax_all):
-        ax_i.hist(values[i * n_entries:(i + 1) * n_entries], bins=bins, density=density, label=label)
-        ax_i.set_xlabel('value')
-        ax_i.set_ylabel('count' if not density else 'probability density')
+        ax_i.hist(
+            values[i * n_entries : (i + 1) * n_entries],
+            bins=bins,
+            density=density,
+            label=label,
+        )
+        ax_i.set_xlabel("value")
+        ax_i.set_ylabel("count" if not density else "probability density")
         ax_i.legend()
 
 
-def plot_residuals_analysis(residuals: TimeSeries,
-                            num_bins: int = 20,
-                            fill_nan: bool = True) -> None:
-    """ Plots data relevant to residuals.
+def plot_residuals_analysis(
+    residuals: TimeSeries, num_bins: int = 20, fill_nan: bool = True
+) -> None:
+    """Plots data relevant to residuals.
 
     This function takes a univariate TimeSeries instance of residuals and plots their values,
     their distribution and their ACF.
@@ -676,7 +768,7 @@ def plot_residuals_analysis(residuals: TimeSeries,
         Univariate TimeSeries instance representing residuals.
     num_bins
         Optionally, an integer value determining the number of bins in the histogram.
-    fill_nan:
+    fill_nan
         A boolean value indicating whether NaN values should be filled in the residuals.
     """
 
@@ -691,24 +783,34 @@ def plot_residuals_analysis(residuals: TimeSeries,
     # plot values
     ax1 = fig.add_subplot(gs[:1, :])
     residuals.plot(ax=ax1)
-    ax1.set_ylabel('value')
-    ax1.set_title('Residual values')
+    ax1.set_ylabel("value")
+    ax1.set_title("Residual values")
 
     # plot histogram and distribution
-    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
-    res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
+    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(
+        residuals.univariate_values()
+    )
+    res_min, res_max = min(residuals.univariate_values()), max(
+        residuals.univariate_values()
+    )
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
     plot_hist(residuals, bins=num_bins, ax=ax2)
-    ax2.plot(x, norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins)
+    ax2.plot(
+        x,
+        norm(res_mean, res_std).pdf(x)
+        * len(residuals)
+        * (res_max - res_min)
+        / num_bins,
+    )
     ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
-    ax2.set_title('Distribution')
-    ax2.set_ylabel('count')
-    ax2.set_xlabel('value')
+    ax2.set_title("Distribution")
+    ax2.set_ylabel("count")
+    ax2.set_xlabel("value")
 
     # plot ACF
     ax3 = fig.add_subplot(gs[1:, :1])
     plot_acf(residuals, axis=ax3)
-    ax3.set_ylabel('ACF value')
-    ax3.set_xlabel('lag')
-    ax3.set_title('ACF')
+    ax3.set_ylabel("ACF value")
+    ax3.set_xlabel("lag")
+    ax3.set_title("ACF")

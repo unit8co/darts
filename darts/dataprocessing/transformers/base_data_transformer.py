@@ -15,11 +15,10 @@ logger = get_logger(__name__)
 
 
 class BaseDataTransformer(ABC):
-    def __init__(self,
-                 name: str = "BaseDataTransformer",
-                 n_jobs: int = 1,
-                 verbose: bool = False):
-        """ Abstract class for data transformers.
+    def __init__(
+        self, name: str = "BaseDataTransformer", n_jobs: int = 1, verbose: bool = False
+    ):
+        """Abstract class for data transformers.
 
         All the deriving classes have to implement the static method :func:`ts_transform`.
         The class offers the method :func:`transform()`, for applying a transformation to a ``TimeSeries`` or
@@ -53,7 +52,7 @@ class BaseDataTransformer(ABC):
         self._n_jobs = n_jobs
 
     def set_verbose(self, value: bool):
-        """ Set the verbosity status.
+        """Set the verbosity status.
 
         `True` for enabling the detailed report about scaler's operation progress,
         `False` for no additional information.
@@ -68,7 +67,7 @@ class BaseDataTransformer(ABC):
         self._verbose = value
 
     def set_n_jobs(self, value: int):
-        """ Set the number of processors to be used by the transformer while processing multiple ``TimeSeries``.
+        """Set the number of processors to be used by the transformer while processing multiple ``TimeSeries``.
 
         Parameters
         ----------
@@ -82,7 +81,7 @@ class BaseDataTransformer(ABC):
     @staticmethod
     @abstractmethod
     def ts_transform(series: TimeSeries) -> TimeSeries:
-        """ The function that will be applied to each series when :func:`transform()` is called.
+        """The function that will be applied to each series when :func:`transform()` is called.
 
         The function must take as first argument a ``TimeSeries`` object, and return the transformed ``TimeSeries``
         object. If more parameters are added as input in the derived classes, the ``_transform_iterator()`` should be
@@ -105,11 +104,13 @@ class BaseDataTransformer(ABC):
         """
         pass
 
-    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
+    def _transform_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries]]:
         """
         Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_transform()`.
-        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to :func:`ts_transform()`)
-        are already forwarded, and thus don't need to be included in this generator.
+        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to
+        :func:`ts_transform()`) are already forwarded, and thus don't need to be included in this generator.
 
         The basic implementation of this method returns ``zip(series)``, i.e., a generator of single-valued tuples,
         each containing one ``TimeSeries`` object.
@@ -141,10 +142,10 @@ class BaseDataTransformer(ABC):
         """
         return zip(series)
 
-    def transform(self,
-                  series: Union[TimeSeries, Sequence[TimeSeries]],
-                  *args, **kwargs) -> Union[TimeSeries, List[TimeSeries]]:
-        """ Transform a (sequence of) of series.
+    def transform(
+        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
+        """Transform a (sequence of) of series.
 
         In case a ``Sequence`` is passed as input data, this function takes care of
         parallelising the transformation of multiple series in the sequence at the same time.
@@ -171,19 +172,26 @@ class BaseDataTransformer(ABC):
         else:
             data = series
 
-        input_iterator = _build_tqdm_iterator(self._transform_iterator(data),
-                                              verbose=self._verbose,
-                                              desc=desc,
-                                              total=len(data))
+        input_iterator = _build_tqdm_iterator(
+            self._transform_iterator(data),
+            verbose=self._verbose,
+            desc=desc,
+            total=len(data),
+        )
 
-        transformed_data = _parallel_apply(input_iterator, self.__class__.ts_transform,
-                                           self._n_jobs, args, kwargs)
+        transformed_data = _parallel_apply(
+            input_iterator, self.__class__.ts_transform, self._n_jobs, args, kwargs
+        )
 
-        return transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
+        return (
+            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
+        )
 
     @staticmethod
-    def _reshape_in(series: TimeSeries, component_mask: Optional[np.ndarray] = None) -> np.ndarray:
-        """ Reshapes the series' values to be fed in input to a transformer.
+    def _reshape_in(
+        series: TimeSeries, component_mask: Optional[np.ndarray] = None
+    ) -> np.ndarray:
+        """Reshapes the series' values to be fed in input to a transformer.
 
         The output is a 2-D matrix where each column corresponds to a component (dimension)
         of the series, and the columns' values are the flattened values over all samples
@@ -200,22 +208,30 @@ class BaseDataTransformer(ABC):
         if component_mask is None:
             component_mask = np.ones(series.n_components, dtype=bool)
 
-        raise_if_not(isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
-                     '`component_mask` must be a boolean np.ndarray`',
-                     logger)
-        raise_if_not(series.width == len(component_mask),
-                     'mismatch between number of components in `series` and length of `component_mask`',
-                     logger)
+        raise_if_not(
+            isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
+            "`component_mask` must be a boolean np.ndarray`",
+            logger,
+        )
+        raise_if_not(
+            series.width == len(component_mask),
+            "mismatch between number of components in `series` and length of `component_mask`",
+            logger,
+        )
 
         vals = series.all_values(copy=False)[:, component_mask, :]
 
-        return np.stack([vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1)
+        return np.stack(
+            [vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1
+        )
 
     @staticmethod
-    def _reshape_out(series: TimeSeries,
-                     vals: np.ndarray,
-                     component_mask: Optional[np.ndarray] = None) -> np.ndarray:
-        """ Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries.
+    def _reshape_out(
+        series: TimeSeries,
+        vals: np.ndarray,
+        component_mask: Optional[np.ndarray] = None,
+    ) -> np.ndarray:
+        """Reshapes the 2-D matrix coming out of a transformer into a 3-D matrix suitable to build a TimeSeries.
 
         The output is a 3-D matrix, built by taking each column of the 2-D matrix (the flattened components)
         and reshaping them to (len(series), n_samples), then stacking them on 2nd axis.
@@ -231,19 +247,28 @@ class BaseDataTransformer(ABC):
             from `series`. If given, insert `vals` back into the columns of the original array.
         """
 
-        raise_if_not(component_mask is None or isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
-                     'If `component_mask` is given, must be a boolean np.ndarray`',
-                     logger)
+        raise_if_not(
+            component_mask is None
+            or isinstance(component_mask, np.ndarray)
+            and component_mask.dtype == bool,
+            "If `component_mask` is given, must be a boolean np.ndarray`",
+            logger,
+        )
 
         series_width = series.width if component_mask is None else component_mask.sum()
-        reshaped = np.stack([vals[:, i].reshape(-1, series.n_samples) for i in range(series_width)], axis=1)
+        reshaped = np.stack(
+            [vals[:, i].reshape(-1, series.n_samples) for i in range(series_width)],
+            axis=1,
+        )
 
         if component_mask is None:
             return reshaped
 
-        raise_if_not(series.width == len(component_mask),
-                     'mismatch between number of components in `series` and length of `component_mask`',
-                     logger)
+        raise_if_not(
+            series.width == len(component_mask),
+            "mismatch between number of components in `series` and length of `component_mask`",
+            logger,
+        )
 
         series_vals = series.all_values(copy=True)
         series_vals[:, component_mask, :] = reshaped
@@ -251,8 +276,7 @@ class BaseDataTransformer(ABC):
 
     @property
     def name(self):
-        """ Name of the data transformer.
-        """
+        """Name of the data transformer."""
         return self._name
 
     def __str__(self):

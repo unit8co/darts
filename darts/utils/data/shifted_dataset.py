@@ -8,22 +8,26 @@ import numpy as np
 
 from darts import TimeSeries
 from .utils import CovariateType
-from .training_dataset import (TrainingDataset,
-                               PastCovariatesTrainingDataset,
-                               FutureCovariatesTrainingDataset,
-                               DualCovariatesTrainingDataset,
-                               MixedCovariatesTrainingDataset,
-                               SplitCovariatesTrainingDataset)
+from .training_dataset import (
+    TrainingDataset,
+    PastCovariatesTrainingDataset,
+    FutureCovariatesTrainingDataset,
+    DualCovariatesTrainingDataset,
+    MixedCovariatesTrainingDataset,
+    SplitCovariatesTrainingDataset,
+)
 from darts.logging import raise_if_not
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 length: int = 12,
-                 shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        length: int = 12,
+        shift: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_target)
         arrays, which all have length `length`.
@@ -63,14 +67,16 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
         """
         super().__init__()
 
-        self.ds = GenericShiftedDataset(target_series=target_series,
-                                        covariates=covariates,
-                                        input_chunk_length=length,
-                                        output_chunk_length=length,
-                                        shift=shift,
-                                        shift_covariates=False,
-                                        max_samples_per_ts=max_samples_per_ts,
-                                        covariate_type=CovariateType.PAST)
+        self.ds = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=length,
+            output_chunk_length=length,
+            shift=shift,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.PAST,
+        )
 
     def __len__(self):
         return len(self.ds)
@@ -80,12 +86,14 @@ class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):
 
 
 class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 length: int = 12,
-                 shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        length: int = 12,
+        shift: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of (past_target, future_covariates, future_target)
         arrays, which all have length `length`.
@@ -128,14 +136,16 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
 
         super().__init__()
 
-        self.ds = GenericShiftedDataset(target_series=target_series,
-                                        covariates=covariates,
-                                        input_chunk_length=length,
-                                        output_chunk_length=length,
-                                        shift=shift,
-                                        shift_covariates=True,
-                                        max_samples_per_ts=max_samples_per_ts,
-                                        covariate_type=CovariateType.FUTURE)
+        self.ds = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=length,
+            output_chunk_length=length,
+            shift=shift,
+            shift_covariates=True,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.FUTURE,
+        )
 
     def __len__(self):
         return len(self.ds)
@@ -145,12 +155,14 @@ class FutureCovariatesShiftedDataset(FutureCovariatesTrainingDataset):
 
 
 class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 length: int = 12,
-                 shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        length: int = 12,
+        shift: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of
         (past_target, historic_future_covariates, future_covariates, future_target)
@@ -196,42 +208,50 @@ class DualCovariatesShiftedDataset(DualCovariatesTrainingDataset):
         super().__init__()
 
         # This dataset is in charge of serving historical future covariates
-        self.ds_past = GenericShiftedDataset(target_series=target_series,
-                                             covariates=covariates,
-                                             input_chunk_length=length,
-                                             output_chunk_length=length,
-                                             shift=shift,
-                                             shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts,
-                                             covariate_type=CovariateType.HISTORIC_FUTURE)
+        self.ds_past = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=length,
+            output_chunk_length=length,
+            shift=shift,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.HISTORIC_FUTURE,
+        )
 
         # This dataset is in charge of serving future covariates
-        self.ds_future = GenericShiftedDataset(target_series=target_series,
-                                               covariates=covariates,
-                                               input_chunk_length=length,
-                                               output_chunk_length=length,
-                                               shift=shift,
-                                               shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts,
-                                               covariate_type=CovariateType.FUTURE)
+        self.ds_future = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=covariates,
+            input_chunk_length=length,
+            output_chunk_length=length,
+            shift=shift,
+            shift_covariates=True,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.FUTURE,
+        )
 
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         past_target, past_covariate, future_target = self.ds_past[idx]
         _, future_covariate, _ = self.ds_future[idx]
         return past_target, past_covariate, future_covariate, future_target
 
 
 class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 length: int = 12,
-                 shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        length: int = 12,
+        shift: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, historic_future_covariates,
                                                     future_covariates, future_target)
@@ -278,41 +298,60 @@ class MixedCovariatesShiftedDataset(MixedCovariatesTrainingDataset):
         super().__init__()
 
         # This dataset is in charge of serving past covariates
-        self.ds_past = GenericShiftedDataset(target_series=target_series,
-                                             covariates=past_covariates,
-                                             input_chunk_length=length,
-                                             output_chunk_length=length,
-                                             shift=shift,
-                                             shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts,
-                                             covariate_type=CovariateType.PAST)
+        self.ds_past = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=past_covariates,
+            input_chunk_length=length,
+            output_chunk_length=length,
+            shift=shift,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.PAST,
+        )
 
         # The dual dataset serves both historical and future future covariates
-        self.ds_dual = DualCovariatesShiftedDataset(target_series=target_series,
-                                                    covariates=future_covariates,
-                                                    length=length,
-                                                    shift=shift,
-                                                    max_samples_per_ts=max_samples_per_ts)
+        self.ds_dual = DualCovariatesShiftedDataset(
+            target_series=target_series,
+            covariates=future_covariates,
+            length=length,
+            shift=shift,
+            max_samples_per_ts=max_samples_per_ts,
+        )
 
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray],
-                                        Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
 
         past_target, past_covariate, future_target = self.ds_past[idx]
         _, historic_future_covariate, future_covariate, _ = self.ds_dual[idx]
-        return past_target, past_covariate, historic_future_covariate, future_covariate, future_target
+        return (
+            past_target,
+            past_covariate,
+            historic_future_covariate,
+            future_covariate,
+            future_target,
+        )
 
 
 class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 length: int = 12,
-                 shift: int = 1,
-                 max_samples_per_ts: Optional[int] = None):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        length: int = 12,
+        shift: int = 1,
+        max_samples_per_ts: Optional[int] = None,
+    ):
         """
         A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target)
         arrays, which all have length `length`.
@@ -359,44 +398,52 @@ class SplitCovariatesShiftedDataset(SplitCovariatesTrainingDataset):
         super().__init__()
 
         # This dataset is in charge of serving past covariates
-        self.ds_past = GenericShiftedDataset(target_series=target_series,
-                                             covariates=past_covariates,
-                                             input_chunk_length=length,
-                                             output_chunk_length=length,
-                                             shift=shift,
-                                             shift_covariates=False,
-                                             max_samples_per_ts=max_samples_per_ts,
-                                             covariate_type=CovariateType.PAST)
+        self.ds_past = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=past_covariates,
+            input_chunk_length=length,
+            output_chunk_length=length,
+            shift=shift,
+            shift_covariates=False,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.PAST,
+        )
 
         # This dataset is in charge of serving future covariates
-        self.ds_future = GenericShiftedDataset(target_series=target_series,
-                                               covariates=future_covariates,
-                                               input_chunk_length=length,
-                                               output_chunk_length=length,
-                                               shift=shift,
-                                               shift_covariates=True,
-                                               max_samples_per_ts=max_samples_per_ts,
-                                               covariate_type=CovariateType.FUTURE)
+        self.ds_future = GenericShiftedDataset(
+            target_series=target_series,
+            covariates=future_covariates,
+            input_chunk_length=length,
+            output_chunk_length=length,
+            shift=shift,
+            shift_covariates=True,
+            max_samples_per_ts=max_samples_per_ts,
+            covariate_type=CovariateType.FUTURE,
+        )
 
     def __len__(self):
         return len(self.ds_past)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         past_target, past_covariate, future_target = self.ds_past[idx]
         _, future_covariate, _ = self.ds_future[idx]
         return past_target, past_covariate, future_covariate, future_target
 
 
 class GenericShiftedDataset(TrainingDataset):
-    def __init__(self,
-                 target_series: Union[TimeSeries, Sequence[TimeSeries]],
-                 covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-                 input_chunk_length: int = 12,
-                 output_chunk_length: int = 1,
-                 shift: int = 1,
-                 shift_covariates: bool = False,
-                 max_samples_per_ts: Optional[int] = None,
-                 covariate_type: CovariateType = CovariateType.NONE):
+    def __init__(
+        self,
+        target_series: Union[TimeSeries, Sequence[TimeSeries]],
+        covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        input_chunk_length: int = 12,
+        output_chunk_length: int = 1,
+        shift: int = 1,
+        shift_covariates: bool = False,
+        max_samples_per_ts: Optional[int] = None,
+        covariate_type: CovariateType = CovariateType.NONE,
+    ):
         """
         Contains (past_target, <X>_covariate, future_target), where "<X>" is past if `shift_covariates = False`
         and future otherwise.
@@ -433,24 +480,36 @@ class GenericShiftedDataset(TrainingDataset):
         """
         super().__init__()
 
-        self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
-        self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
+        self.target_series = (
+            [target_series] if isinstance(target_series, TimeSeries) else target_series
+        )
+        self.covariates = (
+            [covariates] if isinstance(covariates, TimeSeries) else covariates
+        )
         self.covariate_type = covariate_type
 
-        raise_if_not(covariates is None or len(self.target_series) == len(self.covariates),
-                     'The provided sequence of target series must have the same length as '
-                     'the provided sequence of covariate series.')
+        raise_if_not(
+            covariates is None or len(self.target_series) == len(self.covariates),
+            "The provided sequence of target series must have the same length as "
+            "the provided sequence of covariate series.",
+        )
 
-        self.input_chunk_length, self.output_chunk_length = input_chunk_length, output_chunk_length
+        self.input_chunk_length, self.output_chunk_length = (
+            input_chunk_length,
+            output_chunk_length,
+        )
         self.shift, self.shift_covariates = shift, shift_covariates
         self.max_samples_per_ts = max_samples_per_ts
 
-        self.size_of_both_chunks = max(self.input_chunk_length, self.shift + self.output_chunk_length)
+        self.size_of_both_chunks = max(
+            self.input_chunk_length, self.shift + self.output_chunk_length
+        )
 
         if self.max_samples_per_ts is None:
             # read all time series to get the maximum size
-            self.max_samples_per_ts = max(len(ts) for ts in self.target_series) - \
-                                      self.size_of_both_chunks + 1
+            self.max_samples_per_ts = (
+                max(len(ts) for ts in self.target_series) - self.size_of_both_chunks + 1
+            )
 
         self.ideal_nr_samples = len(self.target_series) * self.max_samples_per_ts
 
@@ -466,32 +525,47 @@ class GenericShiftedDataset(TrainingDataset):
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = len(target_vals) - self.size_of_both_chunks + 1
 
-        raise_if_not(n_samples_in_ts >= 1,
-                     'The dataset contains some time series that are too short to contain '
-                     '`max(self.input_chunk_length, self.shift + self.output_chunk_length)` '
-                     '({}-th series)'.format(ts_idx))
+        raise_if_not(
+            n_samples_in_ts >= 1,
+            "The dataset contains some time series that are too short to contain "
+            "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
+            "({}-th series)".format(ts_idx),
+        )
 
         # determine the index at the end of the output chunk
         # it is originally in [0, self.max_samples_per_ts), so we use a modulo to have it in [0, n_samples_in_ts)
-        end_of_output_idx = len(ts_target) - (idx - (ts_idx * self.max_samples_per_ts)) % n_samples_in_ts
+        end_of_output_idx = (
+            len(ts_target)
+            - (idx - (ts_idx * self.max_samples_per_ts)) % n_samples_in_ts
+        )
 
         # optionally, load covariates
         ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
 
         main_cov_type = CovariateType.NONE
         if self.covariates is not None:
-            main_cov_type = CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
+            main_cov_type = (
+                CovariateType.FUTURE if self.shift_covariates else CovariateType.PAST
+            )
 
         # get all indices for the current sample
-        past_start, past_end, future_start, future_end, cov_start, cov_end = \
-            self._memory_indexer(ts_idx=ts_idx,
-                                 ts_target=ts_target,
-                                 shift=self.shift,
-                                 input_chunk_length=self.input_chunk_length,
-                                 output_chunk_length=self.output_chunk_length,
-                                 end_of_output_idx=end_of_output_idx,
-                                 ts_covariate=ts_covariate,
-                                 cov_type=main_cov_type)
+        (
+            past_start,
+            past_end,
+            future_start,
+            future_end,
+            cov_start,
+            cov_end,
+        ) = self._memory_indexer(
+            ts_idx=ts_idx,
+            ts_target=ts_target,
+            shift=self.shift,
+            input_chunk_length=self.input_chunk_length,
+            output_chunk_length=self.output_chunk_length,
+            end_of_output_idx=end_of_output_idx,
+            ts_covariate=ts_covariate,
+            cov_type=main_cov_type,
+        )
 
         # extract sample target
         future_target = target_vals[future_start:future_end]
@@ -500,16 +574,24 @@ class GenericShiftedDataset(TrainingDataset):
         # optionally, extract sample covariates
         covariate = None
         if self.covariates is not None:
-            raise_if_not(cov_end <= len(ts_covariate),
-                         f"The dataset contains {main_cov_type.value} covariates "
-                         f"that don't extend far enough into the future. ({idx}-th sample)")
+            raise_if_not(
+                cov_end <= len(ts_covariate),
+                f"The dataset contains {main_cov_type.value} covariates "
+                f"that don't extend far enough into the future. ({idx}-th sample)",
+            )
 
             covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
 
-            raise_if_not(len(covariate) == (self.output_chunk_length if self.shift_covariates else
-                                            self.input_chunk_length),
-                         f"The dataset contains {main_cov_type.value} covariates "
-                         f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
-                         f"target series.")
+            raise_if_not(
+                len(covariate)
+                == (
+                    self.output_chunk_length
+                    if self.shift_covariates
+                    else self.input_chunk_length
+                ),
+                f"The dataset contains {main_cov_type.value} covariates "
+                f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
+                f"target series.",
+            )
 
         return past_target, covariate, future_target

@@ -10,7 +10,10 @@ from typing import Sequence, Optional, Union, Tuple
 from darts.timeseries import TimeSeries
 
 from darts.logging import raise_if_not, get_logger
-from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (
+    TorchParametricProbabilisticForecastingModel,
+    DualCovariatesTorchModel,
+)
 from darts.utils.torch import random_method
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
 from darts.utils.likelihood_models import Likelihood
@@ -20,16 +23,18 @@ logger = get_logger(__name__)
 
 # TODO add batch norm
 class _RNNModule(nn.Module):
-    def __init__(self,
-                 name: str,
-                 input_size: int,
-                 hidden_dim: int,
-                 num_layers: int,
-                 target_size: int,
-                 nr_params: int,
-                 dropout: float = 0.):
+    def __init__(
+        self,
+        name: str,
+        input_size: int,
+        hidden_dim: int,
+        num_layers: int,
+        target_size: int,
+        nr_params: int,
+        dropout: float = 0.0,
+    ):
 
-        """ PyTorch module implementing an RNN to be used in `RNNModel`.
+        """PyTorch module implementing an RNN to be used in `RNNModel`.
 
         PyTorch module implementing a simple RNN with the specified `name` type.
         This module combines a PyTorch RNN module, together with one fully connected layer which
@@ -74,7 +79,9 @@ class _RNNModule(nn.Module):
         self.name = name
 
         # Defining the RNN module
-        self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
+        self.rnn = getattr(nn, name)(
+            input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout
+        )
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
@@ -98,18 +105,20 @@ class _RNNModule(nn.Module):
 
 class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorchModel):
     @random_method
-    def __init__(self,
-                 model: Union[str, nn.Module] = 'RNN',
-                 input_chunk_length: int = 12,
-                 hidden_dim: int = 25,
-                 n_rnn_layers: int = 1,
-                 dropout: float = 0.,
-                 training_length: int = 24,
-                 likelihood: Optional[Likelihood] = None,
-                 random_state: Optional[Union[int, RandomState]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        model: Union[str, nn.Module] = "RNN",
+        input_chunk_length: int = 12,
+        hidden_dim: int = 25,
+        n_rnn_layers: int = 1,
+        dropout: float = 0.0,
+        training_length: int = 24,
+        likelihood: Optional[Likelihood] = None,
+        random_state: Optional[Union[int, RandomState]] = None,
+        **kwargs
+    ):
 
-        """ Recurrent Neural Network Model (RNNs).
+        """Recurrent Neural Network Model (RNNs).
 
         This class provides three variants of RNNs:
 
@@ -201,9 +210,9 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
             Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
@@ -226,15 +235,20 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
             and loaded using :func:`load_model()`.
         """
 
-        kwargs['input_chunk_length'] = input_chunk_length
-        kwargs['output_chunk_length'] = 1
+        kwargs["input_chunk_length"] = input_chunk_length
+        kwargs["output_chunk_length"] = 1
         super().__init__(likelihood=likelihood, **kwargs)
 
         # check we got right model type specified:
-        if model not in ['RNN', 'LSTM', 'GRU']:
-            raise_if_not(isinstance(model, nn.Module), '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
-                                                       '"GRU", or give your own PyTorch nn.Module'.format(
-                                                        model.__class__.__name__), logger)
+        if model not in ["RNN", "LSTM", "GRU"]:
+            raise_if_not(
+                isinstance(model, nn.Module),
+                '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
+                '"GRU", or give your own PyTorch nn.Module'.format(
+                    model.__class__.__name__
+                ),
+                logger,
+            )
 
         self.rnn_type_or_module = model
         self.dropout = dropout
@@ -245,51 +259,69 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
         # historic_future_covariates and future_covariates have the same width
-        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        input_dim = train_sample[0].shape[1] + (
+            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        )
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
-            model = _RNNModule(name=self.rnn_type_or_module,
-                               input_size=input_dim,
-                               target_size=output_dim,
-                               nr_params=nr_params,
-                               hidden_dim=self.hidden_dim,
-                               dropout=self.dropout,
-                               num_layers=self.n_rnn_layers)
+        if self.rnn_type_or_module in ["RNN", "LSTM", "GRU"]:
+            model = _RNNModule(
+                name=self.rnn_type_or_module,
+                input_size=input_dim,
+                target_size=output_dim,
+                nr_params=nr_params,
+                hidden_dim=self.hidden_dim,
+                dropout=self.dropout,
+                num_layers=self.n_rnn_layers,
+            )
         else:
-            model = self.rnn_type_or_module(name='custom_module',
-                                            input_size=input_dim,
-                                            target_size=output_dim,
-                                            nr_params=nr_params,
-                                            hidden_dim=self.hidden_dim,
-                                            dropout=self.dropout,
-                                            num_layers=self.n_rnn_layers)
+            model = self.rnn_type_or_module(
+                name="custom_module",
+                input_size=input_dim,
+                target_size=output_dim,
+                nr_params=nr_params,
+                hidden_dim=self.hidden_dim,
+                dropout=self.dropout,
+                num_layers=self.n_rnn_layers,
+            )
         return model
 
-    def _build_train_dataset(self,
-                             target: Sequence[TimeSeries],
-                             past_covariates: Optional[Sequence[TimeSeries]],
-                             future_covariates: Optional[Sequence[TimeSeries]],
-                             max_samples_per_ts: Optional[int]) -> DualCovariatesShiftedDataset:
+    def _build_train_dataset(
+        self,
+        target: Sequence[TimeSeries],
+        past_covariates: Optional[Sequence[TimeSeries]],
+        future_covariates: Optional[Sequence[TimeSeries]],
+        max_samples_per_ts: Optional[int],
+    ) -> DualCovariatesShiftedDataset:
 
-        return DualCovariatesShiftedDataset(target_series=target,
-                                            covariates=future_covariates,
-                                            length=self.training_length,
-                                            shift=1,
-                                            max_samples_per_ts=max_samples_per_ts)
+        return DualCovariatesShiftedDataset(
+            target_series=target,
+            covariates=future_covariates,
+            length=self.training_length,
+            shift=1,
+            max_samples_per_ts=max_samples_per_ts,
+        )
 
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
-        raise_if_not(isinstance(train_dataset, DualCovariatesShiftedDataset),
-                     'RNNModel requires a training dataset of type DualCovariatesShiftedDataset.')
-        raise_if_not(train_dataset.ds_past.shift == 1, 'RNNModel requires a shifted training dataset with shift=1.')
+        raise_if_not(
+            isinstance(train_dataset, DualCovariatesShiftedDataset),
+            "RNNModel requires a training dataset of type DualCovariatesShiftedDataset.",
+        )
+        raise_if_not(
+            train_dataset.ds_past.shift == 1,
+            "RNNModel requires a shifted training dataset with shift=1.",
+        )
 
     def _produce_train_output(self, input_batch: Tuple):
         past_target, historic_future_covariates, future_covariates = input_batch
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
-        model_input = torch.cat([past_target, future_covariates],
-                                dim=2) if future_covariates is not None else past_target
+        model_input = (
+            torch.cat([past_target, future_covariates], dim=2)
+            if future_covariates is not None
+            else past_target
+        )
         return self.model(model_input)[0]
 
     @random_method
@@ -300,7 +332,9 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
         else:
             return output.squeeze(dim=-1), hidden
 
-    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
+    def _get_batch_prediction(
+        self, n: int, input_batch: Tuple, roll_size: int
+    ) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
         """
@@ -308,8 +342,13 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
 
         if historic_future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
-            all_covariates = torch.cat([historic_future_covariates[:, 1:, :], future_covariates], dim=1)
-            cov_past, cov_future = all_covariates[:, :past_target.shape[1], :], all_covariates[:, past_target.shape[1]:, :]
+            all_covariates = torch.cat(
+                [historic_future_covariates[:, 1:, :], future_covariates], dim=1
+            )
+            cov_past, cov_future = (
+                all_covariates[:, : past_target.shape[1], :],
+                all_covariates[:, past_target.shape[1] :, :],
+            )
             input_series = torch.cat([past_target, cov_past], dim=2)
         else:
             input_series = past_target
@@ -324,12 +363,21 @@ class RNNModel(TorchParametricProbabilisticForecastingModel, DualCovariatesTorch
 
             # create new input to model from last prediction and current covariates, if available
             new_input = (
-                torch.cat([out[:, -1:, :], cov_future[:, prediction_length - 1:prediction_length, :]], dim=2)
-                if cov_future is not None else out[:, -1:, :]
+                torch.cat(
+                    [
+                        out[:, -1:, :],
+                        cov_future[:, prediction_length - 1 : prediction_length, :],
+                    ],
+                    dim=2,
+                )
+                if cov_future is not None
+                else out[:, -1:, :]
             )
 
             # feed new input to model, including the last hidden state from the previous iteration
-            out, last_hidden_state = self._produce_predict_output(new_input, last_hidden_state)
+            out, last_hidden_state = self._produce_predict_output(
+                new_input, last_hidden_state
+            )
 
             # append prediction to batch prediction array, increase counter
             batch_prediction.append(out[:, -1:, :])

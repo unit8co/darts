@@ -20,11 +20,13 @@ class ExponentialSmoothing(ForecastingModel):
         self,
         trend: Optional[ModelMode] = ModelMode.ADDITIVE,
         damped: Optional[bool] = False,
+
         seasonal: Optional[ModelMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
         **fit_kwargs,
     ):
+
         """ Exponential Smoothing
 
         This is a wrapper around

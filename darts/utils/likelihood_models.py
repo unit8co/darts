@@ -41,48 +41,54 @@ import numpy as np
 import torch
 import torch.nn as nn
 from torch.distributions.kl import kl_divergence
-from torch.distributions import (Normal as _Normal,
-                                 Poisson as _Poisson,
-                                 NegativeBinomial as _NegativeBinomial,
-                                 Bernoulli as _Bernoulli,
-                                 Gamma as _Gamma,
-                                 Gumbel as _Gumbel,
-                                 Laplace as _Laplace,
-                                 Beta as _Beta,
-                                 Exponential as _Exponential,
-                                 MultivariateNormal as _MultivariateNormal,
-                                 Dirichlet as _Dirichlet,
-                                 Geometric as _Geometric,
-                                 Cauchy as _Cauchy,
-                                 ContinuousBernoulli as _ContinuousBernoulli,
-                                 HalfNormal as _HalfNormal,
-                                 LogNormal as _LogNormal,
-                                 Weibull as _Weibull
-                                 )
+from torch.distributions import (
+    Normal as _Normal,
+    Poisson as _Poisson,
+    NegativeBinomial as _NegativeBinomial,
+    Bernoulli as _Bernoulli,
+    Gamma as _Gamma,
+    Gumbel as _Gumbel,
+    Laplace as _Laplace,
+    Beta as _Beta,
+    Exponential as _Exponential,
+    Dirichlet as _Dirichlet,
+    Geometric as _Geometric,
+    Cauchy as _Cauchy,
+    ContinuousBernoulli as _ContinuousBernoulli,
+    HalfNormal as _HalfNormal,
+    LogNormal as _LogNormal,
+    Weibull as _Weibull,
+)
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 
 
 # Some utils for checking parameters' domains
 def _check(param, predicate, param_name, condition_str):
-    if param is None: return
+    if param is None:
+        return
     if isinstance(param, (collections.Sequence, np.ndarray)):
-        raise_if_not(all(predicate(p) for p in param),
-                     'All provided parameters {} must be {}.'.format(param_name, condition_str))
+        raise_if_not(
+            all(predicate(p) for p in param),
+            "All provided parameters {} must be {}.".format(param_name, condition_str),
+        )
     else:
-        raise_if_not(predicate(param), 'The parameter {} must be {}.'.format(param_name, condition_str))
+        raise_if_not(
+            predicate(param),
+            "The parameter {} must be {}.".format(param_name, condition_str),
+        )
 
 
-def _check_strict_positive(param, param_name=''):
-    _check(param, lambda p: p > 0, param_name, 'strictly positive')
+def _check_strict_positive(param, param_name=""):
+    _check(param, lambda p: p > 0, param_name, "strictly positive")
 
 
-def _check_in_open_0_1_intvl(param, param_name=''):
-    _check(param, lambda p: 0 < p < 1, param_name, 'in the open interval (0, 1)')
+def _check_in_open_0_1_intvl(param, param_name=""):
+    _check(param, lambda p: 0 < p < 1, param_name, "in the open interval (0, 1)")
 
 
 class Likelihood(ABC):
-    def __init__(self, prior_strength=1.):
+    def __init__(self, prior_strength=1.0):
         """
         Abstract class for a likelihood model.
         """
@@ -97,19 +103,27 @@ class Likelihood(ABC):
         loss = self._nllloss(params_out, target)
 
         prior_params = self._prior_params
-        use_prior = prior_params is not None and any(p is not None for p in prior_params)
+        use_prior = prior_params is not None and any(
+            p is not None for p in prior_params
+        )
         if use_prior:
             out_distr = self._distr_from_params(params_out)
             device = params_out[0].device
-            prior_params = tuple([
-                # use model output as "prior" for parameters not specified as prior
-                torch.tensor(prior_params[i]).to(device) if prior_params[i] is not None else params_out[i]
-                for i in range(len(prior_params))
-            ])
+            prior_params = tuple(
+                [
+                    # use model output as "prior" for parameters not specified as prior
+                    torch.tensor(prior_params[i]).to(device)
+                    if prior_params[i] is not None
+                    else params_out[i]
+                    for i in range(len(prior_params))
+                ]
+            )
             prior_distr = self._distr_from_params(prior_params)
 
             # Loss regularization using the prior distribution
-            loss += self.prior_strength * torch.mean(kl_divergence(prior_distr, out_distr))
+            loss += self.prior_strength * torch.mean(
+                kl_divergence(prior_distr, out_distr)
+            )
 
         return loss
 
@@ -163,15 +177,15 @@ class Likelihood(ABC):
 
 
 class GaussianLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.):
+    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
         """
         Univariate Gaussian distribution.
 
         https://en.wikipedia.org/wiki/Normal_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: mean :math:`\\mu \in \mathbb{R}`, standard deviation :math:`\\sigma > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: mean :math:`\\mu \\in \\mathbb{R}`, standard deviation :math:`\\sigma > 0`.
 
         Parameters
         ----------
@@ -184,16 +198,18 @@ class GaussianLikelihood(Likelihood):
         """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
-        _check_strict_positive(self.prior_sigma, 'sigma')
+        _check_strict_positive(self.prior_sigma, "sigma")
 
-        self.nllloss = nn.GaussianNLLLoss(reduction='mean', full=True)
+        self.nllloss = nn.GaussianNLLLoss(reduction="mean", full=True)
         self.softplus = nn.Softplus()
 
         super().__init__(prior_strength)
 
     def _nllloss(self, params_out, target):
         means_out, sigmas_out = params_out
-        return self.nllloss(means_out.contiguous(), target.contiguous(), sigmas_out.contiguous())
+        return self.nllloss(
+            means_out.contiguous(), target.contiguous(), sigmas_out.contiguous()
+        )
 
     @property
     def _prior_params(self):
@@ -218,7 +234,7 @@ class GaussianLikelihood(Likelihood):
 
 
 class PoissonLikelihood(Likelihood):
-    def __init__(self, prior_lambda=None, prior_strength=1.):
+    def __init__(self, prior_lambda=None, prior_strength=1.0):
         """
         Poisson distribution. Can typically be used to model event counts during time intervals, when the events
         happen independently of the time since the last event.
@@ -226,7 +242,7 @@ class PoissonLikelihood(Likelihood):
         https://en.wikipedia.org/wiki/Poisson_distribution
 
         - Univariate discrete distribution
-        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
+        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
         - Parameter: rate :math:`\\lambda > 0`.
 
         Parameters
@@ -237,7 +253,7 @@ class PoissonLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         """
         self.prior_lambda = prior_lambda
-        _check_strict_positive(self.prior_lambda, 'lambda')
+        _check_strict_positive(self.prior_lambda, "lambda")
 
         self.nllloss = nn.PoissonNLLLoss(log_input=False, full=True)
         self.softplus = nn.Softplus()
@@ -249,7 +265,7 @@ class PoissonLikelihood(Likelihood):
 
     @property
     def _prior_params(self):
-        return self.prior_lambda,
+        return (self.prior_lambda,)
 
     def _distr_from_params(self, params):
         lmbda = params[0]
@@ -278,8 +294,8 @@ class NegativeBinomialLikelihood(Likelihood):
         It does not support priors.
 
         - Univariate discrete distribution.
-        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
-        - Parameters: number of failures :math:`r > 0`, success probability :math:`p \in (0, 1)`.
+        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
+        - Parameters: number of failures :math:`r > 0`, success probability :math:`p \\in (0, 1)`.
 
         Behind the scenes the distribution is reparameterized so that the actual outputs of the
         network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.
@@ -294,7 +310,7 @@ class NegativeBinomialLikelihood(Likelihood):
     @staticmethod
     def _get_r_and_p_from_mu_and_alpha(mu, alpha):
         # See https://en.wikipedia.org/wiki/Negative_binomial_distribution for the different parametrizations
-        r = 1. / alpha
+        r = 1.0 / alpha
         p = r / (mu + r)
         return r, p
 
@@ -320,15 +336,15 @@ class NegativeBinomialLikelihood(Likelihood):
 
 
 class BernoulliLikelihood(Likelihood):
-    def __init__(self, prior_p=None, prior_strength=1.):
+    def __init__(self, prior_p=None, prior_strength=1.0):
         """
         Bernoulli distribution.
 
         https://en.wikipedia.org/wiki/Bernoulli_distribution
 
         - Univariate discrete distribution.
-        - Support: :math:`\{0, 1\}`.
-        - Parameter: probability :math:`p \in (0, 1)`.
+        - Support: :math:`\\{0, 1\\}`.
+        - Parameter: probability :math:`p \\in (0, 1)`.
 
         Parameters
         ----------
@@ -338,14 +354,14 @@ class BernoulliLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         """
         self.prior_p = prior_p
-        _check_in_open_0_1_intvl(self.prior_p, 'p')
+        _check_in_open_0_1_intvl(self.prior_p, "p")
 
         self.sigmoid = nn.Sigmoid()
         super().__init__(prior_strength)
 
     @property
     def _prior_params(self):
-        return self.prior_p,
+        return (self.prior_p,)
 
     def _distr_from_params(self, params):
         p = params[0]
@@ -365,7 +381,7 @@ class BernoulliLikelihood(Likelihood):
 
 
 class BetaLikelihood(Likelihood):
-    def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.):
+    def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.0):
         """
         Beta distribution.
 
@@ -386,8 +402,8 @@ class BetaLikelihood(Likelihood):
         """
         self.prior_alpha = prior_alpha
         self.prior_beta = prior_beta
-        _check_strict_positive(self.prior_alpha, 'alpha')
-        _check_strict_positive(self.prior_beta, 'beta')
+        _check_strict_positive(self.prior_alpha, "alpha")
+        _check_strict_positive(self.prior_beta, "beta")
 
         self.softplus = nn.Softplus()
         super().__init__(prior_strength)
@@ -416,15 +432,15 @@ class BetaLikelihood(Likelihood):
 
 
 class CauchyLikelihood(Likelihood):
-    def __init__(self, prior_xzero=None, prior_gamma=None, prior_strength=1.):
+    def __init__(self, prior_xzero=None, prior_gamma=None, prior_strength=1.0):
         """
         Cauchy Distribution.
 
         https://en.wikipedia.org/wiki/Cauchy_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: location :math:`x_0 \in \mathbb{R}`, scale :math:`\gamma > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: location :math:`x_0 \\in \\mathbb{R}`, scale :math:`\\gamma > 0`.
 
         Due to its fat tails, this distribution is typically harder to estimate,
         and your mileage may vary. Also be aware that it typically
@@ -441,7 +457,7 @@ class CauchyLikelihood(Likelihood):
         """
         self.prior_xzero = prior_xzero
         self.prior_gamma = prior_gamma
-        _check_strict_positive(self.prior_gamma, 'gamma')
+        _check_strict_positive(self.prior_gamma, "gamma")
 
         self.softplus = nn.Softplus()
         super().__init__(prior_strength)
@@ -474,7 +490,7 @@ class CauchyLikelihood(Likelihood):
 
 
 class ContinuousBernoulliLikelihood(Likelihood):
-    def __init__(self, prior_lambda=None, prior_strength=1.):
+    def __init__(self, prior_lambda=None, prior_strength=1.0):
         """
         Continuous Bernoulli distribution.
 
@@ -482,7 +498,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
 
         - Univariate continuous distribution.
         - Support: open interval :math:`(0, 1)`.
-        - Parameter: shape :math:`\\lambda \in (0,1)`
+        - Parameter: shape :math:`\\lambda \\in (0,1)`
 
         Parameters
         ----------
@@ -492,14 +508,14 @@ class ContinuousBernoulliLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         """
         self.prior_lambda = prior_lambda
-        _check_in_open_0_1_intvl(self.prior_lambda, 'lambda')
+        _check_in_open_0_1_intvl(self.prior_lambda, "lambda")
 
         self.sigmoid = nn.Sigmoid()
         super().__init__(prior_strength)
 
     @property
     def _prior_params(self):
-        return self.prior_lambda,
+        return (self.prior_lambda,)
 
     def _distr_from_params(self, params):
         lmbda = params[0]
@@ -520,7 +536,7 @@ class ContinuousBernoulliLikelihood(Likelihood):
 
 
 class DirichletLikelihood(Likelihood):
-    def __init__(self, prior_alphas=None, prior_strength=1.):
+    def __init__(self, prior_alphas=None, prior_strength=1.0):
         """
         Dirichlet distribution.
 
@@ -528,7 +544,7 @@ class DirichletLikelihood(Likelihood):
 
         - Multivariate continuous distribution, modeling all components of a time series jointly.
         - Support: The :math:`K`-dimensional simplex for series of dimension :math:`K`, i.e.,
-          :math:`x_1, ..., x_K \\text{ with } x_i \in (0,1),\\; \\sum_i^K{x_i}=1`.
+          :math:`x_1, ..., x_K \\text{ with } x_i \\in (0,1),\\; \\sum_i^K{x_i}=1`.
         - Parameter: concentrations :math:`\\alpha_1, ..., \\alpha_K` with :math:`\\alpha_i > 0`.
 
         Parameters
@@ -545,7 +561,7 @@ class DirichletLikelihood(Likelihood):
 
     @property
     def _prior_params(self):
-        return self.prior_alphas,
+        return (self.prior_alphas,)
 
     def _distr_from_params(self, params: Tuple):
         alphas = params[0]
@@ -561,19 +577,21 @@ class DirichletLikelihood(Likelihood):
         return 1  # 1 parameter per component
 
     def _params_from_output(self, model_output):
-        alphas = self.softmax(model_output.squeeze(dim=-1))  # take softmax over components
+        alphas = self.softmax(
+            model_output.squeeze(dim=-1)
+        )  # take softmax over components
         return alphas
 
 
 class ExponentialLikelihood(Likelihood):
-    def __init__(self, prior_lambda=None, prior_strength=1.):
+    def __init__(self, prior_lambda=None, prior_strength=1.0):
         """
         Exponential distribution.
 
         https://en.wikipedia.org/wiki/Exponential_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameter: rate :math:`\\lambda > 0`.
 
         Parameters
@@ -584,13 +602,13 @@ class ExponentialLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         """
         self.prior_lambda = prior_lambda
-        _check_strict_positive(self.prior_lambda, 'lambda')
+        _check_strict_positive(self.prior_lambda, "lambda")
         self.softplus = nn.Softplus()
         super().__init__(prior_strength)
 
     @property
     def _prior_params(self):
-        return self.prior_lambda,
+        return (self.prior_lambda,)
 
     def _distr_from_params(self, params: Tuple):
         lmbda = params[0]
@@ -611,14 +629,14 @@ class ExponentialLikelihood(Likelihood):
 
 
 class GammaLikelihood(Likelihood):
-    def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.):
+    def __init__(self, prior_alpha=None, prior_beta=None, prior_strength=1.0):
         """
         Gamma distribution.
 
         https://en.wikipedia.org/wiki/Gamma_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameters: shape :math:`\\alpha > 0` and rate :math:`\\beta > 0`.
 
         Parameters
@@ -632,8 +650,8 @@ class GammaLikelihood(Likelihood):
         """
         self.prior_alpha = prior_alpha
         self.prior_beta = prior_beta
-        _check_strict_positive(self.prior_alpha, 'alpha')
-        _check_strict_positive(self.prior_beta, 'beta')
+        _check_strict_positive(self.prior_alpha, "alpha")
+        _check_strict_positive(self.prior_beta, "beta")
         self.softplus = nn.Softplus()
         super().__init__(prior_strength)
 
@@ -661,15 +679,15 @@ class GammaLikelihood(Likelihood):
 
 
 class GeometricLikelihood(Likelihood):
-    def __init__(self, prior_p=None, prior_strength=1.):
+    def __init__(self, prior_p=None, prior_strength=1.0):
         """
         Geometric distribution.
 
         https://en.wikipedia.org/wiki/Geometric_distribution
 
         - Univariate discrete distribution
-        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).
-        - Parameter: success probability :math:`p \in (0, 1)`.
+        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).
+        - Parameter: success probability :math:`p \\in (0, 1)`.
 
         Parameters
         ----------
@@ -679,13 +697,13 @@ class GeometricLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         """
         self.prior_p = prior_p
-        _check_in_open_0_1_intvl(self.prior_p, 'p')
+        _check_in_open_0_1_intvl(self.prior_p, "p")
         self.sigmoid = nn.Sigmoid()
         super().__init__(prior_strength)
 
     @property
     def _prior_params(self):
-        return self.prior_p,
+        return (self.prior_p,)
 
     def _distr_from_params(self, params: Tuple):
         p = params[0]
@@ -706,15 +724,15 @@ class GeometricLikelihood(Likelihood):
 
 
 class GumbelLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_beta=None, prior_strength=1.):
+    def __init__(self, prior_mu=None, prior_beta=None, prior_strength=1.0):
         """
         Gumbel distribution.
 
         https://en.wikipedia.org/wiki/Gumbel_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`\\beta > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: location :math:`\\mu \\in \\mathbb{R}` and scale :math:`\\beta > 0`.
 
         Parameters
         ----------
@@ -755,14 +773,14 @@ class GumbelLikelihood(Likelihood):
 
 
 class HalfNormalLikelihood(Likelihood):
-    def __init__(self, prior_sigma=None, prior_strength=1.):
+    def __init__(self, prior_sigma=None, prior_strength=1.0):
         """
         Half-normal distribution.
 
         https://en.wikipedia.org/wiki/Half-normal_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameter: rate :math:`\\sigma > 0`.
 
         Parameters
@@ -773,13 +791,13 @@ class HalfNormalLikelihood(Likelihood):
             strength of the loss regularisation induced by the prior
         """
         self.prior_sigma = prior_sigma
-        _check_strict_positive(self.prior_sigma, 'sigma')
+        _check_strict_positive(self.prior_sigma, "sigma")
         self.softplus = nn.Softplus()
         super().__init__(prior_strength)
 
     @property
     def _prior_params(self):
-        return self.prior_sigma,
+        return (self.prior_sigma,)
 
     def _distr_from_params(self, params: Tuple):
         sigma = params[0]
@@ -800,15 +818,15 @@ class HalfNormalLikelihood(Likelihood):
 
 
 class LaplaceLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_b=None, prior_strength=1.):
+    def __init__(self, prior_mu=None, prior_b=None, prior_strength=1.0):
         """
         Laplace distribution.
 
         https://en.wikipedia.org/wiki/Laplace_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}`.
-        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`b > 0`.
+        - Support: :math:`\\mathbb{R}`.
+        - Parameters: location :math:`\\mu \\in \\mathbb{R}` and scale :math:`b > 0`.
 
         Parameters
         ----------
@@ -849,15 +867,15 @@ class LaplaceLikelihood(Likelihood):
 
 
 class LogNormalLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.):
+    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
         """
         Log-normal distribution.
 
         https://en.wikipedia.org/wiki/Log-normal_distribution
 
         - Univariate continuous distribution.
-        - Support: :math:`\mathbb{R}_{>0}`.
-        - Parameters: :math:`\\mu \in \mathbb{R}` and :math:`\\sigma > 0`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
+        - Parameters: :math:`\\mu \\in \\mathbb{R}` and :math:`\\sigma > 0`.
 
         Parameters
         ----------
@@ -870,7 +888,7 @@ class LogNormalLikelihood(Likelihood):
         """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
-        _check_strict_positive(self.prior_sigma, 'sigma')
+        _check_strict_positive(self.prior_sigma, "sigma")
         self.softplus = nn.Softplus()
         super().__init__(prior_strength)
 
@@ -898,14 +916,14 @@ class LogNormalLikelihood(Likelihood):
 
 
 class WeibullLikelihood(Likelihood):
-    def __init__(self, prior_strength=1.):
+    def __init__(self, prior_strength=1.0):
         """
         Weibull distribution.
 
         https://en.wikipedia.org/wiki/Weibull_distribution
 
         - Univariate continuous distribution
-        - Support: :math:`\mathbb{R}_{>0}`.
+        - Support: :math:`\\mathbb{R}_{>0}`.
         - Parameters: scale :math:`\\lambda > 0` and concentration :math:`k > 0`.
 
         It does not support priors.
@@ -958,8 +976,25 @@ class QuantileRegression(Likelihood):
 
         super().__init__()
         if quantiles is None:
-            self.quantiles = [0.01, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5,
-                              0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99]
+            self.quantiles = [
+                0.01,
+                0.05,
+                0.1,
+                0.15,
+                0.2,
+                0.25,
+                0.3,
+                0.4,
+                0.5,
+                0.6,
+                0.7,
+                0.75,
+                0.8,
+                0.85,
+                0.9,
+                0.95,
+                0.99,
+            ]
         else:
             self.quantiles = sorted(quantiles)
         self._check_quantiles(self.quantiles)
@@ -979,7 +1014,9 @@ class QuantileRegression(Likelihood):
         device = model_output.device
 
         quantiles = torch.tile(torch.tensor(self.quantiles), (batch_size, 1)).to(device)
-        probas = torch.tile(torch.rand(size=(batch_size,)), (len(self.quantiles), 1)).to(device)
+        probas = torch.tile(
+            torch.rand(size=(batch_size,)), (len(self.quantiles), 1)
+        ).to(device)
 
         quantile_idxs = torch.sum(probas.T > quantiles, axis=1)
 
@@ -988,7 +1025,9 @@ class QuantileRegression(Likelihood):
         # too often as it would capture the "probability buckets" preceding and following it.
         #
         # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
-        quantile_idxs = torch.where(quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1)
+        quantile_idxs = torch.where(
+            quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
+        )
 
         batch_idx = torch.tensor(range(batch_size)).to(device)
         return model_output[batch_idx, :, :, quantile_idxs]
@@ -1016,34 +1055,48 @@ class QuantileRegression(Likelihood):
 
         # test if torch model forward produces correct output and store quantiles tensor
         if self.first:
-            raise_if_not(len(model_output.shape) == 4 and len(target.shape) == 3 and
-                         model_output.shape[:2] == target.shape[:2],
-                         'mismatch between predicted and target shape')
-            raise_if_not(model_output.shape[dim_q] == len(self.quantiles),
-                         'mismatch between number of predicted quantiles and target quantiles')
+            raise_if_not(
+                len(model_output.shape) == 4
+                and len(target.shape) == 3
+                and model_output.shape[:2] == target.shape[:2],
+                "mismatch between predicted and target shape",
+            )
+            raise_if_not(
+                model_output.shape[dim_q] == len(self.quantiles),
+                "mismatch between number of predicted quantiles and target quantiles",
+            )
             self.quantiles_tensor = torch.tensor(self.quantiles).to(device)
             self.first = False
 
         errors = target.unsqueeze(-1) - model_output
-        losses = torch.max((self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors)
+        losses = torch.max(
+            (self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors
+        )
 
         return losses.sum(dim=dim_q).mean()
 
     @staticmethod
     def _check_quantiles(quantiles):
-        raise_if_not(all([0 < q < 1 for q in quantiles]),
-                     'All provided quantiles must be between 0 and 1.')
+        raise_if_not(
+            all([0 < q < 1 for q in quantiles]),
+            "All provided quantiles must be between 0 and 1.",
+        )
 
         # we require the median to be present and the quantiles to be symmetric around it,
         # for correctness of sampling.
         median_q = 0.5
-        raise_if_not(median_q in quantiles,
-                     'median quantile `q=0.5` must be in `quantiles`')
-        is_centered = [-1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
-                       for left_q, right_q in zip(quantiles, quantiles[::-1])]
-        raise_if_not(all(is_centered),
-                     'quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles '
-                     'higher than `q=0.5`')
+        raise_if_not(
+            median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
+        )
+        is_centered = [
+            -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
+            for left_q, right_q in zip(quantiles, quantiles[::-1])
+        ]
+        raise_if_not(
+            all(is_centered),
+            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
+            "higher than `q=0.5`",
+        )
 
     def _distr_from_params(self, params: Tuple) -> None:
         # This should not be called in this class (we are abusing Likelihood)
@@ -1053,24 +1106,32 @@ class QuantileRegression(Likelihood):
         # This should not be called in this class (we are abusing Likelihood)
         return None
 
-if False:
-    """ TODO
-        To make it work, we'll have to change our models so they optionally accept an absolute
-        number of parameters, instead of num_perameters per component.
-    """
 
+""" TODO
+To make it work, we'll have to change our models so they optionally accept an absolute
+number of parameters, instead of num_parameters per component.
+
+from torch.distributions import MultivariateNormal as _MultivariateNormal
     class MultivariateNormal(Likelihood):
-        def __init__(self, dim: int, prior_mu=None, prior_covmat=None, prior_strength=1.):
+        def __init__(
+            self, dim: int, prior_mu=None, prior_covmat=None, prior_strength=1.0
+        ):
             self.dim = dim
             self.prior_mu = prior_mu
             self.prior_covmat = prior_covmat
             if self.prior_mu is not None:
-                raise_if_not(len(self.prior_mu) == self.dim, 'The provided prior_mu must have a size matching the '
-                                                             'provided dimension.')
+                raise_if_not(
+                    len(self.prior_mu) == self.dim,
+                    "The provided prior_mu must have a size matching the "
+                    "provided dimension.",
+                )
             if self.prior_covmat is not None:
-                raise_if_not(self.prior_covmat.shape == (self.dim, self.dim), 'The provided prior on the covariaance '
-                                                                              'matrix must have size (dim, dim).')
-                _check_strict_positive(self.prior_covmat.flatten(), 'covariance matrix')
+                raise_if_not(
+                    self.prior_covmat.shape == (self.dim, self.dim),
+                    "The provided prior on the covariaance "
+                    "matrix must have size (dim, dim).",
+                )
+                _check_strict_positive(self.prior_covmat.flatten(), "covariance matrix")
 
             self.softplus = nn.Softplus()
             super().__init__(prior_strength)
@@ -1090,19 +1151,23 @@ if False:
 
         @property
         def num_parameters(self) -> int:
-            return int(self.dim + (self.dim**2 - self.dim) / 2)
+            return int(self.dim + (self.dim ** 2 - self.dim) / 2)
 
         def _params_from_output(self, model_output: torch.Tensor):
             device = model_output.device
-            mu = model_output[:, :, :self.dim]
-            covmat_coefs = self.softplus(model_output[:, :, self.dim:])
+            mu = model_output[:, :, : self.dim]
+            covmat_coefs = self.softplus(model_output[:, :, self.dim :])
 
-            print('model output: {}'.format(model_output.shape))
+            print("model output: {}".format(model_output.shape))
 
             # build covariance matrix
-            covmat = torch.zeros((model_output.shape[0], model_output.shape[1], self.dim, self.dim)).to(device)
-            tril_indices = torch.tril_indices(row=self.dim, col=self.dim, offset=1, device=device)
+            covmat = torch.zeros(
+                (model_output.shape[0], model_output.shape[1], self.dim, self.dim)
+            ).to(device)
+            tril_indices = torch.tril_indices(
+                row=self.dim, col=self.dim, offset=1, device=device
+            )
             covmat[tril_indices[0], tril_indices[1]] = covmat_coefs
             covmat[tril_indices[1], tril_indices[0]] = covmat_coefs
-            covmat[range(self.dim), range(self.dim)] = 1.
-
+            covmat[range(self.dim), range(self.dim)] = 1.0
+"""

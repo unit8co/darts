@@ -17,10 +17,12 @@ from darts.logging import raise_if_not, get_logger, raise_log, raise_if
 logger = get_logger(__name__)
 
 
-def _generate_index(start: Optional[Union[pd.Timestamp, int]] = None,
-                    end: Optional[Union[pd.Timestamp, int]] = None,
-                    length: Optional[int] = None,
-                    freq: str = 'D') -> Union[pd.DatetimeIndex, pd.Int64Index]:
+def _generate_index(
+    start: Optional[Union[pd.Timestamp, int]] = None,
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: str = "D",
+) -> Union[pd.DatetimeIndex, pd.Int64Index]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas Int64Index. The index starts at
 
@@ -42,34 +44,44 @@ def _generate_index(start: Optional[Union[pd.Timestamp, int]] = None,
         The freq is optional for generating an integer index.
     """
     constructors = [
-        arg_name for arg, arg_name in zip([start, end, length], ['start', 'end', 'length']) if arg is not None
+        arg_name
+        for arg, arg_name in zip([start, end, length], ["start", "end", "length"])
+        if arg is not None
     ]
-    raise_if(len(constructors) != 2,
-             'index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. '
-             f'Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting '
-             f'`start` to None.',
-             logger)
-    raise_if(end is not None and start is not None and type(start) != type(end),
-             'index generation with `start` and `end` requires equal object types of `start` and `end`',
-             logger)
+    raise_if(
+        len(constructors) != 2,
+        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
+        f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
+        f"`start` to None.",
+        logger,
+    )
+    raise_if(
+        end is not None and start is not None and type(start) != type(end),
+        "index generation with `start` and `end` requires equal object types of `start` and `end`",
+        logger,
+    )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         index = pd.date_range(start=start, end=end, periods=length, freq=freq)
     else:  # int
-        index = pd.Int64Index(range(
-            start if start is not None else end - length + 1,
-            end + 1 if end is not None else start + length
-        ))
+        index = pd.Int64Index(
+            range(
+                start if start is not None else end - length + 1,
+                end + 1 if end is not None else start + length,
+            )
+        )
     return index
 
 
-def constant_timeseries(value: float = 1,
-                        start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
-                        end: Optional[Union[pd.Timestamp, int]] = None,
-                        length: Optional[int] = None,
-                        freq: str = 'D',
-                        column_name: Optional[str] = 'constant',
-                        dtype: np.dtype = np.float64) -> TimeSeries:
+def constant_timeseries(
+    value: float = 1,
+    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: str = "D",
+    column_name: Optional[str] = "constant",
+    dtype: np.dtype = np.float64,
+) -> TimeSeries:
     """
     Creates a constant univariate TimeSeries with the given value, length (or end date), start date and frequency.
 
@@ -104,17 +116,21 @@ def constant_timeseries(value: float = 1,
     index = _generate_index(start=start, end=end, freq=freq, length=length)
     values = np.full(len(index), value, dtype=dtype)
 
-    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(
+        index, values, freq=freq, columns=pd.Index([column_name])
+    )
 
 
-def linear_timeseries(start_value: float = 0,
-                      end_value: float = 1,
-                      start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
-                      end: Optional[Union[pd.Timestamp, int]] = None,
-                      length: Optional[int] = None,
-                      freq: str = 'D',
-                      column_name: Optional[str] = 'linear',
-                      dtype: np.dtype = np.float64) -> TimeSeries:
+def linear_timeseries(
+    start_value: float = 0,
+    end_value: float = 1,
+    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: str = "D",
+    column_name: Optional[str] = "linear",
+    dtype: np.dtype = np.float64,
+) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a starting value of `start_value` that increases linearly such that
     it takes on the value `end_value` at the last entry of the TimeSeries. This means that
@@ -153,19 +169,23 @@ def linear_timeseries(start_value: float = 0,
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
     values = np.linspace(start_value, end_value, len(index), dtype=dtype)
-    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(
+        index, values, freq=freq, columns=pd.Index([column_name])
+    )
 
 
-def sine_timeseries(value_frequency: float = 0.1,
-                    value_amplitude: float = 1.,
-                    value_phase: float = 0.,
-                    value_y_offset: float = 0.,
-                    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
-                    end: Optional[Union[pd.Timestamp, int]] = None,
-                    length: Optional[int] = None,
-                    freq: str = 'D',
-                    column_name: Optional[str] = 'sine',
-                    dtype: np.dtype = np.float64) -> TimeSeries:
+def sine_timeseries(
+    value_frequency: float = 0.1,
+    value_amplitude: float = 1.0,
+    value_phase: float = 0.0,
+    value_y_offset: float = 0.0,
+    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: str = "D",
+    column_name: Optional[str] = "sine",
+    dtype: np.dtype = np.float64,
+) -> TimeSeries:
     """
     Creates a univariate TimeSeries with a sinusoidal value progression with a given frequency, amplitude,
     phase and y offset.
@@ -207,21 +227,27 @@ def sine_timeseries(value_frequency: float = 0.1,
     index = _generate_index(start=start, end=end, freq=freq, length=length)
     values = np.array(range(len(index)), dtype=dtype)
     f = np.vectorize(
-        lambda x: value_amplitude * math.sin(2 * math.pi * value_frequency * x + value_phase) + value_y_offset
+        lambda x: value_amplitude
+        * math.sin(2 * math.pi * value_frequency * x + value_phase)
+        + value_y_offset
     )
     values = f(values)
 
-    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(
+        index, values, freq=freq, columns=pd.Index([column_name])
+    )
 
 
-def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
-                        std: Union[float, np.ndarray] = 1.,
-                        start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
-                        end: Optional[Union[pd.Timestamp, int]] = None,
-                        length: Optional[int] = None,
-                        freq: str = 'D',
-                        column_name: Optional[str] = 'gaussian',
-                        dtype: np.dtype = np.float64) -> TimeSeries:
+def gaussian_timeseries(
+    mean: Union[float, np.ndarray] = 0.0,
+    std: Union[float, np.ndarray] = 1.0,
+    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: str = "D",
+    column_name: Optional[str] = "gaussian",
+    dtype: np.dtype = np.float64,
+) -> TimeSeries:
     """
     Creates a gaussian univariate TimeSeries by sampling all the series values independently,
     from a gaussian distribution with mean `mean` and standard deviation `std`.
@@ -263,26 +289,38 @@ def gaussian_timeseries(mean: Union[float, np.ndarray] = 0.,
     """
 
     if type(mean) == np.ndarray:
-        raise_if_not(mean.shape == (length,), 'If a vector of means is provided, '
-                                              'it requires the same length as the TimeSeries.', logger)
+        raise_if_not(
+            mean.shape == (length,),
+            "If a vector of means is provided, "
+            "it requires the same length as the TimeSeries.",
+            logger,
+        )
     if type(std) == np.ndarray:
-        raise_if_not(std.shape == (length, length), 'If a matrix of standard deviations is provided, '
-                                                    'its shape has to match the length of the TimeSeries.', logger)
+        raise_if_not(
+            std.shape == (length, length),
+            "If a matrix of standard deviations is provided, "
+            "its shape has to match the length of the TimeSeries.",
+            logger,
+        )
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
     values = np.random.normal(mean, std, size=len(index)).astype(dtype)
 
-    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(
+        index, values, freq=freq, columns=pd.Index([column_name])
+    )
 
 
-def random_walk_timeseries(mean: float = 0.,
-                           std: float = 1.,
-                           start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
-                           end: Optional[Union[pd.Timestamp, int]] = None,
-                           length: Optional[int] = None,
-                           freq: str = 'D',
-                           column_name: Optional[str] = 'random_walk',
-                           dtype: np.dtype = np.float64) -> TimeSeries:
+def random_walk_timeseries(
+    mean: float = 0.0,
+    std: float = 1.0,
+    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: str = "D",
+    column_name: Optional[str] = "random_walk",
+    dtype: np.dtype = np.float64,
+) -> TimeSeries:
     """
     Creates a random walk univariate TimeSeries, where each step is obtained by sampling a gaussian distribution
     with mean `mean` and standard deviation `std`.
@@ -320,42 +358,46 @@ def random_walk_timeseries(mean: float = 0.,
     index = _generate_index(start=start, end=end, freq=freq, length=length)
     values = np.cumsum(np.random.normal(mean, std, size=len(index)), dtype=dtype)
 
-    return TimeSeries.from_times_and_values(index, values, freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(
+        index, values, freq=freq, columns=pd.Index([column_name])
+    )
 
 
-def autoregressive_timeseries(coef: Sequence[float],
-                              start_values: Optional[Sequence[float]] = None,
-                              start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp('2000-01-01'),
-                              end: Optional[Union[pd.Timestamp, int]] = None,
-                              length: Optional[int] = None,
-                              freq: str = 'D',
-                              column_name: Optional[str] = 'autoregressive') -> TimeSeries:
+def autoregressive_timeseries(
+    coef: Sequence[float],
+    start_values: Optional[Sequence[float]] = None,
+    start: Optional[Union[pd.Timestamp, int]] = pd.Timestamp("2000-01-01"),
+    end: Optional[Union[pd.Timestamp, int]] = None,
+    length: Optional[int] = None,
+    freq: str = "D",
+    column_name: Optional[str] = "autoregressive",
+) -> TimeSeries:
     """
     Creates a univariate, autoregressive TimeSeries whose values are calculated using specified coefficients `coef` and
     starting values `start_values`.
 
     Parameters
     ----------
-    coef : list of float
+    coef
         The autoregressive coefficients used for calculating the next time step.
         series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + ... + coef[0] * series[t-len(coef)]
-    start_values : list of float, default: np.ones(len(coef))
+    start_values
         The starting values used for calculating the first few values for which no lags exist yet.
         series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + ... + coef[0] * starting_values[0]
-    start : pd.Timestamp or int, default: pd.Timestamp('2000-01-01')
+    start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
         either `length` or `end`.
-    end : pd.Timestamp or int, optional
+    end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
         set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
-    length : int, optional
+    length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
-    freq : str, default: 'D'
+    freq
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-    column_name : str, default: 'autoregressive'
+    column_name
         Optionally, the name of the value column for the returned TimeSeries
 
     Returns
@@ -368,24 +410,30 @@ def autoregressive_timeseries(coef: Sequence[float],
     if start_values is None:
         start_values = np.ones(len(coef))
     else:
-        raise_if_not(len(start_values) == len(coef), "start_values must have same length as coef.")
+        raise_if_not(
+            len(start_values) == len(coef),
+            "start_values must have same length as coef.",
+        )
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
 
     values = np.empty(len(coef) + len(index))
-    values[:len(coef)] = start_values
+    values[: len(coef)] = start_values
 
     for i in range(len(coef), len(coef) + len(index)):
         # calculate next time step as dot product of coefs with previous len(coef) time steps
-        values[i] = np.dot(values[i - len(coef):i], coef)
+        values[i] = np.dot(values[i - len(coef) : i], coef)
 
-    return TimeSeries.from_times_and_values(index, values[len(coef):], freq=freq, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(
+        index, values[len(coef) :], freq=freq, columns=pd.Index([column_name])
+    )
 
 
-def _extend_time_index_until(time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
-                             until: Optional[Union[int, str, pd.Timestamp]],
-                             add_length: int,
-                             ) -> pd.DatetimeIndex:
+def _extend_time_index_until(
+    time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
+    until: Optional[Union[int, str, pd.Timestamp]],
+    add_length: int,
+) -> pd.DatetimeIndex:
 
     if not add_length and not until:
         return time_index
@@ -396,31 +444,53 @@ def _extend_time_index_until(time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
     freq = time_index.freq
 
     if add_length:
-        raise_if_not(add_length >= 0, f"Expected add_length, by which to extend the time series by, "
-                                      f"to be positive, got {add_length}")
+        raise_if_not(
+            add_length >= 0,
+            f"Expected add_length, by which to extend the time series by, "
+            f"to be positive, got {add_length}",
+        )
 
         try:
-            end += add_length*freq
+            end += add_length * freq
         except pd.errors.OutOfBoundsDatetime:
-            raise_log(ValueError(f"the add operation between {end} and {add_length * freq} will overflow"), logger)
+            raise_log(
+                ValueError(
+                    f"the add operation between {end} and {add_length * freq} will overflow"
+                ),
+                logger,
+            )
     else:
         datetime_index = isinstance(time_index, pd.DatetimeIndex)
 
         if datetime_index:
-            raise_if_not(isinstance(until, (str, pd.Timestamp)), "Expected valid timestamp for TimeSeries, "
-                                                                 "indexed by DatetimeIndex, "
-                                                                 f"for parameter until, got {type(end)}", logger)
+            raise_if_not(
+                isinstance(until, (str, pd.Timestamp)),
+                "Expected valid timestamp for TimeSeries, "
+                "indexed by DatetimeIndex, "
+                f"for parameter until, got {type(end)}",
+                logger,
+            )
         else:
-            raise_if_not(isinstance(until, int),  "Expected integer for TimeSeries,"
-                                                  "indexed by RangeIndex, ",
-                                                  f"for parameter until, got {type(end)}", logger)
+            raise_if_not(
+                isinstance(until, int),
+                "Expected integer for TimeSeries, indexed by RangeIndex, ",
+                f"for parameter until, got {type(end)}",
+                logger,
+            )
 
         timestamp = pd.Timestamp(until) if datetime_index else until
 
-        raise_if_not(timestamp > end, f"Expected until, {timestamp} to lie past end of time index {end}")
+        raise_if_not(
+            timestamp > end,
+            f"Expected until, {timestamp} to lie past end of time index {end}",
+        )
 
         ahead = timestamp - end
-        raise_if_not((ahead % freq) == pd.Timedelta(0), f"End date must correspond with frequency {freq} of the time axis", logger)
+        raise_if_not(
+            (ahead % freq) == pd.Timedelta(0),
+            f"End date must correspond with frequency {freq} of the time axis",
+            logger,
+        )
 
         end = timestamp
 
@@ -428,14 +498,16 @@ def _extend_time_index_until(time_index: Union[pd.DatetimeIndex, pd.RangeIndex],
     return new_time_index
 
 
-def holidays_timeseries(time_index: pd.DatetimeIndex,
-                        country_code: str,
-                        prov: str = None,
-                        state: str = None,
-                        column_name: Optional[str] = 'holidays',
-                        until: Optional[Union[int, str, pd.Timestamp]] = None,
-                        add_length: int = 0,
-                        dtype: np.dtype = np.float64) -> TimeSeries:
+def holidays_timeseries(
+    time_index: pd.DatetimeIndex,
+    country_code: str,
+    prov: str = None,
+    state: str = None,
+    column_name: Optional[str] = "holidays",
+    until: Optional[Union[int, str, pd.Timestamp]] = None,
+    add_length: int = 0,
+    dtype: np.dtype = np.float64,
+) -> TimeSeries:
     """
     Creates a binary univariate TimeSeries with index `time_index` that equals 1 at every index that lies within
     (or equals) a selected country's holiday, and 0 otherwise.
@@ -471,19 +543,25 @@ def holidays_timeseries(time_index: pd.DatetimeIndex,
 
     time_index = _extend_time_index_until(time_index, until, add_length)
     scope = range(time_index[0].year, (time_index[-1] + pd.Timedelta(days=1)).year)
-    country_holidays = holidays.CountryHoliday(country_code, prov=prov, state=state, years=scope)
+    country_holidays = holidays.CountryHoliday(
+        country_code, prov=prov, state=state, years=scope
+    )
     index_series = pd.Series(time_index, index=time_index)
     values = index_series.apply(lambda x: x in country_holidays).astype(dtype)
-    return TimeSeries.from_times_and_values(time_index, values, columns=pd.Index([column_name]))
+    return TimeSeries.from_times_and_values(
+        time_index, values, columns=pd.Index([column_name])
+    )
 
 
-def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries],
-                                  attribute: str,
-                                  one_hot: bool = False,
-                                  cyclic: bool = False,
-                                  until: Optional[Union[int, str, pd.Timestamp]] = None,
-                                  add_length: int = 0,
-                                  dtype=np.float64) -> TimeSeries:
+def datetime_attribute_timeseries(
+    time_index: Union[pd.DatetimeIndex, TimeSeries],
+    attribute: str,
+    one_hot: bool = False,
+    cyclic: bool = False,
+    until: Optional[Union[int, str, pd.Timestamp]] = None,
+    add_length: int = 0,
+    dtype=np.float64,
+) -> TimeSeries:
     """
     Returns a new TimeSeries with index `time_index` and one or more dimensions containing
     (optionally one-hot encoded or cyclic encoded) pd.DatatimeIndex attribute information derived from the index.
@@ -495,8 +573,9 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day", "hour", "minute", "second". 
-        See all available attributes in https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex .
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
+        "hour", "minute", "second". See all available attributes in
+        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -525,10 +604,11 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
     time_index = _extend_time_index_until(time_index, until, add_length)
 
     raise_if_not(
-        hasattr(pd.DatetimeIndex, attribute) or (attribute in ["week", "weekofyear", "week_of_year"]),
-        f'attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. '
-        'See all available attributes in '
-        'https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex',
+        hasattr(pd.DatetimeIndex, attribute)
+        or (attribute in ["week", "weekofyear", "week_of_year"]),
+        f"attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. "
+        "See all available attributes in "
+        "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex",
         logger,
     )
 
@@ -553,11 +633,16 @@ def datetime_attribute_timeseries(time_index: Union[pd.DatetimeIndex, TimeSeries
         "week_of_year": 52,
     }
 
-    if not attribute in ["week", "weekofyear", "week_of_year"]:
+    if attribute not in ["week", "weekofyear", "week_of_year"]:
         values = getattr(time_index, attribute)
     else:
-        values = time_index.isocalendar().set_index("week").index.astype("int64").rename('time')
-    
+        values = (
+            time_index.isocalendar()
+            .set_index("week")
+            .index.astype("int64")
+            .rename("time")
+        )
+
     if one_hot or cyclic:
         raise_if_not(
             attribute in num_values_dict,

@@ -9,7 +9,11 @@ from typing import Optional, List
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
-from darts.utils.statistics import check_seasonality, extract_trend_and_seasonality, remove_from_series
+from darts.utils.statistics import (
+    check_seasonality,
+    extract_trend_and_seasonality,
+    remove_from_series,
+)
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.logging import raise_log, get_logger, raise_if_not
 from darts.timeseries import TimeSeries
@@ -22,10 +26,12 @@ ALPHA_START = 0.2
 class Theta(ForecastingModel):
     # .. todo: Implement OTM: Optimized Theta Method (https://arxiv.org/pdf/1503.03529.pdf)
     # .. todo: Try with something different than SES? They do that in the paper.
-    def __init__(self,
-                 theta: int = 2,
-                 seasonality_period: Optional[int] = None,
-                 season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE):
+    def __init__(
+        self,
+        theta: int = 2,
+        seasonality_period: Optional[int] = None,
+        season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
+    ):
         """
         An implementation of the Theta method with configurable `theta` parameter. See [1]_.
 
@@ -33,7 +39,7 @@ class Theta(ForecastingModel):
         or an inferred seasonality period.
 
         `season_mode` must be a ``SeasonalityMode`` Enum member.
-        
+
         You can access the Enum with ``from darts import SeasonalityMode``.
 
         Parameters
@@ -67,11 +73,14 @@ class Theta(ForecastingModel):
         self.season_period = None
         self.season_mode = season_mode
 
-        raise_if_not(season_mode in SeasonalityMode,
-                     "Unknown value for season_mode: {}.".format(season_mode), logger)
+        raise_if_not(
+            season_mode in SeasonalityMode,
+            "Unknown value for season_mode: {}.".format(season_mode),
+            logger,
+        )
 
         if self.theta == 0:
-            raise_log(ValueError('The parameter theta cannot be equal to 0.'), logger)
+            raise_log(ValueError("The parameter theta cannot be equal to 0."), logger)
 
     def fit(self, series: TimeSeries):
         super().fit(series)
@@ -87,8 +96,9 @@ class Theta(ForecastingModel):
             self.season_period = self.seasonality_period
         if self.season_period is None:
             max_lag = len(ts) // 2
-            self.is_seasonal, self.season_period = check_seasonality(ts, self.season_period, max_lag=max_lag)
-            logger.info('Theta model inferred seasonality of training series: {}'.format(self.season_period))
+            self.is_seasonal, self.season_period = check_seasonality(
+                ts, self.season_period, max_lag=max_lag
+            )
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
@@ -97,33 +107,44 @@ class Theta(ForecastingModel):
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(ts, self.season_period, model=self.season_mode)
+            _, self.seasonality = extract_trend_and_seasonality(
+                ts, self.season_period, model=self.season_mode
+            )
             new_ts = remove_from_series(ts, self.seasonality, model=self.season_mode)
 
         # SES part of the decomposition.
         self.model = hw.SimpleExpSmoothing(new_ts.values()).fit()
 
         # Linear Regression part of the decomposition. We select the degree one coefficient.
-        b_theta = np.polyfit(np.array([i for i in range(0, self.length)]), (1.0 - self.theta) * new_ts.values(), 1)[0]
+        b_theta = np.polyfit(
+            np.array([i for i in range(0, self.length)]),
+            (1.0 - self.theta) * new_ts.values(),
+            1,
+        )[0]
 
         # Normalization of the coefficient b_theta.
         self.coef = b_theta / (-self.theta)
 
         self.alpha = self.model.params["smoothing_level"]
-        if self.alpha == 0.:
-            self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(initial_level=ALPHA_START)
+        if self.alpha == 0.0:
+            self.model = hw.SimpleExpSmoothing(new_ts.values()).fit(
+                initial_level=ALPHA_START
+            )
             self.alpha = self.model.params["smoothing_level"]
 
-    def predict(self,
-                n: int,
-                num_samples: int = 1) -> 'TimeSeries':
+    def predict(self, n: int, num_samples: int = 1) -> "TimeSeries":
         super().predict(n, num_samples)
 
         # Forecast of the SES part.
         forecast = self.model.forecast(n)
 
         # Forecast of the Linear Regression part.
-        drift = self.coef * np.array([i + (1 - (1 - self.alpha) ** self.length) / self.alpha for i in range(0, n)])
+        drift = self.coef * np.array(
+            [
+                i + (1 - (1 - self.alpha) ** self.length) / self.alpha
+                for i in range(0, n)
+            ]
+        )
 
         # Combining the two forecasts
         forecast += drift
@@ -131,8 +152,10 @@ class Theta(ForecastingModel):
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
 
-            replicated_seasonality = np.tile(self.seasonality.pd_series()[-self.season_period:],
-                                             math.ceil(n / self.season_period))[:n]
+            replicated_seasonality = np.tile(
+                self.seasonality.pd_series()[-self.season_period :],
+                math.ceil(n / self.season_period),
+            )[:n]
             if self.season_mode is SeasonalityMode.MULTIPLICATIVE:
                 forecast *= replicated_seasonality
             elif self.season_mode is SeasonalityMode.ADDITIVE:
@@ -141,17 +164,19 @@ class Theta(ForecastingModel):
         return self._build_forecast_series(forecast)
 
     def __str__(self):
-        return 'Theta({})'.format(self.theta)
+        return "Theta({})".format(self.theta)
 
 
 class FourTheta(ForecastingModel):
-    def __init__(self,
-                 theta: int = 2,
-                 seasonality_period: Optional[int] = None,
-                 season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
-                 model_mode: ModelMode = ModelMode.ADDITIVE,
-                 trend_mode: TrendMode = TrendMode.LINEAR,
-                 normalization: bool = True):
+    def __init__(
+        self,
+        theta: int = 2,
+        seasonality_period: Optional[int] = None,
+        season_mode: SeasonalityMode = SeasonalityMode.MULTIPLICATIVE,
+        model_mode: ModelMode = ModelMode.ADDITIVE,
+        trend_mode: TrendMode = TrendMode.LINEAR,
+        normalization: bool = True,
+    ):
         """
         An implementation of the 4Theta method with configurable `theta` parameter.
 
@@ -216,12 +241,21 @@ class FourTheta(ForecastingModel):
         self.fitted_values = None
         self.normalization = normalization
 
-        raise_if_not(isinstance(model_mode, ModelMode),
-                     "Unknown value for model_mode: {}.".format(model_mode), logger)
-        raise_if_not(isinstance(trend_mode, TrendMode),
-                     "Unknown value for trend_mode: {}.".format(trend_mode), logger)
-        raise_if_not(isinstance(season_mode, SeasonalityMode),
-                     "Unknown value for season_mode: {}.".format(season_mode), logger)
+        raise_if_not(
+            isinstance(model_mode, ModelMode),
+            "Unknown value for model_mode: {}.".format(model_mode),
+            logger,
+        )
+        raise_if_not(
+            isinstance(trend_mode, TrendMode),
+            "Unknown value for trend_mode: {}.".format(trend_mode),
+            logger,
+        )
+        raise_if_not(
+            isinstance(season_mode, SeasonalityMode),
+            "Unknown value for season_mode: {}.".format(season_mode),
+            logger,
+        )
 
     def fit(self, series):
         super().fit(series)
@@ -230,8 +264,11 @@ class FourTheta(ForecastingModel):
         # normalization of data
         if self.normalization:
             self.mean = series.mean().mean()
-            raise_if_not(not np.isclose(self.mean, 0),
-                         "The mean value of the provided series is too close to zero to perform normalization", logger)
+            raise_if_not(
+                not np.isclose(self.mean, 0),
+                "The mean value of the provided series is too close to zero to perform normalization",
+                logger,
+            )
             new_ts = series / self.mean
         else:
             new_ts = series
@@ -244,23 +281,29 @@ class FourTheta(ForecastingModel):
             self.season_period = self.seasonality_period
         if self.season_period is None:
             max_lag = len(series) // 2
-            self.is_seasonal, self.season_period = check_seasonality(series, self.season_period, max_lag=max_lag)
-            logger.info('FourTheta model inferred seasonality of training series: {}'.format(self.season_period))
+            self.is_seasonal, self.season_period = check_seasonality(
+                series, self.season_period, max_lag=max_lag
+            )
         else:
             # force the user-defined seasonality to be considered as a true seasonal period.
             self.is_seasonal = self.season_period > 1
 
         # Store and remove seasonality effect if there is any.
         if self.is_seasonal:
-            _, self.seasonality = extract_trend_and_seasonality(new_ts, self.season_period,
-                                                                model=self.season_mode)
-            new_ts = remove_from_series(new_ts, self.seasonality, model=self.season_mode)
+            _, self.seasonality = extract_trend_and_seasonality(
+                new_ts, self.season_period, model=self.season_mode
+            )
+            new_ts = remove_from_series(
+                new_ts, self.seasonality, model=self.season_mode
+            )
 
         ts_values = new_ts.univariate_values()
         if (ts_values <= 0).any():
             self.model_mode = ModelMode.ADDITIVE
             self.trend_mode = TrendMode.LINEAR
-            logger.warning("Time series has negative values. Fallback to additive and linear model")
+            logger.warning(
+                "Time series has negative values. Fallback to additive and linear model"
+            )
 
         # Drift part of the decomposition
         if self.trend_mode is TrendMode.LINEAR:
@@ -285,7 +328,7 @@ class FourTheta(ForecastingModel):
         theta2_in = self.model.fittedvalues
 
         if (theta2_in > 0).all() and self.model_mode is ModelMode.MULTIPLICATIVE:
-            self.fitted_values = theta2_in**self.wses * theta0_in**self.wdrift
+            self.fitted_values = theta2_in ** self.wses * theta0_in ** self.wdrift
         else:
             if self.model_mode is ModelMode.MULTIPLICATIVE:
                 self.model_mode = ModelMode.ADDITIVE
@@ -304,9 +347,7 @@ class FourTheta(ForecastingModel):
         if self.normalization:
             self.fitted_values *= self.mean
 
-    def predict(self,
-                n: int,
-                num_samples: int = 1) -> 'TimeSeries':
+    def predict(self, n: int, num_samples: int = 1) -> "TimeSeries":
         super().predict(n, num_samples)
 
         # Forecast of the SES part.
@@ -320,13 +361,15 @@ class FourTheta(ForecastingModel):
         if self.model_mode is ModelMode.ADDITIVE:
             forecast = self.wses * forecast + self.wdrift * drift
         else:
-            forecast = forecast**self.wses * drift**self.wdrift
+            forecast = forecast ** self.wses * drift ** self.wdrift
 
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:
 
-            replicated_seasonality = np.tile(self.seasonality.pd_series()[-self.season_period:],
-                                             math.ceil(n / self.season_period))[:n]
+            replicated_seasonality = np.tile(
+                self.seasonality.pd_series()[-self.season_period :],
+                math.ceil(n / self.season_period),
+            )[:n]
             if self.season_mode is SeasonalityMode.MULTIPLICATIVE:
                 forecast *= replicated_seasonality
             else:
@@ -338,9 +381,13 @@ class FourTheta(ForecastingModel):
         return self._build_forecast_series(forecast)
 
     @staticmethod
-    def select_best_model(ts: TimeSeries, thetas: Optional[List[int]] = None,
-                          m: Optional[int] = None, normalization: bool = True,
-                          n_jobs: int = 1) -> 'FourTheta':
+    def select_best_model(
+        ts: TimeSeries,
+        thetas: Optional[List[int]] = None,
+        m: Optional[int] = None,
+        normalization: bool = True,
+        n_jobs: int = 1,
+    ) -> "FourTheta":
         """
         Performs a grid search over all hyper parameters to select the best model,
         using the fitted values on the training series `ts`.
@@ -370,28 +417,39 @@ class FourTheta(ForecastingModel):
         """
         # Only import if needed
         from darts.metrics import mae
+
         if thetas is None:
             thetas = [1, 2, 3]
         if (ts.values() <= 0).any():
             drift_mode = [TrendMode.LINEAR]
             model_mode = [ModelMode.ADDITIVE]
             season_mode = [SeasonalityMode.ADDITIVE]
-            logger.warning("The given TimeSeries has negative values. The method will only test "
-                           "linear trend and additive modes.")
+            logger.warning(
+                "The given TimeSeries has negative values. The method will only test "
+                "linear trend and additive modes."
+            )
         else:
             season_mode = [season for season in SeasonalityMode]
             model_mode = [model for model in ModelMode]
             drift_mode = [trend for trend in TrendMode]
 
-        theta = FourTheta.gridsearch({"theta": thetas,
-                                      "model_mode": model_mode,
-                                      "season_mode": season_mode,
-                                      "trend_mode": drift_mode,
-                                      "seasonality_period": [m],
-                                      "normalization": [normalization]},
-                                     ts, use_fitted_values=True, metric=mae, n_jobs=n_jobs)
+        theta = FourTheta.gridsearch(
+            {
+                "theta": thetas,
+                "model_mode": model_mode,
+                "season_mode": season_mode,
+                "trend_mode": drift_mode,
+                "seasonality_period": [m],
+                "normalization": [normalization],
+            },
+            ts,
+            use_fitted_values=True,
+            metric=mae,
+            n_jobs=n_jobs,
+        )
         return theta
 
     def __str__(self):
-        return '4Theta(theta:{}, curve:{}, model:{}, seasonality:{})'.format(self.theta, self.trend_mode,
-                                                                             self.model_mode, self.season_mode)
+        return "4Theta(theta:{}, curve:{}, model:{}, seasonality:{})".format(
+            self.theta, self.trend_mode, self.model_mode, self.season_mode
+        )

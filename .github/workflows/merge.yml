@@ -6,6 +6,20 @@ on:
       - master
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+      - name: "2. Check formatting using Black"
+        uses: psf/black@stable
+        with:
+          version: "21.12b0"
+      - name: "3. Lint using flake8"
+        uses: py-actions/flake8@v2
+        with:
+          flake8-version: "4.0.1"
+
   tests:
     runs-on: ${{ matrix.os }}
     strategy:

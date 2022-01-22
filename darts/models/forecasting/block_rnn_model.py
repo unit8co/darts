@@ -11,26 +11,30 @@ from typing import List, Optional, Union, Tuple
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger
 from darts.utils.torch import random_method
-from darts.models.forecasting.torch_forecasting_model import (TorchParametricProbabilisticForecastingModel,
-                                                              PastCovariatesTorchModel)
+from darts.models.forecasting.torch_forecasting_model import (
+    TorchParametricProbabilisticForecastingModel,
+    PastCovariatesTorchModel,
+)
 
 logger = get_logger(__name__)
 
 
 # TODO add batch norm
 class _BlockRNNModule(nn.Module):
-    def __init__(self,
-                 name: str,
-                 input_size: int,
-                 hidden_dim: int,
-                 num_layers: int,
-                 output_chunk_length: int,
-                 target_size: int,
-                 nr_params: int,
-                 num_layers_out_fc: Optional[List] = None,
-                 dropout: float = 0.):
+    def __init__(
+        self,
+        name: str,
+        input_size: int,
+        hidden_dim: int,
+        num_layers: int,
+        output_chunk_length: int,
+        target_size: int,
+        nr_params: int,
+        num_layers_out_fc: Optional[List] = None,
+        dropout: float = 0.0,
+    ):
 
-        """ PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
+        """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
 
         PyTorch module implementing a simple block RNN with the specified `name` layer.
         This module combines a PyTorch RNN module, together with a fully connected network, which maps the
@@ -40,7 +44,7 @@ class _BlockRNNModule(nn.Module):
         This module uses an RNN to encode the input sequence, and subsequently uses a fully connected
         network as the decoder which takes as input the last hidden state of the encoder RNN.
         The final output of the decoder is a sequence of length `output_chunk_length`. In this sense,
-        the `_BlockRNNModule` produces 'blocks' of forecasts at a time (which is different 
+        the `_BlockRNNModule` produces 'blocks' of forecasts at a time (which is different
         from `_RNNModule` used by the `RNNModel`).
 
         Parameters
@@ -88,13 +92,17 @@ class _BlockRNNModule(nn.Module):
         self.name = name
 
         # Defining the RNN module
-        self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
+        self.rnn = getattr(nn, name)(
+            input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout
+        )
 
         # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [output_chunk_length * target_size * nr_params]:
+        for feature in num_layers_out_fc + [
+            output_chunk_length * target_size * nr_params
+        ]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -111,27 +119,33 @@ class _BlockRNNModule(nn.Module):
             hidden = hidden[0]
         predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
-        predictions = predictions.view(batch_size, self.out_len, self.target_size, self.nr_params)
+        predictions = predictions.view(
+            batch_size, self.out_len, self.target_size, self.nr_params
+        )
 
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
 
 
-class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
+class BlockRNNModel(
+    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
+):
     @random_method
-    def __init__(self,
-                 input_chunk_length: int,
-                 output_chunk_length: int,
-                 model: Union[str, nn.Module] = 'RNN',
-                 hidden_size: int = 25,
-                 n_rnn_layers: int = 1,
-                 hidden_fc_sizes: Optional[List] = None,
-                 dropout: float = 0.,
-                 likelihood: Optional[Likelihood] = None,
-                 random_state: Optional[Union[int, RandomState]] = None,
-                 **kwargs):
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        model: Union[str, nn.Module] = "RNN",
+        hidden_size: int = 25,
+        n_rnn_layers: int = 1,
+        hidden_fc_sizes: Optional[List] = None,
+        dropout: float = 0.0,
+        likelihood: Optional[Likelihood] = None,
+        random_state: Optional[Union[int, RandomState]] = None,
+        **kwargs
+    ):
 
-        """ Block Recurrent Neural Network Model (RNNs).
+        """Block Recurrent Neural Network Model (RNNs).
 
         This is a neural network model that uses an RNN encoder to encode fixed-length input chunks, and
         a fully connected network to produce fixed-length outputs.
@@ -212,9 +226,9 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
             Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
@@ -237,15 +251,20 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
             and loaded using :func:`load_model()`.
         """
 
-        kwargs['input_chunk_length'] = input_chunk_length
-        kwargs['output_chunk_length'] = output_chunk_length
+        kwargs["input_chunk_length"] = input_chunk_length
+        kwargs["output_chunk_length"] = output_chunk_length
         super().__init__(likelihood=likelihood, **kwargs)
 
         # check we got right model type specified:
-        if model not in ['RNN', 'LSTM', 'GRU']:
-            raise_if_not(isinstance(model, nn.Module), '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
-                                                       '"GRU", or give your own PyTorch nn.Module'.format(
-                                                        model.__class__.__name__), logger)
+        if model not in ["RNN", "LSTM", "GRU"]:
+            raise_if_not(
+                isinstance(model, nn.Module),
+                '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
+                '"GRU", or give your own PyTorch nn.Module'.format(
+                    model.__class__.__name__
+                ),
+                logger,
+            )
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -257,21 +276,27 @@ class BlockRNNModel(TorchParametricProbabilisticForecastingModel, PastCovariates
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        input_dim = train_sample[0].shape[1] + (
+            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        )
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
-        if self.rnn_type_or_module in ['RNN', 'LSTM', 'GRU']:
-            hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
-            model = _BlockRNNModule(name=self.rnn_type_or_module,
-                                    input_size=input_dim,
-                                    target_size=output_dim,
-                                    nr_params=nr_params,
-                                    hidden_dim=self.hidden_size,
-                                    num_layers=self.n_rnn_layers,
-                                    output_chunk_length=self.output_chunk_length,
-                                    num_layers_out_fc=hidden_fc_sizes,
-                                    dropout=self.dropout)
+        if self.rnn_type_or_module in ["RNN", "LSTM", "GRU"]:
+            hidden_fc_sizes = (
+                [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
+            )
+            model = _BlockRNNModule(
+                name=self.rnn_type_or_module,
+                input_size=input_dim,
+                target_size=output_dim,
+                nr_params=nr_params,
+                hidden_dim=self.hidden_size,
+                num_layers=self.n_rnn_layers,
+                output_chunk_length=self.output_chunk_length,
+                num_layers_out_fc=hidden_fc_sizes,
+                dropout=self.dropout,
+            )
         else:
             model = self.rnn_type_or_module
         return model

@@ -13,7 +13,10 @@ import torch.nn as nn
 from darts.logging import get_logger, raise_log, raise_if_not
 from darts.utils.torch import random_method
 from darts.utils.likelihood_models import Likelihood
-from darts.models.forecasting.torch_forecasting_model import TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
+from darts.models.forecasting.torch_forecasting_model import (
+    TorchParametricProbabilisticForecastingModel,
+    PastCovariatesTorchModel,
+)
 
 logger = get_logger(__name__)
 
@@ -24,38 +27,45 @@ class _GType(Enum):
     SEASONALITY = 3
 
 
-GTypes = NewType('GTypes', _GType)
+GTypes = NewType("GTypes", _GType)
 
 
 class _TrendGenerator(nn.Module):
-
-    def __init__(self,
-                 expansion_coefficient_dim,
-                 target_length):
+    def __init__(self, expansion_coefficient_dim, target_length):
         super(_TrendGenerator, self).__init__()
 
         # basis is of size (expansion_coefficient_dim, target_length)
-        basis = torch.stack([(torch.arange(target_length) / target_length)**i for i in range(expansion_coefficient_dim)], 
-                            dim=1).T
+        basis = torch.stack(
+            [
+                (torch.arange(target_length) / target_length) ** i
+                for i in range(expansion_coefficient_dim)
+            ],
+            dim=1,
+        ).T
 
         self.basis = nn.Parameter(basis, requires_grad=False)
-
 
     def forward(self, x):
         return torch.matmul(x, self.basis)
 
 
 class _SeasonalityGenerator(nn.Module):
-
-    def __init__(self,
-                 target_length):
+    def __init__(self, target_length):
         super(_SeasonalityGenerator, self).__init__()
         half_minus_one = int(target_length / 2 - 1)
-        cos_vectors = [torch.cos(torch.arange(target_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        sin_vectors = [torch.sin(torch.arange(target_length) * 2 * np.pi * i) for i in range(1, half_minus_one + 1)]
-        
+        cos_vectors = [
+            torch.cos(torch.arange(target_length) * 2 * np.pi * i)
+            for i in range(1, half_minus_one + 1)
+        ]
+        sin_vectors = [
+            torch.sin(torch.arange(target_length) * 2 * np.pi * i)
+            for i in range(1, half_minus_one + 1)
+        ]
+
         # basis is of size (2 * int(target_length / 2 - 1) + 1, target_length)
-        basis = torch.stack([torch.ones(target_length)] + cos_vectors + sin_vectors, dim=1).T
+        basis = torch.stack(
+            [torch.ones(target_length)] + cos_vectors + sin_vectors, dim=1
+        ).T
 
         self.basis = nn.Parameter(basis, requires_grad=False)
 
@@ -64,16 +74,17 @@ class _SeasonalityGenerator(nn.Module):
 
 
 class _Block(nn.Module):
-
-    def __init__(self,
-                 num_layers: int,
-                 layer_width: int,
-                 nr_params: int,
-                 expansion_coefficient_dim: int,
-                 input_chunk_length: int,
-                 target_length: int,
-                 g_type: GTypes):
-        """ PyTorch module implementing the basic building block of the N-BEATS architecture.
+    def __init__(
+        self,
+        num_layers: int,
+        layer_width: int,
+        nr_params: int,
+        expansion_coefficient_dim: int,
+        input_chunk_length: int,
+        target_length: int,
+        g_type: GTypes,
+    ):
+        """PyTorch module implementing the basic building block of the N-BEATS architecture.
 
         The blocks produce outputs of size (target_length, nr_params); i.e.
         "one vector per parameter". The parameters are predicted only for forecast outputs.
@@ -89,7 +100,8 @@ class _Block(nn.Module):
             The number of parameters of the likelihood (or 1 if no likelihood is used)
         expansion_coefficient_dim
             The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-            Used in the generic architecture and the trend module of the interpretable architecture, where it determines the degree of the polynomial basis.
+            Used in the generic architecture and the trend module of the interpretable architecture, where it determines
+            the degree of the polynomial basis.
         input_chunk_length
             The length of the input sequence fed to the model.
         target_length
@@ -122,24 +134,36 @@ class _Block(nn.Module):
 
         # fully connected stack before fork
         self.linear_layer_stack_list = [nn.Linear(input_chunk_length, layer_width)]
-        self.linear_layer_stack_list += [nn.Linear(layer_width, layer_width) for _ in range(num_layers - 1)]
+        self.linear_layer_stack_list += [
+            nn.Linear(layer_width, layer_width) for _ in range(num_layers - 1)
+        ]
         self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
 
         # Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).
         # The coefficients are emitted for each parameter of the likelihood.
         if g_type == _GType.SEASONALITY:
-            self.backcast_linear_layer = nn.Linear(layer_width, 2 * int(input_chunk_length / 2 - 1) + 1)
-            self.forecast_linear_layer = nn.Linear(layer_width, nr_params * (2 * int(target_length / 2 - 1) + 1))
+            self.backcast_linear_layer = nn.Linear(
+                layer_width, 2 * int(input_chunk_length / 2 - 1) + 1
+            )
+            self.forecast_linear_layer = nn.Linear(
+                layer_width, nr_params * (2 * int(target_length / 2 - 1) + 1)
+            )
         else:
-            self.backcast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
-            self.forecast_linear_layer = nn.Linear(layer_width, nr_params * expansion_coefficient_dim)
+            self.backcast_linear_layer = nn.Linear(
+                layer_width, expansion_coefficient_dim
+            )
+            self.forecast_linear_layer = nn.Linear(
+                layer_width, nr_params * expansion_coefficient_dim
+            )
 
         # waveform generator functions
         if g_type == _GType.GENERIC:
             self.backcast_g = nn.Linear(expansion_coefficient_dim, input_chunk_length)
             self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length)
         elif g_type == _GType.TREND:
-            self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_chunk_length)
+            self.backcast_g = _TrendGenerator(
+                expansion_coefficient_dim, input_chunk_length
+            )
             self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length)
         elif g_type == _GType.SEASONALITY:
             self.backcast_g = _SeasonalityGenerator(input_chunk_length)
@@ -172,18 +196,18 @@ class _Block(nn.Module):
 
 
 class _Stack(nn.Module):
-
-    def __init__(self,
-                 num_blocks: int,
-                 num_layers: int,
-                 layer_width: int,
-                 nr_params: int,
-                 expansion_coefficient_dim: int,
-                 input_chunk_length: int,
-                 target_length: int,
-                 g_type: GTypes,
-                 ):
-        """ PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
+    def __init__(
+        self,
+        num_blocks: int,
+        num_layers: int,
+        layer_width: int,
+        nr_params: int,
+        expansion_coefficient_dim: int,
+        input_chunk_length: int,
+        target_length: int,
+        g_type: GTypes,
+    ):
+        """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
 
         Parameters
         ----------
@@ -226,27 +250,41 @@ class _Stack(nn.Module):
 
         if g_type == _GType.GENERIC:
             self.blocks_list = [
-                _Block(num_layers, layer_width, nr_params, 
-                       expansion_coefficient_dim, input_chunk_length, 
-                       target_length, g_type)
+                _Block(
+                    num_layers,
+                    layer_width,
+                    nr_params,
+                    expansion_coefficient_dim,
+                    input_chunk_length,
+                    target_length,
+                    g_type,
+                )
                 for _ in range(num_blocks)
             ]
         else:
             # same block instance is used for weight sharing
-            interpretable_block = _Block(num_layers, layer_width, nr_params,
-                                         expansion_coefficient_dim, input_chunk_length, 
-                                         target_length, g_type)
+            interpretable_block = _Block(
+                num_layers,
+                layer_width,
+                nr_params,
+                expansion_coefficient_dim,
+                input_chunk_length,
+                target_length,
+                g_type,
+            )
             self.blocks_list = [interpretable_block] * num_blocks
 
         self.blocks = nn.ModuleList(self.blocks_list)
 
     def forward(self, x):
         # One forecast vector per parameter in the distribution
-        stack_forecast = torch.zeros(x.shape[0], 
-                                     self.target_length, 
-                                     self.nr_params, 
-                                     device=x.device, 
-                                     dtype=x.dtype)
+        stack_forecast = torch.zeros(
+            x.shape[0],
+            self.target_length,
+            self.nr_params,
+            device=x.device,
+            dtype=x.dtype,
+        )
 
         for block in self.blocks_list:
             # pass input through block
@@ -264,22 +302,22 @@ class _Stack(nn.Module):
 
 
 class _NBEATSModule(nn.Module):
-
-    def __init__(self,
-                 input_dim: int,
-                 output_dim: int,
-                 nr_params: int,
-                 input_chunk_length: int,
-                 output_chunk_length: int,
-                 generic_architecture: bool,
-                 num_stacks: int,
-                 num_blocks: int,
-                 num_layers: int,
-                 layer_widths: List[int],
-                 expansion_coefficient_dim: int,
-                 trend_polynomial_degree: int
-                 ):
-        """ PyTorch module implementing the N-BEATS architecture.
+    def __init__(
+        self,
+        input_dim: int,
+        output_dim: int,
+        nr_params: int,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        generic_architecture: bool,
+        num_stacks: int,
+        num_blocks: int,
+        num_layers: int,
+        layer_widths: List[int],
+        expansion_coefficient_dim: int,
+        trend_polynomial_degree: int,
+    ):
+        """PyTorch module implementing the N-BEATS architecture.
 
         Parameters
         ----------
@@ -336,34 +374,40 @@ class _NBEATSModule(nn.Module):
 
         if generic_architecture:
             self.stacks_list = [
-                _Stack(num_blocks,
-                       num_layers,
-                       layer_widths[i],
-                       nr_params,
-                       expansion_coefficient_dim,
-                       self.input_chunk_length_multi,
-                       self.target_length,
-                       _GType.GENERIC)
+                _Stack(
+                    num_blocks,
+                    num_layers,
+                    layer_widths[i],
+                    nr_params,
+                    expansion_coefficient_dim,
+                    self.input_chunk_length_multi,
+                    self.target_length,
+                    _GType.GENERIC,
+                )
                 for i in range(num_stacks)
             ]
         else:
             num_stacks = 2
-            trend_stack = _Stack(num_blocks,
-                                 num_layers,
-                                 layer_widths[0],
-                                 nr_params,
-                                 trend_polynomial_degree + 1,
-                                 self.input_chunk_length_multi,
-                                 self.target_length,
-                                 _GType.TREND)
-            seasonality_stack = _Stack(num_blocks,
-                                       num_layers,
-                                       layer_widths[1],
-                                       nr_params,
-                                       -1,
-                                       self.input_chunk_length_multi,
-                                       self.target_length,
-                                       _GType.SEASONALITY)
+            trend_stack = _Stack(
+                num_blocks,
+                num_layers,
+                layer_widths[0],
+                nr_params,
+                trend_polynomial_degree + 1,
+                self.input_chunk_length_multi,
+                self.target_length,
+                _GType.TREND,
+            )
+            seasonality_stack = _Stack(
+                num_blocks,
+                num_layers,
+                layer_widths[1],
+                nr_params,
+                -1,
+                self.input_chunk_length_multi,
+                self.target_length,
+                _GType.SEASONALITY,
+            )
             self.stacks_list = [trend_stack, seasonality_stack]
 
         self.stacks = nn.ModuleList(self.stacks_list)
@@ -383,11 +427,13 @@ class _NBEATSModule(nn.Module):
         x = x.squeeze(dim=2)
 
         # One vector of length target_length per parameter in the distribution
-        y = torch.zeros(x.shape[0], 
-                        self.target_length,
-                        self.nr_params,
-                        device=x.device, 
-                        dtype=x.dtype)
+        y = torch.zeros(
+            x.shape[0],
+            self.target_length,
+            self.nr_params,
+            device=x.device,
+            dtype=x.dtype,
+        )
 
         for stack in self.stacks_list:
             # compute stack output
@@ -399,31 +445,37 @@ class _NBEATSModule(nn.Module):
             # set current stack residual as input for next stack
             x = stack_residual
 
-        # In multivariate case, we get a result [x1_param1, x1_param2], [y1_param1, y1_param2], [x2..], [y2..], ... 
+        # In multivariate case, we get a result [x1_param1, x1_param2], [y1_param1, y1_param2], [x2..], [y2..], ...
         # We want to reshape to original format. We also get rid of the covariates and keep only the target dimensions.
         # The covariates are by construction added as extra time series on the right side. So we need to get rid of this
         # right output (keeping only :self.output_dim).
-        y = y.view(y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params)[:, :, :self.output_dim, :]
+        y = y.view(
+            y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
+        )[:, :, : self.output_dim, :]
 
         return y
 
 
-class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel):
+class NBEATSModel(
+    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
+):
     @random_method
-    def __init__(self,
-                 input_chunk_length: int,
-                 output_chunk_length: int,
-                 generic_architecture: bool = True,
-                 num_stacks: int = 30,
-                 num_blocks: int = 1,
-                 num_layers: int = 4,
-                 layer_widths: Union[int, List[int]] = 256,
-                 expansion_coefficient_dim: int = 5,
-                 trend_polynomial_degree: int = 2,
-                 likelihood: Optional[Likelihood] = None,
-                 random_state: Optional[Union[int, RandomState]] = None,
-                 **kwargs):
-        """ Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
+    def __init__(
+        self,
+        input_chunk_length: int,
+        output_chunk_length: int,
+        generic_architecture: bool = True,
+        num_stacks: int = 30,
+        num_blocks: int = 1,
+        num_layers: int = 4,
+        layer_widths: Union[int, List[int]] = 256,
+        expansion_coefficient_dim: int = 5,
+        trend_polynomial_degree: int = 2,
+        likelihood: Optional[Likelihood] = None,
+        random_state: Optional[Union[int, RandomState]] = None,
+        **kwargs
+    ):
+        """Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
 
         This is an implementation of the N-BEATS architecture, as outlined in [1]_.
 
@@ -511,9 +563,9 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
@@ -540,13 +592,16 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
         .. [1] https://openreview.net/forum?id=r1ecqn4YwB
         """
 
-        kwargs['input_chunk_length'] = input_chunk_length
-        kwargs['output_chunk_length'] = output_chunk_length
+        kwargs["input_chunk_length"] = input_chunk_length
+        kwargs["output_chunk_length"] = output_chunk_length
         super().__init__(likelihood=likelihood, **kwargs)
 
-        raise_if_not(isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
-                     "Please pass an integer or a list of integers with length `num_stacks`"
-                     "as value for the `layer_widths` argument.", logger)
+        raise_if_not(
+            isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
+            "Please pass an integer or a list of integers with length `num_stacks`"
+            "as value for the `layer_widths` argument.",
+            logger,
+        )
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -566,7 +621,9 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
+        input_dim = train_sample[0].shape[1] + (
+            train_sample[1].shape[1] if train_sample[1] is not None else 0
+        )
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
@@ -582,9 +639,9 @@ class NBEATSModel(TorchParametricProbabilisticForecastingModel, PastCovariatesTo
             num_layers=self.num_layers,
             layer_widths=self.layer_widths,
             expansion_coefficient_dim=self.expansion_coefficient_dim,
-            trend_polynomial_degree=self.trend_polynomial_degree
+            trend_polynomial_degree=self.trend_polynomial_degree,
         )
-    
+
     @random_method
     def _produce_predict_output(self, x):
         if self.likelihood:
