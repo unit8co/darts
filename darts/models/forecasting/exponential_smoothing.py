@@ -26,7 +26,7 @@ class ExponentialSmoothing(ForecastingModel):
         **fit_kwargs,
     ):
 
-        """ Exponential Smoothing
+        """Exponential Smoothing
 
         This is a wrapper around
         `statsmodels  Holt-Winters' Exponential Smoothing
@@ -50,7 +50,7 @@ class ExponentialSmoothing(ForecastingModel):
         damped
             Should the trend component be damped. Defaults to False.
         seasonal
-            Type of seasonal component. Either ``SeasonalityMode.ADDITIVE``, ``SeasonalityMode.MULTIPLICATIVE``, ``SeasonalityMode.NONE``, or ``None``. 
+            Type of seasonal component. Either ``SeasonalityMode.ADDITIVE``, ``SeasonalityMode.MULTIPLICATIVE``, ``SeasonalityMode.NONE``, or ``None``.
             Defaults to ``SeasonalityMode.ADDITIVE``.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
