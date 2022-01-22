@@ -96,7 +96,7 @@ class ExponentialSmoothing(ForecastingModel):
             series.values(),
             trend=self.trend.value,
             damped_trend=self.damped,
-            seasonal=self.seasonal.value if self.seasonal else None,
+            seasonal=self.seasonal if self.seasonal is None else self.seasonal.value,
             seasonal_periods=seasonal_periods_param,
             freq=series.freq if series.has_datetime_index else None,
             dates=series.time_index if series.has_datetime_index else None,
