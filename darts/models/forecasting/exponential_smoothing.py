@@ -49,8 +49,8 @@ class ExponentialSmoothing(ForecastingModel):
         damped
             Should the trend component be damped. Defaults to False.
         seasonal
-            Type of seasonal component. Either ``SeasonalityMode.ADDITIVE``, ``SeasonalityMode.MULTIPLICATIVE``, or ``SeasonalityMode.NONE``.
-            Defaults to ``SeasonalityMode.ADDITIVE``.
+            Type of seasonal component. Either ``SeasonalityMode.ADDITIVE``, ``SeasonalityMode.MULTIPLICATIVE``, ``SeasonalityMode.NONE``
+            or ``None``. Defaults to ``SeasonalityMode.ADDITIVE``.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
