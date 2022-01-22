@@ -55,6 +55,7 @@ class TimeSeries:
         TimeSeries.from_json : Create from a JSON file.
         TimeSeries.from_xarray : Create from an :class:`xarray.DataArray`.
         """
+
         raise_if_not(
             isinstance(xa, xr.DataArray),
             "Data must be provided as an xarray DataArray instance. "
