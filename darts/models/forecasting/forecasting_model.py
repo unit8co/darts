@@ -60,7 +60,7 @@ class ModelMeta(ABCMeta):
 
         # update defaults with actual model call parameters and store
         all_params.update(kwargs)
-        cls.model_call = all_params
+        cls._model_call = all_params
 
         # call model
         return super(ModelMeta, cls).__call__(**all_params)
@@ -800,12 +800,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _extract_model_creation_params(self):
         """extracts immutable model creation parameters from `ModelMeta` and deletes reference."""
-        model_params = copy.deepcopy(self.model_call)
-        del self.__class__.model_call
+        model_params = copy.deepcopy(self._model_call)
+        del self.__class__._model_call
         return model_params
 
     def untrained_model(self):
-        return self.__class__(**self._model_params)
+        return self.__class__(**self.model_params)
+
+    @property
+    def model_params(self) -> dict:
+        return (
+            self._model_params if hasattr(self, "_model_params") else self._model_call
+        )
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):

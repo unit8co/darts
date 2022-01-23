@@ -260,15 +260,10 @@ class BlockRNNModel(PastCovariatesTorchModel):
             If set to `False`, the model can still be manually saved using :func:`save_model()`
             and loaded using :func:`load_model()`.
         """
-
-        model_kwargs = {key: val for key, val in self.model_call.items()}
-        model_kwargs["input_chunk_length"] = input_chunk_length
-        model_kwargs["output_chunk_length"] = output_chunk_length
-        torch_model_params = self._extract_torch_model_params(**model_kwargs)
-        super().__init__(**torch_model_params)
+        super().__init__(**self._extract_torch_model_params(**self.model_params))
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
+        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:

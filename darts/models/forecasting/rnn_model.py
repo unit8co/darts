@@ -310,13 +310,11 @@ class RNNModel(DualCovariatesTorchModel):
             If set to `False`, the model can still be manually saved using :func:`save_model()`
             and loaded using :func:`load_model()`.
         """
-
         # create copy of model parameters
-        model_kwargs = {key: val for key, val in self.model_call.items()}
+        model_kwargs = {key: val for key, val in self.model_params.items()}
         model_kwargs["output_chunk_length"] = 1
 
-        torch_model_params = self._extract_torch_model_params(**model_kwargs)
-        super().__init__(**torch_model_params)
+        super().__init__(**self._extract_torch_model_params(**model_kwargs))
 
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**model_kwargs)

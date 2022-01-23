@@ -723,14 +723,13 @@ class TFTModel(MixedCovariatesTorchModel):
         ----------
         .. [1] https://arxiv.org/pdf/1912.09363.pdf
         """
-        model_kwargs = {key: val for key, val in self.model_call.items()}
+        model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:
             # This is the default if no loss information is provided
             model_kwargs["loss_fn"] = None
             model_kwargs["likelihood"] = QuantileRegression()
 
-        torch_model_params = self._extract_torch_model_params(**model_kwargs)
-        super().__init__(**torch_model_params)
+        super().__init__(**self._extract_torch_model_params(**model_kwargs))
 
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**model_kwargs)

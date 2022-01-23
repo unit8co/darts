@@ -353,15 +353,10 @@ class TransformerModel(PastCovariatesTorchModel):
         sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
         added to it. Of course, the training of the model would have to be adapted accordingly.
         """
-
-        model_kwargs = {key: val for key, val in self.model_call.items()}
-        model_kwargs["input_chunk_length"] = input_chunk_length
-        model_kwargs["output_chunk_length"] = output_chunk_length
-        torch_model_params = self._extract_torch_model_params(**model_kwargs)
-        super().__init__(**torch_model_params)
+        super().__init__(**self._extract_torch_model_params(**self.model_params))
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
+        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
