@@ -12,6 +12,7 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
+from collections import OrderedDict
 from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
 from itertools import product
 from abc import ABC, ABCMeta, abstractmethod
@@ -42,9 +43,13 @@ class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
         # get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
-        all_params = {
-            p.name: p.default for p in sig.parameters.values() if not p.name == "self"
-        }
+        all_params = OrderedDict(
+            [
+                (p.name, p.default)
+                for p in sig.parameters.values()
+                if not p.name == "self"
+            ]
+        )
 
         # fill params with positional args
         for param, arg in zip(all_params, args):
