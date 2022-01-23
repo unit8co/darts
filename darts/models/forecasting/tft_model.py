@@ -562,13 +562,6 @@ class _TFTModule(PLMixedCovariatesModule):
     def _produce_train_output(self, input_batch: Tuple):
         return self(input_batch)
 
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self(x)
-            return self.likelihood.sample(output)
-        else:
-            return self(x).squeeze(dim=-1)
-
 
 class TFTModel(MixedCovariatesTorchModel):
     def __init__(

@@ -21,7 +21,6 @@ import pytorch_lightning as pl
 logger = get_logger(__name__)
 
 
-# TODO: better names
 class PLForecastingModule(pl.LightningModule, ABC):
     @abstractmethod
     def __init__(
@@ -300,6 +299,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _is_probabilistic(self) -> bool:
         return self.likelihood is None
 
+    def _produce_predict_output(self, x):
+        if self.likelihood:
+            output = self(x)
+            return self.likelihood.sample(output)
+        else:
+            return self(x).squeeze(dim=-1)
+
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(self, input_batch: Tuple):
@@ -401,13 +407,6 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         batch_prediction = torch.cat(batch_prediction, dim=1)
         batch_prediction = batch_prediction[:, :n, :]
         return batch_prediction
-
-    @abstractmethod
-    def _produce_predict_output(self, x):
-        """
-        This method has to be implemented by all children.
-        """
-        pass
 
 
 class PLFutureCovariatesModule(PLForecastingModule, ABC):

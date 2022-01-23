@@ -245,13 +245,6 @@ class _TCNModule(PLPastCovariatesModule):
 
         return x
 
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self(x)
-            return self.likelihood.sample(output)
-        else:
-            return self(x).squeeze(dim=-1)
-
     @property
     def first_prediction_index(self) -> int:
         return -self.output_chunk_length

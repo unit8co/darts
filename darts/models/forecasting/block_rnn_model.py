@@ -127,13 +127,6 @@ class _BlockRNNModule(PLPastCovariatesModule):
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
 
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self(x)
-            return self.likelihood.sample(output)
-        else:
-            return self(x).squeeze(dim=-1)
-
 
 class BlockRNNModel(PastCovariatesTorchModel):
     def __init__(

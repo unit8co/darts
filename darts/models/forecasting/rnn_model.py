@@ -114,6 +114,7 @@ class _RNNModule(PLDualCovariatesModule):
         return self(model_input)[0]
 
     def _produce_predict_output(self, x, last_hidden_state=None):
+        """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
         if self.likelihood:
             return self.likelihood.sample(output), hidden

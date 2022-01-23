@@ -192,13 +192,6 @@ class _TransformerModule(PLPastCovariatesModule):
 
         return predictions
 
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self(x)
-            return self.likelihood.sample(output)
-        else:
-            return self(x).squeeze(dim=-1)
-
 
 class TransformerModel(PastCovariatesTorchModel):
     def __init__(
