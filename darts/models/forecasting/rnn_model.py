@@ -9,20 +9,15 @@ from typing import Sequence, Optional, Union, Tuple
 from darts.timeseries import TimeSeries
 
 from darts.logging import raise_if_not, get_logger
-from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule,
-    PLDualCovariatesModule,
-)
-from darts.models.forecasting.torch_forecasting_model import (
-    DualCovariatesTorchModel,
-)
+from darts.models.forecasting.pl_forecasting_module import PLDualCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
 
 logger = get_logger(__name__)
 
 
 # TODO add batch norm
-class _RNNModule(PLParametricProbabilisticForecastingModule, PLDualCovariatesModule):
+class _RNNModule(PLDualCovariatesModule):
     def __init__(
         self,
         name: str,
@@ -74,7 +69,8 @@ class _RNNModule(PLParametricProbabilisticForecastingModule, PLDualCovariatesMod
 
         # RNNModule doesn't really need input and output_chunk_length for PLModule
         super(_RNNModule, self).__init__(**kwargs)
-        # TODO: This is required for all modules -> saves hparams for checkpoints
+
+        # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         # Defining parameters

@@ -10,10 +10,7 @@ import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_log, raise_if_not
-from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule,
-    PLPastCovariatesModule,
-)
+from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
@@ -298,7 +295,7 @@ class _Stack(nn.Module):
         return stack_residual, stack_forecast
 
 
-class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesModule):
+class _NBEATSModule(PLPastCovariatesModule):
     def __init__(
         self,
         input_dim: int,
@@ -362,7 +359,7 @@ class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariates
         """
         super(_NBEATSModule, self).__init__(**kwargs)
 
-        # TODO: This is required for all modules -> saves hparams for checkpoints
+        # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         self.input_dim = input_dim

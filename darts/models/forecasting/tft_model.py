@@ -20,13 +20,8 @@ from darts.utils.data import (
     MixedCovariatesTrainingDataset,
     MixedCovariatesInferenceDataset,
 )
-from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule,
-    PLMixedCovariatesModule,
-)
-from darts.models.forecasting.torch_forecasting_model import (
-    MixedCovariatesTorchModel,
-)
+from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
     _GatedResidualNetwork,
@@ -42,7 +37,7 @@ MixedCovariatesTrainTensorType = Tuple[
 ]
 
 
-class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesModule):
+class _TFTModule(PLMixedCovariatesModule):
     def __init__(
         self,
         output_dim: Tuple[int, int],
@@ -99,7 +94,8 @@ class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesMo
         """
 
         super(_TFTModule, self).__init__(**kwargs)
-        # TODO: This is required for all modules -> saves hparams for checkpoints
+
+        # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         self.n_targets, self.loss_size = output_dim

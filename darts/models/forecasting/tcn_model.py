@@ -12,10 +12,7 @@ from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
 
 from darts.logging import raise_if_not, get_logger
-from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule,
-    PLPastCovariatesModule,
-)
+from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
@@ -126,7 +123,7 @@ class _ResidualBlock(nn.Module):
         return x
 
 
-class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesModule):
+class _TCNModule(PLPastCovariatesModule):
     def __init__(
         self,
         input_size: int,
@@ -183,7 +180,7 @@ class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesMod
 
         super(_TCNModule, self).__init__(**kwargs)
 
-        # TODO: This is required for all modules -> saves hparams for checkpoints
+        # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         # Defining parameters

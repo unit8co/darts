@@ -10,21 +10,14 @@ from typing import List, Optional, Union, Tuple
 
 from darts.logging import raise_if_not, get_logger
 
-from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule,
-    PLPastCovariatesModule,
-)
-from darts.models.forecasting.torch_forecasting_model import (
-    PastCovariatesTorchModel,
-)
+from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
 
 # TODO add batch norm
-class _BlockRNNModule(
-    PLParametricProbabilisticForecastingModule, PLPastCovariatesModule
-):
+class _BlockRNNModule(PLPastCovariatesModule):
     def __init__(
         self,
         name: str,
@@ -87,7 +80,7 @@ class _BlockRNNModule(
 
         super(_BlockRNNModule, self).__init__(**kwargs)
 
-        # TODO: This is required for all modules -> saves hparams for checkpoints
+        # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         # Defining parameters

@@ -29,6 +29,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
+        likelihood: Optional[Likelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
         lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
@@ -57,6 +58,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
         optimizer_cls
             The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
         optimizer_kwargs
@@ -81,19 +84,18 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
 
-        # Define the loss function
+        # define the loss function
         self.criterion = loss_fn
+        # by default models are deterministic (i.e. not probabilistic)
+        self.likelihood = likelihood
 
-        # Persist optimiser and LR scheduler parameters
+        # persist optimiser and LR scheduler parameters
         self.optimizer_cls = optimizer_cls
         self.optimizer_kwargs = dict() if optimizer_kwargs is None else optimizer_kwargs
         self.lr_scheduler_cls = lr_scheduler_cls
         self.lr_scheduler_kwargs = (
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
-
-        # by default models are deterministic (i.e. not probabilistic)
-        self.likelihood = None
 
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
@@ -226,7 +228,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.set_predict_parameters()
 
     def _compute_loss(self, output, target):
-        return self.criterion(output, target)
+        # output is of shape (batch_size, n_timesteps, n_components, n_params)
+        if self.likelihood:
+            return self.likelihood.compute_loss(output, target)
+        else:
+            # If there's no likelihood, nr_params=1 and we need to squeeze out the
+            # last dimension of model output, for properly computing the loss.
+            return self.criterion(output.squeeze(dim=-1), target)
 
     def configure_optimizers(self):
         """sets up optimizers"""
@@ -288,6 +296,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             else:
                 tiled_input_data.append(None)
         return tuple(tiled_input_data)
+
+    def _is_probabilistic(self) -> bool:
+        return self.likelihood is None
 
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
@@ -391,8 +402,12 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         batch_prediction = batch_prediction[:, :n, :]
         return batch_prediction
 
+    @abstractmethod
     def _produce_predict_output(self, x):
-        return self(x)
+        """
+        This method has to be implemented by all children.
+        """
+        pass
 
 
 class PLFutureCovariatesModule(PLForecastingModule, ABC):
@@ -567,46 +582,3 @@ class PLSplitCovariatesModule(PLForecastingModule, ABC):
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
-
-
-# TODO: I think we could actually integrate probabilistic support already in the parent class and remove it from here?
-class PLParametricProbabilisticForecastingModule(PLForecastingModule, ABC):
-    def __init__(self, likelihood: Optional[Likelihood] = None, **kwargs):
-        """Pytorch Parametric Probabilistic Forecasting Model.
-
-        This is a base class for pytroch parametric probabilistic models. "Parametric"
-        means that these models are based on some predefined parametric distribution, say Gaussian.
-        Make sure that subclasses contain the *likelihood* parameter in __init__ method
-        and it is passed to the superclass via calling super().__init__. If the likelihood is not
-        provided, the model is considered as deterministic.
-
-        All TorchParametricProbabilisticForecastingModel's must produce outputs of shape
-        (batch_size, n_timesteps, n_components, n_params). I.e., there's an extra dimension
-        to store the distribution's parameters.
-
-        Parameters
-        ----------
-        likelihood
-            The likelihood model to be used for probabilistic forecasts.
-        """
-        super().__init__(**kwargs)
-        self.likelihood = likelihood
-
-    def _is_probabilistic(self):
-        return self.likelihood is not None
-
-    def _compute_loss(self, output, target):
-        # output is of shape (batch_size, n_timesteps, n_components, n_params)
-        if self.likelihood:
-            return self.likelihood.compute_loss(output, target)
-        else:
-            # If there's no likelihood, nr_params=1 and we need to squeeze out the
-            # last dimension of model output, for properly computing the loss.
-            return super()._compute_loss(output.squeeze(dim=-1), target)
-
-    @abstractmethod
-    def _produce_predict_output(self, x):
-        """
-        This method has to be implemented by all children.
-        """
-        pass

@@ -9,13 +9,8 @@ import torch.nn as nn
 from typing import Optional, Tuple
 
 from darts.logging import get_logger
-from darts.models.forecasting.pl_forecasting_module import (
-    PLParametricProbabilisticForecastingModule,
-    PLPastCovariatesModule,
-)
-from darts.models.forecasting.torch_forecasting_model import (
-    PastCovariatesTorchModel,
-)
+from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -65,9 +60,7 @@ class _PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class _TransformerModule(
-    PLParametricProbabilisticForecastingModule, PLPastCovariatesModule
-):
+class _TransformerModule(PLPastCovariatesModule):
     def __init__(
         self,
         input_size: int,
@@ -133,7 +126,7 @@ class _TransformerModule(
 
         super(_TransformerModule, self).__init__(**kwargs)
 
-        # TODO: This is required for all modules -> saves hparams for checkpoints
+        # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         self.input_size = input_size
