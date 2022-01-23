@@ -17,7 +17,6 @@ from darts.models.forecasting.torch_forecasting_model import (
     DualCovariatesTorchModel,
 )
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
-from darts.utils.likelihood_models import Likelihood
 
 logger = get_logger(__name__)
 
@@ -74,9 +73,7 @@ class _RNNModule(PLParametricProbabilisticForecastingModule, PLDualCovariatesMod
         """
 
         # RNNModule doesn't really need input and output_chunk_length for PLModule
-        super(_RNNModule, self).__init__(
-            input_chunk_length=0, output_chunk_length=0, **kwargs
-        )
+        super(_RNNModule, self).__init__(**kwargs)
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
@@ -194,7 +191,6 @@ class RNNModel(DualCovariatesTorchModel):
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
         training_length: int = 24,
-        likelihood: Optional[Likelihood] = None,
         **kwargs
     ):
 
@@ -315,24 +311,15 @@ class RNNModel(DualCovariatesTorchModel):
             and loaded using :func:`load_model()`.
         """
 
-        # ignore user defined output_chunk_length
-        kwargs_copy = {
-            kwarg: val
-            for kwarg, val in kwargs.items()
-            if not kwarg == "output_chunk_length"
-        }
+        # create copy of model parameters
+        model_kwargs = {key: val for key, val in self.model_call.items()}
+        model_kwargs["output_chunk_length"] = 1
 
-        torch_model_params = self._extract_torch_model_params(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=1,
-            **kwargs_copy,
-        )
+        torch_model_params = self._extract_torch_model_params(**model_kwargs)
         super().__init__(**torch_model_params)
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(
-            likelihood=likelihood, **kwargs_copy
-        )
+        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:
@@ -345,6 +332,7 @@ class RNNModel(DualCovariatesTorchModel):
                 logger,
             )
 
+        self.input_chunk_length = input_chunk_length
         self.rnn_type_or_module = model
         self.dropout = dropout
         self.hidden_dim = hidden_dim

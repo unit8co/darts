@@ -46,8 +46,6 @@ class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesMo
     def __init__(
         self,
         output_dim: Tuple[int, int],
-        input_chunk_length: int,
-        output_chunk_length: int,
         variables_meta: Dict[str, Dict[str, List[str]]],
         hidden_size: Union[int, List[int]] = 16,
         lstm_layers: int = 1,
@@ -56,7 +54,6 @@ class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesMo
         hidden_continuous_size: int = 8,
         dropout: float = 0.1,
         add_relative_index: bool = False,
-        likelihood: Optional[Likelihood] = None,
         **kwargs,
     ):
 
@@ -68,10 +65,6 @@ class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesMo
         ----------
         output_dim : Tuple[int, int]
             shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).
-        input_chunk_length : int
-            encoder length; number of past time steps that are fed to the forecasting module at prediction time.
-        output_chunk_length : int
-            decoder length; number of future time steps that are fed to the forecasting module at prediction time.
         variables_meta : Dict[str, Dict[str, List[str]]]
             dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`
         hidden_size : int
@@ -98,20 +91,18 @@ class _TFTModule(PLParametricProbabilisticForecastingModule, PLMixedCovariatesMo
             a ``QuantileRegression`` likelihood.
         kwargs
             all parameters for Darts' :class:`PLForecastingModule`.
+
+        input_chunk_length : int
+            encoder length; number of past time steps that are fed to the forecasting module at prediction time.
+        output_chunk_length : int
+            decoder length; number of future time steps that are fed to the forecasting module at prediction time.
         """
 
-        super(_TFTModule, self).__init__(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            likelihood=likelihood,
-            **kwargs,
-        )
+        super(_TFTModule, self).__init__(**kwargs)
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         self.n_targets, self.loss_size = output_dim
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.variables_meta = variables_meta
         self.hidden_size = hidden_size
         self.hidden_continuous_size = hidden_continuous_size
@@ -742,21 +733,17 @@ class TFTModel(MixedCovariatesTorchModel):
         ----------
         .. [1] https://arxiv.org/pdf/1912.09363.pdf
         """
+        model_kwargs = {key: val for key, val in self.model_call.items()}
         if likelihood is None and loss_fn is None:
             # This is the default if no loss information is provided
-            likelihood = QuantileRegression()
+            model_kwargs["loss_fn"] = None
+            model_kwargs["likelihood"] = QuantileRegression()
 
-        torch_model_params = self._extract_torch_model_params(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        torch_model_params = self._extract_torch_model_params(**model_kwargs)
         super().__init__(**torch_model_params)
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(
-            loss_fn=loss_fn, likelihood=likelihood, **kwargs
-        )
+        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -767,8 +754,6 @@ class TFTModel(MixedCovariatesTorchModel):
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
         self.add_relative_index = add_relative_index
-        self.loss_fn = loss_fn
-        self.likelihood = likelihood
         self.output_dim: Optional[Tuple[int, int]] = None
 
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
@@ -897,8 +882,6 @@ class TFTModel(MixedCovariatesTorchModel):
         return _TFTModule(
             variables_meta=variables_meta,
             output_dim=self.output_dim,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
             hidden_size=self.hidden_size,
             lstm_layers=self.lstm_layers,
             dropout=self.dropout,

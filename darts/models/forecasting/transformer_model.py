@@ -8,7 +8,6 @@ import torch
 import torch.nn as nn
 from typing import Optional, Tuple
 
-from darts.utils.likelihood_models import Likelihood
 from darts.logging import get_logger
 from darts.models.forecasting.pl_forecasting_module import (
     PLParametricProbabilisticForecastingModule,
@@ -71,8 +70,6 @@ class _TransformerModule(
 ):
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         input_size: int,
         output_size: int,
         nr_params: int,
@@ -95,10 +92,6 @@ class _TransformerModule(
         ----------
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
-        input_chunk_length
-            Number of time steps to be input to the forecasting module.
-        output_chunk_length
-            Number of time steps to be output by the forecasting module.
         output_size
             The dimensionality of the output time series.
         nr_params
@@ -122,6 +115,11 @@ class _TransformerModule(
         custom_decoder
             a custom transformer decoder provided by the user (default=None)
 
+        input_chunk_length
+            Number of time steps to be input to the forecasting module.
+        output_chunk_length
+            Number of time steps to be output by the forecasting module.
+
         Inputs
         ------
         x of shape `(batch_size, input_chunk_length, input_size)`
@@ -133,11 +131,7 @@ class _TransformerModule(
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_TransformerModule, self).__init__(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        super(_TransformerModule, self).__init__(**kwargs)
 
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
@@ -145,11 +139,11 @@ class _TransformerModule(
         self.input_size = input_size
         self.target_size = output_size
         self.nr_params = nr_params
-        self.target_length = output_chunk_length
+        self.target_length = self.output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, input_chunk_length
+            d_model, dropout, self.input_chunk_length
         )
 
         # Defining the Transformer module
@@ -166,7 +160,7 @@ class _TransformerModule(
         )
 
         self.decoder = nn.Linear(
-            d_model, output_chunk_length * self.target_size * self.nr_params
+            d_model, self.output_chunk_length * self.target_size * self.nr_params
         )
 
     def _create_transformer_inputs(self, data):
@@ -227,7 +221,6 @@ class TransformerModel(PastCovariatesTorchModel):
         activation: str = "relu",
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        likelihood: Optional[Likelihood] = None,
         **kwargs
     ):
 
@@ -361,17 +354,14 @@ class TransformerModel(PastCovariatesTorchModel):
         added to it. Of course, the training of the model would have to be adapted accordingly.
         """
 
-        torch_model_params = self._extract_torch_model_params(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        model_kwargs = {key: val for key, val in self.model_call.items()}
+        model_kwargs["input_chunk_length"] = input_chunk_length
+        model_kwargs["output_chunk_length"] = output_chunk_length
+        torch_model_params = self._extract_torch_model_params(**model_kwargs)
         super().__init__(**torch_model_params)
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(
-            likelihood=likelihood, **kwargs
-        )
+        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -394,8 +384,6 @@ class TransformerModel(PastCovariatesTorchModel):
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _TransformerModule(
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
             input_size=input_dim,
             output_size=output_dim,
             nr_params=nr_params,

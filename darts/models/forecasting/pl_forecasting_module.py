@@ -26,8 +26,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
     @abstractmethod
     def __init__(
         self,
-        input_chunk_length: Optional[int] = None,
-        output_chunk_length: Optional[int] = None,
+        input_chunk_length: int,
+        output_chunk_length: int,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
@@ -49,6 +49,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         Parameters
         ----------
+        input_chunk_length
+            Number of input past time steps per chunk.
+        output_chunk_length
+            Number of output time steps per chunk.
         loss_fn
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.

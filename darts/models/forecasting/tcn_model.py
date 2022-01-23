@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from typing import Optional, Sequence, Tuple
 from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
-from darts.utils.likelihood_models import Likelihood
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import (
@@ -131,7 +130,6 @@ class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesMod
     def __init__(
         self,
         input_size: int,
-        input_chunk_length: int,
         kernel_size: int,
         num_filters: int,
         num_layers: Optional[int],
@@ -155,8 +153,6 @@ class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesMod
             The dimensionality of the output time series.
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
-        input_chunk_length
-            The length of the input time series.
         target_length
             Number of time steps the torch module will predict into the future at once.
         kernel_size
@@ -185,18 +181,13 @@ class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesMod
             leading up to the first prediction, all in chronological order.
         """
 
-        super(_TCNModule, self).__init__(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=target_length,
-            **kwargs,
-        )
+        super(_TCNModule, self).__init__(**kwargs)
 
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
 
         # Defining parameters
         self.input_size = input_size
-        self.input_chunk_length = input_chunk_length
         self.n_filters = num_filters
         self.kernel_size = kernel_size
         self.target_length = target_length
@@ -209,7 +200,7 @@ class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesMod
         if num_layers is None and dilation_base > 1:
             num_layers = math.ceil(
                 math.log(
-                    (input_chunk_length - 1)
+                    (self.input_chunk_length - 1)
                     * (dilation_base - 1)
                     / (kernel_size - 1)
                     / 2
@@ -219,7 +210,9 @@ class _TCNModule(PLParametricProbabilisticForecastingModule, PLPastCovariatesMod
             )
             logger.info("Number of layers chosen: " + str(num_layers))
         elif num_layers is None:
-            num_layers = math.ceil((input_chunk_length - 1) / (kernel_size - 1) / 2)
+            num_layers = math.ceil(
+                (self.input_chunk_length - 1) / (kernel_size - 1) / 2
+            )
             logger.info("Number of layers chosen: " + str(num_layers))
         self.num_layers = num_layers
 
@@ -278,7 +271,6 @@ class TCNModel(PastCovariatesTorchModel):
         dilation_base: int = 2,
         weight_norm: bool = False,
         dropout: float = 0.2,
-        likelihood: Optional[Likelihood] = None,
         **kwargs
     ):
 
@@ -394,17 +386,14 @@ class TCNModel(PastCovariatesTorchModel):
             logger,
         )
 
-        torch_model_params = self._extract_torch_model_params(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        model_kwargs = {key: val for key, val in self.model_call.items()}
+        model_kwargs["input_chunk_length"] = input_chunk_length
+        model_kwargs["output_chunk_length"] = output_chunk_length
+        torch_model_params = self._extract_torch_model_params(**model_kwargs)
         super().__init__(**torch_model_params)
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(
-            likelihood=likelihood, **kwargs
-        )
+        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -425,7 +414,6 @@ class TCNModel(PastCovariatesTorchModel):
 
         return _TCNModule(
             input_size=input_dim,
-            input_chunk_length=self.input_chunk_length,
             target_size=output_dim,
             nr_params=nr_params,
             kernel_size=self.kernel_size,

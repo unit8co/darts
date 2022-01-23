@@ -210,7 +210,6 @@ if TORCH_AVAILABLE:
 
         def test_covariates(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-
                 model = model_cls(
                     input_chunk_length=IN_LEN,
                     output_chunk_length=OUT_LEN,
@@ -227,7 +226,6 @@ if TORCH_AVAILABLE:
                 cov_kwargs = {
                     cov_name: [self.time_covariates_train, self.time_covariates_train]
                 }
-
                 model.fit(
                     series=[self.ts_pass_train, self.ts_pass_train_1], **cov_kwargs
                 )
@@ -378,7 +376,6 @@ if TORCH_AVAILABLE:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
-
                 self.assertTrue(
                     isinstance(
                         model,

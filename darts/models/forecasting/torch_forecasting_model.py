@@ -26,6 +26,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Dict, Tuple, Union, Sequence, List
 
 import torch
+from torch import nn
 from torch import Tensor
 from torch.utils.data import DataLoader
 
@@ -34,6 +35,7 @@ from pytorch_lightning import loggers as pl_loggers
 
 from darts.timeseries import TimeSeries
 from darts.utils.data.encoders import SequentialEncoder
+from darts.utils.likelihood_models import Likelihood
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.logging import (
     raise_if_not,
@@ -113,6 +115,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self,
         input_chunk_length: int,
         output_chunk_length: int,
+        loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
+        likelihood: Optional[Likelihood] = None,
         batch_size: int = 32,
         n_epochs: int = 100,
         model_name: str = None,
@@ -145,6 +149,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of past time steps that are fed to the internal forecasting module.
         output_chunk_length
             Number of time steps to be output by the internal forecasting module.
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
+            Default: ``torch.nn.MSELoss()``.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -230,7 +240,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.batch_size = batch_size
 
         # by default models are deterministic (i.e. not probabilistic)
-        self.likelihood = None
+        self._loss_fn = loss_fn
+        self._likelihood = likelihood
 
         # by default models do not use encoders
         self.add_encoders = add_encoders
@@ -332,6 +343,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         get_params = [
             "input_chunk_length",
             "output_chunk_length",
+            "loss_fn",
+            "likelihood",
             "batch_size",
             "n_epochs",
             "model_name",
@@ -351,6 +364,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _extract_pl_module_params(**kwargs):
         """Extract params from model creation to set up pl.LightningModule (the actual torch.nn.Module)"""
         get_params = [
+            "input_chunk_length",
+            "output_chunk_length",
             "loss_fn",
             "likelihood",
             "optimizer_cls",
@@ -1235,6 +1250,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def epochs_trained(self) -> int:
         return self.model.current_epoch + 1 if self.model.current_epoch > 0 else 0
+
+    @property
+    def model_created(self) -> bool:
+        return self.model is not None
+
+    @property
+    def likelihood(self) -> Likelihood:
+        return self.model.likelihood if self.model_created else self._likelihood
+
+    @property
+    def loss_fn(self) -> nn.modules.loss._Loss:
+        return self.model.loss_fn if self.model_created else self._loss_fn
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):

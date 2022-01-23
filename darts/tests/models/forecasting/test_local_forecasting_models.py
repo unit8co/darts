@@ -115,7 +115,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
-            self.assertTrue(model._model_params, model.untrained_model()._model_params)
+            self.assertTrue(
+                model._model_params == model.untrained_model()._model_params
+            )
 
     def test_models_runnability(self):
         for model, _ in models:

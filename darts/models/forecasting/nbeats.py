@@ -3,14 +3,13 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Union, List, Optional, Tuple
+from typing import NewType, Union, List, Tuple
 from enum import Enum
 import numpy as np
 import torch
 import torch.nn as nn
 
 from darts.logging import get_logger, raise_log, raise_if_not
-from darts.utils.likelihood_models import Likelihood
 from darts.models.forecasting.pl_forecasting_module import (
     PLParametricProbabilisticForecastingModule,
     PLPastCovariatesModule,
@@ -305,8 +304,6 @@ class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariates
         input_dim: int,
         output_dim: int,
         nr_params: int,
-        input_chunk_length: int,
-        output_chunk_length: int,
         generic_architecture: bool,
         num_stacks: int,
         num_blocks: int,
@@ -324,10 +321,6 @@ class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariates
             Number of output components in the target
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        output_chunk_length
-            The length of the forecast of the model.
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
@@ -351,6 +344,11 @@ class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariates
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
 
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
+
         Inputs
         ------
         x of shape `(batch_size, input_chunk_length)`
@@ -362,11 +360,7 @@ class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariates
             Tensor containing the output of the NBEATS module.
 
         """
-        super(_NBEATSModule, self).__init__(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        super(_NBEATSModule, self).__init__(**kwargs)
 
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
@@ -374,9 +368,8 @@ class _NBEATSModule(PLParametricProbabilisticForecastingModule, PLPastCovariates
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.nr_params = nr_params
-        self.input_chunk_length_multi = input_chunk_length * input_dim
-        self.output_chunk_length = output_chunk_length
-        self.target_length = output_chunk_length * input_dim
+        self.input_chunk_length_multi = self.input_chunk_length * input_dim
+        self.target_length = self.output_chunk_length * input_dim
 
         if generic_architecture:
             self.stacks_list = [
@@ -481,7 +474,6 @@ class NBEATSModel(PastCovariatesTorchModel):
         layer_widths: Union[int, List[int]] = 256,
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
-        likelihood: Optional[Likelihood] = None,
         **kwargs
     ):
         """Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -601,17 +593,14 @@ class NBEATSModel(PastCovariatesTorchModel):
         .. [1] https://openreview.net/forum?id=r1ecqn4YwB
         """
 
-        torch_model_params = self._extract_torch_model_params(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        model_kwargs = {key: val for key, val in self.model_call.items()}
+        model_kwargs["input_chunk_length"] = input_chunk_length
+        model_kwargs["output_chunk_length"] = output_chunk_length
+        torch_model_params = self._extract_torch_model_params(**model_kwargs)
         super().__init__(**torch_model_params)
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(
-            likelihood=likelihood, **kwargs
-        )
+        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
         raise_if_not(
             isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
@@ -648,8 +637,6 @@ class NBEATSModel(PastCovariatesTorchModel):
             input_dim=input_dim,
             output_dim=output_dim,
             nr_params=nr_params,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
             generic_architecture=self.generic_architecture,
             num_stacks=self.num_stacks,
             num_blocks=self.num_blocks,

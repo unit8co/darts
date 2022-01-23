@@ -8,7 +8,6 @@ import torch
 
 from typing import List, Optional, Union, Tuple
 
-from darts.utils.likelihood_models import Likelihood
 from darts.logging import raise_if_not, get_logger
 
 from darts.models.forecasting.pl_forecasting_module import (
@@ -32,8 +31,6 @@ class _BlockRNNModule(
         input_size: int,
         hidden_dim: int,
         num_layers: int,
-        input_chunk_length: int,
-        output_chunk_length: int,
         target_size: int,
         nr_params: int,
         num_layers_out_fc: Optional[List] = None,
@@ -64,8 +61,6 @@ class _BlockRNNModule(
             The number of features in the hidden state `h` of the RNN module.
         num_layers
             The number of recurrent layers.
-        output_chunk_length
-            The number of steps to predict in the future.
         target_size
             The dimensionality of the output time series.
         nr_params
@@ -75,6 +70,9 @@ class _BlockRNNModule(
             This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+
+        output_chunk_length
+            The number of steps to predict in the future.
 
         Inputs
         ------
@@ -87,11 +85,7 @@ class _BlockRNNModule(
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_BlockRNNModule, self).__init__(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        super(_BlockRNNModule, self).__init__(**kwargs)
 
         # TODO: This is required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()
@@ -102,7 +96,7 @@ class _BlockRNNModule(
         self.target_size = target_size
         self.nr_params = nr_params
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
-        self.out_len = output_chunk_length
+        self.out_len = self.output_chunk_length
         self.name = name
 
         # Defining the RNN module
@@ -115,7 +109,7 @@ class _BlockRNNModule(
         last = hidden_dim
         feats = []
         for feature in num_layers_out_fc + [
-            output_chunk_length * target_size * nr_params
+            self.output_chunk_length * target_size * nr_params
         ]:
             feats.append(nn.Linear(last, feature))
             last = feature
@@ -158,7 +152,6 @@ class BlockRNNModel(PastCovariatesTorchModel):
         n_rnn_layers: int = 1,
         hidden_fc_sizes: Optional[List] = None,
         dropout: float = 0.0,
-        likelihood: Optional[Likelihood] = None,
         **kwargs,
     ):
 
@@ -268,17 +261,14 @@ class BlockRNNModel(PastCovariatesTorchModel):
             and loaded using :func:`load_model()`.
         """
 
-        torch_model_params = self._extract_torch_model_params(
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            **kwargs,
-        )
+        model_kwargs = {key: val for key, val in self.model_call.items()}
+        model_kwargs["input_chunk_length"] = input_chunk_length
+        model_kwargs["output_chunk_length"] = output_chunk_length
+        torch_model_params = self._extract_torch_model_params(**model_kwargs)
         super().__init__(**torch_model_params)
 
         # extract pytorch lightning module kwargs
-        self.pl_module_params = self._extract_pl_module_params(
-            likelihood=likelihood, **kwargs
-        )
+        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:
@@ -318,8 +308,6 @@ class BlockRNNModel(PastCovariatesTorchModel):
                 nr_params=nr_params,
                 hidden_dim=self.hidden_size,
                 num_layers=self.n_rnn_layers,
-                input_chunk_length=self.input_chunk_length,
-                output_chunk_length=self.output_chunk_length,
                 num_layers_out_fc=hidden_fc_sizes,
                 dropout=self.dropout,
                 **self.pl_module_params,

@@ -40,8 +40,30 @@ logger = get_logger(__name__)
 
 class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
-        cls.model_call = (args, kwargs)
-        return super(ModelMeta, cls).__call__(*args, **kwargs)
+        # get all default values from class' __init__ signature
+        sig = inspect.signature(cls.__init__)
+        all_params = {
+            p.name: p.default for p in sig.parameters.values() if not p.name == "self"
+        }
+
+        # fill params with positional args
+        for param, arg in zip(all_params, args):
+            all_params[param] = arg
+
+        # remove args which were not set (and are per default empty)
+        remove_params = []
+        for param, val in all_params.items():
+            if val is sig.parameters[param].empty:
+                remove_params.append(param)
+        for param in remove_params:
+            all_params.pop(param)
+
+        # update defaults with actual model call parameters and store
+        all_params.update(kwargs)
+        cls.model_call = all_params
+
+        # call model
+        return super(ModelMeta, cls).__call__(**all_params)
 
 
 class ForecastingModel(ABC, metaclass=ModelMeta):
@@ -783,8 +805,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_params
 
     def untrained_model(self):
-        args, kwargs = self._model_params
-        return self.__class__(*args, **kwargs)
+        return self.__class__(**self._model_params)
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
