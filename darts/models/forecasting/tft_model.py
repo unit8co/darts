@@ -20,6 +20,7 @@ from darts.utils.data import (
     MixedCovariatesTrainingDataset,
     MixedCovariatesInferenceDataset,
 )
+from darts.utils.torch import random_method
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.models.forecasting.tft_submodels import (
@@ -564,6 +565,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
 
 class TFTModel(MixedCovariatesTorchModel):
+    @random_method
     def __init__(
         self,
         input_chunk_length: int = 12,
@@ -919,6 +921,7 @@ class TFTModel(MixedCovariatesTorchModel):
             output_chunk_length=self.output_chunk_length,
         )
 
+    @random_method
     def predict(self, n, *args, **kwargs):
         # since we have future covariates, the inference dataset for future input must be at least of length
         # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than

@@ -36,6 +36,7 @@ from pytorch_lightning import loggers as pl_loggers
 from darts.timeseries import TimeSeries
 from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.likelihood_models import Likelihood
+from darts.utils.torch import random_method
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.logging import (
     raise_if_not,
@@ -221,10 +222,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your PyTorch Lightning Trainer configuration.
         """
-        # set random seed for model
-        if random_state is not None:
-            pl.seed_everything(random_state, workers=True)
-
         super().__init__()
         suppress_lightning_warnings(suppress_all=not show_warnings)
 
@@ -521,6 +518,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         pass
 
+    @random_method
     def fit(
         self,
         series: Union[TimeSeries, Sequence[TimeSeries]],
@@ -676,6 +674,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             train_dataset, val_dataset, trainer, verbose, epochs, num_loader_workers
         )
 
+    @random_method
     def fit_from_dataset(
         self,
         train_dataset: TrainingDataset,
@@ -835,6 +834,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ckpt_path=ckpt_path,
         )
 
+    @random_method
     def predict(
         self,
         n: int,

@@ -125,30 +125,19 @@ if TORCH_AVAILABLE:
             self.assertTrue(os.path.exists(model_path_manual))
 
             # load manual save model and compare with automatic model results
-            # TODO for PTL: reloading the model does not yield identical prediction results. I assume it has to do with
-            #  the random seed that we set up at model creation and which doesn't get loaded properly when loading a
-            #  model from file.
             model_manual_save = RNNModel.load_model(model_path_manual)
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save.predict(n=4)
             )
 
             # load automatically saved model with manual load_model() and load_from_checkpoint()
-            model_path_automatic = os.path.join(
-                model_dir, auto_name, checkpoint_file_name
-            )
-            model_auto_save1 = RNNModel.load_model(model_path_automatic)
-
-            model_auto_save2 = RNNModel.load_from_checkpoint(
+            model_auto_save1 = RNNModel.load_from_checkpoint(
                 model_name=auto_name, work_dir=self.temp_work_dir, best=False
             )
 
-            # compare manual load with manual save
+            # compare loaded checkpoint with manual save
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
-            )
-            self.assertEqual(
-                model_manual_save.predict(n=4), model_auto_save2.predict(n=4)
             )
 
         def test_create_instance_new_model_no_name_set(self):
