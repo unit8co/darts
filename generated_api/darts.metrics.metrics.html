@@ -808,8 +808,8 @@ passed as input, parallelising operations regarding different <code class="docut
 <dt class="sig sig-object py" id="darts.metrics.metrics.multi_ts_support">
 <span class="sig-prename descclassname"><span class="pre">darts.metrics.metrics.</span></span><span class="sig-name descname"><span class="pre">multi_ts_support</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">func</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/metrics/metrics.html#multi_ts_support"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.metrics.metrics.multi_ts_support" title="Permalink to this definition">¶</a></dt>
 <dd><p>This decorator further adapts the metrics that took as input two univariate/multivariate <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances,
-adding support for equally-sized sequences of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances. The decorator computes the pairwise metric for
-<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> with the same indices, and returns a float value that is computed as a function of all the
+adding support for equally-sized sequences of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> instances. The decorator computes the pairwise metric
+for <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> with the same indices, and returns a float value that is computed as a function of all the
 pairwise metrics using a <cite>inter_reduction</cite> subroutine passed as argument to the metric function.</p>
 <p>If a ‘Sequence[TimeSeries]’ is passed as input, this decorator provides also parallelisation of the metric
 evaluation regarding different <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (if the <cite>n_jobs</cite> parameter is not set 1).</p>

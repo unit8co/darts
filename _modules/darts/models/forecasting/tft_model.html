@@ -514,7 +514,7 @@
 <span class="sd">        input dimensions: (n_samples, n_time_steps, n_variables)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">dim_samples</span><span class="p">,</span> <span class="n">dim_time</span><span class="p">,</span> <span class="n">dim_variable</span><span class="p">,</span> <span class="n">dim_loss</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span>
+        <span class="n">dim_samples</span><span class="p">,</span> <span class="n">dim_time</span><span class="p">,</span> <span class="n">dim_variable</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span>
         <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">x</span>
 
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_samples</span><span class="p">]</span>
@@ -616,12 +616,13 @@
                 <span class="n">device</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="c1"># this is only to interpret the output</span>
-            <span class="n">static_covariate_var</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">past_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">0</span><span class="p">),</span>
-                <span class="n">dtype</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
-                <span class="n">device</span><span class="o">=</span><span class="n">past_target</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
-            <span class="p">)</span>
+            <span class="c1"># # TODO: implement below when static covariates are supported</span>
+            <span class="c1"># # this is only to interpret the output</span>
+            <span class="c1"># static_covariate_var = torch.zeros(</span>
+            <span class="c1">#     (past_target.shape[0], 0),</span>
+            <span class="c1">#     dtype=past_target.dtype,</span>
+            <span class="c1">#     device=past_target.device,</span>
+            <span class="c1"># )</span>
 
         <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;make zero tensor if future covariates is None&quot;</span><span class="p">)</span>
@@ -648,11 +649,15 @@
 
         <span class="c1"># LSTM</span>
         <span class="c1"># calculate initial state</span>
-        <span class="n">input_hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_context_hidden_encoder_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">input_hidden</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_context_hidden_encoder_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
         <span class="p">)</span>
-        <span class="n">input_cell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_context_cell_encoder_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">)</span><span class="o">.</span><span class="n">expand</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span>
+        <span class="n">input_cell</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">static_context_cell_encoder_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">expand</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">contiguous</span><span class="p">()</span>
         <span class="p">)</span>
 
         <span class="c1"># run local lstm encoder</span>
@@ -836,9 +841,9 @@
 <span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer.</span>
 <span class="sd">        model_name</span>
 <span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
-<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part of the</span>
-<span class="sd">            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at</span>
-<span class="sd">            the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part of</span>
+<span class="sd">            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned</span>
+<span class="sd">            at the same time by different processes to share the same model_name). E.g.,</span>
 <span class="sd">            ``&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;``.</span>
 <span class="sd">        work_dir</span>
 <span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>

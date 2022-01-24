@@ -179,7 +179,6 @@
 <span class="kn">from</span> <span class="nn">statsmodels.tsa.seasonal</span> <span class="kn">import</span> <span class="n">seasonal_decompose</span>
 <span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="n">acf</span><span class="p">,</span> <span class="n">pacf</span><span class="p">,</span> <span class="n">grangercausalitytests</span><span class="p">,</span> <span class="n">adfuller</span><span class="p">,</span> <span class="n">kpss</span>
 
-<span class="kn">from</span> <span class="nn">warnings</span> <span class="kn">import</span> <span class="n">warn</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_if</span>
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">.missing_values</span> <span class="kn">import</span> <span class="n">fill_missing_values</span>
@@ -501,8 +500,9 @@
 <span class="sd">        &#39;c&#39; : The data is stationary around a constant (default).</span>
 <span class="sd">        &#39;ct&#39; : The data is stationary around a trend.</span>
 <span class="sd">    nlags</span>
-<span class="sd">       Indicates the number of lags to be used. If &#39;auto&#39; (default), lags is calculated using the data-dependent method of Hobijn et al. (1998).</span>
-<span class="sd">       See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to &#39;legacy&#39;, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</span>
+<span class="sd">       Indicates the number of lags to be used. If &#39;auto&#39; (default), lags is calculated using the data-dependent method</span>
+<span class="sd">       of Hobijn et al. (1998). See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to &#39;legacy&#39;,</span>
+<span class="sd">       uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
@@ -632,7 +632,8 @@
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">ts_cause</span><span class="o">.</span><span class="n">has_same_time_as</span><span class="p">(</span><span class="n">ts_effect</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="s2">&quot;ts_cause and ts_effect time series have different time index. We will slice-intersect ts_cause with ts_effect.&quot;</span>
+            <span class="s2">&quot;ts_cause and ts_effect time series have different time index. &quot;</span>
+            <span class="s2">&quot;We will slice-intersect ts_cause with ts_effect.&quot;</span>
         <span class="p">)</span>
 
     <span class="n">ts_cause</span> <span class="o">=</span> <span class="n">ts_cause</span><span class="o">.</span><span class="n">slice_intersect</span><span class="p">(</span><span class="n">ts_effect</span><span class="p">)</span>
@@ -640,11 +641,11 @@
 
     <span class="k">if</span> <span class="ow">not</span> <span class="n">stationarity_tests</span><span class="p">(</span><span class="n">ts_cause</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;ts_cause doesn&#39;t seem to be stationary. Please review granger causality validity in your problem context.&quot;</span>
+            <span class="s2">&quot;ts_cause doesn&#39;t seem to be stationary. Please review granger causality validity in your problem context.&quot;</span>
         <span class="p">)</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">stationarity_tests</span><span class="p">(</span><span class="n">ts_effect</span><span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-            <span class="sa">f</span><span class="s2">&quot;ts_effect doesn&#39;t seem to be stationary. Please review granger causality validity in your problem context.&quot;</span>
+            <span class="s2">&quot;ts_effect doesn&#39;t seem to be stationary. Please review granger causality validity in your problem context.&quot;</span>
         <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">grangercausalitytests</span><span class="p">(</span>
@@ -668,28 +669,32 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.</span>
-<span class="sd">    This function uses the `Statsmodels module &lt;https://github.com/statsmodels/statsmodels&gt;`_.</span>
+<span class="sd">    Uses :func:`statsmodels.tsa.stattools.acf` [1]_</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    ts : TimeSeries</span>
+<span class="sd">    ts</span>
 <span class="sd">        The TimeSeries whose ACF should be plotted.</span>
-<span class="sd">    m : int, optional</span>
+<span class="sd">    m</span>
 <span class="sd">        Optionally, a time lag to highlight on the plot.</span>
-<span class="sd">    max_lag : int, default: 24</span>
+<span class="sd">    max_lag</span>
 <span class="sd">        The maximal lag order to consider.</span>
-<span class="sd">    alpha : float, default: 0.05</span>
+<span class="sd">    alpha</span>
 <span class="sd">        The confidence interval to display.</span>
-<span class="sd">    bartlett_confint : bool, default: True</span>
+<span class="sd">    bartlett_confint</span>
 <span class="sd">        The boolean value indicating whether the confidence interval should be</span>
 <span class="sd">        calculated using Bartlett&#39;s formula. If set to True, the confidence interval</span>
 <span class="sd">        can be used in the model identification stage for fitting ARIMA models.</span>
 <span class="sd">        If set to False, the confidence interval can be used to test for randomness</span>
 <span class="sd">        (i.e. there is no time dependence in the data) of the data.</span>
-<span class="sd">    fig_size : tuple of int, default: (10, 5)</span>
+<span class="sd">    fig_size</span>
 <span class="sd">        The size of the figure to be displayed.</span>
-<span class="sd">    axis : plt.axis, optional</span>
+<span class="sd">    axis</span>
 <span class="sd">        Optionally, an axis object to plot the ACF on.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
@@ -750,17 +755,17 @@
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.</span>
-<span class="sd">    This function uses the `Statsmodels module &lt;https://github.com/statsmodels/statsmodels&gt;`_.</span>
+<span class="sd">    Uses :func:`statsmodels.tsa.stattools.pacf` [1]_</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    ts : TimeSeries</span>
+<span class="sd">    ts</span>
 <span class="sd">        The TimeSeries whose ACF should be plotted.</span>
-<span class="sd">    m : int, optional</span>
+<span class="sd">    m</span>
 <span class="sd">        Optionally, a time lag to highlight on the plot.</span>
-<span class="sd">    max_lag : int, default: 24</span>
+<span class="sd">    max_lag</span>
 <span class="sd">        The maximal lag order to consider.</span>
-<span class="sd">    method : str, default: &quot;ywadjusted&quot;</span>
+<span class="sd">    method</span>
 <span class="sd">        The method to be used for the PACF calculation.</span>
 <span class="sd">        - | &quot;yw&quot; or &quot;ywadjusted&quot; : Yule-Walker with sample-size adjustment in</span>
 <span class="sd">          | denominator for acovf. Default.</span>
@@ -774,12 +779,16 @@
 <span class="sd">          correction.</span>
 <span class="sd">        - &quot;ldb&quot; or &quot;ldbiased&quot; : Levinson-Durbin recursion without bias</span>
 <span class="sd">          correction.</span>
-<span class="sd">    alpha : float, default: 0.05</span>
+<span class="sd">    alpha</span>
 <span class="sd">        The confidence interval to display.</span>
-<span class="sd">    fig_size : tuple of int, default: (10, 5)</span>
+<span class="sd">    fig_size</span>
 <span class="sd">        The size of the figure to be displayed.</span>
-<span class="sd">    axis : plt.axis, optional</span>
+<span class="sd">    axis</span>
 <span class="sd">        Optionally, an axis object to plot the ACF on.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
@@ -925,7 +934,7 @@
 <span class="sd">        Univariate TimeSeries instance representing residuals.</span>
 <span class="sd">    num_bins</span>
 <span class="sd">        Optionally, an integer value determining the number of bins in the histogram.</span>
-<span class="sd">    fill_nan:</span>
+<span class="sd">    fill_nan</span>
 <span class="sd">        A boolean value indicating whether NaN values should be filled in the residuals.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 

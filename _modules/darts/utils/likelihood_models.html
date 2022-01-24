@@ -217,7 +217,6 @@
     <span class="n">Laplace</span> <span class="k">as</span> <span class="n">_Laplace</span><span class="p">,</span>
     <span class="n">Beta</span> <span class="k">as</span> <span class="n">_Beta</span><span class="p">,</span>
     <span class="n">Exponential</span> <span class="k">as</span> <span class="n">_Exponential</span><span class="p">,</span>
-    <span class="n">MultivariateNormal</span> <span class="k">as</span> <span class="n">_MultivariateNormal</span><span class="p">,</span>
     <span class="n">Dirichlet</span> <span class="k">as</span> <span class="n">_Dirichlet</span><span class="p">,</span>
     <span class="n">Geometric</span> <span class="k">as</span> <span class="n">_Geometric</span><span class="p">,</span>
     <span class="n">Cauchy</span> <span class="k">as</span> <span class="n">_Cauchy</span><span class="p">,</span>
@@ -351,8 +350,8 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Normal_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution.</span>
-<span class="sd">        - Support: :math:`\mathbb{R}`.</span>
-<span class="sd">        - Parameters: mean :math:`\\mu \in \mathbb{R}`, standard deviation :math:`\\sigma &gt; 0`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}`.</span>
+<span class="sd">        - Parameters: mean :math:`\\mu \\in \\mathbb{R}`, standard deviation :math:`\\sigma &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -409,7 +408,7 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Poisson_distribution</span>
 
 <span class="sd">        - Univariate discrete distribution</span>
-<span class="sd">        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).</span>
+<span class="sd">        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).</span>
 <span class="sd">        - Parameter: rate :math:`\\lambda &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
@@ -461,8 +460,8 @@
 <span class="sd">        It does not support priors.</span>
 
 <span class="sd">        - Univariate discrete distribution.</span>
-<span class="sd">        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).</span>
-<span class="sd">        - Parameters: number of failures :math:`r &gt; 0`, success probability :math:`p \in (0, 1)`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).</span>
+<span class="sd">        - Parameters: number of failures :math:`r &gt; 0`, success probability :math:`p \\in (0, 1)`.</span>
 
 <span class="sd">        Behind the scenes the distribution is reparameterized so that the actual outputs of the</span>
 <span class="sd">        network are in terms of the mean :math:`\\mu` and shape :math:`\\alpha`.</span>
@@ -510,8 +509,8 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Bernoulli_distribution</span>
 
 <span class="sd">        - Univariate discrete distribution.</span>
-<span class="sd">        - Support: :math:`\{0, 1\}`.</span>
-<span class="sd">        - Parameter: probability :math:`p \in (0, 1)`.</span>
+<span class="sd">        - Support: :math:`\\{0, 1\\}`.</span>
+<span class="sd">        - Parameter: probability :math:`p \\in (0, 1)`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -606,8 +605,8 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Cauchy_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution.</span>
-<span class="sd">        - Support: :math:`\mathbb{R}`.</span>
-<span class="sd">        - Parameters: location :math:`x_0 \in \mathbb{R}`, scale :math:`\gamma &gt; 0`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}`.</span>
+<span class="sd">        - Parameters: location :math:`x_0 \\in \\mathbb{R}`, scale :math:`\\gamma &gt; 0`.</span>
 
 <span class="sd">        Due to its fat tails, this distribution is typically harder to estimate,</span>
 <span class="sd">        and your mileage may vary. Also be aware that it typically</span>
@@ -665,7 +664,7 @@
 
 <span class="sd">        - Univariate continuous distribution.</span>
 <span class="sd">        - Support: open interval :math:`(0, 1)`.</span>
-<span class="sd">        - Parameter: shape :math:`\\lambda \in (0,1)`</span>
+<span class="sd">        - Parameter: shape :math:`\\lambda \\in (0,1)`</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -711,7 +710,7 @@
 
 <span class="sd">        - Multivariate continuous distribution, modeling all components of a time series jointly.</span>
 <span class="sd">        - Support: The :math:`K`-dimensional simplex for series of dimension :math:`K`, i.e.,</span>
-<span class="sd">          :math:`x_1, ..., x_K \\text{ with } x_i \in (0,1),\\; \\sum_i^K{x_i}=1`.</span>
+<span class="sd">          :math:`x_1, ..., x_K \\text{ with } x_i \\in (0,1),\\; \\sum_i^K{x_i}=1`.</span>
 <span class="sd">        - Parameter: concentrations :math:`\\alpha_1, ..., \\alpha_K` with :math:`\\alpha_i &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
@@ -758,7 +757,7 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Exponential_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution.</span>
-<span class="sd">        - Support: :math:`\mathbb{R}_{&gt;0}`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}_{&gt;0}`.</span>
 <span class="sd">        - Parameter: rate :math:`\\lambda &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
@@ -803,7 +802,7 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Gamma_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution</span>
-<span class="sd">        - Support: :math:`\mathbb{R}_{&gt;0}`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}_{&gt;0}`.</span>
 <span class="sd">        - Parameters: shape :math:`\\alpha &gt; 0` and rate :math:`\\beta &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
@@ -853,8 +852,8 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Geometric_distribution</span>
 
 <span class="sd">        - Univariate discrete distribution</span>
-<span class="sd">        - Support: :math:`\mathbb{N}_0` (natural numbers including 0).</span>
-<span class="sd">        - Parameter: success probability :math:`p \in (0, 1)`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{N}_0` (natural numbers including 0).</span>
+<span class="sd">        - Parameter: success probability :math:`p \\in (0, 1)`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -898,8 +897,8 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Gumbel_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution</span>
-<span class="sd">        - Support: :math:`\mathbb{R}`.</span>
-<span class="sd">        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`\\beta &gt; 0`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}`.</span>
+<span class="sd">        - Parameters: location :math:`\\mu \\in \\mathbb{R}` and scale :math:`\\beta &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -947,7 +946,7 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Half-normal_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution.</span>
-<span class="sd">        - Support: :math:`\mathbb{R}_{&gt;0}`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}_{&gt;0}`.</span>
 <span class="sd">        - Parameter: rate :math:`\\sigma &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
@@ -992,8 +991,8 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Laplace_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution</span>
-<span class="sd">        - Support: :math:`\mathbb{R}`.</span>
-<span class="sd">        - Parameters: location :math:`\\mu \in \mathbb{R}` and scale :math:`b &gt; 0`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}`.</span>
+<span class="sd">        - Parameters: location :math:`\\mu \\in \\mathbb{R}` and scale :math:`b &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1041,8 +1040,8 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Log-normal_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution.</span>
-<span class="sd">        - Support: :math:`\mathbb{R}_{&gt;0}`.</span>
-<span class="sd">        - Parameters: :math:`\\mu \in \mathbb{R}` and :math:`\\sigma &gt; 0`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}_{&gt;0}`.</span>
+<span class="sd">        - Parameters: :math:`\\mu \\in \\mathbb{R}` and :math:`\\sigma &gt; 0`.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1090,7 +1089,7 @@
 <span class="sd">        https://en.wikipedia.org/wiki/Weibull_distribution</span>
 
 <span class="sd">        - Univariate continuous distribution</span>
-<span class="sd">        - Support: :math:`\mathbb{R}_{&gt;0}`.</span>
+<span class="sd">        - Support: :math:`\\mathbb{R}_{&gt;0}`.</span>
 <span class="sd">        - Parameters: scale :math:`\\lambda &gt; 0` and concentration :math:`k &gt; 0`.</span>
 
 <span class="sd">        It does not support priors.</span>
@@ -1274,70 +1273,70 @@
         <span class="k">return</span> <span class="kc">None</span></div>
 
 
-<span class="k">if</span> <span class="kc">False</span><span class="p">:</span>
-    <span class="sd">&quot;&quot;&quot;TODO</span>
-<span class="sd">    To make it work, we&#39;ll have to change our models so they optionally accept an absolute</span>
-<span class="sd">    number of parameters, instead of num_parameters per component.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">&quot;&quot;&quot; TODO</span>
+<span class="sd">To make it work, we&#39;ll have to change our models so they optionally accept an absolute</span>
+<span class="sd">number of parameters, instead of num_parameters per component.</span>
 
-    <span class="k">class</span> <span class="nc">MultivariateNormal</span><span class="p">(</span><span class="n">Likelihood</span><span class="p">):</span>
-        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
-            <span class="bp">self</span><span class="p">,</span> <span class="n">dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">prior_mu</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_covmat</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">prior_strength</span><span class="o">=</span><span class="mf">1.0</span>
-        <span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">=</span> <span class="n">dim</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">prior_mu</span> <span class="o">=</span> <span class="n">prior_mu</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">prior_covmat</span> <span class="o">=</span> <span class="n">prior_covmat</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_mu</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">raise_if_not</span><span class="p">(</span>
-                    <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_mu</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span>
-                    <span class="s2">&quot;The provided prior_mu must have a size matching the &quot;</span>
-                    <span class="s2">&quot;provided dimension.&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_covmat</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">raise_if_not</span><span class="p">(</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">prior_covmat</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span>
-                    <span class="s2">&quot;The provided prior on the covariaance &quot;</span>
-                    <span class="s2">&quot;matrix must have size (dim, dim).&quot;</span><span class="p">,</span>
-                <span class="p">)</span>
-                <span class="n">_check_strict_positive</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">prior_covmat</span><span class="o">.</span><span class="n">flatten</span><span class="p">(),</span> <span class="s2">&quot;covariance matrix&quot;</span><span class="p">)</span>
+<span class="sd">from torch.distributions import MultivariateNormal as _MultivariateNormal</span>
+<span class="sd">    class MultivariateNormal(Likelihood):</span>
+<span class="sd">        def __init__(</span>
+<span class="sd">            self, dim: int, prior_mu=None, prior_covmat=None, prior_strength=1.0</span>
+<span class="sd">        ):</span>
+<span class="sd">            self.dim = dim</span>
+<span class="sd">            self.prior_mu = prior_mu</span>
+<span class="sd">            self.prior_covmat = prior_covmat</span>
+<span class="sd">            if self.prior_mu is not None:</span>
+<span class="sd">                raise_if_not(</span>
+<span class="sd">                    len(self.prior_mu) == self.dim,</span>
+<span class="sd">                    &quot;The provided prior_mu must have a size matching the &quot;</span>
+<span class="sd">                    &quot;provided dimension.&quot;,</span>
+<span class="sd">                )</span>
+<span class="sd">            if self.prior_covmat is not None:</span>
+<span class="sd">                raise_if_not(</span>
+<span class="sd">                    self.prior_covmat.shape == (self.dim, self.dim),</span>
+<span class="sd">                    &quot;The provided prior on the covariaance &quot;</span>
+<span class="sd">                    &quot;matrix must have size (dim, dim).&quot;,</span>
+<span class="sd">                )</span>
+<span class="sd">                _check_strict_positive(self.prior_covmat.flatten(), &quot;covariance matrix&quot;)</span>
 
-            <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Softplus</span><span class="p">()</span>
-            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">prior_strength</span><span class="p">)</span>
+<span class="sd">            self.softplus = nn.Softplus()</span>
+<span class="sd">            super().__init__(prior_strength)</span>
 
-        <span class="nd">@property</span>
-        <span class="k">def</span> <span class="nf">_prior_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_mu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">prior_covmat</span>
+<span class="sd">        @property</span>
+<span class="sd">        def _prior_params(self):</span>
+<span class="sd">            return self.prior_mu, self.prior_covmat</span>
 
-        <span class="k">def</span> <span class="nf">_distr_from_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
-            <span class="n">mu</span><span class="p">,</span> <span class="n">covmat</span> <span class="o">=</span> <span class="n">params</span>
-            <span class="k">return</span> <span class="n">_MultivariateNormal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">covmat</span><span class="p">)</span>
+<span class="sd">        def _distr_from_params(self, params: Tuple):</span>
+<span class="sd">            mu, covmat = params</span>
+<span class="sd">            return _MultivariateNormal(mu, covmat)</span>
 
-        <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="n">mu</span><span class="p">,</span> <span class="n">covmat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_params_from_output</span><span class="p">(</span><span class="n">model_output</span><span class="p">)</span>
-            <span class="n">distr</span> <span class="o">=</span> <span class="n">_MultivariateNormal</span><span class="p">(</span><span class="n">mu</span><span class="p">,</span> <span class="n">covmat</span><span class="p">)</span>
-            <span class="k">return</span> <span class="n">distr</span><span class="o">.</span><span class="n">sample</span><span class="p">()</span>
+<span class="sd">        def sample(self, model_output: torch.Tensor):</span>
+<span class="sd">            mu, covmat = self._params_from_output(model_output)</span>
+<span class="sd">            distr = _MultivariateNormal(mu, covmat)</span>
+<span class="sd">            return distr.sample()</span>
 
-        <span class="nd">@property</span>
-        <span class="k">def</span> <span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">+</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="o">**</span> <span class="mi">2</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+<span class="sd">        @property</span>
+<span class="sd">        def num_parameters(self) -&gt; int:</span>
+<span class="sd">            return int(self.dim + (self.dim ** 2 - self.dim) / 2)</span>
 
-        <span class="k">def</span> <span class="nf">_params_from_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
-            <span class="n">device</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">device</span>
-            <span class="n">mu</span> <span class="o">=</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">]</span>
-            <span class="n">covmat_coefs</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">softplus</span><span class="p">(</span><span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span> <span class="p">:])</span>
+<span class="sd">        def _params_from_output(self, model_output: torch.Tensor):</span>
+<span class="sd">            device = model_output.device</span>
+<span class="sd">            mu = model_output[:, :, : self.dim]</span>
+<span class="sd">            covmat_coefs = self.softplus(model_output[:, :, self.dim :])</span>
 
-            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;model output: </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+<span class="sd">            print(&quot;model output: {}&quot;.format(model_output.shape))</span>
 
-            <span class="c1"># build covariance matrix</span>
-            <span class="n">covmat</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
-                <span class="p">(</span><span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)</span>
-            <span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-            <span class="n">tril_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tril_indices</span><span class="p">(</span>
-                <span class="n">row</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="n">col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">,</span> <span class="n">offset</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span>
-            <span class="p">)</span>
-            <span class="n">covmat</span><span class="p">[</span><span class="n">tril_indices</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">tril_indices</span><span class="p">[</span><span class="mi">1</span><span class="p">]]</span> <span class="o">=</span> <span class="n">covmat_coefs</span>
-            <span class="n">covmat</span><span class="p">[</span><span class="n">tril_indices</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">tril_indices</span><span class="p">[</span><span class="mi">0</span><span class="p">]]</span> <span class="o">=</span> <span class="n">covmat_coefs</span>
-            <span class="n">covmat</span><span class="p">[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">),</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dim</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="sd">            # build covariance matrix</span>
+<span class="sd">            covmat = torch.zeros(</span>
+<span class="sd">                (model_output.shape[0], model_output.shape[1], self.dim, self.dim)</span>
+<span class="sd">            ).to(device)</span>
+<span class="sd">            tril_indices = torch.tril_indices(</span>
+<span class="sd">                row=self.dim, col=self.dim, offset=1, device=device</span>
+<span class="sd">            )</span>
+<span class="sd">            covmat[tril_indices[0], tril_indices[1]] = covmat_coefs</span>
+<span class="sd">            covmat[tril_indices[1], tril_indices[0]] = covmat_coefs</span>
+<span class="sd">            covmat[range(self.dim), range(self.dim)] = 1.0</span>
+<span class="sd">&quot;&quot;&quot;</span>
 </pre></div>
 
               </div>

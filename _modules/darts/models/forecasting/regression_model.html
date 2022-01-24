@@ -525,7 +525,7 @@
 
             <span class="n">raise_if</span><span class="p">(</span>
                 <span class="n">X_y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
-                <span class="sa">f</span><span class="s2">&quot;Unable to build any training samples; target and covariate series overlap too little.&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Unable to build any training samples; target and covariate series overlap too little.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
             <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">X_y</span><span class="p">,</span> <span class="p">[</span><span class="n">df_X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>

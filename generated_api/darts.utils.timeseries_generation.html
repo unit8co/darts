@@ -530,20 +530,20 @@ starting values <cite>start_values</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>coef</strong> (<em>list of float</em>) – The autoregressive coefficients used for calculating the next time step.
+<li><p><strong>coef</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]) – The autoregressive coefficients used for calculating the next time step.
 series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + … + coef[0] * series[t-len(coef)]</p></li>
-<li><p><strong>start_values</strong> (<em>list of float</em><em>, </em><em>default: np.ones</em><em>(</em><em>len</em><em>(</em><em>coef</em><em>)</em><em>)</em>) – The starting values used for calculating the first few values for which no lags exist yet.
+<li><p><strong>start_values</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – The starting values used for calculating the first few values for which no lags exist yet.
 series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + … + coef[0] * starting_values[0]</p></li>
-<li><p><strong>start</strong> (<em>pd.Timestamp</em><em> or </em><em>int</em><em>, </em><em>default: pd.Timestamp</em><em>(</em><em>'2000-01-01'</em><em>)</em>) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
+<li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
 DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>end</strong> (<em>pd.Timestamp</em><em> or </em><em>int</em><em>, </em><em>optional</em>) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
+<li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
-<li><p><strong>length</strong> (<em>int</em><em>, </em><em>optional</em>) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
-<li><p><strong>freq</strong> (<em>str</em><em>, </em><em>default: 'D'</em>) – The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
+<li><p><strong>length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the length of the returned index. Works only with either <cite>start</cite> or <cite>end</cite>.</p></li>
+<li><p><strong>freq</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The time difference between two adjacent entries in the returned TimeSeries. Only effective if <cite>start</cite> is a
 pandas Timestamp. A DateOffset alias is expected; see
 <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects">docs</a>.</p></li>
-<li><p><strong>column_name</strong> (<em>str</em><em>, </em><em>default: 'autoregressive'</em>) – Optionally, the name of the value column for the returned TimeSeries</p></li>
+<li><p><strong>column_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Optionally, the name of the value column for the returned TimeSeries</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -596,8 +596,9 @@ pandas Timestamp. A DateOffset alias is expected; see
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>time_index</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">DatetimeIndex</span></code>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – Either a <cite>pd.DatetimeIndex</cite> attribute which will serve as the basis of the new column(s), or
 a <cite>TimeSeries</cite> whose time axis will serve this purpose.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – An attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”, “weekday”, “day”, “hour”, “minute”, “second”.
-See all available attributes in <a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a> .</p></li>
+<li><p><strong>attribute</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – An attribute of <cite>pd.DatetimeIndex</cite>, or <cite>week</cite> / <cite>weekofyear</cite> / <cite>week_of_year</cite> - e.g. “month”, “weekday”, “day”,
+“hour”, “minute”, “second”. See all available attributes in
+<a class="reference external" href="https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex">https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex</a>.</p></li>
 <li><p><strong>one_hot</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating whether to add the specified attribute as a one hot encoding
 (results in more columns).</p></li>
 <li><p><strong>cyclic</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Boolean value indicating whether to add the specified attribute as a cyclic encoding.

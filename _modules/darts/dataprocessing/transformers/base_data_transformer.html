@@ -275,8 +275,8 @@
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_transform()`.</span>
-<span class="sd">        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to :func:`ts_transform()`)</span>
-<span class="sd">        are already forwarded, and thus don&#39;t need to be included in this generator.</span>
+<span class="sd">        Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to</span>
+<span class="sd">        :func:`ts_transform()`) are already forwarded, and thus don&#39;t need to be included in this generator.</span>
 
 <span class="sd">        The basic implementation of this method returns ``zip(series)``, i.e., a generator of single-valued tuples,</span>
 <span class="sd">        each containing one ``TimeSeries`` object.</span>

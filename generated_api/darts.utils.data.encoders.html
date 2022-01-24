@@ -821,34 +821,7 @@ An example for a correct <cite>attribute</cite> for <cite>index</cite> of type p
 <dt class="sig sig-object py" id="darts.utils.data.encoders.CyclicTemporalEncoder">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.encoders.</span></span><span class="sig-name descname"><span class="pre">CyclicTemporalEncoder</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">index_generator</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">attribute</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/encoders.html#CyclicTemporalEncoder"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.encoders.CyclicTemporalEncoder" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.SingleEncoder" title="darts.utils.data.encoder_base.SingleEncoder"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.encoder_base.SingleEncoder</span></code></a></p>
-<p>CyclicTemporalEncoder: Cyclic index encoding for <cite>TimeSeries</cite> that have a time index of type <cite>pd.DatetimeIndex</cite>.</p>
-<p class="rubric">Attributes</p>
-<table class="longtable table autosummary">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer" title="darts.utils.data.encoders.CyclicTemporalEncoder.accept_transformer"><code class="xref py py-obj docutils literal notranslate"><span class="pre">accept_transformer</span></code></a></p></td>
-<td><p>CyclicTemporalEncoder should not be transformed.</p></td>
-</tr>
-</tbody>
-</table>
-<p class="rubric">Methods</p>
-<table class="longtable table autosummary">
-<colgroup>
-<col style="width: 10%" />
-<col style="width: 90%" />
-</colgroup>
-<tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.encode_inference" title="darts.utils.data.encoders.CyclicTemporalEncoder.encode_inference"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode_inference</span></code></a>(n, target[, covariate, ...])</p></td>
-<td><p>Returns encoded index for inference/prediction.</p></td>
-</tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.data.encoders.CyclicTemporalEncoder.encode_train" title="darts.utils.data.encoders.CyclicTemporalEncoder.encode_train"><code class="xref py py-obj docutils literal notranslate"><span class="pre">encode_train</span></code></a>(target[, covariate, ...])</p></td>
-<td><p>Returns encoded index for training.</p></td>
-</tr>
-</tbody>
-</table>
+<p>Cyclic index encoding for <cite>TimeSeries</cite> that have a time index of type <cite>pd.DatetimeIndex</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">

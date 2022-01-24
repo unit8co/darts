@@ -537,8 +537,8 @@ a linear dynamical system and the covariance matrices of the process and measure
 algorithm.</p>
 <p>This implementation uses Kalman from the NFourSID package. More information can be found here:
 <a class="reference external" href="https://nfoursid.readthedocs.io/en/latest/source/kalman.html">https://nfoursid.readthedocs.io/en/latest/source/kalman.html</a>.</p>
-<p>The dimensionality of the measurements z and optional control signal (covariates) u is automatically inferred upon
-calling <cite>filter()</cite>.</p>
+<p>The dimensionality of the measurements z and optional control signal (covariates) u is automatically inferred
+upon calling <cite>filter()</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -547,7 +547,7 @@ calling <cite>filter()</cite>.</p>
 If this is provided, the parameter dim_x is ignored. This instance will be copied for every
 call to <cite>filter()</cite>, so the state is not carried over from one time series to another across several
 calls to <cite>filter()</cite>.
-The various dimensionalities of the filter must match those of the <cite>TimeSeries</cite> used when calling <cite>filter()</cite>.</p></li>
+The dimensionalities of the filter must match those of the <cite>TimeSeries</cite> used when calling <cite>filter()</cite>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -573,10 +573,10 @@ The various dimensionalities of the filter must match those of the <cite>TimeSer
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The series of outputs (observations) used to infer the underlying outputs according to the specified Kalman process.
-This must be a deterministic series (containing one sample).</p></li>
-<li><p><strong>covariates</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – An optional series of inputs (control signal), necessary if the Kalman filter was initialized with covariates.
-This must be a deterministic series (containing one sample).</p></li>
+<li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The series of outputs (observations) used to infer the underlying outputs according to the specified Kalman
+process. This must be a deterministic series (containing one sample).</p></li>
+<li><p><strong>covariates</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – An optional series of inputs (control signal), necessary if the Kalman filter was initialized with
+covariates. This must be a deterministic series (containing one sample).</p></li>
 <li><p><strong>num_samples</strong> (<em>int</em><em>, </em><em>default: 1</em>) – The number of samples to generate from the inferred distribution of the output z. If this is set to 1, the
 output is a <cite>TimeSeries</cite> containing a single sample using the mean of the distribution.</p></li>
 </ul>
@@ -599,8 +599,8 @@ output is a <cite>TimeSeries</cite> containing a single sample using the mean of
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The series of outputs (observations) used to infer the underlying state space model.
 This must be a deterministic series (containing one sample).</p></li>
-<li><p><strong>covariates</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – An optional series of inputs (control signal) that will also be used to infer the underlying state space model.
-This must be a deterministic series (containing one sample).</p></li>
+<li><p><strong>covariates</strong> (<em>Optional</em><em>[</em><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em>]</em>) – An optional series of inputs (control signal) that will also be used to infer the underlying state space
+model. This must be a deterministic series (containing one sample).</p></li>
 <li><p><strong>num_block_rows</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em>) – The number of block rows to use in the block Hankel matrices used in the N4SID algorithm.
 See the documentation of nfoursid.nfoursid.NFourSID for more information.
 If not provided, the dimensionality of the state space model will be used, with a maximum of 10.</p></li>

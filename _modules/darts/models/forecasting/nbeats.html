@@ -266,7 +266,8 @@
 <span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used)</span>
 <span class="sd">        expansion_coefficient_dim</span>
 <span class="sd">            The dimensionality of the waveform generator parameters, also known as expansion coefficients.</span>
-<span class="sd">            Used in the generic architecture and the trend module of the interpretable architecture, where it determines the degree of the polynomial basis.</span>
+<span class="sd">            Used in the generic architecture and the trend module of the interpretable architecture, where it determines</span>
+<span class="sd">            the degree of the polynomial basis.</span>
 <span class="sd">        input_chunk_length</span>
 <span class="sd">            The length of the input sequence fed to the model.</span>
 <span class="sd">        target_length</span>
@@ -728,9 +729,9 @@
 <span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
 <span class="sd">        model_name</span>
 <span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
-<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part of the</span>
-<span class="sd">            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at</span>
-<span class="sd">            the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part of</span>
+<span class="sd">            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned</span>
+<span class="sd">            at the same time by different processes to share the same model_name). E.g.,</span>
 <span class="sd">            ``&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;``.</span>
 <span class="sd">        work_dir</span>
 <span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>

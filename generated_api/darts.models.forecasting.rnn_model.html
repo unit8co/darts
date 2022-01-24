@@ -596,9 +596,9 @@ to using a constant learning rate.</p></li>
 This parameter will be ignored for probabilistic models if the <cite>likelihood</cite> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
 <li><p><strong>model_name</strong> – Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-defaults to the following string <code class="docutils literal notranslate"><span class="pre">&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;</span></code>, where the initial part of the
-name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-the same time by different processes to share the same model_name). E.g.,
+defaults to the following string <code class="docutils literal notranslate"><span class="pre">&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;</span></code>, where the initial part of
+the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+at the same time by different processes to share the same model_name). E.g.,
 <code class="docutils literal notranslate"><span class="pre">&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;</span></code>.</p></li>
 <li><p><strong>work_dir</strong> – Path of the working directory, where to save checkpoints and Tensorboard summaries.
 (default: current working directory).</p></li>

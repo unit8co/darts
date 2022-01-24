@@ -498,8 +498,10 @@
 
         <span class="c1"># TODO: do we need a check here? I&#39;d rather leave these checks to the models/datasets.</span>
         <span class="c1"># if covariates:</span>
-        <span class="c1">#     raise_if_not(series.end_time() &lt;= covariates.end_time() and covariates.start_time() &lt;= series.start_time(),</span>
-        <span class="c1">#                  &#39;The provided covariates must be at least as long as the target series.&#39;)</span>
+        <span class="c1">#     raise_if_not(</span>
+        <span class="c1">#         series.end_time() &lt;= covariates.end_time() and covariates.start_time() &lt;= series.start_time(),</span>
+        <span class="c1">#         &#39;The provided covariates must be at least as long as the target series.&#39;</span>
+        <span class="c1">#     )</span>
 
         <span class="c1"># only GlobalForecastingModels support historical forecastings without retraining the model</span>
         <span class="n">base_class_name</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="n">__base__</span><span class="o">.</span><span class="vm">__name__</span>

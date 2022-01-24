@@ -196,8 +196,8 @@
 <div class="viewcode-block" id="multi_ts_support"><a class="viewcode-back" href="../../../generated_api/darts.metrics.metrics.html#darts.metrics.metrics.multi_ts_support">[docs]</a><span class="k">def</span> <span class="nf">multi_ts_support</span><span class="p">(</span><span class="n">func</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    This decorator further adapts the metrics that took as input two univariate/multivariate ``TimeSeries`` instances,</span>
-<span class="sd">    adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric for</span>
-<span class="sd">    ``TimeSeries`` with the same indices, and returns a float value that is computed as a function of all the</span>
+<span class="sd">    adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric</span>
+<span class="sd">    for ``TimeSeries`` with the same indices, and returns a float value that is computed as a function of all the</span>
 <span class="sd">    pairwise metrics using a `inter_reduction` subroutine passed as argument to the metric function.</span>
 
 <span class="sd">    If a &#39;Sequence[TimeSeries]&#39; is passed as input, this decorator provides also parallelisation of the metric</span>
@@ -1312,7 +1312,7 @@
 <span class="sd">    where :math:`L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right)` is the :math:`\\rho`-loss function:</span>
 
 <span class="sd">    .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( Z - \\hat{Z}_{\\rho} \\right)</span>
-<span class="sd">        \\left( \\rho I_{\\hat{Z}_{\\rho} &lt; Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \geq Z} \\right),</span>
+<span class="sd">        \\left( \\rho I_{\\hat{Z}_{\\rho} &lt; Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \\geq Z} \\right),</span>
 
 <span class="sd">    where :math:`Z = \\sum_{t=1}^{T} y_t` (1) is the aggregated target value and :math:`\\hat{Z}_{\\rho}` is the</span>
 <span class="sd">    :math:`\\rho`-quantile of the predicted values. For this, each sample realization :math:`i \\in N` is first</span>

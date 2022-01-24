@@ -544,26 +544,26 @@
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
-<span class="sd">    coef : list of float</span>
+<span class="sd">    coef</span>
 <span class="sd">        The autoregressive coefficients used for calculating the next time step.</span>
 <span class="sd">        series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + ... + coef[0] * series[t-len(coef)]</span>
-<span class="sd">    start_values : list of float, default: np.ones(len(coef))</span>
+<span class="sd">    start_values</span>
 <span class="sd">        The starting values used for calculating the first few values for which no lags exist yet.</span>
 <span class="sd">        series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + ... + coef[0] * starting_values[0]</span>
-<span class="sd">    start : pd.Timestamp or int, default: pd.Timestamp(&#39;2000-01-01&#39;)</span>
+<span class="sd">    start</span>
 <span class="sd">        The start of the returned TimeSeries&#39; index. If a pandas Timestamp is passed, the TimeSeries will have a pandas</span>
 <span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
-<span class="sd">    end : pd.Timestamp or int, optional</span>
+<span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
 <span class="sd">        set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.</span>
-<span class="sd">    length : int, optional</span>
+<span class="sd">    length</span>
 <span class="sd">        Optionally, the length of the returned index. Works only with either `start` or `end`.</span>
-<span class="sd">    freq : str, default: &#39;D&#39;</span>
+<span class="sd">    freq</span>
 <span class="sd">        The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a</span>
 <span class="sd">        pandas Timestamp. A DateOffset alias is expected; see</span>
 <span class="sd">        `docs &lt;https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects&gt;`_.</span>
-<span class="sd">    column_name : str, default: &#39;autoregressive&#39;</span>
+<span class="sd">    column_name</span>
 <span class="sd">        Optionally, the name of the value column for the returned TimeSeries</span>
 
 <span class="sd">    Returns</span>
@@ -739,8 +739,9 @@
 <span class="sd">        Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or</span>
 <span class="sd">        a `TimeSeries` whose time axis will serve this purpose.</span>
 <span class="sd">    attribute</span>
-<span class="sd">        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;, &quot;weekday&quot;, &quot;day&quot;, &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;.</span>
-<span class="sd">        See all available attributes in https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex .</span>
+<span class="sd">        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. &quot;month&quot;, &quot;weekday&quot;, &quot;day&quot;,</span>
+<span class="sd">        &quot;hour&quot;, &quot;minute&quot;, &quot;second&quot;. See all available attributes in</span>
+<span class="sd">        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.</span>
 <span class="sd">    one_hot</span>
 <span class="sd">        Boolean value indicating whether to add the specified attribute as a one hot encoding</span>
 <span class="sd">        (results in more columns).</span>
@@ -798,7 +799,7 @@
         <span class="s2">&quot;week_of_year&quot;</span><span class="p">:</span> <span class="mi">52</span><span class="p">,</span>
     <span class="p">}</span>
 
-    <span class="k">if</span> <span class="ow">not</span> <span class="n">attribute</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span> <span class="s2">&quot;week_of_year&quot;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">attribute</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;week&quot;</span><span class="p">,</span> <span class="s2">&quot;weekofyear&quot;</span><span class="p">,</span> <span class="s2">&quot;week_of_year&quot;</span><span class="p">]:</span>
         <span class="n">values</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">time_index</span><span class="p">,</span> <span class="n">attribute</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">values</span> <span class="o">=</span> <span class="p">(</span>

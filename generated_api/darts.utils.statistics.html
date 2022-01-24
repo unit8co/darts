@@ -612,25 +612,33 @@ matrix for the parameter f_test.</p>
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_acf">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_acf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_acf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.
-This function uses the <a class="reference external" href="https://github.com/statsmodels/statsmodels">Statsmodels module</a>.</p>
+Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.acf()</span></code> <a class="reference internal" href="#rafdb152b6caa-1" id="id2">[1]</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The TimeSeries whose ACF should be plotted.</p></li>
-<li><p><strong>m</strong> (<em>int</em><em>, </em><em>optional</em>) – Optionally, a time lag to highlight on the plot.</p></li>
-<li><p><strong>max_lag</strong> (<em>int</em><em>, </em><em>default: 24</em>) – The maximal lag order to consider.</p></li>
-<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>default: 0.05</em>) – The confidence interval to display.</p></li>
-<li><p><strong>bartlett_confint</strong> (<em>bool</em><em>, </em><em>default: True</em>) – The boolean value indicating whether the confidence interval should be
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose ACF should be plotted.</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
+<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
+<li><p><strong>bartlett_confint</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – The boolean value indicating whether the confidence interval should be
 calculated using Bartlett’s formula. If set to True, the confidence interval
 can be used in the model identification stage for fitting ARIMA models.
 If set to False, the confidence interval can be used to test for randomness
 (i.e. there is no time dependence in the data) of the data.</p></li>
-<li><p><strong>fig_size</strong> (<em>tuple of int</em><em>, </em><em>default:</em><em> (</em><em>10</em><em>, </em><em>5</em><em>)</em>) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<em>plt.axis</em><em>, </em><em>optional</em>) – Optionally, an axis object to plot the ACF on.</p></li>
+<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rafdb152b6caa-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html</a></p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -665,14 +673,14 @@ or an array-like of floats determining the position of bins.</p></li>
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_pacf">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_pacf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ywadjusted'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_pacf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_pacf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the Partial ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.
-This function uses the <a class="reference external" href="https://github.com/statsmodels/statsmodels">Statsmodels module</a>.</p>
+Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.pacf()</span></code> <a class="reference internal" href="#rb31bb5f8a25c-1" id="id3">[1]</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a>) – The TimeSeries whose ACF should be plotted.</p></li>
-<li><p><strong>m</strong> (<em>int</em><em>, </em><em>optional</em>) – Optionally, a time lag to highlight on the plot.</p></li>
-<li><p><strong>max_lag</strong> (<em>int</em><em>, </em><em>default: 24</em>) – The maximal lag order to consider.</p></li>
-<li><p><strong>method</strong> (<em>str</em><em>, </em><em>default: &quot;ywadjusted&quot;</em>) – <p>The method to be used for the PACF calculation.
+<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries whose ACF should be plotted.</p></li>
+<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, a time lag to highlight on the plot.</p></li>
+<li><p><strong>max_lag</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The maximal lag order to consider.</p></li>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – <p>The method to be used for the PACF calculation.
 - | “yw” or “ywadjusted” : Yule-Walker with sample-size adjustment in</p>
 <blockquote>
 <div><div class="line-block">
@@ -692,13 +700,21 @@ correction.</p></li>
 correction.</p></li>
 </ul>
 </p></li>
-<li><p><strong>alpha</strong> (<em>float</em><em>, </em><em>default: 0.05</em>) – The confidence interval to display.</p></li>
-<li><p><strong>fig_size</strong> (<em>tuple of int</em><em>, </em><em>default:</em><em> (</em><em>10</em><em>, </em><em>5</em><em>)</em>) – The size of the figure to be displayed.</p></li>
-<li><p><strong>axis</strong> (<em>plt.axis</em><em>, </em><em>optional</em>) – Optionally, an axis object to plot the ACF on.</p></li>
+<li><p><strong>alpha</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The confidence interval to display.</p></li>
+<li><p><strong>fig_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The size of the figure to be displayed.</p></li>
+<li><p><strong>axis</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">axis</span></code>]) – Optionally, an axis object to plot the ACF on.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rb31bb5f8a25c-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html</a></p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -801,7 +817,7 @@ Defaults to modelMode.MULTIPLICATIVE.</p></li>
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_adf">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_adf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autolag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AIC'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_adf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_adf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides Augmented Dickey-Fuller unit root test for a time series,
-using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.adfuller()</span></code>. See <a class="reference internal" href="#ref511d402b22-1" id="id3">[1]</a>.</p>
+using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.adfuller()</span></code>. See <a class="reference internal" href="#ref511d402b22-1" id="id4">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -822,10 +838,10 @@ If None, then the number of included lags is set to maxlag.</p></li>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><div class="line-block">
 <div class="line">adf: The test statistic.</div>
-<div class="line">pvalue: MacKinnon’s approximate p-value based on <a class="reference internal" href="#ref511d402b22-2" id="id4">[2]</a>.</div>
+<div class="line">pvalue: MacKinnon’s approximate p-value based on <a class="reference internal" href="#ref511d402b22-2" id="id5">[2]</a>.</div>
 <div class="line">usedlag: The number of lags used.</div>
 <div class="line">nobs: The number of observations used for the ADF regression and calculation of the critical values.</div>
-<div class="line">critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on <a class="reference internal" href="#ref511d402b22-2" id="id5">[2]</a>.</div>
+<div class="line">critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on <a class="reference internal" href="#ref511d402b22-2" id="id6">[2]</a>.</div>
 <div class="line">icbest: The maximized information criterion if autolag is not None.</div>
 </div>
 </p>
@@ -836,10 +852,10 @@ If None, then the number of included lags is set to maxlag.</p></li>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="ref511d402b22-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dt class="label" id="ref511d402b22-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html</a></p>
 </dd>
-<dt class="label" id="ref511d402b22-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id4">1</a>,<a href="#id5">2</a>)</span></dt>
+<dt class="label" id="ref511d402b22-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id5">1</a>,<a href="#id6">2</a>)</span></dt>
 <dd><p>MacKinnon (1994, 2010)</p>
 </dd>
 </dl>
@@ -849,7 +865,7 @@ If None, then the number of included lags is set to maxlag.</p></li>
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_kpss">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_kpss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_kpss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_kpss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
-using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.kpss()</span></code>. See <a class="reference internal" href="#r8df52d521c0a-1" id="id6">[1]</a>.</p>
+using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.kpss()</span></code>. See <a class="reference internal" href="#r8df52d521c0a-1" id="id7">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -857,18 +873,19 @@ using <code class="xref py py-func docutils literal notranslate"><span class="pr
 <li><p><strong>regression</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The null hypothesis for the KPSS test.
 ‘c’ : The data is stationary around a constant (default).
 ‘ct’ : The data is stationary around a trend.</p></li>
-<li><p><strong>nlags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Indicates the number of lags to be used. If ‘auto’ (default), lags is calculated using the data-dependent method of Hobijn et al. (1998).
-See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to ‘legacy’, uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
+<li><p><strong>nlags</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Indicates the number of lags to be used. If ‘auto’ (default), lags is calculated using the data-dependent method
+of Hobijn et al. (1998). See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to ‘legacy’,
+uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><div class="line-block">
 <div class="line">kpss_stat: The test statistic.</div>
-<div class="line">pvalue: The p-value of the test. The p-value is interpolated from Table 1 in <a class="reference internal" href="#r8df52d521c0a-2" id="id7">[2]</a>,</div>
+<div class="line">pvalue: The p-value of the test. The p-value is interpolated from Table 1 in <a class="reference internal" href="#r8df52d521c0a-2" id="id8">[2]</a>,</div>
 <div class="line">and a boundary point is returned if the test statistic is outside the table of critical values,</div>
 <div class="line">that is, if the p-value is outside the interval (0.01, 0.1).</div>
 <div class="line">lags: The truncation lag parameter.</div>
-<div class="line">crit: The critical values at 10%, 5%, 2.5% and 1%. Based on <a class="reference internal" href="#r8df52d521c0a-2" id="id8">[2]</a>.</div>
+<div class="line">crit: The critical values at 10%, 5%, 2.5% and 1%. Based on <a class="reference internal" href="#r8df52d521c0a-2" id="id9">[2]</a>.</div>
 </div>
 </p>
 </dd>
@@ -878,10 +895,10 @@ See also Andrews (1991), Newey &amp; West (1994), and Schwert (1989). If set to 
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r8df52d521c0a-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
+<dt class="label" id="r8df52d521c0a-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html</a></p>
 </dd>
-<dt class="label" id="r8df52d521c0a-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id7">1</a>,<a href="#id8">2</a>)</span></dt>
+<dt class="label" id="r8df52d521c0a-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id8">1</a>,<a href="#id9">2</a>)</span></dt>
 <dd><p>Kwiatkowski et al. (1992)</p>
 </dd>
 </dl>
