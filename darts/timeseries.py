@@ -2,7 +2,7 @@
 Timeseries
 ----------
 
-``TimeSeries`` is the main class in `darts`. 
+``TimeSeries`` is the main class in `darts`.
 It represents a univariate or multivariate time series, deterministic or stochastic.
 
 The values are stored in an array of shape `(time, dimensions, samples)`, where
@@ -23,7 +23,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union, TextIO, Sequence
+from typing import Tuple, Optional, Callable, Any, List, Union, Sequence
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
@@ -186,7 +186,7 @@ class TimeSeries:
             self._freq = 1
             self._freq_str = None
 
-    """ 
+    """
     Factory Methods
     ===============
     """
@@ -759,7 +759,7 @@ class TimeSeries:
         """The duration of this time series (as a time delta or int)."""
         return self._time_index[-1] - self._time_index[0]
 
-    """ 
+    """
     Some asserts
     =============
     """
@@ -2594,7 +2594,7 @@ class TimeSeries:
 
         raise_if(
             len(xa) <= 2,
-            f"Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
+            "Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
             logger,
         )
 

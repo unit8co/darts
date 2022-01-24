@@ -30,8 +30,8 @@ logger = get_logger(__name__)
 def multi_ts_support(func):
     """
     This decorator further adapts the metrics that took as input two univariate/multivariate ``TimeSeries`` instances,
-    adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric for
-    ``TimeSeries`` with the same indices, and returns a float value that is computed as a function of all the
+    adding support for equally-sized sequences of ``TimeSeries`` instances. The decorator computes the pairwise metric
+    for ``TimeSeries`` with the same indices, and returns a float value that is computed as a function of all the
     pairwise metrics using a `inter_reduction` subroutine passed as argument to the metric function.
 
     If a 'Sequence[TimeSeries]' is passed as input, this decorator provides also parallelisation of the metric
@@ -1146,7 +1146,7 @@ def rho_risk(
     where :math:`L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right)` is the :math:`\\rho`-loss function:
 
     .. math:: L_{\\rho} \\left( Z, \\hat{Z}_{\\rho} \\right) = 2 \\left( Z - \\hat{Z}_{\\rho} \\right)
-        \\left( \\rho I_{\\hat{Z}_{\\rho} < Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \geq Z} \\right),
+        \\left( \\rho I_{\\hat{Z}_{\\rho} < Z} - \\left( 1 - \\rho \\right) I_{\\hat{Z}_{\\rho} \\geq Z} \\right),
 
     where :math:`Z = \\sum_{t=1}^{T} y_t` (1) is the aggregated target value and :math:`\\hat{Z}_{\\rho}` is the
     :math:`\\rho`-quantile of the predicted values. For this, each sample realization :math:`i \\in N` is first
