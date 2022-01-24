@@ -303,7 +303,7 @@ class TimeSeries:
     @classmethod
     def from_csv(
         cls,
-        filepath_or_buffer: pd._typing.FilePathOrBuffer,
+        filepath_or_buffer,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[List[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
@@ -2442,7 +2442,7 @@ class TimeSeries:
     """
 
     def mean(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.mean()` for deterministic series."""
         return self.pd_dataframe(copy=False).mean(
@@ -2450,7 +2450,7 @@ class TimeSeries:
         )
 
     def var(
-        self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.var()` for deterministic series."""
         return self.pd_dataframe(copy=False).var(
@@ -2458,7 +2458,7 @@ class TimeSeries:
         )
 
     def std(
-        self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.std()` for deterministic series."""
         return self.pd_dataframe(copy=False).std(
@@ -2466,7 +2466,7 @@ class TimeSeries:
         )
 
     def skew(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.skew()` for deterministic series."""
         return self.pd_dataframe(copy=False).skew(
@@ -2474,7 +2474,7 @@ class TimeSeries:
         )
 
     def kurtosis(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.kurtosis()` for deterministic series."""
         return self.pd_dataframe(copy=False).kurtosis(
@@ -2482,7 +2482,7 @@ class TimeSeries:
         )
 
     def min(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.min()` for deterministic series."""
         return self.pd_dataframe(copy=False).min(
@@ -2490,7 +2490,7 @@ class TimeSeries:
         )
 
     def max(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.max()` for deterministic series."""
         return self.pd_dataframe(copy=False).max(
