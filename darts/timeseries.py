@@ -303,7 +303,7 @@ class TimeSeries:
     @classmethod
     def from_csv(
         cls,
-        filepath_or_buffer: pd._typing.FilePathOrBuffer,
+        filepath_or_buffer,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[List[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
