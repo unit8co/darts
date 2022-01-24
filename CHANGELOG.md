@@ -4,7 +4,20 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.16.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.16.1...master)
+
+## [0.16.1](https://github.com/unit8co/darts/tree/0.16.1) (2022-01-24)
+Patch release
+
+### For users of the library:
+- Fixed an incompatibility with latest version of Pandas ([#752](https://github.com/unit8co/darts/pull/752))
+- Fixed non contiguous error when using lstm_layers > 1 on gpu ([#740](https://github.com/unit8co/darts/pull/740))
+- Small improvement in type annotations in API documentation ([#744](https://github.com/unit8co/darts/pull/744))
+
+### For developers of the library:
+- Added flake8 tests to CI pipelines ([#749](https://github.com/unit8co/darts/pull/749), 
+  [#748](https://github.com/unit8co/darts/pull/748), [#745](https://github.com/unit8co/darts/pull/745))
+
 
 ## [0.16.0](https://github.com/unit8co/darts/tree/0.16.0) (2022-01-13)
 
