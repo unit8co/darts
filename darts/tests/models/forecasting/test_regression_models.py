@@ -23,7 +23,6 @@ try:
     )
     from darts.utils.data.inference_dataset import MixedCovariatesInferenceDataset
     from darts.models.forecasting.regression_model import (
-        _shift_matrices,
         _update_min_max,
     )
 
@@ -273,17 +272,6 @@ if TORCH_AVAILABLE:
             np.testing.assert_array_equal(
                 future_covariates_matrix[0].ravel(), np.arange(150, 151)
             )
-
-        def test_shift_matrices(self):
-            a = np.zeros((10, 8, 2))
-            b = np.ones((10, 3, 2))
-            a, b = _shift_matrices(a, b)
-            # last "temporal slice" of a should now contain 1s
-            np.testing.assert_array_equal(a[:, -1, :], np.ones((10, 2)))
-
-            # testing empty future_matrix
-            with self.assertRaises(ValueError):
-                a, b = _shift_matrices(a, None)
 
         def test_update_min_max(self):
             current_min = None
