@@ -19,8 +19,8 @@ class CovariateType(Enum):
 
 def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: int):
     """
-    Given two overlapping series `ts_target` and `ts_covariate` and an index point `idx` of `ts_target`, returns the matching
-    index point in `ts_covariate`, based on the ending times of the two series.
+    Given two overlapping series `ts_target` and `ts_covariate` and an index point `idx` of `ts_target`, returns the
+    matching index point in `ts_covariate`, based on the ending times of the two series.
     The indices are starting from the end of the series.
 
     This function is used to jointly slice target and covariate series in datasets. It supports both datetime and

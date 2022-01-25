@@ -170,8 +170,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
             raise_if_not(
                 len(covariate) == len(past_target),
-                f"The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
-                f"input (or output) chunk relative to the target series.",
+                "The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
+                "input (or output) chunk relative to the target series.",
             )
 
         return past_target, covariate, future_target

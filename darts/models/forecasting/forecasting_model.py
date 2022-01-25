@@ -334,8 +334,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # TODO: do we need a check here? I'd rather leave these checks to the models/datasets.
         # if covariates:
-        #     raise_if_not(series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
-        #                  'The provided covariates must be at least as long as the target series.')
+        #     raise_if_not(
+        #         series.end_time() <= covariates.end_time() and covariates.start_time() <= series.start_time(),
+        #         'The provided covariates must be at least as long as the target series.'
+        #     )
 
         # only GlobalForecastingModels support historical forecastings without retraining the model
         base_class_name = self.__class__.__base__.__name__

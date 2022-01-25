@@ -362,7 +362,7 @@ class RegressionModel(GlobalForecastingModel):
 
             raise_if(
                 X_y.shape[0] == 0,
-                f"Unable to build any training samples; target and covariate series overlap too little.",
+                "Unable to build any training samples; target and covariate series overlap too little.",
             )
 
             X, y = np.split(X_y, [df_X.shape[1]], axis=1)
