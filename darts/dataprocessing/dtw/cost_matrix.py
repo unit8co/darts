@@ -1,4 +1,4 @@
-from typing import Tuple, Dict
+from typing import Tuple
 import numpy as np
 
 from .window import Window, CRWindow
@@ -117,8 +117,8 @@ class SparseCostMatrix(CostMatrix):
 
             # TODO express only in terms of numpy operations
             for i in range(1, self.n + 1):
-                start = self.window.column_ranges[i * 2 + 0] - 1
-                end = self.window.column_ranges[i * 2 + 1] - 1
+                start = ranges[i * 2 + 0] - 1
+                end = ranges[i * 2 + 1] - 1
                 len = lengths[i]
                 offset = self.offsets[i]
 
@@ -150,7 +150,6 @@ class SparseCostMatrix(CostMatrix):
         i, j = elem
 
         start = self.column_ranges[i * 2 + 0]
-        end = self.column_ranges[i * 2 + 1]
 
         self.dense[self.offsets[i] + j - start] = value
 

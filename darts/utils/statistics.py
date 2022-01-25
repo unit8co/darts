@@ -13,7 +13,6 @@ from scipy.signal import argrelmax
 from statsmodels.tsa.seasonal import seasonal_decompose
 from statsmodels.tsa.stattools import acf, pacf, grangercausalitytests, adfuller, kpss
 
-from warnings import warn
 from darts.logging import raise_log, get_logger, raise_if_not, raise_if
 from darts import TimeSeries
 from .missing_values import fill_missing_values
@@ -70,9 +69,6 @@ def check_seasonality(
     candidates = argrelmax(r)[0]
 
     if len(candidates) == 0:
-        logger.info(
-            "The ACF has no local maximum for m < max_lag = {}.".format(max_lag)
-        )
         return False, 0
 
     if m is not None:
@@ -338,8 +334,9 @@ def stationarity_test_kpss(
         'c' : The data is stationary around a constant (default).
         'ct' : The data is stationary around a trend.
     nlags
-       Indicates the number of lags to be used. If 'auto' (default), lags is calculated using the data-dependent method of Hobijn et al. (1998).
-       See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to 'legacy', uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
+       Indicates the number of lags to be used. If 'auto' (default), lags is calculated using the data-dependent method
+       of Hobijn et al. (1998). See also Andrews (1991), Newey & West (1994), and Schwert (1989). If set to 'legacy',
+       uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).
 
     Returns
     -------
@@ -469,7 +466,8 @@ def granger_causality_tests(
 
     if not ts_cause.has_same_time_as(ts_effect):
         logger.warning(
-            "ts_cause and ts_effect time series have different time index. We will slice-intersect ts_cause with ts_effect."
+            "ts_cause and ts_effect time series have different time index. "
+            "We will slice-intersect ts_cause with ts_effect."
         )
 
     ts_cause = ts_cause.slice_intersect(ts_effect)
@@ -477,11 +475,11 @@ def granger_causality_tests(
 
     if not stationarity_tests(ts_cause):
         logger.warning(
-            f"ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
+            "ts_cause doesn't seem to be stationary. Please review granger causality validity in your problem context."
         )
     if not stationarity_tests(ts_effect):
         logger.warning(
-            f"ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
+            "ts_effect doesn't seem to be stationary. Please review granger causality validity in your problem context."
         )
 
     return grangercausalitytests(
@@ -505,28 +503,32 @@ def plot_acf(
 ) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+    Uses :func:`statsmodels.tsa.stattools.acf` [1]_
 
     Parameters
     ----------
-    ts : TimeSeries
+    ts
         The TimeSeries whose ACF should be plotted.
-    m : int, optional
+    m
         Optionally, a time lag to highlight on the plot.
-    max_lag : int, default: 24
+    max_lag
         The maximal lag order to consider.
-    alpha : float, default: 0.05
+    alpha
         The confidence interval to display.
-    bartlett_confint : bool, default: True
+    bartlett_confint
         The boolean value indicating whether the confidence interval should be
         calculated using Bartlett's formula. If set to True, the confidence interval
         can be used in the model identification stage for fitting ARIMA models.
         If set to False, the confidence interval can be used to test for randomness
         (i.e. there is no time dependence in the data) of the data.
-    fig_size : tuple of int, default: (10, 5)
+    fig_size
         The size of the figure to be displayed.
-    axis : plt.axis, optional
+    axis
         Optionally, an axis object to plot the ACF on.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html
     """
 
     ts._assert_univariate()
@@ -587,17 +589,17 @@ def plot_pacf(
 ) -> None:
     """
     Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
-    This function uses the `Statsmodels module <https://github.com/statsmodels/statsmodels>`_.
+    Uses :func:`statsmodels.tsa.stattools.pacf` [1]_
 
     Parameters
     ----------
-    ts : TimeSeries
+    ts
         The TimeSeries whose ACF should be plotted.
-    m : int, optional
+    m
         Optionally, a time lag to highlight on the plot.
-    max_lag : int, default: 24
+    max_lag
         The maximal lag order to consider.
-    method : str, default: "ywadjusted"
+    method
         The method to be used for the PACF calculation.
         - | "yw" or "ywadjusted" : Yule-Walker with sample-size adjustment in
           | denominator for acovf. Default.
@@ -611,12 +613,16 @@ def plot_pacf(
           correction.
         - "ldb" or "ldbiased" : Levinson-Durbin recursion without bias
           correction.
-    alpha : float, default: 0.05
+    alpha
         The confidence interval to display.
-    fig_size : tuple of int, default: (10, 5)
+    fig_size
         The size of the figure to be displayed.
-    axis : plt.axis, optional
+    axis
         Optionally, an axis object to plot the ACF on.
+
+    References
+    ----------
+    .. [1] https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html
     """
 
     ts._assert_univariate()
@@ -762,7 +768,7 @@ def plot_residuals_analysis(
         Univariate TimeSeries instance representing residuals.
     num_bins
         Optionally, an integer value determining the number of bins in the histogram.
-    fill_nan:
+    fill_nan
         A boolean value indicating whether NaN values should be filled in the residuals.
     """
 

@@ -178,10 +178,10 @@ INTEGER_INDEX_ATTRIBUTES = ["absolute", "relative"]
 
 
 class CyclicTemporalEncoder(SingleEncoder):
-    """CyclicTemporalEncoder: Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`."""
-
     def __init__(self, index_generator: CovariateIndexGenerator, attribute: str):
         """
+        Cyclic index encoding for `TimeSeries` that have a time index of type `pd.DatetimeIndex`.
+
         Parameters
         ----------
         index_generator
@@ -682,6 +682,7 @@ class SequentialEncoder(Encoder):
 
         Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
         objects:
+
         * The `encoder_id` is extracted as follows:
             str(encoder_kw) + str(temporal_kw) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
             The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.
@@ -1010,6 +1011,7 @@ class SequentialEncoder(Encoder):
 
             Tuples of `(encoder_id, attribute)` are extracted from `add_encoders` to instantiate the `SingleEncoder`
             objects:
+
             * The `encoder_id` is extracted as follows:
                 str(encoder_kw) + str(temporal_kw) -> 'cyclic' + 'past' -> `encoder_id` = 'cyclic_past'
                 The `encoder_id` is used to map the parameters with the corresponding `SingleEncoder` objects.
@@ -1030,7 +1032,7 @@ class SequentialEncoder(Encoder):
 
         # check input for invalid encoder types
         invalid_encoders = [
-            enc for enc in params if not enc in ENCODER_KEYS + TRANSFORMER_KEYS
+            enc for enc in params if enc not in ENCODER_KEYS + TRANSFORMER_KEYS
         ]
         raise_if(
             len(invalid_encoders) > 0,

@@ -207,7 +207,8 @@ class TaylorDataset(DatasetLoaderCSV):
 
     References
     ----------
-    .. [1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing. Journal of the Operational Research Society, 54, 799-805.
+    .. [1] Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.
+           Journal of the Operational Research Society, 54, 799-805.
 
     .. [2] https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor
     """

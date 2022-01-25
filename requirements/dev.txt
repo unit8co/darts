@@ -6,5 +6,5 @@ testfixtures==6.17.1
 pytest-cov
 
 # linters
-flake8
+flake8==4.0.1
 black[jupyter]==21.12b0

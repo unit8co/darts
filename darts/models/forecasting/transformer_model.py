@@ -305,9 +305,9 @@ class TransformerModel(
             Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
@@ -331,8 +331,8 @@ class TransformerModel(
 
         References
         ----------
-        .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser, and
-        Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
+        .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
+        and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
         pages 6000-6010. https://arxiv.org/abs/1706.03762.
 
         Notes

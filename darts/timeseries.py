@@ -2,7 +2,7 @@
 Timeseries
 ----------
 
-``TimeSeries`` is the main class in `darts`. 
+``TimeSeries`` is the main class in `darts`.
 It represents a univariate or multivariate time series, deterministic or stochastic.
 
 The values are stored in an array of shape `(time, dimensions, samples)`, where
@@ -23,7 +23,7 @@ import pandas as pd
 import numpy as np
 import xarray as xr
 import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union, TextIO, Sequence
+from typing import Tuple, Optional, Callable, Any, List, Union, Sequence
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
@@ -186,7 +186,7 @@ class TimeSeries:
             self._freq = 1
             self._freq_str = None
 
-    """ 
+    """
     Factory Methods
     ===============
     """
@@ -303,7 +303,7 @@ class TimeSeries:
     @classmethod
     def from_csv(
         cls,
-        filepath_or_buffer: pd._typing.FilePathOrBuffer,
+        filepath_or_buffer,
         time_col: Optional[str] = None,
         value_cols: Optional[Union[List[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
@@ -759,7 +759,7 @@ class TimeSeries:
         """The duration of this time series (as a time delta or int)."""
         return self._time_index[-1] - self._time_index[0]
 
-    """ 
+    """
     Some asserts
     =============
     """
@@ -1653,7 +1653,9 @@ class TimeSeries:
         max_slice_start = None
         max_slice_end = None
         for index, row in relevant_gaps.iterrows():
-            size = row["gap_start"] - curr_slice_start - self._freq
+            # evaluate size of the current slice. the slice ends one time step before row['gap_start']
+            curr_slice_end = row["gap_start"] - self.freq
+            size = curr_slice_end - curr_slice_start
             if size > max_size:
                 max_size = size
                 max_slice_start = curr_slice_start
@@ -2440,7 +2442,7 @@ class TimeSeries:
     """
 
     def mean(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.mean()` for deterministic series."""
         return self.pd_dataframe(copy=False).mean(
@@ -2448,7 +2450,7 @@ class TimeSeries:
         )
 
     def var(
-        self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.var()` for deterministic series."""
         return self.pd_dataframe(copy=False).var(
@@ -2456,7 +2458,7 @@ class TimeSeries:
         )
 
     def std(
-        self, axis=None, skipna=None, level=None, ddof=1, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.std()` for deterministic series."""
         return self.pd_dataframe(copy=False).std(
@@ -2464,7 +2466,7 @@ class TimeSeries:
         )
 
     def skew(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.skew()` for deterministic series."""
         return self.pd_dataframe(copy=False).skew(
@@ -2472,7 +2474,7 @@ class TimeSeries:
         )
 
     def kurtosis(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.kurtosis()` for deterministic series."""
         return self.pd_dataframe(copy=False).kurtosis(
@@ -2480,7 +2482,7 @@ class TimeSeries:
         )
 
     def min(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.min()` for deterministic series."""
         return self.pd_dataframe(copy=False).min(
@@ -2488,7 +2490,7 @@ class TimeSeries:
         )
 
     def max(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
+        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
     ) -> float:
         """Simple wrapper around :func:`pd.DataFrame.max()` for deterministic series."""
         return self.pd_dataframe(copy=False).max(
@@ -2592,7 +2594,7 @@ class TimeSeries:
 
         raise_if(
             len(xa) <= 2,
-            f"Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
+            "Input time series must be of (length>=3) when fill_missing_dates=True and freq=None.",
             logger,
         )
 

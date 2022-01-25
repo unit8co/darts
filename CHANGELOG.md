@@ -4,7 +4,44 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.15.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.16.1...master)
+
+## [0.16.1](https://github.com/unit8co/darts/tree/0.16.1) (2022-01-24)
+Patch release
+
+### For users of the library:
+- Fixed an incompatibility with latest version of Pandas ([#752](https://github.com/unit8co/darts/pull/752))
+- Fixed non contiguous error when using lstm_layers > 1 on gpu ([#740](https://github.com/unit8co/darts/pull/740))
+- Small improvement in type annotations in API documentation ([#744](https://github.com/unit8co/darts/pull/744))
+
+### For developers of the library:
+- Added flake8 tests to CI pipelines ([#749](https://github.com/unit8co/darts/pull/749), 
+  [#748](https://github.com/unit8co/darts/pull/748), [#745](https://github.com/unit8co/darts/pull/745))
+
+
+## [0.16.0](https://github.com/unit8co/darts/tree/0.16.0) (2022-01-13)
+
+### For users of the library:
+
+**Improved**
+- The [documentation page](https://unit8co.github.io/darts/index.html) has been revamped and now contains
+  a brand new Quickstart guide, as well as a User Guide section, which will be populated over time.
+- The [API documentation](https://unit8co.github.io/darts/generated_api/darts.html) has been revamped and improved,
+  notably using `numpydoc`.
+- The datasets building procedure has been improved in `RegressionModel`, which yields dramatic speed improvements.
+
+**Added**
+- The `KalmanFilter` can now do system identification using `fit()` (using [nfoursid](https://github.com/spmvg/nfoursid)).
+
+**Fixed**
+- Catch a [potentially problematic case](https://github.com/unit8co/darts/issues/724) in ensemble models.
+- Fixed support for `ReduceLROnPlateau` scheduler.
+
+
+### For developers of the library:
+- We have switched to [black](https://black.readthedocs.io/en/stable/) for code formatting (this is checked
+  by the CI pipeline).
+
 
 ## [0.15.0](https://github.com/unit8co/darts/tree/0.15.0) (2021-12-24)
 ### For users of the library:

@@ -378,26 +378,26 @@ def autoregressive_timeseries(
 
     Parameters
     ----------
-    coef : list of float
+    coef
         The autoregressive coefficients used for calculating the next time step.
         series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + ... + coef[0] * series[t-len(coef)]
-    start_values : list of float, default: np.ones(len(coef))
+    start_values
         The starting values used for calculating the first few values for which no lags exist yet.
         series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + ... + coef[0] * starting_values[0]
-    start : pd.Timestamp or int, default: pd.Timestamp('2000-01-01')
+    start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
         DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
         either `length` or `end`.
-    end : pd.Timestamp or int, optional
+    end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
         set, `end` must be of same type as `start`. Else, it can be either a pandas Timestamp or an integer.
-    length : int, optional
+    length
         Optionally, the length of the returned index. Works only with either `start` or `end`.
-    freq : str, default: 'D'
+    freq
         The time difference between two adjacent entries in the returned TimeSeries. Only effective if `start` is a
         pandas Timestamp. A DateOffset alias is expected; see
         `docs <https://pandas.pydata.org/pandas-docs/stable/user_guide/TimeSeries.html#dateoffset-objects>`_.
-    column_name : str, default: 'autoregressive'
+    column_name
         Optionally, the name of the value column for the returned TimeSeries
 
     Returns
@@ -573,8 +573,9 @@ def datetime_attribute_timeseries(
         Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day", "hour", "minute", "second".
-        See all available attributes in https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex .
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
+        "hour", "minute", "second". See all available attributes in
+        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -632,7 +633,7 @@ def datetime_attribute_timeseries(
         "week_of_year": 52,
     }
 
-    if not attribute in ["week", "weekofyear", "week_of_year"]:
+    if attribute not in ["week", "weekofyear", "week_of_year"]:
         values = getattr(time_index, attribute)
     else:
         values = (

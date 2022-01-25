@@ -348,7 +348,7 @@ class _TFTModule(nn.Module):
         input dimensions: (n_samples, n_time_steps, n_variables)
         """
 
-        dim_samples, dim_time, dim_variable, dim_loss = 0, 1, 2, 3
+        dim_samples, dim_time, dim_variable = 0, 1, 2
         past_target, past_covariates, historic_future_covariates, future_covariates = x
 
         batch_size = past_target.shape[dim_samples]
@@ -450,12 +450,13 @@ class _TFTModule(nn.Module):
                 device=past_target.device,
             )
 
-            # this is only to interpret the output
-            static_covariate_var = torch.zeros(
-                (past_target.shape[0], 0),
-                dtype=past_target.dtype,
-                device=past_target.device,
-            )
+            # # TODO: implement below when static covariates are supported
+            # # this is only to interpret the output
+            # static_covariate_var = torch.zeros(
+            #     (past_target.shape[0], 0),
+            #     dtype=past_target.dtype,
+            #     device=past_target.device,
+            # )
 
         if future_covariates is None and static_covariates is None:
             raise NotImplementedError("make zero tensor if future covariates is None")
@@ -482,11 +483,15 @@ class _TFTModule(nn.Module):
 
         # LSTM
         # calculate initial state
-        input_hidden = self.static_context_hidden_encoder_grn(static_embedding).expand(
-            self.lstm_layers, -1, -1
+        input_hidden = (
+            self.static_context_hidden_encoder_grn(static_embedding)
+            .expand(self.lstm_layers, -1, -1)
+            .contiguous()
         )
-        input_cell = self.static_context_cell_encoder_grn(static_embedding).expand(
-            self.lstm_layers, -1, -1
+        input_cell = (
+            self.static_context_cell_encoder_grn(static_embedding)
+            .expand(self.lstm_layers, -1, -1)
+            .contiguous()
         )
 
         # run local lstm encoder
@@ -670,9 +675,9 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             Optionally, some keyword arguments for the PyTorch optimizer.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
