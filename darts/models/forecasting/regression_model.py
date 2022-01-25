@@ -261,7 +261,7 @@ class RegressionModel(GlobalForecastingModel):
         return last_valid_pred_time
 
     def _create_lagged_data(
-        self, target_series, past_covariates, future_covariates, max_samples_per_ts
+            self, target_series, past_covariates, future_covariates, max_samples_per_ts
     ):
         """
         Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
@@ -292,11 +292,11 @@ class RegressionModel(GlobalForecastingModel):
         # iterate over series
         for idx, target_ts in enumerate(target_series):
             covariates = [
-                (past_covariates[idx].pd_dataframe(), self.lags_past_covariates)
+                (past_covariates[idx].pd_dataframe(copy=False), self.lags_past_covariates)
                 if past_covariates
                 else (None, None),
                 (
-                    future_covariates[idx].pd_dataframe(),
+                    future_covariates[idx].pd_dataframe(copy=False),
                     (
                         self.lags_historical_covariates
                         if self.lags_historical_covariates
@@ -313,14 +313,19 @@ class RegressionModel(GlobalForecastingModel):
             ]
 
             df_X = []
-            df_y = target_ts.pd_dataframe()
+            df_y = []
+            df_target = target_ts.pd_dataframe(copy=False)
 
-            # target lags
+            # y: output chunk length lags
+            for future_target_lag in range(self.output_chunk_length):
+                df_y.append(df_target.shift(-future_target_lag))
+
+            # X: target lags
             if self.lags:
                 for lag in self.lags:
-                    df_X.append(df_y.shift(-lag))
+                    df_X.append(df_target.shift(-lag))
 
-            # covariate lags
+            # X: covariate lags
             for df_cov, lags in covariates:
                 if lags:
                     for lag in lags:
@@ -328,6 +333,7 @@ class RegressionModel(GlobalForecastingModel):
 
             # combine lags
             df_X = pd.concat(df_X, axis=1)
+            df_y = pd.concat(df_y, axis=1)
             df_X_y = pd.concat([df_X, df_y], axis=1)
             X_y = df_X_y.dropna().values
 
@@ -337,7 +343,8 @@ class RegressionModel(GlobalForecastingModel):
 
             raise_if(
                 X_y.shape[0] == 0,
-                "Unable to build any training samples; target and covariate series overlap too little.",
+                f"Unable to build any training samples; the {idx}th target and the corresponding "
+                f"covariate series overlap too little.",
             )
 
             X, y = np.split(X_y, [df_X.shape[1]], axis=1)
