@@ -455,9 +455,14 @@ class RegressionModel(GlobalForecastingModel):
 
         self.input_dim = series_dim + covariates_dim
 
-        # if series is multivariate wrap model with MultiOutputRegressor
-        if not series[0].is_univariate:
-            self.model = MultiOutputRegressor(self.model, n_jobs=1)
+        # if multi-target regression
+        if not series[0].is_univariate or self.output_chunk_length > 1:
+            # check whether model supports it
+            if not (callable(getattr(self.model, '_get_tags', None)) and isinstance(self.model._get_tags(),
+                                                                                    dict) and self.model._get_tags().get(
+                'multioutput', False)):
+                # if not, wrap model with multioutputregressor
+                self.model = MultiOutputRegressor(self.model, n_jobs=1)
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
