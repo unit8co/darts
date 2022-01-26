@@ -34,6 +34,7 @@ import datetime
 
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
+from darts.utils.early_stopping import EarlyStopping
 from darts.utils.torch import random_method
 
 from darts.utils.data.training_dataset import (
@@ -407,6 +408,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
+        patience: Optional[int] = 5,
         num_loader_workers: int = 0,
     ) -> None:
         """Fit/train the model on one or multiple series.
@@ -453,6 +455,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             large number of training samples. This parameter upper-bounds the number of training samples per time
             series (taking only the most recent samples in each series). Leaving to None does not apply any
             upper bound.
+        patience
+            Optionally, change the default number of `nr_epochs_val_period` to wait before stopping the training early.
+            Early stop will be used if set to None.
         num_loader_workers
             Optionally, an integer specifying the `num_workers` to use in PyTorch ``DataLoader`` instances,
             both for the training and validation loaders (if any).
@@ -544,7 +549,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         logger.info("Train dataset contains {} samples.".format(len(train_dataset)))
 
         self.fit_from_dataset(
-            train_dataset, val_dataset, verbose, epochs, num_loader_workers
+            train_dataset, val_dataset, verbose, patience, epochs, num_loader_workers
         )
 
     @property
@@ -579,6 +584,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_dataset: TrainingDataset,
         val_dataset: Optional[TrainingDataset] = None,
         verbose: bool = False,
+        patience: int = 5,
         epochs: int = 0,
         num_loader_workers: int = 0,
     ) -> None:
@@ -604,6 +610,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs
             If specified, will train the model for `epochs` (additional) epochs, irrespective of what `n_epochs`
             was provided to the model constructor.
+        patience
+            Optionally, change the default number of `nr_epochs_val_period` to wait before stopping the training early.
+            Early stop will be used if set to `None`.
         num_loader_workers
             Optionally, an integer specifying the `num_workers` to use in PyTorch ``DataLoader`` instances,
             both for the training and validation loaders (if any).
@@ -686,7 +695,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
         # Train model
-        self._train(train_loader, val_loader, tb_writer, verbose, train_num_epochs)
+        self._train(
+            train_loader, val_loader, tb_writer, verbose, patience, train_num_epochs
+        )
 
         # Close tensorboard writer
         if tb_writer is not None:
@@ -1005,6 +1016,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_loader: Optional[DataLoader],
         tb_writer: Optional[SummaryWriter],
         verbose: bool,
+        patience: Optional[int],
         epochs: int = 0,
     ) -> None:
         """
@@ -1012,6 +1024,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         :param train_loader: the training data loader feeding the training data and targets
         :param val_loader: optionally, a validation set loader
         :param tb_writer: optionally, a TensorBoard writer
+        :param patience: optionally, set the number of `nr_epochs_val_period` to wait for before stopping the training
         :param epochs: value >0 means we're retraining model
         """
 
@@ -1021,6 +1034,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             range(self.total_epochs, self.total_epochs + epochs),
             verbose=verbose,
         )
+
+        if patience is not None:
+            early_stopping = EarlyStopping(patience=patience, verbose=verbose)
+        else:
+            early_stopping = None
 
         for epoch in iterator:
             total_loss = 0
@@ -1090,6 +1108,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                                 ),
                                 epoch=epoch,
                             )
+
+                    if early_stopping:
+                        early_stopping(validation_loss)
+
+                        if early_stopping.early_stop:
+                            print("Early stopping")
+                            break
 
                     if verbose:
                         print(
