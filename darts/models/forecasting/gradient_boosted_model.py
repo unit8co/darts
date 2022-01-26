@@ -44,7 +44,7 @@ class LightGBMModel(RegressionModel):
             of integers with lags is required.
         output_chunk_length
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
-            horizon `n` used in `predict()`. However, setting the output_chunk_length equal to the forecast horizon may
+            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
