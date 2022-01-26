@@ -60,9 +60,7 @@ class LightGBMModel(RegressionModel):
         )
 
     def __str__(self):
-        return "LGBModel(lags={}, lags_past={}, lags_future={})".format(
-            self.lags, self.lags_past_covariates, self.lags_future_covariates
-        )
+        return f"LGBModel(lags={self.lags})"
 
     def fit(
         self,

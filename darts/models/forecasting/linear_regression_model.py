@@ -56,8 +56,5 @@ class LinearRegressionModel(RegressionModel):
 
     def __str__(self):
         return (
-            f"LinearRegression(lags={self.lags}, "
-            f"lags_past_covariates={self.lags_past_covariates}, "
-            f"lags_historical_covariates={self.lags_historical_covariates}, "
-            f"lags_future_covariates={self.lags_future_covariates})"
+            f"LinearRegression(lags={self.lags})"
         )
