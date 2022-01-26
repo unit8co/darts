@@ -28,6 +28,7 @@ class RandomForest(RegressionModel):
         lags: Union[int, list] = None,
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
+        output_chunk_length: int = 1,
         n_estimators: Optional[int] = 100,
         max_depth: Optional[int] = None,
         **kwargs,
@@ -48,6 +49,10 @@ class RandomForest(RegressionModel):
             given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
+        output_chunk_length
+            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
+            be useful if the covariates don't extend far enough into the future.
         n_estimators : int
             The number of trees in the forest.
         max_depth : int
@@ -66,6 +71,7 @@ class RandomForest(RegressionModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
             model=RandomForestRegressor(**kwargs),
         )
 
