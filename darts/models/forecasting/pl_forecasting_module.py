@@ -338,7 +338,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
 
         n_targets = past_target.shape[dim_component]
         n_past_covs = (
-            past_covariates.shape[dim_component] if not past_covariates is None else 0
+            past_covariates.shape[dim_component] if past_covariates is not None else 0
         )
 
         input_past = torch.cat(
