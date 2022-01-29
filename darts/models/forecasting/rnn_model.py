@@ -12,7 +12,6 @@ from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import PLDualCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
-from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -114,7 +113,6 @@ class _RNNModule(PLDualCovariatesModule):
         )
         return self(model_input)[0]
 
-    @random_method
     def _produce_predict_output(self, x, last_hidden_state=None):
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
@@ -182,7 +180,6 @@ class _RNNModule(PLDualCovariatesModule):
 
 
 class RNNModel(DualCovariatesTorchModel):
-    @random_method
     def __init__(
         self,
         model: Union[str, nn.Module] = "RNN",

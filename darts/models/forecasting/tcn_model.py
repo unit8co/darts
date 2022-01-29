@@ -10,7 +10,6 @@ import torch.nn.functional as F
 from typing import Optional, Sequence, Tuple
 from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
-from darts.utils.torch import random_method
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
@@ -252,7 +251,6 @@ class _TCNModule(PLPastCovariatesModule):
 
 
 class TCNModel(PastCovariatesTorchModel):
-    @random_method
     def __init__(
         self,
         input_chunk_length: int,

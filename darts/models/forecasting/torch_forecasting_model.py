@@ -113,7 +113,7 @@ def _get_checkpoint_fname(work_dir, model_name, best=False):
 
 
 class TorchForecastingModel(GlobalForecastingModel, ABC):
-    # TODO: add is_stochastic & reset methods
+    @random_method
     def __init__(
         self,
         input_chunk_length: int,
@@ -345,8 +345,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         get_params.remove("self")
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
-    @staticmethod
-    def _extract_pl_module_params(**kwargs):
+    def _extract_pl_module_params(self, **kwargs):
         """Extract params from model creation to set up PLForecastingModule (the actual torch.nn.Module)"""
         get_params = list(
             inspect.signature(PLForecastingModule.__init__).parameters.keys()
@@ -957,6 +956,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         return predictions[0] if called_with_single_series else predictions
 
+    @random_method
     def predict_from_dataset(
         self,
         n: int,

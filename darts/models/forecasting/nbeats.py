@@ -12,7 +12,6 @@ import torch.nn as nn
 from darts.logging import get_logger, raise_log, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -454,7 +453,6 @@ class _NBEATSModule(PLPastCovariatesModule):
 
 
 class NBEATSModel(PastCovariatesTorchModel):
-    @random_method
     def __init__(
         self,
         input_chunk_length: int,

@@ -5,13 +5,12 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 from joblib import Parallel, delayed
 from typing import Any, Optional, Dict, Tuple, Sequence
 from abc import ABC, abstractmethod
+
 import torch
-from torch import Tensor
 import torch.nn as nn
 
 from darts.timeseries import TimeSeries
 from darts.utils.timeseries_generation import _build_forecast_series
-
 from darts.utils.likelihood_models import Likelihood
 from darts.logging import get_logger, raise_log, raise_if
 
@@ -71,7 +70,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer.
         """
-
         super(PLForecastingModule, self).__init__()
 
         raise_if(
@@ -273,13 +271,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return optimizer
 
     @abstractmethod
-    def _produce_train_output(self, input_batch: Tuple) -> Tensor:
+    def _produce_train_output(self, input_batch: Tuple) -> torch.Tensor:
         pass
 
     @abstractmethod
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
-    ) -> Tensor:
+    ) -> torch.Tensor:
         """
         In charge of applying the recurrent logic for non-recurrent models.
         Should be overwritten by recurrent models.
@@ -412,14 +410,14 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
 class PLFutureCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
-    ) -> Tensor:
+    ) -> torch.Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")
 
 
 class PLDualCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
-    ) -> Tensor:
+    ) -> torch.Tensor:
         raise NotImplementedError(
             "TBD: The only DualCovariatesModel is an RNN with a specific implementation."
         )
@@ -579,5 +577,5 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
 class PLSplitCovariatesModule(PLForecastingModule, ABC):
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
-    ) -> Tensor:
+    ) -> torch.Tensor:
         raise NotImplementedError("TBD: Darts doesn't contain such a model yet.")

@@ -11,7 +11,6 @@ from typing import List, Optional, Union, Tuple
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
-from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -129,7 +128,6 @@ class _BlockRNNModule(PLPastCovariatesModule):
 
 
 class BlockRNNModel(PastCovariatesTorchModel):
-    @random_method
     def __init__(
         self,
         input_chunk_length: int,
