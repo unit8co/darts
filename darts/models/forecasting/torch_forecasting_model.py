@@ -228,9 +228,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         suppress_lightning_warnings(suppress_all=not show_warnings)
 
         # We will fill these dynamically, upon first call of fit_from_dataset():
-        self.model = None
-        self.train_sample = None
-        self.output_dim = None
+        self.model: Optional[PLForecastingModule] = None
+        self.train_sample: Optional[Tuple] = None
+        self.output_dim: Optional[int] = None
 
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length
@@ -244,7 +244,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # by default models do not use encoders
         self.add_encoders = add_encoders
-        self.encoders = None
+        self.encoders: Optional[SequentialEncoder] = None
 
         # get model name and work dir
         if model_name is None:
@@ -332,9 +332,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             self.trainer_params = dict(self.trainer_params, **pl_trainer_kwargs_copy)
 
-        # set up pytorch lightning trainer
-        self.trainer = None
-        self.load_ckpt_path = None
+        # pytorch lightning trainer will be created at training time
+        self.trainer: Optional[pl.Trainer] = None
+        self.load_ckpt_path: Optional[str] = None
 
     @staticmethod
     def _extract_torch_model_params(**kwargs):

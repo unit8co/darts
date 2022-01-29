@@ -9,7 +9,6 @@ from functools import wraps
 
 from sklearn.utils import check_random_state
 from torch.random import fork_rng, manual_seed
-from pytorch_lightning import seed_everything
 from numpy.random import randint
 
 from darts.logging import raise_if_not, get_logger
