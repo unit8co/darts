@@ -196,6 +196,10 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
 
 
 def suppress_lightning_warnings(suppress_all: bool = False):
-    warnings.filterwarnings("ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*")
+    warnings.filterwarnings(
+        "ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*"
+    )
     if suppress_all:
-        warnings.filterwarnings("ignore", ".*does not have many workers which may be a bottleneck.*")
+        warnings.filterwarnings(
+            "ignore", ".*does not have many workers which may be a bottleneck.*"
+        )
