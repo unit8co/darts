@@ -336,9 +336,9 @@ class TCNModel(PastCovariatesTorchModel):
             Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.

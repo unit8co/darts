@@ -164,9 +164,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of epochs over which to train the model.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
@@ -582,7 +582,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates, future_covariates=future_covariates
         )
 
-        wrap_fn = lambda ts: [ts] if isinstance(ts, TimeSeries) else ts
+        def wrap_fn(
+            ts: Union[TimeSeries, Sequence[TimeSeries]]
+        ) -> Sequence[TimeSeries]:
+            return [ts] if isinstance(ts, TimeSeries) else ts
+
         series = wrap_fn(series)
         past_covariates = wrap_fn(past_covariates)
         future_covariates = wrap_fn(future_covariates)
