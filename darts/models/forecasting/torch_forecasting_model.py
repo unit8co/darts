@@ -19,6 +19,7 @@ This file contains several abstract classes:
 
 import os
 import shutil
+import inspect
 import datetime
 import numpy as np
 from glob import glob
@@ -38,6 +39,7 @@ from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.logging import (
     raise_if_not,
     get_logger,
@@ -337,39 +339,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @staticmethod
     def _extract_torch_model_params(**kwargs):
         """extract params from model creation to set up TorchForecastingModels"""
-        get_params = [
-            "input_chunk_length",
-            "output_chunk_length",
-            "loss_fn",
-            "likelihood",
-            "batch_size",
-            "n_epochs",
-            "model_name",
-            "work_dir",
-            "log_tensorboard",
-            "nr_epochs_val_period",
-            "torch_device_str",
-            "force_reset",
-            "save_checkpoints",
-            "add_encoders",
-            "random_state",
-            "pl_trainer_kwargs",
-        ]
+        get_params = list(
+            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
+        )
+        get_params.remove("self")
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
     @staticmethod
     def _extract_pl_module_params(**kwargs):
-        """Extract params from model creation to set up pl.LightningModule (the actual torch.nn.Module)"""
-        get_params = [
-            "input_chunk_length",
-            "output_chunk_length",
-            "loss_fn",
-            "likelihood",
-            "optimizer_cls",
-            "optimizer_kwargs",
-            "lr_scheduler_cls",
-            "lr_scheduler_kwargs",
-        ]
+        """Extract params from model creation to set up PLForecastingModule (the actual torch.nn.Module)"""
+        get_params = list(
+            inspect.signature(PLForecastingModule.__init__).parameters.keys()
+        )
+        get_params.remove("self")
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
     def _create_save_dirs(self):
