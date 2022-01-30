@@ -97,24 +97,26 @@ if TORCH_AVAILABLE:
                 # TESTING SINGLE INT
                 # testing lags
                 model_instance = model(lags=5)
-                self.assertEqual(model_instance.lags.get('target'), [-5, -4, -3, -2, -1])
+                self.assertEqual(
+                    model_instance.lags.get("target"), [-5, -4, -3, -2, -1]
+                )
                 # testing lags_past_covariates
                 model_instance = model(lags=None, lags_past_covariates=3)
-                self.assertEqual(model_instance.lags.get('past'), [-3, -2, -1])
+                self.assertEqual(model_instance.lags.get("past"), [-3, -2, -1])
                 # testing lags_future covariates
                 model_instance = model(lags=None, lags_future_covariates=(3, 5))
                 self.assertEqual(
-                    model_instance.lags.get('future'), [-3, -2, -1, 0, 1, 2, 3, 4]
+                    model_instance.lags.get("future"), [-3, -2, -1, 0, 1, 2, 3, 4]
                 )
 
                 # TESTING LIST of int
                 # lags
                 values = [-5, -3, -1]
                 model_instance = model(lags=values)
-                self.assertEqual(model_instance.lags.get('target'), values)
+                self.assertEqual(model_instance.lags.get("target"), values)
                 # testing lags_past_covariates
                 model_instance = model(lags_past_covariates=values)
-                self.assertEqual(model_instance.lags.get('past'), values)
+                self.assertEqual(model_instance.lags.get("past"), values)
                 # testing lags_future_covariates
 
                 with self.assertRaises(ValueError):
@@ -154,11 +156,13 @@ if TORCH_AVAILABLE:
                 lags_future_covariates=self.lags_future_covariates_1,
             )
 
+            max_samples_per_ts = 17
+
             training_samples, training_labels = model_instance._create_lagged_data(
                 target_series=self.target_series,
                 past_covariates=self.past_covariates,
                 future_covariates=self.future_covariates,
-                max_samples_per_ts=None,
+                max_samples_per_ts=max_samples_per_ts,
             )
 
             # checking number of dimensions
@@ -167,6 +171,7 @@ if TORCH_AVAILABLE:
                 len(training_labels.shape), 2
             )  # samples, components (multivariate)
             self.assertEqual(training_samples.shape[0], training_labels.shape[0])
+            self.assertEqual(training_samples.shape[0], max_samples_per_ts)
             self.assertEqual(
                 training_samples.shape[1],
                 len(self.lags_1)
@@ -174,12 +179,12 @@ if TORCH_AVAILABLE:
                 + len(self.lags_future_covariates_1),
             )
 
-            # checking column order lags | lags_past_cov | lags_future_cov
+            # check last sample
             self.assertListEqual(
-                list(training_samples[0, :]),
-                [0, 2, 4, 51, 51.5, 53, 53.5, 104, 105, 108],
+                list(training_samples[-1, :]),
+                [44, 46, 48, 95, 95.5, 97, 97.5, 148, 149, 152],
             )
-            self.assertEqual(training_labels[0], 5)
+            self.assertEqual(training_labels[-1], 49)
 
         def test_prediction_data_creation(self):
             model_instance = RegressionModel(
@@ -279,7 +284,9 @@ if TORCH_AVAILABLE:
                     series=train_y, past_covariates=self.ts_sum1.stack(self.ts_sum1)
                 )
 
-                self.assertEqual(model_instance.input_dim, 3)
+                self.assertEqual(
+                    model_instance.input_dim, {"target": 1, "past": 2, "future": None}
+                )
 
                 with self.assertRaises(ValueError):
                     prediction = model_instance.predict(n=len(test_y) + 2)
@@ -302,19 +309,19 @@ if TORCH_AVAILABLE:
 
                     model_instance = model(lags=12)
                     model_instance.fit(series=series)
-                    self.assertEqual(model_instance.lags.get('past'), None)
+                    self.assertEqual(model_instance.lags.get("past"), None)
 
                     model_instance = model(lags=12, lags_past_covariates=12)
                     model_instance.fit(series=series, past_covariates=self.ts_cov1)
-                    self.assertEqual(len(model_instance.lags.get('past')), 12)
+                    self.assertEqual(len(model_instance.lags.get("past")), 12)
 
                     model_instance = model(lags=12, lags_future_covariates=(0, 1))
                     model_instance.fit(series=series, future_covariates=self.ts_cov1)
-                    self.assertEqual(len(model_instance.lags.get('future')), 1)
+                    self.assertEqual(len(model_instance.lags.get("future")), 1)
 
                     model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6])
                     model_instance.fit(series=series, past_covariates=self.ts_cov1)
-                    self.assertEqual(len(model_instance.lags.get('past')), 3)
+                    self.assertEqual(len(model_instance.lags.get("past")), 3)
 
                     model_instance = model(
                         lags=12,
@@ -326,7 +333,7 @@ if TORCH_AVAILABLE:
                         past_covariates=self.ts_cov1,
                         future_covariates=self.ts_cov1,
                     )
-                    self.assertEqual(len(model_instance.lags.get('past')), 3)
+                    self.assertEqual(len(model_instance.lags.get("past")), 3)
 
         def helper_test_models_accuracy(self, series, past_covariates, min_rmse):
             # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
@@ -396,7 +403,7 @@ if TORCH_AVAILABLE:
 
             for model in models:
                 model.fit(series=self.ts_sum1)
-                self.assertEqual(len(model.lags.get('target')), lags)
+                self.assertEqual(len(model.lags.get("target")), lags)
                 model.predict(n=10)
 
         def test_multiple_ts(self):
@@ -561,12 +568,27 @@ if TORCH_AVAILABLE:
 
         def test_not_enough_covariates(self):
 
-            target_series = tg.linear_timeseries(start_value=0, end_value=100, length=50)
-            past_covariates = tg.linear_timeseries(start_value=100, end_value=200, length=50)
-            future_covariates = tg.linear_timeseries(start_value=200, end_value=300, length=50)
+            target_series = tg.linear_timeseries(
+                start_value=0, end_value=100, length=50
+            )
+            past_covariates = tg.linear_timeseries(
+                start_value=100, end_value=200, length=50
+            )
+            future_covariates = tg.linear_timeseries(
+                start_value=200, end_value=300, length=50
+            )
 
-            model = RegressionModel(lags_past_covariates=[-10], lags_future_covariates=[-5, 5], output_chunk_length=7)
-            model.fit(series=target_series, past_covariates=past_covariates, future_covariates=future_covariates, max_samples_per_ts=1)
+            model = RegressionModel(
+                lags_past_covariates=[-10],
+                lags_future_covariates=[-5, 5],
+                output_chunk_length=7,
+            )
+            model.fit(
+                series=target_series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                max_samples_per_ts=1,
+            )
 
             # output_chunk_length, required past_offset, required future_offset
             test_cases = [
@@ -575,23 +597,40 @@ if TORCH_AVAILABLE:
                 (7, -2, 11),
             ]
             for (output_chunk_length, req_past_offset, req_future_offset) in test_cases:
-                model = RegressionModel(lags_past_covariates=[-10], lags_future_covariates=[-4, 3],
-                                        output_chunk_length=output_chunk_length)
-                model.fit(series=target_series, past_covariates=past_covariates, future_covariates=future_covariates)
+                model = RegressionModel(
+                    lags_past_covariates=[-10],
+                    lags_future_covariates=[-4, 3],
+                    output_chunk_length=output_chunk_length,
+                )
+                model.fit(
+                    series=target_series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                )
 
                 # check that given the required offsets no ValueError is raised
-                model.predict(10, series=target_series[:-25], past_covariates=past_covariates[:-25 + req_past_offset],
-                              future_covariates=future_covariates[:-25 + req_future_offset])
+                model.predict(
+                    10,
+                    series=target_series[:-25],
+                    past_covariates=past_covariates[: -25 + req_past_offset],
+                    future_covariates=future_covariates[: -25 + req_future_offset],
+                )
                 # check that one less past covariate time step causes ValueError
                 with self.assertRaises(ValueError):
-                    model.predict(10, series=target_series[:-25],
-                                  past_covariates=past_covariates[:-26 + req_past_offset],
-                                  future_covariates=future_covariates[:-25 + req_future_offset])
+                    model.predict(
+                        10,
+                        series=target_series[:-25],
+                        past_covariates=past_covariates[: -26 + req_past_offset],
+                        future_covariates=future_covariates[: -25 + req_future_offset],
+                    )
                 # check that one less future covariate time step causes ValueError
                 with self.assertRaises(ValueError):
-                    model.predict(10, series=target_series[:-25],
-                                  past_covariates=past_covariates[:-25 + req_past_offset],
-                                  future_covariates=future_covariates[:-26 + req_future_offset])
+                    model.predict(
+                        10,
+                        series=target_series[:-25],
+                        past_covariates=past_covariates[: -25 + req_past_offset],
+                        future_covariates=future_covariates[: -26 + req_future_offset],
+                    )
 
         @patch.object(
             darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit"
