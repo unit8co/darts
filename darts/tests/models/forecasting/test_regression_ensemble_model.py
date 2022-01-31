@@ -184,13 +184,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self, model_instance, n, series, past_covariates, min_rmse
     ):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
-        train_f, train_t, test_f, test_t = train_test_split(
-            past_covariates, series, pd.Timestamp("20010101")
+        train_series, test_series = train_test_split(series, pd.Timestamp("20010101"))
+        train_past_covariates, _ = train_test_split(
+            past_covariates, pd.Timestamp("20010101")
         )
 
-        model_instance.fit(series=train_t, past_covariates=train_f)
+        model_instance.fit(series=train_series, past_covariates=train_past_covariates)
         prediction = model_instance.predict(n=n, past_covariates=past_covariates)
-        current_rmse = rmse(test_t, prediction)
+        current_rmse = rmse(test_series, prediction)
 
         self.assertTrue(
             current_rmse <= min_rmse,
