@@ -522,7 +522,7 @@ class RegressionModel(GlobalForecastingModel):
         series_matrix = None
         if "target" in self.lags:
             series_matrix = np.stack(
-                [ts[min(self.lags["target"]) :].values() for ts in series]
+                [ts[self.lags["target"][0] :].values() for ts in series]
             )
 
         # prediction
