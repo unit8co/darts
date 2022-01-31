@@ -219,6 +219,9 @@ class RegressionModel(GlobalForecastingModel):
 
         Where each lags_X has the following structure (lags_X=[-2,-1] and X has 2 components):
         lag_-2_comp_1_X | lag_-2_comp_2_X | lag_-1_comp_1_X | lag_-1_comp_2_X
+
+        y has the following structure (output_chunk_length=4 and target has 2 components):
+        lag_+0_comp_1_target | lag_+0_comp_2_target | ... | lag_+3_comp_1_target | lag_+3_comp_2_target
         """
 
         # ensure list of TimeSeries format
