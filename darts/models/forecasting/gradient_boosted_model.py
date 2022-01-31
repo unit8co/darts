@@ -24,7 +24,7 @@ class LightGBMModel(RegressionModel):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
-        **kwargs
+        **kwargs,
     ):
         """Light Gradient Boosted Model
 
@@ -71,7 +71,7 @@ class LightGBMModel(RegressionModel):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> None:
         """
         Fits/trains the model using the provided list of features time series and the target time series.
@@ -113,5 +113,5 @@ class LightGBMModel(RegressionModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
-            **kwargs
+            **kwargs,
         )

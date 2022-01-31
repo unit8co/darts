@@ -55,6 +55,4 @@ class LinearRegressionModel(RegressionModel):
         )
 
     def __str__(self):
-        return (
-            f"LinearRegression(lags={self.lags})"
-        )
+        return f"LinearRegression(lags={self.lags})"
