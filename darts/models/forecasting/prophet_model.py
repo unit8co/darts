@@ -93,9 +93,7 @@ class Prophet(DualCovariatesForecastingModel):
     def __str__(self):
         return "Prophet"
 
-    def _fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
 
         super()._fit(series, future_covariates)
         series = self.training_series
@@ -131,6 +129,8 @@ class Prophet(DualCovariatesForecastingModel):
             self.model.add_country_holidays(self.country_holidays)
 
         execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
+
+        return self
 
     def _predict(
         self,
