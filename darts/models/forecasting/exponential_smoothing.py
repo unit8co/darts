@@ -110,6 +110,8 @@ class ExponentialSmoothing(ForecastingModel):
         if self.infer_seasonal_periods:
             self.seasonal_periods = hw_model.seasonal_periods
 
+        return self
+
     def predict(self, n, num_samples=1):
         super().predict(n, num_samples)
 

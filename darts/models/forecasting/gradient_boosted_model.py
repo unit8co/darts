@@ -72,7 +72,7 @@ class LightGBMModel(RegressionModel):
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         **kwargs,
-    ) -> None:
+    ):
         """
         Fits/trains the model using the provided list of features time series and the target time series.
 
@@ -115,3 +115,5 @@ class LightGBMModel(RegressionModel):
             max_samples_per_ts=max_samples_per_ts,
             **kwargs,
         )
+
+        return self

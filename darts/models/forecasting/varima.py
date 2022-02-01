@@ -57,9 +57,7 @@ class VARIMA(DualCovariatesForecastingModel):
             return "VARMA({},{})".format(self.p, self.q)
         return "VARIMA({},{},{})".format(self.p, self.d, self.q)
 
-    def fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         # for VARIMA we need to process target `series` before calling DualForecastingModels' fit() method
         self._last_values = (
             series.last_values()
@@ -70,6 +68,8 @@ class VARIMA(DualCovariatesForecastingModel):
             )
 
         super().fit(series, future_covariates)
+
+        return self
 
     def _fit(
         self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None

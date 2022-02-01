@@ -323,7 +323,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         **kwargs,
-    ) -> None:
+    ):
         """
         Fit/train the model on one or multiple series.
 

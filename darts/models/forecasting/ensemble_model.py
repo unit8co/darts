@@ -69,7 +69,7 @@ class EnsembleModel(GlobalForecastingModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> None:
+    ):
         """
         Fits the model on the provided series.
         Note that `EnsembleModel.fit()` does NOT call `fit()` on each of its constituent forecasting models.
@@ -104,6 +104,8 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
         super().fit(series, past_covariates, future_covariates)
+
+        return self
 
     def _stack_ts_seq(self, predictions):
         # stacks list of predictions into one multivariate timeseries

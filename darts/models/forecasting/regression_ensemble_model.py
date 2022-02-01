@@ -81,7 +81,7 @@ class RegressionEnsembleModel(EnsembleModel):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> None:
+    ):
 
         super().fit(
             series, past_covariates=past_covariates, future_covariates=future_covariates
@@ -146,6 +146,8 @@ class RegressionEnsembleModel(EnsembleModel):
 
             else:
                 model.fit(self.training_series)
+
+        return self
 
     def ensemble(
         self,
