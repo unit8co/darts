@@ -19,7 +19,6 @@ from random import sample
 import numpy as np
 import pandas as pd
 import time
-import os
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_log, raise_if_not, raise_if
@@ -684,10 +683,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 list(zip(parameters.keys(), param_combination))
             )
             if param_combination_dict.get("model_name", None):
-                current_time = time.strftime("%Y-%m-%d_%H:%M:%S", time.localtime())
+                current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
                 param_combination_dict[
                     "model_name"
-                ] = f"{current_time}_{param_combination_dict['model_name']}_{os.getpid()}"
+                ] = f"{current_time}_{param_combination_dict['model_name']}"
 
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
