@@ -46,7 +46,7 @@ models = [
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
     (FFT(trend="poly"), 11.4),
     (NaiveSeasonal(), 32.4),
-    (KalmanForecaster(dim_x=3), 13.0),
+    (KalmanForecaster(dim_x=3), 17.0),
 ]
 
 if TORCH_AVAILABLE:
