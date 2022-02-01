@@ -104,6 +104,7 @@ numpydoc_class_members_toctree = True
 #
 html_theme = "pydata_sphinx_theme"
 html_logo = "static/darts-logo-trim.png"
+html_favicon = "static/docs-favicon.ico"
 
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",
