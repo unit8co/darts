@@ -45,6 +45,15 @@ def step_accepting_missing_obs(self, y: np.ndarray, u: np.ndarray):
     )
 
     if y is not None:
+        """
+        The case without an observation is equivalent to setting the Kalman gains
+        to zero. However, here we don't use this approach and treat the y=None case
+        separately, because:
+          - If we set K=0, we need the operand to multiply it with, which in turns
+            requires y to be set.
+          - Even if we treated this above case, we would still need the rest of
+            the operand, which requires computing some matrix multiplications for nothing.
+        """
         k_filtered = (
             p_pred
             @ self.state_space.c.T
@@ -282,7 +291,7 @@ class KalmanFilter(FilteringModel, ABC):
             u_values = covariates.values(copy=False)
 
             # set control signal to 0 if it contains NaNs:
-            # u_values = np.nan_to_num(u_values, copy=True, nan=0.0)
+            u_values = np.nan_to_num(u_values, copy=True, nan=0.0)
         else:
             u_values = np.zeros((len(y_values), 0))
 
