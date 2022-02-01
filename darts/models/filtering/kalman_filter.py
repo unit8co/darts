@@ -10,11 +10,84 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from nfoursid.kalman import Kalman
+from nfoursid.utils import Utils
 from nfoursid.nfoursid import NFourSID
 
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
 from darts.logging import raise_if, raise_if_not
+
+
+def step_accepting_missing_obs(self, y: np.ndarray, u: np.ndarray):
+    """
+    Meant to be injected to a nfoursid.kalman.Kalman object.
+
+    Given an observed input ``u`` and output ``y``, update the filtered and predicted states of the Kalman filter.
+    Follows the implementation of the conventional Kalman filter in [1] on page 140.
+
+    This implementation also accepts missing outputs (``y`` set to `None`). In this case, the state of the
+    Kalman filter is updated, but without taking the measurement into account.
+
+    [1] Verhaegen, Michel, and Vincent Verdult. *Filtering and system identification: a least squares approach.*
+    Cambridge university press, 2007.
+    """
+    if y is not None:
+        Utils.validate_matrix_shape(y, (self.state_space.y_dim, 1), "y")
+    Utils.validate_matrix_shape(u, (self.state_space.u_dim, 1), "u")
+
+    x_pred = (
+        self.x_predicteds[-1]
+        if self.x_predicteds
+        else np.zeros((self.state_space.x_dim, 1))
+    )
+    p_pred = (
+        self.p_predicteds[-1] if self.p_predicteds else np.eye(self.state_space.x_dim)
+    )
+
+    if y is not None:
+        k_filtered = (
+            p_pred
+            @ self.state_space.c.T
+            @ np.linalg.pinv(
+                self.r + self.state_space.c @ p_pred @ self.state_space.c.T
+            )
+        )
+
+        self.p_filtereds.append(p_pred - k_filtered @ self.state_space.c @ p_pred)
+        self.x_filtereds.append(
+            x_pred
+            + k_filtered @ (y - self.state_space.d @ u - self.state_space.c @ x_pred)
+        )
+
+        k_pred = (
+            self.s + self.state_space.a @ p_pred @ self.state_space.c.T
+        ) @ np.linalg.pinv(self.r + self.state_space.c @ p_pred @ self.state_space.c.T)
+
+        self.p_predicteds.append(
+            self.state_space.a @ p_pred @ self.state_space.a.T
+            + self.q
+            - k_pred @ (self.s + self.state_space.a @ p_pred @ self.state_space.c.T).T
+        )
+        self.x_predicteds.append(
+            self.state_space.a @ x_pred
+            + self.state_space.b @ u
+            + k_pred @ (y - self.state_space.d @ u - self.state_space.c @ x_pred)
+        )
+    else:
+        self.p_filtereds.append(p_pred)
+        self.x_filtereds.append(x_pred)
+        self.p_predicteds.append(
+            self.state_space.a @ p_pred @ self.state_space.a.T + self.q
+        )
+        self.x_predicteds.append(self.state_space.a @ x_pred + self.state_space.b @ u)
+
+    self.us.append(u)
+    self.ys.append(y if y is not None else np.nan)
+    self.y_filtereds.append(self.state_space.output(self.x_filtereds[-1], self.us[-1]))
+    self.y_predicteds.append(self.state_space.output(self.x_predicteds[-1]))
+    self.kalman_gains.append(k_pred if y is not None else np.nan)
+
+    return self.y_filtereds[-1], self.y_predicteds[-1]
 
 
 class KalmanFilter(FilteringModel, ABC):
@@ -202,7 +275,7 @@ class KalmanFilter(FilteringModel, ABC):
             u_values = covariates.values(copy=False)
 
             # set control signal to 0 if it contains NaNs:
-            u_values = np.nan_to_num(u_values, copy=True, nan=0.0)
+            # u_values = np.nan_to_num(u_values, copy=True, nan=0.0)
         else:
             u_values = np.zeros((len(y_values), 0))
 
@@ -218,16 +291,16 @@ class KalmanFilter(FilteringModel, ABC):
         else:
             sampled_outputs = np.zeros((len(y_values), self.dim_y, num_samples))
 
-        mean_vec = None  # store previous mean
+        # mean_vec = None  # store previous mean
         for i in range(len(y_values)):
             y = y_values[i, :].reshape(-1, 1)
+            u = u_values[i, :].reshape(-1, 1)
 
             if np.isnan(y).any():
                 raise_if(i == 0, "The first value of the series must not be NaN.")
-                # if an observation is missing, take the previous mean as an observation
-                y = mean_vec.reshape(-1, 1)
-            u = u_values[i, :].reshape(-1, 1)
-            kf.step(y, u)
+                y = None
+
+            step_accepting_missing_obs(kf, y, u)
             mean_vec = kf.y_filtereds[-1].reshape(
                 self.dim_y,
             )
