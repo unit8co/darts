@@ -405,6 +405,8 @@ class RegressionModel(GlobalForecastingModel):
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
         )
 
+        return self
+
     def predict(
         self,
         n: int,
