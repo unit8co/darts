@@ -64,9 +64,7 @@ class ARIMA(DualCovariatesForecastingModel):
             return f"ARIMA{self.order}"
         return f"SARIMA{self.order}x{self.seasonal_order}"
 
-    def _fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
 
         super()._fit(series, future_covariates)
         m = staARIMA(
@@ -77,6 +75,8 @@ class ARIMA(DualCovariatesForecastingModel):
             trend=self.trend,
         )
         self.model = m.fit()
+
+        return self
 
     def _predict(
         self,

@@ -122,8 +122,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_models_runnability(self):
         for model, _ in models:
-            model.fit(self.ts_gaussian)
-            prediction = model.predict(self.forecasting_horizon)
+            prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
     def test_models_performance(self):

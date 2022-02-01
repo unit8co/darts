@@ -151,7 +151,7 @@ class KalmanFilter(FilteringModel, ABC):
         series: TimeSeries,
         covariates: Optional[TimeSeries] = None,
         num_block_rows: Optional[int] = None,
-    ) -> None:
+    ) -> "KalmanFilter":
         """
         Initializes the Kalman filter using the N4SID algorithm.
 
@@ -167,6 +167,11 @@ class KalmanFilter(FilteringModel, ABC):
             The number of block rows to use in the block Hankel matrices used in the N4SID algorithm.
             See the documentation of nfoursid.nfoursid.NFourSID for more information.
             If not provided, the dimensionality of the state space model will be used, with a maximum of 10.
+
+        Returns
+        -------
+        self
+            Fitted Kalman filter.
         """
         if covariates is not None:
             self._expect_covariates = True
@@ -205,6 +210,8 @@ class KalmanFilter(FilteringModel, ABC):
         )
 
         self.kf = Kalman(state_space_identified, covariance_matrix)
+
+        return self
 
     def filter(
         self,
