@@ -80,6 +80,7 @@ class RegressionModel(GlobalForecastingModel):
         self.model = model
         self.lags = {}
         self.output_chunk_length = None
+        self.input_dim = None
 
         # model checks
         if self.model is None:
@@ -198,7 +199,7 @@ class RegressionModel(GlobalForecastingModel):
 
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
         # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
-        extra_shift = max(0, max([lag for lags in self.lags.values() for lag in lags]))
+        extra_shift = max(0, max([lags[-1] for lags in self.lags.values()]))
 
         if overlap_end:
             last_valid_pred_time = series.time_index[-1 - extra_shift]
@@ -279,8 +280,10 @@ class RegressionModel(GlobalForecastingModel):
 
             raise_if(
                 X_y.shape[0] == 0,
-                f"Unable to build any training samples; the target series at index {idx} and the corresponding "
-                f"covariate series overlap too little.",
+                "Unable to build any training samples of the target series "
+                + (f"at index {idx} " if len(target_series) > 1 else "")
+                + "and the corresponding covariate series; "
+                "There is no time step for which all required lags are available and are not NaN values.",
             )
 
             X, y = np.split(X_y, [df_X.shape[1]], axis=1)
@@ -466,10 +469,11 @@ class RegressionModel(GlobalForecastingModel):
         }
         raise_if_not(
             pred_input_dim == self.input_dim,
-            f"The dimensions of the target series and past/future covariates provided for prediction don't match the "
-            f"dimensions of the target series and past/future covariates this model has been trained on.\n"
-            f"Provided dimensions for prediction: {pred_input_dim}\n"
-            f"Provided dimensions for training: {self.input_dim}",
+            f"The number of components of the target series and the covariates provided for prediction doesn't "
+            f"match the number of components of the target series and the covariates this model has been "
+            f"trained on.\n"
+            f"Provided number of components for prediction: {pred_input_dim}\n"
+            f"Provided number of components for training: {self.input_dim}",
         )
 
         # prediction preprocessing
