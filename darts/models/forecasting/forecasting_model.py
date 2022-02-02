@@ -90,13 +90,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         self._model_params = self._extract_model_creation_params()
 
     @abstractmethod
-    def fit(self, series: TimeSeries) -> None:
+    def fit(self, series: TimeSeries) -> "ForecastingModel":
         """Fit/train the model on the provided series.
 
         Parameters
         ----------
         series
             A target time series. The model will be trained to forecast this time series.
+
+        Returns
+        -------
+        self
+            Fitted model.
         """
         if not isinstance(self, DualCovariatesForecastingModel):
             series._assert_univariate()
@@ -851,7 +856,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         series: Union[TimeSeries, Sequence[TimeSeries]],
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> None:
+    ) -> "GlobalForecastingModel":
         """Fit/train the model on (potentially multiple) series.
 
         Optionally, one or multiple past and/or future covariates series can be provided as well.
@@ -873,6 +878,11 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             be used by some models as an input. The covariate(s) may or may not be multivariate, but if multiple
             covariates are provided they must have the same number of components. If `future_covariates` is provided,
             it must contain the same number of series as `series`.
+
+        Returns
+        -------
+        self
+            Fitted model.
         """
 
         if isinstance(series, TimeSeries):
@@ -1002,9 +1012,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
     _expect_covariate = False
 
-    def fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         """Fit/train the model on the (single) provided series.
 
         Optionally, a future covariates series can be provided as well.
@@ -1017,6 +1025,11 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             A time series of future-known covariates. This time series will not be forecasted, but can be used by
             some models as an input. It must contain at least the same time steps/indices as the target `series`.
             If it is longer than necessary, it will be automatically trimmed.
+
+        Returns
+        -------
+        self
+            Fitted model.
         """
 
         if future_covariates is not None:
@@ -1034,12 +1047,10 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
         super().fit(series)
 
-        self._fit(series, future_covariates=future_covariates)
+        return self._fit(series, future_covariates=future_covariates)
 
     @abstractmethod
-    def _fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
