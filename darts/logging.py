@@ -1,6 +1,7 @@
 import logging
 import time
 import os
+import contextlib
 
 
 def get_logger(name):
@@ -139,38 +140,37 @@ def time_log(logger: logging.Logger = get_logger("main_logger")):
 
     return time_log_helper
 
-
-class SuppressStdoutStderr(object):
+@contextlib.contextmanager
+def no_stdout_stderr():
     """
-    A context manager for doing a "deep suppression" of stdout and stderr in
-    Python, i.e. will suppress all print, even if the print originates in a
+    A context manager to perform "deep suppression" stdout and stderr in
+    Python, i.e. it suppresses all outputs from print, even if the print originates in a
     compiled C/Fortran sub-function.
-       This will not suppress raised exceptions, since exceptions are printed
+       This will not suppress raised exceptions, because exceptions are printed
     to stderr just before a script exits, and after the context manager has
-    exited (at least, I think that is why it lets exceptions through).
+    exited (at least, I think that is why it let exceptions through).
 
     source:
     https://stackoverflow.com/questions/11130156/suppress-stdout-stderr-print-from-python-functions
     """
-
-    def __init__(self):
-        # Open a pair of null files
-        self.null_fds = [os.open(os.devnull, os.O_RDWR) for x in range(2)]
-        # Save the actual stdout (1) and stderr (2) file descriptors.
-        self.save_fds = [os.dup(1), os.dup(2)]
-
-    def __enter__(self):
-        # Assign the null pointers to stdout and stderr.
-        os.dup2(self.null_fds[0], 1)
-        os.dup2(self.null_fds[1], 2)
-
-    def __exit__(self, *_):
+    # Save the actual stdout (1) and stderr (2) file descriptors
+    stdout, stderr = os.dup(1), os.dup(2) 
+    # Open a null file
+    devnull = os.open(os.devnull, os.O_RDWR)
+    
+    try:
+        # Assign the null pointers to stdout and stderr
+        os.dup2(devnull, 1)
+        os.dup2(devnull, 2)
+        yield
+    finally:
         # Re-assign the real stdout/stderr back to (1) and (2)
-        os.dup2(self.save_fds[0], 1)
-        os.dup2(self.save_fds[1], 2)
+        os.dup2(stdout, 1)
+        os.dup2(stderr, 2)
         # Close all file descriptors
-        for fd in self.null_fds + self.save_fds:
-            os.close(fd)
+        os.close(devnull)
+        os.close(stdout)
+        os.close(stderr)
 
 
 def execute_and_suppress_output(function, logger, suppression_threshold_level, *args):
@@ -187,7 +187,7 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
     :return: Outputs of 'function'.
     """
     if logger.level >= suppression_threshold_level:
-        with SuppressStdoutStderr():
+        with no_stdout_stderr():
             return_value = function(*args)
     else:
         return_value = function(*args)
