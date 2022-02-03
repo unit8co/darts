@@ -399,7 +399,7 @@ class RegressionModel(GlobalForecastingModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
         **kwargs,
-    ) -> None:
+    ):
         """
         Fit/train the model on one or multiple series.
 
@@ -477,6 +477,8 @@ class RegressionModel(GlobalForecastingModel):
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
         )
+
+        return self
 
     def _get_prediction_data(self, prediction_dataset: MixedCovariatesInferenceDataset):
         """
