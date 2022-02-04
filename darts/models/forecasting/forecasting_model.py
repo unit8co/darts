@@ -261,6 +261,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        train_length: Optional[int] = None,
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -299,6 +300,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        train_length
+            Number of time steps in our training set (size of backtesting window to train on).
         start
             The first point of time at which a prediction is computed for a future time.
             This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -372,7 +375,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # iterate and forecast
         for pred_time in iterator:
-            train = series.drop_after(pred_time)  # build the training series
+            # build the training series
+            train = series.drop_after(pred_time)
+            if train_length and len(train) > train_length:
+                # take last train_length samples (drop_before?)
+                train = train[:train_length]
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
@@ -421,6 +428,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        train_length: Optional[int] = None,
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -463,6 +471,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        train_length
+            Number of time steps in our training set (size of backtesting window to train on).
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -501,6 +511,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            train_length=train_length,
             start=start,
             forecast_horizon=forecast_horizon,
             stride=stride,
