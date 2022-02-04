@@ -10,7 +10,6 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 from nfoursid.kalman import Kalman
-from nfoursid.utils import Utils
 from nfoursid.nfoursid import NFourSID
 
 from darts.models.filtering.filtering_model import FilteringModel
