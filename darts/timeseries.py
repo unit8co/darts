@@ -15,7 +15,14 @@ Definitions:
       | **stochastic** (or **probabilistic**).
 
 Each series also stores a `time_index`, which contains either datetimes (:class:`pandas.DateTimeIndex`)
-or integer indices (:class:`pandas.Int64Index`).
+or integer indices (:class:`pandas.RangeIndex`).
+
+``TimeSeries`` are guaranted to:
+    - Have a monotically increasing time index, without holes (without missing dates)
+    - Contain numeric types only
+    - Have distinct components/columns names
+    - Have a well defined frequency (for ``DateTimeIndex``)
+    - Be non-empty.
 """
 
 import pickle
@@ -36,7 +43,7 @@ logger = get_logger(__name__)
 # the "time" one can be different, if it has a name in the underlying Series/DataFrame.
 DIMS = ("time", "component", "sample")
 
-VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex, pd.Int64Index)
+VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 
 
 class TimeSeries:
@@ -119,6 +126,8 @@ class TimeSeries:
         # As of xarray 0.18.2, this sorting discards the freq of the index for some reason
         # https://github.com/pydata/xarray/issues/5466
         # We sort only if the time axis is not already sorted (monotically increasing).
+
+        # TODO also avoid sorting if index is RangeIndex (already sorted by definition)
         self._xa = (
             xa.copy()
             if xa.get_index(self._time_dim).is_monotonic_increasing
@@ -131,7 +140,7 @@ class TimeSeries:
             raise_log(
                 ValueError(
                     "The time dimension of the DataArray must be indexed either with a DatetimeIndex,"
-                    "or with an Int64Index (this can include a RangeIndex)."
+                    "or with an RangeIndex."
                 ),
                 logger,
             )
@@ -235,7 +244,7 @@ class TimeSeries:
         xa_index = xa.get_index(xa.dims[0])
         has_datetime_index = isinstance(xa_index, pd.DatetimeIndex)
         has_frequency = has_datetime_index and xa_index.freq is not None
-        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a Int64Index)
+        # optionally fill missing dates; do it only when there is a DatetimeIndex (and not a RangeIndex)
         if fill_missing_dates and has_datetime_index:
             xa_ = cls._fill_missing_dates(xa, freq=freq)
         # The provided index does not have a freq; using the provided freq
@@ -313,7 +322,7 @@ class TimeSeries:
     ) -> "TimeSeries":
         """
         Build a deterministic TimeSeries instance built from a single CSV file.
-        One column can be used to represent the time (if not present, the time index will be an Int64Index)
+        One column can be used to represent the time (if not present, the time index will be a RangeIndex)
         and a list of columns `value_cols` can be used to indicate the values for this time series.
 
         Parameters
@@ -322,7 +331,7 @@ class TimeSeries:
             The path to the CSV file, or the file object; consistent with the argument of `pandas.read_csv` function
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex.
-            If not set, the pandas Int64Index will be used.
+            If not set, the pandas RangeIndex will be used.
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the CSV file. If set to
             `None`, all columns from the CSV file will be used (except for the time_col, if specified)
@@ -376,7 +385,7 @@ class TimeSeries:
         time_col
             The time column name. If set, the column will be cast to a pandas DatetimeIndex.
             If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
-            either a pandas DatetimeIndex or a pandas Int64Index (incl. RangeIndex). If a DatetimeIndex is
+            either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
             used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve
             these issues (filling holes with NaN, or with the provided `fillna_value` numeric value, if any).
         value_cols
@@ -411,7 +420,7 @@ class TimeSeries:
             if time_col in df.columns:
                 if np.issubdtype(df[time_col].dtype, object):
                     try:
-                        time_index = pd.Int64Index(df[time_col].astype(int))
+                        time_index = pd.RangeIndex(df[time_col].astype(int))
                     except ValueError:
                         try:
                             time_index = pd.DatetimeIndex(df[time_col])
@@ -422,7 +431,11 @@ class TimeSeries:
                                 )
                             )
                 elif np.issubdtype(df[time_col].dtype, np.integer):
-                    time_index = pd.Int64Index(df[time_col])
+                    df_copy = df.copy()
+                    df_copy.index = df_copy[time_col]
+                    df_copy = df_copy.sort_index()
+                    time_index = pd.RangeIndex(start=start, stop=stop)
+                    raise_if_not()
                 elif np.issubdtype(df[time_col].dtype, np.datetime64):
                     time_index = pd.DatetimeIndex(df[time_col])
                 else:
