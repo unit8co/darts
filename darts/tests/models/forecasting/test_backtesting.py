@@ -100,6 +100,26 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertEqual(score, 1.0)
 
+        # very large train length should not affect the backtest
+        score = NaiveDrift().backtest(
+            linear_series,
+            train_length=10000,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        self.assertEqual(score, 1.0)
+
+        # window of size 2 is too small for naive drift
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(
+                linear_series,
+                train_length=2,
+                start=pd.Timestamp("20000201"),
+                forecast_horizon=3,
+                metric=r2_score,
+            )
+
         # test that it also works for time series that are not Datetime-indexed
         score = NaiveDrift().backtest(
             linear_series_int, start=0.7, forecast_horizon=3, metric=r2_score
@@ -133,6 +153,9 @@ class BacktestingTestCase(DartsBaseTestClass):
         NaiveDrift().backtest(linear_series, start=30)
         NaiveDrift().backtest(linear_series, start=0.7, overlap_end=True)
 
+        # Set custom train window length
+        NaiveDrift().backtest(linear_series, train_length=10, start=30)
+
         # Using invalid start and/or forecast_horizon values
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, start=0.7, forecast_horizon=-1)
@@ -145,6 +168,12 @@ class BacktestingTestCase(DartsBaseTestClass):
             NaiveDrift().backtest(linear_series, start=1.2)
         with self.assertRaises(TypeError):
             NaiveDrift().backtest(linear_series, start="wrong type")
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, train_length=0, start=0.5)
+        with self.assertRaises(TypeError):
+            NaiveDrift().backtest(linear_series, train_length=1.2, start=0.5)
+        with self.assertRaises(TypeError):
+            NaiveDrift().backtest(linear_series, train_length="wrong type", start=0.5)
 
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(
@@ -193,6 +222,8 @@ class BacktestingTestCase(DartsBaseTestClass):
             )
             self.assertEqual(pred.width, 2)
             self.assertEqual(pred.end_time(), linear_series.end_time())
+
+            # TODO: adjusted window size hard to test with tcn model
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_backtest_regression(self):

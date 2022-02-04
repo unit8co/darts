@@ -377,6 +377,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         for pred_time in iterator:
             # build the training series
             train = series.drop_after(pred_time)
+            if train_length and not isinstance(train_length, int):
+                raise_log(
+                    TypeError("If not None, train_length needs to be an integer."),
+                    logger,
+                )
+            elif (train_length is not None) and train_length < 1:
+                raise_log(
+                    ValueError("If not None, train_length needs to be positive."),
+                    logger,
+                )
             if train_length and len(train) > train_length:
                 # take last train_length samples (drop_before?)
                 train = train[:train_length]
