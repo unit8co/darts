@@ -225,13 +225,11 @@ class KalmanFilter(FilteringModel, ABC):
         else:
             sampled_outputs = np.zeros((len(y_values), self.dim_y, num_samples))
 
-        # mean_vec = None  # store previous mean
         for i in range(len(y_values)):
             y = y_values[i, :].reshape(-1, 1)
             u = u_values[i, :].reshape(-1, 1)
 
             if np.isnan(y).any():
-                raise_if(i == 0, "The first value of the series must not be NaN.")
                 y = None
 
             kf.step(y, u)
