@@ -508,11 +508,13 @@ class RegressionModel(GlobalForecastingModel):
                 relative_cov_lags[cov_type] = np.array(lags) - lags[0]
                 covariate_matrices[cov_type] = []
                 for idx, (ts, cov) in enumerate(zip(series, covs)):
+                    # calculating first and last prediction time steps
                     first_pred_ts = ts.end_time() + 1 * ts.freq
                     last_pred_ts = (
                         first_pred_ts
                         + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
                     )
+                    # calculating first and last required time steps
                     first_req_ts = first_pred_ts + lags[0] * ts.freq
                     last_req_ts = last_pred_ts + lags[-1] * ts.freq
 
