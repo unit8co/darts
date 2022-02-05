@@ -322,6 +322,7 @@ class RegressionModel(GlobalForecastingModel):
         past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
+        n_jobs_multioutput_wrapper: Optional[int] = None,
         **kwargs,
     ):
         """
@@ -329,20 +330,23 @@ class RegressionModel(GlobalForecastingModel):
 
         Parameters
         ----------
-        series : TimeSeries or list of TimeSeries
+        series
             TimeSeries or Sequence[TimeSeries] object containing the target values.
-        past_covariates : TimeSeries or list of TimeSeries, optional
+        past_covariates
             Optionally, a series or sequence of series specifying past-observed covariates
-        future_covariates : TimeSeries or list of TimeSeries, optional
+        future_covariates
             Optionally, a series or sequence of series specifying future-known covariates
-        max_samples_per_ts : int, optional
+        max_samples_per_ts
             This is an integer upper bound on the number of tuples that can be produced
             per time series. It can be used in order to have an upper bound on the total size of the dataset and
             ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
-        **kwargs : dict, optional
+        n_jobs_multioutput_wrapper
+            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn't
+            support multi-output regression natively.
+        **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
         super().fit(
@@ -388,18 +392,26 @@ class RegressionModel(GlobalForecastingModel):
                 "future": future_covariates[0].width if future_covariates else None,
             }
 
-        # if multi-target regression
+        # if multi-output regression
         if not series[0].is_univariate or self.output_chunk_length > 1:
             # and model isn't wrapped already
             if not isinstance(self.model, MultiOutputRegressor):
-                # check whether model supports multi-target regression natively
+                # check whether model supports multi-output regression natively
                 if not (
                     callable(getattr(self.model, "_get_tags", None))
                     and isinstance(self.model._get_tags(), dict)
                     and self.model._get_tags().get("multioutput")
                 ):
                     # if not, wrap model with MultiOutputRegressor
-                    self.model = MultiOutputRegressor(self.model, n_jobs=1)
+                    self.model = MultiOutputRegressor(
+                        self.model, n_jobs=n_jobs_multioutput_wrapper
+                    )
+        # warn if n_jobs_multioutput_wrapper was provided but not used
+        if (
+            not isinstance(self.model, MultiOutputRegressor)
+            and n_jobs_multioutput_wrapper is not None
+        ):
+            logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
 
         self._fit_model(
             series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
