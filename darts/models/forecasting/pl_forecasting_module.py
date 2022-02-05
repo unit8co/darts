@@ -295,7 +295,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return tuple(tiled_input_data)
 
     def _is_probabilistic(self) -> bool:
-        return self.likelihood is None
+        return self.likelihood is not None
 
     def _produce_predict_output(self, x):
         if self.likelihood:
@@ -311,7 +311,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
         # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
         # before parameters are loaded by PyTorch-Lightning
-
         dtype = checkpoint["model_dtype"]
         if dtype == torch.float16:
             self.half()

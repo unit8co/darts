@@ -1258,6 +1258,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def loss_fn(self) -> nn.modules.loss._Loss:
         return self.model.loss_fn if self.model_created else self._loss_fn
 
+    def _is_probabilistic(self) -> bool:
+        return self.likelihood is not None
+
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
     raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))

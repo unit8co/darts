@@ -1,4 +1,5 @@
 import numpy as np
+from copy import deepcopy
 from unittest.mock import patch, ANY
 
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -414,17 +415,25 @@ if TORCH_AVAILABLE:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
-                if model._is_probabilistic():
-                    continue
+
                 multiple_ts = [self.ts_pass_train] * 10
 
                 model.fit(multiple_ts)
 
+                # safe random state for two successive identical predictions
+                if model._is_probabilistic():
+                    random_state = deepcopy(model._random_instance)
+                else:
+                    random_state = None
+
                 pred1 = model.predict(n=36, series=multiple_ts, n_jobs=1)
+
+                if random_state is not None:
+                    model._random_instance = random_state
+
                 pred2 = model.predict(
                     n=36, series=multiple_ts, n_jobs=-1
                 )  # assuming > 1 core available in the machine
-
                 self.assertEqual(
                     pred1,
                     pred2,
