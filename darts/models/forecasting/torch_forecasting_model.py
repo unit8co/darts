@@ -384,18 +384,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")
             precision = 32
-            self.model = self.model.float()
         elif np.issubdtype(dtype, np.float64):
             logger.info("Time series values are 64-bits; casting model to float64.")
             precision = 64
-            self.model = self.model.double()
 
         precision_user = self.trainer_params.get("precision", None)
         raise_if(
             precision_user is not None and precision_user != precision,
             f"User-defined trainer_kwarg `precision={precision_user}`-bit does not match dtype: `{dtype}` of the "
             f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}-"
-            f"bit` with `TimeSeries.astype(np.{dtype})`.",
+            f"bit` with `TimeSeries.astype(np.float{precision_user})`.",
             logger,
         )
 
@@ -802,6 +800,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # Train model
         self._train(train_loader, val_loader)
+        return self
 
     def _train(
         self, train_loader: DataLoader, val_loader: Optional[DataLoader]
@@ -828,8 +827,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             val_dataloaders=val_loader,
             ckpt_path=ckpt_path,
         )
-
-        return self
 
     @random_method
     def predict(
@@ -1241,7 +1238,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         file_path = os.path.join(checkpoint_dir, file_name)
         logger.info("loading {}".format(file_name))
 
-        model.model = model.model.load_from_checkpoint(file_path)
+        model.model = model.model.__class__.load_from_checkpoint(file_path)
         model.load_ckpt_path = file_path
         return model
 

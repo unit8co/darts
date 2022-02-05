@@ -304,6 +304,29 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             return self(x).squeeze(dim=-1)
 
+    def on_save_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
+        # we must save the dtype for correct parameter precision at loading time
+        checkpoint["model_dtype"] = self.dtype
+
+    def on_load_checkpoint(self, checkpoint: Dict[str, Any]) -> None:
+        # by default our models are initialized as float32. For other dtypes, we need to cast to the correct precision
+        # before parameters are loaded by PyTorch-Lightning
+
+        dtype = checkpoint["model_dtype"]
+        if dtype == torch.float16:
+            self.half()
+        if dtype == torch.float32:
+            self.float()
+        elif dtype == torch.float64:
+            self.double()
+        else:
+            raise_if(
+                True,
+                f"Trying to load dtype {dtype}. Loading for this type is not implemented yet. Please report this "
+                f"issue on https://github.com/unit8co/darts",
+                logger,
+            )
+
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(self, input_batch: Tuple):
