@@ -33,7 +33,7 @@ except ImportError:
 
 class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
-    RANDOM_SEED = 3
+    RANDOM_SEED = 111
 
     sine_series = tg.sine_timeseries(
         value_frequency=(1 / 5), value_y_offset=10, length=50
@@ -184,13 +184,14 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         self, model_instance, n, series, past_covariates, min_rmse
     ):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
-        train_f, train_t, test_f, test_t = train_test_split(
-            past_covariates, series, pd.Timestamp("20010101")
+        train_series, test_series = train_test_split(series, pd.Timestamp("20010101"))
+        train_past_covariates, _ = train_test_split(
+            past_covariates, pd.Timestamp("20010101")
         )
 
-        model_instance.fit(series=train_t, past_covariates=train_f)
+        model_instance.fit(series=train_series, past_covariates=train_past_covariates)
         prediction = model_instance.predict(n=n, past_covariates=past_covariates)
-        current_rmse = rmse(test_t, prediction)
+        current_rmse = rmse(test_series, prediction)
 
         self.assertTrue(
             current_rmse <= min_rmse,
@@ -237,11 +238,11 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
             ),
-            RegressionModel(lags=1, lags_past_covariates=[-1]),
+            RegressionModel(lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-        self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 10)
+        self.helper_test_models_accuracy(ensemble, horizon, ts_sum1, ts_cov1, 3)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_ensemble_models_denoising_multi_input(self):
@@ -264,9 +265,9 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
                 n_epochs=1,
                 random_state=self.RANDOM_SEED,
             ),
-            RegressionModel(lags=1, lags_past_covariates=[-1]),
-            RegressionModel(lags=1, lags_past_covariates=[-1]),
+            RegressionModel(lags_past_covariates=[-1]),
+            RegressionModel(lags_past_covariates=[-1]),
         ]
 
         ensemble = RegressionEnsembleModel(ensemble_models, horizon)
-        self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 10)
+        self.helper_test_models_accuracy(ensemble, horizon, ts_sum2, ts_cov2, 3)
