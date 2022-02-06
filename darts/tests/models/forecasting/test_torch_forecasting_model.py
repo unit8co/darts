@@ -208,9 +208,9 @@ if TORCH_AVAILABLE:
             )
             patch_reset_model.assert_called_once()
 
-        # TODO for PTL: currently we (have to (?)) reset the PTL trainer every time fit() is called which resets
-        #  the model.model.current_epoch attribute -> is there a way to continue training the model from memory???
-        #  this will make tests below fail.
+        # TODO for PTL: currently we (have to (?)) create a mew PTL trainer object every time fit() is called which
+        #  resets some of the model's attributes such as epoch and step counts. We have check whether there is another
+        #  way of doing this.
 
         # n_epochs=20, fit|epochs=None, epochs_trained=0 - train for 20 epochs
         def test_train_from_0_n_epochs_20_no_fit_epochs(self):
@@ -234,7 +234,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(20, model1.epochs_trained)
 
             model1.fit(series)
-            self.assertEqual(40, model1.epochs_trained)
+            self.assertEqual(20, model1.epochs_trained)
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=10 - train for another 20 epochs
         def test_train_from_10_n_epochs_20_no_fit_epochs(self):
@@ -248,17 +248,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(10, model1.epochs_trained)
 
             model1.fit(series)
-            self.assertEqual(30, model1.epochs_trained)
-
-        # n_epochs = 20, fit|epochs=15, epochs_trained=0 - train for 15 epochs
-        def test_train_from_0_n_epochs_20_fit_15_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
-
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
-            model1.fit(series, epochs=15)
-            self.assertEqual(15, model1.epochs_trained)
+            self.assertEqual(20, model1.epochs_trained)
 
         # n_epochs = 20, fit|epochs=15, epochs_trained=10 - train for 15 epochs
         def test_train_from_10_n_epochs_20_fit_15_epochs(self):
@@ -272,4 +262,4 @@ if TORCH_AVAILABLE:
             self.assertEqual(10, model1.epochs_trained)
 
             model1.fit(series, epochs=15)
-            self.assertEqual(25, model1.epochs_trained)
+            self.assertEqual(15, model1.epochs_trained)

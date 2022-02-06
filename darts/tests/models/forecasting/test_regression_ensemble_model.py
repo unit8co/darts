@@ -142,7 +142,6 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
             input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
         )
 
-        # TODO for PTL: this fails probably also due to randomness not being handled as it should
         ensemble = RegressionEnsembleModel([model1], 5)
         ensemble.fit(self.combined)
 

@@ -1243,23 +1243,23 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return model
 
     @property
-    def epochs_trained(self) -> int:
-        return self.model.current_epoch + 1 if self.model.current_epoch > 0 else 0
-
-    @property
     def model_created(self) -> bool:
         return self.model is not None
+
+    @property
+    def epochs_trained(self) -> int:
+        return self.model.epochs_trained if self.model_created else 0
 
     @property
     def likelihood(self) -> Likelihood:
         return self.model.likelihood if self.model_created else self._likelihood
 
-    @property
-    def loss_fn(self) -> nn.modules.loss._Loss:
-        return self.model.loss_fn if self.model_created else self._loss_fn
-
     def _is_probabilistic(self) -> bool:
-        return self.likelihood is not None
+        return (
+            self.model._is_probabilistic()
+            if self.model_created
+            else self.likelihood is not None
+        )
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
