@@ -431,11 +431,28 @@ class TimeSeries:
                                 )
                             )
                 elif np.issubdtype(df[time_col].dtype, np.integer):
+                    # We have to check all integers appear only once to have a valid index
+                    raise_if(
+                        df[time_col].duplicated().any(),
+                        "The provided integer time index column contains duplicate values.",
+                    )
+
+                    start_idx, stop_idx = min(df[time_col]), max(df[time_col]) + 1
+
+                    # If fill_missing_date is not set, all the integers in the range have to be present
+                    if not fill_missing_dates:
+                        raise_if_not(
+                            stop_idx - 1 - start_idx == len(df),
+                            "The provided integer time index column does not contain all integers in the range,"
+                            + "and fill_missing_dates=False.",
+                        )
+
+                    new_index = pd.RangeIndex(start=start_idx, stop=stop_idx)
+                    new_df = pd.DataFrame()
+
                     df_copy = df.copy()
                     df_copy.index = df_copy[time_col]
-                    df_copy = df_copy.sort_index()
-                    time_index = pd.RangeIndex(start=start, stop=stop)
-                    raise_if_not()
+
                 elif np.issubdtype(df[time_col].dtype, np.datetime64):
                     time_index = pd.DatetimeIndex(df[time_col])
                 else:
