@@ -1412,6 +1412,24 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         self.assertEqual(ts.time_index.dtype, int)
         self.assertEqual(ts.time_index.name, "Time")
 
+    def test_time_col_convert_rangeindex(self):
+        expected = np.random.randint(1, 1000, 30, int)
+        data_dict = {"Time": expected}
+        data_dict["Values1"] = np.random.uniform(
+            low=-10, high=10, size=len(data_dict["Time"])
+        )
+        df = pd.DataFrame(data_dict)
+        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+
+        # check type (should convert to RangeIndex):
+        self.assertEqual(type(ts.time_index), pd.RangeIndex)
+
+        # check values inside the index (should be sorted correctly):
+        self.assertEqual(ts.time_index.values.to_list(), sorted(expected))
+
+        # check that values are sorted accordingly:
+        self.assertEqual(ts.values(copy=False), data_dict["Values1"][sorted(expected)])
+
     def test_time_col_convert_datetime(self):
         expected = pd.date_range(start="20180501", end="20200301", freq="MS")
         data_dict = {"Time": expected}

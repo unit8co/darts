@@ -439,19 +439,19 @@ class TimeSeries:
 
                     start_idx, stop_idx = min(df[time_col]), max(df[time_col]) + 1
 
-                    # If fill_missing_date is not set, all the integers in the range have to be present
-                    if not fill_missing_dates:
-                        raise_if_not(
-                            stop_idx - 1 - start_idx == len(df),
-                            "The provided integer time index column does not contain all integers in the range,"
-                            + "and fill_missing_dates=False.",
-                        )
+                    # All the integers in the range have to be present
+                    raise_if_not(
+                        stop_idx - start_idx == len(df),
+                        "The provided integer time index column does not contain all integers in the range.",
+                    )
 
-                    new_index = pd.RangeIndex(start=start_idx, stop=stop_idx)
-                    new_df = pd.DataFrame()
-
-                    df_copy = df.copy()
-                    df_copy.index = df_copy[time_col]
+                    # Temporarily use an Int64Index (soon to be NumericIndex) to sort the values,
+                    # then replace by a RangeIndex.
+                    series_df.index = series_df[time_col]
+                    series_df = series_df.sort_index()
+                    series_df.index = pd.RangeIndex(
+                        start=start_idx, stop=stop_idx, step=1, name=time_col
+                    )
 
                 elif np.issubdtype(df[time_col].dtype, np.datetime64):
                     time_index = pd.DatetimeIndex(df[time_col])
