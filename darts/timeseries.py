@@ -27,6 +27,7 @@ from typing import Tuple, Optional, Callable, Any, List, Union, Sequence
 from inspect import signature
 from collections import defaultdict
 from pandas.tseries.frequencies import to_offset
+from scipy.stats import skew, kurtosis
 
 from .logging import raise_log, raise_if_not, raise_if, get_logger
 
@@ -2438,94 +2439,150 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     """
-    Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.
+    Simple statistics. Calculate various statistics over the samples of stochastic time series using Numpy.
     """
 
     def mean(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.mean()` for deterministic series."""
-        return self.pd_dataframe(copy=False).mean(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        self
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.mean()` for stochastic series."""
+        self._assert_stochastic()
+        # xarray aggregation functions don't have the option to keep the dimension so numpy is used
+        new_data = self._xa.values.mean(axis=2, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def var(
-        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.var()` for deterministic series."""
-        return self.pd_dataframe(copy=False).var(
-            axis, skipna, level, ddof, numeric_only, **kwargs
-        )
+        self,
+        ddof: int = 1
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.var()` for stochastic series."""
+        self._assert_stochastic()
+        new_data = self._xa.values.var(axis=2, ddof=1, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def std(
-        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.std()` for deterministic series."""
-        return self.pd_dataframe(copy=False).std(
-            axis, skipna, level, ddof, numeric_only, **kwargs
-        )
+        self,
+        ddof: int = 1
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.std()` for stochastic series."""
+        self._assert_stochastic()
+        new_data = self._xa.values.std(axis=2, ddof=1, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def skew(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.skew()` for deterministic series."""
-        return self.pd_dataframe(copy=False).skew(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        self,
+        bias: bool = True,
+        nan_policy: str = 'propagate'
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`scipy.stats.skew()` for stochastic series."""
+        self._assert_stochastic()
+        axis = 2
+        new_data = np.expand_dims(skew(self._xa.values, axis, bias, nan_policy), axis=axis)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def kurtosis(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.kurtosis()` for deterministic series."""
-        return self.pd_dataframe(copy=False).kurtosis(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        self,
+        fisher: bool = True,
+        bias: bool = True,
+        nan_policy: str = 'propagate'
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`pd.DataFrame.kurtosis()` for stochastic series."""
+        self._assert_stochastic()
+        axis = 2
+        new_data = np.expand_dims(kurtosis(self._xa.values, axis, fisher, bias, nan_policy), axis=axis)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def min(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.min()` for deterministic series."""
-        return self.pd_dataframe(copy=False).min(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        self
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.min()` for stochastic series."""
+        self._assert_stochastic()
+        new_data = self._xa.values.min(axis=2, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def max(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.max()` for deterministic series."""
-        return self.pd_dataframe(copy=False).max(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        self
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.max()` for stochastic series."""
+        self._assert_stochastic()
+        new_data = self._xa.values.max(axis=2, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def sum(
-        self,
-        axis=None,
-        skipna=None,
-        level=None,
-        numeric_only=None,
-        min_count=0,
-        **kwargs,
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.sum()` for deterministic series."""
-        return self.pd_dataframe(copy=False).sum(
-            axis, skipna, level, numeric_only, min_count, **kwargs
-        )
+        self
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.sum()` for stochastic series."""
+        self._assert_stochastic()
+        new_data = self._xa.values.sum(axis=2, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     def median(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.median()` for deterministic series."""
-        return self.pd_dataframe(copy=False).median(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        self
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.median()` for stochastic series."""
+        self._assert_stochastic()
+        new_data = np.median(self._xa.values, axis=2, out=None, overwrite_input=False, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
-    def autocorr(self, lag=1) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.autocorr()` for deterministic series."""
-        return self.pd_dataframe(copy=False).autocorr(lag)
-
-    def describe(self, percentiles=None, include=None, exclude=None) -> pd.DataFrame:
-        """Simple wrapper around :func:`pd.DataFrame.describe()` for deterministic series."""
-        return self.pd_dataframe(copy=False).describe(percentiles, include, exclude)
+    def quantile(
+        self,
+        q : float,
+        method : str = 'linear'
+    ) -> "TimeSeries":
+        """Simple wrapper around :func:`np.quantile` for stochastic series."""
+        self._assert_stochastic()
+        new_data = np.quantile(self._xa.values, q=q, axis=2, method=method, out=None, overwrite_input=False, keepdims=True)
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords=self._xa.coords
+            )
+        return self.__class__(new_xa)
 
     """
     Dunder methods
