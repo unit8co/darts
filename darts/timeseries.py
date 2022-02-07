@@ -2812,7 +2812,7 @@ class TimeSeries:
             raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
             return self.__class__(self._xa ** float(n))
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
-            return self._combine_arrays(n, lambda s1, s2: s1**s2)  # elementwise power
+            return self._combine_arrays(n, lambda s1, s2: s1 ** s2)  # elementwise power
         else:
             raise_log(
                 TypeError(
