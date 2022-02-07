@@ -515,7 +515,7 @@ def coefficient_of_variation(
     """
 
     return (
-        100 * rmse(actual_series, pred_series, intersect) / actual_series.pd_dataframe(copy=False).mean().item()
+        100 * rmse(actual_series, pred_series, intersect) / actual_series.pd_dataframe(copy=False).mean().mean()
     )
 
 

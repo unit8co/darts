@@ -265,7 +265,7 @@ class FourTheta(ForecastingModel):
         self.length = len(series)
         # normalization of data
         if self.normalization:
-            self.mean = series.pd_dataframe(copy=False).mean().item()
+            self.mean = series.pd_dataframe(copy=False).mean().mean()
             raise_if_not(
                 not np.isclose(self.mean, 0),
                 "The mean value of the provided series is too close to zero to perform normalization",
