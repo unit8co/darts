@@ -25,6 +25,7 @@ class Prophet(DualCovariatesForecastingModel):
         self,
         add_seasonalities: Optional[Union[dict, List[dict]]] = None,
         country_holidays: Optional[str] = None,
+        suppress_stdout_stderror: bool = True,
         **prophet_kwargs,
     ):
         """Facebook Prophet
@@ -67,6 +68,8 @@ class Prophet(DualCovariatesForecastingModel):
             countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),
             Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),
             Egypt (EG), China (CN), and Russia (RU).
+        suppress_stdout_stderror
+            Optionally suppress the log output produced by Prophet during training.
         prophet_kwargs
             Some optional keyword arguments for Prophet.
             For information about the parameters see:
@@ -89,6 +92,7 @@ class Prophet(DualCovariatesForecastingModel):
         self.country_holidays = country_holidays
         self.prophet_kwargs = prophet_kwargs
         self.model = None
+        self.suppress_stdout_stderr = suppress_stdout_stderror
 
     def __str__(self):
         return "Prophet"
@@ -128,7 +132,10 @@ class Prophet(DualCovariatesForecastingModel):
         if self.country_holidays is not None:
             self.model.add_country_holidays(self.country_holidays)
 
-        execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
+        if self.suppress_stdout_stderr:
+            execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
+        else:
+            self.model.fit(fit_df)
 
         return self
 
