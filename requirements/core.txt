@@ -11,4 +11,4 @@ scikit-learn>=1.0.1
 joblib>=0.16.0
 requests>=2.22.0
 lightgbm>=2.2.3
-nfoursid>=0.1.0
+nfoursid>=1.0.0
