@@ -18,6 +18,7 @@ from abc import ABC, ABCMeta, abstractmethod
 from random import sample
 import numpy as np
 import pandas as pd
+import time
 
 from darts.timeseries import TimeSeries
 from darts.logging import get_logger, raise_log, raise_if_not, raise_if
@@ -195,7 +196,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start = (
             last + input_series.freq if input_series.has_datetime_index else last + 1
         )
-        return _generate_index(start=start, freq=input_series.freq, length=n)
+        return _generate_index(
+            start=start, freq=input_series.freq, length=n, name=input_series.time_dim
+        )
 
     def _build_forecast_series(
         self,
@@ -686,6 +689,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             param_combination_dict = dict(
                 list(zip(parameters.keys(), param_combination))
             )
+            if param_combination_dict.get("model_name", None):
+                current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
+                param_combination_dict[
+                    "model_name"
+                ] = f"{current_time}_{param_combination_dict['model_name']}"
+
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
                 model._fit_wrapper(series, past_covariates, future_covariates)
