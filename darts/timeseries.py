@@ -946,7 +946,7 @@ class TimeSeries:
             columns=cnames,
         )
 
-    def quantile_timeseries(self, quantile=0.5) -> "TimeSeries":
+    def quantile_timeseries(self, quantile=0.5, **kwargs) -> "TimeSeries":
         """
         Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -963,13 +963,38 @@ class TimeSeries:
             The desired quantile value. The value must be represented as a fraction
             (between 0 and 1 inclusive). For instance, `0.5` will return a TimeSeries
             containing the median of the (marginal) distribution of each component.
+        kwargs
+            Other keyword arguments are passed down to `numpy.quantile()`
 
         Returns
         -------
         TimeSeries
             The TimeSeries containing the desired quantile for each component.
         """
-        return self.__class__.from_dataframe(self.quantile_df(quantile))
+        self._assert_stochastic()
+        raise_if_not(
+            0 <= quantile <= 1,
+            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
+            logger,
+        )
+
+        # component names
+        cnames = [f"{comp}_quantiles" for comp in self.components]
+
+        new_data = np.quantile(
+            self._xa.values,
+            q=quantile,
+            axis=2,
+            overwrite_input=False,
+            keepdims=True,
+            **kwargs,
+        )
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},)
+
+        return self.__class__(new_xa)
 
     def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
         """
@@ -2439,97 +2464,126 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     """
-    Simple statistics. Calculate various statistics over the samples of stochastic time series using Numpy.
+    Simple statistic and aggregation functions. Calculate various statistics over the samples of stochastic time series or aggregate over components/time for deterministic series.
     """
 
-    def mean(self) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.mean()` for stochastic series."""
-        self._assert_stochastic()
-        # xarray aggregation functions don't have the option to keep the dimension so numpy is used
-        new_data = self._xa.values.mean(axis=2, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+    def mean(self, axis: int=2) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.mean()`."""
+        new_data = self._xa.values.mean(axis=axis, keepdims=True)
+        new_coords = self._xa.coords
+
+        if axis == 1: #if we aggregate over components we need to rename components
+            cname = 'components_mean'
+            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
+
+        if axis == 0: #if we aggregate over time we need to change timeindex
+            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
+
+    def median(self, axis: int=2) -> "TimeSeries":
+        """Simple wrapper around :func:`np.median()`."""
+        new_data = np.median(
+            self._xa.values, axis=axis, overwrite_input=False, keepdims=True
+        )
+        new_coords = self._xa.coords
+
+        if axis == 1: #if we aggregate over components we need to rename components
+            cname = 'components_median'
+            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
+
+        if axis == 0: #if we aggregate over time we need to change timeindex
+            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
+
+    def sum(self, axis: int=2) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.sum()`."""
+        new_data = self._xa.values.sum(axis=axis, keepdims=True)
+        new_coords = self._xa.coords
+
+        if axis == 1: #if we aggregate over components we need to rename components
+            cname = 'components_sum'
+            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
+
+        if axis == 0: #if we aggregate over time we need to change timeindex
+            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
+
+    def min(self, axis: int=2) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.min()`."""
+
+        new_data = self._xa.values.min(axis=axis, keepdims=True)
+        new_coords = self._xa.coords
+
+        if axis == 1: #if we aggregate over components we need to rename components
+            cname = 'components_min'
+            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
+
+        if axis == 0: #if we aggregate over time we need to change timeindex
+            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
+
+    def max(self, axis: int=2) -> "TimeSeries":
+        """Simple wrapper around :func:`np.ndarray.max()`."""
+        new_data = self._xa.values.max(axis=axis, keepdims=True)
+        new_coords = self._xa.coords
+
+        if axis == 1: #if we aggregate over components we need to rename components
+            cname = 'components_max'
+            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
+
+        if axis == 0: #if we aggregate over time we need to change timeindex
+            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
+
 
     def var(self, ddof: int = 1) -> "TimeSeries":
         """Simple wrapper around :func:`np.ndarray.var()` for stochastic series."""
         self._assert_stochastic()
-        new_data = self._xa.values.var(axis=2, ddof=1, keepdims=True)
+        new_data = self._xa.values.var(axis=2, ddof=ddof, keepdims=True)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
     def std(self, ddof: int = 1) -> "TimeSeries":
         """Simple wrapper around :func:`np.ndarray.std()` for stochastic series."""
         self._assert_stochastic()
-        new_data = self._xa.values.std(axis=2, ddof=1, keepdims=True)
+        new_data = self._xa.values.std(axis=2, ddof=ddof, keepdims=True)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
-    def skew(self, bias: bool = True, nan_policy: str = "propagate") -> "TimeSeries":
+    def skew(self, **kwargs) -> "TimeSeries":
         """Simple wrapper around :func:`scipy.stats.skew()` for stochastic series."""
         self._assert_stochastic()
-        axis = 2
         new_data = np.expand_dims(
-            skew(self._xa.values, axis, bias, nan_policy), axis=axis
+            skew(self._xa.values, axis=2, **kwargs), axis=2
         )
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
     def kurtosis(
-        self, fisher: bool = True, bias: bool = True, nan_policy: str = "propagate"
+        self, **kwargs
     ) -> "TimeSeries":
-        """Simple wrapper around :func:`pd.DataFrame.kurtosis()` for stochastic series."""
+        """Simple wrapper around :func:`scipy.stats.kurtosis()` for stochastic series."""
         self._assert_stochastic()
-        axis = 2
         new_data = np.expand_dims(
-            kurtosis(self._xa.values, axis, fisher, bias, nan_policy), axis=axis
+            kurtosis(self._xa.values, axis=2, **kwargs), axis=2
         )
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
-    def min(self) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.min()` for stochastic series."""
-        self._assert_stochastic()
-        new_data = self._xa.values.min(axis=2, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
-        return self.__class__(new_xa)
 
-    def max(self) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.max()` for stochastic series."""
-        self._assert_stochastic()
-        new_data = self._xa.values.max(axis=2, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
-        return self.__class__(new_xa)
-
-    def sum(self) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.sum()` for stochastic series."""
-        self._assert_stochastic()
-        new_data = self._xa.values.sum(axis=2, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
-        return self.__class__(new_xa)
-
-    def median(self) -> "TimeSeries":
-        """Simple wrapper around :func:`np.median()` for stochastic series."""
-        self._assert_stochastic()
-        new_data = np.median(
-            self._xa.values, axis=2, out=None, overwrite_input=False, keepdims=True
-        )
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
-        return self.__class__(new_xa)
-
-    def quantile(self, q: float, method: str = "linear") -> "TimeSeries":
-        """Simple wrapper around :func:`np.quantile` for stochastic series."""
-        self._assert_stochastic()
-        new_data = np.quantile(
-            self._xa.values,
-            q=q,
-            axis=2,
-            method=method,
-            out=None,
-            overwrite_input=False,
-            keepdims=True,
-        )
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
-        return self.__class__(new_xa)
+    def quantile(self, quantile: float, **kwargs) -> "TimeSeries":
+        """Simple wrapper around :func:`np.quantile()` for stochastic series."""
+        return self.quantile_timeseries(quantile, **kwargs)
 
     """
     Dunder methods
