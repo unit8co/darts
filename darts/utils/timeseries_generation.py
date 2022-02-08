@@ -22,6 +22,7 @@ def _generate_index(
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
     freq: str = "D",
+    name: str = None,
 ) -> Union[pd.DatetimeIndex, pd.Int64Index]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas Int64Index. The index starts at
@@ -62,13 +63,16 @@ def _generate_index(
     )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
-        index = pd.date_range(start=start, end=end, periods=length, freq=freq)
+        index = pd.date_range(
+            start=start, end=end, periods=length, freq=freq, name=name
+        )
     else:  # int
         index = pd.Int64Index(
             range(
                 start if start is not None else end - length + 1,
                 end + 1 if end is not None else start + length,
-            )
+            ),
+            name=name,
         )
     return index
 
@@ -573,8 +577,9 @@ def datetime_attribute_timeseries(
         Either a `pd.DatetimeIndex` attribute which will serve as the basis of the new column(s), or
         a `TimeSeries` whose time axis will serve this purpose.
     attribute
-        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day", "hour", "minute", "second".
-        See all available attributes in https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex .
+        An attribute of `pd.DatetimeIndex`, or `week` / `weekofyear` / `week_of_year` - e.g. "month", "weekday", "day",
+        "hour", "minute", "second". See all available attributes in
+        https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex.
     one_hot
         Boolean value indicating whether to add the specified attribute as a one hot encoding
         (results in more columns).
@@ -632,7 +637,7 @@ def datetime_attribute_timeseries(
         "week_of_year": 52,
     }
 
-    if not attribute in ["week", "weekofyear", "week_of_year"]:
+    if attribute not in ["week", "weekofyear", "week_of_year"]:
         values = getattr(time_index, attribute)
     else:
         values = (

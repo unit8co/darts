@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.16.0"
+version = "0.16.1"
 
 
 # -- General configuration ---------------------------------------------------
@@ -104,6 +104,7 @@ numpydoc_class_members_toctree = True
 #
 html_theme = "pydata_sphinx_theme"
 html_logo = "static/darts-logo-trim.png"
+html_favicon = "static/docs-favicon.ico"
 
 html_theme_options = {
     "github_url": "https://github.com/unit8co/darts",

@@ -10,7 +10,7 @@ import numpy as np
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
-from darts.utils.utils import ModelMode
+from darts.utils.utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 
@@ -20,11 +20,12 @@ class ExponentialSmoothing(ForecastingModel):
         self,
         trend: Optional[ModelMode] = ModelMode.ADDITIVE,
         damped: Optional[bool] = False,
-        seasonal: Optional[ModelMode] = ModelMode.ADDITIVE,
+        seasonal: Optional[ModelMode] = SeasonalityMode.ADDITIVE,
         seasonal_periods: Optional[int] = None,
         random_state: int = 0,
         **fit_kwargs,
     ):
+
         """Exponential Smoothing
 
         This is a wrapper around
@@ -34,8 +35,10 @@ class ExponentialSmoothing(ForecastingModel):
 
         `model_mode` must be a ``ModelMode`` Enum member. You can access the Enum with ``from darts import ModelMode``.
 
-        ``ExponentialSmoothing(trend=None, seasonal=None)`` corresponds to a single exponential smoothing.
-        ``ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=None)`` corresponds to a Holt's exponential smoothing.
+        ``ExponentialSmoothing(trend=ModelMode.NONE, seasonal=SeasonalityMode.NONE)`` corresponds to a single
+        exponential smoothing.
+        ``ExponentialSmoothing(trend=ModelMode.ADDITIVE, seasonal=SeasonalityMode.NONE)`` corresponds to a Holt's
+        exponential smoothing.
 
         Please note that automatic `seasonal_period` selection (setting the `seasonal_periods` parameter equal to
         `None`) can sometimes lead to errors if the input time series is too short. In these cases we suggest to
@@ -44,13 +47,13 @@ class ExponentialSmoothing(ForecastingModel):
         Parameters
         ----------
         trend
-            Type of trend component. Either ``ModelMode.ADDITIVE`` or ``ModelMode.MULTIPLICATIVE``.
-            Defaults to ``ModelMode.ADDITIVE``.
+            Type of trend component. Either ``ModelMode.ADDITIVE``, ``ModelMode.MULTIPLICATIVE``, ``ModelMode.NONE``,
+            or ``None``. Defaults to ``ModelMode.ADDITIVE``.
         damped
             Should the trend component be damped. Defaults to False.
         seasonal
-            Type of seasonal component. Either ``ModelMode.ADDITIVE`` or ``ModelMode.MULTIPLICATIVE``.
-            Defaults to ``ModelMode.ADDITIVE``.
+            Type of seasonal component. Either ``SeasonalityMode.ADDITIVE``, ``SeasonalityMode.MULTIPLICATIVE``,
+            ``SeasonalityMode.NONE``, or ``None``. Defaults to ``SeasonalityMode.ADDITIVE``.
         seasonal_periods
             The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
             data with a weekly cycle. If not set, inferred from frequency of the series.
@@ -94,9 +97,9 @@ class ExponentialSmoothing(ForecastingModel):
 
         hw_model = hw.ExponentialSmoothing(
             series.values(),
-            trend=self.trend.value,
+            trend=self.trend if self.trend is None else self.trend.value,
             damped_trend=self.damped,
-            seasonal=self.seasonal.value,
+            seasonal=self.seasonal if self.seasonal is None else self.seasonal.value,
             seasonal_periods=seasonal_periods_param,
             freq=series.freq if series.has_datetime_index else None,
             dates=series.time_index if series.has_datetime_index else None,
@@ -106,6 +109,8 @@ class ExponentialSmoothing(ForecastingModel):
 
         if self.infer_seasonal_periods:
             self.seasonal_periods = hw_model.seasonal_periods
+
+        return self
 
     def predict(self, n, num_samples=1):
         super().predict(n, num_samples)

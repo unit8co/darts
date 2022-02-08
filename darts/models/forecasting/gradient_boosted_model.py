@@ -2,7 +2,7 @@
 LightGBM Model
 --------------
 
-This is a LightGBM implementation of Gradient Boosted Trees algorightm.
+This is a LightGBM implementation of Gradient Boosted Trees algorithm.
 
 To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the README:
 https://github.com/unit8co/darts/blob/master/README.md
@@ -23,7 +23,8 @@ class LightGBMModel(RegressionModel):
         lags: Union[int, list] = None,
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
-        **kwargs
+        output_chunk_length: int = 1,
+        **kwargs,
     ):
         """Light Gradient Boosted Model
 
@@ -41,6 +42,10 @@ class LightGBMModel(RegressionModel):
             given the last `past` lags in the past are used (inclusive, starting from lag -1) along with the first
             `future` future lags (starting from 0 - the prediction time - up to `future - 1` included). Otherwise a list
             of integers with lags is required.
+        output_chunk_length
+            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
+            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
+            be useful if the covariates don't extend far enough into the future.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
@@ -50,13 +55,12 @@ class LightGBMModel(RegressionModel):
             lags=lags,
             lags_past_covariates=lags_past_covariates,
             lags_future_covariates=lags_future_covariates,
+            output_chunk_length=output_chunk_length,
             model=lgb.LGBMRegressor(**kwargs),
         )
 
     def __str__(self):
-        return "LGBModel(lags={}, lags_past={}, lags_future={})".format(
-            self.lags, self.lags_past_covariates, self.lags_future_covariates
-        )
+        return f"LGBModel(lags={self.lags})"
 
     def fit(
         self,
@@ -67,8 +71,8 @@ class LightGBMModel(RegressionModel):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
-        **kwargs
-    ) -> None:
+        **kwargs,
+    ):
         """
         Fits/trains the model using the provided list of features time series and the target time series.
 
@@ -109,5 +113,7 @@ class LightGBMModel(RegressionModel):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
-            **kwargs
+            **kwargs,
         )
+
+        return self

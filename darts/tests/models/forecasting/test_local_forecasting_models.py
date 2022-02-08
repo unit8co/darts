@@ -13,6 +13,7 @@ from darts.models import (
     FourTheta,
     FFT,
     VARIMA,
+    KalmanForecaster,
 )
 from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
 from darts.logging import get_logger
@@ -45,6 +46,7 @@ models = [
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
     (FFT(trend="poly"), 11.4),
     (NaiveSeasonal(), 32.4),
+    (KalmanForecaster(dim_x=3), 17.0),
 ]
 
 if TORCH_AVAILABLE:
@@ -57,6 +59,7 @@ if TORCH_AVAILABLE:
 multivariate_models = [
     (VARIMA(1, 0, 0), 55.6),
     (VARIMA(1, 1, 1), 57.0),
+    (KalmanForecaster(dim_x=30), 30.0),
 ]
 
 dual_models = [ARIMA()]
@@ -119,8 +122,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
     def test_models_runnability(self):
         for model, _ in models:
-            model.fit(self.ts_gaussian)
-            prediction = model.predict(self.forecasting_horizon)
+            prediction = model.fit(self.ts_gaussian).predict(self.forecasting_horizon)
             self.assertTrue(len(prediction) == self.forecasting_horizon)
 
     def test_models_performance(self):

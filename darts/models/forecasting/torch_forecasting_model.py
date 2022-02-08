@@ -136,9 +136,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Default: ``torch.nn.MSELoss()``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of the
-            name is formatted with the local date and time, while PID is the processed ID (preventing models spawned at
-            the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
+            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
+            at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
@@ -408,9 +408,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
-    ) -> None:
+    ):
         """Fit/train the model on one or multiple series.
-
 
         This method wraps around :func:`fit_from_dataset()`, constructing a default training
         dataset for this model. If you need more control on how the series are sliced for training, consider
@@ -458,6 +457,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+
+        Returns
+        -------
+        self
+            Fitted model.
         """
         super().fit(
             series=series,
@@ -470,7 +474,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             past_covariates=past_covariates, future_covariates=future_covariates
         )
 
-        wrap_fn = lambda ts: [ts] if isinstance(ts, TimeSeries) else ts
+        def wrap_fn(
+            ts: Union[TimeSeries, Sequence[TimeSeries]]
+        ) -> Sequence[TimeSeries]:
+            return [ts] if isinstance(ts, TimeSeries) else ts
+
         series = wrap_fn(series)
         past_covariates = wrap_fn(past_covariates)
         future_covariates = wrap_fn(future_covariates)
@@ -539,7 +547,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info("Train dataset contains {} samples.".format(len(train_dataset)))
 
-        self.fit_from_dataset(
+        return self.fit_from_dataset(
             train_dataset, val_dataset, verbose, epochs, num_loader_workers
         )
 
@@ -577,9 +585,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         verbose: bool = False,
         epochs: int = 0,
         num_loader_workers: int = 0,
-    ) -> None:
+    ):
         """
-        This method allows for training with a specific :class:`darts.utils.data.TrainingDataset` instance.
+        Train the model with a specific :class:`darts.utils.data.TrainingDataset` instance.
         These datasets implement a PyTorch ``Dataset``, and specify how the target and covariates are sliced
         for training. If you are not sure which training dataset to use, consider calling :func:`fit()` instead,
         which will create a default training dataset appropriate for this model.
@@ -605,6 +613,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             both for the training and validation loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+
+        Returns
+        -------
+        self
+            Fitted model.
         """
 
         self._verify_train_dataset_type(train_dataset)
@@ -688,6 +701,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if tb_writer is not None:
             tb_writer.flush()
             tb_writer.close()
+
+        return self
 
     @random_method
     def predict(
@@ -1527,7 +1542,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
         n_targets = past_target.shape[dim_component]
         n_past_covs = (
-            past_covariates.shape[dim_component] if not past_covariates is None else 0
+            past_covariates.shape[dim_component] if past_covariates is not None else 0
         )
 
         input_past = torch.cat(

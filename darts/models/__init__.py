@@ -14,6 +14,7 @@ from darts.models.forecasting.theta import Theta, FourTheta
 from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.varima import VARIMA
+from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 
 try:
     from darts.models.forecasting.auto_arima import AutoARIMA
