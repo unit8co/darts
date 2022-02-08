@@ -992,7 +992,8 @@ class TimeSeries:
         new_xa = xr.DataArray(
             new_data,
             dims=self._xa.dims,
-            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},)
+            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
+        )
 
         return self.__class__(new_xa)
 
@@ -2464,87 +2465,102 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     """
-    Simple statistic and aggregation functions. Calculate various statistics over the samples of stochastic time series or aggregate over components/time for deterministic series.
+    Simple statistic and aggregation functions. Calculate various statistics over the samples of stochastic time series
+    or aggregate over components/time for deterministic series.
     """
 
-    def mean(self, axis: int=2) -> "TimeSeries":
+    def mean(self, axis: int = 2) -> "TimeSeries":
         """Simple wrapper around :func:`np.ndarray.mean()`."""
         new_data = self._xa.values.mean(axis=axis, keepdims=True)
         new_coords = self._xa.coords
 
-        if axis == 1: #if we aggregate over components we need to rename components
-            cname = 'components_mean'
+        if axis == 1:  # if we aggregate over components we need to rename components
+            cname = "components_mean"
             new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
 
-        if axis == 0: #if we aggregate over time we need to change timeindex
-            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+        if axis == 0:  # if we aggregate over time we need to change timeindex
+            new_coords = {
+                self._xa.dims[0]: self.time_index[-1:],
+                DIMS[1]: self.components,
+            }
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
-    def median(self, axis: int=2) -> "TimeSeries":
+    def median(self, axis: int = 2) -> "TimeSeries":
         """Simple wrapper around :func:`np.median()`."""
         new_data = np.median(
             self._xa.values, axis=axis, overwrite_input=False, keepdims=True
         )
         new_coords = self._xa.coords
 
-        if axis == 1: #if we aggregate over components we need to rename components
-            cname = 'components_median'
+        if axis == 1:  # if we aggregate over components we need to rename components
+            cname = "components_median"
             new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
 
-        if axis == 0: #if we aggregate over time we need to change timeindex
-            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+        if axis == 0:  # if we aggregate over time we need to change timeindex
+            new_coords = {
+                self._xa.dims[0]: self.time_index[-1:],
+                DIMS[1]: self.components,
+            }
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
-    def sum(self, axis: int=2) -> "TimeSeries":
+    def sum(self, axis: int = 2) -> "TimeSeries":
         """Simple wrapper around :func:`np.ndarray.sum()`."""
         new_data = self._xa.values.sum(axis=axis, keepdims=True)
         new_coords = self._xa.coords
 
-        if axis == 1: #if we aggregate over components we need to rename components
-            cname = 'components_sum'
+        if axis == 1:  # if we aggregate over components we need to rename components
+            cname = "components_sum"
             new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
 
-        if axis == 0: #if we aggregate over time we need to change timeindex
-            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+        if axis == 0:  # if we aggregate over time we need to change timeindex
+            new_coords = {
+                self._xa.dims[0]: self.time_index[-1:],
+                DIMS[1]: self.components,
+            }
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
-    def min(self, axis: int=2) -> "TimeSeries":
+    def min(self, axis: int = 2) -> "TimeSeries":
         """Simple wrapper around :func:`np.ndarray.min()`."""
 
         new_data = self._xa.values.min(axis=axis, keepdims=True)
         new_coords = self._xa.coords
 
-        if axis == 1: #if we aggregate over components we need to rename components
-            cname = 'components_min'
+        if axis == 1:  # if we aggregate over components we need to rename components
+            cname = "components_min"
             new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
 
-        if axis == 0: #if we aggregate over time we need to change timeindex
-            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+        if axis == 0:  # if we aggregate over time we need to change timeindex
+            new_coords = {
+                self._xa.dims[0]: self.time_index[-1:],
+                DIMS[1]: self.components,
+            }
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
-    def max(self, axis: int=2) -> "TimeSeries":
+    def max(self, axis: int = 2) -> "TimeSeries":
         """Simple wrapper around :func:`np.ndarray.max()`."""
         new_data = self._xa.values.max(axis=axis, keepdims=True)
         new_coords = self._xa.coords
 
-        if axis == 1: #if we aggregate over components we need to rename components
-            cname = 'components_max'
+        if axis == 1:  # if we aggregate over components we need to rename components
+            cname = "components_max"
             new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
 
-        if axis == 0: #if we aggregate over time we need to change timeindex
-            new_coords = {self._xa.dims[0]: self.time_index[-1:], DIMS[1]: self.components}
+        if axis == 0:  # if we aggregate over time we need to change timeindex
+            new_coords = {
+                self._xa.dims[0]: self.time_index[-1:],
+                DIMS[1]: self.components,
+            }
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
-
 
     def var(self, ddof: int = 1) -> "TimeSeries":
         """Simple wrapper around :func:`np.ndarray.var()` for stochastic series."""
@@ -2563,23 +2579,16 @@ class TimeSeries:
     def skew(self, **kwargs) -> "TimeSeries":
         """Simple wrapper around :func:`scipy.stats.skew()` for stochastic series."""
         self._assert_stochastic()
-        new_data = np.expand_dims(
-            skew(self._xa.values, axis=2, **kwargs), axis=2
-        )
+        new_data = np.expand_dims(skew(self._xa.values, axis=2, **kwargs), axis=2)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
-    def kurtosis(
-        self, **kwargs
-    ) -> "TimeSeries":
+    def kurtosis(self, **kwargs) -> "TimeSeries":
         """Simple wrapper around :func:`scipy.stats.kurtosis()` for stochastic series."""
         self._assert_stochastic()
-        new_data = np.expand_dims(
-            kurtosis(self._xa.values, axis=2, **kwargs), axis=2
-        )
+        new_data = np.expand_dims(kurtosis(self._xa.values, axis=2, **kwargs), axis=2)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
-
 
     def quantile(self, quantile: float, **kwargs) -> "TimeSeries":
         """Simple wrapper around :func:`np.quantile()` for stochastic series."""

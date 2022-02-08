@@ -1454,6 +1454,7 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         with self.assertRaises(AttributeError):
             TimeSeries.from_dataframe(df=df, time_col="Time")
 
+
 class SimpleStatisticsTestCase(DartsBaseTestClass):
 
     times = pd.date_range("20130101", "20130110", freq="D")
@@ -1468,71 +1469,97 @@ class SimpleStatisticsTestCase(DartsBaseTestClass):
     def test_mean(self):
         for axis in range(3):
             new_ts = self.ts.mean(axis=axis)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts._xa.values, self.values.mean(axis=axis, keepdims=True)).all())
+                np.isclose(
+                    new_ts._xa.values, self.values.mean(axis=axis, keepdims=True)
+                ).all()
+            )
 
     def test_var(self):
         for ddof in range(5):
             new_ts = self.ts.var(ddof=ddof)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts.values(), self.values.var(ddof=ddof, axis=2)).all())
+                np.isclose(new_ts.values(), self.values.var(ddof=ddof, axis=2)).all()
+            )
 
     def test_std(self):
         for ddof in range(5):
             new_ts = self.ts.std(ddof=ddof)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts.values(), self.values.std(ddof=ddof, axis=2)).all())
+                np.isclose(new_ts.values(), self.values.std(ddof=ddof, axis=2)).all()
+            )
 
     def test_skew(self):
         for bias in [True, False]:
             new_ts = self.ts.skew(bias=bias)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts.values(), skew(self.values, axis=2, bias=bias)).all())
+                np.isclose(new_ts.values(), skew(self.values, axis=2, bias=bias)).all()
+            )
 
     def test_kurtosis(self):
         for bias in [True, False]:
             for fisher in [True, False]:
                 new_ts = self.ts.kurtosis(bias=bias, fisher=fisher)
-                #check values
+                # check values
                 self.assertTrue(
-                    np.isclose(new_ts.values(), kurtosis(self.values, axis=2, bias=bias, fisher=fisher)).all())
+                    np.isclose(
+                        new_ts.values(),
+                        kurtosis(self.values, axis=2, bias=bias, fisher=fisher),
+                    ).all()
+                )
 
     def test_min(self):
         for axis in range(3):
             new_ts = self.ts.min(axis=axis)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts._xa.values, self.values.min(axis=axis, keepdims=True)).all())
+                np.isclose(
+                    new_ts._xa.values, self.values.min(axis=axis, keepdims=True)
+                ).all()
+            )
 
     def test_max(self):
         for axis in range(3):
             new_ts = self.ts.max(axis=axis)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts._xa.values, self.values.max(axis=axis, keepdims=True)).all())
+                np.isclose(
+                    new_ts._xa.values, self.values.max(axis=axis, keepdims=True)
+                ).all()
+            )
 
     def test_sum(self):
         for axis in range(3):
             new_ts = self.ts.sum(axis=axis)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts._xa.values, self.values.sum(axis=axis, keepdims=True)).all())
+                np.isclose(
+                    new_ts._xa.values, self.values.sum(axis=axis, keepdims=True)
+                ).all()
+            )
 
     def test_median(self):
         for axis in range(3):
             new_ts = self.ts.median(axis=axis)
-            #check values
+            # check values
             self.assertTrue(
-                np.isclose(new_ts._xa.values, np.median(self.values, axis=axis, keepdims=True)).all())
+                np.isclose(
+                    new_ts._xa.values, np.median(self.values, axis=axis, keepdims=True)
+                ).all()
+            )
 
     def test_quantile(self):
-        for method in ['linear', 'inverted_cdf']:
+        for method in ["linear", "inverted_cdf"]:
             for q in [0.01, 0.1, 0.5, 0.95]:
                 new_ts = self.ts.quantile(quantile=q, method=method)
-                #check values
+                # check values
                 self.assertTrue(
-                    np.isclose(new_ts.values(), np.quantile(self.values, q=q, method=method, axis=2)).all())
+                    np.isclose(
+                        new_ts.values(),
+                        np.quantile(self.values, q=q, method=method, axis=2),
+                    ).all()
+                )
