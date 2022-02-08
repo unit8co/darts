@@ -29,7 +29,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.
 
 ##### High Level Introductions
 * [Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
-* [Introductory Video](https://www.youtube.com/watch?v=Sx-uI-PypmU&t=8s&ab_channel=Unit8)
+* [Introductory Video](https://youtu.be/g6OXDnXEtFA)
 
 ##### Articles on Selected Topics
 * [Training Models on Multiple Time Series](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844)
