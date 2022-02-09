@@ -448,7 +448,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """Sets up the PyTorch-Lightning trainer for training or prediction."""
 
         self.trainer_params["enable_model_summary"] = (
-            verbose if self.model.current_epoch == 0 else False
+            verbose if self.model.epochs_trained == 0 else False
         )
         self.trainer_params["enable_progress_bar"] = verbose
 
@@ -825,12 +825,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # TODO: multiple training without loading from checkpoint is not trivial (I believe PyTorch-Lightning is still
         #  working on that, see https://github.com/PyTorchLightning/pytorch-lightning/issues/9636)
-        if verbose and self.model.current_epoch > 0 and not self.load_ckpt_path:
+        if self.epochs_trained > 0 and not self.load_ckpt_path:
             logger.warn(
                 "Attempting to retrain the model without resuming from a checkpoint. This is currently "
-                "discouraged. Consider setting `save_checkpoints` to `True` and specying `model_name` at model "
+                "discouraged. Consider setting `save_checkpoints` to `True` and specifying `model_name` at model "
                 f"creation. Then call `model = {self.__class__.__name__}.load_from_checkpoint(model_name, "
-                "best=False)` before `model.fit()` with `epochs=epochs_last + current_epochs`."
+                "best=False)`. Finally, train the model with `model.fit(..., epochs=new_epochs)` where "
+                "`new_epochs` is the sum of (epochs already trained + some additional epochs)."
             )
 
         # Train model
