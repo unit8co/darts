@@ -225,8 +225,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return self.criterion(output.squeeze(dim=-1), target)
 
     def configure_optimizers(self):
-        """sets up optimizers"""
-        # TODO: i think we can move this to to pl.Trainer(). and could probably be simplified
+        """configures optimizers and learning rate schedulers for for model optimization."""
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
