@@ -30,7 +30,7 @@ if TORCH_AVAILABLE:
 
         def test_save_model_parameters(self):
             # check if re-created model has same params as original
-            model = RNNModel("RNN", 10, 10)
+            model = RNNModel(12, "RNN", 10, 10)
             self.assertTrue(model._model_params, model.untrained_model()._model_params)
 
         @patch(
@@ -39,6 +39,7 @@ if TORCH_AVAILABLE:
         def test_suppress_automatic_save(self, patch_save_model):
             model_name = "test_model"
             model1 = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -47,6 +48,7 @@ if TORCH_AVAILABLE:
                 save_checkpoints=False,
             )
             model2 = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -76,6 +78,7 @@ if TORCH_AVAILABLE:
             manual_name = "test_save_manual"
             auto_name = "test_save_automatic"
             model_manual_save = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -85,6 +88,7 @@ if TORCH_AVAILABLE:
                 random_state=42,
             )
             model_auto_save = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -141,17 +145,21 @@ if TORCH_AVAILABLE:
             )
 
         def test_create_instance_new_model_no_name_set(self):
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir)
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir)
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
 
         def test_create_instance_existing_model_with_name_no_fit(self):
             model_name = "test_model"
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            RNNModel(
+                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+            )
             # no exception is raised
 
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            RNNModel(
+                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+            )
             # no exception is raised
 
         @patch(
@@ -161,11 +169,14 @@ if TORCH_AVAILABLE:
             self, patch_reset_model
         ):
             model_name = "test_model"
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            RNNModel(
+                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+            )
             # no exception is raised
             # since no fit, there is no data stored for the model, hence `force_reset` does noting
 
             RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -183,6 +194,7 @@ if TORCH_AVAILABLE:
         ):
             model_name = "test_model"
             model1 = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -198,6 +210,7 @@ if TORCH_AVAILABLE:
             model1.fit(series, epochs=1)
 
             RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -214,7 +227,9 @@ if TORCH_AVAILABLE:
 
         # n_epochs=20, fit|epochs=None, epochs_trained=0 - train for 20 epochs
         def test_train_from_0_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
@@ -225,7 +240,9 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=20 - train for another 20 epochs
         def test_train_from_20_n_epochs_40_no_fit_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
@@ -238,7 +255,9 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=10 - train for another 20 epochs
         def test_train_from_10_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
@@ -252,7 +271,9 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=15, epochs_trained=10 - train for 15 epochs
         def test_train_from_10_n_epochs_20_fit_15_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)

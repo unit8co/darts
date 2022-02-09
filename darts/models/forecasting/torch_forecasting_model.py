@@ -116,8 +116,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
         likelihood: Optional[Likelihood] = None,
         batch_size: int = 32,
@@ -148,10 +146,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         Parameters
         ----------
-        input_chunk_length
-            Number of past time steps that are fed to the internal forecasting module.
-        output_chunk_length
-            Number of time steps to be output by the internal forecasting module.
         loss_fn
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
@@ -231,9 +225,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.model: Optional[PLForecastingModule] = None
         self.train_sample: Optional[Tuple] = None
         self.output_dim: Optional[int] = None
-
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
 
         self.n_epochs = n_epochs
         self.batch_size = batch_size
@@ -336,6 +327,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.trainer: Optional[pl.Trainer] = None
         self.load_ckpt_path: Optional[str] = None
 
+        # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
+        self.pl_module_params: Optional[Dict] = None
+
     @staticmethod
     def _extract_torch_model_params(**kwargs):
         """extract params from model creation to set up TorchForecastingModels"""
@@ -376,6 +370,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     def _init_model(self) -> None:
         """Initializes model and trainer based on examples of input/output tensors (to get the sizes right):"""
+
+        raise_if(
+            self.pl_module_params is None,
+            "`pl_module_params` must be extracted in __init__ method of `TorchForecastingModel` subclass after "
+            "calling `super.__init__(...)`. Do this with `self._extract_pl_module_params(**self.model_params).`",
+        )
+
         # the tensors have shape (chunk_length, nr_dimensions)
         self.model = self._create_model(self.train_sample)
 
@@ -1253,6 +1254,22 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @property
     def likelihood(self) -> Likelihood:
         return self.model.likelihood if self.model_created else self._likelihood
+
+    @property
+    def input_chunk_length(self) -> int:
+        return (
+            self.model.input_chunk_length
+            if self.model_created
+            else self.pl_module_params.get("input_chunk_length")
+        )
+
+    @property
+    def output_chunk_length(self) -> int:
+        return (
+            self.model.output_chunk_length
+            if self.model_created
+            else self.pl_module_params.get("output_chunk_length")
+        )
 
     def _is_probabilistic(self) -> bool:
         return (

@@ -182,8 +182,8 @@ class _RNNModule(PLDualCovariatesModule):
 class RNNModel(DualCovariatesTorchModel):
     def __init__(
         self,
+        input_chunk_length: int,
         model: Union[str, nn.Module] = "RNN",
-        input_chunk_length: int = 12,
         hidden_dim: int = 25,
         n_rnn_layers: int = 1,
         dropout: float = 0.0,
@@ -218,12 +218,12 @@ class RNNModel(DualCovariatesTorchModel):
 
         Parameters
         ----------
+        input_chunk_length
+            Number of past time steps that are fed to the forecasting module at prediction time.
         model
             Either a string specifying the RNN module type ("RNN", "LSTM" or "GRU"),
             or a PyTorch module with the same specifications as
             `darts.models.rnn_model._RNNModule`.
-        input_chunk_length
-            Number of past time steps that are fed to the forecasting module at prediction time.
         hidden_dim
             Size for feature maps for each hidden RNN layer (:math:`h_n`).
         n_rnn_layers
@@ -327,7 +327,6 @@ class RNNModel(DualCovariatesTorchModel):
                 logger,
             )
 
-        self.input_chunk_length = input_chunk_length
         self.rnn_type_or_module = model
         self.dropout = dropout
         self.hidden_dim = hidden_dim

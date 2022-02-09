@@ -569,8 +569,8 @@ class _TFTModule(PLMixedCovariatesModule):
 class TFTModel(MixedCovariatesTorchModel):
     def __init__(
         self,
-        input_chunk_length: int = 12,
-        output_chunk_length: int = 1,
+        input_chunk_length: int,
+        output_chunk_length: int,
         hidden_size: Union[int, List[int]] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
@@ -726,8 +726,6 @@ class TFTModel(MixedCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.hidden_size = hidden_size
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads

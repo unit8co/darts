@@ -309,7 +309,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=166, series=self.ts_pass_train)
 
             # recurrent models can only predict data points for time steps where future covariates are available
-            model = RNNModel(n_epochs=1)
+            model = RNNModel(12, n_epochs=1)
             model.fit(series=self.target_past, future_covariates=self.covariates_past)
             model.predict(n=160, future_covariates=self.covariates)
             with self.assertRaises(ValueError):

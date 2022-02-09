@@ -261,8 +261,6 @@ class BlockRNNModel(PastCovariatesTorchModel):
                 logger,
             )
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.rnn_type_or_module = model
         self.hidden_fc_sizes = hidden_fc_sizes
         self.hidden_size = hidden_size

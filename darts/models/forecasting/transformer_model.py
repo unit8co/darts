@@ -344,8 +344,6 @@ class TransformerModel(PastCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.d_model = d_model
         self.nhead = nhead
         self.num_encoder_layers = num_encoder_layers

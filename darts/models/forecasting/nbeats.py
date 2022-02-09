@@ -595,8 +595,6 @@ class NBEATSModel(PastCovariatesTorchModel):
             logger,
         )
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.generic_architecture = generic_architecture
         self.num_stacks = num_stacks
         self.num_blocks = num_blocks

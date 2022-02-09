@@ -381,8 +381,6 @@ class TCNModel(PastCovariatesTorchModel):
         # extract pytorch lightning module kwargs
         self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.kernel_size = kernel_size
         self.num_filters = num_filters
         self.num_layers = num_layers
