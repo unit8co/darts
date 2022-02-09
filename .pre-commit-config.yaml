@@ -10,3 +10,24 @@ repos:
     hooks:
     -   id: flake8
         language_version: python3
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+      - id: check-added-large-files
+      - id: requirements-txt-fixer
+      - id: mixed-line-ending
+
+  - repo: https://github.com/pre-commit/mirrors-isort
+    rev: v5.9.3
+    hooks:
+      -  id: isort
+         args: [-e, "--profile", "black"]
+
+  - repo: https://github.com/asottile/pyupgrade
+    rev: v2.29.1
+    hooks:
+    -   id: pyupgrade
+        args: ['--py37-plus']
