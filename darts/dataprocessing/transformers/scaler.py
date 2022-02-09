@@ -8,10 +8,9 @@ from typing import Any, Iterator, Sequence, Tuple
 
 from sklearn.preprocessing import MinMaxScaler
 
-from darts.dataprocessing.transformers import (
-    FittableDataTransformer,
-    InvertibleDataTransformer,
-)
+from .fittable_data_transformer import FittableDataTransformer
+from .invertible_data_transformer import InvertibleDataTransformer
+
 from darts.logging import get_logger, raise_log
 from darts.timeseries import TimeSeries
 

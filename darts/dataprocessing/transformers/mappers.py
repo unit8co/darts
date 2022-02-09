@@ -8,10 +8,9 @@ from typing import Callable, List, Sequence, Union
 import numpy as np
 import pandas as pd
 
-from darts.dataprocessing.transformers import (
-    BaseDataTransformer,
-    InvertibleDataTransformer,
-)
+from .base_data_transformer import BaseDataTransformer
+from .invertible_data_transformer import InvertibleDataTransformer
+
 from darts.logging import get_logger
 from darts.timeseries import TimeSeries
 
