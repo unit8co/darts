@@ -41,8 +41,26 @@ logger = get_logger(__name__)
 
 
 class ModelMeta(ABCMeta):
+    """Meta class to store parameters used at model creation.
+
+    When creating a model instance, the parameters are extracted as follows:
+
+        1)  Get the model's __init__ signature and store all arg and kwarg
+            names as well as default values (empty for args) in an ordered
+            dict `all_params`.
+        2)  Replace the arg values from `all_params` with the positional
+            args used at model creation.
+        3)  Remove args from `all_params` that were not passed as positional
+            args at model creation. This will enforce that an error is raised
+            if not all positional args were passed. If all positional args
+            were passed, no parameter will be removed.
+        4)  Update `all_params` kwargs with optional kwargs from model creation.
+        5)  Save `all_params` to the model.
+        6)  Call (create) the model with `all_params`.
+    """
+
     def __call__(cls, *args, **kwargs):
-        # get all default values from class' __init__ signature
+        # 1) get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
         all_params = OrderedDict(
             [
@@ -52,11 +70,11 @@ class ModelMeta(ABCMeta):
             ]
         )
 
-        # fill params with positional args
+        # 2) fill params with positional args
         for param, arg in zip(all_params, args):
             all_params[param] = arg
 
-        # remove args which were not set (and are per default empty)
+        # 3) remove args which were not set (and are per default empty)
         remove_params = []
         for param, val in all_params.items():
             if val is sig.parameters[param].empty:
@@ -64,11 +82,13 @@ class ModelMeta(ABCMeta):
         for param in remove_params:
             all_params.pop(param)
 
-        # update defaults with actual model call parameters and store
+        # 4) update defaults with actual model call parameters and store
         all_params.update(kwargs)
+
+        # 5) save parameters in model
         cls._model_call = all_params
 
-        # call model
+        # 6) call model
         return super(ModelMeta, cls).__call__(**all_params)
 
 
