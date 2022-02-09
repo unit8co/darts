@@ -32,6 +32,29 @@ def get_logger(name):
     return logger
 
 
+def raise_deprecation_warning(
+    message: str = "",
+    logger: logging.Logger = get_logger("main_logger"),
+):
+    """
+    Raises a DeprecationWarning.
+
+    Parameters
+    ----------
+    message
+        The message of the ValueError.
+    logger
+        The logger instance to log the error message if 'condition' is False.
+
+    Raises
+    ------
+    Warning
+        DeprecationWarning
+    """
+
+    logger.warning("DeprecationWarning: " + message)
+
+
 def raise_if_not(
     condition: bool,
     message: str = "",
