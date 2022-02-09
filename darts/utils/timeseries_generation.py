@@ -22,6 +22,7 @@ def _generate_index(
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
     freq: str = "D",
+    name: str = None,
 ) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas RangeIndex. The index starts at
@@ -62,12 +63,15 @@ def _generate_index(
     )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
-        index = pd.date_range(start=start, end=end, periods=length, freq=freq)
+        index = pd.date_range(
+            start=start, end=end, periods=length, freq=freq, name=name
+        )
     else:  # int
         index = pd.RangeIndex(
             start=start if start is not None else end - length + 1,
             stop=end + 1 if end is not None else start + length,
             step=1,
+            name=name,
         )
     return index
 

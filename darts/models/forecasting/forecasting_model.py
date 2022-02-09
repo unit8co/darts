@@ -196,7 +196,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start = (
             last + input_series.freq if input_series.has_datetime_index else last + 1
         )
-        return _generate_index(start=start, freq=input_series.freq, length=n)
+        return _generate_index(
+            start=start, freq=input_series.freq, length=n, name=input_series.time_dim
+        )
 
     def _build_forecast_series(
         self,

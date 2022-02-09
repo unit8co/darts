@@ -7,6 +7,7 @@ from darts import TimeSeries
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.filtering.moving_average import MovingAverage
+from darts.metrics import rmse
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -97,6 +98,25 @@ class KalmanFilterTestCase(FilterBaseTestClass):
 
         self.assertEqual(prediction.width, 1)
         self.assertEqual(prediction.n_samples, 10)
+
+    def test_kalman_missing_values(self):
+        sine = tg.sine_timeseries(
+            length=100, value_frequency=0.05
+        ) + 0.1 * tg.gaussian_timeseries(length=100)
+        values = sine.values()
+        values[20:22] = np.nan
+        values[28:40] = np.nan
+        sine_holes = TimeSeries.from_values(values)
+        sine = TimeSeries.from_values(sine.values())
+
+        kf = KalmanFilter(dim_x=2)
+        kf.fit(sine_holes[-50:])  # fit on the part with no holes
+
+        # reconstructruction should succeed
+        filtered_series = kf.filter(sine_holes, num_samples=100)
+
+        # reconstruction error should be sufficiently small
+        self.assertLess(rmse(filtered_series, sine), 0.1)
 
     def test_kalman_given_kf(self):
         nfoursid_ss = state_space.StateSpace(
