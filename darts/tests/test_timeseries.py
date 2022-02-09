@@ -1,14 +1,14 @@
 import math
+from tempfile import NamedTemporaryFile
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-from tempfile import NamedTemporaryFile
-from unittest.mock import patch
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries, concatenate
-from darts.utils.timeseries_generation import linear_timeseries, constant_timeseries
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
 
 class TimeSeriesTestCase(DartsBaseTestClass):
@@ -153,7 +153,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # test if reordering is correct
         rand_perm = np.random.permutation(range(1, 11))
-        index = pd.to_datetime(["201301{:02d}".format(i) for i in rand_perm])
+        index = pd.to_datetime([f"201301{i:02d}" for i in rand_perm])
         series_test = TimeSeries.from_times_and_values(
             index, self.pd_series1.values[rand_perm - 1]
         )

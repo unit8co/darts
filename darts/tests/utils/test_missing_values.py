@@ -1,8 +1,8 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
+from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.missing_values import fill_missing_values, missing_values_ratio
 
 

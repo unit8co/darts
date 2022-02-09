@@ -3,20 +3,21 @@ Recurrent Neural Networks
 -------------------------
 """
 
-import torch.nn as nn
-import torch
-from numpy.random import RandomState
-from typing import Sequence, Optional, Union, Tuple
-from darts.timeseries import TimeSeries
+from typing import Optional, Sequence, Tuple, Union
 
-from darts.logging import raise_if_not, get_logger
+import torch
+import torch.nn as nn
+from numpy.random import RandomState
+
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
     DualCovariatesTorchModel,
+    TorchParametricProbabilisticForecastingModel,
 )
-from darts.utils.torch import random_method
+from darts.timeseries import TimeSeries
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
 from darts.utils.likelihood_models import Likelihood
+from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -71,7 +72,7 @@ class _RNNModule(nn.Module):
             However, this module always returns the whole Tensor.
         """
 
-        super(_RNNModule, self).__init__()
+        super().__init__()
 
         # Defining parameters
         self.target_size = target_size

@@ -1,27 +1,27 @@
+import math
+from unittest.mock import patch
+
 import numpy as np
 import pandas as pd
-import math
+from sklearn.ensemble import HistGradientBoostingRegressor, RandomForestRegressor
+from sklearn.linear_model import LinearRegression
+from sklearn.multioutput import MultiOutputRegressor
 
 import darts
-from darts.logging import get_logger
 from darts import TimeSeries
+from darts.logging import get_logger
 from darts.metrics import rmse
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from sklearn.linear_model import LinearRegression
-from sklearn.ensemble import RandomForestRegressor, HistGradientBoostingRegressor
-from sklearn.multioutput import MultiOutputRegressor
-from unittest.mock import patch
-
 
 logger = get_logger(__name__)
 
 try:
     from darts.models import (
-        RegressionModel,
-        RandomForest,
-        LinearRegressionModel,
         LightGBMModel,
+        LinearRegressionModel,
+        RandomForest,
+        RegressionModel,
     )
 
     TORCH_AVAILABLE = True

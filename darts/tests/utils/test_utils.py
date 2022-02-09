@@ -1,10 +1,10 @@
 import numpy as np
 import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import retain_period_common_to_all, _with_sanity_checks
-from darts.utils.missing_values import extract_subseries
 from darts import TimeSeries
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import _with_sanity_checks, retain_period_common_to_all
+from darts.utils.missing_values import extract_subseries
 
 
 class UtilsTestCase(DartsBaseTestClass):

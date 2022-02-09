@@ -1,8 +1,8 @@
 import numpy as np
 
+from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts.logging import get_logger
 
 logger = get_logger(__name__)
 

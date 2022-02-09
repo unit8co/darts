@@ -2,20 +2,21 @@
 Additional util functions
 -------------------------
 """
-import pandas as pd
-import numpy as np
+from enum import Enum
+from functools import wraps
+from inspect import Parameter, getcallargs, signature
+from types import SimpleNamespace
+from typing import Callable, Iterator, List, Tuple, TypeVar
 
-from darts import TimeSeries
-from darts.logging import raise_log, get_logger, raise_if_not, raise_if
-from typing import List, Callable, TypeVar, Iterator, Tuple
+import numpy as np
+import pandas as pd
 from IPython import get_ipython
+from joblib import Parallel, delayed
 from tqdm import tqdm
 from tqdm.notebook import tqdm as tqdm_notebook
-from functools import wraps
-from types import SimpleNamespace
-from inspect import signature, Parameter, getcallargs
-from enum import Enum
-from joblib import Parallel, delayed
+
+from darts import TimeSeries
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 
 logger = get_logger(__name__)
 

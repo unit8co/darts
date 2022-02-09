@@ -1,32 +1,34 @@
-import numpy as np
-from unittest.mock import patch, ANY
+from unittest.mock import ANY, patch
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
-from darts.metrics import mape
-from darts.logging import get_logger
+import numpy as np
+
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
+from darts.logging import get_logger
+from darts.metrics import mape
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
 try:
+    import torch
+
     from darts.models import (
         BlockRNNModel,
-        TCNModel,
-        TransformerModel,
         NBEATSModel,
         RNNModel,
+        TCNModel,
         TFTModel,
+        TransformerModel,
     )
-    from darts.utils.likelihood_models import GaussianLikelihood
     from darts.models.forecasting.torch_forecasting_model import (
-        PastCovariatesTorchModel,
         DualCovariatesTorchModel,
         MixedCovariatesTorchModel,
+        PastCovariatesTorchModel,
     )
-    import torch
+    from darts.utils.likelihood_models import GaussianLikelihood
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -161,7 +163,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN,
                     output_chunk_length=OUT_LEN,
                     random_state=0,
-                    **kwargs
+                    **kwargs,
                 )
                 model.fit(self.ts_pass_train)
                 pred = model.predict(n=36)
@@ -178,7 +180,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN,
                     output_chunk_length=OUT_LEN,
                     random_state=0,
-                    **kwargs
+                    **kwargs,
                 )
                 model.fit([self.ts_pass_train, self.ts_pass_train_1])
                 with self.assertRaises(ValueError):
@@ -198,7 +200,7 @@ if TORCH_AVAILABLE:
                 )
                 self.assertTrue(
                     len(pred_list) == 2,
-                    "Model {} did not return a list of prediction".format(model_cls),
+                    f"Model {model_cls} did not return a list of prediction",
                 )
                 for pred in pred_list:
                     mape_err = mape(self.ts_pass_val, pred)
@@ -215,7 +217,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN,
                     output_chunk_length=OUT_LEN,
                     random_state=0,
-                    **kwargs
+                    **kwargs,
                 )
 
                 # Here we rely on the fact that all non-Dual models currently are Past models

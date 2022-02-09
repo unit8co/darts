@@ -3,18 +3,17 @@ Facebook Prophet
 ----------------
 """
 
-from typing import Optional, Union, List
-
-import re
 import logging
-import prophet
+import re
+from typing import List, Optional, Union
+
 import numpy as np
 import pandas as pd
+import prophet
 
-from darts.timeseries import TimeSeries
+from darts.logging import execute_and_suppress_output, get_logger, raise_if
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
-from darts.logging import get_logger, execute_and_suppress_output, raise_if
-
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs

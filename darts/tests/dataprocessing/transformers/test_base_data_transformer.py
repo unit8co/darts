@@ -1,9 +1,9 @@
-import unittest
 import logging
+import unittest
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers import BaseDataTransformer
 from darts.utils.timeseries_generation import constant_timeseries
-from darts import TimeSeries
 
 
 class BaseDataTransformerTestCase(unittest.TestCase):

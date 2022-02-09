@@ -4,19 +4,20 @@ Time Series Statistics
 """
 
 import math
-from typing import Tuple, Optional, List, Union
+from typing import List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
-from scipy.stats import norm
 from scipy.signal import argrelmax
+from scipy.stats import norm
 from statsmodels.tsa.seasonal import seasonal_decompose
-from statsmodels.tsa.stattools import acf, pacf, grangercausalitytests, adfuller, kpss
+from statsmodels.tsa.stattools import acf, adfuller, grangercausalitytests, kpss, pacf
 
-from darts.logging import raise_log, get_logger, raise_if_not, raise_if
 from darts import TimeSeries
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+
 from .missing_values import fill_missing_values
-from .utils import SeasonalityMode, ModelMode
+from .utils import ModelMode, SeasonalityMode
 
 logger = get_logger(__name__)
 
@@ -149,7 +150,7 @@ def extract_trend_and_seasonality(
     ts._assert_univariate()
     raise_if_not(
         model in ModelMode or model in SeasonalityMode,
-        "Unknown value for model_mode: {}.".format(model),
+        f"Unknown value for model_mode: {model}.",
         logger,
     )
     raise_if_not(
@@ -194,7 +195,7 @@ def remove_from_series(
     ts._assert_univariate()
     raise_if_not(
         model in ModelMode or model in SeasonalityMode,
-        "Unknown value for model_mode: {}.".format(model),
+        f"Unknown value for model_mode: {model}.",
         logger,
     )
 
