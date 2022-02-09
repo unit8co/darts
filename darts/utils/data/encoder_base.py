@@ -16,7 +16,7 @@ from darts.utils.timeseries_generation import _generate_index
 from darts.dataprocessing.transformers import FittableDataTransformer
 
 
-SupportedIndex = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
+SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
 EncoderOutputType = Optional[Union[Sequence[TimeSeries], List[TimeSeries]]]
 logger = get_logger(__name__)
 

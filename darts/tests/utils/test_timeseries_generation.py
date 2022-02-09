@@ -189,7 +189,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
         for length_assert in [1, 2, 5, 10, 100]:
             for start_pos in [0, 1]:
-                # pandas.Int64Index
+                # pandas.RangeIndex
                 start_assert, end_assert = start_pos, start_pos + length_assert - 1
                 test_routine(start=start_assert, length=length_assert, freq="")
                 test_routine(start=start_assert, length=length_assert, freq="D")

@@ -22,15 +22,15 @@ def _generate_index(
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
     freq: str = "D",
-) -> Union[pd.DatetimeIndex, pd.Int64Index]:
+) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
-    or a pandas Int64Index. The index starts at
+    or a pandas RangeIndex. The index starts at
 
     Parameters
     ----------
     start
         The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas
-        DatetimeIndex. If an integer is passed, the index will be a pandas Int64Index index. Works only with
+        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
@@ -64,11 +64,10 @@ def _generate_index(
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
         index = pd.date_range(start=start, end=end, periods=length, freq=freq)
     else:  # int
-        index = pd.Int64Index(
-            range(
-                start if start is not None else end - length + 1,
-                end + 1 if end is not None else start + length,
-            )
+        index = pd.RangeIndex(
+            start=start if start is not None else end - length + 1,
+            stop=end + 1 if end is not None else start + length,
+            step=1,
         )
     return index
 
@@ -91,7 +90,7 @@ def constant_timeseries(
         The constant value that the TimeSeries object will assume at every index.
     start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
@@ -145,7 +144,7 @@ def linear_timeseries(
         The value of the last entry in the TimeSeries.
     start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
@@ -202,7 +201,7 @@ def sine_timeseries(
         The shift of the sine function along the y axis.
     start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
@@ -266,7 +265,7 @@ def gaussian_timeseries(
         be used as covariance matrix for a multivariate gaussian distribution.
     start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
@@ -333,7 +332,7 @@ def random_walk_timeseries(
         The standard deviation of the gaussian distribution that is sampled at each step.
     start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
@@ -386,7 +385,7 @@ def autoregressive_timeseries(
         series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + ... + coef[0] * starting_values[0]
     start
         The start of the returned TimeSeries' index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
         either `length` or `end`.
     end
         Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is
