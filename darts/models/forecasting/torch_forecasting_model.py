@@ -27,7 +27,6 @@ from abc import ABC, abstractmethod
 from typing import Optional, Dict, Tuple, Union, Sequence, List
 
 import torch
-from torch import nn
 from torch import Tensor
 from torch.utils.data import DataLoader
 
@@ -106,9 +105,7 @@ def _get_checkpoint_fname(work_dir, model_name, best=False):
             logger,
         )
 
-    file_name = max(
-        checklist, key=os.path.getctime
-    )  # latest file TODO: check case where no files match
+    file_name = max(checklist, key=os.path.getctime)
     return os.path.basename(file_name)
 
 
@@ -116,8 +113,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @random_method
     def __init__(
         self,
-        loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-        likelihood: Optional[Likelihood] = None,
         batch_size: int = 32,
         n_epochs: int = 100,
         model_name: str = None,
@@ -146,12 +141,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         Parameters
         ----------
-        loss_fn
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: ``torch.nn.MSELoss()``.
-        likelihood
-            The likelihood model to be used for probabilistic forecasts.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
@@ -205,7 +194,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
         pl_trainer_kwargs
-            Per default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
             checkpointing, tensorboard logging, setting the torch device and more.
             With `pl_trainer_kwargs` you can add additional kwargs to instantiate the PyTorch Lightning trainer object.
@@ -228,10 +217,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-
-        # by default models are deterministic (i.e. not probabilistic)
-        self._loss_fn = loss_fn
-        self._likelihood = likelihood
 
         # by default models do not use encoders
         self.add_encoders = add_encoders
@@ -258,11 +243,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if checkpoint_exists and save_checkpoints:
             raise_if_not(
                 force_reset,
-                "You already have model data for the '{}' name. Either load model to continue"
-                " training or use `force_reset=True` to initialize anyway to start"
-                " training from scratch and remove all the model data".format(
-                    self.model_name
-                ),
+                f"Some model data already exists for `model_name` '{self.model_name}'. Either load model to continue "
+                f"training or use `force_reset=True` to initialize anyway to start training from scratch and remove "
+                f"all the model data",
                 logger,
             )
             self.reset_model()
@@ -1253,14 +1236,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @property
     def likelihood(self) -> Likelihood:
-        return self.model.likelihood if self.model_created else self._likelihood
+        return (
+            self.model.likelihood
+            if self.model_created
+            else self.pl_module_params.get("likelihood", None)
+        )
 
     @property
     def input_chunk_length(self) -> int:
         return (
             self.model.input_chunk_length
             if self.model_created
-            else self.pl_module_params.get("input_chunk_length")
+            else self.pl_module_params["input_chunk_length"]
         )
 
     @property
@@ -1268,7 +1255,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return (
             self.model.output_chunk_length
             if self.model_created
-            else self.pl_module_params.get("output_chunk_length")
+            else self.pl_module_params["output_chunk_length"]
         )
 
     def _is_probabilistic(self) -> bool:

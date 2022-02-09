@@ -132,7 +132,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     def predict_step(
         self, batch: Tuple, batch_idx: int, dataloader_idx: Optional[int] = None
-    ) -> Tuple[torch.Tensor, Sequence[TimeSeries]]:
+    ) -> Sequence[TimeSeries]:
         """performs the prediction step
 
         batch
@@ -206,12 +206,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         return ts_forecasts
 
     def set_predict_parameters(
-        self,
-        n: Optional[int] = None,
-        num_samples: Optional[int] = None,
-        roll_size: Optional[int] = None,
-        batch_size: Optional[int] = None,
-        n_jobs: Optional[int] = None,
+        self, n: int, num_samples: int, roll_size: int, batch_size: int, n_jobs: int
     ) -> None:
         """to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()"""
         self.pred_n = n
@@ -219,10 +214,6 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.pred_roll_size = roll_size
         self.pred_batch_size = batch_size
         self.pred_n_jobs = n_jobs
-
-    def on_predict_end(self) -> None:
-        """reset all prediction-relevant parameters"""
-        self.set_predict_parameters()
 
     def _compute_loss(self, output, target):
         # output is of shape (batch_size, n_timesteps, n_components, n_params)
