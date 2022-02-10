@@ -2469,129 +2469,260 @@ class TimeSeries:
     or aggregate over components/time for deterministic series.
     """
 
+    def _get_agg_coords(self, new_cname: str, axis: int) -> dict:
+        """Helper function to rename reduced axis. Returns a dictionary containing the new coordinates"""
+        if axis == 0:  # set time_index to first day
+            return {self._xa.dims[0]: self.time_index[0:1], DIMS[1]: self.components}
+        elif axis == 1:  # rename components
+            return {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([new_cname])}
+        elif axis == 2:  # do nothing
+            return {self._xa.dims[0]: self.time_index, DIMS[1]: self.components}
+
     def mean(self, axis: int = 2) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.mean()`."""
+        """
+        Return a ``TimeSeries`` containing the mean calculated over the specified axis.
+
+        If we reduce over time (``axis=1``) the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``) the
+        resulting single component will be renamed to "components_mean".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with mean applied to the indicated axis.
+        """
         new_data = self._xa.values.mean(axis=axis, keepdims=True)
-        new_coords = self._xa.coords
 
-        if axis == 1:  # if we aggregate over components we need to rename components
-            cname = "components_mean"
-            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
-
-        if axis == 0:  # if we aggregate over time we need to change timeindex
-            new_coords = {
-                self._xa.dims[0]: self.time_index[-1:],
-                DIMS[1]: self.components,
-            }
+        new_coords = self._get_agg_coords("components_mean", axis)
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
     def median(self, axis: int = 2) -> "TimeSeries":
-        """Simple wrapper around :func:`np.median()`."""
+        """
+        Return a ``TimeSeries`` containing the median calculated over the specified axis.
+
+        If we reduce over time (``axis=1``) the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``) the
+        resulting single component will be renamed to "components_median".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with median applied to the indicated axis.
+        """
         new_data = np.median(
             self._xa.values, axis=axis, overwrite_input=False, keepdims=True
         )
-        new_coords = self._xa.coords
-
-        if axis == 1:  # if we aggregate over components we need to rename components
-            cname = "components_median"
-            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
-
-        if axis == 0:  # if we aggregate over time we need to change timeindex
-            new_coords = {
-                self._xa.dims[0]: self.time_index[-1:],
-                DIMS[1]: self.components,
-            }
+        new_coords = self._get_agg_coords("components_median", axis)
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
     def sum(self, axis: int = 2) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.sum()`."""
+        """
+        Return a ``TimeSeries`` containing the sum calculated over the specified axis.
+
+        If we reduce over time (``axis=1``) the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``) the
+        resulting single component will be renamed to "components_sum".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with sum applied to the indicated axis.
+        """
         new_data = self._xa.values.sum(axis=axis, keepdims=True)
-        new_coords = self._xa.coords
 
-        if axis == 1:  # if we aggregate over components we need to rename components
-            cname = "components_sum"
-            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
-
-        if axis == 0:  # if we aggregate over time we need to change timeindex
-            new_coords = {
-                self._xa.dims[0]: self.time_index[-1:],
-                DIMS[1]: self.components,
-            }
+        new_coords = self._get_agg_coords("components_sum", axis)
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
     def min(self, axis: int = 2) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.min()`."""
+        """
+        Return a ``TimeSeries`` containing the min calculated over the specified axis.
+
+        If we reduce over time (``axis=1``) the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``) the
+        resulting single component will be renamed to "components_min".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with min applied to the indicated axis.
+        """
 
         new_data = self._xa.values.min(axis=axis, keepdims=True)
-        new_coords = self._xa.coords
-
-        if axis == 1:  # if we aggregate over components we need to rename components
-            cname = "components_min"
-            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
-
-        if axis == 0:  # if we aggregate over time we need to change timeindex
-            new_coords = {
-                self._xa.dims[0]: self.time_index[-1:],
-                DIMS[1]: self.components,
-            }
+        new_coords = self._get_agg_coords("components_min", axis)
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
     def max(self, axis: int = 2) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.max()`."""
+        """
+        Return a ``TimeSeries`` containing the max calculated over the specified axis.
+
+        If we reduce over time (``axis=1``) the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``) the
+        resulting single component will be renamed to "components_max".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with max applied to the indicated axis.
+        """
         new_data = self._xa.values.max(axis=axis, keepdims=True)
-        new_coords = self._xa.coords
-
-        if axis == 1:  # if we aggregate over components we need to rename components
-            cname = "components_max"
-            new_coords = {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([cname])}
-
-        if axis == 0:  # if we aggregate over time we need to change timeindex
-            new_coords = {
-                self._xa.dims[0]: self.time_index[-1:],
-                DIMS[1]: self.components,
-            }
+        new_coords = self._get_agg_coords("components_max", axis)
 
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
         return self.__class__(new_xa)
 
     def var(self, ddof: int = 1) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.var()` for stochastic series."""
+        """
+        Return a deterministic ``TimeSeries`` containing the variance of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        ddof
+            "Delta Degrees of Freedom": the divisor used in the calculation is N - ddof where N represents the
+            number of elements. By default ddof is 1.
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the variance for each component.
+        """
         self._assert_stochastic()
         new_data = self._xa.values.var(axis=2, ddof=ddof, keepdims=True)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
     def std(self, ddof: int = 1) -> "TimeSeries":
-        """Simple wrapper around :func:`np.ndarray.std()` for stochastic series."""
+        """
+        Return a deterministic ``TimeSeries`` containing the standard deviation of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        ddof
+            "Delta Degrees of Freedom": the divisor used in the calculation is N - ddof where N represents the
+            number of elements. By default ddof is 1.
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the standard deviation for each component.
+        """
         self._assert_stochastic()
         new_data = self._xa.values.std(axis=2, ddof=ddof, keepdims=True)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
     def skew(self, **kwargs) -> "TimeSeries":
-        """Simple wrapper around :func:`scipy.stats.skew()` for stochastic series."""
+        """
+        Return a deterministic ``TimeSeries`` containing the skew of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        kwargs
+            Other keyword arguments are passed down to `scipy.stats.skew()`
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the skew for each component.
+        """
         self._assert_stochastic()
         new_data = np.expand_dims(skew(self._xa.values, axis=2, **kwargs), axis=2)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
     def kurtosis(self, **kwargs) -> "TimeSeries":
-        """Simple wrapper around :func:`scipy.stats.kurtosis()` for stochastic series."""
+        """
+        Return a deterministic ``TimeSeries`` containing the kurtosis of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        kwargs
+            Other keyword arguments are passed down to `scipy.stats.kurtosis()`
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the kurtosis for each component.
+        """
         self._assert_stochastic()
         new_data = np.expand_dims(kurtosis(self._xa.values, axis=2, **kwargs), axis=2)
         new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
         return self.__class__(new_xa)
 
     def quantile(self, quantile: float, **kwargs) -> "TimeSeries":
-        """Simple wrapper around :func:`np.quantile()` for stochastic series."""
+        """
+        Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        The components in the new series are named "<component>_X", where "<component>"
+        is the column name corresponding to this component, and "X" is the quantile value.
+        The quantile columns represent the marginal distributions of the components of this series.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        quantile
+            The desired quantile value. The value must be represented as a fraction
+            (between 0 and 1 inclusive). For instance, `0.5` will return a TimeSeries
+            containing the median of the (marginal) distribution of each component.
+        kwargs
+            Other keyword arguments are passed down to `numpy.quantile()`
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the desired quantile for each component.
+        """
         return self.quantile_timeseries(quantile, **kwargs)
 
     """
