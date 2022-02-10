@@ -1,10 +1,5 @@
 black[jupyter]==21.12b0
-
-# linters
 flake8==4.0.1
 pre-commit
-# coverage==5.5
 pytest-cov
-
-# tests
 testfixtures==6.17.1
