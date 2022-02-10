@@ -1458,7 +1458,7 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
 class SimpleStatisticsTestCase(DartsBaseTestClass):
 
     times = pd.date_range("20130101", "20130110", freq="D")
-    values = np.random.rand(10, 2, 1000)
+    values = np.random.rand(10, 2, 100)
     ar = xr.DataArray(
         values,
         dims=("time", "component", "sample"),
