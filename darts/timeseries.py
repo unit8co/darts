@@ -17,7 +17,7 @@ Definitions:
 Each series also stores a `time_index`, which contains either datetimes (:class:`pandas.DateTimeIndex`)
 or integer indices (:class:`pandas.RangeIndex`).
 
-``TimeSeries`` are guaranted to:
+``TimeSeries`` are guaranteed to:
     - Have a monotically increasing time index, without holes (without missing dates)
     - Contain numeric types only
     - Have distinct components/columns names
