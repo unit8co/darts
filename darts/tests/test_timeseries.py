@@ -1493,24 +1493,19 @@ class SimpleStatisticsTestCase(DartsBaseTestClass):
             )
 
     def test_skew(self):
-        for bias in [True, False]:
-            new_ts = self.ts.skew(bias=bias)
-            # check values
-            self.assertTrue(
-                np.isclose(new_ts.values(), skew(self.values, axis=2, bias=bias)).all()
-            )
+        new_ts = self.ts.skew()
+        # check values
+        self.assertTrue(np.isclose(new_ts.values(), skew(self.values, axis=2)).all())
 
     def test_kurtosis(self):
-        for bias in [True, False]:
-            for fisher in [True, False]:
-                new_ts = self.ts.kurtosis(bias=bias, fisher=fisher)
-                # check values
-                self.assertTrue(
-                    np.isclose(
-                        new_ts.values(),
-                        kurtosis(self.values, axis=2, bias=bias, fisher=fisher),
-                    ).all()
-                )
+        new_ts = self.ts.kurtosis()
+        # check values
+        self.assertTrue(
+            np.isclose(
+                new_ts.values(),
+                kurtosis(self.values, axis=2),
+            ).all()
+        )
 
     def test_min(self):
         for axis in range(3):
@@ -1553,13 +1548,12 @@ class SimpleStatisticsTestCase(DartsBaseTestClass):
             )
 
     def test_quantile(self):
-        for method in ["linear", "inverted_cdf"]:
-            for q in [0.01, 0.1, 0.5, 0.95]:
-                new_ts = self.ts.quantile(quantile=q, method=method)
-                # check values
-                self.assertTrue(
-                    np.isclose(
-                        new_ts.values(),
-                        np.quantile(self.values, q=q, method=method, axis=2),
-                    ).all()
-                )
+        for q in [0.01, 0.1, 0.5, 0.95]:
+            new_ts = self.ts.quantile(quantile=q)
+            # check values
+            self.assertTrue(
+                np.isclose(
+                    new_ts.values(),
+                    np.quantile(self.values, q=q, axis=2),
+                ).all()
+            )
