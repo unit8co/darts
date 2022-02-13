@@ -226,3 +226,7 @@ def suppress_lightning_warnings(suppress_all: bool = False):
         warnings.filterwarnings(
             "ignore", ".*does not have many workers which may be a bottleneck.*"
         )
+        warnings.filterwarnings(
+            "ignore",
+            ".*Trying to infer the `batch_size` from an ambiguous collection.*",
+        )
