@@ -223,8 +223,6 @@ class BacktestingTestCase(DartsBaseTestClass):
             self.assertEqual(pred.width, 2)
             self.assertEqual(pred.end_time(), linear_series.end_time())
 
-            # TODO: adjusted window size hard to test with tcn model
-
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_backtest_regression(self):
         np.random.seed(4)

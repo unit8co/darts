@@ -310,6 +310,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for deterministic models.
         train_length
             Number of time steps in our training set (size of backtesting window to train on).
+            Default is set to train_length=None where it takes all available time steps up until prediction time,
+            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+            up until prediction time are used, as in default case.
         start
             The first point of time at which a prediction is computed for a future time.
             This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -358,6 +361,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        if train_length and not isinstance(train_length, int):
+            raise_log(
+                TypeError("If not None, train_length needs to be an integer."),
+                logger,
+            )
+        elif (train_length is not None) and train_length < 1:
+            raise_log(
+                ValueError("If not None, train_length needs to be positive."),
+                logger,
+            )
+
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
 
@@ -387,19 +401,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         for pred_time in iterator:
             # build the training series
             train = series.drop_after(pred_time)
-            if train_length and not isinstance(train_length, int):
-                raise_log(
-                    TypeError("If not None, train_length needs to be an integer."),
-                    logger,
-                )
-            elif (train_length is not None) and train_length < 1:
-                raise_log(
-                    ValueError("If not None, train_length needs to be positive."),
-                    logger,
-                )
             if train_length and len(train) > train_length:
-                # take last train_length samples (drop_before?)
-                train = train[:train_length]
+                train = train[-train_length:]
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
@@ -493,6 +496,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             for deterministic models.
         train_length
             Number of time steps in our training set (size of backtesting window to train on).
+            Default is set to train_length=None where it takes all available time steps up until prediction time,
+            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+            up until prediction time are used, as in default case.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different types: ``float``, ``int`` and ``pandas.Timestamp``.
