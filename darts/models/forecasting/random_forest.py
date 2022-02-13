@@ -14,10 +14,12 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Random_forest
 """
-from darts.logging import get_logger
-from typing import Optional, Union, Tuple, List
-from darts.models.forecasting.regression_model import RegressionModel
+from typing import List, Optional, Tuple, Union
+
 from sklearn.ensemble import RandomForestRegressor
+
+from darts.logging import get_logger
+from darts.models.forecasting.regression_model import RegressionModel
 
 logger = get_logger(__name__)
 

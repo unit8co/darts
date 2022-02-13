@@ -1,5 +1,5 @@
 {%- macro automodule(modname, options) -%}
-.. automodule:: {{ modname }}   
+.. automodule:: {{ modname }}
 {%- endmacro %}
 
 {%- macro toctree(docnames, maxdepth) -%}
@@ -21,4 +21,3 @@
         {% for docname in submodules %}
         {{ docname }}
         {%- endfor %}
-

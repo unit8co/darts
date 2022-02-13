@@ -5,16 +5,17 @@ Baseline Models
 A collection of simple benchmark models for univariate series.
 """
 
-from typing import List, Optional, Union, Sequence
+from typing import List, Optional, Sequence, Union
+
 import numpy as np
 
+from darts.logging import get_logger, raise_if_not
+from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
 )
-from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.timeseries import TimeSeries
-from darts.logging import raise_if_not, get_logger
 
 logger = get_logger(__name__)
 
@@ -65,13 +66,13 @@ class NaiveSeasonal(ForecastingModel):
         return max(self.K, 3)
 
     def __str__(self):
-        return "Naive seasonal model, with K={}".format(self.K)
+        return f"Naive seasonal model, with K={self.K}"
 
     def fit(self, series: TimeSeries):
         super().fit(series)
         raise_if_not(
             len(series) >= self.K,
-            "The time series requires at least K={} points".format(self.K),
+            f"The time series requires at least K={self.K} points",
             logger,
         )
         self.last_k_vals = series.univariate_values()[-self.K :]

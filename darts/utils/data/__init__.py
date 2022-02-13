@@ -5,48 +5,47 @@ TimeSeries Datasets
 
 try:
     # Base classes for training datasets:
-    from .training_dataset import (
-        TrainingDataset,
-        PastCovariatesTrainingDataset,
-        FutureCovariatesTrainingDataset,
-        DualCovariatesTrainingDataset,
-        MixedCovariatesTrainingDataset,
-        SplitCovariatesTrainingDataset,
-    )
+    # Sequence Encoder
+    from .encoders import SequentialEncoder
+
+    # Implementation (horizon-based)
+    from .horizon_based_dataset import HorizonBasedDataset
 
     # Base class and implementations for inference datasets:
     from .inference_dataset import (
-        InferenceDataset,
-        PastCovariatesInferenceDataset,
-        FutureCovariatesInferenceDataset,
         DualCovariatesInferenceDataset,
+        FutureCovariatesInferenceDataset,
+        InferenceDataset,
         MixedCovariatesInferenceDataset,
+        PastCovariatesInferenceDataset,
         SplitCovariatesInferenceDataset,
     )
 
     # Implementations (sequential)
     from .sequential_dataset import (
-        PastCovariatesSequentialDataset,
-        FutureCovariatesSequentialDataset,
         DualCovariatesSequentialDataset,
+        FutureCovariatesSequentialDataset,
         MixedCovariatesSequentialDataset,
+        PastCovariatesSequentialDataset,
         SplitCovariatesSequentialDataset,
     )
 
     # Implementations (shifted)
     from .shifted_dataset import (
-        PastCovariatesShiftedDataset,
-        FutureCovariatesShiftedDataset,
         DualCovariatesShiftedDataset,
+        FutureCovariatesShiftedDataset,
         MixedCovariatesShiftedDataset,
+        PastCovariatesShiftedDataset,
         SplitCovariatesShiftedDataset,
     )
-
-    # Implementation (horizon-based)
-    from .horizon_based_dataset import HorizonBasedDataset
-
-    # Sequence Encoder
-    from .encoders import SequentialEncoder
+    from .training_dataset import (
+        DualCovariatesTrainingDataset,
+        FutureCovariatesTrainingDataset,
+        MixedCovariatesTrainingDataset,
+        PastCovariatesTrainingDataset,
+        SplitCovariatesTrainingDataset,
+        TrainingDataset,
+    )
 
 except ImportError:
     # Torch is not available

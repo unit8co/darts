@@ -3,20 +3,22 @@ Shifted Training Dataset
 ------------------------
 """
 
-from typing import Union, Sequence, Optional, Tuple
+from typing import Optional, Sequence, Tuple, Union
+
 import numpy as np
 
 from darts import TimeSeries
-from .utils import CovariateType
-from .training_dataset import (
-    TrainingDataset,
-    PastCovariatesTrainingDataset,
-    FutureCovariatesTrainingDataset,
-    DualCovariatesTrainingDataset,
-    MixedCovariatesTrainingDataset,
-    SplitCovariatesTrainingDataset,
-)
 from darts.logging import raise_if_not
+
+from .training_dataset import (
+    DualCovariatesTrainingDataset,
+    FutureCovariatesTrainingDataset,
+    MixedCovariatesTrainingDataset,
+    PastCovariatesTrainingDataset,
+    SplitCovariatesTrainingDataset,
+    TrainingDataset,
+)
+from .utils import CovariateType
 
 
 class PastCovariatesShiftedDataset(PastCovariatesTrainingDataset):

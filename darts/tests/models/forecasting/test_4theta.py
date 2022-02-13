@@ -1,15 +1,14 @@
-import numpy as np
 import random
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
-from darts.models import Theta, FourTheta
+import numpy as np
+
 from darts.metrics import mape
-from darts.utils.timeseries_generation import (
-    linear_timeseries as lt,
-    sine_timeseries as st,
-    random_walk_timeseries as rt,
-)
+from darts.models import FourTheta, Theta
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.timeseries_generation import linear_timeseries as lt
+from darts.utils.timeseries_generation import random_walk_timeseries as rt
+from darts.utils.timeseries_generation import sine_timeseries as st
+from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 
 class FourThetaTestCase(DartsBaseTestClass):

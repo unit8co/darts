@@ -1,12 +1,12 @@
-from darts.timeseries import TimeSeries
-
-import numpy as np
 import unittest
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
+import numpy as np
+
 from darts.dataprocessing import dtw
-from darts.metrics import mae, mape, dtw_metric
+from darts.metrics import dtw_metric, mae, mape
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.timeseries import TimeSeries
+from darts.utils import timeseries_generation as tg
 
 
 def _series_from_values(values):

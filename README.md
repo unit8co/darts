@@ -40,8 +40,8 @@ on multiple time series, and some of the models offer probabilistic forecasts.
 ## Quick Install
 
 We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
-([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"), 
-[venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with 
+([conda](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html "conda-env"),
+[venv](https://docs.python.org/3/library/venv.html), [virtualenv](https://virtualenv.pypa.io/en/latest/) with
 or without [virtualenvwrapper](https://virtualenvwrapper.readthedocs.io/en/latest/)).
 
 Once your environment is set up you can install darts using pip:
@@ -144,7 +144,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `NBEATSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
 `TCNModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
-`TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | 
+`TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
 Naive Baselines | ✅ | | | | | |
 
@@ -155,9 +155,9 @@ Anyone is welcome to join our [Discord server](https://discord.gg/Um3jBTYFsA) to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
 or have a feature request, Github issues are also welcome.
 
-If what you want to tell us is not suitable for Discord or Github, 
-feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for 
-darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other 
+If what you want to tell us is not suitable for Discord or Github,
+feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for
+darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other
 inquiries.
 
 ### Contribute
@@ -213,13 +213,13 @@ we also maintain the `u8darts` package, which provides the following alternate l
 
 #### Enabling Support for LightGBM
 
-To enable support for LightGBM in Darts, please follow the 
+To enable support for LightGBM in Darts, please follow the
 [installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS.
 
 ##### MacOS Issues with LightGBM
-At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in 
-[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229). 
-Here's the procedure to downgrade the ``libomp`` library (from the 
+At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in
+[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229).
+Here's the procedure to downgrade the ``libomp`` library (from the
 [original Github issue](https://github.com/microsoft/LightGBM/issues/4229#issue-867528353)):
 * [Install brew](https://brew.sh/) if you don't already have it.
 * Install `wget` if you don't already have it : `brew install wget`.
@@ -279,7 +279,7 @@ If you are using Darts in your scientific work, we would appreciate citations to
 Bibtex entry:
 ```
 @misc{herzen2021darts,
-      title={Darts: User-Friendly Modern Machine Learning for Time Series}, 
+      title={Darts: User-Friendly Modern Machine Learning for Time Series},
       author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
       year={2021},
       eprint={2110.03224},

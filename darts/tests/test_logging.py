@@ -1,13 +1,14 @@
-import pandas as pd
 import logging
-import unittest
-import numpy as np
-import xarray as xr
 import re
+import unittest
+
+import numpy as np
+import pandas as pd
+import xarray as xr
 from testfixtures import LogCapture
 
 from darts import TimeSeries
-from darts.logging import raise_log, raise_if_not, time_log, get_logger
+from darts.logging import get_logger, raise_if_not, raise_log, time_log
 
 
 class LoggingTestCase(unittest.TestCase):

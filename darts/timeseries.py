@@ -26,16 +26,18 @@ or integer indices (:class:`pandas.RangeIndex`).
 """
 
 import pickle
-import pandas as pd
-import numpy as np
-import xarray as xr
-import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union, Sequence
-from inspect import signature
 from collections import defaultdict
-from pandas.tseries.frequencies import to_offset
+from inspect import signature
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
 
-from .logging import raise_log, raise_if_not, raise_if, get_logger
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import xarray as xr
+from pandas.tseries.frequencies import to_offset
+from scipy.stats import skew, kurtosis
+
+from .logging import get_logger, raise_if, raise_if_not, raise_log
 
 logger = get_logger(__name__)
 
@@ -75,7 +77,7 @@ class TimeSeries:
         raise_if_not(xa.size > 0, "The time series array must not be empty.", logger)
         raise_if_not(
             len(xa.shape) == 3,
-            "TimeSeries require DataArray of dimensionality 3 ({}).".format(DIMS),
+            f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
             logger,
         )
 
@@ -483,9 +485,7 @@ class TimeSeries:
                         )
                     )
             else:
-                raise_log(
-                    AttributeError("time_col='{}' is not present.".format(time_col))
-                )
+                raise_log(AttributeError(f"time_col='{time_col}' is not present."))
         else:
             raise_if_not(
                 isinstance(df.index, VALID_INDEX_TYPES),
@@ -988,7 +988,7 @@ class TimeSeries:
         )
 
         # column names
-        cnames = [s + "_{}".format(quantile) for s in self.columns]
+        cnames = [s + f"_{quantile}" for s in self.columns]
 
         return pd.DataFrame(
             self._xa.quantile(q=quantile, dim=DIMS[2]),
@@ -996,7 +996,7 @@ class TimeSeries:
             columns=cnames,
         )
 
-    def quantile_timeseries(self, quantile=0.5) -> "TimeSeries":
+    def quantile_timeseries(self, quantile=0.5, **kwargs) -> "TimeSeries":
         """
         Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
         (over the samples) of this stochastic ``TimeSeries``.
@@ -1013,13 +1013,39 @@ class TimeSeries:
             The desired quantile value. The value must be represented as a fraction
             (between 0 and 1 inclusive). For instance, `0.5` will return a TimeSeries
             containing the median of the (marginal) distribution of each component.
+        kwargs
+            Other keyword arguments are passed down to `numpy.quantile()`
 
         Returns
         -------
         TimeSeries
             The TimeSeries containing the desired quantile for each component.
         """
-        return self.__class__.from_dataframe(self.quantile_df(quantile))
+        self._assert_stochastic()
+        raise_if_not(
+            0 <= quantile <= 1,
+            "The quantile values must be expressed as fraction (between 0 and 1 inclusive).",
+            logger,
+        )
+
+        # component names
+        cnames = [f"{comp}_quantiles" for comp in self.components]
+
+        new_data = np.quantile(
+            self._xa.values,
+            q=quantile,
+            axis=2,
+            overwrite_input=False,
+            keepdims=True,
+            **kwargs,
+        )
+        new_xa = xr.DataArray(
+            new_data,
+            dims=self._xa.dims,
+            coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
+        )
+
+        return self.__class__(new_xa)
 
     def quantiles_df(self, quantiles: Tuple[float] = (0.1, 0.5, 0.9)) -> pd.DataFrame:
         """
@@ -2146,7 +2172,7 @@ class TimeSeries:
         elif method == "bfill":
             new_xa = resample.backfill()
         else:
-            raise_log(ValueError("Unknown method: {}".format(method)), logger)
+            raise_log(ValueError(f"Unknown method: {method}"), logger)
         return self.__class__(new_xa)
 
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
@@ -2489,94 +2515,265 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     """
-    Simple statistics. At the moment these work only on deterministic series, and are wrapped around Pandas.
+    Simple statistic and aggregation functions. Calculate various statistics over the samples of stochastic time series
+    or aggregate over components/time for deterministic series.
     """
 
-    def mean(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.mean()` for deterministic series."""
-        return self.pd_dataframe(copy=False).mean(
-            axis, skipna, level, numeric_only, **kwargs
+    def _get_agg_coords(self, new_cname: str, axis: int) -> dict:
+        """Helper function to rename reduced axis. Returns a dictionary containing the new coordinates"""
+        if axis == 0:  # set time_index to first day
+            return {self._xa.dims[0]: self.time_index[0:1], DIMS[1]: self.components}
+        elif axis == 1:  # rename components
+            return {self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index([new_cname])}
+        elif axis == 2:  # do nothing
+            return {self._xa.dims[0]: self.time_index, DIMS[1]: self.components}
+
+    def mean(self, axis: int = 2) -> "TimeSeries":
+        """
+        Return a ``TimeSeries`` containing the mean calculated over the specified axis.
+
+        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
+        resulting single component will be renamed to "components_mean".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with mean applied to the indicated axis.
+        """
+        new_data = self._xa.values.mean(axis=axis, keepdims=True)
+
+        new_coords = self._get_agg_coords("components_mean", axis)
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
+
+    def median(self, axis: int = 2) -> "TimeSeries":
+        """
+        Return a ``TimeSeries`` containing the median calculated over the specified axis.
+
+        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
+        resulting single component will be renamed to "components_median".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with median applied to the indicated axis.
+        """
+        new_data = np.median(
+            self._xa.values, axis=axis, overwrite_input=False, keepdims=True
         )
+        new_coords = self._get_agg_coords("components_median", axis)
 
-    def var(
-        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.var()` for deterministic series."""
-        return self.pd_dataframe(copy=False).var(
-            axis, skipna, level, ddof, numeric_only, **kwargs
-        )
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
 
-    def std(
-        self, axis=None, skipna=True, level=None, ddof=1, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.std()` for deterministic series."""
-        return self.pd_dataframe(copy=False).std(
-            axis, skipna, level, ddof, numeric_only, **kwargs
-        )
+    def sum(self, axis: int = 2) -> "TimeSeries":
+        """
+        Return a ``TimeSeries`` containing the sum calculated over the specified axis.
 
-    def skew(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.skew()` for deterministic series."""
-        return self.pd_dataframe(copy=False).skew(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
+        resulting single component will be renamed to "components_sum".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
 
-    def kurtosis(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.kurtosis()` for deterministic series."""
-        return self.pd_dataframe(copy=False).kurtosis(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
 
-    def min(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.min()` for deterministic series."""
-        return self.pd_dataframe(copy=False).min(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with sum applied to the indicated axis.
+        """
+        new_data = self._xa.values.sum(axis=axis, keepdims=True)
 
-    def max(
-        self, axis=None, skipna=True, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.max()` for deterministic series."""
-        return self.pd_dataframe(copy=False).max(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+        new_coords = self._get_agg_coords("components_sum", axis)
 
-    def sum(
-        self,
-        axis=None,
-        skipna=None,
-        level=None,
-        numeric_only=None,
-        min_count=0,
-        **kwargs,
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.sum()` for deterministic series."""
-        return self.pd_dataframe(copy=False).sum(
-            axis, skipna, level, numeric_only, min_count, **kwargs
-        )
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
 
-    def median(
-        self, axis=None, skipna=None, level=None, numeric_only=None, **kwargs
-    ) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.median()` for deterministic series."""
-        return self.pd_dataframe(copy=False).median(
-            axis, skipna, level, numeric_only, **kwargs
-        )
+    def min(self, axis: int = 2) -> "TimeSeries":
+        """
+        Return a ``TimeSeries`` containing the min calculated over the specified axis.
 
-    def autocorr(self, lag=1) -> float:
-        """Simple wrapper around :func:`pd.DataFrame.autocorr()` for deterministic series."""
-        return self.pd_dataframe(copy=False).autocorr(lag)
+        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
+        resulting single component will be renamed to "components_min".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
 
-    def describe(self, percentiles=None, include=None, exclude=None) -> pd.DataFrame:
-        """Simple wrapper around :func:`pd.DataFrame.describe()` for deterministic series."""
-        return self.pd_dataframe(copy=False).describe(percentiles, include, exclude)
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with min applied to the indicated axis.
+        """
+
+        new_data = self._xa.values.min(axis=axis, keepdims=True)
+        new_coords = self._get_agg_coords("components_min", axis)
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
+
+    def max(self, axis: int = 2) -> "TimeSeries":
+        """
+        Return a ``TimeSeries`` containing the max calculated over the specified axis.
+
+        If we reduce over time (``axis=1``), the resulting ``TimeSeries`` will have length one and will use the first
+        entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
+        resulting single component will be renamed to "components_max".  When applied to the samples (``axis=2``),
+        a deterministic ``TimeSeries`` is returned.
+
+        Parameters
+        ----------
+        axis
+            The axis to reduce over. The default is to calculate over samples, i.e. axis=2.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries with max applied to the indicated axis.
+        """
+        new_data = self._xa.values.max(axis=axis, keepdims=True)
+        new_coords = self._get_agg_coords("components_max", axis)
+
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        return self.__class__(new_xa)
+
+    def var(self, ddof: int = 1) -> "TimeSeries":
+        """
+        Return a deterministic ``TimeSeries`` containing the variance of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        ddof
+            "Delta Degrees of Freedom": the divisor used in the calculation is N - ddof where N represents the
+            number of elements. By default, ddof is 1.
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the variance for each component.
+        """
+        self._assert_stochastic()
+        new_data = self._xa.values.var(axis=2, ddof=ddof, keepdims=True)
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        return self.__class__(new_xa)
+
+    def std(self, ddof: int = 1) -> "TimeSeries":
+        """
+        Return a deterministic ``TimeSeries`` containing the standard deviation of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        ddof
+            "Delta Degrees of Freedom": the divisor used in the calculation is N - ddof where N represents the
+            number of elements. By default, ddof is 1.
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the standard deviation for each component.
+        """
+        self._assert_stochastic()
+        new_data = self._xa.values.std(axis=2, ddof=ddof, keepdims=True)
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        return self.__class__(new_xa)
+
+    def skew(self, **kwargs) -> "TimeSeries":
+        """
+        Return a deterministic ``TimeSeries`` containing the skew of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        kwargs
+            Other keyword arguments are passed down to `scipy.stats.skew()`
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the skew for each component.
+        """
+        self._assert_stochastic()
+        new_data = np.expand_dims(skew(self._xa.values, axis=2, **kwargs), axis=2)
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        return self.__class__(new_xa)
+
+    def kurtosis(self, **kwargs) -> "TimeSeries":
+        """
+        Return a deterministic ``TimeSeries`` containing the kurtosis of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        kwargs
+            Other keyword arguments are passed down to `scipy.stats.kurtosis()`
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the kurtosis for each component.
+        """
+        self._assert_stochastic()
+        new_data = np.expand_dims(kurtosis(self._xa.values, axis=2, **kwargs), axis=2)
+        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        return self.__class__(new_xa)
+
+    def quantile(self, quantile: float, **kwargs) -> "TimeSeries":
+        """
+        Return a deterministic ``TimeSeries`` containing the single desired quantile of each component
+        (over the samples) of this stochastic ``TimeSeries``.
+
+        The components in the new series are named "<component>_X", where "<component>"
+        is the column name corresponding to this component, and "X" is the quantile value.
+        The quantile columns represent the marginal distributions of the components of this series.
+
+        This works only on stochastic series (i.e., with more than 1 sample)
+
+        Parameters
+        ----------
+        quantile
+            The desired quantile value. The value must be represented as a fraction
+            (between 0 and 1 inclusive). For instance, `0.5` will return a TimeSeries
+            containing the median of the (marginal) distribution of each component.
+        kwargs
+            Other keyword arguments are passed down to `numpy.quantile()`
+
+        Returns
+        -------
+        TimeSeries
+            The TimeSeries containing the desired quantile for each component.
+        """
+        return self.quantile_timeseries(quantile, **kwargs)
 
     """
     Dunder methods
@@ -2668,7 +2865,7 @@ class TimeSeries:
         steps = np.column_stack(
             [time_index[i : (n_dates - step_size + (i + 1))] for i in range(step_size)]
         )
-        observed_freqs = set(pd.infer_freq(step) for step in steps)
+        observed_freqs = {pd.infer_freq(step) for step in steps}
         observed_freqs.discard(None)
 
         raise_if_not(
@@ -3202,8 +3399,8 @@ def concatenate(
 
     da_sequence = [ts.data_array(copy=False) for ts in series]
 
-    component_axis_equal = len(set([ts.width for ts in series])) == 1
-    sample_axis_equal = len(set([ts.n_samples for ts in series])) == 1
+    component_axis_equal = len({ts.width for ts in series}) == 1
+    sample_axis_equal = len({ts.n_samples for ts in series}) == 1
 
     if axis == 0:
         # time
@@ -3252,7 +3449,7 @@ def concatenate(
         time_axes_ok = (
             time_axes_equal
             if not ignore_time_axis
-            else len(set([len(ts) for ts in series])) == 1
+            else len({len(ts) for ts in series}) == 1
         )
 
         raise_if_not(
@@ -3283,7 +3480,7 @@ def concatenate(
                         component_coords.append(comp)
                         existing_components.add(comp)
                     else:
-                        new_comp_name = "{}_{}".format(i, comp)
+                        new_comp_name = f"{i}_{comp}"
                         component_coords.append(new_comp_name)
                         existing_components.add(new_comp_name)
             component_index = pd.Index(component_coords)
