@@ -2,19 +2,18 @@
 This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules
 """
 
-from joblib import Parallel, delayed
-from typing import Any, Optional, Dict, Tuple, Sequence
 from abc import ABC, abstractmethod
-
-import torch
-import torch.nn as nn
-
-from darts.timeseries import TimeSeries
-from darts.utils.timeseries_generation import _build_forecast_series
-from darts.utils.likelihood_models import Likelihood
-from darts.logging import get_logger, raise_log, raise_if
+from typing import Any, Dict, Optional, Sequence, Tuple
 
 import pytorch_lightning as pl
+import torch
+import torch.nn as nn
+from joblib import delayed, Parallel
+
+from darts.logging import get_logger, raise_log, raise_if
+from darts.timeseries import TimeSeries
+from darts.utils.likelihood_models import Likelihood
+from darts.utils.timeseries_generation import _build_forecast_series
 
 
 logger = get_logger(__name__)
@@ -70,7 +69,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         lr_scheduler_kwargs
             Optionally, some keyword arguments for the PyTorch learning rate scheduler.
         """
-        super(PLForecastingModule, self).__init__()
+        super().__init__()
 
         raise_if(
             input_chunk_length is None or output_chunk_length is None,
@@ -110,7 +109,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @abstractmethod
     def forward(self, *args, **kwargs) -> Any:
-        super(PLForecastingModule, self).forward(*args, **kwargs)
+        super().forward(*args, **kwargs)
 
     def training_step(self, train_batch, batch_idx) -> torch.Tensor:
         """performs the training step"""
