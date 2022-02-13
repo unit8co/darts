@@ -422,21 +422,6 @@ class TimeSeries:
             if time_col in df.columns:
                 time_col_vals = df[time_col]
 
-                """
-                if np.issubdtype(time_col_vals.dtype, object):
-                    try:
-                        time_index = pd.RangeIndex(time_col_vals.astype(int))
-                    except ValueError:
-                        try:
-                            time_index = pd.DatetimeIndex(time_col_vals)
-                        except ValueError:
-                            raise_log(
-                                AttributeError(
-                                    "'time_col' is of 'object' dtype but doesn't contain valid timestamps"
-                                )
-                            )
-                """
-
                 if np.issubdtype(time_col_vals.dtype, object):
                     # Try to convert to integers if needed
                     try:
