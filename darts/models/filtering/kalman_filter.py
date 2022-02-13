@@ -28,6 +28,9 @@ class KalmanFilter(FilteringModel, ABC):
         `TimeSeries` describing the distribution of the output z (without noise), as inferred by the Kalman filter from
         sequentially observing z from `series`, and the dynamics of the linear system of order dim_x.
 
+        This filter also supports missing values in the observation series, in which case the underlying
+        Kalman filter will carry on using its mean estimate.
+
         The method `KalmanFilter.fit()` is used to initialize the Kalman filter by estimating the state space model of
         a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID
         algorithm.
@@ -107,12 +110,12 @@ class KalmanFilter(FilteringModel, ABC):
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
         self.dim_y = series.width
-        outputs = series.pd_dataframe()
+        outputs = series.pd_dataframe(copy=False)
         outputs.columns = [f"y_{i}" for i in outputs.columns]
 
         if covariates is not None:
             self.dim_u = covariates.width
-            inputs = covariates.pd_dataframe()
+            inputs = covariates.pd_dataframe(copy=False)
             inputs.columns = [f"u_{i}" for i in inputs.columns]
             input_columns = list(inputs.columns)
             measurements = pd.concat([outputs, inputs], axis=1)
@@ -204,48 +207,48 @@ class KalmanFilter(FilteringModel, ABC):
         y_values = series.values(copy=False)
         if self._expect_covariates:
             u_values = covariates.values(copy=False)
+
+            # set control signal to 0 if it contains NaNs:
+            u_values = np.nan_to_num(u_values, copy=True, nan=0.0)
         else:
             u_values = np.zeros((len(y_values), 0))
 
         # For each time step, we'll sample "n_samples" from a multivariate Gaussian
         # whose mean vector and covariance matrix come from the Kalman filter.
         if num_samples == 1:
-            sampled_states = np.zeros(
+            sampled_outputs = np.zeros(
                 (
                     len(y_values),
                     self.dim_y,
                 )
             )
         else:
-            sampled_states = np.zeros((len(y_values), self.dim_y, num_samples))
+            sampled_outputs = np.zeros((len(y_values), self.dim_y, num_samples))
 
         for i in range(len(y_values)):
             y = y_values[i, :].reshape(-1, 1)
             u = u_values[i, :].reshape(-1, 1)
+
+            if np.isnan(y).any():
+                y = None
+
             kf.step(y, u)
             mean_vec = kf.y_filtereds[-1].reshape(
                 self.dim_y,
             )
 
             if num_samples == 1:
-                sampled_states[i, :] = mean_vec
+                sampled_outputs[i, :] = mean_vec
             else:
                 # The measurement covariance matrix is given by the sum of the covariance matrix of the
                 # state estimate (transformed by C) and the covariance matrix of the measurement noise.
                 cov_matrix = (
                     kf.state_space.c @ kf.p_filtereds[-1] @ kf.state_space.c.T + kf.r
                 )
-                sampled_states[i, :, :] = np.random.multivariate_normal(
+                sampled_outputs[i, :, :] = np.random.multivariate_normal(
                     mean_vec, cov_matrix, size=num_samples
                 ).T
 
-        # TODO: later on for a forecasting model we'll have to do something like
-        """
-        for _ in range(horizon):
-            kf.predict()
-            # forecasts on the observations, obtained from the state
-            preds.append(kf.H.dot(kf.x))
-            preds_cov.append(kf.H.dot(kf.P).dot(kf.H.T))
-        """
-
-        return TimeSeries.from_times_and_values(series.time_index, sampled_states)
+        return TimeSeries.from_times_and_values(
+            series.time_index, sampled_outputs, columns=series.columns
+        )

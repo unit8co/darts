@@ -22,6 +22,7 @@ def _generate_index(
     end: Optional[Union[pd.Timestamp, int]] = None,
     length: Optional[int] = None,
     freq: str = "D",
+    name: str = None,
 ) -> Union[pd.DatetimeIndex, pd.Int64Index]:
     """Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency
     or a pandas Int64Index. The index starts at
@@ -62,13 +63,16 @@ def _generate_index(
     )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
-        index = pd.date_range(start=start, end=end, periods=length, freq=freq)
+        index = pd.date_range(
+            start=start, end=end, periods=length, freq=freq, name=name
+        )
     else:  # int
         index = pd.Int64Index(
             range(
                 start if start is not None else end - length + 1,
                 end + 1 if end is not None else start + length,
-            )
+            ),
+            name=name,
         )
     return index
 
@@ -724,4 +728,6 @@ def _generate_new_dates(
     """
     last = input_series.end_time()
     start = last + input_series.freq if input_series.has_datetime_index else last + 1
-    return _generate_index(start=start, freq=input_series.freq, length=n)
+    return _generate_index(
+        start=start, freq=input_series.freq, length=n, name=input_series.time_dim
+    )
