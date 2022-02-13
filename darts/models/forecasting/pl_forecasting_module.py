@@ -452,6 +452,21 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
     def _process_input_batch(
         self, input_batch
     ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        """
+        Converts output of MixedCovariatesDataset (training dataset) into an input/past- and
+        output/future chunk.
+
+        Parameters
+        ----------
+        input_batch
+            `(past_target, past_covariates, historic_future_covariates, future_covariates)`.
+
+        Returns
+        -------
+        tuple
+            `(x_past, x_future)` the input/past and output/future chunks.
+        """
+
         (
             past_target,
             past_covariates,
@@ -497,7 +512,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to farecast
         the next `n` target values per target variable.
 
-        Parameters:
+        Parameters
         ----------
         n
             prediction length

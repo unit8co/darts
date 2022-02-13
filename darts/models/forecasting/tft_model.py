@@ -341,10 +341,9 @@ class _TFTModule(PLMixedCovariatesModule):
         )
         return mask
 
-    def forward(
-        self, x: Tuple[torch.Tensor, Optional[torch.Tensor]]
-    ) -> Dict[str, torch.Tensor]:
-        """
+    def forward(self, x: Tuple[torch.Tensor, Optional[torch.Tensor]]) -> torch.Tensor:
+        """TFT model forward pass.
+
         Parameters
         ----------
         x
@@ -356,9 +355,8 @@ class _TFTModule(PLMixedCovariatesModule):
         torch.Tensor
             the output tensor
         """
-
-        dim_samples, dim_time, dim_variable = 0, 1, 2
         x_cont_past, x_cont_future = x
+        dim_samples, dim_time, dim_variable = 0, 1, 2
 
         # TODO: impelement static covariates
         static_covariates = None
@@ -528,7 +526,6 @@ class _TFTModule(PLMixedCovariatesModule):
         )
 
         # generate output for n_targets and loss_size elements for loss evaluation
-
         out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
         out = out.view(
             batch_size, self.output_chunk_length, self.n_targets, self.loss_size
@@ -546,9 +543,6 @@ class _TFTModule(PLMixedCovariatesModule):
         # )
 
         return out
-
-    # def _produce_train_output(self, input_batch: Tuple):
-    #     return self(input_batch)
 
 
 class TFTModel(MixedCovariatesTorchModel):
