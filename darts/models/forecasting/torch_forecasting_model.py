@@ -202,7 +202,31 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Check the `PL Trainer documentation
             <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
             supported kwargs.
-            Note that you can also use custom a PyTorch Lightning Trainer for training and prediction with optional
+            With parameter `callbacks` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            TorchForecastingModels. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more infos on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor='val_loss',
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={'callbacks': [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
             parameter `trainer` in :func:`fit()` and :func:`predict()`.
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
@@ -402,7 +426,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.trainer = None
         self.train_sample = None
 
-    def _init_model(self) -> None:
+    def _init_model(self, trainer: Optional[pl.Trainer] = None) -> None:
         """Initializes model and trainer based on examples of input/output tensors (to get the sizes right):"""
 
         raise_if(
@@ -423,7 +447,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger.info("Time series values are 64-bits; casting model to float64.")
             precision = 64
 
-        precision_user = self.trainer_params.get("precision", None)
+        precision_user = (
+            self.trainer_params.get("precision", None)
+            if trainer is None
+            else trainer.precision
+        )
         raise_if(
             precision_user is not None and precision_user != precision,
             f"User-defined trainer_kwarg `precision={precision_user}`-bit does not match dtype: `{dtype}` of the "
@@ -542,7 +570,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         trainer: Optional[pl.Trainer] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         epochs: int = 0,
         max_samples_per_ts: Optional[int] = None,
         num_loader_workers: int = 0,
@@ -703,7 +731,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_dataset: TrainingDataset,
         val_dataset: Optional[TrainingDataset] = None,
         trainer: Optional[pl.Trainer] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         epochs: int = 0,
         num_loader_workers: int = 0,
     ):
@@ -765,7 +793,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
             self.train_sample, self.output_dim = train_sample, train_sample[-1].shape[1]
-            self._init_model()
+            self._init_model(trainer)
         else:
             # Check existing model has input/output dims matching what's provided in the training set.
             raise_if_not(
@@ -820,6 +848,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
+        if verbose is not None:
+            raise_deprecation_warning(
+                "kwarg `verbose` is deprecated and will be removed in a future Darts version. "
+                "Instead, control verbosity with PyTorch Lightning Trainer parameters `enable_progress_bar`, "
+                "`progress_bar_refresh_rate` and `enable_model_summary` in the `pl_trainer_kwargs` dict "
+                "at model creation.",
+                logger,
+            )
+        verbose = True if verbose is None else verbose
+
         # setup trainer
         self._setup_trainer(trainer, verbose, train_num_epochs)
 
@@ -873,7 +911,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         trainer: Optional[pl.Trainer] = None,
         batch_size: Optional[int] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
@@ -1012,7 +1050,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         input_series_dataset: InferenceDataset,
         trainer: Optional[pl.Trainer] = None,
         batch_size: Optional[int] = None,
-        verbose: bool = False,
+        verbose: Optional[bool] = None,
         n_jobs: int = 1,
         roll_size: Optional[int] = None,
         num_samples: int = 1,
@@ -1103,6 +1141,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             drop_last=False,
             collate_fn=self._batch_collate_fn,
         )
+
+        if verbose is not None:
+            raise_deprecation_warning(
+                "kwarg `verbose` is deprecated and will be removed in a future Darts version. "
+                "Instead, control verbosity with PyTorch Lightning Trainer parameters `enable_progress_bar`, "
+                "`progress_bar_refresh_rate` and `enable_model_summary` in the `pl_trainer_kwargs` dict "
+                "at model creation.",
+                logger,
+            )
+        verbose = True if verbose is None else verbose
 
         # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
         trainer = trainer if trainer is not None else self.trainer
