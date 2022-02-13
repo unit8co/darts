@@ -444,6 +444,52 @@ class PLDualCovariatesModule(PLForecastingModule, ABC):
 
 
 class PLMixedCovariatesModule(PLForecastingModule, ABC):
+    def _produce_train_output(
+        self, input_batch: Tuple
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
+        return self(self._process_input_batch(input_batch))
+
+    def _process_input_batch(
+        self, input_batch
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+        (
+            past_target,
+            past_covariates,
+            historic_future_covariates,
+            future_covariates,
+        ) = input_batch
+        dim_variable = 2
+
+        # TODO: impelement static covariates
+        static_covariates = None
+
+        x_past = torch.cat(
+            [
+                tensor
+                for tensor in [
+                    past_target,
+                    past_covariates,
+                    historic_future_covariates,
+                    static_covariates,
+                ]
+                if tensor is not None
+            ],
+            dim=dim_variable,
+        )
+
+        x_future = None
+        if future_covariates is not None or static_covariates is not None:
+            x_future = torch.cat(
+                [
+                    tensor
+                    for tensor in [future_covariates, static_covariates]
+                    if tensor is not None
+                ],
+                dim=dim_variable,
+            )
+
+        return x_past, x_future
+
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> torch.Tensor:
@@ -481,24 +527,20 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             else 0
         )
 
-        input_past = torch.cat(
-            [
-                ds
-                for ds in [past_target, past_covariates, historic_future_covariates]
-                if ds is not None
-            ],
-            dim=dim_component,
+        input_past, input_future = self._process_input_batch(
+            (
+                past_target,
+                past_covariates,
+                historic_future_covariates,
+                future_covariates[:, :roll_size, :]
+                if future_covariates is not None
+                else None,
+            )
         )
 
-        input_future = (
-            future_covariates[:, :roll_size, :]
-            if future_covariates is not None
-            else None
-        )
-
-        out = self._produce_predict_output(
-            x=(past_target, past_covariates, historic_future_covariates, input_future)
-        )[:, self.first_prediction_index :, :]
+        out = self._produce_predict_output(x=(input_past, input_future))[
+            :, self.first_prediction_index :, :
+        ]
 
         batch_prediction = [out[:, :roll_size, :]]
         prediction_length = roll_size
@@ -563,27 +605,10 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             if n_future_covs:
                 input_future = future_covariates[:, left_future:right_future, :]
 
-            # convert back into separate datasets
-            input_past_target = input_past[:, :, :n_targets]
-            input_past_covs = (
-                input_past[:, :, n_targets : n_targets + n_past_covs]
-                if n_past_covs
-                else None
-            )
-            input_historic_future_covs = (
-                input_past[:, :, n_targets + n_past_covs :] if n_future_covs else None
-            )
-            input_future_covs = input_future if n_future_covs else None
-
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(
-                x=(
-                    input_past_target,
-                    input_past_covs,
-                    input_historic_future_covs,
-                    input_future_covs,
-                )
-            )[:, self.first_prediction_index :, :]
+            out = self._produce_predict_output(x=(input_past, input_future))[
+                :, self.first_prediction_index :, :
+            ]
 
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length

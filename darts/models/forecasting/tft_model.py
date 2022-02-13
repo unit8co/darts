@@ -341,15 +341,29 @@ class _TFTModule(PLMixedCovariatesModule):
         )
         return mask
 
-    def forward(self, x) -> Dict[str, torch.Tensor]:
+    def forward(
+        self, x: Tuple[torch.Tensor, Optional[torch.Tensor]]
+    ) -> Dict[str, torch.Tensor]:
         """
-        input dimensions: (n_samples, n_time_steps, n_variables)
+        Parameters
+        ----------
+        x
+            comes as tuple `(x_past, x_future)` where `x_past` is the input/past chunk and `x_future`
+            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+
+        Returns
+        -------
+        torch.Tensor
+            the output tensor
         """
 
         dim_samples, dim_time, dim_variable = 0, 1, 2
-        past_target, past_covariates, historic_future_covariates, future_covariates = x
+        x_cont_past, x_cont_future = x
 
-        batch_size = past_target.shape[dim_samples]
+        # TODO: impelement static covariates
+        static_covariates = None
+
+        batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length
         decoder_length = self.output_chunk_length
         time_steps = encoder_length + decoder_length
@@ -360,7 +374,7 @@ class _TFTModule(PLMixedCovariatesModule):
                 self.attention_mask = self.get_attention_mask_full(
                     time_steps=time_steps,
                     batch_size=batch_size,
-                    dtype=past_target.dtype,
+                    dtype=x_cont_past.dtype,
                     device=self.device,
                 )
             else:
@@ -376,54 +390,28 @@ class _TFTModule(PLMixedCovariatesModule):
                     decoder_length=decoder_length,
                     batch_size=batch_size,
                     device=self.device,
-                    dtype=past_target.dtype,
+                    dtype=x_cont_past.dtype,
                 )
 
             self.batch_size_last = batch_size
 
         if self.add_relative_index:
-            historic_future_covariates = torch.cat(
+            x_cont_past = torch.cat(
                 [
                     ts[:, :encoder_length, :]
-                    for ts in [historic_future_covariates, self.relative_index]
+                    for ts in [x_cont_past, self.relative_index]
                     if ts is not None
                 ],
                 dim=dim_variable,
             )
-            future_covariates = torch.cat(
+            x_cont_future = torch.cat(
                 [
                     ts[:, -decoder_length:, :]
-                    for ts in [future_covariates, self.relative_index]
+                    for ts in [x_cont_future, self.relative_index]
                     if ts is not None
                 ],
                 dim=dim_variable,
             )
-        # TODO: impelement static covariates
-        static_covariates = None
-
-        # data is of size (batch_size, input_length, input_size)
-        x_cont_past = torch.cat(
-            [
-                tensor
-                for tensor in [
-                    past_target,
-                    past_covariates,
-                    historic_future_covariates,
-                    static_covariates,
-                ]
-                if tensor is not None
-            ],
-            dim=dim_variable,
-        )
-
-        x_cont_future = torch.cat(
-            [
-                tensor
-                for tensor in [future_covariates, static_covariates]
-                if tensor is not None
-            ],
-            dim=dim_variable,
-        )
 
         input_vectors_past = {
             name: x_cont_past[..., idx].unsqueeze(-1)
@@ -443,21 +431,18 @@ class _TFTModule(PLMixedCovariatesModule):
             raise NotImplementedError("Static covariates have yet to be defined")
         else:
             static_embedding = torch.zeros(
-                (past_target.shape[0], self.hidden_size),
-                dtype=past_target.dtype,
+                (x_cont_past.shape[0], self.hidden_size),
+                dtype=x_cont_past.dtype,
                 device=self.device,
             )
 
             # # TODO: implement below when static covariates are supported
             # # this is only to interpret the output
             # static_covariate_var = torch.zeros(
-            #     (past_target.shape[0], 0),
-            #     dtype=past_target.dtype,
-            #     device=past_target.device,
+            #     (x_cont_past.shape[0], 0),
+            #     dtype=x_cont_past.dtype,
+            #     device=x_cont_past.device,
             # )
-
-        if future_covariates is None and static_covariates is None:
-            raise NotImplementedError("make zero tensor if future covariates is None")
 
         static_context_expanded = self.expand_static_context(
             context=self.static_context_grn(static_embedding), time_steps=time_steps
@@ -562,8 +547,8 @@ class _TFTModule(PLMixedCovariatesModule):
 
         return out
 
-    def _produce_train_output(self, input_batch: Tuple):
-        return self(input_batch)
+    # def _produce_train_output(self, input_batch: Tuple):
+    #     return self(input_batch)
 
 
 class TFTModel(MixedCovariatesTorchModel):
