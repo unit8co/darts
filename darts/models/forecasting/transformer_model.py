@@ -107,11 +107,8 @@ class _TransformerModule(PLPastCovariatesModule):
             a custom transformer encoder provided by the user (default=None)
         custom_decoder
             a custom transformer decoder provided by the user (default=None)
-
-        input_chunk_length
-            Number of time steps to be input to the forecasting module.
-        output_chunk_length
-            Number of time steps to be output by the forecasting module.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------

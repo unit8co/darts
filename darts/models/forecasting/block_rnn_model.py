@@ -62,9 +62,8 @@ class _BlockRNNModule(PLPastCovariatesModule):
             This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
-
-        output_chunk_length
-            The number of steps to predict in the future.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------

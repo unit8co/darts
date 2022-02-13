@@ -53,6 +53,8 @@ class _RNNModule(PLDualCovariatesModule):
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------

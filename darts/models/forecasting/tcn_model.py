@@ -164,6 +164,8 @@ class _TCNModule(PLPastCovariatesModule):
             The base of the exponent that will determine the dilation on every level.
         dropout
             The dropout rate for every convolutional layer.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------

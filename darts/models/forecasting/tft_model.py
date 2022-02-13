@@ -84,13 +84,8 @@ class _TFTModule(PLMixedCovariatesModule):
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
             a ``QuantileRegression`` likelihood.
-        kwargs
-            all parameters for Darts' :class:`PLForecastingModule`.
-
-        input_chunk_length : int
-            encoder length; number of past time steps that are fed to the forecasting module at prediction time.
-        output_chunk_length : int
-            decoder length; number of future time steps that are fed to the forecasting module at prediction time.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
         """
 
         super(_TFTModule, self).__init__(**kwargs)
