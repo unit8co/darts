@@ -12,9 +12,9 @@ import pandas as pd
 from nfoursid.kalman import Kalman
 from nfoursid.nfoursid import NFourSID
 
+from darts.logging import raise_if, raise_if_not
 from darts.models.filtering.filtering_model import FilteringModel
 from darts.timeseries import TimeSeries
-from darts.logging import raise_if, raise_if_not
 
 
 class KalmanFilter(FilteringModel, ABC):
@@ -71,7 +71,7 @@ class KalmanFilter(FilteringModel, ABC):
                 self._expect_covariates = True
 
     def __str__(self):
-        return "KalmanFilter(dim_x={})".format(self.dim_x)
+        return f"KalmanFilter(dim_x={self.dim_x})"
 
     def fit(
         self,

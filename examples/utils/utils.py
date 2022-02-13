@@ -1,7 +1,7 @@
 # fix pythonpath when working locally
-from os.path import dirname, basename
-from os import getcwd
 import sys
+from os import getcwd
+from os.path import basename, dirname
 
 
 def fix_pythonpath_if_working_locally():

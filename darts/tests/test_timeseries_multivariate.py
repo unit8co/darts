@@ -1,8 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
+from darts.tests.base_test_class import DartsBaseTestClass
 from darts.tests.test_timeseries import TimeSeriesTestCase
 
 

@@ -1,10 +1,11 @@
+import array
+from abc import ABC, abstractmethod
+from itertools import repeat
 from typing import Tuple
+
 import numpy as np
 
-from .window import Window, CRWindow
-from abc import ABC, abstractmethod
-import array
-from itertools import repeat
+from .window import CRWindow, Window
 
 Elem = Tuple[int, int]
 

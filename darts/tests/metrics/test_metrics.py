@@ -1,9 +1,9 @@
 import numpy as np
 import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
 from darts.metrics import metrics
+from darts.tests.base_test_class import DartsBaseTestClass
 
 
 class MetricsTestCase(DartsBaseTestClass):

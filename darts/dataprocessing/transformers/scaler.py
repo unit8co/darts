@@ -3,15 +3,16 @@ Scaler
 ------
 """
 
-from typing import Sequence, Iterator, Any, Tuple
-from darts.dataprocessing.transformers import (
-    InvertibleDataTransformer,
-    FittableDataTransformer,
-)
-from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_log
-from sklearn.preprocessing import MinMaxScaler
 from copy import deepcopy
+from typing import Any, Iterator, Sequence, Tuple
+
+from sklearn.preprocessing import MinMaxScaler
+
+from .fittable_data_transformer import FittableDataTransformer
+from .invertible_data_transformer import InvertibleDataTransformer
+
+from darts.logging import get_logger, raise_log
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

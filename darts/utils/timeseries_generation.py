@@ -4,15 +4,14 @@ Utils for time series generation
 """
 
 import math
+from typing import Optional, Sequence, Union
 
-from typing import Union, Optional, Sequence
-
+import holidays
 import numpy as np
 import pandas as pd
-import holidays
 
 from darts import TimeSeries
-from darts.logging import raise_if_not, get_logger, raise_log, raise_if
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 
 logger = get_logger(__name__)
 

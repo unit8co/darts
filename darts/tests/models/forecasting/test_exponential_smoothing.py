@@ -1,9 +1,9 @@
 import numpy as np
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.models import ExponentialSmoothing
-from darts.utils import timeseries_generation as tg
 from darts import TimeSeries
+from darts.models import ExponentialSmoothing
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 
 
 class ExponentialSmoothingTestCase(DartsBaseTestClass):

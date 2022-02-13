@@ -1,35 +1,38 @@
-import unittest
-import numpy as np
-import pandas as pd
 import random
+import unittest
 from itertools import product
 
-from darts.tests.base_test_class import DartsBaseTestClass
+import numpy as np
+import pandas as pd
+
 from darts import TimeSeries
+from darts.logging import get_logger
 from darts.metrics import mape, r2_score
-from darts.utils.timeseries_generation import (
-    linear_timeseries as lt,
-    sine_timeseries as st,
-    random_walk_timeseries as rt,
-    constant_timeseries as ct,
-    gaussian_timeseries as gt,
-)
 from darts.models import (
-    Theta,
+    ARIMA,
     FFT,
     ExponentialSmoothing,
-    NaiveSeasonal,
     NaiveDrift,
-    ARIMA,
+    NaiveSeasonal,
+    Theta,
 )
-from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.timeseries_generation import constant_timeseries as ct
+from darts.utils.timeseries_generation import gaussian_timeseries as gt
+from darts.utils.timeseries_generation import linear_timeseries as lt
+from darts.utils.timeseries_generation import random_walk_timeseries as rt
+from darts.utils.timeseries_generation import sine_timeseries as st
 
 logger = get_logger(__name__)
 
 
 try:
-    from darts.models import TCNModel, BlockRNNModel
-    from darts.models import LinearRegressionModel, RandomForest
+    from darts.models import (
+        BlockRNNModel,
+        LinearRegressionModel,
+        RandomForest,
+        TCNModel,
+    )
 
     TORCH_AVAILABLE = True
 except ImportError:
