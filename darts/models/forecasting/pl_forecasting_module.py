@@ -43,8 +43,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             - :func:`PLTorchForecastingModel._produce_train_output()`
             - :func:`PLTorchForecastingModel._get_batch_prediction()`
 
-        In subclass `MyModel`'s `__init__` function call `super(MyModel, self).__init__(**kwargs)` where `kwargs` are
-        the parameters of :class:`PLTorchForecastingModel`.
+        In subclass `MyModel`'s :func:`__init__` function call ``super(MyModel, self).__init__(**kwargs)`` where
+        ``kwargs`` are the parameters of :class:`PLTorchForecastingModel`.
 
         Parameters
         ----------
@@ -54,21 +54,21 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Number of output time steps per chunk.
         loss_fn
             PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
+            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
             The likelihood model to be used for probabilistic forecasts.
         optimizer_cls
-            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
+            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
+            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
             will be used.
         lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
             to using a constant learning rate.
         lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer.
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler.
         """
         super(PLForecastingModule, self).__init__()
 
@@ -136,8 +136,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """performs the prediction step
 
         batch
-            output of Darts' `InferenceDataset` - tuple of (past_target, past_covariates, historic_future_covariates,
-            future_covariates, future_past_covariates, input_timeseries)
+            output of Darts' :class:`InferenceDataset` - tuple of ``(past_target, past_covariates,
+            historic_future_covariates, future_covariates, future_past_covariates, input_timeseries)``
         batch_idx
             the batch index of the current batch
         dataloader_idx
@@ -341,7 +341,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
     ) -> torch.Tensor:
         """
         Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset to farecast
-        the next `n` target values per target variable.
+        the next ``n`` target values per target variable.
 
         Parameters:
         ----------
@@ -350,8 +350,8 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         input_batch
             (past_target, past_covariates, future_past_covariates)
         roll_size
-            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to
-            `self.output_chunk_length`
+            roll input arrays after every sequence by ``roll_size``. Initially, ``roll_size`` is equivalent to
+            ``self.output_chunk_length``
         """
         dim_component = 2
         past_target, past_covariates, future_past_covariates = input_batch
@@ -459,12 +459,12 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         Parameters
         ----------
         input_batch
-            `(past_target, past_covariates, historic_future_covariates, future_covariates)`.
+            ``(past_target, past_covariates, historic_future_covariates, future_covariates)``.
 
         Returns
         -------
         tuple
-            `(x_past, x_future)` the input/past and output/future chunks.
+            ``(x_past, x_future)`` the input/past and output/future chunks.
         """
 
         (
@@ -510,7 +510,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
     ) -> torch.Tensor:
         """
         Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to farecast
-        the next `n` target values per target variable.
+        the next ``n`` target values per target variable.
 
         Parameters
         ----------
@@ -519,8 +519,8 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         input_batch
             (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
         roll_size
-            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to
-            `self.output_chunk_length`
+            roll input arrays after every sequence by ``roll_size``. Initially, ``roll_size`` is equivalent to
+            ``self.output_chunk_length``
         """
 
         dim_component = 2

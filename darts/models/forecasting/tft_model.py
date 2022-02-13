@@ -568,15 +568,16 @@ class TFTModel(MixedCovariatesTorchModel):
         The internal sub models are adopted from `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
 
-        This model supports mixed covariates (includes past covariates known for `input_chunk_length`
-        points before prediction time and future covariates known for `output_chunk_length` after prediction time).
+        This model supports mixed covariates (includes past covariates known for ``input_chunk_length``
+        points before prediction time and future covariates known for ``output_chunk_length`` after prediction time).
 
-        The TFT applies multi-head attention queries on future inputs from mandatory `future_covariates`.
-        Specifying future encoders with `add_encoders` (read below) can automatically generate future covariates
-        and allows to use the model without having to pass any `future_covariates` to `fit()` and `predict()`.
+        The TFT applies multi-head attention queries on future inputs from mandatory ``future_covariates``.
+        Specifying future encoders with ``add_encoders`` (read below) can automatically generate future covariates
+        and allows to use the model without having to pass any ``future_covariates`` to :func:`fit()` and
+        :func:`predict()`.
 
         By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
-        probabilistic; it is recommended to call :func`predict()` with `num_samples >> 1` to get meaningful results.
+        probabilistic; it is recommended to call :func`predict()` with ``num_samples >> 1`` to get meaningful results.
 
         Parameters
         ----------
@@ -592,17 +593,17 @@ class TFTModel(MixedCovariatesTorchModel):
         num_attention_heads : int
             Number of attention heads (4 is a good default)
         full_attention : bool
-            If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
-            only queries on future part. Defaults to `False`.
+            If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
+            only queries on future part. Defaults to ``False``.
         dropout : float
             Fraction of neurons afected by Dropout.
         hidden_continuous_size : int
             Default for hidden size for processing continuous variables
         add_relative_index : bool
-            Whether to add positional values to future covariates. Defaults to `False`.
-            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
-            It gives a value to the position of each step from input and output chunk relative to the prediction
-            point. The values are normalized with `input_chunk_length`.
+            Whether to add positional values to future covariates. Defaults to ``False``.
+            This allows to use the TFTModel without having to pass future_covariates to :fun:`fit()` and
+            :func:`train()`. It gives a value to the position of each step from input and output chunk relative
+            to the prediction point. The values are normalized with ``input_chunk_length``.
         loss_fn : nn.Module
             PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
             instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None
@@ -611,35 +612,36 @@ class TFTModel(MixedCovariatesTorchModel):
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
             a ``QuantileRegression`` likelihood.
         **kwargs
-            Optional arguments to initialize the pytorch_lightning.Module and pytorch_lightning.Trainer
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
 
         optimizer_cls
-            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
+            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
+            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
             will be used.
         lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
             to using a constant learning rate.
         lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer.
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
-            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
-            at the same time by different processes to share the same model_name). E.g.,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
             (default: current working directory).
         log_tensorboard
             If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/darts_logs/[model_name]/logs/`.
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
             ``TimeSeries`` is passed to the :func:`fit()` method).
@@ -647,20 +649,22 @@ class TFTModel(MixedCovariatesTorchModel):
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
         force_reset
-            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :func:`save_model()`
-            and loaded using :func:`load_model()`.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save_model()` and loaded using :func:`load_model()`.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            `add_encoders`. An example showing some of `add_encoders` features:
+            ``add_encoders``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
             .. code-block:: python
@@ -677,18 +681,42 @@ class TFTModel(MixedCovariatesTorchModel):
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
         pl_trainer_kwargs
-            Per default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
             checkpointing, tensorboard logging, setting the torch device and more.
-            With `pl_trainer_kwargs` you can add additional kwargs to instantiate the PyTorch Lightning trainer object.
-            Check the `PL Trainer documentation
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
             <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
             supported kwargs.
-            Note that you can also use custom a PyTorch Lightning Trainer for training and prediction with optional
-            parameter `trainer` in :func:`fit()` and :func:`predict()`.
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
-            your PyTorch Lightning Trainer configuration.
+            your forecasting use case.
 
         References
         ----------
