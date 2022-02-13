@@ -1,5 +1,6 @@
 from pathlib import Path
-from setuptools import setup, find_packages
+
+from setuptools import find_packages, setup
 
 
 def read_requirements(path):
@@ -13,7 +14,7 @@ prophet_reqs = read_requirements("requirements/prophet.txt")
 
 all_reqs = base_reqs + pmdarima_reqs + torch_reqs + prophet_reqs
 
-with open("README.md", "r") as fh:
+with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()
 
 

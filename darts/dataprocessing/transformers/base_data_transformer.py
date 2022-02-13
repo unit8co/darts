@@ -3,13 +3,14 @@ Data Transformer Base Class
 ---------------------------
 """
 
-from typing import Sequence, Union, Iterator, Tuple, List, Optional
+from abc import ABC, abstractmethod
+from typing import Iterator, List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 
-from darts.logging import get_logger, raise_if_not
-from darts.utils import _parallel_apply, _build_tqdm_iterator
 from darts import TimeSeries
-from abc import ABC, abstractmethod
+from darts.logging import get_logger, raise_if_not
+from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
 
@@ -165,7 +166,7 @@ class BaseDataTransformer(ABC):
             Transformed data.
         """
 
-        desc = "Transform ({})".format(self._name)
+        desc = f"Transform ({self._name})"
 
         if isinstance(series, TimeSeries):
             data = [series]

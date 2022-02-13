@@ -3,14 +3,15 @@ Recurrent Neural Networks
 -------------------------
 """
 
-import torch.nn as nn
+from typing import Optional, Sequence, Tuple, Union
+
 import torch
-from typing import Sequence, Optional, Union, Tuple
-from darts.timeseries import TimeSeries
+import torch.nn as nn
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import PLDualCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import DualCovariatesTorchModel
+from darts.timeseries import TimeSeries
 from darts.utils.data import DualCovariatesShiftedDataset, TrainingDataset
 
 logger = get_logger(__name__)
@@ -70,7 +71,7 @@ class _RNNModule(PLDualCovariatesModule):
         """
 
         # RNNModule doesn't really need input and output_chunk_length for PLModule
-        super(_RNNModule, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()

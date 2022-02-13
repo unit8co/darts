@@ -3,32 +3,30 @@ Temporal Fusion Transformer (TFT)
 -------
 """
 
-from typing import Union, List, Optional, Tuple, Dict, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-
 import torch
 from torch import nn
+from torch.nn import LSTM as _LSTM
 
 from darts import TimeSeries
-
-from darts.logging import get_logger, raise_if_not, raise_if
-from darts.utils.likelihood_models import QuantileRegression, Likelihood
-from darts.utils.data import (
-    TrainingDataset,
-    MixedCovariatesSequentialDataset,
-    MixedCovariatesTrainingDataset,
-    MixedCovariatesInferenceDataset,
-)
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
-from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
     _GatedResidualNetwork,
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
 )
-from torch.nn import LSTM as _LSTM
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
+from darts.utils.data import (
+    MixedCovariatesInferenceDataset,
+    MixedCovariatesSequentialDataset,
+    MixedCovariatesTrainingDataset,
+    TrainingDataset,
+)
+from darts.utils.likelihood_models import Likelihood, QuantileRegression
 
 logger = get_logger(__name__)
 
@@ -88,7 +86,7 @@ class _TFTModule(PLMixedCovariatesModule):
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
         """
 
-        super(_TFTModule, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()

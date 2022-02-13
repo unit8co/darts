@@ -4,13 +4,15 @@ Training Datasets Base Classes
 """
 
 from abc import ABC, abstractmethod
-from torch.utils.data import Dataset
-import numpy as np
+from typing import Dict, Optional, Tuple
 
-from typing import Tuple, Optional, Dict
-from .utils import CovariateType
-from darts.logging import get_logger, raise_if_not
+import numpy as np
+from torch.utils.data import Dataset
+
 from darts import TimeSeries
+from darts.logging import get_logger, raise_if_not
+
+from .utils import CovariateType
 
 logger = get_logger(__name__)
 SampleIndexType = Tuple[int, int, int, int, int, int]

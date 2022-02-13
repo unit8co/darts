@@ -4,11 +4,12 @@ Exponential Smoothing
 """
 
 from typing import Optional
-import statsmodels.tsa.holtwinters as hw
-import numpy as np
 
-from darts.models.forecasting.forecasting_model import ForecastingModel
+import numpy as np
+import statsmodels.tsa.holtwinters as hw
+
 from darts.logging import get_logger
+from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils.utils import ModelMode, SeasonalityMode
 

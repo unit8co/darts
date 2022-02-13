@@ -2,17 +2,17 @@ import shutil
 import tempfile
 import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 try:
     from darts.models.forecasting.transformer_model import (
-        _TransformerModule,
         TransformerModel,
+        _TransformerModule,
     )
 
     TORCH_AVAILABLE = True

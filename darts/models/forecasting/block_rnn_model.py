@@ -3,10 +3,10 @@ Block Recurrent Neural Networks
 -------------------------------
 """
 
-import torch.nn as nn
-import torch
+from typing import List, Optional, Tuple, Union
 
-from typing import List, Optional, Union, Tuple
+import torch
+import torch.nn as nn
 
 from darts.logging import raise_if_not, get_logger
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
@@ -76,7 +76,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_BlockRNNModule, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()

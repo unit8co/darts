@@ -19,17 +19,18 @@ or integer indices (:class:`pandas.Int64Index`).
 """
 
 import pickle
-import pandas as pd
-import numpy as np
-import xarray as xr
-import matplotlib.pyplot as plt
-from typing import Tuple, Optional, Callable, Any, List, Union, Sequence
-from inspect import signature
 from collections import defaultdict
+from inspect import signature
+from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import xarray as xr
 from pandas.tseries.frequencies import to_offset
 from scipy.stats import skew, kurtosis
 
-from .logging import raise_log, raise_if_not, raise_if, get_logger
+from .logging import get_logger, raise_if, raise_if_not, raise_log
 
 logger = get_logger(__name__)
 
@@ -69,7 +70,7 @@ class TimeSeries:
         raise_if_not(xa.size > 0, "The time series array must not be empty.", logger)
         raise_if_not(
             len(xa.shape) == 3,
-            "TimeSeries require DataArray of dimensionality 3 ({}).".format(DIMS),
+            f"TimeSeries require DataArray of dimensionality 3 ({DIMS}).",
             logger,
         )
 
@@ -433,9 +434,7 @@ class TimeSeries:
                         )
                     )
             else:
-                raise_log(
-                    AttributeError("time_col='{}' is not present.".format(time_col))
-                )
+                raise_log(AttributeError(f"time_col='{time_col}' is not present."))
         else:
             raise_if_not(
                 isinstance(df.index, VALID_INDEX_TYPES),
@@ -938,7 +937,7 @@ class TimeSeries:
         )
 
         # column names
-        cnames = [s + "_{}".format(quantile) for s in self.columns]
+        cnames = [s + f"_{quantile}" for s in self.columns]
 
         return pd.DataFrame(
             self._xa.quantile(q=quantile, dim=DIMS[2]),
@@ -2122,7 +2121,7 @@ class TimeSeries:
         elif method == "bfill":
             new_xa = resample.backfill()
         else:
-            raise_log(ValueError("Unknown method: {}".format(method)), logger)
+            raise_log(ValueError(f"Unknown method: {method}"), logger)
         return self.__class__(new_xa)
 
     def is_within_range(self, ts: Union[pd.Timestamp, int]) -> bool:
@@ -2815,7 +2814,7 @@ class TimeSeries:
         steps = np.column_stack(
             [time_index[i : (n_dates - step_size + (i + 1))] for i in range(step_size)]
         )
-        observed_freqs = set(pd.infer_freq(step) for step in steps)
+        observed_freqs = {pd.infer_freq(step) for step in steps}
         observed_freqs.discard(None)
 
         raise_if_not(
@@ -3317,8 +3316,8 @@ def concatenate(
 
     da_sequence = [ts.data_array(copy=False) for ts in series]
 
-    component_axis_equal = len(set([ts.width for ts in series])) == 1
-    sample_axis_equal = len(set([ts.n_samples for ts in series])) == 1
+    component_axis_equal = len({ts.width for ts in series}) == 1
+    sample_axis_equal = len({ts.n_samples for ts in series}) == 1
 
     if axis == 0:
         # time
@@ -3367,7 +3366,7 @@ def concatenate(
         time_axes_ok = (
             time_axes_equal
             if not ignore_time_axis
-            else len(set([len(ts) for ts in series])) == 1
+            else len({len(ts) for ts in series}) == 1
         )
 
         raise_if_not(
@@ -3398,7 +3397,7 @@ def concatenate(
                         component_coords.append(comp)
                         existing_components.add(comp)
                     else:
-                        new_comp_name = "{}_{}".format(i, comp)
+                        new_comp_name = f"{i}_{comp}"
                         component_coords.append(new_comp_name)
                         existing_components.add(new_comp_name)
             component_index = pd.Index(component_coords)

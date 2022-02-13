@@ -1,12 +1,13 @@
 import os
-import tempfile
 import shutil
+import tempfile
+from unittest.mock import patch
+
 import pandas as pd
 
 from darts import TimeSeries
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.logging import get_logger
-from unittest.mock import patch
+from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 

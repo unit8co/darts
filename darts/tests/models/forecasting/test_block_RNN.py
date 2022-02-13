@@ -2,14 +2,14 @@ import shutil
 import tempfile
 import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models.forecasting.block_rnn_model import _BlockRNNModule, BlockRNNModel
+    from darts.models.forecasting.block_rnn_model import BlockRNNModel, _BlockRNNModule
 
     TORCH_AVAILABLE = True
 except ImportError:

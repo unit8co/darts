@@ -17,59 +17,59 @@ This file contains several abstract classes:
       forecasting models.
 """
 
+import datetime
+import inspect
 import os
 import shutil
-import inspect
-import datetime
-import numpy as np
-from glob import glob
+
 from abc import ABC, abstractmethod
+from glob import glob
 from typing import Optional, Dict, Tuple, Union, Sequence, List
 
+import numpy as np
+import pytorch_lightning as pl
 import torch
+from pytorch_lightning import loggers as pl_loggers
 from torch import Tensor
 from torch.utils.data import DataLoader
 
-import pytorch_lightning as pl
-from pytorch_lightning import loggers as pl_loggers
-
-from darts.timeseries import TimeSeries
-from darts.utils.data.encoders import SequentialEncoder
-from darts.utils.likelihood_models import Likelihood
-from darts.utils.torch import random_method
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.logging import (
-    raise_if_not,
     get_logger,
-    raise_log,
-    raise_if,
     raise_deprecation_warning,
+    raise_if,
+    raise_if_not,
+    raise_log,
     suppress_lightning_warnings,
 )
-from darts.utils.data.training_dataset import (
-    TrainingDataset,
-    PastCovariatesTrainingDataset,
-    FutureCovariatesTrainingDataset,
-    DualCovariatesTrainingDataset,
-    MixedCovariatesTrainingDataset,
-    SplitCovariatesTrainingDataset,
-)
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
+from darts.timeseries import TimeSeries
 from darts.utils.data.inference_dataset import (
-    InferenceDataset,
-    PastCovariatesInferenceDataset,
-    FutureCovariatesInferenceDataset,
     DualCovariatesInferenceDataset,
+    FutureCovariatesInferenceDataset,
+    InferenceDataset,
     MixedCovariatesInferenceDataset,
+    PastCovariatesInferenceDataset,
     SplitCovariatesInferenceDataset,
 )
 from darts.utils.data.sequential_dataset import (
-    PastCovariatesSequentialDataset,
-    FutureCovariatesSequentialDataset,
     DualCovariatesSequentialDataset,
+    FutureCovariatesSequentialDataset,
     MixedCovariatesSequentialDataset,
+    PastCovariatesSequentialDataset,
     SplitCovariatesSequentialDataset,
 )
+from darts.utils.data.training_dataset import (
+    DualCovariatesTrainingDataset,
+    FutureCovariatesTrainingDataset,
+    MixedCovariatesTrainingDataset,
+    PastCovariatesTrainingDataset,
+    SplitCovariatesTrainingDataset,
+    TrainingDataset,
+)
+from darts.utils.data.encoders import SequentialEncoder
+from darts.utils.likelihood_models import Likelihood
+from darts.utils.torch import random_method
 
 DEFAULT_DARTS_FOLDER = "darts_logs"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -399,7 +399,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         get_params.remove("self")
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
-    def _extract_pl_module_params(self, **kwargs):
+    @staticmethod
+    def _extract_pl_module_params(**kwargs):
         """Extract params from model creation to set up PLForecastingModule (the actual torch.nn.Module)"""
         get_params = list(
             inspect.signature(PLForecastingModule.__init__).parameters.keys()
@@ -721,7 +722,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             val_dataset = None
 
-        logger.info("Train dataset contains {} samples.".format(len(train_dataset)))
+        logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         return self.fit_from_dataset(
             train_dataset, val_dataset, trainer, verbose, epochs, num_loader_workers

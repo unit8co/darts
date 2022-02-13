@@ -1,7 +1,7 @@
 import warnings
 import logging
-import time
 import os
+import time
 
 
 def get_logger(name):
@@ -154,9 +154,7 @@ def time_log(logger: logging.Logger = get_logger("main_logger")):
             result = method(*args, **kwargs)
             end_time = time.time()
             duration = int((end_time - start_time) * 1000)
-            logger.info(
-                method.__name__ + " function ran for {} milliseconds".format(duration)
-            )
+            logger.info(method.__name__ + f" function ran for {duration} milliseconds")
             return result
 
         return timed
@@ -164,7 +162,7 @@ def time_log(logger: logging.Logger = get_logger("main_logger")):
     return time_log_helper
 
 
-class SuppressStdoutStderr(object):
+class SuppressStdoutStderr:
     """
     A context manager for doing a "deep suppression" of stdout and stderr in
     Python, i.e. will suppress all print, even if the print originates in a

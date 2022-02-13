@@ -1,18 +1,24 @@
-import numpy as np
-import pandas as pd
 import unittest
 
-from darts.tests.base_test_class import DartsBaseTestClass
+import numpy as np
+import pandas as pd
+
 from darts import TimeSeries
-from darts.utils import timeseries_generation as tg
-from darts.models import NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing
-from darts.models import NaiveEnsembleModel
 from darts.logging import get_logger
+from darts.models import (
+    ExponentialSmoothing,
+    NaiveDrift,
+    NaiveEnsembleModel,
+    NaiveSeasonal,
+    Theta,
+)
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models import RNNModel, TCNModel, NBEATSModel
+    from darts.models import NBEATSModel, RNNModel, TCNModel
 
     TORCH_AVAILABLE = True
 except ImportError:

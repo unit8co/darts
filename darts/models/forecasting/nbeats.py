@@ -3,8 +3,9 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Union, List, Tuple
 from enum import Enum
+from typing import List, NewType, Tuple, Union
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -27,7 +28,7 @@ GTypes = NewType("GTypes", _GType)
 
 class _TrendGenerator(nn.Module):
     def __init__(self, expansion_coefficient_dim, target_length):
-        super(_TrendGenerator, self).__init__()
+        super().__init__()
 
         # basis is of size (expansion_coefficient_dim, target_length)
         basis = torch.stack(
@@ -46,7 +47,7 @@ class _TrendGenerator(nn.Module):
 
 class _SeasonalityGenerator(nn.Module):
     def __init__(self, target_length):
-        super(_SeasonalityGenerator, self).__init__()
+        super().__init__()
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [
             torch.cos(torch.arange(target_length) * 2 * np.pi * i)
@@ -118,7 +119,7 @@ class _Block(nn.Module):
             Tensor containing the forward forecast of the block.
 
         """
-        super(_Block, self).__init__()
+        super().__init__()
 
         self.num_layers = num_layers
         self.layer_width = layer_width
@@ -237,7 +238,7 @@ class _Stack(nn.Module):
             Tensor containing the forward forecast of the stack.
 
         """
-        super(_Stack, self).__init__()
+        super().__init__()
 
         self.input_chunk_length = input_chunk_length
         self.target_length = target_length
@@ -355,7 +356,7 @@ class _NBEATSModule(PLPastCovariatesModule):
             Tensor containing the output of the NBEATS module.
 
         """
-        super(_NBEATSModule, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()

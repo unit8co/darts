@@ -4,9 +4,10 @@ Transformer Model
 """
 
 import math
+from typing import Optional, Tuple
+
 import torch
 import torch.nn as nn
-from typing import Optional, Tuple
 
 from darts.logging import get_logger
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
@@ -42,7 +43,7 @@ class _PositionalEncoding(nn.Module):
         y of shape `(batch_size, input_size, d_model)`
             Tensor containing the embedded time series enhanced with positional encoding
         """
-        super(_PositionalEncoding, self).__init__()
+        super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
         pe = torch.zeros(max_len, d_model)
@@ -121,7 +122,7 @@ class _TransformerModule(PLPastCovariatesModule):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_TransformerModule, self).__init__(**kwargs)
+        super().__init__(**kwargs)
 
         # required for all modules -> saves hparams for checkpoints
         self.save_hyperparameters()

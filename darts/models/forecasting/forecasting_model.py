@@ -12,30 +12,30 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
-from collections import OrderedDict
-from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
-from itertools import product
+import inspect
+import time
 from abc import ABC, ABCMeta, abstractmethod
+from collections import OrderedDict
+from itertools import product
 from random import sample
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 import pandas as pd
-import time
-
-from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_log, raise_if_not, raise_if
-from darts.utils import (
-    _build_tqdm_iterator,
-    _with_sanity_checks,
-    _historical_forecasts_general_checks,
-    _parallel_apply,
-)
-from darts.utils.timeseries_generation import (
-    _generate_new_dates,
-    _build_forecast_series,
-)
-import inspect
 
 from darts import metrics
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.timeseries import TimeSeries
+from darts.utils import (
+    _build_tqdm_iterator,
+    _historical_forecasts_general_checks,
+    _parallel_apply,
+    _with_sanity_checks,
+)
+from darts.utils.timeseries_generation import (
+    _build_forecast_series,
+    _generate_new_dates,
+)
 
 logger = get_logger(__name__)
 
@@ -89,7 +89,7 @@ class ModelMeta(ABCMeta):
         cls._model_call = all_params
 
         # 6) call model
-        return super(ModelMeta, cls).__call__(**all_params)
+        return super().__call__(**all_params)
 
 
 class ForecastingModel(ABC, metaclass=ModelMeta):

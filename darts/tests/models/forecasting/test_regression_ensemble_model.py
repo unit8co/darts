@@ -1,28 +1,31 @@
+import unittest
+
 import numpy as np
 import pandas as pd
-import unittest
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
-from darts.models import NaiveDrift, NaiveSeasonal
-from darts.logging import get_logger
-from darts.tests.models.forecasting.test_ensemble_models import _make_ts
-from darts.metrics import rmse
 from darts import TimeSeries
+from darts.logging import get_logger
+from darts.metrics import rmse
+from darts.models import NaiveDrift, NaiveSeasonal
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.tests.models.forecasting.test_ensemble_models import _make_ts
 from darts.tests.models.forecasting.test_regression_models import train_test_split
+from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 try:
     import torch
-    from darts.models import RNNModel, BlockRNNModel
+
     from darts.models import (
-        RegressionEnsembleModel,
+        BlockRNNModel,
         LinearRegressionModel,
         RandomForest,
+        RegressionEnsembleModel,
         RegressionModel,
+        RNNModel,
     )
 
     TORCH_AVAILABLE = True
