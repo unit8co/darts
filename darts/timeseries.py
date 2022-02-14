@@ -446,7 +446,7 @@ class TimeSeries:
             time_index = df.index
 
         if not time_index.name:
-            time_index.name = DIMS[0]
+            time_index.name = time_col if time_col else DIMS[0]
 
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
