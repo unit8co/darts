@@ -17,9 +17,9 @@ Darts is still in an early development phase and we cannot always guarantee back
 - The `RegressionModel`s now accept an `output_chunk_length` parameter; meaning that they can be trained to
   predict more than one time step in advance (and used auto-regressively to predict on longer horizons).
   [#761](https://github.com/unit8co/darts/pull/761)
-- "&#x1F534;" `TimeSeries` "simple statistics" methods (such as `mean()`, `max()`, `min()` etc, ...) have been refactored
+- &#x1F534; `TimeSeries` "simple statistics" methods (such as `mean()`, `max()`, `min()` etc, ...) have been refactored
   to work natively on stochastic `TimeSeries`, and over configurable axes. [#773](https://github.com/unit8co/darts/pull/773)
-- "&#x1F534;" `TimeSeries` now support only pandas `RangeIndex` as an integer index, and does not support `Int64Index` anymore,
+- &#x1F534; `TimeSeries` now support only pandas `RangeIndex` as an integer index, and does not support `Int64Index` anymore,
   as it became deprecated with pandas 1.4.0. This also now brings the guarantee that `TimeSeries` do not have missing
   "dates" even when indexed with integers. [#777](https://github.com/unit8co/darts/pull/777)
 - New model: `KalmanForecaster` is a new probabilistic model, working on multivariate series, accepting future covariates,
