@@ -521,10 +521,10 @@ class CallableIndexEncoder(SingleEncoder):
             An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
             `generate_inference_series()`. Used to generate the index for encoders.
         attribute
-            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
         """
         raise_if_not(
@@ -571,10 +571,10 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
         """
         super().__init__(
@@ -604,10 +604,10 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
         """
 
