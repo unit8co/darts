@@ -2,7 +2,6 @@ import shutil
 import tempfile
 
 import numpy as np
-import pytorch_lightning as pl
 
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -11,6 +10,8 @@ from darts.utils.timeseries_generation import linear_timeseries
 logger = get_logger(__name__)
 
 try:
+    import pytorch_lightning as pl
+
     from darts.models.forecasting.rnn_model import RNNModel
 
     TORCH_AVAILABLE = True
