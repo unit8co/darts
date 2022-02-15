@@ -686,3 +686,46 @@ def datetime_attribute_timeseries(
     values_df.index = time_index
 
     return TimeSeries.from_dataframe(values_df).astype(dtype)
+
+
+def _build_forecast_series(
+    points_preds: Union[np.ndarray, Sequence[np.ndarray]],
+    input_series: TimeSeries,
+) -> TimeSeries:
+    """
+    Builds a forecast time series starting after the end of an input time series, with the
+    correct time index (or after the end of the input series, if specified).
+    """
+    time_index_length = (
+        len(points_preds)
+        if isinstance(points_preds, np.ndarray)
+        else len(points_preds[0])
+    )
+    time_index = _generate_new_dates(time_index_length, input_series=input_series)
+    if isinstance(points_preds, np.ndarray):
+        return TimeSeries.from_times_and_values(
+            time_index,
+            points_preds,
+            freq=input_series.freq_str,
+            columns=input_series.columns,
+        )
+
+    return TimeSeries.from_times_and_values(
+        time_index,
+        np.stack(points_preds, axis=2),
+        freq=input_series.freq_str,
+        columns=input_series.columns,
+    )
+
+
+def _generate_new_dates(
+    n: int, input_series: TimeSeries
+) -> Union[pd.DatetimeIndex, pd.RangeIndex]:
+    """
+    Generates `n` new dates after the end of the specified series
+    """
+    last = input_series.end_time()
+    start = last + input_series.freq if input_series.has_datetime_index else last + 1
+    return _generate_index(
+        start=start, freq=input_series.freq, length=n, name=input_series.time_dim
+    )

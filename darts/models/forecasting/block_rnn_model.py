@@ -7,32 +7,27 @@ from typing import List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-from numpy.random import RandomState
 
 from darts.logging import get_logger, raise_if_not
-from darts.models.forecasting.torch_forecasting_model import (
-    PastCovariatesTorchModel,
-    TorchParametricProbabilisticForecastingModel,
-)
-from darts.utils.likelihood_models import Likelihood
-from darts.utils.torch import random_method
+from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
 
 # TODO add batch norm
-class _BlockRNNModule(nn.Module):
+class _BlockRNNModule(PLPastCovariatesModule):
     def __init__(
         self,
         name: str,
         input_size: int,
         hidden_dim: int,
         num_layers: int,
-        output_chunk_length: int,
         target_size: int,
         nr_params: int,
         num_layers_out_fc: Optional[List] = None,
         dropout: float = 0.0,
+        **kwargs,
     ):
 
         """PyTorch module implementing a block RNN to be used in `BlockRNNModel`.
@@ -58,8 +53,6 @@ class _BlockRNNModule(nn.Module):
             The number of features in the hidden state `h` of the RNN module.
         num_layers
             The number of recurrent layers.
-        output_chunk_length
-            The number of steps to predict in the future.
         target_size
             The dimensionality of the output time series.
         nr_params
@@ -69,6 +62,8 @@ class _BlockRNNModule(nn.Module):
             This network connects the last hidden layer of the PyTorch RNN module to the output.
         dropout
             The fraction of neurons that are dropped in all-but-last RNN layers.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------
@@ -81,7 +76,10 @@ class _BlockRNNModule(nn.Module):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super().__init__()
+        super().__init__(**kwargs)
+
+        # required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         # Defining parameters
         self.hidden_dim = hidden_dim
@@ -89,7 +87,7 @@ class _BlockRNNModule(nn.Module):
         self.target_size = target_size
         self.nr_params = nr_params
         num_layers_out_fc = [] if num_layers_out_fc is None else num_layers_out_fc
-        self.out_len = output_chunk_length
+        self.out_len = self.output_chunk_length
         self.name = name
 
         # Defining the RNN module
@@ -102,7 +100,7 @@ class _BlockRNNModule(nn.Module):
         last = hidden_dim
         feats = []
         for feature in num_layers_out_fc + [
-            output_chunk_length * target_size * nr_params
+            self.output_chunk_length * target_size * nr_params
         ]:
             feats.append(nn.Linear(last, feature))
             last = feature
@@ -128,10 +126,7 @@ class _BlockRNNModule(nn.Module):
         return predictions
 
 
-class BlockRNNModel(
-    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
-):
-    @random_method
+class BlockRNNModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -141,9 +136,7 @@ class BlockRNNModel(
         n_rnn_layers: int = 1,
         hidden_fc_sizes: Optional[List] = None,
         dropout: float = 0.0,
-        likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
-        **kwargs
+        **kwargs,
     ):
 
         """Block Recurrent Neural Network Model (RNNs).
@@ -179,25 +172,66 @@ class BlockRNNModel(
             Sizes of hidden layers connecting the last hidden layer of the RNN module to the output, if any.
         dropout
             Fraction of neurons afected by Dropout.
-        likelihood
-            Optionally, the likelihood model to be used for probabilistic forecasts.
-            If no likelihood model is provided, forecasts will be deterministic.
-        random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
 
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
+            Default: ``torch.nn.MSELoss()``.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
+        optimizer_cls
+            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
+            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            will be used.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
+            to using a constant learning rate.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
+            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            ``TimeSeries`` is passed to the :func:`fit()` method).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
+            is available, otherwise "cpu")
+        force_reset
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
+        save_checkpoints
+            Whether or not to automatically save the untrained model and checkpoints from training.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save_model()` and loaded using :func:`load_model()`.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            `add_encoders`. An example showing some of `add_encoders` features:
+            ``add_encoders``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
             .. code-block:: python
@@ -210,51 +244,51 @@ class BlockRNNModel(
                     'transformer': Scaler()
                 }
             ..
-        optimizer_cls
-            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
-        optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
-            will be used.
-        lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
-            to using a constant learning rate.
-        lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer.
-        loss_fn
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: ``torch.nn.MSELoss()``.
-        model_name
-            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
-            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
-            at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
-        work_dir
-            Path of the working directory, where to save checkpoints and Tensorboard summaries.
-            (default: current working directory).
-        log_tensorboard
-            If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/.darts/runs/`.
-        nr_epochs_val_period
-            Number of epochs to wait before evaluating the validation loss (if a validation
-            ``TimeSeries`` is passed to the :func:`fit()` method).
-        torch_device_str
-            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
-            is available, otherwise "cpu")
-        force_reset
-            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded).
-        save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :func:`save_model()`
-            and loaded using :func:`load_model()`.
-        """
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            supported kwargs.
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+        show_warnings
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            your forecasting use case.
+        """
+        super().__init__(**self._extract_torch_model_params(**self.model_params))
+
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
         # check we got right model type specified:
         if model not in ["RNN", "LSTM", "GRU"]:
@@ -267,8 +301,6 @@ class BlockRNNModel(
                 logger,
             )
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.rnn_type_or_module = model
         self.hidden_fc_sizes = hidden_fc_sizes
         self.hidden_size = hidden_size
@@ -294,18 +326,10 @@ class BlockRNNModel(
                 nr_params=nr_params,
                 hidden_dim=self.hidden_size,
                 num_layers=self.n_rnn_layers,
-                output_chunk_length=self.output_chunk_length,
                 num_layers_out_fc=hidden_fc_sizes,
                 dropout=self.dropout,
+                **self.pl_module_params,
             )
         else:
             model = self.rnn_type_or_module
         return model
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)
