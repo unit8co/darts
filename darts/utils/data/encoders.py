@@ -137,31 +137,28 @@ TorchForecastingModel (this is only meant to illustrate many features at once).
 ..
 """
 
-import pandas as pd
-import numpy as np
 import copy
+from typing import Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-from typing import Union, Optional, Dict, List, Sequence, Tuple, Callable
+import numpy as np
+import pandas as pd
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
+from darts.dataprocessing.transformers import FittableDataTransformer
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.timeseries import DIMS
 from darts.utils.data.encoder_base import (
-    ReferenceIndexType,
     CovariateIndexGenerator,
-    PastCovariateIndexGenerator,
-    FutureCovariateIndexGenerator,
     Encoder,
-    SingleEncoder,
+    FutureCovariateIndexGenerator,
+    PastCovariateIndexGenerator,
+    ReferenceIndexType,
     SequentialEncoderTransformer,
+    SingleEncoder,
     SupportedIndex,
 )
 from darts.utils.data.utils import _index_diff
-
-from darts.logging import raise_if_not, get_logger, raise_if
-
-from darts import concatenate
 from darts.utils.timeseries_generation import datetime_attribute_timeseries
-from darts.dataprocessing.transformers import FittableDataTransformer
 
 SupportedTimeSeries = Union[TimeSeries, Sequence[TimeSeries]]
 logger = get_logger(__name__)
@@ -195,12 +192,12 @@ class CyclicTemporalEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(CyclicTemporalEncoder, self).__init__(index_generator)
+        super().__init__(index_generator)
         self.attribute = attribute
 
     def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
         """applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
-        super(CyclicTemporalEncoder, self)._encode(index, dtype)
+        super()._encode(index, dtype)
         return datetime_attribute_timeseries(
             index, attribute=self.attribute, cyclic=True, dtype=dtype
         )
@@ -230,7 +227,7 @@ class PastCyclicEncoder(CyclicTemporalEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(PastCyclicEncoder, self).__init__(
+        super().__init__(
             index_generator=PastCovariateIndexGenerator(
                 input_chunk_length, output_chunk_length
             ),
@@ -257,7 +254,7 @@ class FutureCyclicEncoder(CyclicTemporalEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(FutureCyclicEncoder, self).__init__(
+        super().__init__(
             index_generator=FutureCovariateIndexGenerator(
                 input_chunk_length, output_chunk_length
             ),
@@ -285,12 +282,12 @@ class DatetimeAttributeEncoder(SingleEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(DatetimeAttributeEncoder, self).__init__(index_generator)
+        super().__init__(index_generator)
         self.attribute = attribute
 
     def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
         """Applies cyclic encoding from `datetime_attribute_timeseries()` to `self.attribute` of `index`."""
-        super(DatetimeAttributeEncoder, self)._encode(index, dtype)
+        super()._encode(index, dtype)
         return datetime_attribute_timeseries(
             index, attribute=self.attribute, dtype=dtype
         )
@@ -320,7 +317,7 @@ class PastDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(PastDatetimeAttributeEncoder, self).__init__(
+        super().__init__(
             index_generator=PastCovariateIndexGenerator(
                 input_chunk_length, output_chunk_length
             ),
@@ -347,7 +344,7 @@ class FutureDatetimeAttributeEncoder(DatetimeAttributeEncoder):
             For more information, check out :meth:`datetime_attribute_timeseries()
             <darts.utils.timeseries_generation.datetime_attribute_timeseries>`
         """
-        super(FutureDatetimeAttributeEncoder, self).__init__(
+        super().__init__(
             index_generator=FutureCovariateIndexGenerator(
                 input_chunk_length, output_chunk_length
             ),
@@ -380,7 +377,7 @@ class IntegerIndexEncoder(SingleEncoder):
             logger,
         )
 
-        super(IntegerIndexEncoder, self).__init__(index_generator)
+        super().__init__(index_generator)
 
         self.attribute = attribute
         self.reference_index: Optional[
@@ -393,7 +390,7 @@ class IntegerIndexEncoder(SingleEncoder):
         1)  for attribute=='absolute', the reference point/index is one step before start of the train target series
         2)  for attribute=='relative', the reference point/index is the overall prediction/forecast index
         """
-        super(IntegerIndexEncoder, self)._encode(index, dtype)
+        super()._encode(index, dtype)
 
         # load reference index from index_generators
         if not self.was_called:
@@ -464,7 +461,7 @@ class PastIntegerIndexEncoder(IntegerIndexEncoder):
             else ReferenceIndexType.START
         )
 
-        super(PastIntegerIndexEncoder, self).__init__(
+        super().__init__(
             index_generator=PastCovariateIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
@@ -501,7 +498,7 @@ class FutureIntegerIndexEncoder(IntegerIndexEncoder):
             else ReferenceIndexType.START
         )
 
-        super(FutureIntegerIndexEncoder, self).__init__(
+        super().__init__(
             index_generator=FutureCovariateIndexGenerator(
                 input_chunk_length,
                 output_chunk_length,
@@ -524,10 +521,10 @@ class CallableIndexEncoder(SingleEncoder):
             An instance of `CovariateIndexGenerator` with methods `generate_train_series()` and
             `generate_inference_series()`. Used to generate the index for encoders.
         attribute
-            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
         """
         raise_if_not(
@@ -537,13 +534,13 @@ class CallableIndexEncoder(SingleEncoder):
             logger,
         )
 
-        super(CallableIndexEncoder, self).__init__(index_generator)
+        super().__init__(index_generator)
 
         self.attribute = attribute
 
     def _encode(self, index: SupportedIndex, dtype: np.dtype) -> TimeSeries:
         """Apply the user-defined callable to encode the index"""
-        super(CallableIndexEncoder, self)._encode(index, dtype)
+        super()._encode(index, dtype)
 
         return TimeSeries.from_times_and_values(
             times=index, values=self.attribute(index), columns=["custom"]
@@ -574,13 +571,13 @@ class PastCallableIndexEncoder(CallableIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
         """
-        super(PastCallableIndexEncoder, self).__init__(
+        super().__init__(
             index_generator=PastCovariateIndexGenerator(
                 input_chunk_length, output_chunk_length
             ),
@@ -607,14 +604,14 @@ class FutureCallableIndexEncoder(CallableIndexEncoder):
         output_chunk_length
             The length of the emitted future series.
         attribute
-            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)` as input
+            A callable that takes an index `index` of type `(pd.DatetimeIndex, pd.RangeIndex)` as input
             and returns a np.ndarray of shape `(len(index),)`.
             An example for a correct `attribute` for `index` of type pd.DatetimeIndex:
-            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.Int64Index or pd.RangeIndex:
+            ``attribute = lambda index: (index.year - 1950) / 50``. And for pd.RangeIndex:
             ``attribute = lambda index: (index - 1950) / 50``
         """
 
-        super(FutureCallableIndexEncoder, self).__init__(
+        super().__init__(
             index_generator=FutureCovariateIndexGenerator(
                 input_chunk_length, output_chunk_length
             ),
@@ -707,7 +704,7 @@ class SequentialEncoder(Encoder):
             Whether or not the `TrainingDataset` takes past covariates
         """
 
-        super(SequentialEncoder, self).__init__()
+        super().__init__()
         self.params = add_encoders
         self.input_chunk_length = input_chunk_length
         self.output_chunk_length = output_chunk_length

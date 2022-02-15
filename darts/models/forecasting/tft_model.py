@@ -3,35 +3,34 @@ Temporal Fusion Transformer (TFT)
 -------
 """
 
-from typing import Union, List, Optional, Tuple, Dict, Sequence
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
-from numpy.random import RandomState
-
 import torch
+from numpy.random import RandomState
 from torch import nn
+from torch.nn import LSTM as _LSTM
 
 from darts import TimeSeries
-from darts.utils.torch import random_method
-from darts.logging import get_logger, raise_if_not, raise_if
-from darts.utils.likelihood_models import QuantileRegression, Likelihood
-from darts.utils.data import (
-    TrainingDataset,
-    MixedCovariatesSequentialDataset,
-    MixedCovariatesTrainingDataset,
-    MixedCovariatesInferenceDataset,
-)
-from darts.models.forecasting.torch_forecasting_model import (
-    MixedCovariatesTorchModel,
-    TorchParametricProbabilisticForecastingModel,
-)
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
     _GatedResidualNetwork,
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
 )
-from torch.nn import LSTM as _LSTM
+from darts.models.forecasting.torch_forecasting_model import (
+    MixedCovariatesTorchModel,
+    TorchParametricProbabilisticForecastingModel,
+)
+from darts.utils.data import (
+    MixedCovariatesInferenceDataset,
+    MixedCovariatesSequentialDataset,
+    MixedCovariatesTrainingDataset,
+    TrainingDataset,
+)
+from darts.utils.likelihood_models import Likelihood, QuantileRegression
+from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -95,7 +94,7 @@ class _TFTModule(nn.Module):
             a ``QuantileRegression`` likelihood.
         """
 
-        super(_TFTModule, self).__init__()
+        super().__init__()
 
         self.n_targets, self.loss_size = output_dim
         self.input_chunk_length = input_chunk_length

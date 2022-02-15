@@ -3,14 +3,15 @@ Inference Dataset
 -----------------
 """
 
-import numpy as np
-
 from abc import ABC, abstractmethod
+from typing import Optional, Sequence, Tuple, Union
+
+import numpy as np
 from torch.utils.data import Dataset
-from typing import Union, Sequence, Optional, Tuple
 
 from darts import TimeSeries
 from darts.logging import raise_if_not
+
 from .utils import CovariateType
 
 

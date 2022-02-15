@@ -118,7 +118,7 @@ jobs:
       - name: "7. Build docs"
         run: |
           ./gradlew buildDocs
-  
+
   check-examples:
     runs-on: ubuntu-latest
     strategy:

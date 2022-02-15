@@ -1,11 +1,13 @@
-import numpy as np
-from typing import Callable, Union
 import copy
+from typing import Callable, Union
 
-from .window import Window, CRWindow, NoWindow
-from .cost_matrix import CostMatrix
+import numpy as np
+
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if_not, raise_if
+from darts.logging import get_logger, raise_if, raise_if_not
+
+from .cost_matrix import CostMatrix
+from .window import CRWindow, NoWindow, Window
 
 logger = get_logger(__name__)
 

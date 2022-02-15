@@ -9,15 +9,15 @@ References
 ----------
 .. [1] https://en.wikipedia.org/wiki/Vector_autoregression
 """
-import numpy as np
-import pandas as pd
-
-from statsmodels.tsa.api import VARMAX as staVARMA
 from typing import Optional
 
+import numpy as np
+import pandas as pd
+from statsmodels.tsa.api import VARMAX as staVARMA
+
+from darts.logging import get_logger, raise_if
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
 from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_if
 
 logger = get_logger(__name__)
 
@@ -54,8 +54,8 @@ class VARIMA(DualCovariatesForecastingModel):
 
     def __str__(self):
         if self.d == 0:
-            return "VARMA({},{})".format(self.p, self.q)
-        return "VARIMA({},{},{})".format(self.p, self.d, self.q)
+            return f"VARMA({self.p},{self.q})"
+        return f"VARIMA({self.p},{self.d},{self.q})"
 
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         # for VARIMA we need to process target `series` before calling DualForecastingModels' fit() method

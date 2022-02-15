@@ -5,23 +5,23 @@ from darts.datasets import (
     AirPassengersDataset,
     AusBeerDataset,
     EnergyDataset,
+    GasRateCO2Dataset,
     HeartRateDataset,
     IceCreamHeaterDataset,
     MonthlyMilkDataset,
+    MonthlyMilkIncompleteDataset,
     SunspotsDataset,
     TaylorDataset,
     TemperatureDataset,
     USGasolineDataset,
     WineDataset,
     WoolyDataset,
-    GasRateCO2Dataset,
-    MonthlyMilkIncompleteDataset,
 )
 from darts.datasets.dataset_loaders import (
-    DatasetLoadingException,
+    DatasetLoader,
     DatasetLoaderCSV,
     DatasetLoaderMetadata,
-    DatasetLoader,
+    DatasetLoadingException,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
 

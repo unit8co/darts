@@ -1,12 +1,13 @@
+from darts.logging import get_logger
+from darts.metrics import mae
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts.metrics import mae
-from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
 try:
     import torch
+
     from darts.models.forecasting.tcn_model import TCNModel
 
     TORCH_AVAILABLE = True

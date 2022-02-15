@@ -1,28 +1,28 @@
 import numpy as np
 import pandas as pd
 
+from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
+from darts.logging import get_logger
+from darts.metrics import mape
+from darts.models import (
+    ARIMA,
+    FFT,
+    VARIMA,
+    ExponentialSmoothing,
+    FourTheta,
+    KalmanForecaster,
+    NaiveSeasonal,
+    Theta,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.metrics import mape
-from darts.models import (
-    NaiveSeasonal,
-    ExponentialSmoothing,
-    ARIMA,
-    Theta,
-    FourTheta,
-    FFT,
-    VARIMA,
-    KalmanForecaster,
-)
-from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
-from darts.logging import get_logger
-from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
+from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models import RandomForest, LinearRegressionModel
+    from darts.models import LinearRegressionModel, RandomForest
 
     TORCH_AVAILABLE = True
 except ImportError:

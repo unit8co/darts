@@ -3,13 +3,13 @@ Fittable Data Transformer Base Class
 ------------------------------------
 """
 
-from darts import TimeSeries
-from typing import Union, Sequence, Iterator, Tuple, List
-from darts.logging import get_logger
-from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.utils import _parallel_apply, _build_tqdm_iterator
 from abc import abstractmethod
+from typing import Iterator, List, Sequence, Tuple, Union
 
+from darts import TimeSeries
+from .base_data_transformer import BaseDataTransformer
+from darts.logging import get_logger
+from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
 
@@ -160,7 +160,7 @@ class FittableDataTransformer(BaseDataTransformer):
         """
         self._fit_called = True
 
-        desc = "Fitting ({})".format(self._name)
+        desc = f"Fitting ({self._name})"
 
         if isinstance(series, TimeSeries):
             data = [series]

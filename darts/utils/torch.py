@@ -3,15 +3,15 @@ Utils for Pytorch and its usage
 -------------------------------
 """
 
-from typing import Callable, TypeVar, Any
-from inspect import signature
 from functools import wraps
+from inspect import signature
+from typing import Any, Callable, TypeVar
 
+from numpy.random import randint
 from sklearn.utils import check_random_state
 from torch.random import fork_rng, manual_seed
-from numpy.random import randint
 
-from darts.logging import raise_if_not, get_logger
+from darts.logging import get_logger, raise_if_not
 
 T = TypeVar("T")
 logger = get_logger(__name__)

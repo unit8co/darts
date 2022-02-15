@@ -15,10 +15,10 @@ from typing import Optional
 import numpy as np
 from nfoursid.kalman import Kalman
 
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
-from darts.models.filtering.kalman_filter import KalmanFilter
-from darts.timeseries import TimeSeries
 from darts.logging import get_logger
+from darts.models.filtering.kalman_filter import KalmanFilter
+from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -55,7 +55,7 @@ class KalmanForecaster(DualCovariatesForecastingModel):
         self.darts_kf = KalmanFilter(dim_x, kf)
 
     def __str__(self):
-        return "Kalman Filter Forecaster (dim_x={})".format(self.dim_x)
+        return f"Kalman Filter Forecaster (dim_x={self.dim_x})"
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
 

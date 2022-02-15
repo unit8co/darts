@@ -1,9 +1,8 @@
 import numpy as np
 import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
-from darts.utils.timeseries_generation import constant_timeseries, gaussian_timeseries
+from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.statistics import (
     check_seasonality,
     granger_causality_tests,
@@ -11,6 +10,7 @@ from darts.utils.statistics import (
     stationarity_test_kpss,
     stationarity_tests,
 )
+from darts.utils.timeseries_generation import constant_timeseries, gaussian_timeseries
 
 
 class TimeSeriesTestCase(DartsBaseTestClass):

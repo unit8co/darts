@@ -1,9 +1,10 @@
 import unittest
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 
 from darts import TimeSeries
-from darts.dataprocessing.transformers.mappers import Mapper, InvertibleMapper
+from darts.dataprocessing.transformers.mappers import InvertibleMapper, Mapper
 from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
 
