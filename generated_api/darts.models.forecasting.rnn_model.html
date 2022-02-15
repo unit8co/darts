@@ -36,6 +36,7 @@
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Temporal Convolutional Network" href="darts.models.forecasting.tcn_model.html" />
@@ -324,6 +325,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -526,8 +532,8 @@
 <h1>Recurrent Neural Networks<a class="headerlink" href="#recurrent-neural-networks" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.rnn_model.</span></span><span class="sig-name descname"><span class="pre">RNNModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RNN'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rnn_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/rnn_model.html#RNNModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.torch_forecasting_model.TorchParametricProbabilisticForecastingModel</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.torch_forecasting_model.DualCovariatesTorchModel</span></code></p>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.rnn_model.</span></span><span class="sig-name descname"><span class="pre">RNNModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'RNN'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hidden_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">25</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_rnn_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dropout</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">training_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/rnn_model.html#RNNModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.torch_forecasting_model.DualCovariatesTorchModel</span></code></p>
 <p>Recurrent Neural Network Model (RNNs).</p>
 <p>This class provides three variants of RNNs:</p>
 <ul class="simple">
@@ -551,10 +557,10 @@ covariates, checkout <cite>BlockRNNModel</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
+<li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of past time steps that are fed to the forecasting module at prediction time.</p></li>
 <li><p><strong>model</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]) – Either a string specifying the RNN module type (“RNN”, “LSTM” or “GRU”),
 or a PyTorch module with the same specifications as
 <cite>darts.models.rnn_model._RNNModule</cite>.</p></li>
-<li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of past time steps that are fed to the forecasting module at prediction time.</p></li>
 <li><p><strong>hidden_dim</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Size for feature maps for each hidden RNN layer (<span class="math notranslate nohighlight">\(h_n\)</span>).</p></li>
 <li><p><strong>n_rnn_layers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of recurrent layers.</p></li>
 <li><p><strong>dropout</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Fraction of neurons afected by Dropout.</p></li>
@@ -562,19 +568,48 @@ or a PyTorch module with the same specifications as
 training. Generally speaking, <cite>training_length</cite> should have a higher value than <cite>input_chunk_length</cite>
 because otherwise during training the RNN is never run for as many iterations as it will during
 training. For more information on this parameter, please see <cite>darts.utils.data.ShiftedDataset</cite></p></li>
-<li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]) – Optionally, the likelihood model to be used for probabilistic forecasts.
-If no likelihood model is provided, forecasts will be deterministic.</p></li>
-<li><p><strong>random_state</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">RandomState</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Control the randomness of the weights initialization. Check this
-<a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random_state">link</a> for more details.</p></li>
+<li><p><strong>**kwargs</strong> – Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>.</p></li>
+<li><p><strong>loss_fn</strong> – PyTorch loss function used for training.
+This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
+Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
+<li><p><strong>likelihood</strong> – The likelihood model to be used for probabilistic forecasts.</p></li>
+<li><p><strong>optimizer_cls</strong> – The PyTorch optimizer class to be used (default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>).</p></li>
+<li><p><strong>optimizer_kwargs</strong> – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
+for specifying a learning rate). Otherwise the default values of the selected <code class="docutils literal notranslate"><span class="pre">optimizer_cls</span></code>
+will be used.</p></li>
+<li><p><strong>lr_scheduler_cls</strong> – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
+to using a constant learning rate.</p></li>
+<li><p><strong>lr_scheduler_kwargs</strong> – Optionally, some keyword arguments for the PyTorch learning rate scheduler.</p></li>
 <li><p><strong>batch_size</strong> – Number of time series (input and output sequences) used in each training pass.</p></li>
 <li><p><strong>n_epochs</strong> – Number of epochs over which to train the model.</p></li>
+<li><p><strong>model_name</strong> – Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+defaults to the following string <code class="docutils literal notranslate"><span class="pre">&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;</span></code>, where the initial part
+of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+spawned at the same time by different processes to share the same model_name). E.g.,
+<code class="docutils literal notranslate"><span class="pre">&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;</span></code>.</p></li>
+<li><p><strong>work_dir</strong> – Path of the working directory, where to save checkpoints and Tensorboard summaries.
+(default: current working directory).</p></li>
+<li><p><strong>log_tensorboard</strong> – If set, use Tensorboard to log the different parameters. The logs will be located in:
+<code class="docutils literal notranslate"><span class="pre">&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;</span></code>.</p></li>
+<li><p><strong>nr_epochs_val_period</strong> – Number of epochs to wait before evaluating the validation loss (if a validation
+<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is passed to the <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="darts.models.forecasting.rnn_model.RNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> method).</p></li>
+<li><p><strong>torch_device_str</strong> – Optionally, a string indicating the torch device to use. (default: “cuda:0” if a GPU
+is available, otherwise “cpu”)</p></li>
+<li><p><strong>force_reset</strong> – If set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, any previously-existing model with the same name will be reset (all checkpoints will
+be discarded).</p></li>
+<li><p><strong>save_checkpoints</strong> – Whether or not to automatically save the untrained model and checkpoints from training.
+To load the model from checkpoint, call <code class="xref py py-func docutils literal notranslate"><span class="pre">MyModelClass.load_from_checkpoint()</span></code>, where
+<code class="xref py py-class docutils literal notranslate"><span class="pre">MyModelClass</span></code> is the <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> class that was used (such as <code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code>,
+<code class="xref py py-class docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, etc.). If set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the model can still be manually saved using
+<a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.save_model" title="darts.models.forecasting.rnn_model.RNNModel.save_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_model()</span></code></a> and loaded using <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_model" title="darts.models.forecasting.rnn_model.RNNModel.load_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_model()</span></code></a>.</p></li>
 <li><p><strong>add_encoders</strong> – <p>A large number of past and future covariates can be automatically generated with <cite>add_encoders</cite>.
-This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
 will be used as index encoders. Additionally, a transformer such as Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">Scaler</span></code> can be added to
 transform the generated covariates. This happens all under one hood and only needs to be specified at
 model creation.
 Read <a class="reference internal" href="darts.utils.data.encoders.html#darts.utils.data.encoders.SequentialEncoder" title="darts.utils.data.encoders.SequentialEncoder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SequentialEncoder</span></code></a> to find out more about
-<cite>add_encoders</cite>. An example showing some of <cite>add_encoders</cite> features:</p>
+<code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>. An example showing some of <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> features:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
     <span class="s1">&#39;cyclic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]},</span>
     <span class="s1">&#39;datetime_attribute&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="s1">&#39;dayofweek&#39;</span><span class="p">]},</span>
@@ -585,37 +620,68 @@ Read <a class="reference internal" href="darts.utils.data.encoders.html#darts.ut
 </pre></div>
 </div>
 </p></li>
-<li><p><strong>optimizer_cls</strong> – The PyTorch optimizer class to be used (default: <cite>torch.optim.Adam</cite>).</p></li>
-<li><p><strong>optimizer_kwargs</strong> – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
-for specifying a learning rate). Otherwise the default values of the selected <cite>optimizer_cls</cite>
-will be used.</p></li>
-<li><p><strong>lr_scheduler_cls</strong> – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <cite>None</cite> corresponds
-to using a constant learning rate.</p></li>
-<li><p><strong>lr_scheduler_kwargs</strong> – Optionally, some keyword arguments for the PyTorch optimizer.</p></li>
-<li><p><strong>loss_fn</strong> – PyTorch loss function used for training.
-This parameter will be ignored for probabilistic models if the <cite>likelihood</cite> parameter is specified.
-Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
-<li><p><strong>model_name</strong> – Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-defaults to the following string <code class="docutils literal notranslate"><span class="pre">&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;</span></code>, where the initial part of
-the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
-at the same time by different processes to share the same model_name). E.g.,
-<code class="docutils literal notranslate"><span class="pre">&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;</span></code>.</p></li>
-<li><p><strong>work_dir</strong> – Path of the working directory, where to save checkpoints and Tensorboard summaries.
-(default: current working directory).</p></li>
-<li><p><strong>log_tensorboard</strong> – If set, use Tensorboard to log the different parameters. The logs will be located in:
-<cite>[work_dir]/.darts/runs/</cite>.</p></li>
-<li><p><strong>nr_epochs_val_period</strong> – Number of epochs to wait before evaluating the validation loss (if a validation
-<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is passed to the <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="darts.models.forecasting.rnn_model.RNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> method).</p></li>
-<li><p><strong>torch_device_str</strong> – Optionally, a string indicating the torch device to use. (default: “cuda:0” if a GPU
-is available, otherwise “cpu”)</p></li>
-<li><p><strong>force_reset</strong> – If set to <cite>True</cite>, any previously-existing model with the same name will be reset (all checkpoints will
-be discarded).</p></li>
-<li><p><strong>save_checkpoints</strong> – Whether or not to automatically save the untrained model and checkpoints from training.
-If set to <cite>False</cite>, the model can still be manually saved using <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.save_model" title="darts.models.forecasting.rnn_model.RNNModel.save_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_model()</span></code></a>
-and loaded using <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_model" title="darts.models.forecasting.rnn_model.RNNModel.load_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_model()</span></code></a>.</p></li>
+<li><p><strong>random_state</strong> – Control the randomness of the weights initialization. Check this
+<a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random_state">link</a> for more details.</p></li>
+<li><p><strong>pl_trainer_kwargs</strong> – <p>By default <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> creates a PyTorch Lightning Trainer with several useful presets
+that performs the training, validation and prediction processes. These presets include automatic
+checkpointing, tensorboard logging, setting the torch device and more.
+With <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> you can add additional kwargs to instantiate the PyTorch Lightning trainer
+object. Check the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">PL Trainer documentation</a> for more information about the
+supported kwargs.
+With parameter <code class="docutils literal notranslate"><span class="pre">&quot;callbacks&quot;</span></code> you can add custom or PyTorch-Lightning built-in callbacks to Darts’
+<code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>. Below is an example for adding EarlyStopping to the training process.
+The model will stop training early if the validation loss <cite>val_loss</cite> does not improve beyond
+specifications. For more information on callbacks, visit:
+<a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html">PyTorch Lightning Callbacks</a></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks.early_stopping</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
+
+<span class="c1"># stop training when validation loss does not decrease more than 0.05 (`min_delta`) over</span>
+<span class="c1"># a period of 5 epochs (`patience`)</span>
+<span class="n">my_stopper</span> <span class="o">=</span> <span class="n">EarlyStopping</span><span class="p">(</span>
+    <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_loss&quot;</span><span class="p">,</span>
+    <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">min_delta</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">my_stopper</span><span class="p">]}</span>
+</pre></div>
+</div>
+<p>Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+parameter <code class="docutils literal notranslate"><span class="pre">trainer</span></code> in <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="darts.models.forecasting.rnn_model.RNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> and <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a>.</p>
+</p></li>
+<li><p><strong>show_warnings</strong> – whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+your forecasting use case.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="table">
+<colgroup>
+<col style="width: 70%" />
+<col style="width: 30%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>epochs_trained</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>input_chunk_length</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>likelihood</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>model_created</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>output_chunk_length</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -630,7 +696,7 @@ and loaded using <a class="reference internal" href="#darts.models.forecasting.r
 <td><p>Fit/train the model on one or multiple series.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_from_dataset</span></code></a>(train_dataset[, ...])</p></td>
-<td><p>This method allows for training with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code> instance.</p></td>
+<td><p>Train the model with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code> instance.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.gridsearch" title="darts.models.forecasting.rnn_model.RNNModel.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
@@ -639,19 +705,19 @@ and loaded using <a class="reference internal" href="#darts.models.forecasting.r
 <td><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint" title="darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_from_checkpoint</span></code></a>(model_name[, work_dir, ...])</p></td>
-<td><p>Load the model from the checkpoints saved automatically.</p></td>
+<td><p>Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_model" title="darts.models.forecasting.rnn_model.RNNModel.load_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load_model</span></code></a>(path)</p></td>
 <td><p>loads a model from a given file path.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, series, past_covariates, ...])</p></td>
-<td><p>Predict the <cite>n</cite> time step following the end of the training series, or of the specified <cite>series</cite>.</p></td>
+<td><p>Predict the <code class="docutils literal notranslate"><span class="pre">n</span></code> time step following the end of the training series, or of the specified <code class="docutils literal notranslate"><span class="pre">series</span></code>.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict_from_dataset</span></code></a>(n, input_series_dataset)</p></td>
 <td><p>This method allows for predicting with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.InferenceDataset</span></code> instance.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.reset_model" title="darts.models.forecasting.rnn_model.RNNModel.reset_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reset_model</span></code></a>()</p></td>
-<td><p>Resets the model object and removes all the stored data - model, checkpoints and training history.</p></td>
+<td><p>Resets the model object and removes all stored data - model, checkpoints, loggers and training history.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.residuals" title="darts.models.forecasting.rnn_model.RNNModel.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
 <td><p>Compute the residuals produced by this model on a univariate time series.</p></td>
@@ -718,18 +784,31 @@ Set to <code class="docutils literal notranslate"><span class="pre">np.mean</spa
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.epochs_trained">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">epochs_trained</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.epochs_trained" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_samples_per_ts</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit/train the model on one or multiple series.</p>
 <p>This method wraps around <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit_from_dataset()</span></code></a>, constructing a default training
 dataset for this model. If you need more control on how the series are sliced for training, consider
 calling <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset" title="darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit_from_dataset()</span></code></a> with a custom <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code>.</p>
-<p>This function can be called several times to do some extra training. If <cite>epochs</cite> is specified, the model
-will be trained for some (extra) <cite>epochs</cite> epochs.</p>
+<p>Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
+<code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> used at model creation. You can also use a custom Trainer with optional parameter
+<code class="docutils literal notranslate"><span class="pre">trainer</span></code>. For more information on PyTorch Lightning Trainers check out <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">this link</a> .</p>
+<p>This function can be called several times to do some extra training. If <code class="docutils literal notranslate"><span class="pre">epochs</span></code> is specified, the model
+will be trained for some (extra) <code class="docutils literal notranslate"><span class="pre">epochs</span></code> epochs.</p>
 <p>Below, all possible parameters are documented, but not all models support all parameters. For instance,
-all the <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code> support only <cite>past_covariates</cite> and not <cite>future_covariates</cite>. Darts will
-complain if you try fitting a model with the wrong covariates argument.</p>
+all the <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code> support only <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and not <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>.
+Darts will complain if you try fitting a model with the wrong covariates argument.</p>
 <p>When handling covariates, Darts will try to use the time axes of the target and the covariates
 to come up with the right time slices. So the covariates can be longer than needed; as long as the time axes
 are correct Darts will handle them correctly. It will also complain if their time span is not sufficient.</p>
@@ -741,55 +820,68 @@ are correct Darts will handle them correctly. It will also complain if their tim
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, a series or sequence of series specifying future-known covariates</p></li>
 <li><p><strong>val_series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, one or a sequence of validation target series, which will be used to compute the validation
 loss throughout training and keep track of the best performing models.</p></li>
-<li><p><strong>val_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the past covariates corresponding to the validation series (must match <cite>covariates</cite>)</p></li>
-<li><p><strong>val_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future covariates corresponding to the validation series (must match <cite>covariates</cite>)</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print progress.</p></li>
-<li><p><strong>epochs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – If specified, will train the model for <cite>epochs</cite> (additional) epochs, irrespective of what <cite>n_epochs</cite>
+<li><p><strong>val_past_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the past covariates corresponding to the validation series (must match <code class="docutils literal notranslate"><span class="pre">covariates</span></code>)</p></li>
+<li><p><strong>val_future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future covariates corresponding to the validation series (must match <code class="docutils literal notranslate"><span class="pre">covariates</span></code>)</p></li>
+<li><p><strong>trainer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>]) – Optionally, a custom PyTorch-Lightning Trainer object to perform training. Using a custom <code class="docutils literal notranslate"><span class="pre">trainer</span></code> will
+override Darts’ default trainer.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, whether to print progress.</p></li>
+<li><p><strong>epochs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – If specified, will train the model for <code class="docutils literal notranslate"><span class="pre">epochs</span></code> (additional) epochs, irrespective of what <code class="docutils literal notranslate"><span class="pre">n_epochs</span></code>
 was provided to the model constructor.</p></li>
 <li><p><strong>max_samples_per_ts</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, a maximum number of samples to use per time series. Models are trained in a supervised fashion
 by constructing slices of (input, output) examples. On long time series, this can result in unnecessarily
 large number of training samples. This parameter upper-bounds the number of training samples per time
 series (taking only the most recent samples in each series). Leaving to None does not apply any
 upper bound.</p></li>
-<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <cite>num_workers</cite> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
+<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
 both for the training and validation loaders (if any).
 A larger number of workers can sometimes increase performance, but can also incur extra overheads
 and increase memory usage, as more batches are loaded in parallel.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset">
-<span class="sig-name descname"><span class="pre">fit_from_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset" title="Permalink to this definition">¶</a></dt>
-<dd><p>This method allows for training with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code> instance.
+<span class="sig-name descname"><span class="pre">fit_from_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">train_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_dataset</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">epochs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.fit_from_dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Train the model with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.TrainingDataset</span></code> instance.
 These datasets implement a PyTorch <code class="docutils literal notranslate"><span class="pre">Dataset</span></code>, and specify how the target and covariates are sliced
 for training. If you are not sure which training dataset to use, consider calling <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.fit" title="darts.models.forecasting.rnn_model.RNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> instead,
 which will create a default training dataset appropriate for this model.</p>
-<p>This function can be called several times to do some extra training. If <cite>epochs</cite> is specified, the model
-will be trained for some (extra) <cite>epochs</cite> epochs.</p>
+<p>Training is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
+<code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> used at model creation. You can also use a custom Trainer with optional parameter
+<code class="docutils literal notranslate"><span class="pre">trainer</span></code>. For more information on PyTorch Lightning Trainers check out <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">this link</a> .</p>
+<p>This function can be called several times to do some extra training. If <code class="docutils literal notranslate"><span class="pre">epochs</span></code> is specified, the model
+will be trained for some (extra) <code class="docutils literal notranslate"><span class="pre">epochs</span></code> epochs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>train_dataset</strong> (<a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>) – A training dataset with a type matching this model (e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTrainingDataset</span></code> for
 <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code>).</p></li>
 <li><p><strong>val_dataset</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrainingDataset</span></code></a>]) – A training dataset with a type matching this model (e.g. <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTrainingDataset</span></code> for
-:class:<a href="#id1"><span class="problematic" id="id2">`</span></a>PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print progress.</p></li>
-<li><p><strong>epochs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – If specified, will train the model for <cite>epochs</cite> (additional) epochs, irrespective of what <cite>n_epochs</cite>
+:class:<a href="#id2"><span class="problematic" id="id3">`</span></a>PastCovariatesTorchModel`s), representing the validation set (to track the validation loss).</p></li>
+<li><p><strong>trainer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>]) – Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom <cite>trainer</cite> will
+override Darts’ default trainer.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, whether to print progress.</p></li>
+<li><p><strong>epochs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – If specified, will train the model for <code class="docutils literal notranslate"><span class="pre">epochs</span></code> (additional) epochs, irrespective of what <code class="docutils literal notranslate"><span class="pre">n_epochs</span></code>
 was provided to the model constructor.</p></li>
-<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <cite>num_workers</cite> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
+<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
 both for the training and validation loaders (if any).
 A larger number of workers can sometimes increase performance, but can also incur extra overheads
 and increase memory usage, as more batches are loaded in parallel.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
 </dd>
 </dl>
 </dd></dl>
@@ -926,28 +1018,48 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.input_chunk_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">input_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.input_chunk_length" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.likelihood">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">likelihood</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><span class="pre">darts.utils.likelihood_models.Likelihood</span></a></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.likelihood" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_from_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.load_from_checkpoint" title="Permalink to this definition">¶</a></dt>
-<dd><p>Load the model from the checkpoints saved automatically.</p>
-<p>The checkpoints are saved under <code class="docutils literal notranslate"><span class="pre">{work_dir}/checkpoints/{model_name}/</span></code>.
-This method is used for models that were created with <cite>save_checkpoints=True</cite>.
-If you manually saved your model, consider using <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.load_model" title="darts.models.forecasting.rnn_model.RNNModel.load_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_model()</span></code></a>.</p>
-<p>If <cite>file_name</cite> is given, returns the model saved under <code class="docutils literal notranslate"><span class="pre">{work_dir}/checkpoints/{model_name}/{file_name}</span></code></p>
-<p>If <cite>file_name</cite> is not given, will try to restore the best checkpoint (if <cite>best</cite> is <cite>True</cite>) or the most
-recent checkpoint (if <cite>best</cite> is <cite>False</cite>) from <code class="docutils literal notranslate"><span class="pre">{work_dir}/checkpoints/{model_name}</span></code>.</p>
+<dd><p>Load the model from automatically saved checkpoints under ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.
+This method is used for models that were created with <code class="docutils literal notranslate"><span class="pre">save_checkpoints=True</span></code>.
+If you manually saved your model, consider using <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_model()</span></code>.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">file_name</span></code> is given, returns the model saved under
+‘{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}’.</p>
+<p>If <code class="docutils literal notranslate"><span class="pre">file_name</span></code> is not given, will try to restore the best checkpoint (if <code class="docutils literal notranslate"><span class="pre">best</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) or the most
+recent checkpoint (if <code class="docutils literal notranslate"><span class="pre">best</span></code> is <code class="docutils literal notranslate"><span class="pre">False</span></code> from ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>model_name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The name of the model (used to retrieve the checkpoints folder’s name).</p></li>
 <li><p><strong>work_dir</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – Working directory (containing the checkpoints folder). Defaults to current working directory.</p></li>
 <li><p><strong>file_name</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – The name of the checkpoint file. If not specified, use the most recent one.</p></li>
-<li><p><strong>best</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set, will retrieve the best model (according to validation loss) instead of the most recent one.
-Ignored when <cite>file_name</cite> is given.</p></li>
+<li><p><strong>best</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If set, will retrieve the best model (according to validation loss) instead of the most recent one. Only
+is ignored when <code class="docutils literal notranslate"><span class="pre">file_name</span></code> is given.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The (trained) model instance.</p>
+<dd class="field-even"><p>The corresponding trained <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>TorchForecastingModel</p>
@@ -969,26 +1081,59 @@ Ignored when <cite>file_name</cite> is given.</p></li>
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.model_created">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_created</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">bool</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.model_created" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.model_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.output_chunk_length">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">output_chunk_length</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">int</span></em><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.output_chunk_length" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="Permalink to this definition">¶</a></dt>
-<dd><p>Predict the <cite>n</cite> time step following the end of the training series, or of the specified <cite>series</cite>.</p>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="Permalink to this definition">¶</a></dt>
+<dd><p>Predict the <code class="docutils literal notranslate"><span class="pre">n</span></code> time step following the end of the training series, or of the specified <code class="docutils literal notranslate"><span class="pre">series</span></code>.</p>
+<p>Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
+<code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> used at model creation. You can also use a custom Trainer with optional parameter
+<code class="docutils literal notranslate"><span class="pre">trainer</span></code>. For more information on PyTorch Lightning Trainers check out <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">this link</a> .</p>
 <p>Below, all possible parameters are documented, but not all models support all parameters. For instance,
-all the <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code> support only <cite>past_covariates</cite> and not <cite>future_covariates</cite>.
+all the <code class="xref py py-class docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code> support only <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and not <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code>.
 Darts will complain if you try calling <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> on a model with the wrong covariates argument.</p>
 <p>Darts will also complain if the provided covariates do not have a sufficient time span.
 In general, not all models require the same covariates’ time spans:</p>
 <ul>
 <li><div class="line-block">
-<div class="line">Models relying on past covariates require the last <cite>input_chunk_length</cite> of the <cite>past_covariates</cite></div>
-<div class="line">points to be known at prediction time. For horizon values <cite>n &gt; output_chunk_length</cite>, these models</div>
-<div class="line">require at least the next <cite>n - output_chunk_length</cite> future values to be known as well.</div>
+<div class="line">Models relying on past covariates require the last <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code> of the <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code></div>
+<div class="line">points to be known at prediction time. For horizon values <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>, these models</div>
+<div class="line">require at least the next <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">-</span> <span class="pre">output_chunk_length</span></code> future values to be known as well.</div>
 </div>
 </li>
 <li><div class="line-block">
-<div class="line">Models relying on future covariates require the next <cite>n</cite> values to be known.</div>
+<div class="line">Models relying on future covariates require the next <code class="docutils literal notranslate"><span class="pre">n</span></code> values to be known.</div>
 <div class="line">In addition (for <code class="xref py py-class docutils literal notranslate"><span class="pre">DualCovariatesTorchModel</span></code> and <code class="xref py py-class docutils literal notranslate"><span class="pre">MixedCovariatesTorchModel</span></code>), they also</div>
-<div class="line">require the “historic” values of these future covariates (over the past <cite>input_chunk_length</cite>).</div>
+<div class="line">require the “historic” values of these future covariates (over the past <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>).</div>
 </div>
 </li>
 </ul>
@@ -1006,24 +1151,26 @@ series. Otherwise, the method returns the forecast of the (single) training seri
 They must match the covariates used for training in terms of dimension.</p></li>
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>], <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the future-known covariates series needed as inputs for the model.
 They must match the covariates used for training in terms of dimension.</p></li>
-<li><p><strong>batch_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Size of batches during prediction. Defaults to the models’ training <cite>batch_size</cite> value.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print progress.</p></li>
-<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. <cite>-1</cite> means using all processors. Defaults to <cite>1</cite>.</p></li>
-<li><p><strong>roll_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – For self-consuming predictions, i.e. <cite>n &gt; output_chunk_length</cite>, determines how many
+<li><p><strong>trainer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>]) – Optionally, a custom PyTorch-Lightning Trainer object to perform prediction. Using a custom <code class="docutils literal notranslate"><span class="pre">trainer</span></code>
+will override Darts’ default trainer.</p></li>
+<li><p><strong>batch_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Size of batches during prediction. Defaults to the models’ training <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> value.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Optionally, whether to print progress.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. <code class="docutils literal notranslate"><span class="pre">-1</span></code> means using all processors. Defaults to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><strong>roll_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – For self-consuming predictions, i.e. <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>, determines how many
 outputs of the model are fed back into it at every iteration of feeding the predicted target
 (and optionally future covariates) back into the model. If this parameter is not provided,
-it will be set <cite>output_chunk_length</cite> by default.</p></li>
+it will be set <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> by default.</p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
-<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <cite>num_workers</cite> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
+<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
 for the inference/prediction dataset loaders (if any).
 A larger number of workers can sometimes increase performance, but can also incur extra overheads
 and increase memory usage, as more batches are loaded in parallel.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
-<dd class="field-even"><p>One or several time series containing the forecasts of <cite>series</cite>, or the forecast of the training series
-if <cite>series</cite> is not specified and the model has been trained on a single series.</p>
+<dd class="field-even"><p>One or several time series containing the forecasts of <code class="docutils literal notranslate"><span class="pre">series</span></code>, or the forecast of the training series
+if <code class="docutils literal notranslate"><span class="pre">series</span></code> is not specified and the model has been trained on a single series.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
@@ -1033,11 +1180,14 @@ if <cite>series</cite> is not specified and the model has been trained on a sing
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset">
-<span class="sig-name descname"><span class="pre">predict_from_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_series_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict_from_dataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">input_series_dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trainer</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_loader_workers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.predict_from_dataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>This method allows for predicting with a specific <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.InferenceDataset</span></code> instance.
-These datasets implement a PyTorch <cite>Dataset</cite>, and specify how the target and covariates are sliced
+These datasets implement a PyTorch <code class="docutils literal notranslate"><span class="pre">Dataset</span></code>, and specify how the target and covariates are sliced
 for inference. In most cases, you’ll rather want to call <a class="reference internal" href="#darts.models.forecasting.rnn_model.RNNModel.predict" title="darts.models.forecasting.rnn_model.RNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> instead, which will create an
 appropriate <code class="xref py py-class docutils literal notranslate"><span class="pre">InferenceDataset</span></code> for you.</p>
+<p>Prediction is performed with a PyTorch Lightning Trainer. It uses a default Trainer object from presets and
+<code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> used at model creation. You can also use a custom Trainer with optional parameter
+<code class="docutils literal notranslate"><span class="pre">trainer</span></code>. For more information on PyTorch Lightning Trainers check out <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">this link</a> .</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -1045,16 +1195,18 @@ appropriate <code class="xref py py-class docutils literal notranslate"><span cl
 <li><p><strong>input_series_dataset</strong> (<a class="reference internal" href="darts.utils.data.inference_dataset.html#darts.utils.data.inference_dataset.InferenceDataset" title="darts.utils.data.inference_dataset.InferenceDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">InferenceDataset</span></code></a>) – Optionally, a series or sequence of series, representing the history of the target series’ whose
 future is to be predicted. If specified, the method returns the forecasts of these
 series. Otherwise, the method returns the forecast of the (single) training series.</p></li>
-<li><p><strong>batch_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Size of batches during prediction. Defaults to the models <cite>batch_size</cite> value.</p></li>
-<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Shows the progress bar for batch predicition. Off by default.</p></li>
-<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. <cite>-1</cite> means using all processors. Defaults to <cite>1</cite>.</p></li>
-<li><p><strong>roll_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – For self-consuming predictions, i.e. <cite>n &gt; output_chunk_length</cite>, determines how many
+<li><p><strong>trainer</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Trainer</span></code>]) – Optionally, a custom PyTorch-Lightning Trainer object to perform prediction.  Using a custom <code class="docutils literal notranslate"><span class="pre">trainer</span></code>
+will override Darts’ default trainer.</p></li>
+<li><p><strong>batch_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Size of batches during prediction. Defaults to the models <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> value.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Shows the progress bar for batch predicition. Off by default.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. <code class="docutils literal notranslate"><span class="pre">-1</span></code> means using all processors. Defaults to <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
+<li><p><strong>roll_size</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – For self-consuming predictions, i.e. <code class="docutils literal notranslate"><span class="pre">n</span> <span class="pre">&gt;</span> <span class="pre">output_chunk_length</span></code>, determines how many
 outputs of the model are fed back into it at every iteration of feeding the predicted target
 (and optionally future covariates) back into the model. If this parameter is not provided,
-it will be set <cite>output_chunk_length</cite> by default.</p></li>
+it will be set <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> by default.</p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
-<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <cite>num_workers</cite> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
+<li><p><strong>num_loader_workers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Optionally, an integer specifying the <code class="docutils literal notranslate"><span class="pre">num_workers</span></code> to use in PyTorch <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code> instances,
 for the inference/prediction dataset loaders (if any).
 A larger number of workers can sometimes increase performance, but can also incur extra overheads
 and increase memory usage, as more batches are loaded in parallel.</p></li>
@@ -1072,7 +1224,7 @@ and increase memory usage, as more batches are loaded in parallel.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.rnn_model.RNNModel.reset_model">
 <span class="sig-name descname"><span class="pre">reset_model</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.rnn_model.RNNModel.reset_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Resets the model object and removes all the stored data - model, checkpoints and training history.</p>
+<dd><p>Resets the model object and removes all stored data - model, checkpoints, loggers and training history.</p>
 </dd></dl>
 
 <dl class="py method">

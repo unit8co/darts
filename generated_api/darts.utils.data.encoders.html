@@ -34,6 +34,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Horizon-Based Training Dataset" href="darts.utils.data.horizon_based_dataset.html" />
@@ -319,6 +320,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.gradient_boosted_model.html">
        LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
       </a>
      </li>
      <li class="toctree-l3">
@@ -728,10 +734,10 @@ covariates.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>index_generator</strong> (<a class="reference internal" href="darts.utils.data.encoder_base.html#darts.utils.data.encoder_base.CovariateIndexGenerator" title="darts.utils.data.encoder_base.CovariateIndexGenerator"><code class="xref py py-class docutils literal notranslate"><span class="pre">CovariateIndexGenerator</span></code></a>) – An instance of <cite>CovariateIndexGenerator</cite> with methods <cite>generate_train_series()</cite> and
 <cite>generate_inference_series()</cite>. Used to generate the index for encoders.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>) – A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)</cite> as input
+<li><p><strong>attribute</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>) – A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.RangeIndex)</cite> as input
 and returns a np.ndarray of shape <cite>(len(index),)</cite>.
 An example for a correct <cite>attribute</cite> for <cite>index</cite> of type pd.DatetimeIndex:
-<code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.Int64Index or pd.RangeIndex:
+<code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.RangeIndex:
 <code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code></p></li>
 </ul>
 </dd>
@@ -1081,10 +1087,10 @@ TimeSeries’ time index.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted future series.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)</cite> as input
+<li><p><strong>attribute</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.RangeIndex)</cite> as input
 and returns a np.ndarray of shape <cite>(len(index),)</cite>.
 An example for a correct <cite>attribute</cite> for <cite>index</cite> of type pd.DatetimeIndex:
-<code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.Int64Index or pd.RangeIndex:
+<code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.RangeIndex:
 <code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code></p></li>
 </ul>
 </dd>
@@ -1714,10 +1720,10 @@ TimeSeries’ time index.</p>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted past series.</p></li>
 <li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The length of the emitted future series.</p></li>
-<li><p><strong>attribute</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex)</cite> as input
+<li><p><strong>attribute</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-data docutils literal notranslate"><span class="pre">Callable</span></code>]) – A callable that takes an index <cite>index</cite> of type <cite>(pd.DatetimeIndex, pd.RangeIndex)</cite> as input
 and returns a np.ndarray of shape <cite>(len(index),)</cite>.
 An example for a correct <cite>attribute</cite> for <cite>index</cite> of type pd.DatetimeIndex:
-<code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.Int64Index or pd.RangeIndex:
+<code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index.year</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code>. And for pd.RangeIndex:
 <code class="docutils literal notranslate"><span class="pre">attribute</span> <span class="pre">=</span> <span class="pre">lambda</span> <span class="pre">index:</span> <span class="pre">(index</span> <span class="pre">-</span> <span class="pre">1950)</span> <span class="pre">/</span> <span class="pre">50</span></code></p></li>
 </ul>
 </dd>

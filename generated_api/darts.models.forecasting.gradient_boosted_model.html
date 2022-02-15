@@ -34,9 +34,10 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Linear Regression model" href="darts.models.forecasting.linear_regression_model.html" />
+    <link rel="next" title="Kalman Filter Forecaster" href="darts.models.forecasting.kalman_forecaster.html" />
     <link rel="prev" title="&lt;no title&gt;" href="darts.models.forecasting.forecasting_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -322,6 +323,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -522,12 +528,12 @@
                 
   <span class="target" id="module-darts.models.forecasting.gradient_boosted_model"></span><section id="lightgbm-model">
 <h1>LightGBM Model<a class="headerlink" href="#lightgbm-model" title="Permalink to this headline">¶</a></h1>
-<p>This is a LightGBM implementation of Gradient Boosted Trees algorightm.</p>
+<p>This is a LightGBM implementation of Gradient Boosted Trees algorithm.</p>
 <p>To enable LightGBM support in Darts, follow the detailed install instructions for LightGBM in the README:
 <a class="reference external" href="https://github.com/unit8co/darts/blob/master/README.md">https://github.com/unit8co/darts/blob/master/README.md</a></p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.gradient_boosted_model.LightGBMModel">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.gradient_boosted_model.</span></span><span class="sig-name descname"><span class="pre">LightGBMModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/gradient_boosted_model.html#LightGBMModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.gradient_boosted_model.LightGBMModel" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.gradient_boosted_model.</span></span><span class="sig-name descname"><span class="pre">LightGBMModel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lags_future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/gradient_boosted_model.html#LightGBMModel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.gradient_boosted_model.LightGBMModel" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.models.forecasting.regression_model.html#darts.models.forecasting.regression_model.RegressionModel" title="darts.models.forecasting.regression_model.RegressionModel"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.regression_model.RegressionModel</span></code></a></p>
 <p>Light Gradient Boosted Model</p>
 <dl class="field-list simple">
@@ -542,10 +548,25 @@ with lags &lt; 0 is required.</p></li>
 given the last <cite>past</cite> lags in the past are used (inclusive, starting from lag -1) along with the first
 <cite>future</cite> future lags (starting from 0 - the prediction time - up to <cite>future - 1</cite> included). Otherwise a list
 of integers with lags is required.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
+horizon <cite>n</cite> used in <cite>predict()</cite>. However, setting <cite>output_chunk_length</cite> equal to the forecast horizon may
+be useful if the covariates don’t extend far enough into the future.</p></li>
 <li><p><strong>**kwargs</strong> – Additional keyword arguments passed to <cite>lightgbm.LGBRegressor</cite>.</p></li>
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="table">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 38%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -650,9 +671,6 @@ creation) to know their sizes, which might be expensive on big datasets.
 If some series turn out to have a length that would allow more than <cite>max_samples_per_ts</cite>, only the
 most recent <cite>max_samples_per_ts</cite> samples will be considered.</p></li>
 </ul>
-</dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
 </dd>
 </dl>
 </dd></dl>
@@ -789,6 +807,16 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.gradient_boosted_model.LightGBMModel.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.gradient_boosted_model.LightGBMModel.model_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.gradient_boosted_model.LightGBMModel.predict">
 <span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.gradient_boosted_model.LightGBMModel.predict" title="Permalink to this definition">¶</a></dt>
@@ -864,10 +892,10 @@ prediction (when dealing with stochastic forecasts).</p>
             <p class="prev-next-title">&lt;no title&gt;</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.forecasting.linear_regression_model.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.models.forecasting.kalman_forecaster.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Linear Regression model</p>
+        <p class="prev-next-title">Kalman Filter Forecaster</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

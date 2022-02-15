@@ -34,6 +34,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Neural Networks Performance Recommendations" href="performance.html" />
@@ -259,7 +260,7 @@
   <section id="in-depth-look-at-torch-forecasting-models">
 <h1>In-depth look at Torch Forecasting Models<a class="headerlink" href="#in-depth-look-at-torch-forecasting-models" title="Permalink to this headline">¶</a></h1>
 <p>This document was written for darts version 0.15.0.</p>
-<p>We assume that you already know about covariates in Darts. If you’re new to the topic we recommend you to read our <a class="reference external" href="https://github.com/unit8co/darts/blob/master/doc/covariates.md">guide on covariates</a> first.</p>
+<p>We assume that you already know about covariates in Darts. If you’re new to the topic we recommend you to read our <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html">guide on covariates</a> first.</p>
 <section id="content-of-this-document">
 <h2>Content of this document<a class="headerlink" href="#content-of-this-document" title="Permalink to this headline">¶</a></h2>
 <p><a class="reference external" href="#11-introduction">Section 1</a> covers the most important points about Torch Forecasting Models (TFMs):</p>
@@ -445,12 +446,12 @@ You can use the same covariates series for both <code class="docutils literal no
 <p><strong>Training</strong> only works if at least one sample with an input and output chunk can be extracted from the data you passed to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. This applies both to training and validation data. In terms of minimum required time spans, this means:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">target</span></code> series of minimum length <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span> <span class="pre">+</span> <span class="pre">output_chunk_length</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> time span requirements for <code class="docutils literal notranslate"><span class="pre">fit()</span></code> from <a class="reference external" href="https://github.com/unit8co/darts/blob/master/doc/covariates.md#global-forecasting-models-gfms-1">covariates guide section 2.3.</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> time span requirements for <code class="docutils literal notranslate"><span class="pre">fit()</span></code> from <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#id6">covariates guide section 2.3.</a></p></li>
 </ul>
 <p>For <strong>prediction</strong> you have to supply the <code class="docutils literal notranslate"><span class="pre">target</span></code> series that you wish to forecast. For any forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> the minimum time span requirements are:</p>
 <ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">target</span></code> series of minimum length <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code></p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> time span requirements for <code class="docutils literal notranslate"><span class="pre">predict()</span></code> also from from <a class="reference external" href="https://github.com/unit8co/darts/blob/master/doc/covariates.md#global-forecasting-models-gfms-1">covariates guide section 2.3.</a></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">*_covariates</span></code> time span requirements for <code class="docutils literal notranslate"><span class="pre">predict()</span></code> also from from <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html#id6">covariates guide section 2.3.</a></p></li>
 </ul>
 <p>Side note: Our <code class="docutils literal notranslate"><span class="pre">*RNNModels</span></code> accept a <code class="docutils literal notranslate"><span class="pre">training_length</span></code> parameter at model creation instead of <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. Internally the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> for these models is automatically set to <code class="docutils literal notranslate"><span class="pre">1</span></code>. For training, past <code class="docutils literal notranslate"><span class="pre">target</span></code> must have a minimum length of <code class="docutils literal notranslate"><span class="pre">training_length</span> <span class="pre">+</span> <span class="pre">1</span></code> and for prediction, a length of <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>.</p>
 </section>

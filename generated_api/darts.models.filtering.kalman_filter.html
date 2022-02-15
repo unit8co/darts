@@ -34,6 +34,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Moving Average" href="darts.models.filtering.moving_average.html" />
@@ -322,6 +323,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -532,6 +538,8 @@ It considers the provided time series as containing (possibly noisy) observation
 (possibly noisy) linear dynamical system with hidden state x. The function <cite>filter(series)</cite> returns a new
 <cite>TimeSeries</cite> describing the distribution of the output z (without noise), as inferred by the Kalman filter from
 sequentially observing z from <cite>series</cite>, and the dynamics of the linear system of order dim_x.</p>
+<p>This filter also supports missing values in the observation series, in which case the underlying
+Kalman filter will carry on using its mean estimate.</p>
 <p>The method <cite>KalmanFilter.fit()</cite> is used to initialize the Kalman filter by estimating the state space model of
 a linear dynamical system and the covariance matrices of the process and measurement noise using the N4SID
 algorithm.</p>
@@ -606,8 +614,11 @@ See the documentation of nfoursid.nfoursid.NFourSID for more information.
 If not provided, the dimensionality of the state space model will be used, with a maximum of 10.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted Kalman filter.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
 </dd>
 </dl>
 </dd></dl>

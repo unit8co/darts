@@ -16,8 +16,10 @@
         darts.models.forecasting.fft
         darts.models.forecasting.forecasting_model
         darts.models.forecasting.gradient_boosted_model
+        darts.models.forecasting.kalman_forecaster
         darts.models.forecasting.linear_regression_model
         darts.models.forecasting.nbeats
+        darts.models.forecasting.pl_forecasting_module
         darts.models.forecasting.prophet_model
         darts.models.forecasting.random_forest
         darts.models.forecasting.regression_ensemble_model

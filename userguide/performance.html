@@ -34,6 +34,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Darts Covariates" href="covariates.html" />
@@ -225,6 +226,15 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#do-not-use-all-possible-sub-series-for-training">
+   Do not use
+   <em>
+    all
+   </em>
+   possible sub-series for training
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#example-benchmark">
    Example Benchmark
   </a>
@@ -290,6 +300,21 @@ it is set to 0, which means that the main process will also take care of loading
 <p>It’s helpful to load all your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> in memory upfront if you can.
 Darts offers the possibility to train models on any <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code>,
 which means that for big datasets, you can write your own <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> implementation, and read the time series lazily from disk. This will typically incur a high I/O cost, though. So when training on multiple series, first try to build a simple <code class="docutils literal notranslate"><span class="pre">List[TimeSeries]</span></code> upfront, and see if it holds in the computer memory.</p>
+</section>
+<section id="do-not-use-all-possible-sub-series-for-training">
+<h2>Do not use <em>all</em> possible sub-series for training<a class="headerlink" href="#do-not-use-all-possible-sub-series-for-training" title="Permalink to this headline">¶</a></h2>
+<p>By default, when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code>, the models in Darts will build a <code class="docutils literal notranslate"><span class="pre">TrainingDataset</span></code> instance that is
+suitable for the model that you are using (e.g., <code class="docutils literal notranslate"><span class="pre">PastCovariatesTorchModel</span></code>, <code class="docutils literal notranslate"><span class="pre">FutureCovariatesTorchModel</span></code>, etc.).
+By default, these training datasets will often contain <em>all</em> possible consecutive (input, output) subseries present
+in each <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>. If your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> are long, this can result in a large amount of training samples, which directly (linearly)
+impacts the time required to train the model for one epoch. You have two options to limit this:</p>
+<ul class="simple">
+<li><p>Specify some <code class="docutils literal notranslate"><span class="pre">max_samples_per_ts</span></code> argument to the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function. This will use only the most recent <code class="docutils literal notranslate"><span class="pre">max_samples_per_ts</span></code> samples
+per <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> for training.</p></li>
+<li><p>If this option does not do what you want, you can implement your own <code class="docutils literal notranslate"><span class="pre">TrainingDataset</span></code> instance, and define
+how to slice your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> for training yourself. We suggest to have a look at <a class="reference external" href="https://github.com/unit8co/darts/tree/master/darts/utils/data">this submodule</a>
+to see examples of how to do it.</p></li>
+</ul>
 </section>
 <hr class="docutils" />
 <section id="example-benchmark">

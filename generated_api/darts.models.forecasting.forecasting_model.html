@@ -36,6 +36,7 @@
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="LightGBM Model" href="darts.models.forecasting.gradient_boosted_model.html" />
@@ -324,6 +325,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -553,6 +559,18 @@ covariates.</p>
 <p>If <a class="reference internal" href="#darts.models.forecasting.forecasting_model.GlobalForecastingModel.fit" title="darts.models.forecasting.forecasting_model.GlobalForecastingModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> has been called with only one training and covariate series as argument, then
 calling <a class="reference internal" href="#darts.models.forecasting.forecasting_model.GlobalForecastingModel.predict" title="darts.models.forecasting.forecasting_model.GlobalForecastingModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> will forecast the future of this series. Otherwise, the user has to
 provide to <a class="reference internal" href="#darts.models.forecasting.forecasting_model.GlobalForecastingModel.predict" title="darts.models.forecasting.forecasting_model.GlobalForecastingModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a> the series they want to forecast, as well as covariates, if needed.</p>
+<p class="rubric">Attributes</p>
+<table class="table">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 38%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -659,8 +677,11 @@ covariates are provided they must have the same number of components. If <cite>f
 it must contain the same number of series as <cite>series</cite>.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Return type</dt>
-<dd class="field-even"><p><code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code></p>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
 </dd>
 </dl>
 </dd></dl>
@@ -797,6 +818,16 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dl>
 </dd></dl>
 
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.forecasting_model.GlobalForecastingModel.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.forecasting_model.GlobalForecastingModel.model_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.forecasting_model.GlobalForecastingModel.predict">
 <em class="property"><span class="pre">abstract</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/forecasting_model.html#GlobalForecastingModel.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.forecasting_model.GlobalForecastingModel.predict" title="Permalink to this definition">¶</a></dt>
@@ -876,6 +907,24 @@ prediction (when dealing with stochastic forecasts).</p>
 <dt class="sig sig-object py" id="darts.models.forecasting.forecasting_model.ModelMeta">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.forecasting_model.</span></span><span class="sig-name descname"><span class="pre">ModelMeta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bases</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">namespace</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/forecasting_model.html#ModelMeta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.forecasting_model.ModelMeta" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABCMeta</span></code></p>
+<p>Meta class to store parameters used at model creation.</p>
+<p>When creating a model instance, the parameters are extracted as follows:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Get the model’s __init__ signature and store all arg and kwarg
+names as well as default values (empty for args) in an ordered
+dict <cite>all_params</cite>.</p></li>
+<li><p>Replace the arg values from <cite>all_params</cite> with the positional
+args used at model creation.</p></li>
+<li><p>Remove args from <cite>all_params</cite> that were not passed as positional
+args at model creation. This will enforce that an error is raised
+if not all positional args were passed. If all positional args
+were passed, no parameter will be removed.</p></li>
+<li><p>Update <cite>all_params</cite> kwargs with optional kwargs from model creation.</p></li>
+<li><p>Save <cite>all_params</cite> to the model.</p></li>
+<li><p>Call (create) the model with <cite>all_params</cite>.</p></li>
+</ol>
+</div></blockquote>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>

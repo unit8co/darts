@@ -33,6 +33,7 @@
     <script src="../../../../_static/underscore.js"></script>
     <script src="../../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../../genindex.html" />
     <link rel="search" title="Search" href="../../../../search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -169,19 +170,15 @@
 <span class="sd">-----------------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="kn">from</span> <span class="nn">numpy.random</span> <span class="kn">import</span> <span class="n">RandomState</span>
 <span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Tuple</span>
 
-<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">Likelihood</span>
-<span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">random_method</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span>
-    <span class="n">PastCovariatesTorchModel</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLPastCovariatesModule</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -213,7 +210,7 @@
 <span class="sd">        y of shape `(batch_size, input_size, d_model)`</span>
 <span class="sd">            Tensor containing the embedded time series enhanced with positional encoding</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="nb">super</span><span class="p">(</span><span class="n">_PositionalEncoding</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="n">dropout</span><span class="p">)</span>
 
         <span class="n">pe</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">max_len</span><span class="p">,</span> <span class="n">d_model</span><span class="p">)</span>
@@ -231,11 +228,9 @@
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
 
 
-<span class="k">class</span> <span class="nc">_TransformerModule</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">_TransformerModule</span><span class="p">(</span><span class="n">PLPastCovariatesModule</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
-        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">input_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">output_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -248,6 +243,7 @@
         <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">custom_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;PyTorch module implementing a Transformer to be used in `TransformerModel`.</span>
 
@@ -257,10 +253,6 @@
 <span class="sd">        ----------</span>
 <span class="sd">        input_size</span>
 <span class="sd">            The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.</span>
-<span class="sd">        input_chunk_length</span>
-<span class="sd">            Number of time steps to be input to the forecasting module.</span>
-<span class="sd">        output_chunk_length</span>
-<span class="sd">            Number of time steps to be output by the forecasting module.</span>
 <span class="sd">        output_size</span>
 <span class="sd">            The dimensionality of the output time series.</span>
 <span class="sd">        nr_params</span>
@@ -283,6 +275,8 @@
 <span class="sd">            a custom transformer encoder provided by the user (default=None)</span>
 <span class="sd">        custom_decoder</span>
 <span class="sd">            a custom transformer decoder provided by the user (default=None)</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -295,16 +289,19 @@
 <span class="sd">            Tensor containing the prediction at the last time step of the sequence.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="nb">super</span><span class="p">(</span><span class="n">_TransformerModule</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># required for all modules -&gt; saves hparams for checkpoints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_hyperparameters</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">input_size</span> <span class="o">=</span> <span class="n">input_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">=</span> <span class="n">output_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">d_model</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">positional_encoding</span> <span class="o">=</span> <span class="n">_PositionalEncoding</span><span class="p">(</span>
-            <span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="n">input_chunk_length</span>
+            <span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
         <span class="p">)</span>
 
         <span class="c1"># Defining the Transformer module</span>
@@ -321,7 +318,7 @@
         <span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
-            <span class="n">d_model</span><span class="p">,</span> <span class="n">output_chunk_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
+            <span class="n">d_model</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_size</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_create_transformer_inputs</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
@@ -361,10 +358,7 @@
         <span class="k">return</span> <span class="n">predictions</span>
 
 
-<div class="viewcode-block" id="TransformerModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel">[docs]</a><span class="k">class</span> <span class="nc">TransformerModel</span><span class="p">(</span>
-    <span class="n">TorchParametricProbabilisticForecastingModel</span><span class="p">,</span> <span class="n">PastCovariatesTorchModel</span>
-<span class="p">):</span>
-    <span class="nd">@random_method</span>
+<div class="viewcode-block" id="TransformerModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.transformer_model.html#darts.models.forecasting.transformer_model.TransformerModel">[docs]</a><span class="k">class</span> <span class="nc">TransformerModel</span><span class="p">(</span><span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
@@ -378,8 +372,6 @@
         <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
         <span class="n">custom_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">likelihood</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Likelihood</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span>
     <span class="p">):</span>
 
@@ -423,25 +415,66 @@
 <span class="sd">            a custom user-provided encoder module for the transformer (default=None)</span>
 <span class="sd">        custom_decoder</span>
 <span class="sd">            a custom user-provided decoder module for the transformer (default=None)</span>
-<span class="sd">        likelihood</span>
-<span class="sd">            Optionally, the likelihood model to be used for probabilistic forecasts.</span>
-<span class="sd">            If no likelihood model is provided, forecasts will be deterministic.</span>
-<span class="sd">        random_state</span>
-<span class="sd">            Controls the randomness of the weights initialization. Check this</span>
-<span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random_state&gt;`_ for more details.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
+<span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
 
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for training.</span>
+<span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
+<span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            The likelihood model to be used for probabilistic forecasts.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
+<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``</span>
+<span class="sd">            will be used.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds</span>
+<span class="sd">            to using a constant learning rate.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler.</span>
 <span class="sd">        batch_size</span>
 <span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
 <span class="sd">        n_epochs</span>
 <span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part</span>
+<span class="sd">            of the name is formatted with the local date and time, while PID is the processed ID (preventing models</span>
+<span class="sd">            spawned at the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            ``&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;``.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            (default: current working directory).</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            ``&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;``.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method).</span>
+<span class="sd">        torch_device_str</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
+<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded).</span>
+<span class="sd">        save_checkpoints</span>
+<span class="sd">            Whether or not to automatically save the untrained model and checkpoints from training.</span>
+<span class="sd">            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where</span>
+<span class="sd">            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,</span>
+<span class="sd">            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using</span>
+<span class="sd">            :func:`save_model()` and loaded using :func:`load_model()`.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
-<span class="sd">            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
 <span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
 <span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
 <span class="sd">            model creation.</span>
 <span class="sd">            Read :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;` to find out more about</span>
-<span class="sd">            `add_encoders`. An example showing some of `add_encoders` features:</span>
+<span class="sd">            ``add_encoders``. An example showing some of ``add_encoders`` features:</span>
 
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
@@ -454,46 +487,46 @@
 <span class="sd">                    &#39;transformer&#39;: Scaler()</span>
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
-<span class="sd">        optimizer_cls</span>
-<span class="sd">            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).</span>
-<span class="sd">        optimizer_kwargs</span>
-<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
-<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`</span>
-<span class="sd">            will be used.</span>
-<span class="sd">        lr_scheduler_cls</span>
-<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds</span>
-<span class="sd">            to using a constant learning rate.</span>
-<span class="sd">        lr_scheduler_kwargs</span>
-<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer.</span>
-<span class="sd">        loss_fn</span>
-<span class="sd">            PyTorch loss function used for training.</span>
-<span class="sd">            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.</span>
-<span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
-<span class="sd">        model_name</span>
-<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
-<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part of</span>
-<span class="sd">            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned</span>
-<span class="sd">            at the same time by different processes to share the same model_name). E.g.,</span>
-<span class="sd">            ``&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;``.</span>
-<span class="sd">        work_dir</span>
-<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
-<span class="sd">            (default: current working directory).</span>
-<span class="sd">        log_tensorboard</span>
-<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
-<span class="sd">            `[work_dir]/.darts/runs/`.</span>
-<span class="sd">        nr_epochs_val_period</span>
-<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
-<span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method).</span>
-<span class="sd">        torch_device_str</span>
-<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
-<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
-<span class="sd">        force_reset</span>
-<span class="sd">            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will</span>
-<span class="sd">            be discarded).</span>
-<span class="sd">        save_checkpoints</span>
-<span class="sd">            Whether or not to automatically save the untrained model and checkpoints from training.</span>
-<span class="sd">            If set to `False`, the model can still be manually saved using :func:`save_model()`</span>
-<span class="sd">            and loaded using :func:`load_model()`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of the weights initialization. Check this</span>
+<span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random_state&gt;`_ for more details.</span>
+<span class="sd">        pl_trainer_kwargs</span>
+<span class="sd">            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets</span>
+<span class="sd">            that performs the training, validation and prediction processes. These presets include automatic</span>
+<span class="sd">            checkpointing, tensorboard logging, setting the torch device and more.</span>
+<span class="sd">            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer</span>
+<span class="sd">            object. Check the `PL Trainer documentation</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`_ for more information about the</span>
+<span class="sd">            supported kwargs.</span>
+<span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
+<span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
+<span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>
+<span class="sd">            specifications. For more information on callbacks, visit:</span>
+<span class="sd">            `PyTorch Lightning Callbacks</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html&gt;`_</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                from pytorch_lightning.callbacks.early_stopping import EarlyStopping</span>
+
+<span class="sd">                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over</span>
+<span class="sd">                # a period of 5 epochs (`patience`)</span>
+<span class="sd">                my_stopper = EarlyStopping(</span>
+<span class="sd">                    monitor=&quot;val_loss&quot;,</span>
+<span class="sd">                    patience=5,</span>
+<span class="sd">                    min_delta=0.05,</span>
+<span class="sd">                    mode=&#39;min&#39;,</span>
+<span class="sd">                )</span>
+
+<span class="sd">                pl_trainer_kwargs={&quot;callbacks&quot;: [my_stopper]}</span>
+<span class="sd">            ..</span>
+
+<span class="sd">            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional</span>
+<span class="sd">            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of</span>
+<span class="sd">            your forecasting use case.</span>
 
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
@@ -512,13 +545,11 @@
 <span class="sd">        sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be</span>
 <span class="sd">        added to it. Of course, the training of the model would have to be adapted accordingly.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_extract_torch_model_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
 
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;input_chunk_length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
-        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;output_chunk_length&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
-        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">likelihood</span><span class="o">=</span><span class="n">likelihood</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="c1"># extract pytorch lightning module kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_pl_module_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">d_model</span> <span class="o">=</span> <span class="n">d_model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nhead</span> <span class="o">=</span> <span class="n">nhead</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_encoder_layers</span> <span class="o">=</span> <span class="n">num_encoder_layers</span>
@@ -538,8 +569,6 @@
         <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
 
         <span class="k">return</span> <span class="n">_TransformerModule</span><span class="p">(</span>
-            <span class="n">input_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
-            <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">input_size</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
             <span class="n">output_size</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
             <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
@@ -552,15 +581,8 @@
             <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
             <span class="n">custom_encoder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">custom_encoder</span><span class="p">,</span>
             <span class="n">custom_decoder</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">custom_decoder</span><span class="p">,</span>
-        <span class="p">)</span>
-
-    <span class="nd">@random_method</span>
-    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
-            <span class="n">output</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="p">(</span><span class="n">x</span><span class="p">)</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span></div>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

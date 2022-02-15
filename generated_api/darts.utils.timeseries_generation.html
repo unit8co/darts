@@ -34,6 +34,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Utils for Pytorch and its usage" href="darts.utils.torch.html" />
@@ -322,6 +323,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -535,7 +541,7 @@ series[t] = coef[-1] * series[t-1] + coef[-2] * series[t-2] + … + coef[0] * se
 <li><p><strong>start_values</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>]]) – The starting values used for calculating the first few values for which no lags exist yet.
 series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + … + coef[0] * starting_values[0]</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
@@ -564,7 +570,7 @@ pandas Timestamp. A DateOffset alias is expected; see
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The constant value that the TimeSeries object will assume at every index.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
@@ -637,7 +643,7 @@ If a float value is given, the same standard deviation is used at every step.
 If an array of dimension <cite>(length, length)</cite> is given, it will
 be used as covariance matrix for a multivariate gaussian distribution.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
@@ -702,7 +708,7 @@ the difference between two adjacent entries will be equal to
 <li><p><strong>start_value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The value of the first entry in the TimeSeries.</p></li>
 <li><p><strong>end_value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The value of the last entry in the TimeSeries.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
@@ -735,7 +741,7 @@ with mean <cite>mean</cite> and standard deviation <cite>std</cite>.</p>
 <li><p><strong>mean</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The mean of the gaussian distribution that is sampled at each step.</p></li>
 <li><p><strong>std</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The standard deviation of the gaussian distribution that is sampled at each step.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>
@@ -770,7 +776,7 @@ phase and y offset.</p>
 <li><p><strong>value_phase</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The relative position within one period of the first value of the returned TimeSeries (in radians).</p></li>
 <li><p><strong>value_y_offset</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – The shift of the sine function along the y axis.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – The start of the returned TimeSeries’ index. If a pandas Timestamp is passed, the TimeSeries will have a pandas
-DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with
+DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with
 either <cite>length</cite> or <cite>end</cite>.</p></li>
 <li><p><strong>end</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Optionally, the end of the returned index. Works only with either <cite>start</cite> or <cite>length</cite>. If <cite>start</cite> is
 set, <cite>end</cite> must be of same type as <cite>start</cite>. Else, it can be either a pandas Timestamp or an integer.</p></li>

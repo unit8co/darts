@@ -1,0 +1,4 @@
+
+.. automodule:: darts.models.forecasting.kalman_forecaster
+   :members:
+   :undoc-members:

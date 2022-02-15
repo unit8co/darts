@@ -33,6 +33,7 @@
     <script src="../../../_static/underscore.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -170,15 +171,14 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span>
-
+<span class="kn">import</span> <span class="nn">holidays</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
-<span class="kn">import</span> <span class="nn">holidays</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_log</span><span class="p">,</span> <span class="n">raise_if</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -188,15 +188,16 @@
     <span class="n">end</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;D&quot;</span><span class="p">,</span>
-<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Int64Index</span><span class="p">]:</span>
+    <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;Returns an index with a given start point and length. Either a pandas DatetimeIndex with given frequency</span>
-<span class="sd">    or a pandas Int64Index. The index starts at</span>
+<span class="sd">    or a pandas RangeIndex. The index starts at</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    start</span>
 <span class="sd">        The start of the returned index. If a pandas Timestamp is passed, the index will be a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the index will be a pandas Int64Index index. Works only with</span>
+<span class="sd">        DatetimeIndex. If an integer is passed, the index will be a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
@@ -228,13 +229,15 @@
     <span class="p">)</span>
 
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">start</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">end</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">):</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="n">end</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="n">length</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">name</span>
+        <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>  <span class="c1"># int</span>
-        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Int64Index</span><span class="p">(</span>
-            <span class="nb">range</span><span class="p">(</span>
-                <span class="n">start</span> <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">end</span> <span class="o">-</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
-                <span class="n">end</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">start</span> <span class="o">+</span> <span class="n">length</span><span class="p">,</span>
-            <span class="p">)</span>
+        <span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">(</span>
+            <span class="n">start</span><span class="o">=</span><span class="n">start</span> <span class="k">if</span> <span class="n">start</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">end</span> <span class="o">-</span> <span class="n">length</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="n">stop</span><span class="o">=</span><span class="n">end</span> <span class="o">+</span> <span class="mi">1</span> <span class="k">if</span> <span class="n">end</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">start</span> <span class="o">+</span> <span class="n">length</span><span class="p">,</span>
+            <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">return</span> <span class="n">index</span>
 
@@ -257,7 +260,7 @@
 <span class="sd">        The constant value that the TimeSeries object will assume at every index.</span>
 <span class="sd">    start</span>
 <span class="sd">        The start of the returned TimeSeries&#39; index. If a pandas Timestamp is passed, the TimeSeries will have a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with</span>
+<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
@@ -311,7 +314,7 @@
 <span class="sd">        The value of the last entry in the TimeSeries.</span>
 <span class="sd">    start</span>
 <span class="sd">        The start of the returned TimeSeries&#39; index. If a pandas Timestamp is passed, the TimeSeries will have a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with</span>
+<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
@@ -368,7 +371,7 @@
 <span class="sd">        The shift of the sine function along the y axis.</span>
 <span class="sd">    start</span>
 <span class="sd">        The start of the returned TimeSeries&#39; index. If a pandas Timestamp is passed, the TimeSeries will have a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with</span>
+<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
@@ -432,7 +435,7 @@
 <span class="sd">        be used as covariance matrix for a multivariate gaussian distribution.</span>
 <span class="sd">    start</span>
 <span class="sd">        The start of the returned TimeSeries&#39; index. If a pandas Timestamp is passed, the TimeSeries will have a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with</span>
+<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
@@ -499,7 +502,7 @@
 <span class="sd">        The standard deviation of the gaussian distribution that is sampled at each step.</span>
 <span class="sd">    start</span>
 <span class="sd">        The start of the returned TimeSeries&#39; index. If a pandas Timestamp is passed, the TimeSeries will have a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with</span>
+<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
@@ -552,7 +555,7 @@
 <span class="sd">        series[0] = coef[-1] * starting_values[-1] + coef[-2] * starting_values[-2] + ... + coef[0] * starting_values[0]</span>
 <span class="sd">    start</span>
 <span class="sd">        The start of the returned TimeSeries&#39; index. If a pandas Timestamp is passed, the TimeSeries will have a pandas</span>
-<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas Int64Index index. Works only with</span>
+<span class="sd">        DatetimeIndex. If an integer is passed, the TimeSeries will have a pandas RangeIndex index. Works only with</span>
 <span class="sd">        either `length` or `end`.</span>
 <span class="sd">    end</span>
 <span class="sd">        Optionally, the end of the returned index. Works only with either `start` or `length`. If `start` is</span>
@@ -850,6 +853,49 @@
     <span class="n">values_df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">time_index</span>
 
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">values_df</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span></div>
+
+
+<span class="k">def</span> <span class="nf">_build_forecast_series</span><span class="p">(</span>
+    <span class="n">points_preds</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
+    <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Builds a forecast time series starting after the end of an input time series, with the</span>
+<span class="sd">    correct time index (or after the end of the input series, if specified).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">time_index_length</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="nb">len</span><span class="p">(</span><span class="n">points_preds</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+        <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">points_preds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="p">)</span>
+    <span class="n">time_index</span> <span class="o">=</span> <span class="n">_generate_new_dates</span><span class="p">(</span><span class="n">time_index_length</span><span class="p">,</span> <span class="n">input_series</span><span class="o">=</span><span class="n">input_series</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">time_index</span><span class="p">,</span>
+            <span class="n">points_preds</span><span class="p">,</span>
+            <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
+            <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+        <span class="n">time_index</span><span class="p">,</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
+        <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">_generate_new_dates</span><span class="p">(</span>
+    <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">input_series</span><span class="p">:</span> <span class="n">TimeSeries</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">RangeIndex</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates `n` new dates after the end of the specified series</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">last</span> <span class="o">=</span> <span class="n">input_series</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">last</span> <span class="o">+</span> <span class="n">input_series</span><span class="o">.</span><span class="n">freq</span> <span class="k">if</span> <span class="n">input_series</span><span class="o">.</span><span class="n">has_datetime_index</span> <span class="k">else</span> <span class="n">last</span> <span class="o">+</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">_generate_index</span><span class="p">(</span>
+        <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="n">n</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">time_dim</span>
+    <span class="p">)</span>
 </pre></div>
 
               </div>

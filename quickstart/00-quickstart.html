@@ -36,6 +36,7 @@
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="User Guide" href="../userguide.html" />
@@ -682,7 +683,7 @@ div.rendered_html tbody tr:hover {
 </section>
 <section id="Building-and-manipulating-TimeSeries">
 <h1>Building and manipulating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Building-and-manipulating-TimeSeries" title="Permalink to this headline">¶</a></h1>
-<p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is the main data class in Darts. A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> represents a univariate or multivariate time series, with a proper time index. The time index can either be of type <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> (containing datetimes), or of type <code class="docutils literal notranslate"><span class="pre">pandas.Int64Index</span></code> (containing integers; useful for representing sequential data without specific timestamps). In some cases, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can even represent <em>probabilistic</em> series, in order for instance to obtain confidence intervals. All models in
+<p><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is the main data class in Darts. A <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> represents a univariate or multivariate time series, with a proper time index. The time index can either be of type <code class="docutils literal notranslate"><span class="pre">pandas.DatetimeIndex</span></code> (containing datetimes), or of type <code class="docutils literal notranslate"><span class="pre">pandas.RangeIndex</span></code> (containing integers; useful for representing sequential data without specific timestamps). In some cases, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can even represent <em>probabilistic</em> series, in order for instance to obtain confidence intervals. All models in
 Darts consume <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> and produce <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
 <section id="Read-data-and-build-a-TimeSeries">
 <h2>Read data and build a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code><a class="headerlink" href="#Read-data-and-build-a-TimeSeries" title="Permalink to this headline">¶</a></h2>

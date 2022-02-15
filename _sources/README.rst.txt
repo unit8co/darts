@@ -85,7 +85,7 @@ High Level Introductions
 
 
 * `Introductory Blog Post <https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878>`_
-* `Introductory Video <https://www.youtube.com/watch?v=Sx-uI-PypmU&t=8s&ab_channel=Unit8>`_
+* `Introductory Video <https://youtu.be/g6OXDnXEtFA>`_
 
 Articles on Selected Topics
 """""""""""""""""""""""""""
@@ -100,8 +100,8 @@ Quick Install
 -------------
 
 We recommend to first setup a clean Python environment for your project with at least Python 3.7 using your favorite tool
-(\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ , 
-`venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with 
+(\ :raw-html-m2r:`<a href="https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html" title="conda-env">conda</a>`\ ,
+`venv <https://docs.python.org/3/library/venv.html>`_\ , `virtualenv <https://virtualenv.pypa.io/en/latest/>`_ with
 or without `virtualenvwrapper <https://virtualenvwrapper.readthedocs.io/en/latest/>`_\ ).
 
 Once your environment is set up you can install darts using pip:
@@ -342,9 +342,9 @@ Anyone is welcome to join our `Discord server <https://discord.gg/Um3jBTYFsA>`_ 
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
 or have a feature request, Github issues are also welcome.
 
-If what you want to tell us is not suitable for Discord or Github, 
-feel free to send us an email at :raw-html-m2r:`<a href="mailto:darts@unit8.co">darts@unit8.co</a>` for 
-darts related matters or :raw-html-m2r:`<a href="mailto:info@unit8.co">info@unit8.co</a>` for any other 
+If what you want to tell us is not suitable for Discord or Github,
+feel free to send us an email at :raw-html-m2r:`<a href="mailto:darts@unit8.co">darts@unit8.co</a>` for
+darts related matters or :raw-html-m2r:`<a href="mailto:info@unit8.co">info@unit8.co</a>` for any other
 inquiries.
 
 Contribute
@@ -413,15 +413,15 @@ we also maintain the ``u8darts`` package, which provides the following alternate
 Enabling Support for LightGBM
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable support for LightGBM in Darts, please follow the 
+To enable support for LightGBM in Darts, please follow the
 `installation instructions <https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html>`_ for your OS.
 
 MacOS Issues with LightGBM
 """"""""""""""""""""""""""
 
-At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in 
-`segmentation fault on Mac OS Big Sur <https://github.com/microsoft/LightGBM/issues/4229>`_. 
-Here's the procedure to downgrade the ``libomp`` library (from the 
+At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in
+`segmentation fault on Mac OS Big Sur <https://github.com/microsoft/LightGBM/issues/4229>`_.
+Here's the procedure to downgrade the ``libomp`` library (from the
 `original Github issue <https://github.com/microsoft/LightGBM/issues/4229#issue-867528353>`_\ ):
 
 
@@ -492,7 +492,7 @@ Bibtex entry:
 .. code-block::
 
    @misc{herzen2021darts,
-         title={Darts: User-Friendly Modern Machine Learning for Time Series}, 
+         title={Darts: User-Friendly Modern Machine Learning for Time Series},
          author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
          year={2021},
          eprint={2110.03224},

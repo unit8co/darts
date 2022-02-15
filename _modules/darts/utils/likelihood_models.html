@@ -33,6 +33,7 @@
     <script src="../../../_static/underscore.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../../../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -196,35 +197,33 @@
 <span class="sd">to see what is the support. Similarly, the prior parameters also have to lie in some pre-defined domains.</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
-<span class="c1"># TODO: Table on README listing distribution, possible priors and wiki article</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
-
-<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">List</span>
 <span class="kn">import</span> <span class="nn">collections</span>
+<span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span><span class="p">,</span> <span class="n">abstractmethod</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Bernoulli</span> <span class="k">as</span> <span class="n">_Bernoulli</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Beta</span> <span class="k">as</span> <span class="n">_Beta</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Cauchy</span> <span class="k">as</span> <span class="n">_Cauchy</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">ContinuousBernoulli</span> <span class="k">as</span> <span class="n">_ContinuousBernoulli</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Dirichlet</span> <span class="k">as</span> <span class="n">_Dirichlet</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Exponential</span> <span class="k">as</span> <span class="n">_Exponential</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Gamma</span> <span class="k">as</span> <span class="n">_Gamma</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Geometric</span> <span class="k">as</span> <span class="n">_Geometric</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Gumbel</span> <span class="k">as</span> <span class="n">_Gumbel</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">HalfNormal</span> <span class="k">as</span> <span class="n">_HalfNormal</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Laplace</span> <span class="k">as</span> <span class="n">_Laplace</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">LogNormal</span> <span class="k">as</span> <span class="n">_LogNormal</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">NegativeBinomial</span> <span class="k">as</span> <span class="n">_NegativeBinomial</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Normal</span> <span class="k">as</span> <span class="n">_Normal</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Poisson</span> <span class="k">as</span> <span class="n">_Poisson</span>
+<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="n">Weibull</span> <span class="k">as</span> <span class="n">_Weibull</span>
 <span class="kn">from</span> <span class="nn">torch.distributions.kl</span> <span class="kn">import</span> <span class="n">kl_divergence</span>
-<span class="kn">from</span> <span class="nn">torch.distributions</span> <span class="kn">import</span> <span class="p">(</span>
-    <span class="n">Normal</span> <span class="k">as</span> <span class="n">_Normal</span><span class="p">,</span>
-    <span class="n">Poisson</span> <span class="k">as</span> <span class="n">_Poisson</span><span class="p">,</span>
-    <span class="n">NegativeBinomial</span> <span class="k">as</span> <span class="n">_NegativeBinomial</span><span class="p">,</span>
-    <span class="n">Bernoulli</span> <span class="k">as</span> <span class="n">_Bernoulli</span><span class="p">,</span>
-    <span class="n">Gamma</span> <span class="k">as</span> <span class="n">_Gamma</span><span class="p">,</span>
-    <span class="n">Gumbel</span> <span class="k">as</span> <span class="n">_Gumbel</span><span class="p">,</span>
-    <span class="n">Laplace</span> <span class="k">as</span> <span class="n">_Laplace</span><span class="p">,</span>
-    <span class="n">Beta</span> <span class="k">as</span> <span class="n">_Beta</span><span class="p">,</span>
-    <span class="n">Exponential</span> <span class="k">as</span> <span class="n">_Exponential</span><span class="p">,</span>
-    <span class="n">Dirichlet</span> <span class="k">as</span> <span class="n">_Dirichlet</span><span class="p">,</span>
-    <span class="n">Geometric</span> <span class="k">as</span> <span class="n">_Geometric</span><span class="p">,</span>
-    <span class="n">Cauchy</span> <span class="k">as</span> <span class="n">_Cauchy</span><span class="p">,</span>
-    <span class="n">ContinuousBernoulli</span> <span class="k">as</span> <span class="n">_ContinuousBernoulli</span><span class="p">,</span>
-    <span class="n">HalfNormal</span> <span class="k">as</span> <span class="n">_HalfNormal</span><span class="p">,</span>
-    <span class="n">LogNormal</span> <span class="k">as</span> <span class="n">_LogNormal</span><span class="p">,</span>
-    <span class="n">Weibull</span> <span class="k">as</span> <span class="n">_Weibull</span><span class="p">,</span>
-<span class="p">)</span>
+
+<span class="c1"># TODO: Table on README listing distribution, possible priors and wiki article</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
 
 <span class="n">MIN_CAUCHY_GAMMA_SAMPLING</span> <span class="o">=</span> <span class="mf">1e-100</span>
 
@@ -236,12 +235,12 @@
     <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">param</span><span class="p">,</span> <span class="p">(</span><span class="n">collections</span><span class="o">.</span><span class="n">Sequence</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">all</span><span class="p">(</span><span class="n">predicate</span><span class="p">(</span><span class="n">p</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">param</span><span class="p">),</span>
-            <span class="s2">&quot;All provided parameters </span><span class="si">{}</span><span class="s2"> must be </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">condition_str</span><span class="p">),</span>
+            <span class="sa">f</span><span class="s2">&quot;All provided parameters </span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2"> must be </span><span class="si">{</span><span class="n">condition_str</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="n">predicate</span><span class="p">(</span><span class="n">param</span><span class="p">),</span>
-            <span class="s2">&quot;The parameter </span><span class="si">{}</span><span class="s2"> must be </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">param_name</span><span class="p">,</span> <span class="n">condition_str</span><span class="p">),</span>
+            <span class="sa">f</span><span class="s2">&quot;The parameter </span><span class="si">{</span><span class="n">param_name</span><span class="si">}</span><span class="s2"> must be </span><span class="si">{</span><span class="n">condition_str</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
         <span class="p">)</span>
 
 
@@ -276,13 +275,11 @@
             <span class="n">out_distr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distr_from_params</span><span class="p">(</span><span class="n">params_out</span><span class="p">)</span>
             <span class="n">device</span> <span class="o">=</span> <span class="n">params_out</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">device</span>
             <span class="n">prior_params</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="c1"># use model output as &quot;prior&quot; for parameters not specified as prior</span>
-                    <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">prior_params</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-                    <span class="k">if</span> <span class="n">prior_params</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-                    <span class="k">else</span> <span class="n">params_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-                    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prior_params</span><span class="p">))</span>
-                <span class="p">]</span>
+                <span class="c1"># use model output as &quot;prior&quot; for parameters not specified as prior</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">prior_params</span><span class="p">[</span><span class="n">i</span><span class="p">])</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">prior_params</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+                <span class="k">else</span> <span class="n">params_out</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prior_params</span><span class="p">))</span>
             <span class="p">)</span>
             <span class="n">prior_distr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_distr_from_params</span><span class="p">(</span><span class="n">prior_params</span><span class="p">)</span>
 

@@ -34,6 +34,7 @@
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Fast Fourier Transform" href="darts.models.forecasting.fft.html" />
@@ -322,6 +323,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
        Linear Regression model
       </a>
@@ -524,26 +530,28 @@
 <h1>Exponential Smoothing<a class="headerlink" href="#exponential-smoothing" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.exponential_smoothing.</span></span><span class="sig-name descname"><span class="pre">ExponentialSmoothing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">damped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">fit_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.exponential_smoothing.</span></span><span class="sig-name descname"><span class="pre">ExponentialSmoothing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">trend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">damped</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">fit_kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/exponential_smoothing.html#ExponentialSmoothing"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.ForecastingModel</span></code></p>
 <p>Exponential Smoothing</p>
 <p>This is a wrapper around
 <a class="reference external" href="https://www.statsmodels.org/stable/generated/statsmodels.tsa.holtwinters.ExponentialSmoothing.html">statsmodels  Holt-Winters’ Exponential Smoothing</a>;
 we refer to this link for the original and more complete documentation of the parameters.</p>
 <p><cite>model_mode</cite> must be a <code class="docutils literal notranslate"><span class="pre">ModelMode</span></code> Enum member. You can access the Enum with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">ModelMode</span></code>.</p>
-<p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing(trend=None,</span> <span class="pre">seasonal=None)</span></code> corresponds to a single exponential smoothing.
-<code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing(trend=ModelMode.ADDITIVE,</span> <span class="pre">seasonal=None)</span></code> corresponds to a Holt’s exponential smoothing.</p>
+<p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing(trend=ModelMode.NONE,</span> <span class="pre">seasonal=SeasonalityMode.NONE)</span></code> corresponds to a single
+exponential smoothing.
+<code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing(trend=ModelMode.ADDITIVE,</span> <span class="pre">seasonal=SeasonalityMode.NONE)</span></code> corresponds to a Holt’s
+exponential smoothing.</p>
 <p>Please note that automatic <cite>seasonal_period</cite> selection (setting the <cite>seasonal_periods</cite> parameter equal to
 <cite>None</cite>) can sometimes lead to errors if the input time series is too short. In these cases we suggest to
 manually set the <cite>seasonal_periods</cite> parameter to a positive integer.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>trend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – Type of trend component. Either <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.
-Defaults to <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code>.</p></li>
+<li><p><strong>trend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – Type of trend component. Either <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code>, <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>, <code class="docutils literal notranslate"><span class="pre">ModelMode.NONE</span></code>,
+or <code class="docutils literal notranslate"><span class="pre">None</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code>.</p></li>
 <li><p><strong>damped</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Should the trend component be damped. Defaults to False.</p></li>
-<li><p><strong>seasonal</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – Type of seasonal component. Either <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.
-Defaults to <code class="docutils literal notranslate"><span class="pre">ModelMode.ADDITIVE</span></code>.</p></li>
+<li><p><strong>seasonal</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>]) – Type of seasonal component. Either <code class="docutils literal notranslate"><span class="pre">SeasonalityMode.ADDITIVE</span></code>, <code class="docutils literal notranslate"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></code>,
+<code class="docutils literal notranslate"><span class="pre">SeasonalityMode.NONE</span></code>, or <code class="docutils literal notranslate"><span class="pre">None</span></code>. Defaults to <code class="docutils literal notranslate"><span class="pre">SeasonalityMode.ADDITIVE</span></code>.</p></li>
 <li><p><strong>seasonal_periods</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The number of periods in a complete seasonal cycle, e.g., 4 for quarterly data or 7 for daily
 data with a weekly cycle. If not set, inferred from frequency of the series.</p></li>
 <li><p><strong>fit_kwargs</strong> – Some optional keyword arguments that will be used to call
@@ -552,6 +560,18 @@ See <a class="reference external" href="https://www.statsmodels.org/stable/gener
 </ul>
 </dd>
 </dl>
+<p class="rubric">Attributes</p>
+<table class="table">
+<colgroup>
+<col style="width: 62%" />
+<col style="width: 38%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>model_params</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -643,6 +663,12 @@ Set to <code class="docutils literal notranslate"><span class="pre">np.mean</spa
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – A target time series. The model will be trained to forecast this time series.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted model.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>self</p>
 </dd>
 </dl>
 </dd></dl>
@@ -775,6 +801,16 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a> or List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.exponential_smoothing.ExponentialSmoothing.model_params" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
 </dd>
 </dl>
 </dd></dl>
