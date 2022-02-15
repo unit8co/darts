@@ -99,7 +99,10 @@ task pipInstall() {
 
 task lint(type: Exec) {
     dependsOn pip_dev
-    commandLine "flake8", "--config=setup.cfg", "--exit-zero", "darts"
+    commandLine "black", "."
+    commandLine "flake8"
+    commandLine "isort", "."
+    commandLine "find", ".", "-name", "'*.py'", "-exec", "pyupgrade", "--py37-plus", "{}", "+"
 }
 
 void createPipRelatedTask(String flavour) {
