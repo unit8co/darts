@@ -4,7 +4,38 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.16.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.17.0...master)
+
+## [0.17.0](https://github.com/unit8co/darts/tree/0.17.0) (2022-02-15)
+### For users of the library:
+
+**Improved**
+- 🚀 Support for [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning): All deep learning
+  models are now implemented using PyTorch Lightning. This means that many more features are now available
+  via PyTorch Lightning trainers functionalities; such as tailored callbacks, or multi-GUP training.
+  [#702](https://github.com/unit8co/darts/pull/702)
+- The `RegressionModel`s now accept an `output_chunk_length` parameter; meaning that they can be trained to
+  predict more than one time step in advance (and used auto-regressively to predict on longer horizons).
+  [#761](https://github.com/unit8co/darts/pull/761)
+- &#x1F534; `TimeSeries` "simple statistics" methods (such as `mean()`, `max()`, `min()` etc, ...) have been refactored
+  to work natively on stochastic `TimeSeries`, and over configurable axes. [#773](https://github.com/unit8co/darts/pull/773)
+- &#x1F534; `TimeSeries` now support only pandas `RangeIndex` as an integer index, and does not support `Int64Index` anymore,
+  as it became deprecated with pandas 1.4.0. This also now brings the guarantee that `TimeSeries` do not have missing
+  "dates" even when indexed with integers. [#777](https://github.com/unit8co/darts/pull/777)
+- New model: `KalmanForecaster` is a new probabilistic model, working on multivariate series, accepting future covariates,
+  and which works by running the state-space model of a given Kalman filter into the future. The `fit()` function uses the
+  N4SID algorithm for system identification. [#743](https://github.com/unit8co/darts/pull/743)
+- The `KalmanFilter` now also works on `TimeSeries` containing missing values. [#743](https://github.com/unit8co/darts/pull/743)
+- The estimators (forecasting and filtering models) now also return their own instance when calling `fit()`,
+  which allows chaining calls. [#741](https://github.com/unit8co/darts/pull/741)
+
+
+**Fixed**
+- Fixed an issue with tensorboard and gridsearch when `model_name` is provided. [#759](https://github.com/unit8co/darts/issues/759)
+- Fixed issues with pip-tools. [#762](https://github.com/unit8co/darts/pull/762)
+
+### For developers of the library:
+- Some linting checks have been added to the CI pipeline. [#749](https://github.com/unit8co/darts/pull/749)
 
 ## [0.16.1](https://github.com/unit8co/darts/tree/0.16.1) (2022-01-24)
 Patch release
