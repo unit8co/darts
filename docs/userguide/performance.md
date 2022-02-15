@@ -34,6 +34,20 @@ It's helpful to load all your `TimeSeries` in memory upfront if you can.
 Darts offers the possibility to train models on any `Sequence[TimeSeries]`,
 which means that for big datasets, you can write your own `Sequence` implementation, and read the time series lazily from disk. This will typically incur a high I/O cost, though. So when training on multiple series, first try to build a simple `List[TimeSeries]` upfront, and see if it holds in the computer memory.
 
+## Do not use *all* possible sub-series for training
+By default, when calling `fit()`, the models in Darts will build a `TrainingDataset` instance that is
+suitable for the model that you are using (e.g., `PastCovariatesTorchModel`, `FutureCovariatesTorchModel`, etc.).
+By default, these training datasets will often contain *all* possible consecutive (input, output) subseries present
+in each `TimeSeries`. If your `TimeSeries` are long, this can result in a large amount of training samples, which directly (linearly)
+impacts the time required to train the model for one epoch. You have two options to limit this:
+
+* Specify some `max_samples_per_ts` argument to the `fit()` function. This will use only the most recent `max_samples_per_ts` samples
+per `TimeSeries` for training.
+* If this option does not do what you want, you can implement your own `TrainingDataset` instance, and define
+how to slice your `TimeSeries` for training yourself. We suggest to have a look at [this submodule](https://github.com/unit8co/darts/tree/master/darts/utils/data)
+to see examples of how to do it.
+
+
 -------------
 
 ## Example Benchmark

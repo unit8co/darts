@@ -1,7 +1,7 @@
 # In-depth look at Torch Forecasting Models
 This document was written for darts version 0.15.0.
 
-We assume that you already know about covariates in Darts. If you're new to the topic we recommend you to read our [guide on covariates](https://github.com/unit8co/darts/blob/master/doc/covariates.md) first.
+We assume that you already know about covariates in Darts. If you're new to the topic we recommend you to read our [guide on covariates](https://unit8co.github.io/darts/userguide/covariates.html) first.
 
 ## Content of this document
 
@@ -108,11 +108,11 @@ You can use the same covariates series for both `fit()` and `predict()` if they 
 
 **Training** only works if at least one sample with an input and output chunk can be extracted from the data you passed to `fit()`. This applies both to training and validation data. In terms of minimum required time spans, this means:
 - `target` series of minimum length `input_chunk_length + output_chunk_length`
-- `*_covariates` time span requirements for `fit()` from [covariates guide section 2.3.](https://github.com/unit8co/darts/blob/master/doc/covariates.md#global-forecasting-models-gfms-1)
+- `*_covariates` time span requirements for `fit()` from [covariates guide section 2.3.](https://unit8co.github.io/darts/userguide/covariates.html#id6)
 
 For **prediction** you have to supply the `target` series that you wish to forecast. For any forecast horizon `n` the minimum time span requirements are:
 - `target` series of minimum length `input_chunk_length`
-- `*_covariates` time span requirements for `predict()` also from from [covariates guide section 2.3.](https://github.com/unit8co/darts/blob/master/doc/covariates.md#global-forecasting-models-gfms-1)
+- `*_covariates` time span requirements for `predict()` also from from [covariates guide section 2.3.](https://unit8co.github.io/darts/userguide/covariates.html#id6)
 
 Side note: Our `*RNNModels` accept a `training_length` parameter at model creation instead of `output_chunk_length`. Internally the `output_chunk_length` for these models is automatically set to `1`. For training, past `target` must have a minimum length of `training_length + 1` and for prediction, a length of `input_chunk_length`.
 
