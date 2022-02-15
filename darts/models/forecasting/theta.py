@@ -318,7 +318,7 @@ class FourTheta(ForecastingModel):
             theta0_in = np.exp(theta0_in)
 
         if (theta0_in > 0).all() and self.model_mode is ModelMode.MULTIPLICATIVE:
-            theta_t = (ts_values ** self.theta) * (theta0_in ** (1 - self.theta))
+            theta_t = (ts_values**self.theta) * (theta0_in ** (1 - self.theta))
         else:
             if self.model_mode is ModelMode.MULTIPLICATIVE:
                 logger.warning("Negative Theta line. Fallback to additive model")
@@ -330,7 +330,7 @@ class FourTheta(ForecastingModel):
         theta2_in = self.model.fittedvalues
 
         if (theta2_in > 0).all() and self.model_mode is ModelMode.MULTIPLICATIVE:
-            self.fitted_values = theta2_in ** self.wses * theta0_in ** self.wdrift
+            self.fitted_values = theta2_in**self.wses * theta0_in**self.wdrift
         else:
             if self.model_mode is ModelMode.MULTIPLICATIVE:
                 self.model_mode = ModelMode.ADDITIVE
@@ -365,7 +365,7 @@ class FourTheta(ForecastingModel):
         if self.model_mode is ModelMode.ADDITIVE:
             forecast = self.wses * forecast + self.wdrift * drift
         else:
-            forecast = forecast ** self.wses * drift ** self.wdrift
+            forecast = forecast**self.wses * drift**self.wdrift
 
         # Re-apply the seasonal trend of the TimeSeries
         if self.is_seasonal:

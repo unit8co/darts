@@ -83,13 +83,13 @@ class _ResidualBlock(nn.Module):
             input_dim,
             num_filters,
             kernel_size,
-            dilation=(dilation_base ** nr_blocks_below),
+            dilation=(dilation_base**nr_blocks_below),
         )
         self.conv2 = nn.Conv1d(
             num_filters,
             output_dim,
             kernel_size,
-            dilation=(dilation_base ** nr_blocks_below),
+            dilation=(dilation_base**nr_blocks_below),
         )
         if weight_norm:
             self.conv1, self.conv2 = nn.utils.weight_norm(
@@ -103,7 +103,7 @@ class _ResidualBlock(nn.Module):
         residual = x
 
         # first step
-        left_padding = (self.dilation_base ** self.nr_blocks_below) * (
+        left_padding = (self.dilation_base**self.nr_blocks_below) * (
             self.kernel_size - 1
         )
         x = F.pad(x, (left_padding, 0))

@@ -10,11 +10,11 @@ import pandas as pd
 from scipy.special import inv_boxcox
 from scipy.stats import boxcox, boxcox_normmax
 
-from .fittable_data_transformer import FittableDataTransformer
-from .invertible_data_transformer import InvertibleDataTransformer
-
 from darts.logging import get_logger, raise_if
 from darts.timeseries import TimeSeries
+
+from .fittable_data_transformer import FittableDataTransformer
+from .invertible_data_transformer import InvertibleDataTransformer
 
 logger = get_logger(__name__)
 

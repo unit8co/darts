@@ -5,7 +5,7 @@ from unittest.mock import patch
 import numpy as np
 import pandas as pd
 import xarray as xr
-from scipy.stats import skew, kurtosis
+from scipy.stats import kurtosis, skew
 
 from darts import TimeSeries, concatenate
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -483,7 +483,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             pd.Series([i / 2 for i in range(10)], index=self.pd_series1.index)
         )
         targetPow = TimeSeries.from_series(
-            pd.Series([float(i ** 2) for i in range(10)], index=self.pd_series1.index)
+            pd.Series([float(i**2) for i in range(10)], index=self.pd_series1.index)
         )
 
         self.assertEqual(self.series1 + seriesA, targetAdd)
@@ -496,7 +496,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertEqual(2 * self.series1, targetMul)
         self.assertEqual(self.series1 / seriesA, targetDiv)
         self.assertEqual(self.series1 / 2, targetDiv)
-        self.assertEqual(self.series1 ** 2, targetPow)
+        self.assertEqual(self.series1**2, targetPow)
 
         with self.assertRaises(ZeroDivisionError):
             # Cannot divide by a TimeSeries with a value 0.

@@ -8,13 +8,12 @@ from typing import Any, Dict, Optional, Sequence, Tuple
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
-from joblib import delayed, Parallel
+from joblib import Parallel, delayed
 
 from darts.logging import get_logger, raise_if, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.timeseries_generation import _build_forecast_series
-
 
 logger = get_logger(__name__)
 

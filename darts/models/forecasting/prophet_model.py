@@ -382,11 +382,11 @@ class Prophet(DualCovariatesForecastingModel):
         elif freq in ["S"]:  # second
             days = 1 / seconds_per_day
         elif freq in ["L", "ms"]:  # millisecond
-            days = 1 / (seconds_per_day * 10 ** 3)
+            days = 1 / (seconds_per_day * 10**3)
         elif freq in ["U", "us"]:  # microsecond
-            days = 1 / (seconds_per_day * 10 ** 6)
+            days = 1 / (seconds_per_day * 10**6)
         elif freq in ["N"]:  # nanosecond
-            days = 1 / (seconds_per_day * 10 ** 9)
+            days = 1 / (seconds_per_day * 10**9)
         else:
             raise ValueError(
                 "freq {} not understood. Please report if you think this is in error.".format(
