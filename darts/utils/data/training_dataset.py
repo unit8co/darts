@@ -83,7 +83,7 @@ class TrainingDataset(ABC, Dataset):
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
         sample `i` from `ts_idx`.
 
-        Works for all TimeSeries index types: pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex
+        Works for all TimeSeries index types: pd.DatetimeIndex, pd.RangeIndex (and the deprecated Int64Index)
 
         When `ts_idx` is observed for the first time, it stores the position of the sample `0` within the full target
         time series and the (start, end) indices of all sub sets.
