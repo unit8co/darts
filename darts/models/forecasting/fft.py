@@ -4,13 +4,14 @@ Fast Fourier Transform
 """
 
 from typing import Optional
+
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import acf
 
+from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.timeseries import TimeSeries
-from darts.logging import get_logger
 from darts.utils.missing_values import fill_missing_values
 
 logger = get_logger(__name__)

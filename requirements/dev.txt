@@ -1,10 +1,5 @@
-pre-commit
-
-# tests
-testfixtures==6.17.1
-# coverage==5.5
-pytest-cov
-
-# linters
-flake8==4.0.1
 black[jupyter]==21.12b0
+flake8==4.0.1
+pre-commit
+pytest-cov
+testfixtures==6.17.1

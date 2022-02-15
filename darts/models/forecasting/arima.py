@@ -10,13 +10,14 @@ References
 .. [1] https://wikipedia.org/wiki/Autoregressive_integrated_moving_average
 """
 
-from statsmodels.tsa.arima.model import ARIMA as staARIMA
 from typing import Optional, Tuple
-import numpy as np
 
+import numpy as np
+from statsmodels.tsa.arima.model import ARIMA as staARIMA
+
+from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
 from darts.timeseries import TimeSeries
-from darts.logging import get_logger
 
 logger = get_logger(__name__)
 

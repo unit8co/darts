@@ -3,19 +3,20 @@ Transformer Model
 -----------------
 """
 
-from numpy.random import RandomState
 import math
+from typing import Optional, Tuple, Union
+
 import torch
 import torch.nn as nn
-from typing import Optional, Union, Tuple
+from numpy.random import RandomState
 
-from darts.utils.likelihood_models import Likelihood
-from darts.utils.torch import random_method
 from darts.logging import get_logger
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
     PastCovariatesTorchModel,
+    TorchParametricProbabilisticForecastingModel,
 )
+from darts.utils.likelihood_models import Likelihood
+from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -47,7 +48,7 @@ class _PositionalEncoding(nn.Module):
         y of shape `(batch_size, input_size, d_model)`
             Tensor containing the embedded time series enhanced with positional encoding
         """
-        super(_PositionalEncoding, self).__init__()
+        super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
         pe = torch.zeros(max_len, d_model)
@@ -129,7 +130,7 @@ class _TransformerModule(nn.Module):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_TransformerModule, self).__init__()
+        super().__init__()
 
         self.input_size = input_size
         self.target_size = output_size

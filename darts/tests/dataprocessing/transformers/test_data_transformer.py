@@ -1,12 +1,12 @@
-import unittest
 import logging
+import unittest
 
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
 
+from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
 from darts.utils import timeseries_generation as tg
-from darts import TimeSeries
 
 
 class DataTransformerTestCase(unittest.TestCase):

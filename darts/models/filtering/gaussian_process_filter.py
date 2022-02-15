@@ -6,11 +6,11 @@ Gaussian Processes
 from typing import Optional
 
 import numpy as np
-from darts.timeseries import TimeSeries
 from sklearn.gaussian_process import GaussianProcessRegressor
 from sklearn.gaussian_process.kernels import Kernel
 
 from darts.models.filtering.filtering_model import FilteringModel
+from darts.timeseries import TimeSeries
 
 
 class GaussianProcessFilter(FilteringModel):

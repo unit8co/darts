@@ -3,12 +3,13 @@ Invertible Data Transformer Base Class
 --------------------------------------
 """
 
-from typing import Union, Sequence, Iterator, Tuple, List
 from abc import abstractmethod
+from typing import Iterator, List, Sequence, Tuple, Union
+
 from darts import TimeSeries
+from .base_data_transformer import BaseDataTransformer
 from darts.logging import get_logger, raise_if_not
-from darts.dataprocessing.transformers import BaseDataTransformer
-from darts.utils import _parallel_apply, _build_tqdm_iterator
+from darts.utils import _build_tqdm_iterator, _parallel_apply
 
 logger = get_logger(__name__)
 
@@ -154,7 +155,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
                 logger,
             )
 
-        desc = "Inverse ({})".format(self._name)
+        desc = f"Inverse ({self._name})"
 
         if isinstance(series, TimeSeries):
             data = [series]

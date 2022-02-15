@@ -3,19 +3,18 @@ Box-Cox Transformer
 -------------------
 """
 
-from typing import Optional, Union, Sequence, Iterator, Tuple
-from scipy.stats import boxcox_normmax, boxcox
-from scipy.special import inv_boxcox
-import pandas as pd
+from typing import Iterator, Optional, Sequence, Tuple, Union
+
 import numpy as np
+import pandas as pd
+from scipy.special import inv_boxcox
+from scipy.stats import boxcox, boxcox_normmax
 
-from darts.timeseries import TimeSeries
-from darts.dataprocessing.transformers import (
-    FittableDataTransformer,
-    InvertibleDataTransformer,
-)
+from .fittable_data_transformer import FittableDataTransformer
+from .invertible_data_transformer import InvertibleDataTransformer
+
 from darts.logging import get_logger, raise_if
-
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

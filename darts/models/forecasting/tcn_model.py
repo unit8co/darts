@@ -4,21 +4,22 @@ Temporal Convolutional Network
 """
 
 import math
+from typing import Optional, Sequence, Tuple, Union
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from numpy.random import RandomState
-from typing import Optional, Union, Sequence, Tuple
+
+from darts.logging import get_logger, raise_if_not
+from darts.models.forecasting.torch_forecasting_model import (
+    PastCovariatesTorchModel,
+    TorchParametricProbabilisticForecastingModel,
+)
 from darts.timeseries import TimeSeries
-from darts.utils.torch import random_method
 from darts.utils.data import PastCovariatesShiftedDataset
 from darts.utils.likelihood_models import Likelihood
-
-from darts.logging import raise_if_not, get_logger
-from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
-    PastCovariatesTorchModel,
-)
+from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -73,7 +74,7 @@ class _ResidualBlock(nn.Module):
             out_dimension is equal to `output_size` if this is the last residual block,
             in all other cases it is equal to `num_filters`.
         """
-        super(_ResidualBlock, self).__init__()
+        super().__init__()
 
         self.dilation_base = dilation_base
         self.kernel_size = kernel_size
@@ -185,7 +186,7 @@ class _TCNModule(nn.Module):
             leading up to the first prediction, all in chronological order.
         """
 
-        super(_TCNModule, self).__init__()
+        super().__init__()
 
         # Defining parameters
         self.input_size = input_size

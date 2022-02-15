@@ -3,20 +3,19 @@ Encoder Base Classes
 --------------------
 """
 
+from abc import ABC, abstractmethod
+from enum import Enum, auto
+from typing import List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 import pandas as pd
 
-from abc import ABC, abstractmethod
-from enum import Enum, auto
-from typing import Union, Optional, Tuple, Sequence, List
-
 from darts import TimeSeries
+from darts.dataprocessing.transformers import FittableDataTransformer
 from darts.logging import get_logger
 from darts.utils.timeseries_generation import _generate_index
-from darts.dataprocessing.transformers import FittableDataTransformer
 
-
-SupportedIndex = Union[pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex]
+SupportedIndex = Union[pd.DatetimeIndex, pd.RangeIndex]
 EncoderOutputType = Optional[Union[Sequence[TimeSeries], List[TimeSeries]]]
 logger = get_logger(__name__)
 
@@ -92,9 +91,7 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
         self, target: TimeSeries, covariate: Optional[TimeSeries] = None
     ) -> SupportedIndex:
 
-        super(PastCovariateIndexGenerator, self).generate_train_series(
-            target, covariate
-        )
+        super().generate_train_series(target, covariate)
 
         # save a reference index if specified
         if (
@@ -117,9 +114,7 @@ class PastCovariateIndexGenerator(CovariateIndexGenerator):
             before the end of `target` and ends `max(0, n - output_chunk_length)` after the end of `target`
         """
 
-        super(PastCovariateIndexGenerator, self).generate_inference_series(
-            n, target, covariate
-        )
+        super().generate_inference_series(n, target, covariate)
         if covariate is not None:
             return covariate.time_index
         else:
@@ -140,9 +135,7 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
         reference to extract the time index.
         """
 
-        super(FutureCovariateIndexGenerator, self).generate_train_series(
-            target, covariate
-        )
+        super().generate_train_series(target, covariate)
 
         # save a reference index if specified
         if (
@@ -164,9 +157,7 @@ class FutureCovariateIndexGenerator(CovariateIndexGenerator):
         2)  If future covariates are missing, we need to generate a time index that starts `input_chunk_length`
             before the end of `target` and ends `max(n, output_chunk_length)` after the end of `target`
         """
-        super(FutureCovariateIndexGenerator, self).generate_inference_series(
-            n, target, covariate
-        )
+        super().generate_inference_series(n, target, covariate)
 
         if covariate is not None:
             return covariate.time_index
@@ -270,7 +261,7 @@ class SingleEncoder(Encoder, ABC):
             `generate_inference_series()`. Used to generate the index for encoders.
         """
 
-        super(SingleEncoder, self).__init__()
+        super().__init__()
         self.index_generator = index_generator
 
     @abstractmethod

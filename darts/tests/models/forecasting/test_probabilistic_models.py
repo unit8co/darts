@@ -1,42 +1,43 @@
 import numpy as np
 
+from darts import TimeSeries
+from darts.logging import get_logger
+from darts.metrics import mae
+from darts.models import ARIMA, ExponentialSmoothing
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts.metrics import mae
-from darts.logging import get_logger
-from darts import TimeSeries
-from darts.models import ExponentialSmoothing, ARIMA
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 
 logger = get_logger(__name__)
 
 try:
     import torch
+
     from darts.models import (
+        BlockRNNModel,
+        NBEATSModel,
         RNNModel,
         TCNModel,
         TransformerModel,
-        BlockRNNModel,
-        NBEATSModel,
     )
     from darts.utils.likelihood_models import (
-        GaussianLikelihood,
-        PoissonLikelihood,
-        NegativeBinomialLikelihood,
         BernoulliLikelihood,
-        GammaLikelihood,
-        GumbelLikelihood,
-        LaplaceLikelihood,
         BetaLikelihood,
-        ExponentialLikelihood,
-        DirichletLikelihood,
-        GeometricLikelihood,
         CauchyLikelihood,
         ContinuousBernoulliLikelihood,
+        DirichletLikelihood,
+        ExponentialLikelihood,
+        GammaLikelihood,
+        GaussianLikelihood,
+        GeometricLikelihood,
+        GumbelLikelihood,
         HalfNormalLikelihood,
+        LaplaceLikelihood,
         LogNormalLikelihood,
-        WeibullLikelihood,
+        NegativeBinomialLikelihood,
+        PoissonLikelihood,
         QuantileRegression,
+        WeibullLikelihood,
     )
 
     TORCH_AVAILABLE = True

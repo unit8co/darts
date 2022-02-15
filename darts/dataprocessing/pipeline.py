@@ -3,15 +3,15 @@ Pipeline
 --------
 """
 from copy import deepcopy
-from typing import Sequence, Union, Iterator
+from typing import Iterator, Sequence, Union
 
-from darts.logging import raise_if_not, get_logger
 from darts import TimeSeries
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
-    InvertibleDataTransformer,
     FittableDataTransformer,
+    InvertibleDataTransformer,
 )
+from darts.logging import get_logger, raise_if_not
 
 logger = get_logger(__name__)
 
@@ -85,7 +85,7 @@ class Pipeline:
             self._transformers = transformers
 
         self._invertible = all(
-            (isinstance(t, InvertibleDataTransformer) for t in self._transformers)
+            isinstance(t, InvertibleDataTransformer) for t in self._transformers
         )
 
         if verbose is not None:
