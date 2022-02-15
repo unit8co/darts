@@ -97,22 +97,23 @@ task pipInstall() {
     dependsOn pip_core, pip_dev, pip_prophet, pip_pmdarima, pip_torch, pip_release
 }
 
+task lint_black(type: Exec) {
+    commandLine "black", "--check", "."
+}
+
+task lint_flake8(type: Exec) {
+    commandLine "flake8"
+}
+
+task lint_isort(type: Exec) {
+    commandLine "isort", "--check", "."
+}
+
 task lint {
-    dependsOn pip_dev
-    doLast {
-        exec {
-            commandLine "black", "."
-        }
-        exec {
-            commandLine "flake8"
-        }
-        exec {
-            commandLine "isort", "."
-        }
-        exec {
-            commandLine "find", ".", "-name", "'*.py'", "-exec", "pyupgrade", "--py37-plus", "{}", "+"
-        }
+    doFirst {
+        pip_dev
     }
+    dependsOn lint_black, lint_flake8, lint_isort
 }
 
 void createPipRelatedTask(String flavour) {
