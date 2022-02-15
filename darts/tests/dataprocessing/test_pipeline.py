@@ -1,15 +1,16 @@
-import unittest
 import logging
+import unittest
 
 from darts import TimeSeries
-from darts.utils.timeseries_generation import constant_timeseries
 from darts.dataprocessing import Pipeline
 from darts.dataprocessing.transformers import (
     BaseDataTransformer,
     FittableDataTransformer,
     InvertibleDataTransformer,
+    InvertibleMapper,
+    Mapper,
 )
-from darts.dataprocessing.transformers import InvertibleMapper, Mapper
+from darts.utils.timeseries_generation import constant_timeseries
 
 
 class PipelineTestCase(unittest.TestCase):
@@ -208,8 +209,7 @@ class PipelineTestCase(unittest.TestCase):
         # given
 
         transformers = [
-            self.PlusTenTransformer(name="+10 transformer{}".format(i))
-            for i in range(0, 10)
+            self.PlusTenTransformer(name=f"+10 transformer{i}") for i in range(0, 10)
         ]
         p = Pipeline(transformers)
 

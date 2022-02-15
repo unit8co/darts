@@ -1,23 +1,22 @@
 import unittest
+from typing import Optional, Sequence
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from typing import Sequence, Optional
+from darts import TimeSeries
+from darts.dataprocessing.transformers import Scaler
+from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts import TimeSeries
 from darts.utils.data.encoder_base import SingleEncoder
 from darts.utils.data.encoders import (
-    SequentialEncoder,
-    PastCyclicEncoder,
     FutureCyclicEncoder,
-    PastDatetimeAttributeEncoder,
     FutureDatetimeAttributeEncoder,
+    PastCyclicEncoder,
+    PastDatetimeAttributeEncoder,
+    SequentialEncoder,
 )
-from darts.dataprocessing.transformers import Scaler
-
-from darts.logging import get_logger
 
 logger = get_logger(__name__)
 

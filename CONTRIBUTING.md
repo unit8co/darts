@@ -8,7 +8,7 @@ However, it is strongly recommended to first comment on the issue, and discuss t
 together with some of the core developers.
 
 If you spot issues or would like to propose new improvements that are not (yet) in the backlog
-of issues above, the best procedure is to open a regular Github issue (https://github.com/unit8co/darts/issues), 
+of issues above, the best procedure is to open a regular Github issue (https://github.com/unit8co/darts/issues),
 and discuss it with some of the core team.
 
 
@@ -18,7 +18,7 @@ and discuss it with some of the core team.
 * Pay attention to designing the best possible API, simple by default, but offering control when needed.
 * Make it hard for users to make mistakes (e.g., future data leakage).
 * `TimeSeries` is the main data type used to interface with Darts because:
-    * We do not want users to have to worry about the specifics of Numpy, Torch etc 
+    * We do not want users to have to worry about the specifics of Numpy, Torch etc
     (users shouldn't have to know what's used behind the scenes if they don't want to).
     * `TimeSeries` objects provide guarantees that the data represent a well-formed time series.
 * It is in general OK to propose breaking changes, if these changes are really genuinely improving the API.
@@ -50,7 +50,7 @@ and discuss it with some of the core team.
     * Work on your update
 7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew test_all`.
 8. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested 
+    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested
     lines with `./coverage.sh xml`
 9. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
 10. Create a pull request from your new branch into the **master** branch.

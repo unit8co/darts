@@ -3,20 +3,21 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Union, List, Optional, Tuple
 from enum import Enum
+from typing import List, NewType, Optional, Tuple, Union
+
 import numpy as np
-from numpy.random import RandomState
 import torch
 import torch.nn as nn
+from numpy.random import RandomState
 
-from darts.logging import get_logger, raise_log, raise_if_not
-from darts.utils.torch import random_method
-from darts.utils.likelihood_models import Likelihood
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
     PastCovariatesTorchModel,
+    TorchParametricProbabilisticForecastingModel,
 )
+from darts.utils.likelihood_models import Likelihood
+from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -32,7 +33,7 @@ GTypes = NewType("GTypes", _GType)
 
 class _TrendGenerator(nn.Module):
     def __init__(self, expansion_coefficient_dim, target_length):
-        super(_TrendGenerator, self).__init__()
+        super().__init__()
 
         # basis is of size (expansion_coefficient_dim, target_length)
         basis = torch.stack(
@@ -51,7 +52,7 @@ class _TrendGenerator(nn.Module):
 
 class _SeasonalityGenerator(nn.Module):
     def __init__(self, target_length):
-        super(_SeasonalityGenerator, self).__init__()
+        super().__init__()
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [
             torch.cos(torch.arange(target_length) * 2 * np.pi * i)
@@ -123,7 +124,7 @@ class _Block(nn.Module):
             Tensor containing the forward forecast of the block.
 
         """
-        super(_Block, self).__init__()
+        super().__init__()
 
         self.num_layers = num_layers
         self.layer_width = layer_width
@@ -242,7 +243,7 @@ class _Stack(nn.Module):
             Tensor containing the forward forecast of the stack.
 
         """
-        super(_Stack, self).__init__()
+        super().__init__()
 
         self.input_chunk_length = input_chunk_length
         self.target_length = target_length
@@ -363,7 +364,7 @@ class _NBEATSModule(nn.Module):
             Tensor containing the output of the NBEATS module.
 
         """
-        super(_NBEATSModule, self).__init__()
+        super().__init__()
 
         self.input_dim = input_dim
         self.output_dim = output_dim

@@ -7,14 +7,15 @@ from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
-# Forecasting
-from darts.models.forecasting.baselines import NaiveMean, NaiveSeasonal, NaiveDrift
-from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
-from darts.models.forecasting.theta import Theta, FourTheta
 from darts.models.forecasting.arima import ARIMA
+
+# Forecasting
+from darts.models.forecasting.baselines import NaiveDrift, NaiveMean, NaiveSeasonal
+from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
-from darts.models.forecasting.varima import VARIMA
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
+from darts.models.forecasting.theta import FourTheta, Theta
+from darts.models.forecasting.varima import VARIMA
 
 try:
     from darts.models.forecasting.auto_arima import AutoARIMA
@@ -35,11 +36,11 @@ except ModuleNotFoundError:
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
+    from darts.models.forecasting.nbeats import NBEATSModel
     from darts.models.forecasting.rnn_model import RNNModel
     from darts.models.forecasting.tcn_model import TCNModel
-    from darts.models.forecasting.nbeats import NBEATSModel
-    from darts.models.forecasting.transformer_model import TransformerModel
     from darts.models.forecasting.tft_model import TFTModel
+    from darts.models.forecasting.transformer_model import TransformerModel
 
 except ModuleNotFoundError:
     logger.warning(
@@ -52,10 +53,10 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.linear_regression_model import LinearRegressionModel
     from darts.models.forecasting.random_forest import RandomForest
-    from darts.models.forecasting.regression_model import RegressionModel
     from darts.models.forecasting.regression_ensemble_model import (
         RegressionEnsembleModel,
     )
+    from darts.models.forecasting.regression_model import RegressionModel
 except ModuleNotFoundError:
     logger.warning(
         "Support for Regression based models (incl. RegressionEnsembleModel) not available, "
@@ -74,11 +75,12 @@ except ModuleNotFoundError:
         "https://github.com/unit8co/darts/blob/master/README.md"
     )
 
-# Ensembling
-from darts.models.forecasting.ensemble_model import EnsembleModel
-from darts.models.forecasting.baselines import NaiveEnsembleModel
+from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
+from darts.models.filtering.kalman_filter import KalmanFilter
 
 # Filtering
 from darts.models.filtering.moving_average import MovingAverage
-from darts.models.filtering.kalman_filter import KalmanFilter
-from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
+from darts.models.forecasting.baselines import NaiveEnsembleModel
+
+# Ensembling
+from darts.models.forecasting.ensemble_model import EnsembleModel

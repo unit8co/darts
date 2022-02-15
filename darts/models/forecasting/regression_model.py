@@ -23,17 +23,17 @@ to take into consideration, or as a list - in which case the lags have to be enu
 denoting past lags and positive values including 0 denoting future lags).
 """
 
-from typing import Union, Sequence, Optional, Tuple, List
+import math
+from typing import List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 import pandas as pd
-import math
-
-from darts.timeseries import TimeSeries
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputRegressor
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
-from darts.logging import raise_if, raise_if_not, get_logger, raise_log
 
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -199,7 +199,7 @@ class RegressionModel(GlobalForecastingModel):
 
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
         # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
-        extra_shift = max(0, max([lags[-1] for lags in self.lags.values()]))
+        extra_shift = max(0, max(lags[-1] for lags in self.lags.values()))
 
         if overlap_end:
             last_valid_pred_time = series.time_index[-1 - extra_shift]

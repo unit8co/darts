@@ -17,53 +17,52 @@ This file contains several abstract classes:
       forecasting models.
 """
 
-import numpy as np
+import datetime
 import os
 import re
-from glob import glob
 import shutil
-from joblib import Parallel, delayed
-from typing import Optional, Dict, Tuple, Union, Sequence, List
 from abc import ABC, abstractmethod
+from glob import glob
+from typing import Dict, List, Optional, Sequence, Tuple, Union
+
+import numpy as np
 import torch
-from torch import Tensor
 import torch.nn as nn
+from joblib import Parallel, delayed
+from torch import Tensor
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
-import datetime
 
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
 from darts.utils import _build_tqdm_iterator
-from darts.utils.torch import random_method
-
-from darts.utils.data.training_dataset import (
-    TrainingDataset,
-    PastCovariatesTrainingDataset,
-    FutureCovariatesTrainingDataset,
-    DualCovariatesTrainingDataset,
-    MixedCovariatesTrainingDataset,
-    SplitCovariatesTrainingDataset,
-)
+from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.data.inference_dataset import (
-    InferenceDataset,
-    PastCovariatesInferenceDataset,
-    FutureCovariatesInferenceDataset,
     DualCovariatesInferenceDataset,
+    FutureCovariatesInferenceDataset,
+    InferenceDataset,
     MixedCovariatesInferenceDataset,
+    PastCovariatesInferenceDataset,
     SplitCovariatesInferenceDataset,
 )
 from darts.utils.data.sequential_dataset import (
-    PastCovariatesSequentialDataset,
-    FutureCovariatesSequentialDataset,
     DualCovariatesSequentialDataset,
+    FutureCovariatesSequentialDataset,
     MixedCovariatesSequentialDataset,
+    PastCovariatesSequentialDataset,
     SplitCovariatesSequentialDataset,
 )
-from darts.utils.data.encoders import SequentialEncoder
-
+from darts.utils.data.training_dataset import (
+    DualCovariatesTrainingDataset,
+    FutureCovariatesTrainingDataset,
+    MixedCovariatesTrainingDataset,
+    PastCovariatesTrainingDataset,
+    SplitCovariatesTrainingDataset,
+    TrainingDataset,
+)
 from darts.utils.likelihood_models import Likelihood
-from darts.logging import raise_if_not, get_logger, raise_log, raise_if
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.utils.torch import random_method
 
 DEFAULT_DARTS_FOLDER = ".darts"
 CHECKPOINTS_FOLDER = "checkpoints"
@@ -545,7 +544,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             val_dataset = None
 
-        logger.info("Train dataset contains {} samples.".format(len(train_dataset)))
+        logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         return self.fit_from_dataset(
             train_dataset, val_dataset, verbose, epochs, num_loader_workers
@@ -1110,7 +1109,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                             end="\r",
                         )
                 elif verbose:
-                    print("Training loss: {:.4f}".format(training_loss), end="\r")
+                    print(f"Training loss: {training_loss:.4f}", end="\r")
 
     def _compute_loss(self, output, target):
         return self.criterion(output, target)
@@ -1170,7 +1169,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         checklist = glob(os.path.join(folder, "checkpoint_*"))
         checklist = sorted(checklist, key=lambda x: float(re.findall(r"(\d+)", x)[-1]))
-        file_name = "checkpoint_{0}.pth.tar".format(epoch)
+        file_name = f"checkpoint_{epoch}.pth.tar"
         os.makedirs(folder, exist_ok=True)
         file_path = os.path.join(folder, file_name)
 
@@ -1181,7 +1180,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for chkpt in checklist[:-4]:
                 os.remove(chkpt)
         if is_best:
-            best_path = os.path.join(folder, "model_best_{0}.pth.tar".format(epoch))
+            best_path = os.path.join(folder, f"model_best_{epoch}.pth.tar")
             shutil.copyfile(file_path, best_path)
             checklist = glob(os.path.join(folder, "model_best_*"))
             checklist = sorted(
@@ -1286,7 +1285,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             file_name = os.path.basename(file_name)
 
         file_path = os.path.join(checkpoint_dir, file_name)
-        logger.info("loading {}".format(file_name))
+        logger.info(f"loading {file_name}")
         return TorchForecastingModel.load_model(file_path)
 
     def _get_best_torch_device(self):

@@ -3,18 +3,19 @@ Block Recurrent Neural Networks
 -------------------------------
 """
 
-import torch.nn as nn
-import torch
-from numpy.random import RandomState
-from typing import List, Optional, Union, Tuple
+from typing import List, Optional, Tuple, Union
 
-from darts.utils.likelihood_models import Likelihood
-from darts.logging import raise_if_not, get_logger
-from darts.utils.torch import random_method
+import torch
+import torch.nn as nn
+from numpy.random import RandomState
+
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
     PastCovariatesTorchModel,
+    TorchParametricProbabilisticForecastingModel,
 )
+from darts.utils.likelihood_models import Likelihood
+from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -80,7 +81,7 @@ class _BlockRNNModule(nn.Module):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_BlockRNNModule, self).__init__()
+        super().__init__()
 
         # Defining parameters
         self.hidden_dim = hidden_dim
