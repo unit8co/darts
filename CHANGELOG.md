@@ -12,7 +12,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 **Improved**
 - 🚀 Support for [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning): All deep learning
   models are now implemented using PyTorch Lightning. This means that many more features are now available
-  via PyTorch Lightning trainers functionalities; such as tailored callbacks, or multi-GUP training.
+  via PyTorch Lightning trainers functionalities; such as tailored callbacks, or multi-GPU training.
   [#702](https://github.com/unit8co/darts/pull/702)
 - The `RegressionModel`s now accept an `output_chunk_length` parameter; meaning that they can be trained to
   predict more than one time step in advance (and used auto-regressively to predict on longer horizons).
