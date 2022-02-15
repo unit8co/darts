@@ -21,10 +21,9 @@ import datetime
 import inspect
 import os
 import shutil
-
 from abc import ABC, abstractmethod
 from glob import glob
-from typing import Optional, Dict, Tuple, Union, Sequence, List
+from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pytorch_lightning as pl
@@ -44,6 +43,7 @@ from darts.logging import (
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
+from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.data.inference_dataset import (
     DualCovariatesInferenceDataset,
     FutureCovariatesInferenceDataset,
@@ -67,7 +67,6 @@ from darts.utils.data.training_dataset import (
     SplitCovariatesTrainingDataset,
     TrainingDataset,
 )
-from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.torch import random_method
 

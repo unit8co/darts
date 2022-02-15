@@ -8,7 +8,7 @@ from typing import List, Optional, Tuple, Union
 import torch
 import torch.nn as nn
 
-from darts.logging import raise_if_not, get_logger
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 

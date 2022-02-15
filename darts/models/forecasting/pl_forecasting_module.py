@@ -10,7 +10,7 @@ import torch
 import torch.nn as nn
 from joblib import delayed, Parallel
 
-from darts.logging import get_logger, raise_log, raise_if
+from darts.logging import get_logger, raise_if, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.timeseries_generation import _build_forecast_series

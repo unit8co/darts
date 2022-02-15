@@ -10,7 +10,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_log, raise_if_not
+from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
