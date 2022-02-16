@@ -22,7 +22,7 @@ sys.path.insert(0, os.path.abspath("../../.."))
 project = "darts"
 copyright = f"2020 - {datetime.now().year}, Unit8 SA (Apache 2.0 License)"
 author = "Unit8 SA"
-version = "0.16.1"
+version = "0.17.0"
 
 
 # -- General configuration ---------------------------------------------------
