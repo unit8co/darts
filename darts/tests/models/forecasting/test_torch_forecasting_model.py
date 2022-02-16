@@ -330,3 +330,32 @@ if TORCH_AVAILABLE:
                 )
                 # should not raise an error
                 model.fit(series, epochs=1)
+
+        def test_devices(self):
+            torch_devices = [
+                ("cpu", ("cpu", None, False)),
+                ("cuda:0", ("gpu", [0], False)),
+                ("cuda", ("gpu", -1, True)),
+                ("auto", ("auto", None, False)),
+            ]
+
+            for torch_device, settings in torch_devices:
+                accelerator, gpus, auto_select_gpus = settings
+                model = RNNModel(12, "RNN", 10, 10, torch_device_str=torch_device)
+
+                self.assertEqual(model.trainer_params["accelerator"], accelerator)
+                self.assertEqual(model.trainer_params["gpus"], gpus)
+                self.assertEqual(
+                    model.trainer_params["auto_select_gpus"], auto_select_gpus
+                )
+
+        def test_wrong_model_creation_params(self):
+            valid_kwarg = {"pl_trainer_kwargs": {}}
+            invalid_kwarg = {"some_invalid_kwarg": None}
+
+            # valid params should not raise an error
+            _ = RNNModel(12, "RNN", 10, 10, **valid_kwarg)
+
+            # invalid params should raise an error
+            with self.assertRaises(ValueError):
+                _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)

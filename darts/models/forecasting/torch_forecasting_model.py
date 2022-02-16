@@ -372,13 +372,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         gpus = None
         auto_select_gpus = False
-        accelerator = device_split[0]
-        if len(device_split) == 2 and accelerator == "cuda":
+        accelerator = "gpu" if device_split[0] == "cuda" else device_split[0]
+
+        if len(device_split) == 2 and accelerator == "gpu":
             gpus = device_split[1]
             gpus = [int(gpus)]
         elif len(device_split) == 1:
-            if accelerator == "cuda":
-                accelerator = "gpu"
+            if accelerator == "gpu":
                 gpus = -1
                 auto_select_gpus = True
         else:
@@ -389,9 +389,29 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         return accelerator, gpus, auto_select_gpus
 
-    @staticmethod
-    def _extract_torch_model_params(**kwargs):
+    @classmethod
+    def _validate_model_kwargs(cls, **kwargs):
+        """validate that kwargs used at model creation are part of :class:`TorchForecastingModel`,
+        :class:`PLForecastingModule` or cls __init__ methods.
+        """
+        valid_kwargs = (
+            set(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
+            | set(inspect.signature(PLForecastingModule.__init__).parameters.keys())
+            | set(inspect.signature(cls.__init__).parameters.keys())
+        )
+
+        invalid_kwargs = [kwarg for kwarg in kwargs if kwarg not in valid_kwargs]
+
+        raise_if(
+            len(invalid_kwargs) > 0,
+            f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs `{invalid_kwargs}`",
+            logger=logger,
+        )
+
+    @classmethod
+    def _extract_torch_model_params(cls, **kwargs):
         """extract params from model creation to set up TorchForecastingModels"""
+        cls._validate_model_kwargs(**kwargs)
         get_params = list(
             inspect.signature(TorchForecastingModel.__init__).parameters.keys()
         )
