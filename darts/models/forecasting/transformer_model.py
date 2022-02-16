@@ -291,9 +291,16 @@ class TransformerModel(PastCovariatesTorchModel):
         torch_device_str
             Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
             is available, otherwise "cpu")
-        force_reset
-            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. (default: ``None``. Set "cuda:0" if a GPU
+            is available, otherwise "cpu")
+
+            .. deprecated:: v0.17.0
+                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
+                ``pl_trainer_kwargs`` dict. For more info, see here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
