@@ -4,6 +4,7 @@ import tempfile
 from unittest.mock import patch
 
 import pandas as pd
+import torch
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -285,3 +286,47 @@ if TORCH_AVAILABLE:
 
             model1.fit(series, epochs=15)
             self.assertEqual(15, model1.epochs_trained)
+
+        def test_optimizers(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+
+            optimizers = [
+                (torch.optim.Adam, {"lr": 0.001}),
+                (torch.optim.SGD, {"lr": 0.001}),
+            ]
+
+            for optim_cls, optim_kwargs in optimizers:
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    optimizer_cls=optim_cls,
+                    optimizer_kwargs=optim_kwargs,
+                )
+                # should not raise an error
+                model.fit(series, epochs=1)
+
+        def test_lr_schedulers(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+
+            lr_schedulers = [
+                (torch.optim.lr_scheduler.ReduceLROnPlateau, {"threshold": 0.001}),
+                (torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.09}),
+            ]
+
+            for lr_scheduler_cls, lr_scheduler_kwargs in lr_schedulers:
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    lr_schedulerizer_cls=lr_scheduler_cls,
+                    lr_schedulerizer_kwargs=lr_scheduler_kwargs,
+                )
+                # should not raise an error
+                model.fit(series, epochs=1)

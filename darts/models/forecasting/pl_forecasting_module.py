@@ -255,7 +255,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
             lr_scheduler = _create_from_cls_and_kwargs(
                 self.lr_scheduler_cls, lr_sched_kws
             )
-            return [optimizer], [lr_scheduler]
+            return {
+                "optimizer": optimizer,
+                "lr_scheduler": lr_scheduler,
+                "monitor": "val_loss",
+            }
         else:
             return optimizer
 
