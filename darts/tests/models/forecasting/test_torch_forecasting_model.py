@@ -315,7 +315,11 @@ if TORCH_AVAILABLE:
             series = TimeSeries.from_series(pd_series)
 
             lr_schedulers = [
-                (torch.optim.lr_scheduler.ReduceLROnPlateau, {"threshold": 0.001}),
+                (torch.optim.lr_scheduler.LinearLR, {}),
+                (
+                    torch.optim.lr_scheduler.ReduceLROnPlateau,
+                    {"threshold": 0.001, "monitor": "train_loss"},
+                ),
                 (torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.09}),
             ]
 
@@ -325,8 +329,8 @@ if TORCH_AVAILABLE:
                     "RNN",
                     10,
                     10,
-                    lr_schedulerizer_cls=lr_scheduler_cls,
-                    lr_schedulerizer_kwargs=lr_scheduler_kwargs,
+                    lr_scheduler_cls=lr_scheduler_cls,
+                    lr_scheduler_kwargs=lr_scheduler_kwargs,
                 )
                 # should not raise an error
                 model.fit(series, epochs=1)
