@@ -4,7 +4,6 @@ import tempfile
 from unittest.mock import patch
 
 import pandas as pd
-import torch
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -13,6 +12,8 @@ from darts.tests.base_test_class import DartsBaseTestClass
 logger = get_logger(__name__)
 
 try:
+    import torch
+
     from darts.models.forecasting.rnn_model import RNNModel
 
     TORCH_AVAILABLE = True
