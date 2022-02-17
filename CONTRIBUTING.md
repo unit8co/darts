@@ -39,7 +39,7 @@ and discuss it with some of the core team.
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
-5. Set up [automatic code formatting](#code-formatting)
+5. Set up [automatic code formatting and linting](#code-formatting-and-linting)
 6. Create a new branch:
     * Branch off from the **master** branch.
     * Prefix the branch with the type of update you are making:
@@ -56,13 +56,15 @@ and discuss it with some of the core team.
 10. Create a pull request from your new branch into the **master** branch.
 
 
-### Code Formatting
+### Code Formatting and Linting
 
-Darts uses [Black](https://black.readthedocs.io/en/stable/index.html) with default values for automatic code formatting.
-As part of the checks on pull requests, it is checked whether the code still adheres to the style of Black.
-To ensure you don't need to worry about formatting when contributing, it is recommended to set up at least one of the following:
-- [Black integration in your editor](https://black.readthedocs.io/en/stable/integrations/editors.html)
-- [Black integration in Git](https://black.readthedocs.io/en/stable/integrations/source_version_control.html):
+Darts uses [Black](https://black.readthedocs.io/en/stable/index.html) with default values for automatic code formatting, along with [flake8](https://flake8.pycqa.org/en/latest/) and [isort](https://pycqa.github.io/isort/).
+As part of the checks on pull requests, it is checked whether the code still adheres to the code style.
+To ensure you don't need to worry about formatting and linting when contributing, it is recommended to set up at least one of the following:
+- Integration in git (recommended):
     1. Install the pre-commit hook using `pre-commit install`
-    2. Black will automatically format all files before committing
-    3. This will also enable flake8 linting
+    2. This will install Black, isort and pyupgrade formatting and flake8 linting hooks
+    3. The formatters will automatically fix all files and flake8 will highlight any potential problems before committing
+- Integration in your editor:
+    - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
+    - For other integrations please look at the documentation for your editor

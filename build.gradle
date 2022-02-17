@@ -97,9 +97,23 @@ task pipInstall() {
     dependsOn pip_core, pip_dev, pip_prophet, pip_pmdarima, pip_torch, pip_release
 }
 
-task lint(type: Exec) {
+task lint_black(type: Exec) {
     dependsOn pip_dev
-    commandLine "flake8", "--config=setup.cfg", "--exit-zero", "darts"
+    commandLine "black", "--check", "."
+}
+
+task lint_flake8(type: Exec) {
+    dependsOn pip_dev
+    commandLine "flake8"
+}
+
+task lint_isort(type: Exec) {
+    dependsOn pip_dev
+    commandLine "isort", "--check", "."
+}
+
+task lint {
+    dependsOn lint_black, lint_flake8, lint_isort
 }
 
 void createPipRelatedTask(String flavour) {
