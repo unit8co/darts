@@ -289,13 +289,21 @@ class TransformerModel(PastCovariatesTorchModel):
             Number of epochs to wait before evaluating the validation loss (if a validation
             ``TimeSeries`` is passed to the :func:`fit()` method).
         torch_device_str
-            Optionally, a string indicating the torch device to use. (default: ``None``. Set "cuda:0" if a GPU
-            is available, otherwise "cpu")
+            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
+            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
+            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
 
             .. deprecated:: v0.17.0
                 ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
                 Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
-                ``pl_trainer_kwargs`` dict. For more info, see here:
+                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+                dict:
+
+                - ``{"accelerator": "cpu"}`` for CPU,
+                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+                For more info, see here:
                 https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
                 https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
         force_reset

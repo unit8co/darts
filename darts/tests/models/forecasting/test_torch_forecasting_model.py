@@ -338,6 +338,7 @@ if TORCH_AVAILABLE:
 
         def test_devices(self):
             torch_devices = [
+                (None, ("cpu", None, False)),
                 ("cpu", ("cpu", None, False)),
                 ("cuda:0", ("gpu", [0], False)),
                 ("cuda", ("gpu", -1, True)),
