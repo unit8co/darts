@@ -481,7 +481,7 @@ class TimeSeries:
             time_index = df.index
 
         if not time_index.name:
-            time_index.name = DIMS[0]
+            time_index.name = time_col if time_col else DIMS[0]
 
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
@@ -1796,6 +1796,8 @@ class TimeSeries:
             new_time_index = self._time_index + n * self.freq
         else:
             new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
+            if new_time_index.freq is None:
+                new_time_index.freq = self.freq
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
         return self.__class__(new_xa)
 

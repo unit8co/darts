@@ -4,7 +4,19 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.17.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.17.1...master)
+
+## [0.17.1](https://github.com/unit8co/darts/tree/0.17.1) (2022-02-17)
+Patch release
+
+### For users of the library:
+**Fixed**
+- Fixed issues with (now deprecated) `torch_device_str` parameter, and improved documentation
+  related to using devices with PyTorch Lightning. [#806](https://github.com/unit8co/darts/pull/806)
+- Fixed an issue with `ReduceLROnPlateau`. [#806](https://github.com/unit8co/darts/pull/806)
+- Fixed an issue with the periodic basis functions of N-BEATS. [#804](https://github.com/unit8co/darts/pull/804)
+- Relaxed requirements for `pandas`; from `pandas>=1.1.0` to `pandas>=1.0.5`. [#800](https://github.com/unit8co/darts/pull/800)
+
 
 ## [0.17.0](https://github.com/unit8co/darts/tree/0.17.0) (2022-02-15)
 ### For users of the library:
