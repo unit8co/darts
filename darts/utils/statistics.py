@@ -118,7 +118,7 @@ def _bartlett_formula(r: np.ndarray, m: int, length: int) -> float:
     if m == 1:
         return math.sqrt(1 / length)
     else:
-        return math.sqrt((1 + 2 * sum(map(lambda x: x ** 2, r[: m - 1]))) / length)
+        return math.sqrt((1 + 2 * sum(map(lambda x: x**2, r[: m - 1]))) / length)
 
 
 def extract_trend_and_seasonality(
