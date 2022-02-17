@@ -252,10 +252,17 @@ class PLForecastingModule(pl.LightningModule, ABC):
         if self.lr_scheduler_cls is not None:
             lr_sched_kws = {k: v for k, v in self.lr_scheduler_kwargs.items()}
             lr_sched_kws["optimizer"] = optimizer
+
+            # ReduceLROnPlateau requires a metric to "monitor" which must be set separately, most others do not
+            lr_monitor = lr_sched_kws.pop("monitor", None)
+
             lr_scheduler = _create_from_cls_and_kwargs(
                 self.lr_scheduler_cls, lr_sched_kws
             )
-            return [optimizer], [lr_scheduler]
+            return [optimizer], {
+                "scheduler": lr_scheduler,
+                "monitor": lr_monitor if lr_monitor is not None else "val_loss",
+            }
         else:
             return optimizer
 

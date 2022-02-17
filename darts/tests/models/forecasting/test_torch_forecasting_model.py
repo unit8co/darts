@@ -12,6 +12,8 @@ from darts.tests.base_test_class import DartsBaseTestClass
 logger = get_logger(__name__)
 
 try:
+    import torch
+
     from darts.models.forecasting.rnn_model import RNNModel
 
     TORCH_AVAILABLE = True
@@ -285,3 +287,81 @@ if TORCH_AVAILABLE:
 
             model1.fit(series, epochs=15)
             self.assertEqual(15, model1.epochs_trained)
+
+        def test_optimizers(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+
+            optimizers = [
+                (torch.optim.Adam, {"lr": 0.001}),
+                (torch.optim.SGD, {"lr": 0.001}),
+            ]
+
+            for optim_cls, optim_kwargs in optimizers:
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    optimizer_cls=optim_cls,
+                    optimizer_kwargs=optim_kwargs,
+                )
+                # should not raise an error
+                model.fit(series, epochs=1)
+
+        def test_lr_schedulers(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+
+            lr_schedulers = [
+                (torch.optim.lr_scheduler.LinearLR, {}),
+                (
+                    torch.optim.lr_scheduler.ReduceLROnPlateau,
+                    {"threshold": 0.001, "monitor": "train_loss"},
+                ),
+                (torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.09}),
+            ]
+
+            for lr_scheduler_cls, lr_scheduler_kwargs in lr_schedulers:
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    lr_scheduler_cls=lr_scheduler_cls,
+                    lr_scheduler_kwargs=lr_scheduler_kwargs,
+                )
+                # should not raise an error
+                model.fit(series, epochs=1)
+
+        def test_devices(self):
+            torch_devices = [
+                (None, ("cpu", None, False)),
+                ("cpu", ("cpu", None, False)),
+                ("cuda:0", ("gpu", [0], False)),
+                ("cuda", ("gpu", -1, True)),
+                ("auto", ("auto", None, False)),
+            ]
+
+            for torch_device, settings in torch_devices:
+                accelerator, gpus, auto_select_gpus = settings
+                model = RNNModel(12, "RNN", 10, 10, torch_device_str=torch_device)
+
+                self.assertEqual(model.trainer_params["accelerator"], accelerator)
+                self.assertEqual(model.trainer_params["gpus"], gpus)
+                self.assertEqual(
+                    model.trainer_params["auto_select_gpus"], auto_select_gpus
+                )
+
+        def test_wrong_model_creation_params(self):
+            valid_kwarg = {"pl_trainer_kwargs": {}}
+            invalid_kwarg = {"some_invalid_kwarg": None}
+
+            # valid params should not raise an error
+            _ = RNNModel(12, "RNN", 10, 10, **valid_kwarg)
+
+            # invalid params should raise an error
+            with self.assertRaises(ValueError):
+                _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
