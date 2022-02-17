@@ -50,11 +50,11 @@ class _SeasonalityGenerator(nn.Module):
         super().__init__()
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [
-            torch.cos(torch.arange(target_length) * 2 * np.pi * i)
+            torch.cos(torch.arange(target_length) / target_length * 2 * np.pi * i)
             for i in range(1, half_minus_one + 1)
         ]
         sin_vectors = [
-            torch.sin(torch.arange(target_length) * 2 * np.pi * i)
+            torch.sin(torch.arange(target_length) / target_length * 2 * np.pi * i)
             for i in range(1, half_minus_one + 1)
         ]
 
