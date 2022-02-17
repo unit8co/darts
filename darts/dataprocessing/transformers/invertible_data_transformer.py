@@ -7,9 +7,10 @@ from abc import abstractmethod
 from typing import Iterator, List, Sequence, Tuple, Union
 
 from darts import TimeSeries
-from .base_data_transformer import BaseDataTransformer
 from darts.logging import get_logger, raise_if_not
 from darts.utils import _build_tqdm_iterator, _parallel_apply
+
+from .base_data_transformer import BaseDataTransformer
 
 logger = get_logger(__name__)
 

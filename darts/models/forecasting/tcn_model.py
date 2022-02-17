@@ -83,13 +83,13 @@ class _ResidualBlock(nn.Module):
             input_dim,
             num_filters,
             kernel_size,
-            dilation=(dilation_base ** nr_blocks_below),
+            dilation=(dilation_base**nr_blocks_below),
         )
         self.conv2 = nn.Conv1d(
             num_filters,
             output_dim,
             kernel_size,
-            dilation=(dilation_base ** nr_blocks_below),
+            dilation=(dilation_base**nr_blocks_below),
         )
         if weight_norm:
             self.conv1, self.conv2 = nn.utils.weight_norm(
@@ -103,7 +103,7 @@ class _ResidualBlock(nn.Module):
         residual = x
 
         # first step
-        left_padding = (self.dilation_base ** self.nr_blocks_below) * (
+        left_padding = (self.dilation_base**self.nr_blocks_below) * (
             self.kernel_size - 1
         )
         x = F.pad(x, (left_padding, 0))
@@ -332,8 +332,23 @@ class TCNModel(PastCovariatesTorchModel):
             Number of epochs to wait before evaluating the validation loss (if a validation
             ``TimeSeries`` is passed to the :func:`fit()` method).
         torch_device_str
-            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
-            is available, otherwise "cpu")
+            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
+            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
+            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
+
+            .. deprecated:: v0.17.0
+                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
+                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+                dict:
+
+                - ``{"accelerator": "cpu"}`` for CPU,
+                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+                For more info, see here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).

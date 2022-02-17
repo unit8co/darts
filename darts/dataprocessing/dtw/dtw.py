@@ -300,7 +300,7 @@ def dtw(
     if (
         multi_grid_radius == -1
         and type(window) is NoWindow
-        and len(series1) * len(series2) > 10 ** 6
+        and len(series1) * len(series2) > 10**6
     ):
         logger.warn(
             "Exact evaluation will result in poor performance on large datasets."

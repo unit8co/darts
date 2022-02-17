@@ -161,8 +161,23 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Number of epochs to wait before evaluating the validation loss (if a validation
             ``TimeSeries`` is passed to the :func:`fit()` method).
         torch_device_str
-            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
-            is available, otherwise "cpu")
+            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
+            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
+            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
+
+            .. deprecated:: v0.17.0
+                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
+                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+                dict:
+
+                - ``{"accelerator": "cpu"}`` for CPU,
+                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+                For more info, see here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
             be discarded).
@@ -336,7 +351,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.pl_module_params: Optional[Dict] = None
 
     @staticmethod
-    def _extract_torch_devices(torch_device_str) -> Tuple[str, Optional[list], bool]:
+    def _extract_torch_devices(
+        torch_device_str,
+    ) -> Tuple[str, Optional[Union[list, int]], bool]:
         """This method handles the deprecated `torch_device_str` and should be removed in a future Darts version.
 
         Returns
@@ -346,7 +363,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
 
         if torch_device_str is None:
-            return "auto", None, False
+            return "cpu", None, False
 
         device_warning = (
             "`torch_device_str` is deprecated and will be removed in a coming Darts version. For full support "
@@ -372,13 +389,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         gpus = None
         auto_select_gpus = False
-        accelerator = device_split[0]
-        if len(device_split) == 2 and accelerator == "cuda":
+        accelerator = "gpu" if device_split[0] == "cuda" else device_split[0]
+
+        if len(device_split) == 2 and accelerator == "gpu":
             gpus = device_split[1]
             gpus = [int(gpus)]
         elif len(device_split) == 1:
-            if accelerator == "cuda":
-                accelerator = "gpu"
+            if accelerator == "gpu":
                 gpus = -1
                 auto_select_gpus = True
         else:
@@ -389,9 +406,29 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
         return accelerator, gpus, auto_select_gpus
 
-    @staticmethod
-    def _extract_torch_model_params(**kwargs):
+    @classmethod
+    def _validate_model_params(cls, **kwargs):
+        """validate that parameters used at model creation are part of :class:`TorchForecastingModel`,
+        :class:`PLForecastingModule` or cls __init__ methods.
+        """
+        valid_kwargs = (
+            set(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
+            | set(inspect.signature(PLForecastingModule.__init__).parameters.keys())
+            | set(inspect.signature(cls.__init__).parameters.keys())
+        )
+
+        invalid_kwargs = [kwarg for kwarg in kwargs if kwarg not in valid_kwargs]
+
+        raise_if(
+            len(invalid_kwargs) > 0,
+            f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs `{invalid_kwargs}`",
+            logger=logger,
+        )
+
+    @classmethod
+    def _extract_torch_model_params(cls, **kwargs):
         """extract params from model creation to set up TorchForecastingModels"""
+        cls._validate_model_params(**kwargs)
         get_params = list(
             inspect.signature(TorchForecastingModel.__init__).parameters.keys()
         )
@@ -619,6 +656,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             override Darts' default trainer.
         verbose
             Optionally, whether to print progress.
+
+            .. deprecated:: v0.17.0
+                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
+                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
+                at model creation. See for example here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -764,6 +808,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             override Darts' default trainer.
         verbose
             Optionally, whether to print progress.
+
+            .. deprecated:: v0.17.0
+                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
+                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
+                at model creation. See for example here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -965,6 +1016,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Size of batches during prediction. Defaults to the models' training ``batch_size`` value.
         verbose
             Optionally, whether to print progress.
+
+            .. deprecated:: v0.17.0
+                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
+                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
+                at model creation. See for example here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size
@@ -1084,7 +1142,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         batch_size
             Size of batches during prediction. Defaults to the models ``batch_size`` value.
         verbose
-            Shows the progress bar for batch predicition. Off by default.
+            Optionally, whether to print progress.
+
+            .. deprecated:: v0.17.0
+                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
+                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
+                at model creation. See for example here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size
