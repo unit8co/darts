@@ -98,21 +98,21 @@ task pipInstall() {
 }
 
 task lint_black(type: Exec) {
+    dependsOn pip_dev
     commandLine "black", "--check", "."
 }
 
 task lint_flake8(type: Exec) {
+    dependsOn pip_dev
     commandLine "flake8"
 }
 
 task lint_isort(type: Exec) {
+    dependsOn pip_dev
     commandLine "isort", "--check", "."
 }
 
 task lint {
-    doFirst {
-        pip_dev
-    }
     dependsOn lint_black, lint_flake8, lint_isort
 }
 
