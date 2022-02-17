@@ -1,32 +1,35 @@
-import numpy as np
-from unittest.mock import patch, ANY
+from copy import deepcopy
+from unittest.mock import ANY, patch
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
-from darts.metrics import mape
-from darts.logging import get_logger
+import numpy as np
+
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
+from darts.logging import get_logger
+from darts.metrics import mape
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 from darts.utils.timeseries_generation import linear_timeseries
 
 logger = get_logger(__name__)
 
 try:
+    import torch
+
     from darts.models import (
         BlockRNNModel,
-        TCNModel,
-        TransformerModel,
         NBEATSModel,
         RNNModel,
+        TCNModel,
         TFTModel,
+        TransformerModel,
     )
-    from darts.utils.likelihood_models import GaussianLikelihood
     from darts.models.forecasting.torch_forecasting_model import (
-        PastCovariatesTorchModel,
         DualCovariatesTorchModel,
         MixedCovariatesTorchModel,
+        PastCovariatesTorchModel,
     )
-    import torch
+    from darts.utils.likelihood_models import GaussianLikelihood
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -161,7 +164,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN,
                     output_chunk_length=OUT_LEN,
                     random_state=0,
-                    **kwargs
+                    **kwargs,
                 )
                 model.fit(self.ts_pass_train)
                 pred = model.predict(n=36)
@@ -178,7 +181,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN,
                     output_chunk_length=OUT_LEN,
                     random_state=0,
-                    **kwargs
+                    **kwargs,
                 )
                 model.fit([self.ts_pass_train, self.ts_pass_train_1])
                 with self.assertRaises(ValueError):
@@ -198,7 +201,7 @@ if TORCH_AVAILABLE:
                 )
                 self.assertTrue(
                     len(pred_list) == 2,
-                    "Model {} did not return a list of prediction".format(model_cls),
+                    f"Model {model_cls} did not return a list of prediction",
                 )
                 for pred in pred_list:
                     mape_err = mape(self.ts_pass_val, pred)
@@ -210,12 +213,11 @@ if TORCH_AVAILABLE:
 
         def test_covariates(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
-
                 model = model_cls(
                     input_chunk_length=IN_LEN,
                     output_chunk_length=OUT_LEN,
                     random_state=0,
-                    **kwargs
+                    **kwargs,
                 )
 
                 # Here we rely on the fact that all non-Dual models currently are Past models
@@ -227,7 +229,6 @@ if TORCH_AVAILABLE:
                 cov_kwargs = {
                     cov_name: [self.time_covariates_train, self.time_covariates_train]
                 }
-
                 model.fit(
                     series=[self.ts_pass_train, self.ts_pass_train_1], **cov_kwargs
                 )
@@ -310,7 +311,7 @@ if TORCH_AVAILABLE:
                 model.predict(n=166, series=self.ts_pass_train)
 
             # recurrent models can only predict data points for time steps where future covariates are available
-            model = RNNModel(n_epochs=1)
+            model = RNNModel(12, n_epochs=1)
             model.fit(series=self.target_past, future_covariates=self.covariates_past)
             model.predict(n=160, future_covariates=self.covariates)
             with self.assertRaises(ValueError):
@@ -354,7 +355,6 @@ if TORCH_AVAILABLE:
                     past_covariates=[self.covariates] * len(targets),
                     batch_size=batch_size,
                 )
-
                 for i in range(len(targets)):
                     self.assertLess(
                         sum(sum((preds[i] - preds_default[i]).values())), epsilon
@@ -379,7 +379,6 @@ if TORCH_AVAILABLE:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
-
                 self.assertTrue(
                     isinstance(
                         model,
@@ -418,29 +417,35 @@ if TORCH_AVAILABLE:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
-                if model._is_probabilistic():
-                    continue
+
                 multiple_ts = [self.ts_pass_train] * 10
 
                 model.fit(multiple_ts)
 
+                # safe random state for two successive identical predictions
+                if model._is_probabilistic():
+                    random_state = deepcopy(model._random_instance)
+                else:
+                    random_state = None
+
                 pred1 = model.predict(n=36, series=multiple_ts, n_jobs=1)
+
+                if random_state is not None:
+                    model._random_instance = random_state
+
                 pred2 = model.predict(
                     n=36, series=multiple_ts, n_jobs=-1
                 )  # assuming > 1 core available in the machine
-
                 self.assertEqual(
                     pred1,
                     pred2,
                     "Model {} produces different predictions with different number of jobs",
                 )
 
-        @patch("darts.models.forecasting.torch_forecasting_model.torch.save")
         @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train"
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
         )
-        @patch("darts.models.forecasting.torch_forecasting_model.shutil.rmtree")
-        def test_fit_with_constr_epochs(self, rmtree_patch, train_patch, save_patch):
+        def test_fit_with_constr_epochs(self, init_trainer):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
@@ -448,14 +453,14 @@ if TORCH_AVAILABLE:
                 multiple_ts = [self.ts_pass_train] * 10
                 model.fit(multiple_ts)
 
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, kwargs["n_epochs"])
+                init_trainer.assert_called_with(
+                    max_epochs=kwargs["n_epochs"], trainer_params=ANY
+                )
 
-        @patch("darts.models.forecasting.torch_forecasting_model.torch.save")
         @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train"
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
         )
-        @patch("darts.models.forecasting.torch_forecasting_model.shutil.rmtree")
-        def test_fit_with_fit_epochs(self, rmtree_patch, train_patch, save_patch):
+        def test_fit_with_fit_epochs(self, init_trainer):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
@@ -464,23 +469,17 @@ if TORCH_AVAILABLE:
                 epochs = 42
 
                 model.fit(multiple_ts, epochs=epochs)
-
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
                 model.total_epochs = epochs
                 # continue training
                 model.fit(multiple_ts, epochs=epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
-
-        @patch("darts.models.forecasting.torch_forecasting_model.torch.save")
         @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._train"
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel._init_trainer"
         )
-        @patch("darts.models.forecasting.torch_forecasting_model.shutil.rmtree")
-        def test_fit_from_dataset_with_epochs(
-            self, rmtree_patch, train_patch, save_patch
-        ):
+        def test_fit_from_dataset_with_epochs(self, init_trainer):
             for model_cls, kwargs, err in models_cls_kwargs_errs:
                 model = model_cls(
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
@@ -495,14 +494,11 @@ if TORCH_AVAILABLE:
                 epochs = 42
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
-
-                model.total_epochs = epochs
                 # continue training
                 model.fit_from_dataset(train_dataset, epochs=epochs)
-
-                train_patch.assert_called_with(ANY, ANY, ANY, ANY, epochs)
+                init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
 
         def test_sample_smaller_than_batch_size(self):
             """

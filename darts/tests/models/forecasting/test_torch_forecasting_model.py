@@ -1,16 +1,19 @@
 import os
-import tempfile
 import shutil
+import tempfile
+from unittest.mock import patch
+
 import pandas as pd
 
 from darts import TimeSeries
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.logging import get_logger
-from unittest.mock import patch
+from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 
 try:
+    import torch
+
     from darts.models.forecasting.rnn_model import RNNModel
 
     TORCH_AVAILABLE = True
@@ -30,7 +33,7 @@ if TORCH_AVAILABLE:
 
         def test_save_model_parameters(self):
             # check if re-created model has same params as original
-            model = RNNModel("RNN", 10, 10)
+            model = RNNModel(12, "RNN", 10, 10)
             self.assertTrue(model._model_params, model.untrained_model()._model_params)
 
         @patch(
@@ -39,6 +42,7 @@ if TORCH_AVAILABLE:
         def test_suppress_automatic_save(self, patch_save_model):
             model_name = "test_model"
             model1 = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -47,6 +51,7 @@ if TORCH_AVAILABLE:
                 save_checkpoints=False,
             )
             model2 = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -76,6 +81,7 @@ if TORCH_AVAILABLE:
             manual_name = "test_save_manual"
             auto_name = "test_save_automatic"
             model_manual_save = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -85,6 +91,7 @@ if TORCH_AVAILABLE:
                 random_state=42,
             )
             model_auto_save = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -101,15 +108,19 @@ if TORCH_AVAILABLE:
             model_manual_save.fit(series, epochs=1)
             model_auto_save.fit(series, epochs=1)
 
-            checkpoints_dir = os.path.join(self.temp_work_dir, "checkpoints")
+            model_dir = os.path.join(self.temp_work_dir)
 
             # check that file was not created with manual save
-            self.assertFalse(os.path.exists(os.path.join(checkpoints_dir, manual_name)))
+            self.assertFalse(
+                os.path.exists(os.path.join(model_dir, manual_name, "checkpoints"))
+            )
             # check that file was created with automatic save
-            self.assertTrue(os.path.exists(os.path.join(checkpoints_dir, auto_name)))
+            self.assertTrue(
+                os.path.exists(os.path.join(model_dir, auto_name, "checkpoints"))
+            )
 
             # create manually saved model checkpoints folder
-            checkpoint_path_manual = os.path.join(checkpoints_dir, manual_name)
+            checkpoint_path_manual = os.path.join(model_dir, manual_name)
             os.mkdir(checkpoint_path_manual)
 
             # save manually saved model
@@ -127,35 +138,31 @@ if TORCH_AVAILABLE:
             )
 
             # load automatically saved model with manual load_model() and load_from_checkpoint()
-            model_path_automatic = os.path.join(
-                checkpoints_dir, auto_name, checkpoint_file_name
-            )
-            model_auto_save1 = RNNModel.load_model(model_path_automatic)
-
-            model_auto_save2 = RNNModel.load_from_checkpoint(
+            model_auto_save1 = RNNModel.load_from_checkpoint(
                 model_name=auto_name, work_dir=self.temp_work_dir, best=False
             )
 
-            # compare manual load with manual save
+            # compare loaded checkpoint with manual save
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
             )
-            self.assertEqual(
-                model_manual_save.predict(n=4), model_auto_save2.predict(n=4)
-            )
 
         def test_create_instance_new_model_no_name_set(self):
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir)
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir)
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
             # no exception is raised
 
         def test_create_instance_existing_model_with_name_no_fit(self):
             model_name = "test_model"
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            RNNModel(
+                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+            )
             # no exception is raised
 
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            RNNModel(
+                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+            )
             # no exception is raised
 
         @patch(
@@ -165,11 +172,14 @@ if TORCH_AVAILABLE:
             self, patch_reset_model
         ):
             model_name = "test_model"
-            RNNModel("RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
+            RNNModel(
+                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
+            )
             # no exception is raised
             # since no fit, there is no data stored for the model, hence `force_reset` does noting
 
             RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -187,6 +197,7 @@ if TORCH_AVAILABLE:
         ):
             model_name = "test_model"
             model1 = RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -202,6 +213,7 @@ if TORCH_AVAILABLE:
             model1.fit(series, epochs=1)
 
             RNNModel(
+                12,
                 "RNN",
                 10,
                 10,
@@ -212,64 +224,144 @@ if TORCH_AVAILABLE:
             )
             patch_reset_model.assert_called_once()
 
-        # n_epochs=20, fit|epochs=None, total_epochs=0 - train for 20 epochs
+        # TODO for PTL: currently we (have to (?)) create a mew PTL trainer object every time fit() is called which
+        #  resets some of the model's attributes such as epoch and step counts. We have check whether there is another
+        #  way of doing this.
+
+        # n_epochs=20, fit|epochs=None, epochs_trained=0 - train for 20 epochs
         def test_train_from_0_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
             model1.fit(series)
 
-            self.assertEqual(model1.total_epochs, 20)
+            self.assertEqual(20, model1.epochs_trained)
 
-        # n_epochs = 20, fit|epochs=None, total_epochs=20 - train for another 20 epochs
+        # n_epochs = 20, fit|epochs=None, epochs_trained=20 - train for another 20 epochs
         def test_train_from_20_n_epochs_40_no_fit_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
             model1.fit(series)
-            self.assertEqual(model1.total_epochs, 20)
+            self.assertEqual(20, model1.epochs_trained)
 
             model1.fit(series)
-            self.assertEqual(model1.total_epochs, 40)
+            self.assertEqual(20, model1.epochs_trained)
 
-        # n_epochs = 20, fit|epochs=None, total_epochs=10 - train for another 20 epochs
+        # n_epochs = 20, fit|epochs=None, epochs_trained=10 - train for another 20 epochs
         def test_train_from_10_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
             model1.fit(series, epochs=10)
-            self.assertEqual(model1.total_epochs, 10)
+            self.assertEqual(10, model1.epochs_trained)
 
             model1.fit(series)
-            self.assertEqual(model1.total_epochs, 30)
+            self.assertEqual(20, model1.epochs_trained)
 
-        # n_epochs = 20, fit|epochs=15, total_epochs=0 - train for 15 epochs
-        def test_train_from_0_n_epochs_20_fit_15_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
-
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
-            model1.fit(series, epochs=15)
-            self.assertEqual(model1.total_epochs, 15)
-
-        # n_epochs = 20, fit|epochs=15, total_epochs=10 - train for 15 epochs
+        # n_epochs = 20, fit|epochs=15, epochs_trained=10 - train for 15 epochs
         def test_train_from_10_n_epochs_20_fit_15_epochs(self):
-            model1 = RNNModel("RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
+            model1 = RNNModel(
+                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
+            )
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
             series = TimeSeries.from_series(pd_series)
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
             model1.fit(series, epochs=10)
-            self.assertEqual(model1.total_epochs, 10)
+            self.assertEqual(10, model1.epochs_trained)
 
             model1.fit(series, epochs=15)
-            self.assertEqual(model1.total_epochs, 25)
+            self.assertEqual(15, model1.epochs_trained)
+
+        def test_optimizers(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+
+            optimizers = [
+                (torch.optim.Adam, {"lr": 0.001}),
+                (torch.optim.SGD, {"lr": 0.001}),
+            ]
+
+            for optim_cls, optim_kwargs in optimizers:
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    optimizer_cls=optim_cls,
+                    optimizer_kwargs=optim_kwargs,
+                )
+                # should not raise an error
+                model.fit(series, epochs=1)
+
+        def test_lr_schedulers(self):
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            series = TimeSeries.from_series(pd_series)
+
+            lr_schedulers = [
+                (torch.optim.lr_scheduler.LinearLR, {}),
+                (
+                    torch.optim.lr_scheduler.ReduceLROnPlateau,
+                    {"threshold": 0.001, "monitor": "train_loss"},
+                ),
+                (torch.optim.lr_scheduler.ExponentialLR, {"gamma": 0.09}),
+            ]
+
+            for lr_scheduler_cls, lr_scheduler_kwargs in lr_schedulers:
+                model = RNNModel(
+                    12,
+                    "RNN",
+                    10,
+                    10,
+                    lr_scheduler_cls=lr_scheduler_cls,
+                    lr_scheduler_kwargs=lr_scheduler_kwargs,
+                )
+                # should not raise an error
+                model.fit(series, epochs=1)
+
+        def test_devices(self):
+            torch_devices = [
+                (None, ("cpu", None, False)),
+                ("cpu", ("cpu", None, False)),
+                ("cuda:0", ("gpu", [0], False)),
+                ("cuda", ("gpu", -1, True)),
+                ("auto", ("auto", None, False)),
+            ]
+
+            for torch_device, settings in torch_devices:
+                accelerator, gpus, auto_select_gpus = settings
+                model = RNNModel(12, "RNN", 10, 10, torch_device_str=torch_device)
+
+                self.assertEqual(model.trainer_params["accelerator"], accelerator)
+                self.assertEqual(model.trainer_params["gpus"], gpus)
+                self.assertEqual(
+                    model.trainer_params["auto_select_gpus"], auto_select_gpus
+                )
+
+        def test_wrong_model_creation_params(self):
+            valid_kwarg = {"pl_trainer_kwargs": {}}
+            invalid_kwarg = {"some_invalid_kwarg": None}
+
+            # valid params should not raise an error
+            _ = RNNModel(12, "RNN", 10, 10, **valid_kwarg)
+
+            # invalid params should raise an error
+            with self.assertRaises(ValueError):
+                _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)

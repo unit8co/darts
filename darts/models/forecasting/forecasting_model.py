@@ -12,34 +12,84 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
-from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
-from itertools import product
+import inspect
+import time
 from abc import ABC, ABCMeta, abstractmethod
+from collections import OrderedDict
+from itertools import product
 from random import sample
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 import pandas as pd
-import time
-
-from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_log, raise_if_not, raise_if
-from darts.utils import (
-    _build_tqdm_iterator,
-    _with_sanity_checks,
-    _historical_forecasts_general_checks,
-    _parallel_apply,
-)
-from darts.utils.timeseries_generation import _generate_index
-import inspect
 
 from darts import metrics
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.timeseries import TimeSeries
+from darts.utils import (
+    _build_tqdm_iterator,
+    _historical_forecasts_general_checks,
+    _parallel_apply,
+    _with_sanity_checks,
+)
+from darts.utils.timeseries_generation import (
+    _build_forecast_series,
+    _generate_new_dates,
+)
 
 logger = get_logger(__name__)
 
 
 class ModelMeta(ABCMeta):
+    """Meta class to store parameters used at model creation.
+
+    When creating a model instance, the parameters are extracted as follows:
+
+        1)  Get the model's __init__ signature and store all arg and kwarg
+            names as well as default values (empty for args) in an ordered
+            dict `all_params`.
+        2)  Replace the arg values from `all_params` with the positional
+            args used at model creation.
+        3)  Remove args from `all_params` that were not passed as positional
+            args at model creation. This will enforce that an error is raised
+            if not all positional args were passed. If all positional args
+            were passed, no parameter will be removed.
+        4)  Update `all_params` kwargs with optional kwargs from model creation.
+        5)  Save `all_params` to the model.
+        6)  Call (create) the model with `all_params`.
+    """
+
     def __call__(cls, *args, **kwargs):
-        cls.model_call = (args, kwargs)
-        return super(ModelMeta, cls).__call__(*args, **kwargs)
+        # 1) get all default values from class' __init__ signature
+        sig = inspect.signature(cls.__init__)
+        all_params = OrderedDict(
+            [
+                (p.name, p.default)
+                for p in sig.parameters.values()
+                if not p.name == "self"
+            ]
+        )
+
+        # 2) fill params with positional args
+        for param, arg in zip(all_params, args):
+            all_params[param] = arg
+
+        # 3) remove args which were not set (and are per default empty)
+        remove_params = []
+        for param, val in all_params.items():
+            if val is sig.parameters[param].empty:
+                remove_params.append(param)
+        for param in remove_params:
+            all_params.pop(param)
+
+        # 4) update defaults with actual model call parameters and store
+        all_params.update(kwargs)
+
+        # 5) save parameters in model
+        cls._model_call = all_params
+
+        # 6) call model
+        return super().__call__(**all_params)
 
 
 class ForecastingModel(ABC, metaclass=ModelMeta):
@@ -191,14 +241,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         input_series = (
             input_series if input_series is not None else self.training_series
         )
-
-        last = input_series.end_time()
-        start = (
-            last + input_series.freq if input_series.has_datetime_index else last + 1
-        )
-        return _generate_index(
-            start=start, freq=input_series.freq, length=n, name=input_series.time_dim
-        )
+        return _generate_new_dates(n=n, input_series=input_series)
 
     def _build_forecast_series(
         self,
@@ -212,28 +255,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         input_series = (
             input_series if input_series is not None else self.training_series
         )
-        time_index_length = (
-            len(points_preds)
-            if isinstance(points_preds, np.ndarray)
-            else len(points_preds[0])
-        )
-        time_index = self._generate_new_dates(
-            time_index_length, input_series=input_series
-        )
-        if isinstance(points_preds, np.ndarray):
-            return TimeSeries.from_times_and_values(
-                time_index,
-                points_preds,
-                freq=input_series.freq_str,
-                columns=input_series.columns,
-            )
-
-        return TimeSeries.from_times_and_values(
-            time_index,
-            np.stack(points_preds, axis=2),
-            freq=input_series.freq_str,
-            columns=input_series.columns,
-        )
+        return _build_forecast_series(points_preds, input_series)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
         """Sanity checks for the historical_forecasts function
@@ -817,13 +839,18 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     def _extract_model_creation_params(self):
         """extracts immutable model creation parameters from `ModelMeta` and deletes reference."""
-        model_params = copy.deepcopy(self.model_call)
-        del self.__class__.model_call
+        model_params = copy.deepcopy(self._model_call)
+        del self.__class__._model_call
         return model_params
 
     def untrained_model(self):
-        args, kwargs = self._model_params
-        return self.__class__(*args, **kwargs)
+        return self.__class__(**self.model_params)
+
+    @property
+    def model_params(self) -> dict:
+        return (
+            self._model_params if hasattr(self, "_model_params") else self._model_call
+        )
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):

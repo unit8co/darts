@@ -3,6 +3,8 @@
 *.pyc
 docs/build
 docs/source/examples
+docs/source/userguide/
+docs/source/quickstart/
 docs/source/README.rst
 docs/source/generated_api
 darts.egg-info/

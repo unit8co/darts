@@ -4,10 +4,10 @@ from nfoursid import kalman, state_space
 from sklearn.gaussian_process.kernels import RBF, ExpSineSquared
 
 from darts import TimeSeries
+from darts.metrics import rmse
 from darts.models.filtering.gaussian_process_filter import GaussianProcessFilter
 from darts.models.filtering.kalman_filter import KalmanFilter
 from darts.models.filtering.moving_average import MovingAverage
-from darts.metrics import rmse
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 

@@ -3,10 +3,10 @@ Utils for filling missing values
 --------------------------------
 """
 
-from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
-
 from typing import List, Optional, Union
+
+from darts.logging import get_logger, raise_if, raise_if_not
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

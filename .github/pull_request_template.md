@@ -4,7 +4,7 @@ Fixes #.
 ### Summary
 
 <!-- Provide a general description of the code changes in your pull
-request. If your pull request is not ready to merge, please create 
+request. If your pull request is not ready to merge, please create
 a draft and ask for comments. -->
 
 ### Other Information

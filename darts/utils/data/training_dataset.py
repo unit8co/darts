@@ -4,13 +4,15 @@ Training Datasets Base Classes
 """
 
 from abc import ABC, abstractmethod
-from torch.utils.data import Dataset
-import numpy as np
+from typing import Dict, Optional, Tuple
 
-from typing import Tuple, Optional, Dict
-from .utils import CovariateType
-from darts.logging import get_logger, raise_if_not
+import numpy as np
+from torch.utils.data import Dataset
+
 from darts import TimeSeries
+from darts.logging import get_logger, raise_if_not
+
+from .utils import CovariateType
 
 logger = get_logger(__name__)
 SampleIndexType = Tuple[int, int, int, int, int, int]
@@ -81,7 +83,7 @@ class TrainingDataset(ABC, Dataset):
         """Returns the (start, end) indices for past target, future target and covariates (sub sets) of the current
         sample `i` from `ts_idx`.
 
-        Works for all TimeSeries index types: pd.DatetimeIndex, pd.Int64Index, pd.RangeIndex
+        Works for all TimeSeries index types: pd.DatetimeIndex, pd.RangeIndex (and the deprecated Int64Index)
 
         When `ts_idx` is observed for the first time, it stores the position of the sample `0` within the full target
         time series and the (start, end) indices of all sub sets.

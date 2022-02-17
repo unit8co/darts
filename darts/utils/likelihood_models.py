@@ -30,35 +30,33 @@ errors will be raised during training. You can refer to the individual likelihoo
 to see what is the support. Similarly, the prior parameters also have to lie in some pre-defined domains.
 """
 
-# TODO: Table on README listing distribution, possible priors and wiki article
-from darts.utils.utils import raise_if_not
-
-from abc import ABC, abstractmethod
-from typing import Optional, Tuple, List
 import collections
+from abc import ABC, abstractmethod
+from typing import List, Optional, Tuple
 
 import numpy as np
 import torch
 import torch.nn as nn
+from torch.distributions import Bernoulli as _Bernoulli
+from torch.distributions import Beta as _Beta
+from torch.distributions import Cauchy as _Cauchy
+from torch.distributions import ContinuousBernoulli as _ContinuousBernoulli
+from torch.distributions import Dirichlet as _Dirichlet
+from torch.distributions import Exponential as _Exponential
+from torch.distributions import Gamma as _Gamma
+from torch.distributions import Geometric as _Geometric
+from torch.distributions import Gumbel as _Gumbel
+from torch.distributions import HalfNormal as _HalfNormal
+from torch.distributions import Laplace as _Laplace
+from torch.distributions import LogNormal as _LogNormal
+from torch.distributions import NegativeBinomial as _NegativeBinomial
+from torch.distributions import Normal as _Normal
+from torch.distributions import Poisson as _Poisson
+from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
-from torch.distributions import (
-    Normal as _Normal,
-    Poisson as _Poisson,
-    NegativeBinomial as _NegativeBinomial,
-    Bernoulli as _Bernoulli,
-    Gamma as _Gamma,
-    Gumbel as _Gumbel,
-    Laplace as _Laplace,
-    Beta as _Beta,
-    Exponential as _Exponential,
-    Dirichlet as _Dirichlet,
-    Geometric as _Geometric,
-    Cauchy as _Cauchy,
-    ContinuousBernoulli as _ContinuousBernoulli,
-    HalfNormal as _HalfNormal,
-    LogNormal as _LogNormal,
-    Weibull as _Weibull,
-)
+
+# TODO: Table on README listing distribution, possible priors and wiki article
+from darts.utils.utils import raise_if_not
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 
@@ -70,12 +68,12 @@ def _check(param, predicate, param_name, condition_str):
     if isinstance(param, (collections.Sequence, np.ndarray)):
         raise_if_not(
             all(predicate(p) for p in param),
-            "All provided parameters {} must be {}.".format(param_name, condition_str),
+            f"All provided parameters {param_name} must be {condition_str}.",
         )
     else:
         raise_if_not(
             predicate(param),
-            "The parameter {} must be {}.".format(param_name, condition_str),
+            f"The parameter {param_name} must be {condition_str}.",
         )
 
 
@@ -110,13 +108,11 @@ class Likelihood(ABC):
             out_distr = self._distr_from_params(params_out)
             device = params_out[0].device
             prior_params = tuple(
-                [
-                    # use model output as "prior" for parameters not specified as prior
-                    torch.tensor(prior_params[i]).to(device)
-                    if prior_params[i] is not None
-                    else params_out[i]
-                    for i in range(len(prior_params))
-                ]
+                # use model output as "prior" for parameters not specified as prior
+                torch.tensor(prior_params[i]).to(device)
+                if prior_params[i] is not None
+                else params_out[i]
+                for i in range(len(prior_params))
             )
             prior_distr = self._distr_from_params(prior_params)
 

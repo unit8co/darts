@@ -1,8 +1,11 @@
+import shutil
+import tempfile
+
 import numpy as np
 
+from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -18,6 +21,12 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class NBEATSModelTestCase(DartsBaseTestClass):
+        def setUp(self):
+            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+        def tearDown(self):
+            shutil.rmtree(self.temp_work_dir)
+
         def test_creation(self):
             with self.assertRaises(ValueError):
                 # if a list is passed to the `layer_widths` argument, it must have a length equal to `num_stacks`
@@ -106,6 +115,7 @@ if TORCH_AVAILABLE:
                     output_chunk_length=1,
                     n_epochs=1,
                     log_tensorboard=True,
+                    work_dir=self.temp_work_dir,
                     generic_architecture=architecture,
                 )
                 model.fit(ts)

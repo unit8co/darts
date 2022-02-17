@@ -1,5 +1,5 @@
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.model_selection import train_test_split, MODEL_AWARE, SIMPLE
+from darts.utils.model_selection import MODEL_AWARE, SIMPLE, train_test_split
 from darts.utils.timeseries_generation import constant_timeseries
 
 

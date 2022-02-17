@@ -1,13 +1,16 @@
+import shutil
+import tempfile
+
 import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
 from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models.forecasting.block_rnn_model import _BlockRNNModule, BlockRNNModel
+    from darts.models.forecasting.block_rnn_model import BlockRNNModel, _BlockRNNModule
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -25,6 +28,7 @@ if TORCH_AVAILABLE:
         module = _BlockRNNModule(
             "RNN",
             input_size=1,
+            input_chunk_length=1,
             output_chunk_length=1,
             hidden_dim=25,
             target_size=1,
@@ -33,6 +37,12 @@ if TORCH_AVAILABLE:
             num_layers_out_fc=[],
             dropout=0,
         )
+
+        def setUp(self):
+            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+        def tearDown(self):
+            shutil.rmtree(self.temp_work_dir)
 
         def test_creation(self):
             with self.assertRaises(ValueError):
@@ -61,13 +71,17 @@ if TORCH_AVAILABLE:
                 input_chunk_length=1,
                 output_chunk_length=1,
                 model="LSTM",
-                n_epochs=3,
+                n_epochs=1,
                 model_name="unittest-model-lstm",
+                work_dir=self.temp_work_dir,
                 save_checkpoints=True,
+                force_reset=True,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
-                model_name="unittest-model-lstm", best=False
+                model_name="unittest-model-lstm",
+                work_dir=self.temp_work_dir,
+                best=False,
             )
             pred1 = model2.predict(n=6)
             pred2 = model_loaded.predict(n=6)

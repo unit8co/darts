@@ -4,7 +4,50 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.16.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.17.1...master)
+
+## [0.17.1](https://github.com/unit8co/darts/tree/0.17.1) (2022-02-17)
+Patch release
+
+### For users of the library:
+**Fixed**
+- Fixed issues with (now deprecated) `torch_device_str` parameter, and improved documentation
+  related to using devices with PyTorch Lightning. [#806](https://github.com/unit8co/darts/pull/806)
+- Fixed an issue with `ReduceLROnPlateau`. [#806](https://github.com/unit8co/darts/pull/806)
+- Fixed an issue with the periodic basis functions of N-BEATS. [#804](https://github.com/unit8co/darts/pull/804)
+- Relaxed requirements for `pandas`; from `pandas>=1.1.0` to `pandas>=1.0.5`. [#800](https://github.com/unit8co/darts/pull/800)
+
+
+## [0.17.0](https://github.com/unit8co/darts/tree/0.17.0) (2022-02-15)
+### For users of the library:
+
+**Improved**
+- 🚀 Support for [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning): All deep learning
+  models are now implemented using PyTorch Lightning. This means that many more features are now available
+  via PyTorch Lightning trainers functionalities; such as tailored callbacks, or multi-GPU training.
+  [#702](https://github.com/unit8co/darts/pull/702)
+- The `RegressionModel`s now accept an `output_chunk_length` parameter; meaning that they can be trained to
+  predict more than one time step in advance (and used auto-regressively to predict on longer horizons).
+  [#761](https://github.com/unit8co/darts/pull/761)
+- &#x1F534; `TimeSeries` "simple statistics" methods (such as `mean()`, `max()`, `min()` etc, ...) have been refactored
+  to work natively on stochastic `TimeSeries`, and over configurable axes. [#773](https://github.com/unit8co/darts/pull/773)
+- &#x1F534; `TimeSeries` now support only pandas `RangeIndex` as an integer index, and does not support `Int64Index` anymore,
+  as it became deprecated with pandas 1.4.0. This also now brings the guarantee that `TimeSeries` do not have missing
+  "dates" even when indexed with integers. [#777](https://github.com/unit8co/darts/pull/777)
+- New model: `KalmanForecaster` is a new probabilistic model, working on multivariate series, accepting future covariates,
+  and which works by running the state-space model of a given Kalman filter into the future. The `fit()` function uses the
+  N4SID algorithm for system identification. [#743](https://github.com/unit8co/darts/pull/743)
+- The `KalmanFilter` now also works on `TimeSeries` containing missing values. [#743](https://github.com/unit8co/darts/pull/743)
+- The estimators (forecasting and filtering models) now also return their own instance when calling `fit()`,
+  which allows chaining calls. [#741](https://github.com/unit8co/darts/pull/741)
+
+
+**Fixed**
+- Fixed an issue with tensorboard and gridsearch when `model_name` is provided. [#759](https://github.com/unit8co/darts/issues/759)
+- Fixed issues with pip-tools. [#762](https://github.com/unit8co/darts/pull/762)
+
+### For developers of the library:
+- Some linting checks have been added to the CI pipeline. [#749](https://github.com/unit8co/darts/pull/749)
 
 ## [0.16.1](https://github.com/unit8co/darts/tree/0.16.1) (2022-01-24)
 Patch release
@@ -15,7 +58,7 @@ Patch release
 - Small improvement in type annotations in API documentation ([#744](https://github.com/unit8co/darts/pull/744))
 
 ### For developers of the library:
-- Added flake8 tests to CI pipelines ([#749](https://github.com/unit8co/darts/pull/749), 
+- Added flake8 tests to CI pipelines ([#749](https://github.com/unit8co/darts/pull/749),
   [#748](https://github.com/unit8co/darts/pull/748), [#745](https://github.com/unit8co/darts/pull/745))
 
 
@@ -50,7 +93,7 @@ Patch release
 - On-the-fly encoding of position and calendar information in Torch-based models.
   Torch-based models now accept an option `add_encoders` parameter, specifying how to
   use certain calendar and position information as past and/or future covariates on the-fly.
-  
+
   Example:
   ```
   from darts.dataprocessing.transformers import Scaler
@@ -67,11 +110,11 @@ Patch release
   even some custom mapping of the index (such as a function of the year). A `Scaler` will
   be applied to fit/transform all of these covariates both during training and inference.
 - The scalers can now also be applied on stochastic `TimeSeries`.
-- There is now a new argument `max_samples_per_ts` to the :func:`fit()` method of Torch-based 
+- There is now a new argument `max_samples_per_ts` to the :func:`fit()` method of Torch-based
   models, which can be used to limit the number of samples contained in the underlying
   training dataset, by taking (at most) the most recent `max_samples_per_ts` training samples
   per time series.
-- All local forecasting models that support covariates (Prophet, ARIMA, VARIMA, AutoARIMA) 
+- All local forecasting models that support covariates (Prophet, ARIMA, VARIMA, AutoARIMA)
   now handle covariate slicing themselves; this means that you don't need to make sure your
   covariates have the exact right time span. As long as they contain the right time span, the
   models will slice them for you.
@@ -86,7 +129,7 @@ Patch release
 **Fixed**:
 - Fixed various issues in different notebooks.
 - Fixed a bug handling frequencies in Prophet model.
-- Fixed an issue causing `PastCovariatesTorchModels` (such as `NBEATSModel`) prediction 
+- Fixed an issue causing `PastCovariatesTorchModels` (such as `NBEATSModel`) prediction
   to fail when `n > output_chunk_length` AND `n` not being a multiple of `output_chunk_length`.
 - Fixed an issue in backtesting which was causing untrained models
   not to be trained on the initial window when `retrain=False`.
@@ -108,7 +151,7 @@ in a similar way as all the other deep learning models in Darts (specifying a `l
 and predicting with `num_samples` >> 1).
 - We have improved the speed of the data loaing functionalities for PyTorch-based models.
 This should speedup training, typically by a few percents.
-- Added `num_loader_workers` parameters to `fit()` and `predict()` methods of PyTorch-based models, 
+- Added `num_loader_workers` parameters to `fit()` and `predict()` methods of PyTorch-based models,
 in order to control the `num_workers` of PyTorch DataLoaders. This can sometimes result in drastic speedups.
 - New method `TimeSeries.astype()` which allows to easily case (e.g. between `np.float64` and `np.float32`).
 - Added `dtype` as an option to the time series generation modules.
@@ -139,31 +182,31 @@ Future covariates don't have to be specified when this is used.
 ### For users of the library:
 
 **Added**:
-- New forecasting model: [Temporal Fusion Transformer](https://arxiv.org/abs/1912.09363) (`TFTModel`). 
+- New forecasting model: [Temporal Fusion Transformer](https://arxiv.org/abs/1912.09363) (`TFTModel`).
   A new deep learning model supporting both past and future covariates.
 - Improved support for Facebook Prophet model (`Prophet`):
     - Added support for fit & predict with future covariates. For instance:
       `model.fit(train, future_covariates=train_covariates)` and
       `model.predict(n=len(test), num_sample=1, future_covariates=test_covariates)`
     - Added stochastic forecasting, for instance: `model.predict(n=len(test), num_samples=200)`
-    - Added user-defined seasonalities either at model creation with kwarg 
-      `add_seasonality` (`Prophet(add_seasonality=kwargs_dict)`) or pre-fit with 
+    - Added user-defined seasonalities either at model creation with kwarg
+      `add_seasonality` (`Prophet(add_seasonality=kwargs_dict)`) or pre-fit with
       `model.add_seasonality(kwargs)`. For more information on how to add seasonalities,
        see the [Prophet docs](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.prophet.html).
     - Added possibility to predict and return the base model's raw output with `model.predict_raw()`.
-      Note that this returns a pd.DataFrame `pred_df`, which will not be supported for further 
-      processing with the Darts API. But it is possible to access Prophet's methods such as 
+      Note that this returns a pd.DataFrame `pred_df`, which will not be supported for further
+      processing with the Darts API. But it is possible to access Prophet's methods such as
       plots with `model.model.plot_compenents(pred_df)`.
 - New `n_random_samples` in `gridsearch()` method, which allows to specify a number of (random)
   hyper parameters combinations to be tried, in order mainly to limit the gridsearch time.
 - Improvements in the checkpointing and saving of Torch models.
     - Now models don't save checkpoints by default anymore. Set `save_checkpoints=True` to enable them.
-    - Models can be manually saved with `YourTorchModel.save_model(file_path)` 
+    - Models can be manually saved with `YourTorchModel.save_model(file_path)`
       (file_path pointing to the .pth.tar file).
-    - Models can be manually loaded with `YourTorchModel.load_model(file_path)` or 
+    - Models can be manually loaded with `YourTorchModel.load_model(file_path)` or
       the original method `YourTorchModel.load_from_checkpoint()`.
 - New `QuantileRegression` Likelihood class in `darts.utils.likelihood_models`.
-  Allows to apply quantile regression loss, and get probabilistic forecasts on all deep 
+  Allows to apply quantile regression loss, and get probabilistic forecasts on all deep
   learning models supporting likelihoods.
   Used by default in the Temporal Fusion Transformer.
 
@@ -183,11 +226,11 @@ Future covariates don't have to be specified when this is used.
   - Now all neural networks based forecasting models (except `NBEATSModel`) support probabilistic forecasting,
     by providing the `likelihood` parameter to the model's constructor method.
   - `darts.utils.likelihood_models` now contains many more distributions. The complete list of likelihoods
-    available to train neural networks based models is 
+    available to train neural networks based models is
     available here: https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html
   - Many of the available likelihood models now offer the possibility to specify "priors" on the distribution's
     parameters. Specifying such priors will regularize the training loss to make the output distribution
-    more like the one specified by the prior parameters values.  
+    more like the one specified by the prior parameters values.
 - Performance improvements on `TimeSeries` creation. creating `TimeSeries` is now be significantly faster,
   especially for large series, and filling missing dates has also been significantly sped up.
 - New rho-risk metric for probabilistic forecasts.
@@ -215,7 +258,7 @@ Future covariates don't have to be specified when this is used.
 - New model: `LightGBMModel` is a new regression model. Regression models allow to predict future values
 of the target, given arbitrary lags of the target as well as past and/or future covariates. `RegressionModel`
 already works with any scikit-learn regression model, and now `LightGBMModel` does the same with LightGBM.
-If you want to activate LightGBM support in Darts, please read the detailed install notes on 
+If you want to activate LightGBM support in Darts, please read the detailed install notes on
 the [README](https://github.com/unit8co/darts/blob/master/README.md) carefully.
 - Added stride support to gridsearch
 
@@ -239,9 +282,9 @@ the [README](https://github.com/unit8co/darts/blob/master/README.md) carefully.
 ### For users of the library:
 
 **Added:**
-- &#x1F534; Improvement of the covariates support. Before, some models were accepting a `covariates` (or `exog`) 
-argument, but it wasn't always clear whether this represented "past-observed" or "future-known" covariates. 
-We have made this clearer. Now all covariate-aware models support `past_covariates` and/or `future_covariates` argument 
+- &#x1F534; Improvement of the covariates support. Before, some models were accepting a `covariates` (or `exog`)
+argument, but it wasn't always clear whether this represented "past-observed" or "future-known" covariates.
+We have made this clearer. Now all covariate-aware models support `past_covariates` and/or `future_covariates` argument
 in their `fit()` and `predict()` methods, which makes it clear what series is used as a past or future covariate.
 We recommend [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
 for more information and examples.
@@ -249,14 +292,14 @@ for more information and examples.
 - &#x1F534; Significant improvement of `RegressionModel` (incl. `LinearRegressionModel` and `RandomForest`).
 These models now support training on multiple (possibly multivariate) time series. They also support both
 `past_covariates` and `future_covariates`. It makes it easier than ever to fit arbitrary regression models (e.g. from
-scikit-learn) on multiple series, to predict the future of a target series based on arbitrary lags of the target and 
+scikit-learn) on multiple series, to predict the future of a target series based on arbitrary lags of the target and
 the past/future covariates. The signature of these models changed: It's not using "`exog`" keyword arguments, but
 `past_covariates` and `future_covariates` instead.
 
 - Dynamic Time Warping. There is a brand new `darts.dataprocessing.dtw` submodule that
 implements Dynamic Time Warping between two `TimeSeries`. It's also coming with a new `dtw`
-metric in `darts.metrics`. We recommend going over the 
-[new DTW example notebook](https://github.com/unit8co/darts/blob/master/examples/13-Dynamic-Time-Warping-example.ipynb) 
+metric in `darts.metrics`. We recommend going over the
+[new DTW example notebook](https://github.com/unit8co/darts/blob/master/examples/13-Dynamic-Time-Warping-example.ipynb)
 for a good overview of the new functionalities
 
 - Conda forge installation support (fully supported with Python 3.7 only for now). You can now
@@ -264,12 +307,12 @@ for a good overview of the new functionalities
 
 - `TimeSeries.from_csv()` allows to obtain a `TimeSeries` from a CSV file directly.
 
-- Optional cyclic encoding of the datetime attributes future covariates; for instance it's now possible to call 
-`my_series.add_datetime_attribute('weekday', cyclic=True)`, which will add two columns containing a sin/cos 
+- Optional cyclic encoding of the datetime attributes future covariates; for instance it's now possible to call
+`my_series.add_datetime_attribute('weekday', cyclic=True)`, which will add two columns containing a sin/cos
 encoding of the weekday.
 
 - Default seasonality inference in `ExponentialSmoothing`. If left to `None`, the `seasonal_periods` is inferred
-from the `freq` of the provided series.  
+from the `freq` of the provided series.
 
 - Various documentation improvements.
 
@@ -300,7 +343,7 @@ resampling the series is causing significant performance overhead.
 - Fixed backtesting to make it work with integer-indexed series.
 - Fixed a bug that was causing inference to crash on GPUs for some models.
 - Fixed the default folder name, which was causing issues on Windows systems.
-- We have slightly improved the documentation rendering and fixed the titles 
+- We have slightly improved the documentation rendering and fixed the titles
 of the documentation pages for `RNNModel` and `BlockRNNModel` to distinguish them.
 
 **Changed:**
@@ -356,8 +399,8 @@ ts: TimeSeries = AirPassengers().load()
 - `RandomForest` algorithm implemented. Uses the scikit-learn `RandomForestRegressor` to predict future values from (lagged) exogenous
 variables and lagged values of the target.
 - `darts.datasets` is a new submodule allowing to easily download, cache and import some commonly used time series.
-- Better support for processing sequences of `TimeSeries`. 
-  * The Transformers, Pipelines and metrics have been adapted to be used on sequences of `TimeSeries` 
+- Better support for processing sequences of `TimeSeries`.
+  * The Transformers, Pipelines and metrics have been adapted to be used on sequences of `TimeSeries`
   (rather than isolated series).
   * The inference of neural networks on sequences of series has been improved
 - There is a new utils function `darts.utils.model_selection.train_test_split` which allows to split a `TimeSeries`
@@ -370,9 +413,9 @@ training set.
 - `RegressionModel` is now a user exposed class. It acts as a wrapper around any regression model with a `fit()` and `predict()`
 method. It enables the flexible usage of lagged values of the target variable as well as lagged values of multiple exogenous
 variables. Allowed values for the `lags` argument are positive integers or a list of positive integers indicating which lags
-should be used during training and prediction, e.g. `lags=12` translates to training with the last 12 lagged values of the target variable. 
+should be used during training and prediction, e.g. `lags=12` translates to training with the last 12 lagged values of the target variable.
 `lags=[1, 4, 8, 12]` translates to training with the previous value, the value at lag 4, lag 8 and lag 12.
-- &#x1F534; `StandardRegressionModel` is now called `LinearRegressionModel`. It implements a linear regression model 
+- &#x1F534; `StandardRegressionModel` is now called `LinearRegressionModel`. It implements a linear regression model
 from `sklearn.linear_model.LinearRegression`. Users who still need to use the former `StandardRegressionModel` with
 another sklearn model should use the `RegressionModel` now.
 

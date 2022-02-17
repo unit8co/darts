@@ -1,28 +1,28 @@
 import numpy as np
 import pandas as pd
 
+from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
+from darts.logging import get_logger
+from darts.metrics import mape
+from darts.models import (
+    ARIMA,
+    FFT,
+    VARIMA,
+    ExponentialSmoothing,
+    FourTheta,
+    KalmanForecaster,
+    NaiveSeasonal,
+    Theta,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.metrics import mape
-from darts.models import (
-    NaiveSeasonal,
-    ExponentialSmoothing,
-    ARIMA,
-    Theta,
-    FourTheta,
-    FFT,
-    VARIMA,
-    KalmanForecaster,
-)
-from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
-from darts.logging import get_logger
-from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
+from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models import RandomForest, LinearRegressionModel
+    from darts.models import LinearRegressionModel, RandomForest
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -118,7 +118,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
-            self.assertTrue(model._model_params, model.untrained_model()._model_params)
+            self.assertTrue(
+                model._model_params == model.untrained_model()._model_params
+            )
 
     def test_models_runnability(self):
         for model, _ in models:

@@ -1,8 +1,10 @@
-import numpy as np
-from darts.logging import raise_if_not, raise_if
-from abc import ABC, abstractmethod
-from math import tan, atan
 import array
+from abc import ABC, abstractmethod
+from math import atan, tan
+
+import numpy as np
+
+from darts.logging import raise_if, raise_if_not
 
 
 class Window(ABC):
@@ -101,7 +103,7 @@ class NoWindow(Window):
         return self.m
 
     def column_lengths(self) -> np.ndarray:
-        result = np.empty((self.n + 1))
+        result = np.empty(self.n + 1)
         result.fill(self.m)
         result[0] = 1
 

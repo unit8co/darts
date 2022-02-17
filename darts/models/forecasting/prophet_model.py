@@ -3,18 +3,17 @@ Facebook Prophet
 ----------------
 """
 
-from typing import Optional, Union, List
-
-import re
 import logging
-import prophet
+import re
+from typing import List, Optional, Union
+
 import numpy as np
 import pandas as pd
+import prophet
 
-from darts.timeseries import TimeSeries
+from darts.logging import execute_and_suppress_output, get_logger, raise_if
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
-from darts.logging import get_logger, execute_and_suppress_output, raise_if
-
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 logger.level = logging.WARNING  # set to warning to suppress prophet logs
@@ -390,11 +389,11 @@ class Prophet(DualCovariatesForecastingModel):
         elif freq in ["S"]:  # second
             days = 1 / seconds_per_day
         elif freq in ["L", "ms"]:  # millisecond
-            days = 1 / (seconds_per_day * 10 ** 3)
+            days = 1 / (seconds_per_day * 10**3)
         elif freq in ["U", "us"]:  # microsecond
-            days = 1 / (seconds_per_day * 10 ** 6)
+            days = 1 / (seconds_per_day * 10**6)
         elif freq in ["N"]:  # nanosecond
-            days = 1 / (seconds_per_day * 10 ** 9)
+            days = 1 / (seconds_per_day * 10**9)
         else:
             raise ValueError(
                 "freq {} not understood. Please report if you think this is in error.".format(
