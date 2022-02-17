@@ -380,8 +380,23 @@
 <span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
 <span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method).</span>
 <span class="sd">        torch_device_str</span>
-<span class="sd">            Optionally, a string indicating the torch device to use. (default: &quot;cuda:0&quot; if a GPU</span>
-<span class="sd">            is available, otherwise &quot;cpu&quot;)</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``</span>
+<span class="sd">            which will run on CPU. Set it to ``&quot;cuda&quot;`` to use all available GPUs or ``&quot;cuda:i&quot;`` to only use</span>
+<span class="sd">            GPU ``i`` (``i`` must be an integer). For example &quot;cuda:0&quot; will use the first GPU only.</span>
+
+<span class="sd">            .. deprecated:: v0.17.0</span>
+<span class="sd">                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.</span>
+<span class="sd">                Instead, specify this with keys ``&quot;accelerator&quot;, &quot;gpus&quot;, &quot;auto_select_gpus&quot;`` in your</span>
+<span class="sd">                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
+<span class="sd">                dict:</span>
+
+<span class="sd">                - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
+<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
+<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
+
+<span class="sd">                For more info, see here:</span>
+<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
+<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices</span>
 <span class="sd">        force_reset</span>
 <span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
 <span class="sd">            be discarded).</span>

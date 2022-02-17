@@ -269,6 +269,14 @@ on bringing more models and features.
      - 
      - 
      - 
+   * - ``KalmanForecaster`` using the Kalman filter and N4SID for system identification
+     - ✅
+     - ✅
+     - ✅
+     - 
+     - 
+     - ✅
+     - `N4SID paper <https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf>`_
    * - ``RegressionModel`` (incl ``RandomForest``\ , ``LinearRegressionModel`` and ``LightGBMModel``\ )
      - ✅
      - ✅

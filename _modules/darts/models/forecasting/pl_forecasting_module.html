@@ -419,10 +419,17 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_cls</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">lr_sched_kws</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_kwargs</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
             <span class="n">lr_sched_kws</span><span class="p">[</span><span class="s2">&quot;optimizer&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">optimizer</span>
+
+            <span class="c1"># ReduceLROnPlateau requires a metric to &quot;monitor&quot; which must be set separately, most others do not</span>
+            <span class="n">lr_monitor</span> <span class="o">=</span> <span class="n">lr_sched_kws</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s2">&quot;monitor&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
             <span class="n">lr_scheduler</span> <span class="o">=</span> <span class="n">_create_from_cls_and_kwargs</span><span class="p">(</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">lr_scheduler_cls</span><span class="p">,</span> <span class="n">lr_sched_kws</span>
             <span class="p">)</span>
-            <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="p">[</span><span class="n">lr_scheduler</span><span class="p">]</span>
+            <span class="k">return</span> <span class="p">[</span><span class="n">optimizer</span><span class="p">],</span> <span class="p">{</span>
+                <span class="s2">&quot;scheduler&quot;</span><span class="p">:</span> <span class="n">lr_scheduler</span><span class="p">,</span>
+                <span class="s2">&quot;monitor&quot;</span><span class="p">:</span> <span class="n">lr_monitor</span> <span class="k">if</span> <span class="n">lr_monitor</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="s2">&quot;val_loss&quot;</span><span class="p">,</span>
+            <span class="p">}</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">optimizer</span></div>
 

@@ -648,7 +648,7 @@
             <span class="n">time_index</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">index</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">time_index</span><span class="o">.</span><span class="n">name</span><span class="p">:</span>
-            <span class="n">time_index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">time_index</span><span class="o">.</span><span class="n">name</span> <span class="o">=</span> <span class="n">time_col</span> <span class="k">if</span> <span class="n">time_col</span> <span class="k">else</span> <span class="n">DIMS</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
         <span class="n">xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span>
             <span class="n">series_df</span><span class="o">.</span><span class="n">values</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span>
@@ -1963,6 +1963,8 @@
             <span class="n">new_time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">new_time_index</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_time_index</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">ts</span><span class="p">:</span> <span class="n">ts</span> <span class="o">+</span> <span class="n">n</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">new_time_index</span><span class="o">.</span><span class="n">freq</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">new_time_index</span><span class="o">.</span><span class="n">freq</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">freq</span>
         <span class="n">new_xa</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">assign_coords</span><span class="p">({</span><span class="bp">self</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span> <span class="n">new_time_index</span><span class="p">})</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span></div>
 
