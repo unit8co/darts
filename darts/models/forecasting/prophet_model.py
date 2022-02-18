@@ -90,10 +90,11 @@ class Prophet(DualCovariatesForecastingModel):
 
         self.country_holidays = country_holidays
         self.prophet_kwargs = prophet_kwargs
-        self.model = prophet.Prophet(**self.prophet_kwargs)
+        self.model = None
         self.suppress_stdout_stderr = suppress_stdout_stderror
 
         self.execute_and_suppress_output = execute_and_suppress_output
+        self.model_builder = prophet.Prophet
 
     def __str__(self):
         return "Prophet"
@@ -106,6 +107,8 @@ class Prophet(DualCovariatesForecastingModel):
         fit_df = pd.DataFrame(
             data={"ds": series.time_index, "y": series.univariate_values()}
         )
+
+        self.model = self.model_builder(**self.prophet_kwargs)
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         interval_length = self._freq_to_days(series.freq_str)

@@ -108,7 +108,7 @@ if PROPHET_AVAILABLE:
         def test_prophet_model_without_stdout_suppression(self):
             model = Prophet(suppress_stdout_stderror=False)
             model.execute_and_suppress_output = Mock(return_value=True)
-            model.model = Mock(fit=Mock(return_value=True))
+            model.model_builder = Mock(return_value=Mock(fit=Mock(return_value=True)))
             df = pd.DataFrame({
                 'ds': pd.date_range(start='2022-01-01', periods=30, freq='D'),
                 'y': np.linspace(0, 10, 30)
