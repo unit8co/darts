@@ -93,6 +93,8 @@ class Prophet(DualCovariatesForecastingModel):
         self.model = None
         self.suppress_stdout_stderr = suppress_stdout_stderror
 
+        self.execute_and_suppress_output = execute_and_suppress_output
+
     def __str__(self):
         return "Prophet"
 
@@ -132,7 +134,7 @@ class Prophet(DualCovariatesForecastingModel):
             self.model.add_country_holidays(self.country_holidays)
 
         if self.suppress_stdout_stderr:
-            execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
+            self.execute_and_suppress_output(self.model.fit, logger, logging.WARNING, fit_df)
         else:
             self.model.fit(fit_df)
 

@@ -2,6 +2,8 @@ from darts import TimeSeries
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
+import numpy as np
+from unittest.mock import Mock
 
 logger = get_logger(__name__)
 
@@ -101,6 +103,16 @@ if PROPHET_AVAILABLE:
                     self.helper_test_prophet_model(
                         period=period, freq=freq, compare_all_models=False
                     )
+        
+        def test_prophet_model_without_stdout_suppression(self):
+            model = Prophet(suppress_stdout_stderror=False)
+            model.execute_and_suppress_output = Mock(return_value=True)
+            model.model = Mock(fit=Mock(return_value=True))
+            ts = TimeSeries.from_values(np.array([1, 2, 3, 4, 5]))
+            model.fit(ts)
+
+            model.execute_and_suppress_output.assert_not_called(), "Suppression should not be called"
+            model.model.fit.assert_called_once(), "Model should still be fitted"
 
         def helper_test_freq_coversion(self, test_cases):
             for freq, period in test_cases.items():
