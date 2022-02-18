@@ -1,5 +1,7 @@
-black[jupyter]==21.12b0
+black[jupyter]==22.1.0
 flake8==4.0.1
+isort==5.10.1
 pre-commit
 pytest-cov
+pyupgrade==2.31.0
 testfixtures==6.17.1
