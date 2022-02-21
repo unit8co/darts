@@ -256,6 +256,20 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertGreater(score, 0.9)
 
+        # univariate feature test + train length
+        score = LinearRegressionModel(
+            lags=None, lags_future_covariates=[0, -1]
+        ).backtest(
+            series=target,
+            future_covariates=features,
+            start=pd.Timestamp("20000201"),
+            train_length=20,
+            forecast_horizon=3,
+            metric=r2_score,
+            last_points_only=True,
+        )
+        self.assertGreater(score, 0.9)
+
         # Using an int or float value for start
         score = RandomForest(
             lags=12, lags_future_covariates=[0], random_state=0
@@ -305,6 +319,39 @@ class BacktestingTestCase(DartsBaseTestClass):
             metric=r2_score,
         )
         self.assertGreater(score, 0.94)
+
+        # multivariate feature test with train window 35
+        score_35 = RandomForest(
+            lags=12, lags_future_covariates=[0, -1], random_state=0
+        ).backtest(
+            series=target,
+            train_length=35,
+            future_covariates=features_multivariate,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        logger.info(
+            "Score for multivariate feature test with train window 35 is: ", score_35
+        )
+        self.assertGreater(score_35, 0.92)
+
+        # multivariate feature test with train window 45
+        score_45 = RandomForest(
+            lags=12, lags_future_covariates=[0, -1], random_state=0
+        ).backtest(
+            series=target,
+            train_length=45,
+            future_covariates=features_multivariate,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        logger.info(
+            "Score for multivariate feature test with train window 45 is: ", score_45
+        )
+        self.assertGreater(score_45, 0.94)
+        self.assertGreater(score_45, score_35)
 
         # multivariate with stride
         score = RandomForest(

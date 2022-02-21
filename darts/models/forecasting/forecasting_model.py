@@ -361,6 +361,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        # TODO: model can't build training samples if train_length to small (eg. if less than number of lags)
+        # raise descriptive error early for all such cases (currently fails in specific models' file)
+
         if train_length and not isinstance(train_length, int):
             raise_log(
                 TypeError("If not None, train_length needs to be an integer."),
