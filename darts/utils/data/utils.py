@@ -1,6 +1,7 @@
-import pandas as pd
 from enum import Enum
 from typing import Union
+
+import pandas as pd
 
 from darts import TimeSeries
 from darts.logging import raise_if_not

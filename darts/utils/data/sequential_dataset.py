@@ -3,19 +3,21 @@ Sequential Training Dataset
 ---------------------------
 """
 
-from typing import Union, Sequence, Optional, Tuple
+from typing import Optional, Sequence, Tuple, Union
+
 import numpy as np
 
 from darts import TimeSeries
-from .utils import CovariateType
+
+from .shifted_dataset import GenericShiftedDataset
 from .training_dataset import (
-    PastCovariatesTrainingDataset,
-    FutureCovariatesTrainingDataset,
     DualCovariatesTrainingDataset,
+    FutureCovariatesTrainingDataset,
     MixedCovariatesTrainingDataset,
+    PastCovariatesTrainingDataset,
     SplitCovariatesTrainingDataset,
 )
-from .shifted_dataset import GenericShiftedDataset
+from .utils import CovariateType
 
 
 class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):

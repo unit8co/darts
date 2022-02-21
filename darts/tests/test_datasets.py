@@ -1,31 +1,31 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries
-from darts.utils.timeseries_generation import gaussian_timeseries
 from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.timeseries_generation import gaussian_timeseries
 
 logger = get_logger(__name__)
 
 try:
     from darts.utils.data import (  # noqa: F401
-        PastCovariatesInferenceDataset,
-        FutureCovariatesInferenceDataset,
         DualCovariatesInferenceDataset,
-        MixedCovariatesInferenceDataset,
-        SplitCovariatesInferenceDataset,
-        PastCovariatesSequentialDataset,
-        FutureCovariatesSequentialDataset,
         DualCovariatesSequentialDataset,
-        MixedCovariatesSequentialDataset,
-        SplitCovariatesSequentialDataset,
-        PastCovariatesShiftedDataset,
-        FutureCovariatesShiftedDataset,
         DualCovariatesShiftedDataset,
-        MixedCovariatesShiftedDataset,
-        SplitCovariatesShiftedDataset,
+        FutureCovariatesInferenceDataset,
+        FutureCovariatesSequentialDataset,
+        FutureCovariatesShiftedDataset,
         HorizonBasedDataset,
+        MixedCovariatesInferenceDataset,
+        MixedCovariatesSequentialDataset,
+        MixedCovariatesShiftedDataset,
+        PastCovariatesInferenceDataset,
+        PastCovariatesSequentialDataset,
+        PastCovariatesShiftedDataset,
+        SplitCovariatesInferenceDataset,
+        SplitCovariatesSequentialDataset,
+        SplitCovariatesShiftedDataset,
     )
 
     TORCH_AVAILABLE = True

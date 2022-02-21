@@ -5,18 +5,18 @@ Metrics
 Some metrics to compare time series.
 """
 
+from functools import wraps
+from inspect import signature
+from typing import Callable, Optional, Sequence, Tuple, Union
+from warnings import warn
+
 import numpy as np
 
 from darts import TimeSeries
-from darts.utils import _parallel_apply, _build_tqdm_iterator
-from darts.utils.statistics import check_seasonality
-from darts.logging import raise_if_not, get_logger, raise_log
-from warnings import warn
-from typing import Optional, Callable, Sequence, Union, Tuple
-from inspect import signature
-from functools import wraps
 from darts.dataprocessing import dtw
-
+from darts.logging import get_logger, raise_if_not, raise_log
+from darts.utils import _build_tqdm_iterator, _parallel_apply
+from darts.utils.statistics import check_seasonality
 
 logger = get_logger(__name__)
 
@@ -515,7 +515,9 @@ def coefficient_of_variation(
     """
 
     return (
-        100 * rmse(actual_series, pred_series, intersect) / actual_series.mean().mean()
+        100
+        * rmse(actual_series, pred_series, intersect)
+        / actual_series.pd_dataframe(copy=False).mean().mean()
     )
 
 

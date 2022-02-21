@@ -1,14 +1,15 @@
 import math
+from tempfile import NamedTemporaryFile
+from unittest.mock import patch
 
 import numpy as np
 import pandas as pd
 import xarray as xr
-from tempfile import NamedTemporaryFile
-from unittest.mock import patch
+from scipy.stats import skew, kurtosis
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts import TimeSeries, concatenate
-from darts.utils.timeseries_generation import linear_timeseries, constant_timeseries
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.timeseries_generation import constant_timeseries, linear_timeseries
 
 
 class TimeSeriesTestCase(DartsBaseTestClass):
@@ -97,6 +98,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             )
         )
 
+        # check the RangeIndex when indexing with a list
+        indexed_ts = series_int[[2, 3, 4, 5, 6]]
+        self.assertTrue(isinstance(indexed_ts.time_index, pd.RangeIndex))
+        self.assertTrue(
+            list(indexed_ts.time_index) == list(pd.RangeIndex(2, 7, step=1))
+        )
+
     def test_column_names(self):
         # test the column names resolution
         columns_before = [
@@ -153,7 +161,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
 
         # test if reordering is correct
         rand_perm = np.random.permutation(range(1, 11))
-        index = pd.to_datetime(["201301{:02d}".format(i) for i in rand_perm])
+        index = pd.to_datetime([f"201301{i:02d}" for i in rand_perm])
         series_test = TimeSeries.from_times_and_values(
             index, self.pd_series1.values[rand_perm - 1]
         )
@@ -1387,7 +1395,7 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         self.assertEqual(data_darts1, data_darts3)
 
     def test_time_col_convert_string_integers(self):
-        expected = np.random.randint(1, 100000, 10, int)
+        expected = np.array(list(range(3, 10)))
         data_dict = {"Time": expected.astype(str)}
         data_dict["Values1"] = np.random.uniform(
             low=-10, high=10, size=len(data_dict["Time"])
@@ -1400,7 +1408,7 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         self.assertEqual(ts.time_index.name, "Time")
 
     def test_time_col_convert_integers(self):
-        expected = np.random.randint(1, 100000, 10, int)
+        expected = np.array(list(range(10)))
         data_dict = {"Time": expected}
         data_dict["Values1"] = np.random.uniform(
             low=-10, high=10, size=len(data_dict["Time"])
@@ -1411,6 +1419,39 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
         self.assertEqual(set(ts.time_index.values.tolist()), set(expected))
         self.assertEqual(ts.time_index.dtype, int)
         self.assertEqual(ts.time_index.name, "Time")
+
+    def test_fail_with_bad_integer_time_col(self):
+        bad_time_col_vals = np.array([4, 0, 1, 2])
+        data_dict = {"Time": bad_time_col_vals}
+        data_dict["Values1"] = np.random.uniform(
+            low=-10, high=10, size=len(data_dict["Time"])
+        )
+        df = pd.DataFrame(data_dict)
+        with self.assertRaises(ValueError):
+            TimeSeries.from_dataframe(df=df, time_col="Time")
+
+    def test_time_col_convert_rangeindex(self):
+        expected_l = [4, 0, 2, 3, 1]
+        expected = np.array(expected_l)
+        data_dict = {"Time": expected}
+        data_dict["Values1"] = np.random.uniform(
+            low=-10, high=10, size=len(data_dict["Time"])
+        )
+        df = pd.DataFrame(data_dict)
+        ts = TimeSeries.from_dataframe(df=df, time_col="Time")
+
+        # check type (should convert to RangeIndex):
+        self.assertEqual(type(ts.time_index), pd.RangeIndex)
+
+        # check values inside the index (should be sorted correctly):
+        self.assertEqual(list(ts.time_index), sorted(expected))
+
+        # check that values are sorted accordingly:
+        ar1 = ts.values(copy=False)[:, 0]
+        ar2 = data_dict["Values1"][
+            list(expected_l.index(i) for i in range(len(expected)))
+        ]
+        self.assertTrue(np.all(ar1 == ar2))
 
     def test_time_col_convert_datetime(self):
         expected = pd.date_range(start="20180501", end="20200301", freq="MS")
@@ -1452,3 +1493,107 @@ class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
 
         with self.assertRaises(AttributeError):
             TimeSeries.from_dataframe(df=df, time_col="Time")
+
+
+class SimpleStatisticsTestCase(DartsBaseTestClass):
+
+    times = pd.date_range("20130101", "20130110", freq="D")
+    values = np.random.rand(10, 2, 100)
+    ar = xr.DataArray(
+        values,
+        dims=("time", "component", "sample"),
+        coords={"time": times, "component": ["a", "b"]},
+    )
+    ts = TimeSeries(ar)
+
+    def test_mean(self):
+        for axis in range(3):
+            new_ts = self.ts.mean(axis=axis)
+            # check values
+            self.assertTrue(
+                np.isclose(
+                    new_ts._xa.values, self.values.mean(axis=axis, keepdims=True)
+                ).all()
+            )
+
+    def test_var(self):
+        for ddof in range(5):
+            new_ts = self.ts.var(ddof=ddof)
+            # check values
+            self.assertTrue(
+                np.isclose(new_ts.values(), self.values.var(ddof=ddof, axis=2)).all()
+            )
+
+    def test_std(self):
+        for ddof in range(5):
+            new_ts = self.ts.std(ddof=ddof)
+            # check values
+            self.assertTrue(
+                np.isclose(new_ts.values(), self.values.std(ddof=ddof, axis=2)).all()
+            )
+
+    def test_skew(self):
+        new_ts = self.ts.skew()
+        # check values
+        self.assertTrue(np.isclose(new_ts.values(), skew(self.values, axis=2)).all())
+
+    def test_kurtosis(self):
+        new_ts = self.ts.kurtosis()
+        # check values
+        self.assertTrue(
+            np.isclose(
+                new_ts.values(),
+                kurtosis(self.values, axis=2),
+            ).all()
+        )
+
+    def test_min(self):
+        for axis in range(3):
+            new_ts = self.ts.min(axis=axis)
+            # check values
+            self.assertTrue(
+                np.isclose(
+                    new_ts._xa.values, self.values.min(axis=axis, keepdims=True)
+                ).all()
+            )
+
+    def test_max(self):
+        for axis in range(3):
+            new_ts = self.ts.max(axis=axis)
+            # check values
+            self.assertTrue(
+                np.isclose(
+                    new_ts._xa.values, self.values.max(axis=axis, keepdims=True)
+                ).all()
+            )
+
+    def test_sum(self):
+        for axis in range(3):
+            new_ts = self.ts.sum(axis=axis)
+            # check values
+            self.assertTrue(
+                np.isclose(
+                    new_ts._xa.values, self.values.sum(axis=axis, keepdims=True)
+                ).all()
+            )
+
+    def test_median(self):
+        for axis in range(3):
+            new_ts = self.ts.median(axis=axis)
+            # check values
+            self.assertTrue(
+                np.isclose(
+                    new_ts._xa.values, np.median(self.values, axis=axis, keepdims=True)
+                ).all()
+            )
+
+    def test_quantile(self):
+        for q in [0.01, 0.1, 0.5, 0.95]:
+            new_ts = self.ts.quantile(quantile=q)
+            # check values
+            self.assertTrue(
+                np.isclose(
+                    new_ts.values(),
+                    np.quantile(self.values, q=q, axis=2),
+                ).all()
+            )

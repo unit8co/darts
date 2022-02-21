@@ -4,20 +4,20 @@ Theta Method
 """
 
 import math
-from typing import Optional, List
+from typing import List, Optional
 
 import numpy as np
 import statsmodels.tsa.holtwinters as hw
 
+from darts.logging import get_logger, raise_if_not, raise_log
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.timeseries import TimeSeries
 from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
     remove_from_series,
 )
-from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.logging import raise_log, get_logger, raise_if_not
-from darts.timeseries import TimeSeries
-from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
+from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 logger = get_logger(__name__)
 ALPHA_START = 0.2
@@ -75,7 +75,7 @@ class Theta(ForecastingModel):
 
         raise_if_not(
             season_mode in SeasonalityMode,
-            "Unknown value for season_mode: {}.".format(season_mode),
+            f"Unknown value for season_mode: {season_mode}.",
             logger,
         )
 
@@ -166,7 +166,7 @@ class Theta(ForecastingModel):
         return self._build_forecast_series(forecast)
 
     def __str__(self):
-        return "Theta({})".format(self.theta)
+        return f"Theta({self.theta})"
 
 
 class FourTheta(ForecastingModel):
@@ -245,17 +245,17 @@ class FourTheta(ForecastingModel):
 
         raise_if_not(
             isinstance(model_mode, ModelMode),
-            "Unknown value for model_mode: {}.".format(model_mode),
+            f"Unknown value for model_mode: {model_mode}.",
             logger,
         )
         raise_if_not(
             isinstance(trend_mode, TrendMode),
-            "Unknown value for trend_mode: {}.".format(trend_mode),
+            f"Unknown value for trend_mode: {trend_mode}.",
             logger,
         )
         raise_if_not(
             isinstance(season_mode, SeasonalityMode),
-            "Unknown value for season_mode: {}.".format(season_mode),
+            f"Unknown value for season_mode: {season_mode}.",
             logger,
         )
 
@@ -265,7 +265,7 @@ class FourTheta(ForecastingModel):
         self.length = len(series)
         # normalization of data
         if self.normalization:
-            self.mean = series.mean().mean()
+            self.mean = series.pd_dataframe(copy=False).mean().mean()
             raise_if_not(
                 not np.isclose(self.mean, 0),
                 "The mean value of the provided series is too close to zero to perform normalization",

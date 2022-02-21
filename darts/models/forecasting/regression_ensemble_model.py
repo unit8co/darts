@@ -4,17 +4,17 @@ Regression ensemble model
 
 An ensemble model which uses a regression model to compute the ensemble forecast.
 """
-from typing import Optional, List, Union, Sequence, Tuple
-from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
+from typing import List, Optional, Sequence, Tuple, Union
 
+from darts.logging import get_logger, raise_if, raise_if_not
+from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
 )
-from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 

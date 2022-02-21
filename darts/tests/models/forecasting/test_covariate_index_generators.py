@@ -1,16 +1,15 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 
+from darts import TimeSeries
+from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-from darts import TimeSeries
 from darts.utils.data.encoder_base import (
     CovariateIndexGenerator,
-    PastCovariateIndexGenerator,
     FutureCovariateIndexGenerator,
+    PastCovariateIndexGenerator,
 )
-
-from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
@@ -84,15 +83,15 @@ class CovariateIndexGeneratorTestCase(DartsBaseTestClass):
         idx = ig.generate_train_series(self.target_time, None)
         self.assertTrue(isinstance(idx, pd.DatetimeIndex))
 
-        # pd.Int64Index
+        # pd.RangeIndex
         idx = ig.generate_train_series(self.target_int, self.cov_int_train)
-        self.assertTrue(isinstance(idx, pd.Int64Index))
+        self.assertTrue(isinstance(idx, pd.RangeIndex))
         idx = ig.generate_inference_series(
             self.n_short, self.target_int, self.cov_int_inf_short
         )
-        self.assertTrue(isinstance(idx, pd.Int64Index))
+        self.assertTrue(isinstance(idx, pd.RangeIndex))
         idx = ig.generate_train_series(self.target_int, None)
-        self.assertTrue(isinstance(idx, pd.Int64Index))
+        self.assertTrue(isinstance(idx, pd.RangeIndex))
 
     def helper_test_index_generator_train(self, ig: CovariateIndexGenerator):
         """
