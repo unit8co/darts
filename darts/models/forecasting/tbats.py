@@ -20,10 +20,12 @@ References
 .. [1] https://robjhyndman.com/papers/ComplexSeasonality.pdf
 """
 
-from typing import List, Optional
+from abc import ABC, abstractmethod
+from typing import List, Optional, Tuple
 
 import numpy as np
 from scipy.special import inv_boxcox
+from tbats import BATS as tbats_BATS
 from tbats import TBATS as tbats_TBATS
 
 from darts.logging import get_logger
@@ -33,139 +35,169 @@ from darts.timeseries import TimeSeries
 logger = get_logger(__name__)
 
 
-class TBATS(ForecastingModel):
+def _seasonality_from_freq(series: TimeSeries):
+    """
+    Infer a naive seasonality based on the frequency
+    """
+    if series.has_range_index:
+        return [12]
+    elif series.freq_str == "B":
+        return [5]
+    elif series.freq_str == "D":
+        return [7]
+    elif series.freq_str == "W":
+        return [52]
+    elif series.freq_str in ["MS", "M"]:
+        return [12]
+    elif series.freq_str == ["Q", "BQ", "QS", "BQS"]:
+        return [4]
+    elif series.freq_str == ["H"]:
+        return [24]
+    return None
+
+
+def _compute_samples(model, predictions, n_samples):
+    """
+    This function is drawn from Model._calculate_confidence_intervals() in tbats.
+    We have to implement our own version here in order to compute the samples before
+    the inverse boxcox transform.
+    """
+
+    # In the deterministic case we return the analytic mean
+    if n_samples == 1:
+        return predictions.view(len(predictions), 1)
+
+    F = model.matrix.make_F_matrix()
+    g = model.matrix.make_g_vector()
+    w = model.matrix.make_w_vector()
+
+    c = np.asarray([1.0] * len(predictions))
+    f_running = np.identity(F.shape[1])
+    for step in range(1, len(predictions)):
+        c[step] = w @ f_running @ g
+        f_running = f_running @ F
+    variance_multiplier = np.cumsum(c * c)
+
+    base_variance_boxcox = np.sum(model.resid_boxcox * model.resid_boxcox) / len(
+        model.y
+    )
+    variance_boxcox = base_variance_boxcox * variance_multiplier
+    std_boxcox = np.sqrt(variance_boxcox)
+
+    # get the samples before inverse boxcoxing
+    samples = np.random.normal(
+        loc=model._boxcox(predictions),
+        scale=std_boxcox,
+        size=(n_samples, len(predictions)),
+    ).T
+    samples = np.expand_dims(samples, axis=1)
+
+    # apply inverse boxcox if needed
+    boxcox_lambda = model.params.box_cox_lambda
+    if boxcox_lambda is not None:
+        samples = inv_boxcox(samples, boxcox_lambda)
+
+    return samples
+
+
+class _BaseBatsTbatsModel(ForecastingModel, ABC):
     def __init__(
         self,
-        seasonal_periods: Optional[List[int]] = "freq",
-        use_arma_errors: Optional[bool] = None,
         use_box_cox: Optional[bool] = None,
+        box_cox_bounds: Tuple = (0, 1),
         use_trend: Optional[bool] = None,
         use_damped_trend: Optional[bool] = None,
+        seasonal_periods: Optional[List] = "freq",
+        use_arma_errors: Optional[bool] = True,
+        show_warnings: bool = False,
+        n_jobs: Optional[int] = None,
+        multiprocessing_start_method: Optional[str] = "spawn",
         random_state: int = 0,
         **kwargs,
     ):
 
-        """TBATS
+        """BATS & TBATS
 
         This is a wrapper around
-        `tbats TBATS model
-        <https://github.com/intive-DataScience/tbats>`_;
-        we refer to this link for the documentation on the parameters.
+        `tbats BATS or TBATS model
+        <https://github.com/intive-DataScience/tbats>`_.
+
+        This implementation also provides naive frequency inference (when "freq"
+        is provided for ``seasonal_periods``),
+        as well as Darts-compatible sampling of the resulting normal distribution.
+
+        For convenience, the tbats documentation of the parameters is reported here.
 
         Parameters
         ----------
+        use_box_cox
+            If Box-Cox transformation of original series should be applied.
+            When None both cases shall be considered and better is selected by AIC.
+        box_cox_bounds
+            Minimal and maximal Box-Cox parameter values.
+        use_trend
+            Indicates whether to include a trend or not.
+            When None both cases shall be considered and better is selected by AIC.
+        use_damped_trend
+            Indicates whether to include a damping parameter in the trend or not.
+            Applies only when trend is used.
+            When None both cases shall be considered and better is selected by AIC.
         seasonal_periods
-            A list of seasonal periods. If ``None``, no seasonality will be set.
+            Length of each of the periods (amount of observations in each period).
+            TBATS accepts int and float values here.
+            BATS accepts only int values.
+            When ``None`` or empty array, non-seasonal model shall be fitted.
             If set to ``"freq"``, a single "naive" seasonality
             based on the series frequency will be used (e.g. [12] for monthly series).
+            In this latter case, the seasonality will be recomputed every time the model is fit.
         use_arma_errors
-            Whether to use ARMA errors (``None``: try with and without)
-        use_box_cox
-            Whether to use BoxCox transform (``None``: try with and without)
-        use_trend
-            Whether to use trend (``None``: try with and without)
-        use_damped_trend
-            Whether to use damped trend (``None``: try with and without)
-        kwargs
-            Other optional keyword arguments that will be used to call
-            :class:`tbats.TBATS`.
+            When True BATS will try to improve the model by modelling residuals with ARMA.
+            Best model will be selected by AIC.
+            If False, ARMA residuals modeling will not be considered.
+        show_warnings
+            If warnings should be shown or not.
+        n_jobs: int, optional (default=None)
+            How many jobs to run in parallel when fitting BATS model.
+            When not provided BATS shall try to utilize all available cpu cores.
+        multiprocessing_start_method: str, optional (default='spawn')
+            How threads should be started.
+            See https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
         """
         super().__init__()
-        self.seasonal_periods = seasonal_periods
-        self.use_arma_errors = use_arma_errors
-        self.use_box_cox = use_box_cox
-        self.use_trend = use_trend
-        self.use_damped_trend = use_damped_trend
-        self.tbats_kwargs = kwargs
 
+        self.kwargs = {
+            "use_box_cox": use_box_cox,
+            "box_cox_bounds": box_cox_bounds,
+            "use_trend": use_trend,
+            "use_damped_trend": use_damped_trend,
+            "seasonal_periods": seasonal_periods,
+            "use_arma_errors": use_arma_errors,
+            "show_warnings": show_warnings,
+            "n_jobs": n_jobs,
+            "multiprocessing_start_method": multiprocessing_start_method,
+        }
+
+        self.seasonal_periods = seasonal_periods
         self.infer_seasonal_periods = seasonal_periods == "freq"
         self.model = None
         np.random.seed(random_state)
 
     def __str__(self):
-        return (
-            f"TBATS(periods={self.seasonal_periods}, arma_errs={self.use_arma_errors}, "
-            f"boxcox={self.use_box_cox}, trend={self.use_trend}, damped_trend={self.use_damped_trend}"
-        )
+        return "(T)BATS"
 
-    @staticmethod
-    def _infer_naive_seasonality(series: TimeSeries):
-        """
-        Infer a naive seasonality based on the frequency
-        """
-        if series.has_range_index:
-            return [12]
-        elif series.freq_str == "B":
-            return [5]
-        elif series.freq_str == "D":
-            return [7]
-        elif series.freq_str == "W":
-            return [52]
-        elif series.freq_str in ["MS", "M"]:
-            return [12]
-        elif series.freq_str == ["Q", "BQ", "QS", "BQS"]:
-            return [4]
-        elif series.freq_str == ["H"]:
-            return [24]
-        return None
-
-    @staticmethod
-    def _darts_calculate_confidence_intervals(model, predictions, n_samples):
-        """
-        This function is drawn from Model._calculate_confidence_intervals() in tbats.
-        We have to implement our own version here in order to compute the samples before
-        the inverse boxcox transform.
-        """
-        F = model.matrix.make_F_matrix()
-        g = model.matrix.make_g_vector()
-        w = model.matrix.make_w_vector()
-
-        c = np.asarray([1.0] * len(predictions))
-        f_running = np.identity(F.shape[1])
-        for step in range(1, len(predictions)):
-            c[step] = w @ f_running @ g
-            f_running = f_running @ F
-        variance_multiplier = np.cumsum(c * c)
-
-        base_variance_boxcox = np.sum(model.resid_boxcox * model.resid_boxcox) / len(
-            model.y
-        )
-        variance_boxcox = base_variance_boxcox * variance_multiplier
-        std_boxcox = np.sqrt(variance_boxcox)
-
-        # get the samples before inverse boxcoxing
-        samples = np.random.normal(
-            loc=model._boxcox(predictions),
-            scale=std_boxcox,
-            size=(n_samples, len(predictions)),
-        ).T
-        samples = np.expand_dims(samples, axis=1)
-
-        # apply inverse boxcox if needed
-        boxcox_lambda = model.params.box_cox_lambda
-        if boxcox_lambda is not None:
-            samples = inv_boxcox(samples, boxcox_lambda)
-
-        return samples
+    @abstractmethod
+    def _create_model(self):
+        pass
+        # return tbats_TBATS(**self.kwargs)
 
     def fit(self, series: TimeSeries):
         super().fit(series)
         series = self.training_series
 
         if self.infer_seasonal_periods:
-            seasonal_periods = TBATS._infer_naive_seasonality(series)
-        else:
-            seasonal_periods = self.seasonal_periods
+            self.kwargs["seasonal_periods"] = _seasonality_from_freq(series)
 
-        model = tbats_TBATS(
-            seasonal_periods=seasonal_periods,
-            use_arma_errors=self.use_arma_errors,
-            use_box_cox=self.use_box_cox,
-            use_trend=self.use_trend,
-            use_damped_trend=self.use_damped_trend,
-            show_warnings=False,
-            **self.tbats_kwargs,
-        )
+        model = self._create_model()
         fitted_model = model.fit(series.values())
         self.model = fitted_model
 
@@ -175,12 +207,8 @@ class TBATS(ForecastingModel):
         super().predict(n, num_samples)
 
         yhat = self.model.forecast(steps=n)
-        if num_samples == 1:
-            samples = yhat.view(len(yhat), 1)
-        else:
-            samples = TBATS._darts_calculate_confidence_intervals(
-                self.model, yhat, num_samples
-            )
+        samples = _compute_samples(self.model, yhat, num_samples)
+
         return self._build_forecast_series(samples)
 
     def _is_probabilistic(self) -> bool:
@@ -191,3 +219,18 @@ class TBATS(ForecastingModel):
         if isinstance(self.seasonal_periods, int) and self.seasonal_periods > 1:
             return 2 * self.seasonal_periods
         return 3
+
+
+class TBATS(_BaseBatsTbatsModel):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+    def _create_model(self):
+        pass
+        return tbats_TBATS(**self.kwargs)
+
+
+class BATS(_BaseBatsTbatsModel):
+    def _create_model(self):
+        pass
+        return tbats_BATS(**self.kwargs)
