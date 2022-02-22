@@ -3,7 +3,7 @@ import numpy as np
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.metrics import mae
-from darts.models import ARIMA, ExponentialSmoothing
+from darts.models import ARIMA, BATS, TBATS, ExponentialSmoothing
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
@@ -46,8 +46,30 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 models_cls_kwargs_errs = [
-    (ExponentialSmoothing, {}, 0.4),
-    (ARIMA, {"p": 1, "d": 0, "q": 1}, 0.17),
+    (ExponentialSmoothing, {}, 0.3),
+    (ARIMA, {"p": 1, "d": 0, "q": 1}, 0.03),
+    (
+        BATS,
+        {
+            "use_trend": False,
+            "use_damped_trend": False,
+            "use_box_cox": True,
+            "use_arma_errors": False,
+            "random_state": 42,
+        },
+        0.3,
+    ),
+    (
+        TBATS,
+        {
+            "use_trend": False,
+            "use_damped_trend": False,
+            "use_box_cox": True,
+            "use_arma_errors": False,
+            "random_state": 42,
+        },
+        0.3,
+    ),
 ]
 
 if TORCH_AVAILABLE:
@@ -125,11 +147,11 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
             # whether the first predictions of two models initiated with the same random state are the same
             model = model_cls(**model_kwargs)
-            model.fit(self.constant_ts)
+            model.fit(self.constant_noisy_ts)
             pred1 = model.predict(n=10, num_samples=2).values()
 
             model = model_cls(**model_kwargs)
-            model.fit(self.constant_ts)
+            model.fit(self.constant_noisy_ts)
             pred2 = model.predict(n=10, num_samples=2).values()
 
             self.assertTrue((pred1 == pred2).all())
@@ -210,7 +232,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
             (ExponentialLikelihood(), real_pos_series, 0.3, 2),
             (DirichletLikelihood(), simplex_series, 0.3, 0.3),
             (GeometricLikelihood(), discrete_pos_series, 1, 1),
-            (CauchyLikelihood(), real_series, 3, 10),
+            (CauchyLikelihood(), real_series, 3, 11),
             (ContinuousBernoulliLikelihood(), bounded_series, 0.1, 0.1),
             (HalfNormalLikelihood(), real_pos_series, 0.3, 8),
             (LogNormalLikelihood(), real_pos_series, 0.3, 1),
