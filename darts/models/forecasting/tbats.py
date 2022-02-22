@@ -65,7 +65,7 @@ def _compute_samples(model, predictions, n_samples):
 
     # In the deterministic case we return the analytic mean
     if n_samples == 1:
-        return predictions.view(len(predictions), 1)
+        return np.expand_dims(predictions, axis=1)
 
     F = model.matrix.make_F_matrix()
     g = model.matrix.make_g_vector()
