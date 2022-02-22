@@ -312,7 +312,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Number of time steps in our training set (size of backtesting window to train on).
             Default is set to train_length=None where it takes all available time steps up until prediction time,
             otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
-            up until prediction time are used, as in default case.
+            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
         start
             The first point of time at which a prediction is computed for a future time.
             This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -361,9 +361,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
-        # TODO: model can't build training samples if train_length to small (eg. if less than number of lags)
-        # raise descriptive error early for all such cases (currently fails in specific models' file)
-
         if train_length and not isinstance(train_length, int):
             raise_log(
                 TypeError("If not None, train_length needs to be an integer."),
@@ -372,6 +369,13 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         elif (train_length is not None) and train_length < 1:
             raise_log(
                 ValueError("If not None, train_length needs to be positive."),
+                logger,
+            )
+        elif (train_length is not None) and train_length < self.min_train_series_length:
+            raise_log(
+                ValueError(
+                    "train_length is too small for the training requirements of this model"
+                ),
                 logger,
             )
 
@@ -501,7 +505,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Number of time steps in our training set (size of backtesting window to train on).
             Default is set to train_length=None where it takes all available time steps up until prediction time,
             otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
-            up until prediction time are used, as in default case.
+            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different types: ``float``, ``int`` and ``pandas.Timestamp``.
