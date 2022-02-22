@@ -14,7 +14,7 @@ from darts.models.forecasting.baselines import NaiveDrift, NaiveMean, NaiveSeaso
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
-from darts.models.forecasting.tbats import TBATS
+from darts.models.forecasting.tbats import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
 
