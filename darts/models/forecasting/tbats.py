@@ -221,9 +221,6 @@ class _BaseBatsTbatsModel(ForecastingModel, ABC):
 
 
 class TBATS(_BaseBatsTbatsModel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
     def _create_model(self):
         return tbats_TBATS(**self.kwargs)
 
