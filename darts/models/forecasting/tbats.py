@@ -226,11 +226,9 @@ class TBATS(_BaseBatsTbatsModel):
         super().__init__(*args, **kwargs)
 
     def _create_model(self):
-        pass
         return tbats_TBATS(**self.kwargs)
 
 
 class BATS(_BaseBatsTbatsModel):
     def _create_model(self):
-        pass
         return tbats_BATS(**self.kwargs)
