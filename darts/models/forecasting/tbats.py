@@ -116,10 +116,9 @@ class _BaseBatsTbatsModel(ForecastingModel, ABC):
         **kwargs,
     ):
 
-        """BATS & TBATS
-
+        """
         This is a wrapper around
-        `tbats BATS or TBATS model
+        `tbats
         <https://github.com/intive-DataScience/tbats>`_.
 
         This implementation also provides naive frequency inference (when "freq"
