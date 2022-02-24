@@ -1,10 +1,12 @@
+from unittest.mock import Mock
+
+import numpy as np
+import pandas as pd
+
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
-import numpy as np
-import pandas as pd
-from unittest.mock import Mock
 
 logger = get_logger(__name__)
 
