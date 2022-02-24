@@ -93,8 +93,8 @@ class Prophet(DualCovariatesForecastingModel):
         self.model = None
         self.suppress_stdout_stderr = suppress_stdout_stderror
 
-        self.execute_and_suppress_output = execute_and_suppress_output
-        self.model_builder = prophet.Prophet
+        self._execute_and_suppress_output = execute_and_suppress_output
+        self._model_builder = prophet.Prophet
 
     def __str__(self):
         return "Prophet"
@@ -108,7 +108,7 @@ class Prophet(DualCovariatesForecastingModel):
             data={"ds": series.time_index, "y": series.univariate_values()}
         )
 
-        self.model = self.model_builder(**self.prophet_kwargs)
+        self.model = self._model_builder(**self.prophet_kwargs)
 
         # add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())
         interval_length = self._freq_to_days(series.freq_str)
@@ -135,7 +135,7 @@ class Prophet(DualCovariatesForecastingModel):
             self.model.add_country_holidays(self.country_holidays)
 
         if self.suppress_stdout_stderr:
-            self.execute_and_suppress_output(
+            self._execute_and_suppress_output(
                 self.model.fit, logger, logging.WARNING, fit_df
             )
         else:
