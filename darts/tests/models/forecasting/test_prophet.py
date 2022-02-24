@@ -104,7 +104,7 @@ if PROPHET_AVAILABLE:
                     self.helper_test_prophet_model(
                         period=period, freq=freq, compare_all_models=False
                     )
-        
+
         def test_prophet_model_without_stdout_suppression(self):
             model = Prophet(suppress_stdout_stderror=False)
             model.execute_and_suppress_output = Mock(return_value=True)
@@ -118,6 +118,24 @@ if PROPHET_AVAILABLE:
 
             model.execute_and_suppress_output.assert_not_called(), "Suppression should not be called"
             model.model.fit.assert_called_once(), "Model should still be fitted"
+
+        def test_prophet_model_with_stdout_suppression(self):
+            model = Prophet(suppress_stdout_stderror=True)
+            model.execute_and_suppress_output = Mock(return_value=True)
+            model.model_builder = Mock(return_value=Mock(fit=Mock(return_value=True)))
+            df = pd.DataFrame({
+                'ds': pd.date_range(start='2022-01-01', periods=30, freq='D'),
+                'y': np.linspace(0, 10, 30)
+            })
+            ts = TimeSeries.from_dataframe(df, time_col='ds', value_cols='y')
+            model.fit(ts)
+
+            model.execute_and_suppress_output.assert_called_once(), "Suppression should be called once"
+
+        def test_prophet_model_default_with_prophet_constructor(self):
+            from prophet import Prophet as FBProphet
+            model = Prophet()
+            model.model_builder == FBProphet
 
         def helper_test_freq_coversion(self, test_cases):
             for freq, period in test_cases.items():
