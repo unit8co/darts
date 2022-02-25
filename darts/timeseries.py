@@ -1192,7 +1192,7 @@ class TimeSeries:
         numpy.ndarray
             The values composing one sample taken at random from the time series.
         """
-        sample = np.random.randint(low=0, high=self.n_components)
+        sample = np.random.randint(low=0, high=self.n_samples)
         if copy:
             return np.copy(self._xa.values[:, :, sample])
         else:
