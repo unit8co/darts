@@ -67,6 +67,7 @@ class LightGBMModel(RegressionModel):
         self._model_container = _LightGBMModelContainer()
         self.quantiles = quantiles
         self.likelihood = likelihood
+        self._rng = None
 
         # parse likelihood
         available_likelihoods = ["quantile"]  # to be extended
@@ -76,6 +77,7 @@ class LightGBMModel(RegressionModel):
                 f"If likelihood is specified it must be one of {available_likelihoods}",
             )
             self.kwargs["objective"] = likelihood
+            self._rng = np.random.default_rng(seed=420)
             if likelihood == "quantile":
                 if quantiles is None:
                     self.quantiles = [
@@ -87,7 +89,9 @@ class LightGBMModel(RegressionModel):
                         0.25,
                         0.3,
                         0.4,
+                        0.45,
                         0.5,
+                        0.55,
                         0.6,
                         0.7,
                         0.75,
@@ -242,11 +246,11 @@ class LightGBMModel(RegressionModel):
         This method is ported to numpy from the probabilistic torch models module
         model_output is of shape (n_timesteps, n_components, n_quantiles)
         """
-
-        rng = np.random.default_rng()
         raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
         quantiles = np.tile(np.array(self.quantiles), (num_samples, 1))
-        probas = np.tile(rng.uniform(size=(num_samples,)), (len(self.quantiles), 1))
+        probas = np.tile(
+            self._rng.uniform(size=(num_samples,)), (len(self.quantiles), 1)
+        )
 
         quantile_idxs = np.sum(probas.T > quantiles, axis=1)
 
