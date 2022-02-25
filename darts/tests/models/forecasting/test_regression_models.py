@@ -889,3 +889,37 @@ if TORCH_AVAILABLE:
 
             assert lgb_fit_patch.call_args[1]["eval_set"] is not None
             assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+
+    class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
+        np.random.seed(420)
+
+        # default probabilistic regression models
+        models = [
+            LightGBMModel,
+        ]
+        models_init_kwargs = [
+            {"lags": 6, "likelihood": "quantile"},
+        ]
+
+        # dummy multivariate target TimeSeries instances
+        base = 5 * tg.sine_timeseries(length=100, value_frequency=0.1)
+        base2 = 2.5 * tg.sine_timeseries(length=100, value_frequency=0.05)
+        noise_level = tg.sine_timeseries(length=100, value_frequency=0.5) + 1
+        gauss = tg.gaussian_timeseries(mean=0, std=1, length=100)
+        noise = gauss * noise_level
+
+        target = darts.concatenate(
+            (
+                base + noise,
+                base2 + noise,
+            ),
+            axis="component",
+        )
+        train, eval = target[:-20], target[-20:]
+
+        def test_fit_predict(self):
+            for model, model_init_kwargs in zip(self.models, self.models_init_kwargs):
+                m = model(**model_init_kwargs)
+                m.fit(self.train)
+                preds = m.predict(n=3, series=self.train, num_samples=50)
+                self.assertTrue(preds._xa.shape == (3, 2, 50))
