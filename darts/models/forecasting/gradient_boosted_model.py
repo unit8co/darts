@@ -8,13 +8,18 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/README.md
 """
 
+from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import lightgbm as lgb
+import numpy
+import numpy as np
+import xarray as xr
 
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.timeseries import TimeSeries
+from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
 
@@ -26,6 +31,8 @@ class LightGBMModel(RegressionModel):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        likelihood: str = None,
+        quantiles: List[float] = None,
         **kwargs,
     ):
         """Light Gradient Boosted Model
@@ -48,10 +55,52 @@ class LightGBMModel(RegressionModel):
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
+        likelihood
+            The objective used by the model. Currently only `quantile` is available. Allows sampling from the model.
+        quantiles
+            If the `likelihood` is set to `quantile`, use these quantiles to samples from.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
         self.kwargs = kwargs
+        self._median_idx = None
+        self._model_container = _LightGBMModelContainer()
+        self.quantiles = quantiles
+        self.likelihood = likelihood
+
+        # parse likelihood
+        available_likelihoods = ["quantile"]  # to be extended
+        if likelihood is not None:
+            raise_if_not(
+                likelihood in available_likelihoods,
+                f"If likelihood is specified it must be one of {available_likelihoods}",
+            )
+            self.kwargs["objective"] = likelihood
+            if likelihood == "quantile":
+                if quantiles is None:
+                    self.quantiles = [
+                        0.01,
+                        0.05,
+                        0.1,
+                        0.15,
+                        0.2,
+                        0.25,
+                        0.3,
+                        0.4,
+                        0.5,
+                        0.6,
+                        0.7,
+                        0.75,
+                        0.8,
+                        0.85,
+                        0.9,
+                        0.95,
+                        0.99,
+                    ]
+                else:
+                    self.quantiles = sorted(self.quantiles)
+                    self._check_quantiles(self.quantiles)
+                self._median_idx = self.quantiles.index(0.5)
 
         super().__init__(
             lags=lags,
@@ -102,13 +151,29 @@ class LightGBMModel(RegressionModel):
         """
 
         if val_series is not None:
-
             kwargs["eval_set"] = self._create_lagged_data(
                 target_series=val_series,
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
                 max_samples_per_ts=max_samples_per_ts,
             )
+
+        if self.likelihood == "quantile":
+            # empty model container in case of multiple calls to fit, e.g. when backtesting
+            self._model_container.clear()
+            for quantile in self.quantiles:
+                self.kwargs["alpha"] = quantile
+                self.model = lgb.LGBMRegressor(**self.kwargs)
+
+                super().fit(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                    **kwargs,
+                )
+
+                self._model_container[quantile] = self.model
 
         super().fit(
             series=series,
@@ -119,3 +184,110 @@ class LightGBMModel(RegressionModel):
         )
 
         return self
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        **kwargs,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Forecasts values for `n` time steps after the end of the series.
+
+        Parameters
+        ----------
+        n : int
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series : TimeSeries or list of TimeSeries, optional
+            Optionally, one or several input `TimeSeries`, representing the history of the target series whose future
+            is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
+            returns the forecast of the (single) training series.
+        past_covariates : TimeSeries or list of TimeSeries, optional
+            Optionally, the past-observed covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
+        future_covariates : TimeSeries or list of TimeSeries, optional
+            Optionally, the future-known covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
+        num_samples : int, default: 1
+            Specifies the numer of samples to obtain from the model. Only workds if a `likelihood` is specified.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to the `predict` method of the model. Only works with
+            univariate target series.
+        """
+
+        if self.likelihood == "quantile":
+            model_outputs = []
+            for quantile, fitted in self._model_container.items():
+                self.model = fitted
+                prediction = super().predict(
+                    n, series, past_covariates, future_covariates, **kwargs
+                )
+                model_outputs.append(np.array(prediction._xa.to_numpy()))
+            model_outputs = np.concatenate(model_outputs, axis=-1)
+            samples = self._sample(model_outputs, num_samples)
+            # build timeseries from samples
+            new_xa = xr.DataArray(
+                samples, dims=prediction._xa.dims, coords=prediction._xa.coords
+            )
+            return TimeSeries(new_xa)
+
+        return super().predict(
+            n, series, past_covariates, future_covariates, num_samples, **kwargs
+        )
+
+    def _sample(self, model_output: numpy.ndarray, num_samples: int) -> numpy.ndarray:
+        """
+        This method is ported to numpy from the probabilistic torch models module
+        model_output is of shape (n_timesteps, n_components, n_quantiles)
+        """
+
+        rng = np.random.default_rng()
+        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        quantiles = np.tile(np.array(self.quantiles), (num_samples, 1))
+        probas = np.tile(rng.uniform(size=(num_samples,)), (len(self.quantiles), 1))
+
+        quantile_idxs = np.sum(probas.T > quantiles, axis=1)
+
+        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
+        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
+        # too often as it would capture the "probability buckets" preceding and following it.
+        #
+        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
+        quantile_idxs = np.where(
+            quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
+        )
+
+        return model_output[:, :, quantile_idxs]
+
+    @staticmethod
+    def _check_quantiles(quantiles):
+        raise_if_not(
+            all([0 < q < 1 for q in quantiles]),
+            "All provided quantiles must be between 0 and 1.",
+        )
+
+        # we require the median to be present and the quantiles to be symmetric around it,
+        # for correctness of sampling.
+        median_q = 0.5
+        raise_if_not(
+            median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
+        )
+        is_centered = [
+            -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
+            for left_q, right_q in zip(quantiles, quantiles[::-1])
+        ]
+        raise_if_not(
+            all(is_centered),
+            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
+            "higher than `q=0.5`",
+        )
+
+
+class _LightGBMModelContainer(OrderedDict):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return f"_LightGBMModelContainer(quantiles={list(self.keys())})"
