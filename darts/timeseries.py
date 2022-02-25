@@ -1176,6 +1176,28 @@ class TimeSeries:
         else:
             return self._xa.values[:, :, sample]
 
+    def random_component_values(self, copy=True) -> np.array:
+        """
+        Return a 2-D array of shape (time, component), containing the values for
+        one sample taken uniformly at random among this series' samples.
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values, otherwise returns a view.
+            Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values composing one sample taken at random from the time series.
+        """
+        sample = np.random.randint(low=0, high=self.n_components)
+        if copy:
+            return np.copy(self._xa.values[:, :, sample])
+        else:
+            return self._xa.values[:, :, sample]
+
     def all_values(self, copy=True) -> np.ndarray:
         """
         Return a 3-D array of dimension (time, component, sample),

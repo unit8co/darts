@@ -109,7 +109,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         # determine the index of the time series.
         ts_idx = idx // self.nr_samples_per_ts
         ts_target = self.target_series[ts_idx]
-        target_vals = ts_target.values(copy=False)
+        target_vals = ts_target.random_component_values(copy=False)
 
         raise_if_not(
             len(target_vals)
@@ -168,7 +168,9 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                 f"({idx}-th sample)",
             )
 
-            covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
+            covariate = ts_covariate.random_component_values(copy=False)[
+                cov_start:cov_end
+            ]
 
             raise_if_not(
                 len(covariate) == len(past_target),
