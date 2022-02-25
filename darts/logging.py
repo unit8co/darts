@@ -164,10 +164,10 @@ def time_log(logger: logging.Logger = get_logger("main_logger")):
 
 class SuppressStdoutStderr:
     """
-    A context manager for doing a "deep suppression" of stdout and stderr in
-    Python, i.e. will suppress all print, even if the print originates in a
+    A context manager for "deep suppression" of stdout and stderr in
+    Python, i.e. it suppresses all print, even if the print originates in a
     compiled C/Fortran sub-function.
-       This will not suppress raised exceptions, since exceptions are printed
+       This does not suppress raised exceptions, since exceptions are printed
     to stderr just before a script exits, and after the context manager has
     exited (at least, I think that is why it lets exceptions through).
 
