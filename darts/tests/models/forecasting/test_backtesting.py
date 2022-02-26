@@ -57,7 +57,9 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index[-10])
-    best_model_2, _, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
+    best_model_2, _, _ = model_class.gridsearch(
+        params, train, val_series=val, metric=mape
+    )
 
     # intantiate model with random parameters from 'params'
     random.seed(1)
