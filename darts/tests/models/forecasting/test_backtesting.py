@@ -46,7 +46,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
     # instantiate best model in expanding window mode
     np.random.seed(1)
-    best_model_1, _ = model_class.gridsearch(
+    best_model_1, _, _ = model_class.gridsearch(
         params,
         series,
         forecast_horizon=10,
@@ -57,7 +57,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index[-10])
-    best_model_2, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
+    best_model_2, _, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
     random.seed(1)
@@ -343,6 +343,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         self.assertEqual(type(result[0]), RandomForest)
         self.assertEqual(type(result[1]["lags"]), int)
+        self.assertEqual(type(result[2]), float)
         self.assertTrue(min(param_range) <= result[1]["lags"] <= max(param_range))
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -433,12 +434,12 @@ class BacktestingTestCase(DartsBaseTestClass):
             parameters = test["parameters"]
 
             np.random.seed(1)
-            _, best_params1 = model.gridsearch(
+            _, best_params1, _ = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
             )
 
             np.random.seed(1)
-            _, best_params2 = model.gridsearch(
+            _, best_params2, _ = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
             )
 

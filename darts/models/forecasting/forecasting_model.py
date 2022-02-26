@@ -749,7 +749,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
                 error = metric(pred, val_series)
 
-            return error
+            return float(error)
 
         errors: List[float] = _parallel_apply(
             iterator, _evaluate_combination, n_jobs, {}, {}
