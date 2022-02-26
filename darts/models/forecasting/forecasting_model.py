@@ -12,25 +12,22 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
-from typing import Optional, Tuple, Union, Any, Callable, Dict, List, Sequence
-from itertools import product
+import inspect
 from abc import ABC, ABCMeta, abstractmethod
+from itertools import product
 from random import sample
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+
 import numpy as np
 import pandas as pd
 
-from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_log, raise_if_not, raise_if
-from darts.utils import (
-    _build_tqdm_iterator,
-    _with_sanity_checks,
-    _historical_forecasts_general_checks,
-    _parallel_apply,
-)
-from darts.utils.timeseries_generation import _generate_index
-import inspect
-
 from darts import metrics
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.timeseries import TimeSeries
+from darts.utils import (_build_tqdm_iterator,
+                         _historical_forecasts_general_checks, _parallel_apply,
+                         _with_sanity_checks)
+from darts.utils.timeseries_generation import _generate_index
 
 logger = get_logger(__name__)
 
@@ -544,7 +541,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: Optional[Union[int, float]] = None,
-    ) -> Tuple["ForecastingModel", Dict]:
+    ) -> Tuple["ForecastingModel", Dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
 
@@ -635,9 +632,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Returns
         -------
-        ForecastingModel, Dict
+        ForecastingModel, Dict, float
             A tuple containing an untrained `model_class` instance created from the best-performing hyper-parameters,
-            along with a dictionary containing these best hyper-parameters.
+            along with a dictionary containing these best hyper-parameters,
+            and metric score for the best hyper-parameters.
         """
         raise_if_not(
             (forecast_horizon is not None)
@@ -682,7 +680,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             zip(params_cross_product), verbose, total=len(params_cross_product)
         )
 
-        def _evaluate_combination(param_combination):
+        def _evaluate_combination(param_combination) -> float:
             param_combination_dict = dict(
                 list(zip(parameters.keys(), param_combination))
             )
@@ -719,7 +717,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             return error
 
-        errors = _parallel_apply(iterator, _evaluate_combination, n_jobs, {}, {})
+        errors: List[float] = _parallel_apply(
+            iterator, _evaluate_combination, n_jobs, {}, {}
+        )
 
         min_error = min(errors)
 
@@ -729,7 +729,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         logger.info("Chosen parameters: " + str(best_param_combination))
 
-        return model_class(**best_param_combination), best_param_combination
+        return model_class(**best_param_combination), best_param_combination, min_error
 
     def residuals(
         self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False
