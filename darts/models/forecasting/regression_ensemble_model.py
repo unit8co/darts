@@ -4,17 +4,17 @@ Regression ensemble model
 
 An ensemble model which uses a regression model to compute the ensemble forecast.
 """
-from typing import Optional, List, Union, Sequence, Tuple
-from darts.timeseries import TimeSeries
-from darts.logging import get_logger, raise_if
+from typing import List, Optional, Sequence, Tuple, Union
 
+from darts.logging import get_logger, raise_if, raise_if_not
+from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
 )
-from darts.models.forecasting.ensemble_model import EnsembleModel
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
 from darts.models.forecasting.regression_model import RegressionModel
+from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
@@ -58,20 +58,12 @@ class RegressionEnsembleModel(EnsembleModel):
                 lags_future_covariates=[0], model=regression_model
             )
 
-        raise_if(
-            regression_model.lags is not None
-            and regression_model.lags_historical_covariates is not None
-            and regression_model.lags_past_covariates is not None
-            and regression_model.lags_future_covariates != [0],
-            (
-                f"`lags`, `lags_historical_covariates` and `lags_past_covariates` "
-                f"of regression model must be `None` "
-                f"and `lags_future_covariates` must be [0]. Given:\n"
-                f"`lags`: {regression_model.lags}, "
-                f"`lags_historical_covariates`: {regression_model.lags_historical_covariates}, "
-                f"`lags_past_covariates`: {regression_model.lags} and "
-                f"`lags_future_covariates`: {regression_model.lags_future_covariates}."
-            ),
+        # check lags of the regression model
+        raise_if_not(
+            regression_model.lags == {"future": [0]},
+            f"`lags` and `lags_past_covariates` of regression model must be `None`"
+            f"and `lags_future_covariates` must be [0]. Given:\n"
+            f"{regression_model.lags}",
         )
 
         self.regression_model = regression_model

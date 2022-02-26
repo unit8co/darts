@@ -3,12 +3,12 @@ darts
 -----
 """
 
-from .timeseries import TimeSeries, concatenate
 import matplotlib as mpl
 from matplotlib import cycler
 
+from .timeseries import TimeSeries, concatenate
 
-__version__ = "0.16.1"
+__version__ = "0.17.1"
 
 colors = cycler(
     color=["black", "003DFD", "b512b8", "11a9ba", "0d780f", "f77f07", "ba0f0f"]

@@ -3,7 +3,7 @@ This document was written for darts version 0.15.0.
 ## Summary - TL;DR
 In Darts, **covariates** refer to external data that can be used as inputs to models to help improve forecasts.
 In the context of forecasting models, the **target** is the series to be forecasted/predicted, and the
-covariates themselves are not predicted. We distinguish three kinds of covariates: 
+covariates themselves are not predicted. We distinguish three kinds of covariates:
 
 * **past covariates** are (by definition) covariates known only into the past (e.g. measurements)
 * **future covariates** are (by definition) covariates known into the future (e.g., weather forecasts)
@@ -15,14 +15,14 @@ Models in Darts accept `past_covariates` and/or `future_covariates` in their `fi
 model = SomeForecastingModel(...)
 
 # fitting model with past and future covariates
-model.fit(target=target, 
-          past_covariates=past_covariates_train, 
+model.fit(target=target,
+          past_covariates=past_covariates_train,
           future_covariates=future_covariates_train)
 
 # predict the next n=12 steps
-model.predict(n=12, 
-              series=target,  # only required for Global Forecasting Models 
-              past_covariates=past_covariates_pred, 
+model.predict(n=12,
+              series=target,  # only required for Global Forecasting Models
+              past_covariates=past_covariates_pred,
               future_covariates=future_covariates_pred)
 ```
 
@@ -41,20 +41,20 @@ Darts' forecasting models expect one past and/or future covariate series per tar
 
 ```
 # fit using multiple (two) target series
-model.fit(target=[target, target_2], 
+model.fit(target=[target, target_2],
           past_covariates=[past_covariates, past_covariates_2],
           # optional future_covariates,
           )
 
 # you must give the specific target and covariate series that you want to predict
-model.predict(n=12, 
-              series=target_2, 
+model.predict(n=12,
+              series=target_2,
               past_covariates=past_covariates_2,
               # optional future_covariates,
               )
 ```
 
-If you train a model using `past_covariates`, you'll have to provide these `past_covariates` also at prediction time to `predict()`. This applies to `future_covariates` too, with a nuance that `future_covariates` have to extend far enough into the future at prediction time (all the way to the forecast horizon `n`). This can be seen in the graph below. `past_covariates` needs to include at least the same time steps as `target`, and `future_covariates` must include at least the same time span plus additional `n` forecast horizon time steps. 
+If you train a model using `past_covariates`, you'll have to provide these `past_covariates` also at prediction time to `predict()`. This applies to `future_covariates` too, with a nuance that `future_covariates` have to extend far enough into the future at prediction time (all the way to the forecast horizon `n`). This can be seen in the graph below. `past_covariates` needs to include at least the same time steps as `target`, and `future_covariates` must include at least the same time span plus additional `n` forecast horizon time steps.
 
 ***You can use the same `*_covariates` for both training and prediction, given that they contain the required time spans.***
 
@@ -63,7 +63,7 @@ If you train a model using `past_covariates`, you'll have to provide these `past
 **Figure 1: Top level summary of how forecasting models work with target and covariates for a prediction with forecast horizon n=2**
 
 There are some extra nuances that might be good to know. For instance, deep learning models in Darts
-can (in general) forecast `output_chunk_length` points at a time. However it is still possible for models 
+can (in general) forecast `output_chunk_length` points at a time. However it is still possible for models
 trained with past covariates to make forecasts for some horizon `n > output_chunk_length` if the `past_covariates`
 are known far enough into the future. In such cases, the forecasts are obtained by consuming future values
 of the past covariates, and using auto-regression on the target series. If you want to know more details, read on.
@@ -89,10 +89,10 @@ Covariates can hold information about the past (upto and including present time)
 In Darts, we refer to these two types as `past_covariates` and `future_covariates`. Darts' forecasting models have different support modes for `*_covariates`. Some do not support covariates at all, others support either past or future covariates and some support both (more on that in [section 2.1.](#21-forecasting-model-covariate-support)).
 
 Let's have a look at some examples of past and future covariates:
-- `past_covariates`: typically measurements (past data) or temporal attributes 
+- `past_covariates`: typically measurements (past data) or temporal attributes
     -   daily average **measured** temperatures (known only in the past)
     -   day of week, month, year, ...
-- `future_covariates`: typically forecasts (future known data) or temporal attributes  
+- `future_covariates`: typically forecasts (future known data) or temporal attributes
     -   daily average **forecasted** temperatures (known in the future)
     -   day of week, month, year, ...
 
@@ -142,7 +142,7 @@ Model | Past Covariates | Future Covariates
 
 
 `*` `RegressionModel` including `RandomForest`, `LinearRegressionModel` and `LightGBMModel`. `RegressionModel` is a
-special kind of GFM which can use arbitrary lags on covariates (past and/or future) 
+special kind of GFM which can use arbitrary lags on covariates (past and/or future)
 and past targets to do predictions.
 
 `**` `RNNModel` including `LSTM` and `GRU`; equivalent to DeepAR in its probabilistic version
@@ -152,9 +152,9 @@ and past targets to do predictions.
 ----
 
 ## 2.2. Quick guide on how to use covariates with Darts' forecasting models
-It is very simple to use covariates with Darts' forecasting models. There are just some requirements they have to fulfill. 
+It is very simple to use covariates with Darts' forecasting models. There are just some requirements they have to fulfill.
 
-Just like the `target` series, each of your past and / or future covariates series must be a `TimeSeries` object. When you train your model with `fit()` using past and /or future covariates, you have to supply the same types of covariates to `predict()`. Depending on the choice of your model and how long your forecast horizon `n` is, there might be different time span requirements for your covariates. You can find these requirements in the next [section 2.3.](#23-covariate-time-span-requirements-for-local-and-global-forecasting-models). 
+Just like the `target` series, each of your past and / or future covariates series must be a `TimeSeries` object. When you train your model with `fit()` using past and /or future covariates, you have to supply the same types of covariates to `predict()`. Depending on the choice of your model and how long your forecast horizon `n` is, there might be different time span requirements for your covariates. You can find these requirements in the next [section 2.3.](#23-covariate-time-span-requirements-for-local-and-global-forecasting-models).
 
 ***You can even use the same `*_covariates` for fitting and prediction if they contain the required time spans. This is because Darts will "intelligently" slice them for you based on the target time axis.***
 
@@ -163,14 +163,14 @@ Just like the `target` series, each of your past and / or future covariates seri
 model = SomeForecastingModel(...)
 
 # fit the model
-model.fit(target, 
-          past_covariates=past_covariate, 
+model.fit(target,
+          past_covariates=past_covariate,
           future_covariates=future_covariates)
 
 # make a prediction with the same covariate types
-pred = model.predict(n=1, 
-                     series=target,  # this is only required for GFMs 
-                     past_covariates=past_covariates, 
+pred = model.predict(n=1,
+                     series=target,  # this is only required for GFMs
+                     past_covariates=past_covariates,
                      future_covariates=future_covariates)
 ```
 
@@ -196,11 +196,11 @@ all_past_covariates = [past_covariates1, past_covariates2, ...]
 # create a GFM model, train and predict
 model = NBEATSModel(input_chunk_length=1, output_chunk_length=1)
 
-model.fit(all_targets, 
+model.fit(all_targets,
           past_covariates=all_past_covarites)
 
-pred = model.predict(n=1, 
-                     series=all_targets[0], 
+pred = model.predict(n=1,
+                     series=all_targets[0],
                      past_covariates=all_past_covariates[0])
 ```
 
@@ -211,7 +211,7 @@ There are differences in how Darts' "Local" and "Global" Forecasting Models perf
 Depending on the model you use and how long your forecast horizon `n` is, there might be different time span requirements for your covariates.
 
 ### Local Forecasting Models (LFMs):
-LFMs usually train on the entire `target` and `future_covariates` series (if supported) you supplied when calling `fit()` at once. They can also predict in one go for forecast horizon `n` after the end of the `target`. 
+LFMs usually train on the entire `target` and `future_covariates` series (if supported) you supplied when calling `fit()` at once. They can also predict in one go for forecast horizon `n` after the end of the `target`.
 
 *Time span requirements to use the same future covariates series for both `fit()` and `predict()`:*
 - `future_covariates`: **at least** the same time span as `target` plus the next `n` time steps after the end of `target`
@@ -230,7 +230,7 @@ Depending on your forecast horizon `n`, the model can either predict in one go, 
   - `past_covariates`: **at least** the same time span as `target` plus the next `n - output_chunk_length` time steps after the end of `target`
   - `future_covariates`: **at least** the same time span as `target` plus the next `n` time steps after the end of `target`
 
-If you want to know more details about how covariates are used behind the scenes in Global Forecasting Models, read our [guide on Torch Forecasting Models](https://github.com/unit8co/darts/blob/master/doc/torch_forecasting_models.md) (PyTorch based GFMs). It gives a step-by-step explanation of the training and prediction process using one of our Torch Forecasting Models.
+If you want to know more details about how covariates are used behind the scenes in Global Forecasting Models, read our [guide on Torch Forecasting Models](https://unit8co.github.io/darts/userguide/torch_forecasting_models.html) (PyTorch based GFMs). It gives a step-by-step explanation of the training and prediction process using one of our Torch Forecasting Models.
 
 ## 2.4. Examples
 We have lots of great examples showcasing how to use covariates with Darts' forecasting models.

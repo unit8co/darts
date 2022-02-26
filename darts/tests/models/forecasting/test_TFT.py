@@ -1,17 +1,18 @@
 import numpy as np
 
 from darts import TimeSeries
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 try:
+    from torch.nn import MSELoss
+
     from darts.models.forecasting.tft_model import TFTModel
     from darts.utils.likelihood_models import QuantileRegression
-    from torch.nn import MSELoss
 
     TORCH_AVAILABLE = True
 except ImportError:

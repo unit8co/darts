@@ -8,7 +8,7 @@ However, it is strongly recommended to first comment on the issue, and discuss t
 together with some of the core developers.
 
 If you spot issues or would like to propose new improvements that are not (yet) in the backlog
-of issues above, the best procedure is to open a regular Github issue (https://github.com/unit8co/darts/issues), 
+of issues above, the best procedure is to open a regular Github issue (https://github.com/unit8co/darts/issues),
 and discuss it with some of the core team.
 
 
@@ -18,7 +18,7 @@ and discuss it with some of the core team.
 * Pay attention to designing the best possible API, simple by default, but offering control when needed.
 * Make it hard for users to make mistakes (e.g., future data leakage).
 * `TimeSeries` is the main data type used to interface with Darts because:
-    * We do not want users to have to worry about the specifics of Numpy, Torch etc 
+    * We do not want users to have to worry about the specifics of Numpy, Torch etc
     (users shouldn't have to know what's used behind the scenes if they don't want to).
     * `TimeSeries` objects provide guarantees that the data represent a well-formed time series.
 * It is in general OK to propose breaking changes, if these changes are really genuinely improving the API.
@@ -39,7 +39,7 @@ and discuss it with some of the core team.
 2. Fork the repository.
 3. Clone the forked repository locally.
 4. Create a clean Python env and install requirements with pip: `pip install -r requirements/dev-all.txt`
-5. Set up [automatic code formatting](#code-formatting)
+5. Set up [automatic code formatting and linting](#code-formatting-and-linting)
 6. Create a new branch:
     * Branch off from the **master** branch.
     * Prefix the branch with the type of update you are making:
@@ -50,19 +50,21 @@ and discuss it with some of the core team.
     * Work on your update
 7. Check that your code passes all the tests and design new unit tests if needed: `./gradlew test_all`.
 8. Verify your tests coverage by running `./gradlew coverageTest`
-    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested 
+    * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested
     lines with `./coverage.sh xml`
 9. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
 10. Create a pull request from your new branch into the **master** branch.
 
 
-### Code Formatting
+### Code Formatting and Linting
 
-Darts uses [Black](https://black.readthedocs.io/en/stable/index.html) with default values for automatic code formatting.
-As part of the checks on pull requests, it is checked whether the code still adheres to the style of Black.
-To ensure you don't need to worry about formatting when contributing, it is recommended to set up at least one of the following:
-- [Black integration in your editor](https://black.readthedocs.io/en/stable/integrations/editors.html)
-- [Black integration in Git](https://black.readthedocs.io/en/stable/integrations/source_version_control.html):
+Darts uses [Black](https://black.readthedocs.io/en/stable/index.html) with default values for automatic code formatting, along with [flake8](https://flake8.pycqa.org/en/latest/) and [isort](https://pycqa.github.io/isort/).
+As part of the checks on pull requests, it is checked whether the code still adheres to the code style.
+To ensure you don't need to worry about formatting and linting when contributing, it is recommended to set up at least one of the following:
+- Integration in git (recommended):
     1. Install the pre-commit hook using `pre-commit install`
-    2. Black will automatically format all files before committing
-    3. This will also enable flake8 linting
+    2. This will install Black, isort and pyupgrade formatting and flake8 linting hooks
+    3. The formatters will automatically fix all files and flake8 will highlight any potential problems before committing
+- Integration in your editor:
+    - For [Black](https://black.readthedocs.io/en/stable/integrations/editors.html)
+    - For other integrations please look at the documentation for your editor

@@ -3,11 +3,13 @@ Horizon-Based Training Dataset
 ------------------------------
 """
 
-from typing import Union, Optional, Sequence, Tuple
+from typing import Optional, Sequence, Tuple, Union
+
 import numpy as np
 
-from darts.logging import raise_if_not, get_logger
 from darts import TimeSeries
+from darts.logging import get_logger, raise_if_not
+
 from .training_dataset import PastCovariatesTrainingDataset
 from .utils import CovariateType
 

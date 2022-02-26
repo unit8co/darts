@@ -1,12 +1,13 @@
 from numpy.random import RandomState
 
-from darts.tests.base_test_class import DartsBaseTestClass
 from darts.logging import get_logger
+from darts.tests.base_test_class import DartsBaseTestClass
 
 logger = get_logger(__name__)
 
 try:
     import torch
+
     from darts.utils.torch import random_method
 
     TORCH_AVAILABLE = True

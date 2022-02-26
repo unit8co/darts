@@ -1,12 +1,12 @@
-from darts.timeseries import TimeSeries
-
-import numpy as np
 import unittest
 
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils import timeseries_generation as tg
+import numpy as np
+
 from darts.dataprocessing import dtw
-from darts.metrics import mae, mape, dtw_metric
+from darts.metrics import dtw_metric, mae, mape
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.timeseries import TimeSeries
+from darts.utils import timeseries_generation as tg
 
 
 def _series_from_values(values):
@@ -73,7 +73,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         )
 
     def test_multi_grid(self):
-        size = 2 ** 5 - 1  # test odd size
+        size = 2**5 - 1  # test odd size
         freq = 1 / size
         input1 = np.cos(np.arange(size) * 2 * np.pi * freq)
         input2 = np.sin(np.arange(size) * 2 * np.pi * freq) + 0.1 * np.random.random(
@@ -227,8 +227,8 @@ def _dtw_multigrid():
 
 
 def _benchmark_dtw():
-    size1 = 2 ** 10
-    size2 = 2 ** 10
+    size1 = 2**10
+    size2 = 2**10
     freq1 = 1 / size1
     freq2 = 1 / size2
     input1 = np.cos(np.arange(size1) * 2 * np.pi * freq1)

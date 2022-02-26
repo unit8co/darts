@@ -1,19 +1,19 @@
-import pandas as pd
-import numpy as np
-
 from typing import Union
 
+import numpy as np
+import pandas as pd
+
+from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.timeseries_generation import (
-    constant_timeseries,
-    holidays_timeseries,
-    linear_timeseries,
-    sine_timeseries,
-    gaussian_timeseries,
-    random_walk_timeseries,
     _generate_index,
     autoregressive_timeseries,
+    constant_timeseries,
+    gaussian_timeseries,
+    holidays_timeseries,
+    linear_timeseries,
+    random_walk_timeseries,
+    sine_timeseries,
 )
-from darts.tests.base_test_class import DartsBaseTestClass
 
 
 class TimeSeriesGenerationTestCase(DartsBaseTestClass):
@@ -189,7 +189,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
         for length_assert in [1, 2, 5, 10, 100]:
             for start_pos in [0, 1]:
-                # pandas.Int64Index
+                # pandas.RangeIndex
                 start_assert, end_assert = start_pos, start_pos + length_assert - 1
                 test_routine(start=start_assert, length=length_assert, freq="")
                 test_routine(start=start_assert, length=length_assert, freq="D")

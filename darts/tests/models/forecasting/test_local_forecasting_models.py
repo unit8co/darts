@@ -1,27 +1,28 @@
 import numpy as np
 import pandas as pd
 
+from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
+from darts.logging import get_logger
+from darts.metrics import mape
+from darts.models import (
+    ARIMA,
+    FFT,
+    VARIMA,
+    ExponentialSmoothing,
+    FourTheta,
+    KalmanForecaster,
+    NaiveSeasonal,
+    Theta,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
-from darts.metrics import mape
-from darts.models import (
-    NaiveSeasonal,
-    ExponentialSmoothing,
-    ARIMA,
-    Theta,
-    FourTheta,
-    FFT,
-    VARIMA,
-)
-from darts.utils.utils import SeasonalityMode, TrendMode, ModelMode
-from darts.logging import get_logger
-from darts.datasets import AirPassengersDataset, IceCreamHeaterDataset
+from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models import RandomForest, LinearRegressionModel
+    from darts.models import LinearRegressionModel, RandomForest
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -45,6 +46,7 @@ models = [
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
     (FFT(trend="poly"), 11.4),
     (NaiveSeasonal(), 32.4),
+    (KalmanForecaster(dim_x=3), 17.0),
 ]
 
 if TORCH_AVAILABLE:
@@ -57,6 +59,7 @@ if TORCH_AVAILABLE:
 multivariate_models = [
     (VARIMA(1, 0, 0), 55.6),
     (VARIMA(1, 1, 1), 57.0),
+    (KalmanForecaster(dim_x=30), 30.0),
 ]
 
 dual_models = [ARIMA()]
@@ -115,7 +118,9 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
-            self.assertTrue(model._model_params, model.untrained_model()._model_params)
+            self.assertTrue(
+                model._model_params == model.untrained_model()._model_params
+            )
 
     def test_models_runnability(self):
         for model, _ in models:

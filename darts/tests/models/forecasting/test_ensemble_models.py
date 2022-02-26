@@ -1,18 +1,24 @@
-import numpy as np
-import pandas as pd
 import unittest
 
-from darts.tests.base_test_class import DartsBaseTestClass
+import numpy as np
+import pandas as pd
+
 from darts import TimeSeries
-from darts.utils import timeseries_generation as tg
-from darts.models import NaiveDrift, NaiveSeasonal, Theta, ExponentialSmoothing
-from darts.models import NaiveEnsembleModel
 from darts.logging import get_logger
+from darts.models import (
+    ExponentialSmoothing,
+    NaiveDrift,
+    NaiveEnsembleModel,
+    NaiveSeasonal,
+    Theta,
+)
+from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
 
 try:
-    from darts.models import RNNModel, TCNModel, NBEATSModel
+    from darts.models import NBEATSModel, RNNModel, TCNModel
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -78,13 +84,13 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_global_models(self):
-        NaiveEnsembleModel([RNNModel(), TCNModel(10, 2), NBEATSModel(10, 2)])
+        NaiveEnsembleModel([RNNModel(12), TCNModel(10, 2), NBEATSModel(10, 2)])
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_call_predict_global_models_univariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(n_epochs=1),
+                RNNModel(12, n_epochs=1),
                 TCNModel(10, 2, n_epochs=1),
                 NBEATSModel(10, 2, n_epochs=1),
             ]
@@ -99,7 +105,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_call_predict_global_models_multivariate_input_no_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(n_epochs=1),
+                RNNModel(12, n_epochs=1),
                 TCNModel(10, 2, n_epochs=1),
                 NBEATSModel(10, 2, n_epochs=1),
             ]
@@ -111,7 +117,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     def test_call_predict_global_models_multivariate_input_with_covariates(self):
         naive_ensemble = NaiveEnsembleModel(
             [
-                RNNModel(n_epochs=1),
+                RNNModel(12, n_epochs=1),
                 TCNModel(10, 2, n_epochs=1),
                 NBEATSModel(10, 2, n_epochs=1),
             ]
@@ -126,7 +132,7 @@ class EnsembleModelsTestCase(DartsBaseTestClass):
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_input_models_mixed(self):
         with self.assertRaises(ValueError):
-            NaiveEnsembleModel([NaiveDrift(), Theta(), RNNModel()])
+            NaiveEnsembleModel([NaiveDrift(), Theta(), RNNModel(12)])
 
     def test_fit_multivar_ts_with_local_models(self):
         naive = NaiveEnsembleModel(

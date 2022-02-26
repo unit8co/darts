@@ -1,18 +1,15 @@
-# docs
+bump2version==1.0.1
+docutils==0.17.1
+ipykernel==5.3.4
+ipywidgets==7.5.1
 jinja2==3.0.3
+m2r2==0.3.2
+nbsphinx==0.8.7
+numpydoc==1.1.0
+papermill==2.2.2
+pydata-sphinx-theme==0.7.2
+recommonmark==0.7.1
 sphinx==4.3.2
 sphinx-automodapi==0.14.0
 sphinx_autodoc_typehints==1.12.0
-nbsphinx==0.8.7
-pydata-sphinx-theme==0.7.2
-recommonmark==0.7.1
-m2r2==0.3.2
-docutils==0.17.1
-numpydoc==1.1.0
-
-# publish
 twine==3.3.0
-bump2version==1.0.1
-ipykernel==5.3.4
-papermill==2.2.2
-ipywidgets==7.5.1

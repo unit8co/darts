@@ -20,7 +20,7 @@ all copies or substantial portions of the Software.
 '
 """
 
-from typing import Dict, Tuple, List, Union
+from typing import Dict, List, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -490,7 +490,7 @@ class _VariableSelectionNetwork(nn.Module):
 
 class _ScaledDotProductAttention(nn.Module):
     def __init__(self, dropout: float = None, scale: bool = True):
-        super(_ScaledDotProductAttention, self).__init__()
+        super().__init__()
         if dropout is not None:
             self.dropout = nn.Dropout(p=dropout)
         else:
@@ -517,7 +517,7 @@ class _ScaledDotProductAttention(nn.Module):
 
 class _InterpretableMultiHeadAttention(nn.Module):
     def __init__(self, n_head: int, d_model: int, dropout: float = 0.0):
-        super(_InterpretableMultiHeadAttention, self).__init__()
+        super().__init__()
 
         self.n_head = n_head
         self.d_model = d_model

@@ -3,20 +3,16 @@ N-BEATS
 -------
 """
 
-from typing import NewType, Union, List, Optional, Tuple
 from enum import Enum
+from typing import List, NewType, Tuple, Union
+
 import numpy as np
-from numpy.random import RandomState
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_log, raise_if_not
-from darts.utils.torch import random_method
-from darts.utils.likelihood_models import Likelihood
-from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
-    PastCovariatesTorchModel,
-)
+from darts.logging import get_logger, raise_if_not, raise_log
+from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -32,7 +28,7 @@ GTypes = NewType("GTypes", _GType)
 
 class _TrendGenerator(nn.Module):
     def __init__(self, expansion_coefficient_dim, target_length):
-        super(_TrendGenerator, self).__init__()
+        super().__init__()
 
         # basis is of size (expansion_coefficient_dim, target_length)
         basis = torch.stack(
@@ -51,14 +47,14 @@ class _TrendGenerator(nn.Module):
 
 class _SeasonalityGenerator(nn.Module):
     def __init__(self, target_length):
-        super(_SeasonalityGenerator, self).__init__()
+        super().__init__()
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [
-            torch.cos(torch.arange(target_length) * 2 * np.pi * i)
+            torch.cos(torch.arange(target_length) / target_length * 2 * np.pi * i)
             for i in range(1, half_minus_one + 1)
         ]
         sin_vectors = [
-            torch.sin(torch.arange(target_length) * 2 * np.pi * i)
+            torch.sin(torch.arange(target_length) / target_length * 2 * np.pi * i)
             for i in range(1, half_minus_one + 1)
         ]
 
@@ -123,7 +119,7 @@ class _Block(nn.Module):
             Tensor containing the forward forecast of the block.
 
         """
-        super(_Block, self).__init__()
+        super().__init__()
 
         self.num_layers = num_layers
         self.layer_width = layer_width
@@ -242,7 +238,7 @@ class _Stack(nn.Module):
             Tensor containing the forward forecast of the stack.
 
         """
-        super(_Stack, self).__init__()
+        super().__init__()
 
         self.input_chunk_length = input_chunk_length
         self.target_length = target_length
@@ -301,14 +297,12 @@ class _Stack(nn.Module):
         return stack_residual, stack_forecast
 
 
-class _NBEATSModule(nn.Module):
+class _NBEATSModule(PLPastCovariatesModule):
     def __init__(
         self,
         input_dim: int,
         output_dim: int,
         nr_params: int,
-        input_chunk_length: int,
-        output_chunk_length: int,
         generic_architecture: bool,
         num_stacks: int,
         num_blocks: int,
@@ -316,6 +310,7 @@ class _NBEATSModule(nn.Module):
         layer_widths: List[int],
         expansion_coefficient_dim: int,
         trend_polynomial_degree: int,
+        **kwargs
     ):
         """PyTorch module implementing the N-BEATS architecture.
 
@@ -325,10 +320,6 @@ class _NBEATSModule(nn.Module):
             Number of output components in the target
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        output_chunk_length
-            The length of the forecast of the model.
         generic_architecture
             Boolean value indicating whether the generic architecture of N-BEATS is used.
             If not, the interpretable architecture outlined in the paper (consisting of one trend
@@ -351,6 +342,8 @@ class _NBEATSModule(nn.Module):
         trend_polynomial_degree
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------
@@ -363,14 +356,16 @@ class _NBEATSModule(nn.Module):
             Tensor containing the output of the NBEATS module.
 
         """
-        super(_NBEATSModule, self).__init__()
+        super().__init__(**kwargs)
+
+        # required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.nr_params = nr_params
-        self.input_chunk_length_multi = input_chunk_length * input_dim
-        self.output_chunk_length = output_chunk_length
-        self.target_length = output_chunk_length * input_dim
+        self.input_chunk_length_multi = self.input_chunk_length * input_dim
+        self.target_length = self.output_chunk_length * input_dim
 
         if generic_architecture:
             self.stacks_list = [
@@ -456,10 +451,7 @@ class _NBEATSModule(nn.Module):
         return y
 
 
-class NBEATSModel(
-    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
-):
-    @random_method
+class NBEATSModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -471,8 +463,6 @@ class NBEATSModel(
         layer_widths: Union[int, List[int]] = 256,
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
-        likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
         **kwargs
     ):
         """Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -515,25 +505,81 @@ class NBEATSModel(
         trend_polynomial_degree
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
-        likelihood
-            Optionally, the likelihood model to be used for probabilistic forecasts.
-            If no likelihood model is provided, forecasts will be deterministic.
-        random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
 
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
+            Default: ``torch.nn.MSELoss()``.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
+        optimizer_cls
+            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
+            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            will be used.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
+            to using a constant learning rate.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
+            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            ``TimeSeries`` is passed to the :func:`fit()` method).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
+            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
+            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
+
+            .. deprecated:: v0.17.0
+                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
+                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+                dict:
+
+                - ``{"accelerator": "cpu"}`` for CPU,
+                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+                For more info, see here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
+        force_reset
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
+        save_checkpoints
+            Whether or not to automatically save the untrained model and checkpoints from training.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save_model()` and loaded using :func:`load_model()`.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            `add_encoders`. An example showing some of `add_encoders` features:
+            ``add_encoders``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
             .. code-block:: python
@@ -546,55 +592,55 @@ class NBEATSModel(
                     'transformer': Scaler()
                 }
             ..
-        optimizer_cls
-            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
-        optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
-            will be used.
-        lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
-            to using a constant learning rate.
-        lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer.
-        loss_fn
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: ``torch.nn.MSELoss()``.
-        model_name
-            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
-            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
-            at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
-        work_dir
-            Path of the working directory, where to save checkpoints and Tensorboard summaries.
-            (default: current working directory).
-        log_tensorboard
-            If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/.darts/runs/`.
-        nr_epochs_val_period
-            Number of epochs to wait before evaluating the validation loss (if a validation
-            ``TimeSeries`` is passed to the :func:`fit()` method).
-        torch_device_str
-            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
-            is available, otherwise "cpu")
-        force_reset
-            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded).
-        save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :func:`save_model()`
-            and loaded using :func:`load_model()`.
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            supported kwargs.
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+        show_warnings
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            your forecasting use case.
 
         References
         ----------
         .. [1] https://openreview.net/forum?id=r1ecqn4YwB
         """
+        super().__init__(**self._extract_torch_model_params(**self.model_params))
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
         raise_if_not(
             isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
@@ -603,8 +649,6 @@ class NBEATSModel(
             logger,
         )
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.generic_architecture = generic_architecture
         self.num_stacks = num_stacks
         self.num_blocks = num_blocks
@@ -631,8 +675,6 @@ class NBEATSModel(
             input_dim=input_dim,
             output_dim=output_dim,
             nr_params=nr_params,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
             generic_architecture=self.generic_architecture,
             num_stacks=self.num_stacks,
             num_blocks=self.num_blocks,
@@ -640,12 +682,5 @@ class NBEATSModel(
             layer_widths=self.layer_widths,
             expansion_coefficient_dim=self.expansion_coefficient_dim,
             trend_polynomial_degree=self.trend_polynomial_degree,
+            **self.pl_module_params,
         )
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)

@@ -3,19 +3,15 @@ Transformer Model
 -----------------
 """
 
-from numpy.random import RandomState
 import math
+from typing import Optional, Tuple
+
 import torch
 import torch.nn as nn
-from typing import Optional, Union, Tuple
 
-from darts.utils.likelihood_models import Likelihood
-from darts.utils.torch import random_method
 from darts.logging import get_logger
-from darts.models.forecasting.torch_forecasting_model import (
-    TorchParametricProbabilisticForecastingModel,
-    PastCovariatesTorchModel,
-)
+from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
+from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
@@ -47,7 +43,7 @@ class _PositionalEncoding(nn.Module):
         y of shape `(batch_size, input_size, d_model)`
             Tensor containing the embedded time series enhanced with positional encoding
         """
-        super(_PositionalEncoding, self).__init__()
+        super().__init__()
         self.dropout = nn.Dropout(p=dropout)
 
         pe = torch.zeros(max_len, d_model)
@@ -65,11 +61,9 @@ class _PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-class _TransformerModule(nn.Module):
+class _TransformerModule(PLPastCovariatesModule):
     def __init__(
         self,
-        input_chunk_length: int,
-        output_chunk_length: int,
         input_size: int,
         output_size: int,
         nr_params: int,
@@ -82,6 +76,7 @@ class _TransformerModule(nn.Module):
         activation: str,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
+        **kwargs
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
@@ -91,10 +86,6 @@ class _TransformerModule(nn.Module):
         ----------
         input_size
             The dimensionality of the TimeSeries instances that will be fed to the the fit and predict functions.
-        input_chunk_length
-            Number of time steps to be input to the forecasting module.
-        output_chunk_length
-            Number of time steps to be output by the forecasting module.
         output_size
             The dimensionality of the output time series.
         nr_params
@@ -117,6 +108,8 @@ class _TransformerModule(nn.Module):
             a custom transformer encoder provided by the user (default=None)
         custom_decoder
             a custom transformer decoder provided by the user (default=None)
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------
@@ -129,16 +122,19 @@ class _TransformerModule(nn.Module):
             Tensor containing the prediction at the last time step of the sequence.
         """
 
-        super(_TransformerModule, self).__init__()
+        super().__init__(**kwargs)
+
+        # required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         self.input_size = input_size
         self.target_size = output_size
         self.nr_params = nr_params
-        self.target_length = output_chunk_length
+        self.target_length = self.output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
         self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, input_chunk_length
+            d_model, dropout, self.input_chunk_length
         )
 
         # Defining the Transformer module
@@ -155,7 +151,7 @@ class _TransformerModule(nn.Module):
         )
 
         self.decoder = nn.Linear(
-            d_model, output_chunk_length * self.target_size * self.nr_params
+            d_model, self.output_chunk_length * self.target_size * self.nr_params
         )
 
     def _create_transformer_inputs(self, data):
@@ -195,10 +191,7 @@ class _TransformerModule(nn.Module):
         return predictions
 
 
-class TransformerModel(
-    TorchParametricProbabilisticForecastingModel, PastCovariatesTorchModel
-):
-    @random_method
+class TransformerModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -212,8 +205,6 @@ class TransformerModel(
         activation: str = "relu",
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
         **kwargs
     ):
 
@@ -257,25 +248,81 @@ class TransformerModel(
             a custom user-provided encoder module for the transformer (default=None)
         custom_decoder
             a custom user-provided decoder module for the transformer (default=None)
-        likelihood
-            Optionally, the likelihood model to be used for probabilistic forecasts.
-            If no likelihood model is provided, forecasts will be deterministic.
-        random_state
-            Controls the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+        **kwargs
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
 
+        loss_fn
+            PyTorch loss function used for training.
+            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
+            Default: ``torch.nn.MSELoss()``.
+        likelihood
+            The likelihood model to be used for probabilistic forecasts.
+        optimizer_cls
+            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
+            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            will be used.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
+            to using a constant learning rate.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler.
         batch_size
             Number of time series (input and output sequences) used in each training pass.
         n_epochs
             Number of epochs over which to train the model.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
+            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            (default: current working directory).
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            ``TimeSeries`` is passed to the :func:`fit()` method).
+        torch_device_str
+            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
+            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
+            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
+
+            .. deprecated:: v0.17.0
+                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
+                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+                dict:
+
+                - ``{"accelerator": "cpu"}`` for CPU,
+                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+                For more info, see here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
+        force_reset
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded).
+        save_checkpoints
+            Whether or not to automatically save the untrained model and checkpoints from training.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save_model()` and loaded using :func:`load_model()`.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            `add_encoders`. An example showing some of `add_encoders` features:
+            ``add_encoders``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
             .. code-block:: python
@@ -288,46 +335,46 @@ class TransformerModel(
                     'transformer': Scaler()
                 }
             ..
-        optimizer_cls
-            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
-        optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
-            will be used.
-        lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
-            to using a constant learning rate.
-        lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer.
-        loss_fn
-            PyTorch loss function used for training.
-            This parameter will be ignored for probabilistic models if the `likelihood` parameter is specified.
-            Default: ``torch.nn.MSELoss()``.
-        model_name
-            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
-            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
-            at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
-        work_dir
-            Path of the working directory, where to save checkpoints and Tensorboard summaries.
-            (default: current working directory).
-        log_tensorboard
-            If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/.darts/runs/`.
-        nr_epochs_val_period
-            Number of epochs to wait before evaluating the validation loss (if a validation
-            ``TimeSeries`` is passed to the :func:`fit()` method).
-        torch_device_str
-            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
-            is available, otherwise "cpu")
-        force_reset
-            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded).
-        save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :func:`save_model()`
-            and loaded using :func:`load_model()`.
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            supported kwargs.
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+        show_warnings
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            your forecasting use case.
 
         References
         ----------
@@ -346,13 +393,11 @@ class TransformerModel(
         sequences of values, the input to the `tgt` argument would grow as outputs of the transformer model would be
         added to it. Of course, the training of the model would have to be adapted accordingly.
         """
+        super().__init__(**self._extract_torch_model_params(**self.model_params))
 
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(**self.model_params)
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.d_model = d_model
         self.nhead = nhead
         self.num_encoder_layers = num_encoder_layers
@@ -372,8 +417,6 @@ class TransformerModel(
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         return _TransformerModule(
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
             input_size=input_dim,
             output_size=output_dim,
             nr_params=nr_params,
@@ -386,12 +429,5 @@ class TransformerModel(
             activation=self.activation,
             custom_encoder=self.custom_encoder,
             custom_decoder=self.custom_decoder,
+            **self.pl_module_params,
         )
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)

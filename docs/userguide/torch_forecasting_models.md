@@ -1,7 +1,7 @@
 # In-depth look at Torch Forecasting Models
 This document was written for darts version 0.15.0.
 
-We assume that you already know about covariates in Darts. If you're new to the topic we recommend you to read our [guide on covariates](https://github.com/unit8co/darts/blob/master/doc/covariates.md) first.
+We assume that you already know about covariates in Darts. If you're new to the topic we recommend you to read our [guide on covariates](https://unit8co.github.io/darts/userguide/covariates.html) first.
 
 ## Content of this document
 
@@ -17,14 +17,14 @@ an in-depth guide of how input data is used when training and predicting with TF
 ## 1.1. Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
 
-TFMs train and predict on fixed-length chunks (sub-samples) of your input `target` and `*_covariates` series (if supported). `Target` is the series for which we want to predict the future, `*_covariates` are the past and / or future covariates. 
+TFMs train and predict on fixed-length chunks (sub-samples) of your input `target` and `*_covariates` series (if supported). `Target` is the series for which we want to predict the future, `*_covariates` are the past and / or future covariates.
 
 Each chunk contains an input chunk - representing the sample's past - and an output chunk - the sample's future. The sample's prediction point lies at the end of the input chunk. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (more on chunks in [section 1.2.](#12-top-level-look-at-training-and-predicting-with-chunks)).
 
 ```
 # model that looks 7 time steps back (past) and 1 time step ahead (future)
-model = SomeTorchForecastingModel(input_chunk_length=7, 
-                                  output_chunk_length=1, 
+model = SomeTorchForecastingModel(input_chunk_length=7,
+                                  output_chunk_length=1,
                                   **model_kwargs)
 ```
 
@@ -34,16 +34,16 @@ Optionally, you can use a validation set with dedicated covariates during traini
 
 ```
 # fit the model on a single target series with optional past and / or future covariates
-model.fit(target, 
-          past_covariates=past_covariates, 
-          future_covariates=future_covariates, 
+model.fit(target,
+          past_covariates=past_covariates,
+          future_covariates=future_covariates,
           val_series=target_val,  # optionally, use a validation set
-          val_past_covariates=past_covariates_val, 
+          val_past_covariates=past_covariates_val,
           val_future_covariates=future_covariates_val)
 
 # fit the model on multiple target series
-model.fit([target, target2, ...], 
-          past_covariates=[past_covariates, past_covariates2, ...], 
+model.fit([target, target2, ...],
+          past_covariates=[past_covariates, past_covariates2, ...],
           ...
           )
 ```
@@ -52,9 +52,9 @@ You can produce forecasts for any input `target` TimeSeries or for several targe
 
 ```
 # predict the next n=3 time steps for any input series with `series`
-prediction = model.predict(n=3, 
-                           series=target, 
-                           past_covariates=past_covariates, 
+prediction = model.predict(n=3,
+                           series=target,
+                           past_covariates=past_covariates,
                            future_covariates=future_covariates)
 ```
 
@@ -62,9 +62,9 @@ If you want to know more about the training and prediction process of our Torch 
 
 ## 1.2. Top level look at training and predicting with chunks
 
-In Figure 1 you can see how your data is distributed to the input and output chunks for each sample when calling `fit()` or `predict()`. For this example we look at data with daily frequency. The input chunk extracts values from `target` and optionally from `past_covariates` and / or `future_covariates` that fall into the input chunk time span. These "past" values of `future_covariates` are called "historic future covariates". 
+In Figure 1 you can see how your data is distributed to the input and output chunks for each sample when calling `fit()` or `predict()`. For this example we look at data with daily frequency. The input chunk extracts values from `target` and optionally from `past_covariates` and / or `future_covariates` that fall into the input chunk time span. These "past" values of `future_covariates` are called "historic future covariates".
 
-The output chunk only takes optional `future_covariates` values that fall into the output chunk time span. The future values of our `past_covariates` - "future past covariates" - are only used to provide the input chunk of upcoming samples with new data. 
+The output chunk only takes optional `future_covariates` values that fall into the output chunk time span. The future values of our `past_covariates` - "future past covariates" - are only used to provide the input chunk of upcoming samples with new data.
 
 All this information is used to predict the "future target" - the next `output_chunk_length` points after the end of "past target".
 
@@ -108,11 +108,11 @@ You can use the same covariates series for both `fit()` and `predict()` if they 
 
 **Training** only works if at least one sample with an input and output chunk can be extracted from the data you passed to `fit()`. This applies both to training and validation data. In terms of minimum required time spans, this means:
 - `target` series of minimum length `input_chunk_length + output_chunk_length`
-- `*_covariates` time span requirements for `fit()` from [covariates guide section 2.3.](https://github.com/unit8co/darts/blob/master/doc/covariates.md#global-forecasting-models-gfms-1)
+- `*_covariates` time span requirements for `fit()` from [covariates guide section 2.3.](https://unit8co.github.io/darts/userguide/covariates.html#id6)
 
 For **prediction** you have to supply the `target` series that you wish to forecast. For any forecast horizon `n` the minimum time span requirements are:
 - `target` series of minimum length `input_chunk_length`
-- `*_covariates` time span requirements for `predict()` also from from [covariates guide section 2.3.](https://github.com/unit8co/darts/blob/master/doc/covariates.md#global-forecasting-models-gfms-1)
+- `*_covariates` time span requirements for `predict()` also from from [covariates guide section 2.3.](https://unit8co.github.io/darts/userguide/covariates.html#id6)
 
 Side note: Our `*RNNModels` accept a `training_length` parameter at model creation instead of `output_chunk_length`. Internally the `output_chunk_length` for these models is automatically set to `1`. For training, past `target` must have a minimum length of `training_length + 1` and for prediction, a length of `input_chunk_length`.
 
@@ -134,8 +134,8 @@ Checking Table 1, a model that would accomodate this kind of covariates would be
 `SplitCovariatesModel` (if we don't use historic values of future covariates), or
 `MixedCovariatesModel` (if we do). We choose a `MixedCovariatesModel` - the `TFTModel`.
 
-Imagine that we saw a pattern in our past ice cream sales that repeated week after week. 
-So we set `input_chunk_length = 7` days to let the model look back an entire week into the past. 
+Imagine that we saw a pattern in our past ice cream sales that repeated week after week.
+So we set `input_chunk_length = 7` days to let the model look back an entire week into the past.
 The `output_chunk_length` can be set to `1` day to predict the next day.
 
 Now we can create a model and train it! Figure 2 shows you how `TFTModel` will use our data.
@@ -145,7 +145,7 @@ from darts.models import TFTModel
 
 model = TFTModel(input_chunk_length=7, output_chunk_length=1)
 model.fit(series=ice_cream_sales,
-          past_covariates=temperature, 
+          past_covariates=temperature,
           future_covariates=weekday)
 ```
 
@@ -153,7 +153,7 @@ model.fit(series=ice_cream_sales,
 
 **Figure 2: Overview of a single sequence from our ice-cream sales example**; Mon1 - Sun1 stand for the first 7 days from our training dataset (week 1 of the year). Mon2 is the Monday of week 2.
 
-When calling `fit()`, the models will build an appropriate `darts.utils.data.TrainingDataset`, which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own `TrainingDataset` and call `model.fit_from_dataset()` instead of `fit()`. By default, most models (though not all) will build *sequential* datasets, which basically means that all sub-slices of length `input_chunk_length + output_chunk_length` in the provided series will be used for training. 
+When calling `fit()`, the models will build an appropriate `darts.utils.data.TrainingDataset`, which specifies how to slice the data to obtain training samples. If you want to control this slicing yourself, you can instantiate your own `TrainingDataset` and call `model.fit_from_dataset()` instead of `fit()`. By default, most models (though not all) will build *sequential* datasets, which basically means that all sub-slices of length `input_chunk_length + output_chunk_length` in the provided series will be used for training.
 
 So during training, the torch models will go through the training data in sequences (see Figure 3). Using information from the **input chunk** and **output chunk**, the model predicts the future target on the output chunk. The training loss is evaluated between the predicted future target and the actual target value on the output chunk. The model trains itself by minimizing the loss over all sequences.
 
@@ -161,7 +161,7 @@ So during training, the torch models will go through the training data in sequen
 
 **Figure 3: Prediction and loss evaluation in a single sequence**
 
-After having completed computations on the first sequence, the model moves to the next one and performs the same training steps. *The starting point of each sequence is selected randomly from the sequential dataset*. Figure 4 shows how this would look like if by pure chance the second sequence started one time step (day) after the first.  
+After having completed computations on the first sequence, the model moves to the next one and performs the same training steps. *The starting point of each sequence is selected randomly from the sequential dataset*. Figure 4 shows how this would look like if by pure chance the second sequence started one time step (day) after the first.
 
 This sequence-to-sequence process is repeated until all 365 days were covered.
 
@@ -186,7 +186,7 @@ ice_cream_sales_train, ice_cream_sales_val = ice_cream_sales.split_after(trainin
 
 # train with validation set
 model.fit(series=ice_cream_sales_train,
-          past_covariates=temperature, 
+          past_covariates=temperature,
           future_covariates=weekday,
           val_series=ice_cream_sales_val,
           val_past_covariates=temperature,
@@ -209,7 +209,7 @@ model = SomeTorchForecastingModel(..., model_name='MyModel', save_checkpoints=Tr
 # checkpoints are saved automatically
 model.fit(...)
 
-# load the model state that performed best on validation set 
+# load the model state that performed best on validation set
 best_model = model.load_from_checkpoint(model_name='MyModel', best=True)
 ```
 
@@ -234,14 +234,14 @@ want to predict - the forecast horizon `n` - we distinguish between two cases:
     - in our example: predict ice-cream sales for the next 3 days at once (`n = 3`)
 
   To do this we have to supply additional `past_covariates` for the next `n - output_chunk_length = 2` time steps (days) after the end of our 365 days training data. Unfortunately, we do not have measured `temperture` for the future. But let's assume we have access to temperature forecasts for the next 2 days. We can just append them to `temperature` and the prediction will work!
-  
+
   ```
   temperature = temperature.concatenate(temperature_forecast, axis=0)
   ```
 
 ```
-prediction = model.predict(n=n, 
-                           series=ice_cream_sales_train, 
+prediction = model.predict(n=n,
+                           series=ice_cream_sales_train,
                            past_covariates=temperature,
                            future_covariates=weekday)
 ```
