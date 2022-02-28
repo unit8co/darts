@@ -12,7 +12,6 @@ from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import lightgbm as lgb
-import numpy
 import numpy as np
 import xarray as xr
 
@@ -256,8 +255,8 @@ class LightGBMModel(RegressionModel):
         )
 
     def _sample_quantiles(
-        self, model_output: numpy.ndarray, num_samples: int
-    ) -> numpy.ndarray:
+        self, model_output: np.ndarray, num_samples: int
+    ) -> np.ndarray:
         """
         This method is ported to numpy from the probabilistic torch models module
         model_output is of shape (n_timesteps, n_components, n_quantiles)
@@ -281,9 +280,7 @@ class LightGBMModel(RegressionModel):
 
         return model_output[:, :, quantile_idxs]
 
-    def _sample_poisson(
-        self, model_output: numpy.ndarray, num_samples: int
-    ) -> numpy.ndarray:
+    def _sample_poisson(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
         raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
         return self._rng.poisson(
             lam=model_output, size=(*model_output.shape[:2], num_samples)
