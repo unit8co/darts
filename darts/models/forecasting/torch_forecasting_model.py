@@ -1075,7 +1075,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else future_covariates
         )
 
-        if self.encoders.encoding_available:
+        # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        if self.encoders is not None and self.encoders.encoding_available:
             past_covariates, future_covariates = self.encoders.encode_inference(
                 n=n,
                 target=series,
