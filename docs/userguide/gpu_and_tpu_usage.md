@@ -80,7 +80,7 @@ Epoch 299: 100% 8/8 [00:00<00:00, 42.49it/s, loss=0.00285, v_num=logs]
 Now the model is ready to start predicting, which won't be shown here since it's included in the example linked in the start of this guide.
 
 ## Use a GPU
-GPUs can dramatically improve the performance of your model in terms of processing time. We only need to instruct our model to use our machine's GPU through PyTorch Lighnting Trainer parameters, which are expressed as the `pl_trainer_kwargs` dictionary, like this:
+GPUs can dramatically improve the performance of your model in terms of processing time. By using an Accelarator in the [Pytorch Lightning Trainer](https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#accelerator), we can enjoy the benefits of a GPU. We only need to instruct our model to use our machine's GPU through PyTorch Lightning Trainer parameters, which are expressed as the `pl_trainer_kwargs` dictionary, like this:
 ```
 my_model = RNNModel(
     model="RNN",
