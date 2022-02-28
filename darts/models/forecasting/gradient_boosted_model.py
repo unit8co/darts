@@ -56,7 +56,8 @@ class LightGBMModel(RegressionModel):
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         likelihood
-            The objective used by the model. Currently only `quantile` is available. Allows sampling from the model.
+            The objective used by the model. Currently, only `quantile` and 'poisson' are available. Allows sampling
+            from the model.
         quantiles
             If the `likelihood` is set to `quantile`, use these quantiles to samples from.
         **kwargs
@@ -70,7 +71,7 @@ class LightGBMModel(RegressionModel):
         self._rng = None
 
         # parse likelihood
-        available_likelihoods = ["quantile"]  # to be extended
+        available_likelihoods = ["quantile", "poisson"]  # to be extended
         if likelihood is not None:
             raise_if_not(
                 likelihood in available_likelihoods,
@@ -215,7 +216,7 @@ class LightGBMModel(RegressionModel):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Specifies the numer of samples to obtain from the model. Only workds if a `likelihood` is specified.
+            Specifies the numer of samples to obtain from the model. Should be set to 1 if no `likelihood` is specified.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
@@ -228,9 +229,22 @@ class LightGBMModel(RegressionModel):
                 prediction = super().predict(
                     n, series, past_covariates, future_covariates, **kwargs
                 )
-                model_outputs.append(np.array(prediction._xa.to_numpy()))
+                model_outputs.append(prediction._xa.to_numpy())
             model_outputs = np.concatenate(model_outputs, axis=-1)
-            samples = self._sample(model_outputs, num_samples)
+            samples = self._sample_quantiles(model_outputs, num_samples)
+            # build timeseries from samples
+            new_xa = xr.DataArray(
+                samples, dims=prediction._xa.dims, coords=prediction._xa.coords
+            )
+            return TimeSeries(new_xa)
+
+        if self.likelihood == "poisson":
+            prediction = super().predict(
+                n, series, past_covariates, future_covariates, **kwargs
+            )
+            samples = self._sample_poisson(
+                np.array(prediction._xa.to_numpy()), num_samples
+            )
             # build timeseries from samples
             new_xa = xr.DataArray(
                 samples, dims=prediction._xa.dims, coords=prediction._xa.coords
@@ -241,7 +255,9 @@ class LightGBMModel(RegressionModel):
             n, series, past_covariates, future_covariates, num_samples, **kwargs
         )
 
-    def _sample(self, model_output: numpy.ndarray, num_samples: int) -> numpy.ndarray:
+    def _sample_quantiles(
+        self, model_output: numpy.ndarray, num_samples: int
+    ) -> numpy.ndarray:
         """
         This method is ported to numpy from the probabilistic torch models module
         model_output is of shape (n_timesteps, n_components, n_quantiles)
@@ -264,6 +280,14 @@ class LightGBMModel(RegressionModel):
         )
 
         return model_output[:, :, quantile_idxs]
+
+    def _sample_poisson(
+        self, model_output: numpy.ndarray, num_samples: int
+    ) -> numpy.ndarray:
+        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        return self._rng.poisson(
+            lam=model_output, size=(*model_output.shape[:2], num_samples)
+        ).astype(float)
 
     @staticmethod
     def _check_quantiles(quantiles):

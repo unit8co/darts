@@ -894,6 +894,7 @@ if TORCH_AVAILABLE:
     class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
         models_cls_kwargs_errs = [
             (LightGBMModel, {"lags": 2, "likelihood": "quantile"}, 0.4),
+            (LightGBMModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
         ]
 
         np.random.seed(420)
