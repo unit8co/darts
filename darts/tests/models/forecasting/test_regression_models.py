@@ -896,7 +896,11 @@ if TORCH_AVAILABLE:
             (LightGBMModel, {"lags": 2, "likelihood": "quantile"}, 0.4),
             (
                 LightGBMModel,
-                {"lags": 2, "likelihood": "quantile", "quantiles": [0.3, 0.5, 0.7]},
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                },
                 0.4,
             ),
             (LightGBMModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
