@@ -257,22 +257,23 @@ class TransformerModel(PastCovariatesTorchModel):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            The likelihood model to be used for probabilistic forecasts.
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            probabilistic forecasts. Default: ``None``.
         optimizer_cls
-            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).
+            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
             for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
-            will be used.
+            will be used. Default: ``None``.
         lr_scheduler_cls
             Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
-            to using a constant learning rate.
+            to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch learning rate scheduler.
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         batch_size
-            Number of time series (input and output sequences) used in each training pass.
+            Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
-            Number of epochs over which to train the model.
+            Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
@@ -281,13 +282,13 @@ class TransformerModel(PastCovariatesTorchModel):
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
-            (default: current working directory).
+            Default: current working directory.
         log_tensorboard
             If set, use Tensorboard to log the different parameters. The logs will be located in:
-            ``"{work_dir}/darts_logs/{model_name}/logs/"``.
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``. Default: ``False``.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
-            ``TimeSeries`` is passed to the :func:`fit()` method).
+            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
         torch_device_str
             Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
             which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
@@ -308,13 +309,13 @@ class TransformerModel(PastCovariatesTorchModel):
                 https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded).
+            be discarded). Default: ``False``.
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
-            :func:`save_model()` and loaded using :func:`load_model()`.
+            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -322,7 +323,7 @@ class TransformerModel(PastCovariatesTorchModel):
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            ``add_encoders``. An example showing some of ``add_encoders`` features:
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
             .. code-block:: python
@@ -338,6 +339,7 @@ class TransformerModel(PastCovariatesTorchModel):
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+            Default: ``None``.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
@@ -345,7 +347,7 @@ class TransformerModel(PastCovariatesTorchModel):
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
             <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
-            supported kwargs.
+            supported kwargs. Default: ``None``.
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
@@ -374,7 +376,7 @@ class TransformerModel(PastCovariatesTorchModel):
             parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
-            your forecasting use case.
+            your forecasting use case. Default: ``False``.
 
         References
         ----------
