@@ -118,7 +118,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         model_name: str = None,
         work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
         log_tensorboard: bool = False,
-        nr_epochs_val_period: int = 10,
+        nr_epochs_val_period: int = 1,
         torch_device_str: Optional[str] = None,
         force_reset: bool = False,
         save_checkpoints: bool = False,
@@ -142,9 +142,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         batch_size
-            Number of time series (input and output sequences) used in each training pass.
+            Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
-            Number of epochs over which to train the model.
+            Number of epochs over which to train the model. Default: ``100``.
         model_name
             Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
             defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
@@ -153,13 +153,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ``"2021-06-14_09:53:32_torch_model_run_44607"``.
         work_dir
             Path of the working directory, where to save checkpoints and Tensorboard summaries.
-            (default: current working directory).
+            Default: current working directory.
         log_tensorboard
             If set, use Tensorboard to log the different parameters. The logs will be located in:
-            ``"{work_dir}/darts_logs/{model_name}/logs/"``.
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``. Default: ``False``.
         nr_epochs_val_period
             Number of epochs to wait before evaluating the validation loss (if a validation
-            ``TimeSeries`` is passed to the :func:`fit()` method).
+            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
         torch_device_str
             Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
             which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
@@ -180,13 +180,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
         force_reset
             If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded).
+            be discarded). Default: ``False``.
         save_checkpoints
             Whether or not to automatically save the untrained model and checkpoints from training.
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
-            :func:`save_model()` and loaded using :func:`load_model()`.
+            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -194,7 +194,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            ``add_encoders``. An example showing some of ``add_encoders`` features:
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
             .. code-block:: python
@@ -210,6 +210,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         random_state
             Control the randomness of the weights initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+            Default: ``None``.
         pl_trainer_kwargs
             By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
             that performs the training, validation and prediction processes. These presets include automatic
@@ -217,7 +218,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
             object. Check the `PL Trainer documentation
             <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
-            supported kwargs.
+            supported kwargs. Default: ``None``.
             With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
             :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
             The model will stop training early if the validation loss `val_loss` does not improve beyond
@@ -246,7 +247,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
         show_warnings
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
-            your forecasting use case.
+            your forecasting use case. Default: ``False``.
         """
         super().__init__()
         suppress_lightning_warnings(suppress_all=not show_warnings)
@@ -1075,7 +1076,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else future_covariates
         )
 
-        if self.encoders.encoding_available:
+        # encoders are set when calling fit(), but not when calling fit_from_dataset()
+        if self.encoders is not None and self.encoders.encoding_available:
             past_covariates, future_covariates = self.encoders.encode_inference(
                 n=n,
                 target=series,
@@ -1223,13 +1225,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         trainer = trainer if trainer is not None else self.trainer
         self._setup_trainer(trainer=trainer, verbose=verbose, epochs=self.n_epochs)
 
-        # if model checkpoint was loaded without calling fit afterwards (when `load_ckpt_path is not None`),
-        # trainer needs to be instantiated here
-        ckpt_path = self.load_ckpt_path
-        self.load_ckpt_path = None
-
         # prediction output comes as nested list: list of predicted `TimeSeries` for each batch.
-        predictions = self.trainer.predict(self.model, pred_loader, ckpt_path=ckpt_path)
+        predictions = self.trainer.predict(self.model, pred_loader)
         # flatten and return
         return [ts for batch in predictions for ts in batch]
 
@@ -1316,6 +1313,16 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def load_model(path: str) -> "TorchForecastingModel":
         """loads a model from a given file path. The file name should end with '.pth.tar'
 
+        Example for loading a :class:`RNNModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load_model("my_model.pth.tar")
+            ..
+
         Parameters
         ----------
         path
@@ -1339,7 +1346,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
+
         If you manually saved your model, consider using :meth:`load_model() <TorchForeCastingModel.load_model()>`.
+
+        Example for loading a :class:`RNNModel` from checkpoint (``model_name`` is the ``model_name`` used at model
+        creation):
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RNNModel
+
+                model_loaded = RNNModel.load_from_checkpoint(model_name, best=True)
+            ..
 
         If ``file_name`` is given, returns the model saved under
         '{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}'.
@@ -1387,7 +1406,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             file_name = _get_checkpoint_fname(work_dir, model_name, best=best)
 
         file_path = os.path.join(checkpoint_dir, file_name)
-        logger.info("loading {}".format(file_name))
+        logger.info(f"loading {file_name}")
 
         model.model = model.model.__class__.load_from_checkpoint(file_path)
         model.load_ckpt_path = file_path

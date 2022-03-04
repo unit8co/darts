@@ -55,18 +55,19 @@ class PLForecastingModule(pl.LightningModule, ABC):
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
         likelihood
-            The likelihood model to be used for probabilistic forecasts.
+            One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
+            probabilistic forecasts. Default: ``None``.
         optimizer_cls
-            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).
+            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
             for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
-            will be used.
+            will be used. Default: ``None``.
         lr_scheduler_cls
             Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
-            to using a constant learning rate.
+            to using a constant learning rate. Default: ``None``.
         lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch learning rate scheduler.
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         """
         super().__init__()
 
@@ -117,7 +118,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             -1
         ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
-        self.log("train_loss", loss, batch_size=train_batch[0].shape[0])
+        self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True)
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
@@ -125,7 +126,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output = self._produce_train_output(val_batch[:-1])
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
-        self.log("val_loss", loss, batch_size=val_batch[0].shape[0])
+        self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True)
         return loss
 
     def predict_step(

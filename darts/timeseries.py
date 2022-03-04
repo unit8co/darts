@@ -1060,7 +1060,7 @@ class TimeSeries:
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
-        Converts this series to a new seroes with desired dtype.
+        Converts this series to a new series with desired dtype.
 
         Parameters
         ----------

@@ -569,7 +569,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         verbose=False,
         n_jobs: int = 1,
         n_random_samples: Optional[Union[int, float]] = None,
-    ) -> Tuple["ForecastingModel", Dict]:
+    ) -> Tuple["ForecastingModel", Dict[str, Any], float]:
         """
         Find the best hyper-parameters among a given set using a grid search.
 
@@ -660,9 +660,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         Returns
         -------
-        ForecastingModel, Dict
+        ForecastingModel, Dict, float
             A tuple containing an untrained `model_class` instance created from the best-performing hyper-parameters,
-            along with a dictionary containing these best hyper-parameters.
+            along with a dictionary containing these best hyper-parameters,
+            and metric score for the best hyper-parameters.
         """
         raise_if_not(
             (forecast_horizon is not None)
@@ -707,7 +708,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             zip(params_cross_product), verbose, total=len(params_cross_product)
         )
 
-        def _evaluate_combination(param_combination):
+        def _evaluate_combination(param_combination) -> float:
             param_combination_dict = dict(
                 list(zip(parameters.keys(), param_combination))
             )
@@ -748,9 +749,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 )
                 error = metric(pred, val_series)
 
-            return error
+            return float(error)
 
-        errors = _parallel_apply(iterator, _evaluate_combination, n_jobs, {}, {})
+        errors: List[float] = _parallel_apply(
+            iterator, _evaluate_combination, n_jobs, {}, {}
+        )
 
         min_error = min(errors)
 
@@ -760,7 +763,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         logger.info("Chosen parameters: " + str(best_param_combination))
 
-        return model_class(**best_param_combination), best_param_combination
+        return model_class(**best_param_combination), best_param_combination, min_error
 
     def residuals(
         self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False
