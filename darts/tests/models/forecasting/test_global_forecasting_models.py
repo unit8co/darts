@@ -466,7 +466,7 @@ if TORCH_AVAILABLE:
                     input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
                 )
                 multiple_ts = [self.ts_pass_train] * 10
-                epochs = 42
+                epochs = 3
 
                 model.fit(multiple_ts, epochs=epochs)
                 init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
@@ -491,7 +491,7 @@ if TORCH_AVAILABLE:
                     future_covariates=None,
                     max_samples_per_ts=None,
                 )
-                epochs = 42
+                epochs = 3
 
                 model.fit_from_dataset(train_dataset, epochs=epochs)
                 init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
@@ -499,6 +499,24 @@ if TORCH_AVAILABLE:
                 # continue training
                 model.fit_from_dataset(train_dataset, epochs=epochs)
                 init_trainer.assert_called_with(max_epochs=epochs, trainer_params=ANY)
+
+        def test_predit_after_fit_from_dataset(self):
+            model_cls, kwargs, _ = models_cls_kwargs_errs[0]
+            model = model_cls(
+                input_chunk_length=IN_LEN, output_chunk_length=OUT_LEN, **kwargs
+            )
+
+            multiple_ts = [self.ts_pass_train] * 10
+            train_dataset = model._build_train_dataset(
+                multiple_ts,
+                past_covariates=None,
+                future_covariates=None,
+                max_samples_per_ts=None,
+            )
+            model.fit_from_dataset(train_dataset, epochs=3)
+
+            # test predict() works after fit_from_dataset()
+            model.predict(n=1, series=multiple_ts[0])
 
         def test_sample_smaller_than_batch_size(self):
             """
