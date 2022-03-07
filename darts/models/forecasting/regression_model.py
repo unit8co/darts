@@ -600,8 +600,8 @@ class RegressionModel(GlobalForecastingModel):
 
 class _LikelihoodMixin:
     """
-    A class containing functions supporting quantile and poisson regression, to be used as a mixin in
-    [`PreTrainedModel`].
+    A class containing functions supporting quantile and poisson regression, to be used as a mixin for some
+    `RegressionModel` subclasses.
     """
 
     @staticmethod
