@@ -197,6 +197,13 @@ class RegressionModel(GlobalForecastingModel):
         )
         self.output_chunk_length = output_chunk_length
 
+    @property
+    def min_train_series_length(self) -> int:
+        return max(
+            [3]
+            + [self.output_chunk_length + max(max(lags) for lags in self.lags.values())]
+        )
+
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
         # overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any
         extra_shift = max(0, max(lags[-1] for lags in self.lags.values()))
