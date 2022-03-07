@@ -906,7 +906,7 @@ if TORCH_AVAILABLE:
             (LightGBMModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
             (
                 LinearRegressionModel,
-                {"lags": 2, "likelihood": "quantile", "solver": "highs"},
+                {"lags": 2, "likelihood": "quantile"},
                 0.6,
             ),
             (LinearRegressionModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
