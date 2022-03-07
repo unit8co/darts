@@ -904,9 +904,13 @@ if TORCH_AVAILABLE:
                 0.4,
             ),
             (LightGBMModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
+            (
+                LinearRegressionModel,
+                {"lags": 2, "likelihood": "quantile", "solver": "highs"},
+                0.6,
+            ),
+            (LinearRegressionModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
         ]
-
-        np.random.seed(420)
 
         constant_ts = tg.constant_timeseries(length=200, value=0.5)
         constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)

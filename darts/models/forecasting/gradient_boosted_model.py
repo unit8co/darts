@@ -8,22 +8,19 @@ To enable LightGBM support in Darts, follow the detailed install instructions fo
 https://github.com/unit8co/darts/blob/master/README.md
 """
 
-from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import lightgbm as lgb
 import numpy as np
-import xarray as xr
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
-from darts.utils.utils import raise_if_not
 
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModel):
+class LightGBMModel(RegressionModel, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
@@ -64,47 +61,21 @@ class LightGBMModel(RegressionModel):
         """
         self.kwargs = kwargs
         self._median_idx = None
-        self._model_container = _LightGBMModelContainer()
-        self.quantiles = quantiles
+        self._model_container = None
+        self.quantiles = None
         self.likelihood = likelihood
         self._rng = None
 
         # parse likelihood
         available_likelihoods = ["quantile", "poisson"]  # to be extended
         if likelihood is not None:
-            raise_if_not(
-                likelihood in available_likelihoods,
-                f"If likelihood is specified it must be one of {available_likelihoods}",
-            )
+            self._check_likelihood(likelihood, available_likelihoods)
             self.kwargs["objective"] = likelihood
             self._rng = np.random.default_rng(seed=420)
+
             if likelihood == "quantile":
-                if quantiles is None:
-                    self.quantiles = [
-                        0.01,
-                        0.05,
-                        0.1,
-                        0.15,
-                        0.2,
-                        0.25,
-                        0.3,
-                        0.4,
-                        0.45,
-                        0.5,
-                        0.55,
-                        0.6,
-                        0.7,
-                        0.75,
-                        0.8,
-                        0.85,
-                        0.9,
-                        0.95,
-                        0.99,
-                    ]
-                else:
-                    self.quantiles = sorted(self.quantiles)
-                    self._check_quantiles(self.quantiles)
-                self._median_idx = self.quantiles.index(0.5)
+                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
+                self._model_container = self._get_model_container()
 
         super().__init__(
             lags=lags,
@@ -179,6 +150,8 @@ class LightGBMModel(RegressionModel):
 
                 self._model_container[quantile] = self.model
 
+            return self
+
         super().fit(
             series=series,
             past_covariates=past_covariates,
@@ -232,10 +205,7 @@ class LightGBMModel(RegressionModel):
             model_outputs = np.concatenate(model_outputs, axis=-1)
             samples = self._sample_quantiles(model_outputs, num_samples)
             # build timeseries from samples
-            new_xa = xr.DataArray(
-                samples, dims=prediction._xa.dims, coords=prediction._xa.coords
-            )
-            return TimeSeries(new_xa)
+            return self._ts_like(prediction, samples)
 
         if self.likelihood == "poisson":
             prediction = super().predict(
@@ -245,74 +215,8 @@ class LightGBMModel(RegressionModel):
                 np.array(prediction._xa.to_numpy()), num_samples
             )
             # build timeseries from samples
-            new_xa = xr.DataArray(
-                samples, dims=prediction._xa.dims, coords=prediction._xa.coords
-            )
-            return TimeSeries(new_xa)
+            return self._ts_like(prediction, samples)
 
         return super().predict(
             n, series, past_covariates, future_covariates, num_samples, **kwargs
         )
-
-    def _sample_quantiles(
-        self, model_output: np.ndarray, num_samples: int
-    ) -> np.ndarray:
-        """
-        This method is ported to numpy from the probabilistic torch models module
-        model_output is of shape (n_timesteps, n_components, n_quantiles)
-        """
-        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
-        quantiles = np.tile(np.array(self.quantiles), (num_samples, 1))
-        probas = np.tile(
-            self._rng.uniform(size=(num_samples,)), (len(self.quantiles), 1)
-        )
-
-        quantile_idxs = np.sum(probas.T > quantiles, axis=1)
-
-        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
-        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
-        # too often as it would capture the "probability buckets" preceding and following it.
-        #
-        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
-        quantile_idxs = np.where(
-            quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
-        )
-
-        return model_output[:, :, quantile_idxs]
-
-    def _sample_poisson(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
-        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
-        return self._rng.poisson(
-            lam=model_output, size=(*model_output.shape[:2], num_samples)
-        ).astype(float)
-
-    @staticmethod
-    def _check_quantiles(quantiles):
-        raise_if_not(
-            all([0 < q < 1 for q in quantiles]),
-            "All provided quantiles must be between 0 and 1.",
-        )
-
-        # we require the median to be present and the quantiles to be symmetric around it,
-        # for correctness of sampling.
-        median_q = 0.5
-        raise_if_not(
-            median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
-        )
-        is_centered = [
-            -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
-            for left_q, right_q in zip(quantiles, quantiles[::-1])
-        ]
-        raise_if_not(
-            all(is_centered),
-            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
-            "higher than `q=0.5`",
-        )
-
-
-class _LightGBMModelContainer(OrderedDict):
-    def __init__(self):
-        super().__init__()
-
-    def __str__(self):
-        return f"_LightGBMModelContainer(quantiles={list(self.keys())})"

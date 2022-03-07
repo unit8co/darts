@@ -24,10 +24,12 @@ denoting past lags and positive values including 0 denoting future lags).
 """
 
 import math
+from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputRegressor
 
@@ -594,3 +596,119 @@ class RegressionModel(GlobalForecastingModel):
 
     def __str__(self):
         return self.model.__str__()
+
+
+class _LikelihoodMixin:
+    """
+    A class containing functions supporting quantile and poisson regression, to be used as a mixin in
+    [`PreTrainedModel`].
+    """
+
+    @staticmethod
+    def _check_likelihood(likelihood, available_likelihoods):
+        raise_if_not(
+            likelihood in available_likelihoods,
+            f"If likelihood is specified it must be one of {available_likelihoods}",
+        )
+
+    @staticmethod
+    def _get_model_container():
+        return _QuantileModelContainer()
+
+    def _prepare_quantiles(self, quantiles):
+        if quantiles is None:
+            quantiles = [
+                0.01,
+                0.05,
+                0.1,
+                0.15,
+                0.2,
+                0.25,
+                0.3,
+                0.4,
+                0.45,
+                0.5,
+                0.55,
+                0.6,
+                0.7,
+                0.75,
+                0.8,
+                0.85,
+                0.9,
+                0.95,
+                0.99,
+            ]
+        else:
+            quantiles = sorted(quantiles)
+            self._check_quantiles(quantiles)
+        median_idx = quantiles.index(0.5)
+
+        return quantiles, median_idx
+
+    def _sample_quantiles(
+        self, model_output: np.ndarray, num_samples: int
+    ) -> np.ndarray:
+        """
+        This method is ported to numpy from the probabilistic torch models module
+        model_output is of shape (n_timesteps, n_components, n_quantiles)
+        """
+        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        quantiles = np.tile(np.array(self.quantiles), (num_samples, 1))
+        probas = np.tile(
+            self._rng.uniform(size=(num_samples,)), (len(self.quantiles), 1)
+        )
+
+        quantile_idxs = np.sum(probas.T > quantiles, axis=1)
+
+        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
+        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
+        # too often as it would capture the "probability buckets" preceding and following it.
+        #
+        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
+        quantile_idxs = np.where(
+            quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
+        )
+
+        return model_output[:, :, quantile_idxs]
+
+    def _sample_poisson(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
+        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        return self._rng.poisson(
+            lam=model_output, size=(*model_output.shape[:2], num_samples)
+        ).astype(float)
+
+    @staticmethod
+    def _ts_like(other: TimeSeries, data: np.ndarray) -> TimeSeries:
+        new_xa = xr.DataArray(data, dims=other._xa.dims, coords=other._xa.coords)
+        return TimeSeries(new_xa)
+
+    @staticmethod
+    def _check_quantiles(quantiles):
+        raise_if_not(
+            all([0 < q < 1 for q in quantiles]),
+            "All provided quantiles must be between 0 and 1.",
+        )
+
+        # we require the median to be present and the quantiles to be symmetric around it,
+        # for correctness of sampling.
+        median_q = 0.5
+        raise_if_not(
+            median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
+        )
+        is_centered = [
+            -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
+            for left_q, right_q in zip(quantiles, quantiles[::-1])
+        ]
+        raise_if_not(
+            all(is_centered),
+            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
+            "higher than `q=0.5`",
+        )
+
+
+class _QuantileModelContainer(OrderedDict):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return f"_QuantileModelContainer(quantiles={list(self.keys())})"
