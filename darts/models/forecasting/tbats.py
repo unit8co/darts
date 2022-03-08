@@ -21,7 +21,7 @@ References
 """
 
 from abc import ABC, abstractmethod
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import numpy as np
 from scipy.special import inv_boxcox
@@ -118,13 +118,12 @@ class _BaseBatsTbatsModel(ForecastingModel, ABC):
         box_cox_bounds: Tuple = (0, 1),
         use_trend: Optional[bool] = None,
         use_damped_trend: Optional[bool] = None,
-        seasonal_periods: Optional[List] = "freq",
+        seasonal_periods: Optional[Union[str, List]] = "freq",
         use_arma_errors: Optional[bool] = True,
         show_warnings: bool = False,
         n_jobs: Optional[int] = None,
         multiprocessing_start_method: Optional[str] = "spawn",
         random_state: int = 0,
-        **kwargs,
     ):
 
         """
@@ -172,6 +171,8 @@ class _BaseBatsTbatsModel(ForecastingModel, ABC):
         multiprocessing_start_method: str, optional (default='spawn')
             How threads should be started.
             See https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods
+        random_state
+            Sets the underlying random seed at model initialization time.
         """
         super().__init__()
 
