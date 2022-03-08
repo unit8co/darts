@@ -522,7 +522,7 @@ class GenericShiftedDataset(TrainingDataset):
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx]
-        target_vals = ts_target.values(copy=False)
+        target_vals = ts_target.random_component_values(copy=False)
 
         # determine the actual number of possible samples in this time series
         n_samples_in_ts = len(target_vals) - self.size_of_both_chunks + 1
@@ -582,7 +582,9 @@ class GenericShiftedDataset(TrainingDataset):
                 f"that don't extend far enough into the future. ({idx}-th sample)",
             )
 
-            covariate = ts_covariate.values(copy=False)[cov_start:cov_end]
+            covariate = ts_covariate.random_component_values(copy=False)[
+                cov_start:cov_end
+            ]
 
             raise_if_not(
                 len(covariate)

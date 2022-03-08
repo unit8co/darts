@@ -42,11 +42,21 @@ except ImportError:
     TORCH_AVAILABLE = False
 
 
+def get_dummy_series(
+    ts_length: int, lt_end_value: int = 10, st_value_offset: int = 10
+) -> TimeSeries:
+    return (
+        lt(length=ts_length, end_value=lt_end_value)
+        + st(length=ts_length, value_y_offset=st_value_offset)
+        + rt(length=ts_length)
+    )
+
+
 def compare_best_against_random(model_class, params, series, stride=1):
 
     # instantiate best model in expanding window mode
     np.random.seed(1)
-    best_model_1, _ = model_class.gridsearch(
+    best_model_1, _, _ = model_class.gridsearch(
         params,
         series,
         forecast_horizon=10,
@@ -57,7 +67,9 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index[-10])
-    best_model_2, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
+    best_model_2, _, _ = model_class.gridsearch(
+        params, train, val_series=val, metric=mape
+    )
 
     # intantiate model with random parameters from 'params'
     random.seed(1)
@@ -373,12 +385,7 @@ class BacktestingTestCase(DartsBaseTestClass):
     def test_gridsearch(self):
         np.random.seed(1)
 
-        ts_length = 50
-        dummy_series = (
-            lt(length=ts_length, end_value=10)
-            + st(length=ts_length, value_y_offset=10)
-            + rt(length=ts_length)
-        )
+        dummy_series = get_dummy_series(ts_length=50)
         dummy_series_int_index = TimeSeries.from_values(dummy_series.values())
 
         theta_params = {"theta": list(range(3, 10))}
@@ -398,16 +405,34 @@ class BacktestingTestCase(DartsBaseTestClass):
             compare_best_against_random(ExponentialSmoothing, es_params, dummy_series)
         )
 
+    def test_gridsearch_metric_score(self):
+        np.random.seed(1)
+
+        model_class = Theta
+        params = {"theta": list(range(3, 6))}
+        dummy_series = get_dummy_series(ts_length=50)
+
+        best_model, _, score = model_class.gridsearch(
+            params,
+            series=dummy_series,
+            forecast_horizon=10,
+            stride=1,
+            start=dummy_series.time_index[-21],
+        )
+        recalculated_score = best_model.backtest(
+            series=dummy_series,
+            start=dummy_series.time_index[-21],
+            forecast_horizon=10,
+            stride=1,
+        )
+
+        self.assertEqual(score, recalculated_score, "The metric scores should match")
+
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_random_search(self):
         np.random.seed(1)
 
-        ts_length = 50
-        dummy_series = (
-            lt(length=ts_length, end_value=10)
-            + st(length=ts_length, value_y_offset=10)
-            + rt(length=ts_length)
-        )
+        dummy_series = get_dummy_series(ts_length=50)
 
         param_range = list(range(10, 20))
         params = {"lags": param_range}
@@ -419,16 +444,12 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         self.assertEqual(type(result[0]), RandomForest)
         self.assertEqual(type(result[1]["lags"]), int)
+        self.assertEqual(type(result[2]), float)
         self.assertTrue(min(param_range) <= result[1]["lags"] <= max(param_range))
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_random_samples_bad_arguments(self):
-        ts_length = 50
-        dummy_series = (
-            lt(length=ts_length, end_value=10)
-            + st(length=ts_length, value_y_offset=10)
-            + rt(length=ts_length)
-        )
+        dummy_series = get_dummy_series(ts_length=50)
 
         params = {"lags": list(range(1, 11)), "past_covariates": list(range(1, 11))}
 
@@ -474,16 +495,11 @@ class BacktestingTestCase(DartsBaseTestClass):
         """
 
         np.random.seed(1)
-        ts_length = 100
 
-        dummy_series = (
-            lt(length=ts_length, end_value=1)
-            + st(length=ts_length, value_y_offset=0)
-            + rt(length=ts_length)
+        dummy_series = get_dummy_series(
+            ts_length=100, lt_end_value=1, st_value_offset=0
         ).astype(np.float32)
-
-        ts_train = dummy_series[: round(ts_length * 0.8)]
-        ts_val = dummy_series[round(ts_length * 0.8) :]
+        ts_train, ts_val = dummy_series.split_before(split_point=0.8)
 
         test_cases = [
             {
@@ -509,12 +525,12 @@ class BacktestingTestCase(DartsBaseTestClass):
             parameters = test["parameters"]
 
             np.random.seed(1)
-            _, best_params1 = model.gridsearch(
+            _, best_params1, _ = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
             )
 
             np.random.seed(1)
-            _, best_params2 = model.gridsearch(
+            _, best_params2, _ = model.gridsearch(
                 parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
             )
 

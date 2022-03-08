@@ -7,22 +7,19 @@ from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import torch
-from numpy.random import RandomState
 from torch import nn
 from torch.nn import LSTM as _LSTM
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
     _GatedResidualNetwork,
     _InterpretableMultiHeadAttention,
     _VariableSelectionNetwork,
 )
-from darts.models.forecasting.torch_forecasting_model import (
-    MixedCovariatesTorchModel,
-    TorchParametricProbabilisticForecastingModel,
-)
+from darts.models.forecasting.torch_forecasting_model import MixedCovariatesTorchModel
 from darts.utils.data import (
     MixedCovariatesInferenceDataset,
     MixedCovariatesSequentialDataset,
@@ -30,7 +27,6 @@ from darts.utils.data import (
     TrainingDataset,
 )
 from darts.utils.likelihood_models import Likelihood, QuantileRegression
-from darts.utils.torch import random_method
 
 logger = get_logger(__name__)
 
@@ -39,12 +35,10 @@ MixedCovariatesTrainTensorType = Tuple[
 ]
 
 
-class _TFTModule(nn.Module):
+class _TFTModule(PLMixedCovariatesModule):
     def __init__(
         self,
         output_dim: Tuple[int, int],
-        input_chunk_length: int,
-        output_chunk_length: int,
         variables_meta: Dict[str, Dict[str, List[str]]],
         hidden_size: Union[int, List[int]] = 16,
         lstm_layers: int = 1,
@@ -53,7 +47,7 @@ class _TFTModule(nn.Module):
         hidden_continuous_size: int = 8,
         dropout: float = 0.1,
         add_relative_index: bool = False,
-        likelihood: Optional[Likelihood] = None,
+        **kwargs,
     ):
 
         """PyTorch module implementing the TFT architecture from `this paper <https://arxiv.org/pdf/1912.09363.pdf>`_
@@ -64,10 +58,6 @@ class _TFTModule(nn.Module):
         ----------
         output_dim : Tuple[int, int]
             shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).
-        input_chunk_length : int
-            encoder length; number of past time steps that are fed to the forecasting module at prediction time.
-        output_chunk_length : int
-            decoder length; number of future time steps that are fed to the forecasting module at prediction time.
         variables_meta : Dict[str, Dict[str, List[str]]]
             dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`
         hidden_size : int
@@ -92,13 +82,16 @@ class _TFTModule(nn.Module):
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
             a ``QuantileRegression`` likelihood.
+        **kwargs
+            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
         """
 
-        super().__init__()
+        super().__init__(**kwargs)
+
+        # required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         self.n_targets, self.loss_size = output_dim
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
         self.variables_meta = variables_meta
         self.hidden_size = hidden_size
         self.hidden_continuous_size = hidden_continuous_size
@@ -106,7 +99,6 @@ class _TFTModule(nn.Module):
         self.num_attention_heads = num_attention_heads
         self.full_attention = full_attention
         self.dropout = dropout
-        self.likelihood = likelihood
         self.add_relative_index = add_relative_index
 
         # initialize last batch size to check if new mask needs to be generated
@@ -342,15 +334,27 @@ class _TFTModule(nn.Module):
         )
         return mask
 
-    def forward(self, x) -> Dict[str, torch.Tensor]:
-        """
-        input dimensions: (n_samples, n_time_steps, n_variables)
-        """
+    def forward(self, x: Tuple[torch.Tensor, Optional[torch.Tensor]]) -> torch.Tensor:
+        """TFT model forward pass.
 
+        Parameters
+        ----------
+        x
+            comes as tuple `(x_past, x_future)` where `x_past` is the input/past chunk and `x_future`
+            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
+
+        Returns
+        -------
+        torch.Tensor
+            the output tensor
+        """
+        x_cont_past, x_cont_future = x
         dim_samples, dim_time, dim_variable = 0, 1, 2
-        past_target, past_covariates, historic_future_covariates, future_covariates = x
 
-        batch_size = past_target.shape[dim_samples]
+        # TODO: impelement static covariates
+        static_covariates = None
+
+        batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length
         decoder_length = self.output_chunk_length
         time_steps = encoder_length + decoder_length
@@ -361,70 +365,44 @@ class _TFTModule(nn.Module):
                 self.attention_mask = self.get_attention_mask_full(
                     time_steps=time_steps,
                     batch_size=batch_size,
-                    dtype=past_target.dtype,
-                    device=past_target.device,
+                    dtype=x_cont_past.dtype,
+                    device=self.device,
                 )
             else:
                 self.attention_mask = self.get_attention_mask_future(
                     encoder_length=encoder_length,
                     decoder_length=decoder_length,
                     batch_size=batch_size,
-                    device=past_target.device,
+                    device=self.device,
                 )
             if self.add_relative_index:
                 self.relative_index = self.get_relative_index(
                     encoder_length=encoder_length,
                     decoder_length=decoder_length,
                     batch_size=batch_size,
-                    device=past_target.device,
-                    dtype=past_target.dtype,
+                    device=self.device,
+                    dtype=x_cont_past.dtype,
                 )
 
             self.batch_size_last = batch_size
 
         if self.add_relative_index:
-            historic_future_covariates = torch.cat(
+            x_cont_past = torch.cat(
                 [
                     ts[:, :encoder_length, :]
-                    for ts in [historic_future_covariates, self.relative_index]
+                    for ts in [x_cont_past, self.relative_index]
                     if ts is not None
                 ],
                 dim=dim_variable,
             )
-            future_covariates = torch.cat(
+            x_cont_future = torch.cat(
                 [
                     ts[:, -decoder_length:, :]
-                    for ts in [future_covariates, self.relative_index]
+                    for ts in [x_cont_future, self.relative_index]
                     if ts is not None
                 ],
                 dim=dim_variable,
             )
-        # TODO: impelement static covariates
-        static_covariates = None
-
-        # data is of size (batch_size, input_length, input_size)
-        x_cont_past = torch.cat(
-            [
-                tensor
-                for tensor in [
-                    past_target,
-                    past_covariates,
-                    historic_future_covariates,
-                    static_covariates,
-                ]
-                if tensor is not None
-            ],
-            dim=dim_variable,
-        )
-
-        x_cont_future = torch.cat(
-            [
-                tensor
-                for tensor in [future_covariates, static_covariates]
-                if tensor is not None
-            ],
-            dim=dim_variable,
-        )
 
         input_vectors_past = {
             name: x_cont_past[..., idx].unsqueeze(-1)
@@ -444,21 +422,18 @@ class _TFTModule(nn.Module):
             raise NotImplementedError("Static covariates have yet to be defined")
         else:
             static_embedding = torch.zeros(
-                (past_target.shape[0], self.hidden_size),
-                dtype=past_target.dtype,
-                device=past_target.device,
+                (x_cont_past.shape[0], self.hidden_size),
+                dtype=x_cont_past.dtype,
+                device=self.device,
             )
 
             # # TODO: implement below when static covariates are supported
             # # this is only to interpret the output
             # static_covariate_var = torch.zeros(
-            #     (past_target.shape[0], 0),
-            #     dtype=past_target.dtype,
-            #     device=past_target.device,
+            #     (x_cont_past.shape[0], 0),
+            #     dtype=x_cont_past.dtype,
+            #     device=x_cont_past.device,
             # )
-
-        if future_covariates is None and static_covariates is None:
-            raise NotImplementedError("make zero tensor if future covariates is None")
 
         static_context_expanded = self.expand_static_context(
             context=self.static_context_grn(static_embedding), time_steps=time_steps
@@ -544,7 +519,6 @@ class _TFTModule(nn.Module):
         )
 
         # generate output for n_targets and loss_size elements for loss evaluation
-
         out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
         out = out.view(
             batch_size, self.output_chunk_length, self.n_targets, self.loss_size
@@ -564,12 +538,11 @@ class _TFTModule(nn.Module):
         return out
 
 
-class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorchModel):
-    @random_method
+class TFTModel(MixedCovariatesTorchModel):
     def __init__(
         self,
-        input_chunk_length: int = 12,
-        output_chunk_length: int = 1,
+        input_chunk_length: int,
+        output_chunk_length: int,
         hidden_size: Union[int, List[int]] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
@@ -579,7 +552,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
-        random_state: Optional[Union[int, RandomState]] = None,
         **kwargs,
     ):
         """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
@@ -589,15 +561,16 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         The internal sub models are adopted from `pytorch-forecasting's TemporalFusionTransformer
         <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_ implementation.
 
-        This model supports mixed covariates (includes past covariates known for `input_chunk_length`
-        points before prediction time and future covariates known for `output_chunk_length` after prediction time).
+        This model supports mixed covariates (includes past covariates known for ``input_chunk_length``
+        points before prediction time and future covariates known for ``output_chunk_length`` after prediction time).
 
-        The TFT applies multi-head attention queries on future inputs from mandatory `future_covariates`.
-        Specifying future encoders with `add_encoders` (read below) can automatically generate future covariates
-        and allows to use the model without having to pass any `future_covariates` to `fit()` and `predict()`.
+        The TFT applies multi-head attention queries on future inputs from mandatory ``future_covariates``.
+        Specifying future encoders with ``add_encoders`` (read below) can automatically generate future covariates
+        and allows to use the model without having to pass any ``future_covariates`` to :func:`fit()` and
+        :func:`predict()`.
 
         By default, this model uses the ``QuantileRegression`` likelihood, which means that its forecasts are
-        probabilistic; it is recommended to call :func`predict()` with `num_samples >> 1` to get meaningful results.
+        probabilistic; it is recommended to call :func`predict()` with ``num_samples >> 1`` to get meaningful results.
 
         Parameters
         ----------
@@ -613,17 +586,17 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         num_attention_heads : int
             Number of attention heads (4 is a good default)
         full_attention : bool
-            If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
-            only queries on future part. Defaults to `False`.
+            If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
+            only queries on future part. Defaults to ``False``.
         dropout : float
             Fraction of neurons afected by Dropout.
         hidden_continuous_size : int
             Default for hidden size for processing continuous variables
         add_relative_index : bool
-            Whether to add positional values to future covariates. Defaults to `False`.
-            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
-            It gives a value to the position of each step from input and output chunk relative to the prediction
-            point. The values are normalized with `input_chunk_length`.
+            Whether to add positional values to future covariates. Defaults to ``False``.
+            This allows to use the TFTModel without having to pass future_covariates to :fun:`fit()` and
+            :func:`train()`. It gives a value to the position of each step from input and output chunk relative
+            to the prediction point. The values are normalized with ``input_chunk_length``.
         loss_fn : nn.Module
             PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
             instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None
@@ -631,24 +604,75 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default the TFT uses
             a ``QuantileRegression`` likelihood.
-        random_state
-            Control the randomness of the weights initialization. Check this
-            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
         **kwargs
-            Optional arguments to initialize the torch.Module
+            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
+            Darts' :class:`TorchForecastingModel`.
 
+        optimizer_cls
+            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
+        optimizer_kwargs
+            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
+            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            will be used. Default: ``None``.
+        lr_scheduler_cls
+            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
+            to using a constant learning rate. Default: ``None``.
+        lr_scheduler_kwargs
+            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.
         batch_size
-            Number of time series (input and output sequences) used in each training pass.
+            Number of time series (input and output sequences) used in each training pass. Default: ``32``.
         n_epochs
-            Number of epochs over which to train the model.
+            Number of epochs over which to train the model. Default: ``100``.
+        model_name
+            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
+            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part
+            of the name is formatted with the local date and time, while PID is the processed ID (preventing models
+            spawned at the same time by different processes to share the same model_name). E.g.,
+            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
+        work_dir
+            Path of the working directory, where to save checkpoints and Tensorboard summaries.
+            Default: current working directory.
+        log_tensorboard
+            If set, use Tensorboard to log the different parameters. The logs will be located in:
+            ``"{work_dir}/darts_logs/{model_name}/logs/"``. Default: ``False``.
+        nr_epochs_val_period
+            Number of epochs to wait before evaluating the validation loss (if a validation
+            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.
+        torch_device_str
+            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``
+            which will run on CPU. Set it to ``"cuda"`` to use all available GPUs or ``"cuda:i"`` to only use
+            GPU ``i`` (``i`` must be an integer). For example "cuda:0" will use the first GPU only.
+
+            .. deprecated:: v0.17.0
+                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.
+                Instead, specify this with keys ``"accelerator", "gpus", "auto_select_gpus"`` in your
+                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``
+                dict:
+
+                - ``{"accelerator": "cpu"}`` for CPU,
+                - ``{"accelerator": "gpu", "gpus": [i]}`` to use only GPU ``i`` (``i`` must be an integer),
+                - ``{"accelerator": "gpu", "gpus": -1, "auto_select_gpus": True}`` to use all available GPUS.
+
+                For more info, see here:
+                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and
+                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices
+        force_reset
+            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will
+            be discarded). Default: ``False``.
+        save_checkpoints
+            Whether or not to automatically save the untrained model and checkpoints from training.
+            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
+            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
+            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
+            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
-            This can be done by adding mutliple pre-defined index encoders and/or custom user-made functions that
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
             will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
             transform the generated covariates. This happens all under one hood and only needs to be specified at
             model creation.
             Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
-            `add_encoders`. An example showing some of `add_encoders` features:
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
 
             .. highlight:: python
             .. code-block:: python
@@ -661,58 +685,63 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
                     'transformer': Scaler()
                 }
             ..
-        optimizer_cls
-            The PyTorch optimizer class to be used (default: `torch.optim.Adam`).
-        optimizer_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected `optimizer_cls`
-            will be used.
-        lr_scheduler_cls
-            Optionally, the PyTorch learning rate scheduler class to be used. Specifying `None` corresponds
-            to using a constant learning rate.
-        lr_scheduler_kwargs
-            Optionally, some keyword arguments for the PyTorch optimizer.
-        model_name
-            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
-            defaults to the following string ``"YYYY-mm-dd_HH:MM:SS_torch_model_run_PID"``, where the initial part of
-            the name is formatted with the local date and time, while PID is the processed ID (preventing models spawned
-            at the same time by different processes to share the same model_name). E.g.,
-            ``"2021-06-14_09:53:32_torch_model_run_44607"``.
-        work_dir
-            Path of the working directory, where to save checkpoints and Tensorboard summaries.
-            (default: current working directory).
-        log_tensorboard
-            If set, use Tensorboard to log the different parameters. The logs will be located in:
-            `[work_dir]/.darts/runs/`.
-        nr_epochs_val_period
-            Number of epochs to wait before evaluating the validation loss (if a validation
-            ``TimeSeries`` is passed to the :func:`fit()` method).
-        torch_device_str
-            Optionally, a string indicating the torch device to use. (default: "cuda:0" if a GPU
-            is available, otherwise "cpu")
-        force_reset
-            If set to `True`, any previously-existing model with the same name will be reset (all checkpoints will
-            be discarded).
-        save_checkpoints
-            Whether or not to automatically save the untrained model and checkpoints from training.
-            If set to `False`, the model can still be manually saved using :func:`save_model()`
-            and loaded using :func:`load_model()`.
+        random_state
+            Control the randomness of the weights initialization. Check this
+            `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
+            Default: ``None``.
+        pl_trainer_kwargs
+            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets
+            that performs the training, validation and prediction processes. These presets include automatic
+            checkpointing, tensorboard logging, setting the torch device and more.
+            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer
+            object. Check the `PL Trainer documentation
+            <https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html>`_ for more information about the
+            supported kwargs. Default: ``None``.
+            With parameter ``"callbacks"`` you can add custom or PyTorch-Lightning built-in callbacks to Darts'
+            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.
+            The model will stop training early if the validation loss `val_loss` does not improve beyond
+            specifications. For more information on callbacks, visit:
+            `PyTorch Lightning Callbacks
+            <https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html>`_
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from pytorch_lightning.callbacks.early_stopping import EarlyStopping
+
+                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over
+                # a period of 5 epochs (`patience`)
+                my_stopper = EarlyStopping(
+                    monitor="val_loss",
+                    patience=5,
+                    min_delta=0.05,
+                    mode='min',
+                )
+
+                pl_trainer_kwargs={"callbacks": [my_stopper]}
+            ..
+
+            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional
+            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.
+        show_warnings
+            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
+            your forecasting use case. Default: ``False``.
 
         References
         ----------
         .. [1] https://arxiv.org/pdf/1912.09363.pdf
         """
+        model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:
             # This is the default if no loss information is provided
-            likelihood = QuantileRegression()
+            model_kwargs["loss_fn"] = None
+            model_kwargs["likelihood"] = QuantileRegression()
 
-        kwargs["loss_fn"] = loss_fn
-        kwargs["input_chunk_length"] = input_chunk_length
-        kwargs["output_chunk_length"] = output_chunk_length
-        super().__init__(likelihood=likelihood, **kwargs)
+        super().__init__(**self._extract_torch_model_params(**model_kwargs))
 
-        self.input_chunk_length = input_chunk_length
-        self.output_chunk_length = output_chunk_length
+        # extract pytorch lightning module kwargs
+        self.pl_module_params = self._extract_pl_module_params(**model_kwargs)
+
         self.hidden_size = hidden_size
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
@@ -720,8 +749,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
         self.add_relative_index = add_relative_index
-        self.loss_fn = loss_fn
-        self.likelihood = likelihood
         self.output_dim: Optional[Tuple[int, int]] = None
 
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
@@ -850,16 +877,14 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
         return _TFTModule(
             variables_meta=variables_meta,
             output_dim=self.output_dim,
-            input_chunk_length=self.input_chunk_length,
-            output_chunk_length=self.output_chunk_length,
             hidden_size=self.hidden_size,
             lstm_layers=self.lstm_layers,
             dropout=self.dropout,
             num_attention_heads=self.num_attention_heads,
             full_attention=self.full_attention,
             hidden_continuous_size=self.hidden_continuous_size,
-            likelihood=self.likelihood,
             add_relative_index=self.add_relative_index,
+            **self.pl_module_params,
         )
 
     def _build_train_dataset(
@@ -911,9 +936,6 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             output_chunk_length=self.output_chunk_length,
         )
 
-    def _produce_train_output(self, input_batch: Tuple):
-        return self.model(input_batch)
-
     def predict(self, n, *args, **kwargs):
         # since we have future covariates, the inference dataset for future input must be at least of length
         # `output_chunk_length`. If not, we would have to step back which causes past input to be shorter than
@@ -923,159 +945,3 @@ class TFTModel(TorchParametricProbabilisticForecastingModel, MixedCovariatesTorc
             return super().predict(n, *args, **kwargs)
         else:
             return super().predict(self.output_chunk_length, *args, **kwargs)[:n]
-
-    @random_method
-    def _produce_predict_output(self, x):
-        if self.likelihood:
-            output = self.model(x)
-            return self.likelihood.sample(output)
-        else:
-            return self.model(x).squeeze(dim=-1)
-
-    def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
-    ) -> torch.Tensor:
-        """
-        Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to farecast
-        the next `n` target values per target variable.
-
-        Parameters:
-        ----------
-        n
-            prediction length
-        input_batch
-            (past_target, past_covariates, historic_future_covariates, future_covariates, future_past_covariates)
-        roll_size
-            roll input arrays after every sequence by `roll_size`. Initially, `roll_size` is equivalent to
-            `self.output_chunk_length`
-        """
-        dim_component = 2
-        (
-            past_target,
-            past_covariates,
-            historic_future_covariates,
-            future_covariates,
-            future_past_covariates,
-        ) = input_batch
-
-        n_targets = past_target.shape[dim_component]
-        n_past_covs = (
-            past_covariates.shape[dim_component] if past_covariates is not None else 0
-        )
-        n_future_covs = (
-            future_covariates.shape[dim_component]
-            if future_covariates is not None
-            else 0
-        )
-
-        input_past = torch.cat(
-            [
-                ds
-                for ds in [past_target, past_covariates, historic_future_covariates]
-                if ds is not None
-            ],
-            dim=dim_component,
-        )
-
-        input_future = (
-            future_covariates[:, :roll_size, :]
-            if future_covariates is not None
-            else None
-        )
-
-        out = self._produce_predict_output(
-            x=(past_target, past_covariates, historic_future_covariates, input_future)
-        )[:, self.first_prediction_index :, :]
-
-        batch_prediction = [out[:, :roll_size, :]]
-        prediction_length = roll_size
-
-        while prediction_length < n:
-            # we want the last prediction to end exactly at `n` into the future.
-            # this means we may have to truncate the previous prediction and step
-            # back the roll size for the last chunk
-            if prediction_length + self.output_chunk_length > n:
-                spillover_prediction_length = (
-                    prediction_length + self.output_chunk_length - n
-                )
-                roll_size -= spillover_prediction_length
-                prediction_length -= spillover_prediction_length
-                batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
-
-            # ==========> PAST INPUT <==========
-            # roll over input series to contain latest target and covariate
-            input_past = torch.roll(input_past, -roll_size, 1)
-
-            # update target input to include next `roll_size` predictions
-            if self.input_chunk_length >= roll_size:
-                input_past[:, -roll_size:, :n_targets] = out[:, :roll_size, :]
-            else:
-                input_past[:, :, :n_targets] = out[:, -self.input_chunk_length :, :]
-
-            # set left and right boundaries for extracting future elements
-            if self.input_chunk_length >= roll_size:
-                left_past, right_past = prediction_length - roll_size, prediction_length
-            else:
-                left_past, right_past = (
-                    prediction_length - self.input_chunk_length,
-                    prediction_length,
-                )
-
-            # update past covariates to include next `roll_size` future past covariates elements
-            if n_past_covs and self.input_chunk_length >= roll_size:
-                input_past[
-                    :, -roll_size:, n_targets : n_targets + n_past_covs
-                ] = future_past_covariates[:, left_past:right_past, :]
-            elif n_past_covs:
-                input_past[
-                    :, :, n_targets : n_targets + n_past_covs
-                ] = future_past_covariates[:, left_past:right_past, :]
-
-            # update historic future covariates to include next `roll_size` future covariates elements
-            if n_future_covs and self.input_chunk_length >= roll_size:
-                input_past[
-                    :, -roll_size:, n_targets + n_past_covs :
-                ] = future_covariates[:, left_past:right_past, :]
-            elif n_future_covs:
-                input_past[:, :, n_targets + n_past_covs :] = future_covariates[
-                    :, left_past:right_past, :
-                ]
-
-            # ==========> FUTURE INPUT <==========
-            left_future, right_future = (
-                right_past,
-                right_past + self.output_chunk_length,
-            )
-            # update future covariates to include next `roll_size` future covariates elements
-            if n_future_covs:
-                input_future = future_covariates[:, left_future:right_future, :]
-
-            # convert back into separate datasets
-            input_past_target = input_past[:, :, :n_targets]
-            input_past_covs = (
-                input_past[:, :, n_targets : n_targets + n_past_covs]
-                if n_past_covs
-                else None
-            )
-            input_historic_future_covs = (
-                input_past[:, :, n_targets + n_past_covs :] if n_future_covs else None
-            )
-            input_future_covs = input_future if n_future_covs else None
-
-            # take only last part of the output sequence where needed
-            out = self._produce_predict_output(
-                x=(
-                    input_past_target,
-                    input_past_covs,
-                    input_historic_future_covs,
-                    input_future_covs,
-                )
-            )[:, self.first_prediction_index :, :]
-
-            batch_prediction.append(out)
-            prediction_length += self.output_chunk_length
-
-        # bring predictions into desired format and drop unnecessary values
-        batch_prediction = torch.cat(batch_prediction, dim=1)
-        batch_prediction = batch_prediction[:, :n, :]
-        return batch_prediction

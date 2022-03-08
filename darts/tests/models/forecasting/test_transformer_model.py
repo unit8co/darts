@@ -1,3 +1,6 @@
+import shutil
+import tempfile
+
 import pandas as pd
 
 from darts import TimeSeries
@@ -44,6 +47,12 @@ if TORCH_AVAILABLE:
             custom_decoder=None,
         )
 
+        def setUp(self):
+            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+        def tearDown(self):
+            shutil.rmtree(self.temp_work_dir)
+
         def test_fit(self):
             # Test fit-save-load cycle
             model2 = TransformerModel(
@@ -51,11 +60,15 @@ if TORCH_AVAILABLE:
                 output_chunk_length=1,
                 n_epochs=2,
                 model_name="unittest-model-transformer",
+                work_dir=self.temp_work_dir,
                 save_checkpoints=True,
+                force_reset=True,
             )
             model2.fit(self.series)
             model_loaded = model2.load_from_checkpoint(
-                model_name="unittest-model-transformer", best=False
+                model_name="unittest-model-transformer",
+                work_dir=self.temp_work_dir,
+                best=False,
             )
             pred1 = model2.predict(n=6)
             pred2 = model_loaded.predict(n=6)

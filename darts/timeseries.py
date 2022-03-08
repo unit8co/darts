@@ -35,7 +35,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 from pandas.tseries.frequencies import to_offset
-from scipy.stats import skew, kurtosis
+from scipy.stats import kurtosis, skew
 
 from .logging import get_logger, raise_if, raise_if_not, raise_log
 
@@ -481,7 +481,7 @@ class TimeSeries:
             time_index = df.index
 
         if not time_index.name:
-            time_index.name = DIMS[0]
+            time_index.name = time_col if time_col else DIMS[0]
 
         xa = xr.DataArray(
             series_df.values[:, :, np.newaxis],
@@ -1060,7 +1060,7 @@ class TimeSeries:
 
     def astype(self, dtype: Union[str, np.dtype]) -> "TimeSeries":
         """
-        Converts this series to a new seroes with desired dtype.
+        Converts this series to a new series with desired dtype.
 
         Parameters
         ----------
@@ -1171,6 +1171,28 @@ class TimeSeries:
             "so only sample=0 is accepted.",
             logger,
         )
+        if copy:
+            return np.copy(self._xa.values[:, :, sample])
+        else:
+            return self._xa.values[:, :, sample]
+
+    def random_component_values(self, copy=True) -> np.array:
+        """
+        Return a 2-D array of shape (time, component), containing the values for
+        one sample taken uniformly at random among this series' samples.
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values, otherwise returns a view.
+            Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values composing one sample taken at random from the time series.
+        """
+        sample = np.random.randint(low=0, high=self.n_samples)
         if copy:
             return np.copy(self._xa.values[:, :, sample])
         else:
@@ -1796,6 +1818,8 @@ class TimeSeries:
             new_time_index = self._time_index + n * self.freq
         else:
             new_time_index = self._time_index.map(lambda ts: ts + n * self.freq)
+            if new_time_index.freq is None:
+                new_time_index.freq = self.freq
         new_xa = self._xa.assign_coords({self._xa.dims[0]: new_time_index})
         return self.__class__(new_xa)
 
@@ -3041,7 +3065,7 @@ class TimeSeries:
             raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
             return self.__class__(self._xa ** float(n))
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
-            return self._combine_arrays(n, lambda s1, s2: s1 ** s2)  # elementwise power
+            return self._combine_arrays(n, lambda s1, s2: s1**s2)  # elementwise power
         else:
             raise_log(
                 TypeError(

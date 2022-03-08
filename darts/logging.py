@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+import warnings
 
 
 def get_logger(name):
@@ -29,6 +30,29 @@ def get_logger(name):
     stderr_handler.setFormatter(formatter)
     logger.addHandler(stderr_handler)
     return logger
+
+
+def raise_deprecation_warning(
+    message: str = "",
+    logger: logging.Logger = get_logger("main_logger"),
+):
+    """
+    Raises a DeprecationWarning.
+
+    Parameters
+    ----------
+    message
+        The message of the ValueError.
+    logger
+        The logger instance to log the error message if 'condition' is False.
+
+    Raises
+    ------
+    Warning
+        DeprecationWarning
+    """
+
+    logger.warning("DeprecationWarning: " + message)
 
 
 def raise_if_not(
@@ -140,10 +164,10 @@ def time_log(logger: logging.Logger = get_logger("main_logger")):
 
 class SuppressStdoutStderr:
     """
-    A context manager for doing a "deep suppression" of stdout and stderr in
-    Python, i.e. will suppress all print, even if the print originates in a
+    A context manager for "deep suppression" of stdout and stderr in
+    Python, i.e. it suppresses all print, even if the print originates in a
     compiled C/Fortran sub-function.
-       This will not suppress raised exceptions, since exceptions are printed
+       This does not suppress raised exceptions, since exceptions are printed
     to stderr just before a script exits, and after the context manager has
     exited (at least, I think that is why it lets exceptions through).
 
@@ -190,3 +214,17 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
     else:
         return_value = function(*args)
     return return_value
+
+
+def suppress_lightning_warnings(suppress_all: bool = False):
+    warnings.filterwarnings(
+        "ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*"
+    )
+    if suppress_all:
+        warnings.filterwarnings(
+            "ignore", ".*does not have many workers which may be a bottleneck.*"
+        )
+        warnings.filterwarnings(
+            "ignore",
+            ".*Trying to infer the `batch_size` from an ambiguous collection.*",
+        )
