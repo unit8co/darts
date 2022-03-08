@@ -200,8 +200,10 @@ class RegressionModel(GlobalForecastingModel):
     @property
     def min_train_series_length(self) -> int:
         return max(
-            [3]
-            + [self.output_chunk_length + max(max(lags) for lags in self.lags.values())]
+            3,
+            -self.lags["target"][0] + self.output_chunk_length
+            if "target" in self.lags
+            else self.output_chunk_length,
         )
 
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
