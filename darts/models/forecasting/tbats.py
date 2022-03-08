@@ -39,20 +39,31 @@ def _seasonality_from_freq(series: TimeSeries):
     """
     Infer a naive seasonality based on the frequency
     """
+
     if series.has_range_index:
-        return [12]
-    elif series.freq_str == "B":
+        return None
+
+    freq = series.freq_str
+
+    if freq in ["B", "C"]:
         return [5]
-    elif series.freq_str == "D":
+    elif freq == "D":
         return [7]
-    elif series.freq_str == "W":
+    elif freq == "W":
         return [52]
-    elif series.freq_str in ["MS", "M"]:
-        return [12]
-    elif series.freq_str == ["Q", "BQ", "QS", "BQS"]:
-        return [4]
-    elif series.freq_str == ["H"]:
-        return [24]
+    elif freq in ["M", "BM", "CBM", "SM"] or freq.startswith(
+        ("M", "BM", "BS", "CBM", "SM")
+    ):
+        return [12]  # month
+    elif freq in ["Q", "BQ", "REQ"] or freq.startswith(("Q", "BQ", "REQ")):
+        return [4]  # quarter
+    elif freq in ["H", "BH", "CBH"]:
+        return [24]  # hour
+    elif freq in ["T", "min"]:
+        return [60]  # minute
+    elif freq == "S":
+        return [60]  # second
+
     return None
 
 
