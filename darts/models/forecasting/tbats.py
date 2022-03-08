@@ -146,11 +146,11 @@ class _BaseBatsTbatsModel(ForecastingModel, ABC):
             Minimal and maximal Box-Cox parameter values.
         use_trend
             Indicates whether to include a trend or not.
-            When None both cases shall be considered and better is selected by AIC.
+            When None, both cases shall be considered and the better one is selected by AIC.
         use_damped_trend
             Indicates whether to include a damping parameter in the trend or not.
             Applies only when trend is used.
-            When None both cases shall be considered and better is selected by AIC.
+            When None, both cases shall be considered and the better one is selected by AIC.
         seasonal_periods
             Length of each of the periods (amount of observations in each period).
             TBATS accepts int and float values here.
