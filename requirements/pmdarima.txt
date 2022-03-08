@@ -1,1 +1,2 @@
 pmdarima>=1.8.0
+tbats>=1.1.0

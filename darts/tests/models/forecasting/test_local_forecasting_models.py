@@ -6,9 +6,7 @@ from darts.logging import get_logger
 from darts.metrics import mape
 from darts.models import (
     ARIMA,
-    BATS,
     FFT,
-    TBATS,
     VARIMA,
     ExponentialSmoothing,
     FourTheta,
@@ -46,8 +44,6 @@ models = [
     (FourTheta(trend_mode=TrendMode.EXPONENTIAL), 5.5),
     (FourTheta(model_mode=ModelMode.MULTIPLICATIVE), 11.4),
     (FourTheta(season_mode=SeasonalityMode.ADDITIVE), 14.2),
-    (TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0),
-    (BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0),
     (FFT(trend="poly"), 11.4),
     (NaiveSeasonal(), 32.4),
     (KalmanForecaster(dim_x=3), 17.0),
@@ -78,9 +74,11 @@ except ImportError:
     logger.warning("Prophet not installed - will be skipping Prophet tests")
 
 try:
-    from darts.models import AutoARIMA
+    from darts.models import BATS, TBATS, AutoARIMA
 
     models.append((AutoARIMA(), 12.2))
+    models.append((TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0))
+    models.append((BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0))
     dual_models.append(AutoARIMA())
     PMDARIMA_AVAILABLE = True
 except ImportError:

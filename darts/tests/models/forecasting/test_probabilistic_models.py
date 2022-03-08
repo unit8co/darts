@@ -3,12 +3,20 @@ import numpy as np
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.metrics import mae
-from darts.models import ARIMA, BATS, TBATS, ExponentialSmoothing
+from darts.models import ARIMA, ExponentialSmoothing
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 logger = get_logger(__name__)
+
+try:
+    from darts.models import BATS, TBATS
+
+    PMDARIMA_AVAILABLE = True
+except ImportError:
+    logger.warning("pmdarima not available. BATS/TBATS probabilistic tests skipped.")
+    PMDARIMA_AVAILABLE = False
 
 try:
     import torch
@@ -48,29 +56,33 @@ except ImportError:
 models_cls_kwargs_errs = [
     (ExponentialSmoothing, {}, 0.3),
     (ARIMA, {"p": 1, "d": 0, "q": 1}, 0.03),
-    (
-        BATS,
-        {
-            "use_trend": False,
-            "use_damped_trend": False,
-            "use_box_cox": True,
-            "use_arma_errors": False,
-            "random_state": 42,
-        },
-        0.3,
-    ),
-    (
-        TBATS,
-        {
-            "use_trend": False,
-            "use_damped_trend": False,
-            "use_box_cox": True,
-            "use_arma_errors": False,
-            "random_state": 42,
-        },
-        0.3,
-    ),
 ]
+
+if PMDARIMA_AVAILABLE:
+    models_cls_kwargs_errs += [
+        (
+            BATS,
+            {
+                "use_trend": False,
+                "use_damped_trend": False,
+                "use_box_cox": True,
+                "use_arma_errors": False,
+                "random_state": 42,
+            },
+            0.3,
+        ),
+        (
+            TBATS,
+            {
+                "use_trend": False,
+                "use_damped_trend": False,
+                "use_box_cox": True,
+                "use_arma_errors": False,
+                "random_state": 42,
+            },
+            0.3,
+        ),
+    ]
 
 if TORCH_AVAILABLE:
     models_cls_kwargs_errs += [
