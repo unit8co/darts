@@ -115,6 +115,26 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertEqual(score, 1.0)
 
+        # very large train length should not affect the backtest
+        score = NaiveDrift().backtest(
+            linear_series,
+            train_length=10000,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        self.assertEqual(score, 1.0)
+
+        # window of size 2 is too small for naive drift
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(
+                linear_series,
+                train_length=2,
+                start=pd.Timestamp("20000201"),
+                forecast_horizon=3,
+                metric=r2_score,
+            )
+
         # test that it also works for time series that are not Datetime-indexed
         score = NaiveDrift().backtest(
             linear_series_int, start=0.7, forecast_horizon=3, metric=r2_score
@@ -148,6 +168,9 @@ class BacktestingTestCase(DartsBaseTestClass):
         NaiveDrift().backtest(linear_series, start=30)
         NaiveDrift().backtest(linear_series, start=0.7, overlap_end=True)
 
+        # Set custom train window length
+        NaiveDrift().backtest(linear_series, train_length=10, start=30)
+
         # Using invalid start and/or forecast_horizon values
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(linear_series, start=0.7, forecast_horizon=-1)
@@ -160,6 +183,12 @@ class BacktestingTestCase(DartsBaseTestClass):
             NaiveDrift().backtest(linear_series, start=1.2)
         with self.assertRaises(TypeError):
             NaiveDrift().backtest(linear_series, start="wrong type")
+        with self.assertRaises(ValueError):
+            NaiveDrift().backtest(linear_series, train_length=0, start=0.5)
+        with self.assertRaises(TypeError):
+            NaiveDrift().backtest(linear_series, train_length=1.2, start=0.5)
+        with self.assertRaises(TypeError):
+            NaiveDrift().backtest(linear_series, train_length="wrong type", start=0.5)
 
         with self.assertRaises(ValueError):
             NaiveDrift().backtest(
@@ -242,6 +271,20 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertGreater(score, 0.9)
 
+        # univariate feature test + train length
+        score = LinearRegressionModel(
+            lags=None, lags_future_covariates=[0, -1]
+        ).backtest(
+            series=target,
+            future_covariates=features,
+            start=pd.Timestamp("20000201"),
+            train_length=20,
+            forecast_horizon=3,
+            metric=r2_score,
+            last_points_only=True,
+        )
+        self.assertGreater(score, 0.9)
+
         # Using an int or float value for start
         score = RandomForest(
             lags=12, lags_future_covariates=[0], random_state=0
@@ -291,6 +334,39 @@ class BacktestingTestCase(DartsBaseTestClass):
             metric=r2_score,
         )
         self.assertGreater(score, 0.94)
+
+        # multivariate feature test with train window 35
+        score_35 = RandomForest(
+            lags=12, lags_future_covariates=[0, -1], random_state=0
+        ).backtest(
+            series=target,
+            train_length=35,
+            future_covariates=features_multivariate,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        logger.info(
+            "Score for multivariate feature test with train window 35 is: ", score_35
+        )
+        self.assertGreater(score_35, 0.92)
+
+        # multivariate feature test with train window 45
+        score_45 = RandomForest(
+            lags=12, lags_future_covariates=[0, -1], random_state=0
+        ).backtest(
+            series=target,
+            train_length=45,
+            future_covariates=features_multivariate,
+            start=pd.Timestamp("20000201"),
+            forecast_horizon=3,
+            metric=r2_score,
+        )
+        logger.info(
+            "Score for multivariate feature test with train window 45 is: ", score_45
+        )
+        self.assertGreater(score_45, 0.94)
+        self.assertGreater(score_45, score_35)
 
         # multivariate with stride
         score = RandomForest(
