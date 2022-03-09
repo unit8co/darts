@@ -163,7 +163,9 @@ class GenericInferenceDataset(InferenceDataset):
         )
 
         # extract past target values
-        past_target = target_series.values(copy=False)[-self.input_chunk_length :]
+        past_target = target_series.random_component_values(copy=False)[
+            -self.input_chunk_length :
+        ]
 
         # optionally, extract covariates
         cov_past, cov_future = None, None
@@ -181,7 +183,9 @@ class GenericInferenceDataset(InferenceDataset):
             )
 
             # extract covariate values and split into a past (historic) and future part
-            covariate = covariate_series.values(copy=False)[cov_start:cov_end]
+            covariate = covariate_series.random_component_values(copy=False)[
+                cov_start:cov_end
+            ]
             if self.input_chunk_length != 0:  # regular models
                 cov_past, cov_future = (
                     covariate[: self.input_chunk_length],
