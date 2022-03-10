@@ -168,15 +168,16 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
             return self
 
-        super().fit(
-            series=series,
-            past_covariates=past_covariates,
-            future_covariates=future_covariates,
-            max_samples_per_ts=max_samples_per_ts,
-            **kwargs,
-        )
+        else:
+            super().fit(
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                max_samples_per_ts=max_samples_per_ts,
+                **kwargs,
+            )
 
-        return self
+            return self
 
     def predict(
         self,
