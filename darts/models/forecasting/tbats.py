@@ -228,8 +228,12 @@ class _BaseBatsTbatsModel(ForecastingModel, ABC):
 
     @property
     def min_train_series_length(self) -> int:
-        if isinstance(self.seasonal_periods, int) and self.seasonal_periods > 1:
-            return 2 * self.seasonal_periods
+        if (
+            isinstance(self.seasonal_periods, List)
+            and len(self.seasonal_periods) > 0
+            and max(self.seasonal_periods) > 1
+        ):
+            return 2 * max(self.seasonal_periods)
         return 3
 
 

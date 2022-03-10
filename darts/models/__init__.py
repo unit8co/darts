@@ -14,15 +14,15 @@ from darts.models.forecasting.baselines import NaiveDrift, NaiveMean, NaiveSeaso
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
-from darts.models.forecasting.tbats import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
 
 try:
     from darts.models.forecasting.auto_arima import AutoARIMA
+    from darts.models.forecasting.tbats import BATS, TBATS
 except ModuleNotFoundError:
     logger.warning(
-        "Support for AutoARIMA is not available."
+        "Support for AutoARIMA, BATS and TBATS is not available."
         "To enable it, install u8darts[pmdarima] or u8darts[all]."
     )
 
