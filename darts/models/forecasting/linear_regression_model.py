@@ -219,7 +219,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 prediction = super().predict(
                     n, series, past_covariates, future_covariates, **kwargs
                 )
-                model_outputs.append(prediction._xa.to_numpy())
+                model_outputs.append(prediction.all_values(copy=False))
             model_outputs = np.concatenate(model_outputs, axis=-1)
             samples = self._sample_quantiles(model_outputs, num_samples)
 
