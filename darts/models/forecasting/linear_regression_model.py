@@ -8,6 +8,7 @@ covariate series' lags in order to obtain a forecast.
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from scipy.optimize import linprog
 from sklearn.linear_model import LinearRegression, PoissonRegressor, QuantileRegressor
 
 from darts.logging import get_logger
@@ -26,6 +27,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         output_chunk_length: int = 1,
         likelihood: str = None,
         quantiles: List[float] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Linear regression model.
@@ -49,12 +51,20 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         likelihood
-            The objective used by the model. Currently, only `quantile` and 'poisson' are available. Allows sampling
-            from the model.
+            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at
+            prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
+            set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.
         quantiles
-            If the `likelihood` is set to `quantile`, use these quantiles to samples from.
+            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+        random_state
+            Control the randomness of the sampling. Used as seed for
+            `link <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_ . Ignored when
+             no`likelihood` is set.
+            Default: ``None``.
         **kwargs
-            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
+            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
+            `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
+             `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
         """
         self.kwargs = kwargs
         self._median_idx = None
@@ -67,7 +77,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         available_likelihoods = ["quantile", "poisson"]  # to be extended
         if likelihood is not None:
             self._check_likelihood(likelihood, available_likelihoods)
-            self._rng = np.random.default_rng(seed=420)
+            self._rng = np.random.default_rng(seed=random_state)
 
             if likelihood == "poisson":
                 model = PoissonRegressor(**kwargs)
@@ -126,37 +136,25 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         if self.likelihood == "quantile":
             # empty model container in case of multiple calls to fit, e.g. when backtesting
             self._model_container.clear()
+
+            # set solver for linear program
+            if "solver" not in self.kwargs:
+                # set default fast solver
+                self.kwargs["solver"] = "highs"
+
+            # test solver availability with dummy problem
+            c = [1]
+            try:
+                linprog(c=c, method=self.kwargs["solver"])
+            except ValueError as ve:
+                logger.warning(
+                    f"{ve}. Upgrading scipy enables significantly faster solvers"
+                )
+                # set solver to slow legacy
+                self.kwargs["solver"] = "interior-point"
+
             for i, quantile in enumerate(self.quantiles):
                 self.kwargs["quantile"] = quantile
-                if i == 0:
-                    # check solver
-                    if "solver" not in self.kwargs:
-                        # set default fast solver
-                        self.kwargs["solver"] = "highs"
-                    try:
-                        self.model = QuantileRegressor(**self.kwargs)
-                        super().fit(
-                            series=series,
-                            past_covariates=past_covariates,
-                            future_covariates=future_covariates,
-                            max_samples_per_ts=max_samples_per_ts,
-                            **kwargs,
-                        )
-                    except ValueError:
-                        logger.warning(
-                            f"Solver {self.kwargs.get('solver')} is not available. Upgrade scipy"
-                            f" to access faster solvers."
-                        )
-                        # set to slow (legacy) solver
-                        self.kwargs["solver"] = "interior-point"
-                        self.model = QuantileRegressor(**self.kwargs)
-                        super().fit(
-                            series=series,
-                            past_covariates=past_covariates,
-                            future_covariates=future_covariates,
-                            max_samples_per_ts=max_samples_per_ts,
-                            **kwargs,
-                        )
                 self.model = QuantileRegressor(**self.kwargs)
                 super().fit(
                     series=series,
@@ -206,7 +204,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             Optionally, the future-known covariates series needed as inputs for the model.
             They must match the covariates used for training in terms of dimension and type.
         num_samples : int, default: 1
-            Currently this parameter is ignored for regression models.
+            Specifies the numer of samples to obtain from the model. Should be set to 1 if no `likelihood` is specified.
         **kwargs : dict, optional
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
@@ -237,6 +235,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             # build timeseries from samples
             return self._ts_like(prediction, samples)
 
-        return super().predict(
-            n, series, past_covariates, future_covariates, num_samples, **kwargs
-        )
+        else:
+            return super().predict(
+                n, series, past_covariates, future_covariates, num_samples, **kwargs
+            )

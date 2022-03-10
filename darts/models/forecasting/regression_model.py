@@ -36,6 +36,7 @@ from sklearn.multioutput import MultiOutputRegressor
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
+from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
 
@@ -624,32 +625,23 @@ class _LikelihoodMixin:
     def _get_model_container():
         return _QuantileModelContainer()
 
-    def _prepare_quantiles(self, quantiles):
+    @staticmethod
+    def _prepare_quantiles(quantiles):
         if quantiles is None:
             quantiles = [
                 0.01,
                 0.05,
                 0.1,
-                0.15,
-                0.2,
                 0.25,
-                0.3,
-                0.4,
-                0.45,
                 0.5,
-                0.55,
-                0.6,
-                0.7,
                 0.75,
-                0.8,
-                0.85,
                 0.9,
                 0.95,
                 0.99,
             ]
         else:
             quantiles = sorted(quantiles)
-            self._check_quantiles(quantiles)
+            _check_quantiles(quantiles)
         median_idx = quantiles.index(0.5)
 
         return quantiles, median_idx
@@ -690,29 +682,6 @@ class _LikelihoodMixin:
     def _ts_like(other: TimeSeries, data: np.ndarray) -> TimeSeries:
         new_xa = xr.DataArray(data, dims=other._xa.dims, coords=other._xa.coords)
         return TimeSeries(new_xa)
-
-    @staticmethod
-    def _check_quantiles(quantiles):
-        raise_if_not(
-            all([0 < q < 1 for q in quantiles]),
-            "All provided quantiles must be between 0 and 1.",
-        )
-
-        # we require the median to be present and the quantiles to be symmetric around it,
-        # for correctness of sampling.
-        median_q = 0.5
-        raise_if_not(
-            median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
-        )
-        is_centered = [
-            -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
-            for left_q, right_q in zip(quantiles, quantiles[::-1])
-        ]
-        raise_if_not(
-            all(is_centered),
-            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
-            "higher than `q=0.5`",
-        )
 
 
 class _QuantileModelContainer(OrderedDict):

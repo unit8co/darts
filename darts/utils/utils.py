@@ -293,3 +293,26 @@ def _parallel_apply(
         delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator
     )
     return returned_data
+
+
+def _check_quantiles(quantiles):
+    raise_if_not(
+        all([0 < q < 1 for q in quantiles]),
+        "All provided quantiles must be between 0 and 1.",
+    )
+
+    # we require the median to be present and the quantiles to be symmetric around it,
+    # for correctness of sampling.
+    median_q = 0.5
+    raise_if_not(
+        median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
+    )
+    is_centered = [
+        -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
+        for left_q, right_q in zip(quantiles, quantiles[::-1])
+    ]
+    raise_if_not(
+        all(is_centered),
+        "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
+        "higher than `q=0.5`",
+    )

@@ -893,23 +893,36 @@ if TORCH_AVAILABLE:
 
     class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
         models_cls_kwargs_errs = [
-            (LightGBMModel, {"lags": 2, "likelihood": "quantile"}, 0.4),
+            (
+                LightGBMModel,
+                {"lags": 2, "likelihood": "quantile", "random_state": 42},
+                0.4,
+            ),
             (
                 LightGBMModel,
                 {
                     "lags": 2,
                     "likelihood": "quantile",
                     "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "random_state": 42,
                 },
                 0.4,
             ),
-            (LightGBMModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
             (
-                LinearRegressionModel,
-                {"lags": 2, "likelihood": "quantile"},
+                LightGBMModel,
+                {"lags": 2, "likelihood": "poisson", "random_state": 42},
                 0.6,
             ),
-            (LinearRegressionModel, {"lags": 2, "likelihood": "poisson"}, 0.6),
+            (
+                LinearRegressionModel,
+                {"lags": 2, "likelihood": "quantile", "random_state": 42},
+                0.6,
+            ),
+            (
+                LinearRegressionModel,
+                {"lags": 2, "likelihood": "poisson", "random_state": 42},
+                0.6,
+            ),
         ]
 
         constant_ts = tg.constant_timeseries(length=200, value=0.5)
@@ -931,10 +944,6 @@ if TORCH_AVAILABLE:
                 pred2 = model.predict(n=10, num_samples=2).values()
 
                 self.assertTrue((pred1 == pred2).all())
-
-                # test whether the next prediction of the same model is different
-                pred3 = model.predict(n=10, num_samples=2).values()
-                self.assertTrue((pred2 != pred3).any())
 
         def test_probabilistic_forecast_accuracy(self):
             for model_cls, model_kwargs, err in self.models_cls_kwargs_errs:

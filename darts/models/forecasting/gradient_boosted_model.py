@@ -29,6 +29,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         output_chunk_length: int = 1,
         likelihood: str = None,
         quantiles: List[float] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Light Gradient Boosted Model
@@ -52,13 +53,17 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         likelihood
-            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at prediction time.
-            from the model.
+            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at
+             prediction time.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+        random_state
+            Control the randomness in the fitting procedure and for sampling.
+            Default: ``None``.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
+        kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
         self._median_idx = None
         self._model_container = None
@@ -71,7 +76,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         if likelihood is not None:
             self._check_likelihood(likelihood, available_likelihoods)
             self.kwargs["objective"] = likelihood
-            self._rng = np.random.default_rng(seed=420)
+            self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
 
             if likelihood == "quantile":
                 self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
