@@ -212,7 +212,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
                 n, series, past_covariates, future_covariates, **kwargs
             )
             samples = self._sample_poisson(
-                np.array(prediction._xa.to_numpy()), num_samples
+                np.array(prediction.all_values(copy=False)), num_samples
             )
             # build timeseries from samples
             return self._ts_like(prediction, samples)
