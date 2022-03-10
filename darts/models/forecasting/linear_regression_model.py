@@ -153,7 +153,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 # set solver to slow legacy
                 self.kwargs["solver"] = "interior-point"
 
-            for i, quantile in enumerate(self.quantiles):
+            for quantile in self.quantiles:
                 self.kwargs["quantile"] = quantile
                 self.model = QuantileRegressor(**self.kwargs)
                 super().fit(
