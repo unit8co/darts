@@ -55,7 +55,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at prediction time.
             from the model.
         quantiles
-            If the `likelihood` is set to `quantile`, use these quantiles to samples from.
+            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
