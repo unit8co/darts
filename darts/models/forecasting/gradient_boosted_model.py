@@ -52,7 +52,7 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         likelihood
-            The objective used by the model. Currently, only `quantile` and 'poisson' are available. Allows sampling
+            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at prediction time.
             from the model.
         quantiles
             If the `likelihood` is set to `quantile`, use these quantiles to samples from.
