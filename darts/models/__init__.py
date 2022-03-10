@@ -19,9 +19,10 @@ from darts.models.forecasting.varima import VARIMA
 
 try:
     from darts.models.forecasting.auto_arima import AutoARIMA
+    from darts.models.forecasting.tbats import BATS, TBATS
 except ModuleNotFoundError:
     logger.warning(
-        "Support for AutoARIMA is not available."
+        "Support for AutoARIMA, BATS and TBATS is not available."
         "To enable it, install u8darts[pmdarima] or u8darts[all]."
     )
 

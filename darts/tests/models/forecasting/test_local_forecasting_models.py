@@ -74,9 +74,11 @@ except ImportError:
     logger.warning("Prophet not installed - will be skipping Prophet tests")
 
 try:
-    from darts.models import AutoARIMA
+    from darts.models import BATS, TBATS, AutoARIMA
 
     models.append((AutoARIMA(), 12.2))
+    models.append((TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0))
+    models.append((BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0))
     dual_models.append(AutoARIMA())
     PMDARIMA_AVAILABLE = True
 except ImportError:
