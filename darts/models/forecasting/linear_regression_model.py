@@ -54,7 +54,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         quantiles
             If the `likelihood` is set to `quantile`, use these quantiles to samples from.
         **kwargs
-            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression`.
+            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
         """
         self.kwargs = kwargs
         self._median_idx = None
@@ -226,12 +226,12 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             # build timeseries from samples
             return self._ts_like(prediction, samples)
 
-        if self.likelihood == "poisson":
+        elif self.likelihood == "poisson":
             prediction = super().predict(
                 n, series, past_covariates, future_covariates, **kwargs
             )
             samples = self._sample_poisson(
-                np.array(prediction._xa.to_numpy()), num_samples
+                np.array(prediction.all_values(copy=False)), num_samples
             )
 
             # build timeseries from samples
