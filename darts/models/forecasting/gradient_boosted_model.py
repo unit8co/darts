@@ -11,21 +11,25 @@ https://github.com/unit8co/darts/blob/master/README.md
 from typing import List, Optional, Sequence, Tuple, Union
 
 import lightgbm as lgb
+import numpy as np
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModel):
+class LightGBMModel(RegressionModel, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        likelihood: str = None,
+        quantiles: List[float] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Light Gradient Boosted Model
@@ -48,10 +52,35 @@ class LightGBMModel(RegressionModel):
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
+        likelihood
+            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at
+             prediction time.
+        quantiles
+            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+        random_state
+            Control the randomness in the fitting procedure and for sampling.
+            Default: ``None``.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
+        kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
+        self._median_idx = None
+        self._model_container = None
+        self.quantiles = None
+        self.likelihood = likelihood
+        self._rng = None
+
+        # parse likelihood
+        available_likelihoods = ["quantile", "poisson"]  # to be extended
+        if likelihood is not None:
+            self._check_likelihood(likelihood, available_likelihoods)
+            self.kwargs["objective"] = likelihood
+            self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
+
+            if likelihood == "quantile":
+                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
+                self._model_container = self._get_model_container()
 
         super().__init__(
             lags=lags,
@@ -102,13 +131,31 @@ class LightGBMModel(RegressionModel):
         """
 
         if val_series is not None:
-
             kwargs["eval_set"] = self._create_lagged_data(
                 target_series=val_series,
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
                 max_samples_per_ts=max_samples_per_ts,
             )
+
+        if self.likelihood == "quantile":
+            # empty model container in case of multiple calls to fit, e.g. when backtesting
+            self._model_container.clear()
+            for quantile in self.quantiles:
+                self.kwargs["alpha"] = quantile
+                self.model = lgb.LGBMRegressor(**self.kwargs)
+
+                super().fit(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                    **kwargs,
+                )
+
+                self._model_container[quantile] = self.model
+
+            return self
 
         super().fit(
             series=series,
@@ -119,3 +166,62 @@ class LightGBMModel(RegressionModel):
         )
 
         return self
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        num_samples: int = 1,
+        **kwargs,
+    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+        """Forecasts values for `n` time steps after the end of the series.
+
+        Parameters
+        ----------
+        n : int
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series : TimeSeries or list of TimeSeries, optional
+            Optionally, one or several input `TimeSeries`, representing the history of the target series whose future
+            is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
+            returns the forecast of the (single) training series.
+        past_covariates : TimeSeries or list of TimeSeries, optional
+            Optionally, the past-observed covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
+        future_covariates : TimeSeries or list of TimeSeries, optional
+            Optionally, the future-known covariates series needed as inputs for the model.
+            They must match the covariates used for training in terms of dimension and type.
+        num_samples : int, default: 1
+            Specifies the numer of samples to obtain from the model. Should be set to 1 if no `likelihood` is specified.
+        **kwargs : dict, optional
+            Additional keyword arguments passed to the `predict` method of the model. Only works with
+            univariate target series.
+        """
+
+        if self.likelihood == "quantile":
+            model_outputs = []
+            for quantile, fitted in self._model_container.items():
+                self.model = fitted
+                prediction = super().predict(
+                    n, series, past_covariates, future_covariates, **kwargs
+                )
+                model_outputs.append(prediction.all_values(copy=False))
+            model_outputs = np.concatenate(model_outputs, axis=-1)
+            samples = self._sample_quantiles(model_outputs, num_samples)
+            # build timeseries from samples
+            return self._ts_like(prediction, samples)
+
+        if self.likelihood == "poisson":
+            prediction = super().predict(
+                n, series, past_covariates, future_covariates, **kwargs
+            )
+            samples = self._sample_poisson(
+                np.array(prediction.all_values(copy=False)), num_samples
+            )
+            # build timeseries from samples
+            return self._ts_like(prediction, samples)
+
+        return super().predict(
+            n, series, past_covariates, future_covariates, num_samples, **kwargs
+        )

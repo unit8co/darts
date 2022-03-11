@@ -291,6 +291,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        train_length: Optional[int] = None,
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -329,6 +330,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        train_length
+            Number of time steps in our training set (size of backtesting window to train on).
+            Default is set to train_length=None where it takes all available time steps up until prediction time,
+            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
         start
             The first point of time at which a prediction is computed for a future time.
             This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -377,6 +383,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        if train_length and not isinstance(train_length, int):
+            raise_log(
+                TypeError("If not None, train_length needs to be an integer."),
+                logger,
+            )
+        elif (train_length is not None) and train_length < 1:
+            raise_log(
+                ValueError("If not None, train_length needs to be positive."),
+                logger,
+            )
+        elif (train_length is not None) and train_length < self.min_train_series_length:
+            raise_log(
+                ValueError(
+                    "train_length is too small for the training requirements of this model"
+                ),
+                logger,
+            )
+
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
 
@@ -404,7 +428,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # iterate and forecast
         for pred_time in iterator:
-            train = series.drop_after(pred_time)  # build the training series
+            # build the training series
+            train = series.drop_after(pred_time)
+            if train_length and len(train) > train_length:
+                train = train[-train_length:]
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
@@ -453,6 +480,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        train_length: Optional[int] = None,
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -495,6 +523,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        train_length
+            Number of time steps in our training set (size of backtesting window to train on).
+            Default is set to train_length=None where it takes all available time steps up until prediction time,
+            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -533,6 +566,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            train_length=train_length,
             start=start,
             forecast_horizon=forecast_horizon,
             stride=stride,
