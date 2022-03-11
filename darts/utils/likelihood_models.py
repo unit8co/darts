@@ -56,7 +56,7 @@ from torch.distributions import Weibull as _Weibull
 from torch.distributions.kl import kl_divergence
 
 # TODO: Table on README listing distribution, possible priors and wiki article
-from darts.utils.utils import raise_if_not
+from darts.utils.utils import _check_quantiles, raise_if_not
 
 MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 
@@ -993,7 +993,7 @@ class QuantileRegression(Likelihood):
             ]
         else:
             self.quantiles = sorted(quantiles)
-        self._check_quantiles(self.quantiles)
+        _check_quantiles(self.quantiles)
         self._median_idx = self.quantiles.index(0.5)
         self.first = True
         self.quantiles_tensor = None
@@ -1070,29 +1070,6 @@ class QuantileRegression(Likelihood):
         )
 
         return losses.sum(dim=dim_q).mean()
-
-    @staticmethod
-    def _check_quantiles(quantiles):
-        raise_if_not(
-            all([0 < q < 1 for q in quantiles]),
-            "All provided quantiles must be between 0 and 1.",
-        )
-
-        # we require the median to be present and the quantiles to be symmetric around it,
-        # for correctness of sampling.
-        median_q = 0.5
-        raise_if_not(
-            median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
-        )
-        is_centered = [
-            -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
-            for left_q, right_q in zip(quantiles, quantiles[::-1])
-        ]
-        raise_if_not(
-            all(is_centered),
-            "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
-            "higher than `q=0.5`",
-        )
 
     def _distr_from_params(self, params: Tuple) -> None:
         # This should not be called in this class (we are abusing Likelihood)

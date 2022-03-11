@@ -24,16 +24,19 @@ denoting past lags and positive values including 0 denoting future lags).
 """
 
 import math
+from collections import OrderedDict
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.timeseries import TimeSeries
+from darts.utils.utils import _check_quantiles
 
 logger = get_logger(__name__)
 
@@ -603,3 +606,87 @@ class RegressionModel(GlobalForecastingModel):
 
     def __str__(self):
         return self.model.__str__()
+
+
+class _LikelihoodMixin:
+    """
+    A class containing functions supporting quantile and poisson regression, to be used as a mixin for some
+    `RegressionModel` subclasses.
+    """
+
+    @staticmethod
+    def _check_likelihood(likelihood, available_likelihoods):
+        raise_if_not(
+            likelihood in available_likelihoods,
+            f"If likelihood is specified it must be one of {available_likelihoods}",
+        )
+
+    @staticmethod
+    def _get_model_container():
+        return _QuantileModelContainer()
+
+    @staticmethod
+    def _prepare_quantiles(quantiles):
+        if quantiles is None:
+            quantiles = [
+                0.01,
+                0.05,
+                0.1,
+                0.25,
+                0.5,
+                0.75,
+                0.9,
+                0.95,
+                0.99,
+            ]
+        else:
+            quantiles = sorted(quantiles)
+            _check_quantiles(quantiles)
+        median_idx = quantiles.index(0.5)
+
+        return quantiles, median_idx
+
+    def _sample_quantiles(
+        self, model_output: np.ndarray, num_samples: int
+    ) -> np.ndarray:
+        """
+        This method is ported to numpy from the probabilistic torch models module
+        model_output is of shape (n_timesteps, n_components, n_quantiles)
+        """
+        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        quantiles = np.tile(np.array(self.quantiles), (num_samples, 1))
+        probas = np.tile(
+            self._rng.uniform(size=(num_samples,)), (len(self.quantiles), 1)
+        )
+
+        quantile_idxs = np.sum(probas.T > quantiles, axis=1)
+
+        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
+        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
+        # too often as it would capture the "probability buckets" preceding and following it.
+        #
+        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
+        quantile_idxs = np.where(
+            quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
+        )
+
+        return model_output[:, :, quantile_idxs]
+
+    def _sample_poisson(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
+        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        return self._rng.poisson(
+            lam=model_output, size=(*model_output.shape[:2], num_samples)
+        ).astype(float)
+
+    @staticmethod
+    def _ts_like(other: TimeSeries, data: np.ndarray) -> TimeSeries:
+        new_xa = xr.DataArray(data, dims=other._xa.dims, coords=other._xa.coords)
+        return TimeSeries(new_xa)
+
+
+class _QuantileModelContainer(OrderedDict):
+    def __init__(self):
+        super().__init__()
+
+    def __str__(self):
+        return f"_QuantileModelContainer(quantiles={list(self.keys())})"

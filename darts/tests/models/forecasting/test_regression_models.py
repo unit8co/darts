@@ -10,7 +10,8 @@ from sklearn.multioutput import MultiOutputRegressor
 import darts
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.metrics import rmse
+from darts.metrics import mae, rmse
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -889,3 +890,102 @@ if TORCH_AVAILABLE:
 
             assert lgb_fit_patch.call_args[1]["eval_set"] is not None
             assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+
+    class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
+        models_cls_kwargs_errs = [
+            (
+                LightGBMModel,
+                {"lags": 2, "likelihood": "quantile", "random_state": 42},
+                0.4,
+            ),
+            (
+                LightGBMModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "random_state": 42,
+                },
+                0.4,
+            ),
+            (
+                LightGBMModel,
+                {"lags": 2, "likelihood": "poisson", "random_state": 42},
+                0.6,
+            ),
+            (
+                LinearRegressionModel,
+                {"lags": 2, "likelihood": "quantile", "random_state": 42},
+                0.6,
+            ),
+            (
+                LinearRegressionModel,
+                {"lags": 2, "likelihood": "poisson", "random_state": 42},
+                0.6,
+            ),
+        ]
+
+        constant_ts = tg.constant_timeseries(length=200, value=0.5)
+        constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+        constant_multivar_ts = constant_ts.stack(constant_ts)
+        constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
+        num_samples = 5
+
+        def test_fit_predict_determinism(self):
+
+            for model_cls, model_kwargs, _ in self.models_cls_kwargs_errs:
+                # whether the first predictions of two models initiated with the same random state are the same
+                model = model_cls(**model_kwargs)
+                model.fit(self.constant_noisy_multivar_ts)
+                pred1 = model.predict(n=10, num_samples=2).values()
+
+                model = model_cls(**model_kwargs)
+                model.fit(self.constant_noisy_multivar_ts)
+                pred2 = model.predict(n=10, num_samples=2).values()
+
+                self.assertTrue((pred1 == pred2).all())
+
+        def test_probabilistic_forecast_accuracy(self):
+            for model_cls, model_kwargs, err in self.models_cls_kwargs_errs:
+                self.helper_test_probabilistic_forecast_accuracy(
+                    model_cls,
+                    model_kwargs,
+                    err,
+                    self.constant_ts,
+                    self.constant_noisy_ts,
+                )
+                if issubclass(model_cls, GlobalForecastingModel):
+                    self.helper_test_probabilistic_forecast_accuracy(
+                        model_cls,
+                        model_kwargs,
+                        err,
+                        self.constant_multivar_ts,
+                        self.constant_noisy_multivar_ts,
+                    )
+
+        def helper_test_probabilistic_forecast_accuracy(
+            self, model_cls, model_kwargs, err, ts, noisy_ts
+        ):
+            model = model_cls(**model_kwargs)
+            model.fit(noisy_ts[:100])
+            pred = model.predict(n=100, num_samples=100)
+
+            # test accuracy of the median prediction compared to the noiseless ts
+            mae_err_median = mae(ts[100:], pred)
+            self.assertLess(mae_err_median, err)
+
+            # test accuracy for increasing quantiles between 0.7 and 1 (it should ~decrease, mae should ~increase)
+            tested_quantiles = [0.7, 0.8, 0.9, 0.99]
+            mae_err = mae_err_median
+            for quantile in tested_quantiles:
+                new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+                self.assertLess(mae_err, new_mae + 0.1)
+                mae_err = new_mae
+
+            # test accuracy for decreasing quantiles between 0.3 and 0 (it should ~decrease, mae should ~increase)
+            tested_quantiles = [0.3, 0.2, 0.1, 0.01]
+            mae_err = mae_err_median
+            for quantile in tested_quantiles:
+                new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+                self.assertLess(mae_err, new_mae + 0.1)
+                mae_err = new_mae
