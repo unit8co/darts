@@ -52,41 +52,6 @@ class SmapeLoss(nn.Module):
         return torch.mean(_divide_no_nan(num, denom))
 
 
-class SmapeLossM3(nn.Module):
-    """
-    sMAPE loss as defined in the context of the M3 competition, in "Appendix A" of
-    http://www.forecastingprinciples.com/files/pdf/Makridakia-The%20M3%20Competition.pdf
-
-    Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
-        both of length :math:`T`, it is computed as
-
-        .. math::
-            \\frac{1}{T}
-            \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}
-                                  {y_t + \\hat{y}_t} }.
-
-        The results of divisions yielding NaN or Inf are replaced by 0.
-
-        Parameters
-        ----------
-        block_denom_grad
-            Whether to stop the gradient in the denomitator
-    """
-
-    def __init__(self, block_denom_grad: bool = True):
-        super().__init__()
-        self.block_denom_grad = block_denom_grad
-
-    def forward(self, inpt, tgt):
-        num = torch.abs(inpt - tgt)
-        if self.block_denom_grad:
-            with torch.no_grad():
-                denom = tgt + inpt
-        else:
-            denom = tgt + inpt
-        return torch.mean(_divide_no_nan(num, denom))
-
-
 class MapeLoss(nn.Module):
     """
     MAPE loss as defined in: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error
