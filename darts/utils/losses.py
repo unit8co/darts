@@ -16,6 +16,7 @@ def _divide_no_nan(a, b):
     result = a / b
     result[result != result] = 0.0
     result[result == np.inf] = 0.0
+    result[result == np.NINF] = 0.0
     return result
 
 
