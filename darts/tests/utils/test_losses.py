@@ -29,7 +29,7 @@ class LossesTestCase(DartsBaseTestClass):
 
         pred = model.predict(n=36)
 
-        self.assertLess(smape(pred, self.air_s), 12.0)
+        self.assertLess(smape(pred, self.air_s), 13.5)
 
     def test_mape_loss(self):
         model = NBEATSModel(
