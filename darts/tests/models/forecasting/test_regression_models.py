@@ -201,7 +201,7 @@ if TORCH_AVAILABLE:
             pcov_offset=0,
             fcov_offset=0,
         )
-        # shift sines to poistive values for poisson regressors
+        # shift sines to positive values for poisson regressors
         sine_univariate1 = tg.sine_timeseries(length=100) + 1.5
         sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705) + 1.5
         sine_univariate3 = tg.sine_timeseries(length=100, value_phase=0.78525) + 1.5
