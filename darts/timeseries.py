@@ -91,10 +91,12 @@ class TimeSeries:
 
         val_dtype = xa.values.dtype
         if not (
-            np.issubdtype(val_dtype, np.float64) or np.issubdtype(val_dtype, np.float32)
+            np.issubdtype(val_dtype, np.float16)
+            or np.issubdtype(val_dtype, np.float64)
+            or np.issubdtype(val_dtype, np.float32)
         ):
             logger.warn(
-                "TimeSeries is using a numeric type different from np.float32 or np.float64. "
+                "TimeSeries is using a numeric type different from np.float16, np.float32 or np.float64. "
                 "Not all functionalities may work properly. It is recommended casting your data to floating "
                 "point numbers before using TimeSeries."
             )
