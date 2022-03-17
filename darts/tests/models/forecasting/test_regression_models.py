@@ -1,3 +1,4 @@
+import functools
 import math
 from unittest.mock import patch
 
@@ -142,6 +143,14 @@ def dummy_timeseries(
     return targets, pcovs, fcovs
 
 
+# helper function used to register LightGBMModel/LinearRegressionModel with likelihood
+def partialclass(cls, *args, **kwargs):
+    class NewCls(cls):
+        __init__ = functools.partialmethod(cls.__init__, *args, **kwargs)
+
+    return NewCls
+
+
 # Regression models rely on PyTorch for the Datasets
 if TORCH_AVAILABLE:
 
@@ -151,6 +160,35 @@ if TORCH_AVAILABLE:
 
         # default regression models
         models = [RandomForest, LinearRegressionModel, RegressionModel, LightGBMModel]
+
+        # register likelihood regression models
+        QuantileLightGBMModel = partialclass(
+            LightGBMModel,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+            random_state=42,
+        )
+        PoissonLightGBMModel = partialclass(
+            LightGBMModel, likelihood="poisson", random_state=42
+        )
+        QuantileLinearRegressionModel = partialclass(
+            LinearRegressionModel,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+            random_state=42,
+        )
+        PoissonLinearRegressionModel = partialclass(
+            LinearRegressionModel, likelihood="poisson", random_state=42
+        )
+        # targets for poisson regression must be positive, so we exclude them for some tests
+        models.extend(
+            [
+                QuantileLightGBMModel,
+                QuantileLinearRegressionModel,
+                PoissonLightGBMModel,
+                PoissonLinearRegressionModel,
+            ]
+        )
 
         # dummy feature and target TimeSeries instances
         target_series, past_covariates, future_covariates = dummy_timeseries(
@@ -163,13 +201,13 @@ if TORCH_AVAILABLE:
             pcov_offset=0,
             fcov_offset=0,
         )
-
-        sine_univariate1 = tg.sine_timeseries(length=100)
-        sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705)
-        sine_univariate3 = tg.sine_timeseries(length=100, value_phase=0.78525)
-        sine_univariate4 = tg.sine_timeseries(length=100, value_phase=0.392625)
-        sine_univariate5 = tg.sine_timeseries(length=100, value_phase=0.1963125)
-        sine_univariate6 = tg.sine_timeseries(length=100, value_phase=0.09815625)
+        # shift sines to poistive values for poisson regressors
+        sine_univariate1 = tg.sine_timeseries(length=100) + 1.5
+        sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705) + 1.5
+        sine_univariate3 = tg.sine_timeseries(length=100, value_phase=0.78525) + 1.5
+        sine_univariate4 = tg.sine_timeseries(length=100, value_phase=0.392625) + 1.5
+        sine_univariate5 = tg.sine_timeseries(length=100, value_phase=0.1963125) + 1.5
+        sine_univariate6 = tg.sine_timeseries(length=100, value_phase=0.09815625) + 1.5
         sine_multivariate1 = sine_univariate1.stack(sine_univariate2)
         sine_multivariate2 = sine_univariate2.stack(sine_univariate3)
         sine_multiseries1 = [sine_univariate1, sine_univariate2, sine_univariate3]
@@ -178,7 +216,6 @@ if TORCH_AVAILABLE:
         lags_1 = {"target": [-3, -2, -1], "past": [-4, -2], "future": [-5, 2]}
 
         def test_model_construction(self):
-
             for model in self.models:
                 # TESTING SINGLE INT
                 # testing lags
@@ -470,6 +507,7 @@ if TORCH_AVAILABLE:
 
         def test_fit(self):
             for model in self.models:
+
                 # test fitting both on univariate and multivariate timeseries
                 for series in [self.sine_univariate1, self.sine_multivariate2]:
                     with self.assertRaises(ValueError):
@@ -546,7 +584,9 @@ if TORCH_AVAILABLE:
             # for every model, and different output_chunk_lengths test whether it predicts the univariate time series
             # as well as expected
             self.helper_test_models_accuracy(
-                self.sine_univariate1, self.sine_univariate2, [0.03, 1e-13, 1e-13, 0.3]
+                self.sine_univariate1,
+                self.sine_univariate2,
+                [0.03, 1e-13, 1e-13, 0.3, 0.5, 0.8, 0.2, 0.3],
             )
 
         def test_models_accuracy_multivariate(self):
@@ -555,7 +595,7 @@ if TORCH_AVAILABLE:
             self.helper_test_models_accuracy(
                 self.sine_multivariate1,
                 self.sine_multivariate2,
-                [0.3, 1e-13, 1e-13, 0.4],
+                [0.3, 1e-13, 1e-13, 0.4, 0.4, 0.8, 0.2, 0.2],
             )
 
         def test_models_accuracy_multiseries_multivariate(self):
@@ -564,7 +604,7 @@ if TORCH_AVAILABLE:
             self.helper_test_models_accuracy(
                 self.sine_multiseries1,
                 self.sine_multiseries2,
-                [0.05, 1e-13, 1e-13, 0.05],
+                [0.05, 1e-13, 1e-13, 0.05, 0.4, 0.8, 0.2, 0.2],
             )
 
         def test_historical_forecast(self):

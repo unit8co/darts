@@ -91,6 +91,8 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         )
 
     def __str__(self):
+        if self.likelihood:
+            return f"LGBModel(lags={self.lags}, likelihood={self.likelihood})"
         return f"LGBModel(lags={self.lags})"
 
     def fit(
@@ -200,27 +202,26 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
         """
 
         if self.likelihood == "quantile":
-            model_outputs = []
-            for quantile, fitted in self._model_container.items():
-                self.model = fitted
-                prediction = super().predict(
-                    n, series, past_covariates, future_covariates, **kwargs
-                )
-                model_outputs.append(prediction.all_values(copy=False))
-            model_outputs = np.concatenate(model_outputs, axis=-1)
-            samples = self._sample_quantiles(model_outputs, num_samples)
-            # build timeseries from samples
-            return self._ts_like(prediction, samples)
+            return self._predict_quantiles(
+                superfun=super().predict,
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                **kwargs,
+            )
 
         if self.likelihood == "poisson":
-            prediction = super().predict(
-                n, series, past_covariates, future_covariates, **kwargs
+            return self._predict_poisson(
+                superfun=super().predict,
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                **kwargs,
             )
-            samples = self._sample_poisson(
-                np.array(prediction.all_values(copy=False)), num_samples
-            )
-            # build timeseries from samples
-            return self._ts_like(prediction, samples)
 
         return super().predict(
             n, series, past_covariates, future_covariates, num_samples, **kwargs

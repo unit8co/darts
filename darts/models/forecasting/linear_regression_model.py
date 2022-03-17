@@ -97,6 +97,8 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         )
 
     def __str__(self):
+        if self.likelihood:
+            return f"LinearRegression(lags={self.lags}, likelihood={self.likelihood})"
         return f"LinearRegression(lags={self.lags})"
 
     def fit(
@@ -134,9 +136,6 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         """
 
         if self.likelihood == "quantile":
-            # empty model container in case of multiple calls to fit, e.g. when backtesting
-            self._model_container.clear()
-
             # set solver for linear program
             if "solver" not in self.kwargs:
                 # set default fast solver
@@ -152,6 +151,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
                 )
                 # set solver to slow legacy
                 self.kwargs["solver"] = "interior-point"
+
+            # empty model container in case of multiple calls to fit, e.g. when backtesting
+            self._model_container.clear()
 
             for quantile in self.quantiles:
                 self.kwargs["quantile"] = quantile
@@ -212,29 +214,26 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
         """
 
         if self.likelihood == "quantile":
-            model_outputs = []
-            for quantile, fitted in self._model_container.items():
-                self.model = fitted
-                prediction = super().predict(
-                    n, series, past_covariates, future_covariates, **kwargs
-                )
-                model_outputs.append(prediction.all_values(copy=False))
-            model_outputs = np.concatenate(model_outputs, axis=-1)
-            samples = self._sample_quantiles(model_outputs, num_samples)
-
-            # build timeseries from samples
-            return self._ts_like(prediction, samples)
+            return self._predict_quantiles(
+                superfun=super().predict,
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                **kwargs,
+            )
 
         elif self.likelihood == "poisson":
-            prediction = super().predict(
-                n, series, past_covariates, future_covariates, **kwargs
+            return self._predict_poisson(
+                superfun=super().predict,
+                n=n,
+                series=series,
+                past_covariates=past_covariates,
+                future_covariates=future_covariates,
+                num_samples=num_samples,
+                **kwargs,
             )
-            samples = self._sample_poisson(
-                np.array(prediction.all_values(copy=False)), num_samples
-            )
-
-            # build timeseries from samples
-            return self._ts_like(prediction, samples)
 
         else:
             return super().predict(

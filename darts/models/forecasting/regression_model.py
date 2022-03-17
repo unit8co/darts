@@ -25,7 +25,7 @@ denoting past lags and positive values including 0 denoting future lags).
 
 import math
 from collections import OrderedDict
-from typing import List, Optional, Sequence, Tuple, Union
+from typing import Callable, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -646,6 +646,45 @@ class _LikelihoodMixin:
 
         return quantiles, median_idx
 
+    def _predict_quantiles(self, superfun: Callable, num_samples: int, **kwargs):
+        predictions = []
+        for quantile, fitted in self._model_container.items():
+            self.model = fitted
+            prediction = superfun(**kwargs)
+            if not isinstance(prediction, list):  # handles the single series case
+                prediction = [prediction]
+            predictions.append([p.all_values(copy=False) for p in prediction])
+        model_outputs = [
+            np.concatenate([m[i] for m in predictions], axis=-1)
+            for i in range(len(prediction))
+        ]
+        samples = [self._sample_quantiles(m, num_samples) for m in model_outputs]
+        # build timeseries from samples
+        return self._build_ts_from_samples(prediction, samples)
+
+    def _predict_poisson(self, superfun: Callable, num_samples: int, **kwargs):
+        prediction = superfun(**kwargs)
+        if not isinstance(prediction, list):  # handles the single series case
+            prediction = [prediction]
+
+        samples = [
+            self._sample_poisson(np.array(p.all_values(copy=False)), num_samples)
+            for p in prediction
+        ]
+        # build timeseries from samples
+        return self._build_ts_from_samples(prediction, samples)
+
+    def _build_ts_from_samples(
+        self, prediction: List[TimeSeries], samples: List[np.ndarray]
+    ) -> Union[TimeSeries, List[TimeSeries]]:
+        ts_list = [
+            self._ts_like(pred, sample) for pred, sample in zip(prediction, samples)
+        ]
+        if len(ts_list) == 1:
+            return ts_list[0]
+        else:
+            return ts_list
+
     def _sample_quantiles(
         self, model_output: np.ndarray, num_samples: int
     ) -> np.ndarray:
@@ -670,10 +709,16 @@ class _LikelihoodMixin:
             quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
         )
 
+        if num_samples == 1:  # return median
+            return model_output[:, :, [self._median_idx]]
+
         return model_output[:, :, quantile_idxs]
 
     def _sample_poisson(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
         raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        if num_samples == 1:  # return mean
+            return model_output
+
         return self._rng.poisson(
             lam=model_output, size=(*model_output.shape[:2], num_samples)
         ).astype(float)
