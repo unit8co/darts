@@ -586,7 +586,7 @@ if TORCH_AVAILABLE:
             self.helper_test_models_accuracy(
                 self.sine_univariate1,
                 self.sine_univariate2,
-                [0.03, 1e-13, 1e-13, 0.3, 0.5, 0.8, 0.2, 0.3],
+                [0.03, 1e-13, 1e-13, 0.3, 0.5, 0.8, 0.4, 0.4],
             )
 
         def test_models_accuracy_multivariate(self):
@@ -595,7 +595,7 @@ if TORCH_AVAILABLE:
             self.helper_test_models_accuracy(
                 self.sine_multivariate1,
                 self.sine_multivariate2,
-                [0.3, 1e-13, 1e-13, 0.4, 0.4, 0.8, 0.2, 0.2],
+                [0.3, 1e-13, 1e-13, 0.4, 0.4, 0.8, 0.4, 0.4],
             )
 
         def test_models_accuracy_multiseries_multivariate(self):
@@ -604,7 +604,7 @@ if TORCH_AVAILABLE:
             self.helper_test_models_accuracy(
                 self.sine_multiseries1,
                 self.sine_multiseries2,
-                [0.05, 1e-13, 1e-13, 0.05, 0.4, 0.8, 0.2, 0.2],
+                [0.05, 1e-13, 1e-13, 0.05, 0.4, 0.8, 0.4, 0.4],
             )
 
         def test_historical_forecast(self):
