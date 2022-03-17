@@ -646,7 +646,9 @@ class _LikelihoodMixin:
 
         return quantiles, median_idx
 
-    def _predict_quantiles(self, superfun: Callable, num_samples: int, **kwargs):
+    def _predict_quantiles(
+        self, superfun: Callable, num_samples: int, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         predictions = []
         for quantile, fitted in self._model_container.items():
             self.model = fitted
@@ -662,7 +664,9 @@ class _LikelihoodMixin:
         # build timeseries from samples
         return self._build_ts_from_samples(prediction, samples)
 
-    def _predict_poisson(self, superfun: Callable, num_samples: int, **kwargs):
+    def _predict_poisson(
+        self, superfun: Callable, num_samples: int, **kwargs
+    ) -> Union[TimeSeries, List[TimeSeries]]:
         prediction = superfun(**kwargs)
         if not isinstance(prediction, list):  # handles the single series case
             prediction = [prediction]
