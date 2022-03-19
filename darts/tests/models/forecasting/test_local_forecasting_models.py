@@ -165,30 +165,55 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             es_model.fit(ts_passengers_enhanced["2"])
 
     def test_exogenous_variables_support(self):
-        for model in dual_models:
+        # test case with pd.DatetimeIndex
+        target_dt_idx = self.ts_gaussian
+        fc_dt_idx = self.ts_gaussian_long
 
-            # Test models runnability - proper future covariates slicing
-            model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian_long)
-            prediction = model.predict(
-                self.forecasting_horizon, future_covariates=self.ts_gaussian_long
-            )
+        # test case with numerical pd.RangeIndex
+        target_num_idx = TimeSeries.from_times_and_values(
+            times=tg._generate_index(start=0, length=len(self.ts_gaussian)),
+            values=self.ts_gaussian.all_values(copy=False),
+        )
+        fc_num_idx = TimeSeries.from_times_and_values(
+            times=tg._generate_index(start=0, length=len(self.ts_gaussian_long)),
+            values=self.ts_gaussian_long.all_values(copy=False),
+        )
 
-            self.assertTrue(len(prediction) == self.forecasting_horizon)
+        for target, future_covariates in zip(
+            [target_dt_idx, target_num_idx], [fc_dt_idx, fc_num_idx]
+        ):
+            for model in dual_models:
+                # skip models which do not support RangeIndex
+                if isinstance(target.time_index, pd.RangeIndex):
+                    try:
+                        # _supports_range_index raises a ValueError if model does not support RangeIndex
+                        model._supports_range_index()
+                    except ValueError:
+                        continue
 
-            # Test mismatch in length between exogenous variables and forecasting horizon
-            with self.assertRaises(ValueError):
-                model.predict(
-                    self.forecasting_horizon,
-                    future_covariates=tg.gaussian_timeseries(
-                        length=self.forecasting_horizon - 1
-                    ),
+                # Test models runnability - proper future covariates slicing
+                model.fit(target, future_covariates=future_covariates)
+                prediction = model.predict(
+                    self.forecasting_horizon, future_covariates=future_covariates
                 )
 
-            # Test mismatch in time-index/length between series and exogenous variables
-            with self.assertRaises(ValueError):
-                model.fit(self.ts_gaussian, future_covariates=self.ts_gaussian[:-1])
-            with self.assertRaises(ValueError):
-                model.fit(self.ts_gaussian[1:], future_covariates=self.ts_gaussian[:-1])
+                self.assertTrue(len(prediction) == self.forecasting_horizon)
+
+                # Test mismatch in length between exogenous variables and forecasting horizon
+                with self.assertRaises(ValueError):
+                    model.predict(
+                        self.forecasting_horizon,
+                        future_covariates=tg.gaussian_timeseries(
+                            start=future_covariates.start_time(),
+                            length=self.forecasting_horizon - 1,
+                        ),
+                    )
+
+                # Test mismatch in time-index/length between series and exogenous variables
+                with self.assertRaises(ValueError):
+                    model.fit(target, future_covariates=target[:-1])
+                with self.assertRaises(ValueError):
+                    model.fit(target[1:], future_covariates=target[:-1])
 
     def test_dummy_series(self):
         values = np.random.uniform(low=-10, high=10, size=100)
