@@ -54,7 +54,7 @@ class SmapeLoss(nn.Module):
 
 
 class MapeLoss(nn.Module):
-    def __init__(self, keep_denom: bool = True):
+    def __init__(self):
         """
         MAPE loss as defined in: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error.
 
@@ -68,22 +68,11 @@ class MapeLoss(nn.Module):
         The results of divisions yielding NaN or Inf are replaced by 0. Note that we drop the coefficient of
         100 usually used for computing MAPE values, as it impacts only the magnitude of the gradients
         and not their direction.
-
-        Parameters
-        ----------
-        keep_denom
-            Whether to keep the denominator (:math:`y_t`) in the MAPE computation; otherwise,
-            only the numerator is computed for the loss (making it equivalent to MAE).
         """
         super().__init__()
-        self.keep_denom = keep_denom
 
     def forward(self, inpt, tgt):
-        num = torch.abs(tgt - inpt)
-        if self.keep_denom:
-            return torch.mean(_divide_no_nan(num, tgt))
-        else:
-            return torch.mean(num)
+        return torch.mean(_divide_no_nan(torch.abs(tgt - inpt), tgt))
 
 
 class MAELoss(nn.Module):
@@ -97,6 +86,8 @@ class MAELoss(nn.Module):
         .. math::
             \\frac{1}{T}
             \\sum_{t=1}^{T}{\\left| y_t - \\hat{y}_t \\right|}.
+
+        Note that this is the same as torch.nn.L1Loss.
         """
         super().__init__()
 
