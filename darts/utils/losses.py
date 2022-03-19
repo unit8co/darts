@@ -54,7 +54,7 @@ class SmapeLoss(nn.Module):
 
 
 class MapeLoss(nn.Module):
-    def __init__(self, keep_denom: bool = False):
+    def __init__(self, keep_denom: bool = True):
         """
         MAPE loss as defined in: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error.
 
@@ -69,20 +69,11 @@ class MapeLoss(nn.Module):
         100 usually used for computing MAPE values, as it impacts only the magnitude of the gradients
         and not their direction.
 
-        By default, the denominator is not considered and the loss is computed as
-
-        .. math::
-            \\frac{1}{T}
-            \\sum_{t=1}^{T}{\\left| y_t - \\hat{y}_t \\right|}.
-
-        Since the denominator is a constant w.r.t. the model parameters,
-        this only impacts the magnitude of the gradients.
-
         Parameters
         ----------
         keep_denom
             Whether to keep the denominator (:math:`y_t`) in the MAPE computation; otherwise,
-            only the numerator is computed for the loss.
+            only the numerator is computed for the loss (making it equivalent to MAE).
         """
         super().__init__()
         self.keep_denom = keep_denom
@@ -93,3 +84,21 @@ class MapeLoss(nn.Module):
             return torch.mean(_divide_no_nan(num, tgt))
         else:
             return torch.mean(num)
+
+
+class MAELoss(nn.Module):
+    def __init__(self):
+        """
+        MAE loss as defined in: https://en.wikipedia.org/wiki/Mean_absolute_error.
+
+        Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
+        both of length :math:`T`, it is computed as
+
+        .. math::
+            \\frac{1}{T}
+            \\sum_{t=1}^{T}{\\left| y_t - \\hat{y}_t \\right|}.
+        """
+        super().__init__()
+
+    def forward(self, inpt, tgt):
+        return torch.mean(torch.abs(tgt - inpt))
