@@ -23,7 +23,7 @@ def _divide_no_nan(a, b):
 class SmapeLoss(nn.Module):
     def __init__(self, block_denom_grad: bool = True):
         """
-        sMAPE loss as defined in https://robjhyndman.com/hyndsight/smape/ (Makridakis 1993)
+        sMAPE loss as defined in https://robjhyndman.com/hyndsight/smape/ (Chen and Yang 2004)
 
         Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
         both of length :math:`T`, it is computed as

@@ -15,7 +15,6 @@ class LossesTestCase(DartsBaseTestClass):
         lval = loss_fn(y_hat, self.y)
         lval.backward()
 
-        print(lval)
         self.assertTrue(torch.allclose(lval, exp_loss_val, atol=1e-3))
         self.assertTrue(torch.allclose(W.grad, exp_w_grad, atol=1e-3))
 
