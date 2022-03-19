@@ -33,7 +33,9 @@ class SmapeLoss(nn.Module):
             \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}
                                   {\\left| y_t \\right| + \\left| \\hat{y}_t \\right|} }.
 
-        The results of divisions yielding NaN or Inf are replaced by 0.
+        The results of divisions yielding NaN or Inf are replaced by 0. Note that we drop the coefficient of
+        200 usually used for computing sMAPE values, as it impacts only the magnitude of the gradients
+        and not their direction.
 
         Parameters
         ----------
@@ -45,21 +47,49 @@ class SmapeLoss(nn.Module):
 
     def forward(self, inpt, tgt):
         num = torch.abs(tgt - inpt)
+        denom = torch.abs(tgt) + torch.abs(inpt)
         if self.block_denom_grad:
-            with torch.no_grad():
-                denom = torch.abs(tgt) + torch.abs(inpt)
-        else:
-            denom = torch.abs(tgt) + torch.abs(inpt)
+            denom = denom.detach()
         return torch.mean(_divide_no_nan(num, denom))
 
 
 class MapeLoss(nn.Module):
-    """
-    MAPE loss as defined in: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error
-    """
+    def __init__(self, keep_denom: bool = False):
+        """
+        MAPE loss as defined in: https://en.wikipedia.org/wiki/Mean_absolute_percentage_error.
 
-    def __init__(self):
+        Given a time series of actual values :math:`y_t` and a time series of predicted values :math:`\\hat{y}_t`
+        both of length :math:`T`, it is computed as
+
+        .. math::
+            \\frac{1}{T}
+            \\sum_{t=1}^{T}{\\frac{\\left| y_t - \\hat{y}_t \\right|}{y_t}}.
+
+        The results of divisions yielding NaN or Inf are replaced by 0. Note that we drop the coefficient of
+        100 usually used for computing MAPE values, as it impacts only the magnitude of the gradients
+        and not their direction.
+
+        By default, the denominator is not considered and the loss is computed as
+
+        .. math::
+            \\frac{1}{T}
+            \\sum_{t=1}^{T}{\\left| y_t - \\hat{y}_t \\right|}.
+
+        Since the denominator is a constant w.r.t. the model parameters,
+        this only impacts the magnitude of the gradients.
+
+        Parameters
+        ----------
+        keep_denom
+            Whether to keep the denominator (:math:`y_t`) in the MAPE computation; otherwise,
+            only the numerator is computed for the loss.
+        """
         super().__init__()
+        self.keep_denom = keep_denom
 
     def forward(self, inpt, tgt):
-        return torch.mean(torch.abs(inpt - tgt))
+        num = torch.abs(tgt - inpt)
+        if self.keep_denom:
+            return torch.mean(_divide_no_nan(num, tgt))
+        else:
+            return torch.mean(num)
