@@ -72,7 +72,7 @@ class MapeLoss(nn.Module):
         super().__init__()
 
     def forward(self, inpt, tgt):
-        return torch.mean(_divide_no_nan(torch.abs(tgt - inpt), tgt))
+        return torch.mean(torch.abs(_divide_no_nan(tgt - inpt, tgt)))
 
 
 class MAELoss(nn.Module):
