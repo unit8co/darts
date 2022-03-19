@@ -481,7 +481,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         precision = None
         dtype = self.train_sample[0].dtype
         if np.issubdtype(dtype, np.float16):
-            logger.info("Time series values are 16-bits; casting model to float16.")
+            logger.info(
+                "Time series values are 16-bits; casting model to float16. "
+                + "Note that only GPUs support this type at this time."
+            )
             precision = 16
         elif np.issubdtype(dtype, np.float32):
             logger.info("Time series values are 32-bits; casting model to float32.")

@@ -1067,7 +1067,10 @@ class TimeSeries:
         Parameters
         ----------
         dtype
-            A NumPy dtype (np.float32 or np.float64)
+            A NumPy dtype (np.float16, np.float32 or np.float64).
+            .. note:: Not all Darts functionalities work with np.float16 - use at your own risks.
+                      This is typically only used in some particular cases to train models on
+                      hardware that can take advantage of this floating point format.
 
         Returns
         -------
