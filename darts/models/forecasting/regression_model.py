@@ -653,7 +653,7 @@ class _LikelihoodMixin:
         for quantile, fitted in self._model_container.items():
             self.model = fitted
             prediction = superfun(**kwargs)
-            if not isinstance(prediction, list):  # handles the single series case
+            if not isinstance(prediction, Sequence):  # handles the single series case
                 prediction = [prediction]
             predictions.append([p.all_values(copy=False) for p in prediction])
         model_outputs = [
@@ -668,7 +668,7 @@ class _LikelihoodMixin:
         self, superfun: Callable, num_samples: int, **kwargs
     ) -> Union[TimeSeries, List[TimeSeries]]:
         prediction = superfun(**kwargs)
-        if not isinstance(prediction, list):  # handles the single series case
+        if not isinstance(prediction, Sequence):  # handles the single series case
             prediction = [prediction]
 
         samples = [
