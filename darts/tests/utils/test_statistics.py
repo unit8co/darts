@@ -5,12 +5,20 @@ from darts import TimeSeries
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.statistics import (
     check_seasonality,
+    extract_trend_and_seasonality,
     granger_causality_tests,
+    remove_seasonality,
+    remove_trend,
     stationarity_test_adf,
     stationarity_test_kpss,
     stationarity_tests,
 )
-from darts.utils.timeseries_generation import constant_timeseries, gaussian_timeseries
+from darts.utils.timeseries_generation import (
+    constant_timeseries,
+    gaussian_timeseries,
+    linear_timeseries,
+)
+from darts.utils.utils import ModelMode, SeasonalityMode
 
 
 class TimeSeriesTestCase(DartsBaseTestClass):
@@ -93,3 +101,95 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         self.assertTrue(stationarity_test_kpss(series_3)[1] > 0.05)
         self.assertTrue(stationarity_test_adf(series_3)[1] < 0.05)
         self.assertTrue(stationarity_tests)
+
+
+class SeasonalDecomposeTestCase(DartsBaseTestClass):
+    pd_series = pd.Series(range(50), index=pd.date_range("20130101", "20130219"))
+    pd_series = pd_series.map(lambda x: np.sin(x * np.pi / 3 + np.pi / 2))
+    season = TimeSeries.from_series(pd_series)
+    trend = linear_timeseries(
+        start_value=1, end_value=10, start=season.start_time(), end=season.end_time()
+    )
+    ts = trend + season
+
+    def test_extract(self):
+        # test default (naive) method
+        calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6)
+        diff = self.trend - calc_trend
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+
+        # test default (naive) method additive
+        calc_trend, _ = extract_trend_and_seasonality(
+            self.ts, freq=6, model=ModelMode.ADDITIVE
+        )
+        diff = self.trend - calc_trend
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+
+        # test STL method
+        calc_trend, _ = extract_trend_and_seasonality(
+            self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE
+        )
+        diff = self.trend - calc_trend
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+
+        # check if error is raised
+        with self.assertRaises(ValueError):
+            calc_trend, _ = extract_trend_and_seasonality(
+                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
+            )
+
+    def test_remove_seasonality(self):
+        # test default (naive) method
+        calc_trend = remove_seasonality(self.ts, freq=6)
+        diff = self.trend - calc_trend
+        self.assertTrue(np.mean(diff.values() ** 2).item() < 0.5)
+
+        # test default (naive) method additive
+        calc_trend = remove_seasonality(self.ts, freq=6, model=SeasonalityMode.ADDITIVE)
+        diff = self.trend - calc_trend
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+
+        # test STL method
+        calc_trend = remove_seasonality(
+            self.ts,
+            freq=6,
+            method="STL",
+            model=SeasonalityMode.ADDITIVE,
+            low_pass=9,
+        )
+        diff = self.trend - calc_trend
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+
+        # check if error is raised
+        with self.assertRaises(ValueError):
+            calc_trend = remove_seasonality(
+                self.ts, freq=6, method="STL", model=SeasonalityMode.MULTIPLICATIVE
+            )
+
+    def test_remove_trend(self):
+        # test naive method
+        calc_season = remove_trend(self.ts, freq=6)
+        diff = self.season - calc_season
+        self.assertTrue(np.mean(diff.values() ** 2).item() < 1.5)
+
+        # test naive method additive
+        calc_season = remove_trend(self.ts, freq=6, model=ModelMode.ADDITIVE)
+        diff = self.season - calc_season
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+
+        # test STL method
+        calc_season = remove_trend(
+            self.ts,
+            freq=6,
+            method="STL",
+            model=ModelMode.ADDITIVE,
+            low_pass=9,
+        )
+        diff = self.season - calc_season
+        self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
+
+        # check if error is raised
+        with self.assertRaises(ValueError):
+            calc_season = remove_trend(
+                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
+            )
