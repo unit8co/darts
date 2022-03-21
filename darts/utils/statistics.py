@@ -144,8 +144,8 @@ def extract_trend_and_seasonality(
         Defaults ``ModelMode.MULTIPLICATIVE``.
     method
         The method to be used to decompose the series.
-        "naive" : Seasonal decomposition using moving averages [1]_.
-        "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
+        - "naive" : Seasonal decomposition using moving averages [1]_.
+        - "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
     kwargs
         Other keyword arguments are passed down to the decomposition method.
     Returns
@@ -265,8 +265,8 @@ def remove_seasonality(
         Defaults SeasonalityMode.MULTIPLICATIVE.
     method
         The method to be used to decompose the series.
-        "naive" : Seasonal decomposition using moving averages [1]_.
-        "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
+        - "naive" : Seasonal decomposition using moving averages [1]_.
+        - "STL" : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.
         Defaults to "naive"
     kwargs
         Other keyword arguments are passed down to the decomposition method.
