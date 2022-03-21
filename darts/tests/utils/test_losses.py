@@ -1,6 +1,4 @@
 from darts.logging import get_logger
-from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.losses import MAELoss, MapeLoss, SmapeLoss
 
 logger = get_logger(__name__)
 
@@ -14,6 +12,8 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
+    from darts.tests.base_test_class import DartsBaseTestClass
+    from darts.utils.losses import MAELoss, MapeLoss, SmapeLoss
 
     class LossesTestCase(DartsBaseTestClass):
         x = torch.tensor([1.1, 2.2, 0.6345, -1.436])
