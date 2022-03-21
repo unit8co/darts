@@ -153,7 +153,11 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
 
         # test STL method
         calc_trend = remove_seasonality(
-            self.ts, freq=6, method="STL", model=SeasonalityMode.ADDITIVE
+            self.ts,
+            freq=6,
+            method="STL",
+            model=SeasonalityMode.ADDITIVE,
+            low_pass=9,
         )
         diff = self.trend - calc_trend
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
@@ -179,7 +183,11 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
 
         # test STL method
         calc_season = remove_trend(
-            self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE
+            self.ts,
+            freq=6,
+            method="STL",
+            model=ModelMode.ADDITIVE,
+            low_pass=9,
         )
         diff = self.season - calc_season
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
