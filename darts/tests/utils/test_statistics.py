@@ -133,12 +133,10 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # check if warning is raised
-        with self.assertWarns(Warning):
+        with self.assertRaises(ValueError):
             calc_trend, _ = extract_trend_and_seasonality(
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
-            diff = self.trend - calc_trend
-            self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
     def test_remove_seasonality(self):
         # test default (naive) method
@@ -163,12 +161,10 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # check if warning is raised
-        with self.assertWarns(Warning):
+        with self.assertRaises(ValueError):
             calc_trend = remove_seasonality(
                 self.ts, freq=6, method="STL", model=SeasonalityMode.MULTIPLICATIVE
             )
-            diff = self.trend - calc_trend
-            self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
     def test_remove_trend(self):
         # test naive method
@@ -193,9 +189,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # check if warning is raised
-        with self.assertWarns(Warning):
+        with self.assertRaises(ValueError):
             calc_season = remove_trend(
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
-            diff = self.season - calc_season
-            self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))

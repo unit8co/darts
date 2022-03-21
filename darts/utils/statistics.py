@@ -177,11 +177,12 @@ def extract_trend_and_seasonality(
         )
 
     elif method == "STL":
-        if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE]:
-            logger.warn(
-                f"Only ADDITIVE model is compatible with the STL method. Changing from {model} to"
-                f" {type(model).__name__}.ADDITIVE."
-            )
+        raise_if_not(
+            model in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE],
+            f"Only ADDITIVE model is compatible with the STL method. Current model is {model}.",
+            logger,
+        )
+
         decomp = STL(
             endog=ts.pd_series(),
             period=freq,
@@ -284,12 +285,12 @@ def remove_seasonality(
         model is not SeasonalityMode.NONE,
         "The model must be either MULTIPLICATIVE or ADDITIVE.",
     )
-    if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL":
-        logger.warn(
-            f"Only ADDITIVE seasonality is compatible with the STL method. Changing from {model} to"
-            f" {type(model).__name__}.ADDITIVE."
-        )
-        model = SeasonalityMode.ADDITIVE
+    raise_if(
+        model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL",
+        f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
+        logger,
+    )
+
     _, seasonality = extract_trend_and_seasonality(ts, freq, model, method, **kwargs)
     new_ts = remove_from_series(ts, seasonality, model)
     return new_ts
@@ -327,12 +328,12 @@ def remove_trend(
     """
 
     ts._assert_univariate()
-    if model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL":
-        logger.warn(
-            f"Only ADDITIVE seasonality is compatible with the STL method. Changing from {model} to"
-            f" {type(model).__name__}.ADDITIVE."
-        )
-        model = ModelMode.ADDITIVE
+
+    raise_if(
+        model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL",
+        f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
+        logger,
+    )
     trend, _ = extract_trend_and_seasonality(ts, model=model, method=method, **kwargs)
     new_ts = remove_from_series(ts, trend, model)
     return new_ts
