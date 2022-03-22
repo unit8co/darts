@@ -363,6 +363,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
        Temporal Convolutional Network
       </a>
@@ -451,6 +456,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
     </a>
    </li>
    <li class="toctree-l2">
@@ -555,8 +565,8 @@ and <cite>m</cite> is the seasonality period.</p>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.extract_trend_and_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">extract_trend_and_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
-<dd><p>Extracts trend and seasonality from a TimeSeries instance using <cite>statsmodels.seasonal_decompose</cite>.</p>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">extract_trend_and_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#extract_trend_and_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.extract_trend_and_seasonality" title="Permalink to this definition">¶</a></dt>
+<dd><p>Extracts trend and seasonality from a TimeSeries instance using <cite>statsmodels.tsa</cite>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -566,6 +576,10 @@ and <cite>m</cite> is the seasonality period.</p>
 Must be <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">ModelMode,</span> <span class="pre">SeasonalityMode</span></code> Enum member.
 Either <code class="docutils literal notranslate"><span class="pre">MULTIPLICATIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code>.
 Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.MULTIPLICATIVE</span></code>.</p></li>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
+- “naive” : Seasonal decomposition using moving averages <a class="reference internal" href="#rbe1076d57ddf-1" id="id1">[1]</a>.
+- “STL” : Season-Trend decomposition using LOESS <a class="reference internal" href="#rbe1076d57ddf-2" id="id2">[2]</a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.</p></li>
+<li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -575,6 +589,15 @@ Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.
 <dd class="field-odd"><p>Tuple[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, <a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]</p>
 </dd>
 </dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rbe1076d57ddf-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</a></p>
+</dd>
+<dt class="label" id="rbe1076d57ddf-2"><span class="brackets"><a class="fn-backref" href="#id2">2</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py function">
@@ -582,7 +605,7 @@ Defaults <code class="docutils literal notranslate"><span class="pre">ModelMode.
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">granger_causality_tests</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts_cause</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ts_effect</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">addconst</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#granger_causality_tests"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.granger_causality_tests" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides four tests for granger non causality of 2 time series using
 <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.grangercausalitytests()</span></code>.
-See <a class="reference internal" href="#r11379780e7c2-1" id="id1">[1]</a>.</p>
+See <a class="reference internal" href="#r11379780e7c2-1" id="id3">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -608,7 +631,7 @@ matrix for the parameter f_test.</p>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r11379780e7c2-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dt class="label" id="r11379780e7c2-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.grangercausalitytests.html</a></p>
 </dd>
 </dl>
@@ -618,7 +641,7 @@ matrix for the parameter f_test.</p>
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_acf">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_acf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bartlett_confint</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_acf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_acf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.
-Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.acf()</span></code> <a class="reference internal" href="#rafdb152b6caa-1" id="id2">[1]</a></p>
+Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.acf()</span></code> <a class="reference internal" href="#rafdb152b6caa-1" id="id4">[1]</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -638,7 +661,7 @@ If set to False, the confidence interval can be used to test for randomness
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rafdb152b6caa-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dt class="label" id="rafdb152b6caa-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.acf.html</a></p>
 </dd>
 </dl>
@@ -679,7 +702,7 @@ or an array-like of floats determining the position of bins.</p></li>
 <dt class="sig sig-object py" id="darts.utils.statistics.plot_pacf">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">plot_pacf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_lag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">24</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ywadjusted'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">alpha</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.05</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(10,</span> <span class="pre">5)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axis</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#plot_pacf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.plot_pacf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Plots the Partial ACF of <cite>ts</cite>, highlighting it at lag <cite>m</cite>, with corresponding significance interval.
-Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.pacf()</span></code> <a class="reference internal" href="#rb31bb5f8a25c-1" id="id3">[1]</a></p>
+Uses <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.pacf()</span></code> <a class="reference internal" href="#rb31bb5f8a25c-1" id="id5">[1]</a></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -714,7 +737,7 @@ correction.</p></li>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rb31bb5f8a25c-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dt class="label" id="rb31bb5f8a25c-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.pacf.html</a></p>
 </dd>
 </dl>
@@ -774,7 +797,7 @@ Either MULTIPLICATIVE or ADDITIVE.</p></li>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_seasonality">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_seasonality</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_seasonality"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_seasonality" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a seasonality of order <cite>frequency</cite> using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -785,29 +808,50 @@ Either MULTIPLICATIVE or ADDITIVE.</p></li>
 Must be a <cite>from darts import SeasonalityMode</cite> Enum member.
 Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.
 Defaults SeasonalityMode.MULTIPLICATIVE.</p></li>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
+- “naive” : Seasonal decomposition using moving averages <a class="reference internal" href="#rf4f084a62862-1" id="id6">[1]</a>.
+- “STL” : Season-Trend decomposition using LOESS <a class="reference internal" href="#rf4f084a62862-2" id="id7">[2]</a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.
+Defaults to “naive”</p></li>
+<li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.
+Returns</p></li>
+<li><p><strong>-------</strong> – </p></li>
+<li><p><strong>TimeSeries</strong> – A new TimeSeries instance that corresponds to the seasonality-adjusted ‘ts’.</p></li>
 </ul>
 </dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>A new TimeSeries instance that corresponds to the seasonality-adjusted ‘ts’.</p>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rf4f084a62862-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</a></p>
 </dd>
+<dt class="label" id="rf4f084a62862-2"><span class="brackets"><a class="fn-backref" href="#id7">2</a></span></dt>
+<dd><p><a class="reference external" href="https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html">https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</a></p>
+</dd>
+</dl>
+<dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py function">
 <dt class="sig sig-object py" id="darts.utils.statistics.remove_trend">
-<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
+<span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">remove_trend</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'naive'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#remove_trend"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.remove_trend" title="Permalink to this definition">¶</a></dt>
 <dd><p>Adjusts the TimeSeries <cite>ts</cite> for a trend using the <cite>model</cite> decomposition.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries to adjust.</p></li>
 <li><p><strong>model</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>) – The type of decomposition to use.
-Must be <cite>from darts import ModelMode</cite> Enum member.
+Must be a <cite>from darts import ModelMode</cite> Enum member.
 Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.
-Defaults to modelMode.MULTIPLICATIVE.</p></li>
+Defaults ModelMode.MULTIPLICATIVE.</p></li>
+<li><p><strong>method</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The method to be used to decompose the series.
+- “naive” : Seasonal decomposition using moving averages <a href="#id16"><span class="problematic" id="id8">[1]_</span></a>.
+- “STL” : Season-Trend decomposition using LOESS <a href="#id17"><span class="problematic" id="id9">[2]_</span></a>. Only compatible with <code class="docutils literal notranslate"><span class="pre">ADDITIVE</span></code> model type.
+Defaults to “naive”</p></li>
+<li><p><strong>kwargs</strong> – Other keyword arguments are passed down to the decomposition method.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -823,7 +867,7 @@ Defaults to modelMode.MULTIPLICATIVE.</p></li>
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_adf">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_adf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">maxlag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">autolag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'AIC'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_adf"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_adf" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides Augmented Dickey-Fuller unit root test for a time series,
-using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.adfuller()</span></code>. See <a class="reference internal" href="#ref511d402b22-1" id="id4">[1]</a>.</p>
+using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.adfuller()</span></code>. See <a class="reference internal" href="#ref511d402b22-1" id="id10">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -844,10 +888,10 @@ If None, then the number of included lags is set to maxlag.</p></li>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><div class="line-block">
 <div class="line">adf: The test statistic.</div>
-<div class="line">pvalue: MacKinnon’s approximate p-value based on <a class="reference internal" href="#ref511d402b22-2" id="id5">[2]</a>.</div>
+<div class="line">pvalue: MacKinnon’s approximate p-value based on <a class="reference internal" href="#ref511d402b22-2" id="id11">[2]</a>.</div>
 <div class="line">usedlag: The number of lags used.</div>
 <div class="line">nobs: The number of observations used for the ADF regression and calculation of the critical values.</div>
-<div class="line">critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on <a class="reference internal" href="#ref511d402b22-2" id="id6">[2]</a>.</div>
+<div class="line">critical: Critical values for the test statistic at the 1 %, 5 %, and 10 % levels. Based on <a class="reference internal" href="#ref511d402b22-2" id="id12">[2]</a>.</div>
 <div class="line">icbest: The maximized information criterion if autolag is not None.</div>
 </div>
 </p>
@@ -858,10 +902,10 @@ If None, then the number of included lags is set to maxlag.</p></li>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="ref511d402b22-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
+<dt class="label" id="ref511d402b22-1"><span class="brackets"><a class="fn-backref" href="#id10">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.adfuller.html</a></p>
 </dd>
-<dt class="label" id="ref511d402b22-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id5">1</a>,<a href="#id6">2</a>)</span></dt>
+<dt class="label" id="ref511d402b22-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id11">1</a>,<a href="#id12">2</a>)</span></dt>
 <dd><p>MacKinnon (1994, 2010)</p>
 </dd>
 </dl>
@@ -871,7 +915,7 @@ If None, then the number of included lags is set to maxlag.</p></li>
 <dt class="sig sig-object py" id="darts.utils.statistics.stationarity_test_kpss">
 <span class="sig-prename descclassname"><span class="pre">darts.utils.statistics.</span></span><span class="sig-name descname"><span class="pre">stationarity_test_kpss</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">regression</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'c'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nlags</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'auto'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/statistics.html#stationarity_test_kpss"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.statistics.stationarity_test_kpss" title="Permalink to this definition">¶</a></dt>
 <dd><p>Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
-using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.kpss()</span></code>. See <a class="reference internal" href="#r8df52d521c0a-1" id="id7">[1]</a>.</p>
+using <code class="xref py py-func docutils literal notranslate"><span class="pre">statsmodels.tsa.stattools.kpss()</span></code>. See <a class="reference internal" href="#r8df52d521c0a-1" id="id13">[1]</a>.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -887,11 +931,11 @@ uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p><div class="line-block">
 <div class="line">kpss_stat: The test statistic.</div>
-<div class="line">pvalue: The p-value of the test. The p-value is interpolated from Table 1 in <a class="reference internal" href="#r8df52d521c0a-2" id="id8">[2]</a>,</div>
+<div class="line">pvalue: The p-value of the test. The p-value is interpolated from Table 1 in <a class="reference internal" href="#r8df52d521c0a-2" id="id14">[2]</a>,</div>
 <div class="line">and a boundary point is returned if the test statistic is outside the table of critical values,</div>
 <div class="line">that is, if the p-value is outside the interval (0.01, 0.1).</div>
 <div class="line">lags: The truncation lag parameter.</div>
-<div class="line">crit: The critical values at 10%, 5%, 2.5% and 1%. Based on <a class="reference internal" href="#r8df52d521c0a-2" id="id9">[2]</a>.</div>
+<div class="line">crit: The critical values at 10%, 5%, 2.5% and 1%. Based on <a class="reference internal" href="#r8df52d521c0a-2" id="id15">[2]</a>.</div>
 </div>
 </p>
 </dd>
@@ -901,10 +945,10 @@ uses int(12 * (n / 100)**(1 / 4)) , as outlined in Schwert (1989).</p></li>
 </dl>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r8df52d521c0a-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
+<dt class="label" id="r8df52d521c0a-1"><span class="brackets"><a class="fn-backref" href="#id13">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html">https://www.statsmodels.org/dev/generated/statsmodels.tsa.stattools.kpss.html</a></p>
 </dd>
-<dt class="label" id="r8df52d521c0a-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id8">1</a>,<a href="#id9">2</a>)</span></dt>
+<dt class="label" id="r8df52d521c0a-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id14">1</a>,<a href="#id15">2</a>)</span></dt>
 <dd><p>Kwiatkowski et al. (1992)</p>
 </dd>
 </dl>

@@ -177,7 +177,7 @@
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">from</span> <span class="nn">scipy.signal</span> <span class="kn">import</span> <span class="n">argrelmax</span>
 <span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">norm</span>
-<span class="kn">from</span> <span class="nn">statsmodels.tsa.seasonal</span> <span class="kn">import</span> <span class="n">seasonal_decompose</span>
+<span class="kn">from</span> <span class="nn">statsmodels.tsa.seasonal</span> <span class="kn">import</span> <span class="n">STL</span><span class="p">,</span> <span class="n">seasonal_decompose</span>
 <span class="kn">from</span> <span class="nn">statsmodels.tsa.stattools</span> <span class="kn">import</span> <span class="n">acf</span><span class="p">,</span> <span class="n">adfuller</span><span class="p">,</span> <span class="n">grangercausalitytests</span><span class="p">,</span> <span class="n">kpss</span><span class="p">,</span> <span class="n">pacf</span>
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -285,16 +285,18 @@
     <span class="k">if</span> <span class="n">m</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">length</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">r</span><span class="p">[:</span> <span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])))</span> <span class="o">/</span> <span class="n">length</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">math</span><span class="o">.</span><span class="n">sqrt</span><span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="nb">sum</span><span class="p">(</span><span class="nb">map</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">x</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">r</span><span class="p">[:</span> <span class="n">m</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])))</span> <span class="o">/</span> <span class="n">length</span><span class="p">)</span>
 
 
 <div class="viewcode-block" id="extract_trend_and_seasonality"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.extract_trend_and_seasonality">[docs]</a><span class="k">def</span> <span class="nf">extract_trend_and_seasonality</span><span class="p">(</span>
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">freq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">ModelMode</span><span class="p">]</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;naive&quot;</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">TimeSeries</span><span class="p">]:</span>
     <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.seasonal_decompose`.</span>
+<span class="sd">    Extracts trend and seasonality from a TimeSeries instance using `statsmodels.tsa`.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -307,11 +309,21 @@
 <span class="sd">        Must be ``from darts import ModelMode, SeasonalityMode`` Enum member.</span>
 <span class="sd">        Either ``MULTIPLICATIVE`` or ``ADDITIVE``.</span>
 <span class="sd">        Defaults ``ModelMode.MULTIPLICATIVE``.</span>
-
+<span class="sd">    method</span>
+<span class="sd">        The method to be used to decompose the series.</span>
+<span class="sd">        - &quot;naive&quot; : Seasonal decomposition using moving averages [1]_.</span>
+<span class="sd">        - &quot;STL&quot; : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Other keyword arguments are passed down to the decomposition method.</span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    Tuple[TimeSeries, TimeSeries]</span>
 <span class="sd">        A tuple of (trend, seasonal) time series.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    -------</span>
+<span class="sd">    .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</span>
+<span class="sd">    .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
@@ -325,9 +337,27 @@
         <span class="s2">&quot;The model must be either MULTIPLICATIVE or ADDITIVE.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
 
-    <span class="n">decomp</span> <span class="o">=</span> <span class="n">seasonal_decompose</span><span class="p">(</span>
-        <span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span> <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">extrapolate_trend</span><span class="o">=</span><span class="s2">&quot;freq&quot;</span>
-    <span class="p">)</span>
+    <span class="k">if</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;naive&quot;</span><span class="p">:</span>
+
+        <span class="n">decomp</span> <span class="o">=</span> <span class="n">seasonal_decompose</span><span class="p">(</span>
+            <span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span> <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">extrapolate_trend</span><span class="o">=</span><span class="s2">&quot;freq&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">elif</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;STL&quot;</span><span class="p">:</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">model</span> <span class="ow">in</span> <span class="p">[</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">],</span>
+            <span class="sa">f</span><span class="s2">&quot;Only ADDITIVE model is compatible with the STL method. Current model is </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">decomp</span> <span class="o">=</span> <span class="n">STL</span><span class="p">(</span>
+            <span class="n">endog</span><span class="o">=</span><span class="n">ts</span><span class="o">.</span><span class="n">pd_series</span><span class="p">(),</span>
+            <span class="n">period</span><span class="o">=</span><span class="n">freq</span><span class="p">,</span>
+            <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">()</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">raise_log</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown value for method: </span><span class="si">{</span><span class="n">method</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">),</span> <span class="n">logger</span><span class="p">)</span>
 
     <span class="n">season</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">decomp</span><span class="o">.</span><span class="n">seasonal</span><span class="p">)</span>
     <span class="n">trend</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span><span class="n">ts</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">decomp</span><span class="o">.</span><span class="n">trend</span><span class="p">)</span>
@@ -352,7 +382,6 @@
 <span class="sd">        The type of model considered.</span>
 <span class="sd">        Must be `from darts import ModelMode, SeasonalityMode` Enums member.</span>
 <span class="sd">        Either MULTIPLICATIVE or ADDITIVE.</span>
-
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
@@ -385,6 +414,8 @@
     <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
     <span class="n">freq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="n">model</span><span class="p">:</span> <span class="n">SeasonalityMode</span> <span class="o">=</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;naive&quot;</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Adjusts the TimeSeries `ts` for a seasonality of order `frequency` using the `model` decomposition.</span>
@@ -400,25 +431,43 @@
 <span class="sd">        Must be a `from darts import SeasonalityMode` Enum member.</span>
 <span class="sd">        Either SeasonalityMode.MULTIPLICATIVE or SeasonalityMode.ADDITIVE.</span>
 <span class="sd">        Defaults SeasonalityMode.MULTIPLICATIVE.</span>
-<span class="sd">    Returns</span>
+<span class="sd">    method</span>
+<span class="sd">        The method to be used to decompose the series.</span>
+<span class="sd">        - &quot;naive&quot; : Seasonal decomposition using moving averages [1]_.</span>
+<span class="sd">        - &quot;STL&quot; : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.</span>
+<span class="sd">        Defaults to &quot;naive&quot;</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Other keyword arguments are passed down to the decomposition method.</span>
+<span class="sd">     Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
 <span class="sd">        A new TimeSeries instance that corresponds to the seasonality-adjusted &#39;ts&#39;.</span>
+<span class="sd">    References</span>
+<span class="sd">    -------</span>
+<span class="sd">    .. [1] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.seasonal_decompose.html</span>
+<span class="sd">    .. [2] https://www.statsmodels.org/devel/generated/statsmodels.tsa.seasonal.STL.html</span>
 <span class="sd">    &quot;&quot;&quot;</span>
-
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
     <span class="n">raise_if_not</span><span class="p">(</span>
         <span class="n">model</span> <span class="ow">is</span> <span class="ow">not</span> <span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">NONE</span><span class="p">,</span>
         <span class="s2">&quot;The model must be either MULTIPLICATIVE or ADDITIVE.&quot;</span><span class="p">,</span>
     <span class="p">)</span>
+    <span class="n">raise_if</span><span class="p">(</span>
+        <span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">]</span> <span class="ow">and</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;STL&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Only ADDITIVE seasonality is compatible with the STL method. Current model is </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
+    <span class="p">)</span>
 
-    <span class="n">_</span><span class="p">,</span> <span class="n">seasonality</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">seasonality</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">freq</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">new_ts</span> <span class="o">=</span> <span class="n">remove_from_series</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">seasonality</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">new_ts</span></div>
 
 
 <div class="viewcode-block" id="remove_trend"><a class="viewcode-back" href="../../../generated_api/darts.utils.statistics.html#darts.utils.statistics.remove_trend">[docs]</a><span class="k">def</span> <span class="nf">remove_trend</span><span class="p">(</span>
-    <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">model</span><span class="p">:</span> <span class="n">ModelMode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span>
+    <span class="n">ts</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">:</span> <span class="n">ModelMode</span> <span class="o">=</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">MULTIPLICATIVE</span><span class="p">,</span>
+    <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;naive&quot;</span><span class="p">,</span>
+    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
 <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
     <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Adjusts the TimeSeries `ts` for a trend using the `model` decomposition.</span>
@@ -429,9 +478,16 @@
 <span class="sd">        The TimeSeries to adjust.</span>
 <span class="sd">    model</span>
 <span class="sd">        The type of decomposition to use.</span>
-<span class="sd">        Must be `from darts import ModelMode` Enum member.</span>
+<span class="sd">        Must be a `from darts import ModelMode` Enum member.</span>
 <span class="sd">        Either ModelMode.MULTIPLICATIVE or ModelMode.ADDITIVE.</span>
-<span class="sd">        Defaults to modelMode.MULTIPLICATIVE.</span>
+<span class="sd">        Defaults ModelMode.MULTIPLICATIVE.</span>
+<span class="sd">    method</span>
+<span class="sd">        The method to be used to decompose the series.</span>
+<span class="sd">        - &quot;naive&quot; : Seasonal decomposition using moving averages [1]_.</span>
+<span class="sd">        - &quot;STL&quot; : Season-Trend decomposition using LOESS [2]_. Only compatible with ``ADDITIVE`` model type.</span>
+<span class="sd">        Defaults to &quot;naive&quot;</span>
+<span class="sd">    kwargs</span>
+<span class="sd">        Other keyword arguments are passed down to the decomposition method.</span>
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    TimeSeries</span>
@@ -440,7 +496,12 @@
 
     <span class="n">ts</span><span class="o">.</span><span class="n">_assert_univariate</span><span class="p">()</span>
 
-    <span class="n">trend</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">)</span>
+    <span class="n">raise_if</span><span class="p">(</span>
+        <span class="n">model</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="n">SeasonalityMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">,</span> <span class="n">ModelMode</span><span class="o">.</span><span class="n">ADDITIVE</span><span class="p">]</span> <span class="ow">and</span> <span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;STL&quot;</span><span class="p">,</span>
+        <span class="sa">f</span><span class="s2">&quot;Only ADDITIVE seasonality is compatible with the STL method. Current model is </span><span class="si">{</span><span class="n">model</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">,</span>
+        <span class="n">logger</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">trend</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">extract_trend_and_seasonality</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="n">new_ts</span> <span class="o">=</span> <span class="n">remove_from_series</span><span class="p">(</span><span class="n">ts</span><span class="p">,</span> <span class="n">trend</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
     <span class="k">return</span> <span class="n">new_ts</span></div>
 

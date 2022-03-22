@@ -458,6 +458,7 @@
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">train_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -496,6 +497,11 @@
 <span class="sd">        num_samples</span>
 <span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1</span>
 <span class="sd">            for deterministic models.</span>
+<span class="sd">        train_length</span>
+<span class="sd">            Number of time steps in our training set (size of backtesting window to train on).</span>
+<span class="sd">            Default is set to train_length=None where it takes all available time steps up until prediction time,</span>
+<span class="sd">            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps</span>
+<span class="sd">            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.</span>
 <span class="sd">        start</span>
 <span class="sd">            The first point of time at which a prediction is computed for a future time.</span>
 <span class="sd">            This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.</span>
@@ -544,6 +550,24 @@
             <span class="n">logger</span><span class="p">,</span>
         <span class="p">)</span>
 
+        <span class="k">if</span> <span class="n">train_length</span> <span class="ow">and</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">train_length</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;If not None, train_length needs to be an integer.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">train_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">train_length</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;If not None, train_length needs to be positive.&quot;</span><span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">train_length</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="n">train_length</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_train_series_length</span><span class="p">:</span>
+            <span class="n">raise_log</span><span class="p">(</span>
+                <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;train_length is too small for the training requirements of this model&quot;</span>
+                <span class="p">),</span>
+                <span class="n">logger</span><span class="p">,</span>
+            <span class="p">)</span>
+
         <span class="c1"># prepare the start parameter -&gt; pd.Timestamp</span>
         <span class="n">start</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">get_timestamp_at_point</span><span class="p">(</span><span class="n">start</span><span class="p">)</span>
 
@@ -571,7 +595,10 @@
 
         <span class="c1"># iterate and forecast</span>
         <span class="k">for</span> <span class="n">pred_time</span> <span class="ow">in</span> <span class="n">iterator</span><span class="p">:</span>
-            <span class="n">train</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>  <span class="c1"># build the training series</span>
+            <span class="c1"># build the training series</span>
+            <span class="n">train</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">drop_after</span><span class="p">(</span><span class="n">pred_time</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">train_length</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">train</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">train_length</span><span class="p">:</span>
+                <span class="n">train</span> <span class="o">=</span> <span class="n">train</span><span class="p">[</span><span class="o">-</span><span class="n">train_length</span><span class="p">:]</span>
 
             <span class="c1"># train_cov = covariates.drop_after(pred_time) if covariates else None</span>
 
@@ -620,6 +647,7 @@
         <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">train_length</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">start</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">,</span>
         <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">stride</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -662,6 +690,11 @@
 <span class="sd">        num_samples</span>
 <span class="sd">            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1</span>
 <span class="sd">            for deterministic models.</span>
+<span class="sd">        train_length</span>
+<span class="sd">            Number of time steps in our training set (size of backtesting window to train on).</span>
+<span class="sd">            Default is set to train_length=None where it takes all available time steps up until prediction time,</span>
+<span class="sd">            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps</span>
+<span class="sd">            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.</span>
 <span class="sd">        start</span>
 <span class="sd">            The first prediction time, at which a prediction is computed for a future time.</span>
 <span class="sd">            This parameter supports 3 different types: ``float``, ``int`` and ``pandas.Timestamp``.</span>
@@ -700,6 +733,7 @@
             <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
             <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
             <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+            <span class="n">train_length</span><span class="o">=</span><span class="n">train_length</span><span class="p">,</span>
             <span class="n">start</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
             <span class="n">forecast_horizon</span><span class="o">=</span><span class="n">forecast_horizon</span><span class="p">,</span>
             <span class="n">stride</span><span class="o">=</span><span class="n">stride</span><span class="p">,</span>
@@ -736,7 +770,7 @@
         <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
         <span class="n">n_jobs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">n_random_samples</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;ForecastingModel&quot;</span><span class="p">,</span> <span class="n">Dict</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="s2">&quot;ForecastingModel&quot;</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Find the best hyper-parameters among a given set using a grid search.</span>
 
@@ -827,9 +861,10 @@
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
-<span class="sd">        ForecastingModel, Dict</span>
+<span class="sd">        ForecastingModel, Dict, float</span>
 <span class="sd">            A tuple containing an untrained `model_class` instance created from the best-performing hyper-parameters,</span>
-<span class="sd">            along with a dictionary containing these best hyper-parameters.</span>
+<span class="sd">            along with a dictionary containing these best hyper-parameters,</span>
+<span class="sd">            and metric score for the best hyper-parameters.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="p">(</span><span class="n">forecast_horizon</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span>
@@ -874,7 +909,7 @@
             <span class="nb">zip</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">),</span> <span class="n">verbose</span><span class="p">,</span> <span class="n">total</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">params_cross_product</span><span class="p">)</span>
         <span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">_evaluate_combination</span><span class="p">(</span><span class="n">param_combination</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_evaluate_combination</span><span class="p">(</span><span class="n">param_combination</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
             <span class="n">param_combination_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
                 <span class="nb">list</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">parameters</span><span class="o">.</span><span class="n">keys</span><span class="p">(),</span> <span class="n">param_combination</span><span class="p">))</span>
             <span class="p">)</span>
@@ -915,9 +950,11 @@
                 <span class="p">)</span>
                 <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">val_series</span><span class="p">)</span>
 
-            <span class="k">return</span> <span class="n">error</span>
+            <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
-        <span class="n">errors</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span><span class="n">iterator</span><span class="p">,</span> <span class="n">_evaluate_combination</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{})</span>
+        <span class="n">errors</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="n">_parallel_apply</span><span class="p">(</span>
+            <span class="n">iterator</span><span class="p">,</span> <span class="n">_evaluate_combination</span><span class="p">,</span> <span class="n">n_jobs</span><span class="p">,</span> <span class="p">{},</span> <span class="p">{}</span>
+        <span class="p">)</span>
 
         <span class="n">min_error</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">errors</span><span class="p">)</span>
 
@@ -927,7 +964,7 @@
 
         <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s2">&quot;Chosen parameters: &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">best_param_combination</span><span class="p">))</span>
 
-        <span class="k">return</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">best_param_combination</span><span class="p">),</span> <span class="n">best_param_combination</span>
+        <span class="k">return</span> <span class="n">model_class</span><span class="p">(</span><span class="o">**</span><span class="n">best_param_combination</span><span class="p">),</span> <span class="n">best_param_combination</span><span class="p">,</span> <span class="n">min_error</span>
 
     <span class="k">def</span> <span class="nf">residuals</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
@@ -1302,8 +1339,13 @@
                 <span class="n">future_covariates</span><span class="o">.</span><span class="n">end_time</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="n">start</span><span class="p">,</span> <span class="n">invalid_time_span_error</span><span class="p">,</span> <span class="n">logger</span>
             <span class="p">)</span>
 
+            <span class="n">offset</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">n</span> <span class="o">-</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">future_covariates</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">)</span>
+                <span class="k">else</span> <span class="n">n</span>
+            <span class="p">)</span>
             <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">future_covariates</span><span class="p">[</span>
-                <span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="p">(</span><span class="n">n</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">freq</span>
+                <span class="n">start</span> <span class="p">:</span> <span class="n">start</span> <span class="o">+</span> <span class="n">offset</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">training_series</span><span class="o">.</span><span class="n">freq</span>
             <span class="p">]</span>
 
             <span class="n">raise_if_not</span><span class="p">(</span>

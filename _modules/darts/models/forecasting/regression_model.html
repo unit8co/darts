@@ -191,16 +191,19 @@
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span> <span class="nn">math</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
 <span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
 <span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputRegressor</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.forecasting_model</span> <span class="kn">import</span> <span class="n">GlobalForecastingModel</span>
 <span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_check_quantiles</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
@@ -363,6 +366,15 @@
             <span class="sa">f</span><span class="s2">&quot;output_chunk_length must be an integer greater than 0. Given: </span><span class="si">{</span><span class="n">output_chunk_length</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">max</span><span class="p">(</span>
+            <span class="mi">3</span><span class="p">,</span>
+            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="p">[</span><span class="s2">&quot;target&quot;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span>
+            <span class="k">if</span> <span class="s2">&quot;target&quot;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">lags</span>
+            <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+        <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_get_last_prediction_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">forecast_horizon</span><span class="p">,</span> <span class="n">overlap_end</span><span class="p">):</span>
         <span class="c1"># overrides the ForecastingModel _get_last_prediction_time, taking care of future lags if any</span>
@@ -761,6 +773,139 @@
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="fm">__str__</span><span class="p">()</span></div>
+
+
+<span class="k">class</span> <span class="nc">_LikelihoodMixin</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A class containing functions supporting quantile and poisson regression, to be used as a mixin for some</span>
+<span class="sd">    `RegressionModel` subclasses.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">available_likelihoods</span><span class="p">):</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">likelihood</span> <span class="ow">in</span> <span class="n">available_likelihoods</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;If likelihood is specified it must be one of </span><span class="si">{</span><span class="n">available_likelihoods</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_model_container</span><span class="p">():</span>
+        <span class="k">return</span> <span class="n">_QuantileModelContainer</span><span class="p">()</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_prepare_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">quantiles</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">quantiles</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="mf">0.01</span><span class="p">,</span>
+                <span class="mf">0.05</span><span class="p">,</span>
+                <span class="mf">0.1</span><span class="p">,</span>
+                <span class="mf">0.25</span><span class="p">,</span>
+                <span class="mf">0.5</span><span class="p">,</span>
+                <span class="mf">0.75</span><span class="p">,</span>
+                <span class="mf">0.9</span><span class="p">,</span>
+                <span class="mf">0.95</span><span class="p">,</span>
+                <span class="mf">0.99</span><span class="p">,</span>
+            <span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">quantiles</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
+            <span class="n">_check_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
+        <span class="n">median_idx</span> <span class="o">=</span> <span class="n">quantiles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">quantiles</span><span class="p">,</span> <span class="n">median_idx</span>
+
+    <span class="k">def</span> <span class="nf">_predict_quantiles</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">superfun</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="n">predictions</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">quantile</span><span class="p">,</span> <span class="n">fitted</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">fitted</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="n">superfun</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>  <span class="c1"># handles the single series case</span>
+                <span class="n">prediction</span> <span class="o">=</span> <span class="p">[</span><span class="n">prediction</span><span class="p">]</span>
+            <span class="n">predictions</span><span class="o">.</span><span class="n">append</span><span class="p">([</span><span class="n">p</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span> <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prediction</span><span class="p">])</span>
+        <span class="n">model_outputs</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">m</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">predictions</span><span class="p">],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">prediction</span><span class="p">))</span>
+        <span class="p">]</span>
+        <span class="n">samples</span> <span class="o">=</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_sample_quantiles</span><span class="p">(</span><span class="n">m</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span> <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">model_outputs</span><span class="p">]</span>
+        <span class="c1"># build timeseries from samples</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_ts_from_samples</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_predict_poisson</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">superfun</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="n">prediction</span> <span class="o">=</span> <span class="n">superfun</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">):</span>  <span class="c1"># handles the single series case</span>
+            <span class="n">prediction</span> <span class="o">=</span> <span class="p">[</span><span class="n">prediction</span><span class="p">]</span>
+
+        <span class="n">samples</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_sample_poisson</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">p</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)),</span> <span class="n">num_samples</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">prediction</span>
+        <span class="p">]</span>
+        <span class="c1"># build timeseries from samples</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_build_ts_from_samples</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_build_ts_from_samples</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">prediction</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">samples</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="n">ts_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_ts_like</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">sample</span><span class="p">)</span> <span class="k">for</span> <span class="n">pred</span><span class="p">,</span> <span class="n">sample</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">prediction</span><span class="p">,</span> <span class="n">samples</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ts_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ts_list</span>
+
+    <span class="k">def</span> <span class="nf">_sample_quantiles</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        This method is ported to numpy from the probabilistic torch models module</span>
+<span class="sd">        model_output is of shape (n_timesteps, n_components, n_quantiles)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]))</span>
+        <span class="n">quantiles</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">),</span> <span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="n">probas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,)),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="n">quantile_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">probas</span><span class="o">.</span><span class="n">T</span> <span class="o">&gt;</span> <span class="n">quantiles</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># To make the sampling symmetric around the median, we assign the two &quot;probability buckets&quot; before and after</span>
+        <span class="c1"># the median to the median value. If we don&#39;t do that, the highest quantile would be wrongly sampled</span>
+        <span class="c1"># too often as it would capture the &quot;probability buckets&quot; preceding and following it.</span>
+        <span class="c1">#</span>
+        <span class="c1"># Example; the arrows shows how the buckets map to values: [--&gt; 0.1 --&gt; 0.25 --&gt; 0.5 &lt;-- 0.75 &lt;-- 0.9 &lt;--]</span>
+        <span class="n">quantile_idxs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
+            <span class="n">quantile_idxs</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span><span class="p">,</span> <span class="n">quantile_idxs</span><span class="p">,</span> <span class="n">quantile_idxs</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># return median</span>
+            <span class="k">return</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span><span class="p">]]</span>
+
+        <span class="k">return</span> <span class="n">model_output</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">quantile_idxs</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="nf">_sample_poisson</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="nb">all</span><span class="p">([</span><span class="nb">isinstance</span><span class="p">(</span><span class="n">num_samples</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span> <span class="n">num_samples</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">num_samples</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>  <span class="c1"># return mean</span>
+            <span class="k">return</span> <span class="n">model_output</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span><span class="o">.</span><span class="n">poisson</span><span class="p">(</span>
+            <span class="n">lam</span><span class="o">=</span><span class="n">model_output</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="o">*</span><span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">],</span> <span class="n">num_samples</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">float</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_ts_like</span><span class="p">(</span><span class="n">other</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TimeSeries</span><span class="p">:</span>
+        <span class="n">new_xa</span> <span class="o">=</span> <span class="n">xr</span><span class="o">.</span><span class="n">DataArray</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">dims</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">dims</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">other</span><span class="o">.</span><span class="n">_xa</span><span class="o">.</span><span class="n">coords</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="p">(</span><span class="n">new_xa</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_QuantileModelContainer</span><span class="p">(</span><span class="n">OrderedDict</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;_QuantileModelContainer(quantiles=</span><span class="si">{</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">}</span><span class="s2">)&quot;</span>
 </pre></div>
 
               </div>

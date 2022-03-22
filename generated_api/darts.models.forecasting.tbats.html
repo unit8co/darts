@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Theta Method &#8212; darts  documentation</title>
+    <title>BATS and TBATS &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -37,8 +37,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="&lt;no title&gt;" href="darts.models.forecasting.torch_forecasting_model.html" />
-    <link rel="prev" title="&lt;no title&gt;" href="darts.models.forecasting.tft_submodels.html" />
+    <link rel="next" title="Temporal Convolutional Network" href="darts.models.forecasting.tcn_model.html" />
+    <link rel="prev" title="Recurrent Neural Networks" href="darts.models.forecasting.rnn_model.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -362,8 +362,8 @@
        Recurrent Neural Networks
       </a>
      </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
        BATS and TBATS
       </a>
      </li>
@@ -377,8 +377,8 @@
        Temporal Fusion Transformer (TFT)
       </a>
      </li>
-     <li class="toctree-l3 current active">
-      <a class="current reference internal" href="#">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
        Theta Method
       </a>
      </li>
@@ -536,44 +536,66 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.theta"></span><section id="theta-method">
-<h1>Theta Method<a class="headerlink" href="#theta-method" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-darts.models.forecasting.tbats"></span><section id="bats-and-tbats">
+<h1>BATS and TBATS<a class="headerlink" href="#bats-and-tbats" title="Permalink to this headline">¶</a></h1>
+<p>(T)BATS models <a class="reference internal" href="#r0000a99f6531-1" id="id1">[1]</a> stand for</p>
+<ul class="simple">
+<li><p>(Trigonometric)</p></li>
+<li><p>Box-Cox</p></li>
+<li><p>ARMA errors</p></li>
+<li><p>Trend</p></li>
+<li><p>Seasonal components</p></li>
+</ul>
+<p>They are appropriate to model “complex
+seasonal time series such as those with multiple
+seasonal periods, high frequency seasonality,
+non-integer seasonality and dual-calendar effects” <a class="reference internal" href="#r0000a99f6531-1" id="id2">[1]</a>.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r0000a99f6531-1"><span class="brackets">1</span><span class="fn-backref">(<a href="#id1">1</a>,<a href="#id2">2</a>)</span></dt>
+<dd><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">https://robjhyndman.com/papers/ComplexSeasonality.pdf</a></p>
+</dd>
+</dl>
 <dl class="py class">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.theta.</span></span><span class="sig-name descname"><span class="pre">FourTheta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonality_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">season_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">model_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">ModelMode.ADDITIVE</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">trend_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">TrendMode.LINEAR</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#FourTheta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.ForecastingModel</span></code></p>
-<p>An implementation of the 4Theta method with configurable <cite>theta</cite> parameter.</p>
-<p>See M4 competition <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">solution</a>.</p>
-<p>The training time series is de-seasonalized according to <cite>seasonality_period</cite>,
-or an inferred seasonality period.</p>
-<p><cite>season_mode</cite> must be a <code class="docutils literal notranslate"><span class="pre">SeasonalityMode</span></code> Enum member.
-<cite>model_mode</cite> must be a <code class="docutils literal notranslate"><span class="pre">ModelMode</span></code> Enum member.
-<cite>trend_mode</cite> must be a <code class="docutils literal notranslate"><span class="pre">TrendMode</span></code> Enum member.</p>
-<p>You can access the different Enums with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">SeasonalityMode,</span> <span class="pre">TrendMode,</span> <span class="pre">ModelMode</span></code>.</p>
-<p>When called with <cite>theta = X</cite>, <cite>model_mode = Model.ADDITIVE</cite> and <cite>trend_mode = Trend.LINEAR</cite>,
-this model is equivalent to calling <cite>Theta(theta=X)</cite>.</p>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.tbats.</span></span><span class="sig-name descname"><span class="pre">BATS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_box_cox</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">box_cox_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_trend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_damped_trend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'freq'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_arma_errors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multiprocessing_start_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spawn'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/tbats.html#BATS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.tbats.BATS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.tbats._BaseBatsTbatsModel</span></code></p>
+<p>This is a wrapper around
+<a class="reference external" href="https://github.com/intive-DataScience/tbats">tbats</a>.</p>
+<p>This implementation also provides naive frequency inference (when “freq”
+is provided for <code class="docutils literal notranslate"><span class="pre">seasonal_periods</span></code>),
+as well as Darts-compatible sampling of the resulting normal distribution.</p>
+<p>For convenience, the tbats documentation of the parameters is reported here.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>theta</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Value of the theta parameter. Defaults to 2.
-If theta = 1, then the fourtheta method restricts to a simple exponential smoothing (SES).
-If theta = 0, then the fourtheta method restricts to a simple <cite>trend_mode</cite> regression.</p></li>
-<li><p><strong>seasonality_period</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
-calling <cite>fit()</cite>.</p></li>
-<li><p><strong>model_mode</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.ModelMode" title="darts.utils.utils.ModelMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">ModelMode</span></code></a>) – Type of model combining the Theta lines. Either ModelMode.ADDITIVE or ModelMode.MULTIPLICATIVE.
-Defaults to <cite>ModelMode.ADDITIVE</cite>.</p></li>
-<li><p><strong>season_mode</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>) – Type of seasonality.
-Either SeasonalityMode.MULTIPLICATIVE, SeasonalityMode.ADDITIVE or SeasonalityMode.NONE.
-Defaults to <cite>SeasonalityMode.MULTIPLICATIVE</cite>.</p></li>
-<li><p><strong>trend_mode</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.TrendMode" title="darts.utils.utils.TrendMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">TrendMode</span></code></a>) – Type of trend to fit. Either TrendMode.LINEAR or TrendMode.EXPONENTIAL.
-Defaults to <cite>TrendMode.LINEAR</cite>.</p></li>
-<li><p><strong>normalization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <cite>True</cite>, the data is normalized so that the mean is 1. Defaults to <cite>True</cite>.</p></li>
+<li><p><strong>use_box_cox</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – If Box-Cox transformation of original series should be applied.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code> both cases shall be considered and better is selected by AIC.</p></li>
+<li><p><strong>box_cox_bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>) – Minimal and maximal Box-Cox parameter values.</p></li>
+<li><p><strong>use_trend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Indicates whether to include a trend or not.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code>, both cases shall be considered and the better one is selected by AIC.</p></li>
+<li><p><strong>use_damped_trend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Indicates whether to include a damping parameter in the trend or not.
+Applies only when trend is used.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code>, both cases shall be considered and the better one is selected by AIC.</p></li>
+<li><p><strong>seasonal_periods</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Length of each of the periods (amount of observations in each period).
+TBATS accepts int and float values here.
+BATS accepts only int values.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code> or empty array, non-seasonal model shall be fitted.
+If set to <code class="docutils literal notranslate"><span class="pre">&quot;freq&quot;</span></code>, a single “naive” seasonality
+based on the series frequency will be used (e.g. [12] for monthly series).
+In this latter case, the seasonality will be recomputed every time the model is fit.</p></li>
+<li><p><strong>use_arma_errors</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – When True BATS will try to improve the model by modelling residuals with ARMA.
+Best model will be selected by AIC.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, ARMA residuals modeling will not be considered.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If warnings should be shown or not.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – How many jobs to run in parallel when fitting BATS model.
+When not provided BATS shall try to utilize all available cpu cores.</p></li>
+<li><p><strong>multiprocessing_start_method</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – How threads should be started.
+See <a class="reference external" href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods</a></p></li>
+<li><p><strong>random_state</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Sets the underlying random seed at model initialization time.</p></li>
 </ul>
 </dd>
 </dl>
-<p class="rubric">Notes</p>
-<p>Even though this model is an improvement of <a class="reference internal" href="#darts.models.forecasting.theta.Theta" title="darts.models.forecasting.theta.Theta"><code class="xref py py-class docutils literal notranslate"><span class="pre">Theta</span></code></a>, it is a naive
-implementation of the algorithm, which can potentially be slower.</p>
 <p class="rubric">Attributes</p>
 <table class="table">
 <colgroup>
@@ -593,32 +615,29 @@ implementation of the algorithm, which can potentially be slower.</p>
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.backtest" title="darts.models.forecasting.theta.FourTheta.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.BATS.backtest" title="darts.models.forecasting.tbats.BATS.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute error values that the model would have produced when used on <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.fit" title="darts.models.forecasting.theta.FourTheta.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.BATS.fit" title="darts.models.forecasting.tbats.BATS.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
 <td><p>Fit/train the model on the provided series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.gridsearch" title="darts.models.forecasting.theta.FourTheta.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.BATS.gridsearch" title="darts.models.forecasting.tbats.BATS.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.historical_forecasts" title="darts.models.forecasting.theta.FourTheta.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.BATS.historical_forecasts" title="darts.models.forecasting.tbats.BATS.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.predict" title="darts.models.forecasting.theta.FourTheta.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.BATS.predict" title="darts.models.forecasting.tbats.BATS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.residuals" title="darts.models.forecasting.theta.FourTheta.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.BATS.residuals" title="darts.models.forecasting.tbats.BATS.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
 <td><p>Compute the residuals produced by this model on a univariate time series.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.select_best_model" title="darts.models.forecasting.theta.FourTheta.select_best_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">select_best_model</span></code></a>(ts[, thetas, m, ...])</p></td>
-<td><p>Performs a grid search over all hyper parameters to select the best model, using the fitted values on the training series <cite>ts</cite>.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.backtest">
-<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.backtest" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS.backtest">
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.BATS.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute error values that the model would have produced when
 used on <cite>series</cite>.</p>
 <p>It repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -678,12 +697,12 @@ Set to <code class="docutils literal notranslate"><span class="pre">np.mean</spa
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#FourTheta.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.fit" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.BATS.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit/train the model on the provided series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>series</strong> – A target time series. The model will be trained to forecast this time series.</p>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – A target time series. The model will be trained to forecast this time series.</p>
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>Fitted model.</p>
@@ -695,8 +714,8 @@ Set to <code class="docutils literal notranslate"><span class="pre">np.mean</spa
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.gridsearch">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS.gridsearch">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.BATS.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the best hyper-parameters among a given set using a grid search.</p>
 <p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -708,7 +727,7 @@ thus the model resulting in the smallest <cite>metric</cite> output will be chos
 <p>Expanding window mode (activated when <cite>forecast_horizon</cite> is passed):
 For every hyperparameter combination, the model is repeatedly trained and evaluated on different
 splits of <cite>series</cite>. This process is accomplished by using
-the <a class="reference internal" href="#darts.models.forecasting.theta.FourTheta.backtest" title="darts.models.forecasting.theta.FourTheta.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
+the <a class="reference internal" href="#darts.models.forecasting.tbats.BATS.backtest" title="darts.models.forecasting.tbats.BATS.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
 that are compared against the ground truth values of <cite>series</cite>.
 Note that the model is retrained for every single prediction, thus this mode is slower.</p>
 <p>Split window mode (activated when <cite>val_series</cite> is passed):
@@ -774,8 +793,8 @@ and metric score for the best hyper-parameters.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS.historical_forecasts">
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.BATS.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p>
 <p>This method uses an expanding training window;
 it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
@@ -832,8 +851,8 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.model_params">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.model_params" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.tbats.BATS.model_params" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -842,14 +861,14 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#FourTheta.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.predict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.BATS.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
-<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+<li><p><strong>n</strong> – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
+<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
 </ul>
 </dd>
@@ -863,8 +882,8 @@ for deterministic models.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.residuals" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.BATS.residuals">
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.BATS.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the residuals produced by this model on a univariate time series.</p>
 <p>This function computes the difference between the actual observations from <cite>series</cite>
 and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
@@ -894,61 +913,46 @@ prediction (when dealing with stochastic forecasts).</p>
 </dl>
 </dd></dl>
 
-<dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.FourTheta.select_best_model">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">select_best_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ts</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thetas</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">m</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normalization</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#FourTheta.select_best_model"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.FourTheta.select_best_model" title="Permalink to this definition">¶</a></dt>
-<dd><p>Performs a grid search over all hyper parameters to select the best model,
-using the fitted values on the training series <cite>ts</cite>.</p>
-<p>Uses ‘ForecastingModel.gridsearch’ with ‘use_fitted_values=True’ and ‘metric=metrics.mae`.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>ts</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – The TimeSeries on which the model will be tested.</p></li>
-<li><p><strong>thetas</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]]) – A list of thetas to loop over. Defaults to [1, 2, 3].</p></li>
-<li><p><strong>m</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Optionally, the season used to decompose the time series.</p></li>
-<li><p><strong>normalization</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If <cite>True</cite>, the data is normalized so that the mean is 1. Defaults to <cite>True</cite>.</p></li>
-<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when there are two or more theta
-values to be evaluated. Each job will instantiate, train, and evaluate a different instance of the model.
-Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite> means using all the available cores.</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p>The best performing model on the time series.</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="#darts.models.forecasting.theta.FourTheta" title="darts.models.forecasting.theta.FourTheta">FourTheta</a></p>
-</dd>
-</dl>
-</dd></dl>
-
 </dd></dl>
 
 <dl class="py class">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.theta.</span></span><span class="sig-name descname"><span class="pre">Theta</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">theta</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonality_period</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">season_mode</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#Theta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.Theta" title="Permalink to this definition">¶</a></dt>
-<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.forecasting_model.ForecastingModel</span></code></p>
-<p>An implementation of the Theta method with configurable <cite>theta</cite> parameter. See <a class="reference internal" href="#ra93aca907cd8-1" id="id1">[1]</a>.</p>
-<p>The training time series is de-seasonalized according to <cite>seasonality_period</cite>,
-or an inferred seasonality period.</p>
-<p><cite>season_mode</cite> must be a <code class="docutils literal notranslate"><span class="pre">SeasonalityMode</span></code> Enum member.</p>
-<p>You can access the Enum with <code class="docutils literal notranslate"><span class="pre">from</span> <span class="pre">darts</span> <span class="pre">import</span> <span class="pre">SeasonalityMode</span></code>.</p>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.tbats.</span></span><span class="sig-name descname"><span class="pre">TBATS</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">use_box_cox</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">box_cox_bounds</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(0,</span> <span class="pre">1)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_trend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_damped_trend</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">seasonal_periods</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'freq'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_arma_errors</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_warnings</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multiprocessing_start_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'spawn'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">random_state</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/tbats.html#TBATS"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.tbats._BaseBatsTbatsModel</span></code></p>
+<p>This is a wrapper around
+<a class="reference external" href="https://github.com/intive-DataScience/tbats">tbats</a>.</p>
+<p>This implementation also provides naive frequency inference (when “freq”
+is provided for <code class="docutils literal notranslate"><span class="pre">seasonal_periods</span></code>),
+as well as Darts-compatible sampling of the resulting normal distribution.</p>
+<p>For convenience, the tbats documentation of the parameters is reported here.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>theta</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Value of the theta parameter. Defaults to 2. Cannot be set to 0.
-If <cite>theta = 1</cite>, then the theta method restricts to a simple exponential smoothing (SES)</p></li>
-<li><p><strong>seasonality_period</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – User-defined seasonality period. If not set, will be tentatively inferred from the training series upon
-calling <a class="reference internal" href="#darts.models.forecasting.theta.Theta.fit" title="darts.models.forecasting.theta.Theta.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a>.</p></li>
-<li><p><strong>season_mode</strong> (<a class="reference internal" href="darts.utils.utils.html#darts.utils.utils.SeasonalityMode" title="darts.utils.utils.SeasonalityMode"><code class="xref py py-class docutils literal notranslate"><span class="pre">SeasonalityMode</span></code></a>) – Type of seasonality.
-Either <code class="docutils literal notranslate"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></code>, <code class="docutils literal notranslate"><span class="pre">SeasonalityMode.ADDITIVE</span></code> or <code class="docutils literal notranslate"><span class="pre">SeasonalityMode.NONE</span></code>.
-Defaults to <code class="docutils literal notranslate"><span class="pre">SeasonalityMode.MULTIPLICATIVE</span></code>.</p></li>
+<li><p><strong>use_box_cox</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – If Box-Cox transformation of original series should be applied.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code> both cases shall be considered and better is selected by AIC.</p></li>
+<li><p><strong>box_cox_bounds</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Tuple</span></code>) – Minimal and maximal Box-Cox parameter values.</p></li>
+<li><p><strong>use_trend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Indicates whether to include a trend or not.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code>, both cases shall be considered and the better one is selected by AIC.</p></li>
+<li><p><strong>use_damped_trend</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – Indicates whether to include a damping parameter in the trend or not.
+Applies only when trend is used.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code>, both cases shall be considered and the better one is selected by AIC.</p></li>
+<li><p><strong>seasonal_periods</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">List</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – Length of each of the periods (amount of observations in each period).
+TBATS accepts int and float values here.
+BATS accepts only int values.
+When <code class="docutils literal notranslate"><span class="pre">None</span></code> or empty array, non-seasonal model shall be fitted.
+If set to <code class="docutils literal notranslate"><span class="pre">&quot;freq&quot;</span></code>, a single “naive” seasonality
+based on the series frequency will be used (e.g. [12] for monthly series).
+In this latter case, the seasonality will be recomputed every time the model is fit.</p></li>
+<li><p><strong>use_arma_errors</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>]) – When True BATS will try to improve the model by modelling residuals with ARMA.
+Best model will be selected by AIC.
+If <code class="docutils literal notranslate"><span class="pre">False</span></code>, ARMA residuals modeling will not be considered.</p></li>
+<li><p><strong>show_warnings</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – If warnings should be shown or not.</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – How many jobs to run in parallel when fitting BATS model.
+When not provided BATS shall try to utilize all available cpu cores.</p></li>
+<li><p><strong>multiprocessing_start_method</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>]) – How threads should be started.
+See <a class="reference external" href="https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods">https://docs.python.org/3/library/multiprocessing.html#contexts-and-start-methods</a></p></li>
+<li><p><strong>random_state</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Sets the underlying random seed at model initialization time.</p></li>
 </ul>
-</dd>
-</dl>
-<p class="rubric">References</p>
-<dl class="citation">
-<dt class="label" id="ra93aca907cd8-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
-<dd><p><cite>Unmasking the Theta method &lt;https://robjhyndman.com/papers/Theta.pdf</cite></p>
 </dd>
 </dl>
 <p class="rubric">Attributes</p>
@@ -970,29 +974,29 @@ Defaults to <code class="docutils literal notranslate"><span class="pre">Seasona
 <col style="width: 90%" />
 </colgroup>
 <tbody>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.backtest" title="darts.models.forecasting.theta.Theta.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.TBATS.backtest" title="darts.models.forecasting.tbats.TBATS.backtest"><code class="xref py py-obj docutils literal notranslate"><span class="pre">backtest</span></code></a>(series[, past_covariates, ...])</p></td>
 <td><p>Compute error values that the model would have produced when used on <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.fit" title="darts.models.forecasting.theta.Theta.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.TBATS.fit" title="darts.models.forecasting.tbats.TBATS.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series)</p></td>
 <td><p>Fit/train the model on the provided series.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.gridsearch" title="darts.models.forecasting.theta.Theta.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.TBATS.gridsearch" title="darts.models.forecasting.tbats.TBATS.gridsearch"><code class="xref py py-obj docutils literal notranslate"><span class="pre">gridsearch</span></code></a>(parameters, series[, ...])</p></td>
 <td><p>Find the best hyper-parameters among a given set using a grid search.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.historical_forecasts" title="darts.models.forecasting.theta.Theta.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.TBATS.historical_forecasts" title="darts.models.forecasting.tbats.TBATS.historical_forecasts"><code class="xref py py-obj docutils literal notranslate"><span class="pre">historical_forecasts</span></code></a>(series[, ...])</p></td>
 <td><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.predict" title="darts.models.forecasting.theta.Theta.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.TBATS.predict" title="darts.models.forecasting.tbats.TBATS.predict"><code class="xref py py-obj docutils literal notranslate"><span class="pre">predict</span></code></a>(n[, num_samples])</p></td>
 <td><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.theta.Theta.residuals" title="darts.models.forecasting.theta.Theta.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.tbats.TBATS.residuals" title="darts.models.forecasting.tbats.TBATS.residuals"><code class="xref py py-obj docutils literal notranslate"><span class="pre">residuals</span></code></a>(series[, forecast_horizon, verbose])</p></td>
 <td><p>Compute the residuals produced by this model on a univariate time series.</p></td>
 </tr>
 </tbody>
 </table>
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.backtest">
-<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.backtest" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS.backtest">
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute error values that the model would have produced when
 used on <cite>series</cite>.</p>
 <p>It repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -1052,8 +1056,8 @@ Set to <code class="docutils literal notranslate"><span class="pre">np.mean</spa
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.fit">
-<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#Theta.fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.Theta.fit" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS.fit" title="Permalink to this definition">¶</a></dt>
 <dd><p>Fit/train the model on the provided series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -1069,8 +1073,8 @@ Set to <code class="docutils literal notranslate"><span class="pre">np.mean</spa
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.gridsearch">
-<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.gridsearch" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS.gridsearch">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">gridsearch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">parameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_series=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_fitted_values=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_random_samples=None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS.gridsearch" title="Permalink to this definition">¶</a></dt>
 <dd><p>Find the best hyper-parameters among a given set using a grid search.</p>
 <p>This function has 3 modes of operation: Expanding window mode, split mode and fitted value mode.
 The three modes of operation evaluate every possible combination of hyper-parameter values
@@ -1082,7 +1086,7 @@ thus the model resulting in the smallest <cite>metric</cite> output will be chos
 <p>Expanding window mode (activated when <cite>forecast_horizon</cite> is passed):
 For every hyperparameter combination, the model is repeatedly trained and evaluated on different
 splits of <cite>series</cite>. This process is accomplished by using
-the <a class="reference internal" href="#darts.models.forecasting.theta.Theta.backtest" title="darts.models.forecasting.theta.Theta.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
+the <a class="reference internal" href="#darts.models.forecasting.tbats.TBATS.backtest" title="darts.models.forecasting.tbats.TBATS.backtest"><code class="xref py py-func docutils literal notranslate"><span class="pre">backtest()</span></code></a> function as a subroutine to produce historic forecasts starting from <cite>start</cite>
 that are compared against the ground truth values of <cite>series</cite>.
 Note that the model is retrained for every single prediction, thus this mode is slower.</p>
 <p>Split window mode (activated when <cite>val_series</cite> is passed):
@@ -1148,8 +1152,8 @@ and metric score for the best hyper-parameters.</p>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS.historical_forecasts">
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p>
 <p>This method uses an expanding training window;
 it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
@@ -1206,8 +1210,8 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dd></dl>
 
 <dl class="py property">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.model_params">
-<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.theta.Theta.model_params" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS.model_params">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">model_params</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">dict</span></em><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS.model_params" title="Permalink to this definition">¶</a></dt>
 <dd><dl class="field-list simple">
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">dict</span></code></p>
@@ -1216,14 +1220,14 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/theta.html#Theta.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.theta.Theta.predict" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS.predict">
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Forecasts values for <cite>n</cite> time steps after the end of the training series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>n</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
-<li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+<li><p><strong>n</strong> – Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</p></li>
+<li><p><strong>num_samples</strong> – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
 </ul>
 </dd>
@@ -1237,8 +1241,8 @@ for deterministic models.</p></li>
 </dd></dl>
 
 <dl class="py method">
-<dt class="sig sig-object py" id="darts.models.forecasting.theta.Theta.residuals">
-<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.theta.Theta.residuals" title="Permalink to this definition">¶</a></dt>
+<dt class="sig sig-object py" id="darts.models.forecasting.tbats.TBATS.residuals">
+<span class="sig-name descname"><span class="pre">residuals</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.tbats.TBATS.residuals" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the residuals produced by this model on a univariate time series.</p>
 <p>This function computes the difference between the actual observations from <cite>series</cite>
 and the fitted values vector <cite>p</cite> obtained by training the model on <cite>series</cite>.
@@ -1278,17 +1282,17 @@ prediction (when dealing with stochastic forecasts).</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.models.forecasting.tft_submodels.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.models.forecasting.rnn_model.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">&lt;no title&gt;</p>
+            <p class="prev-next-title">Recurrent Neural Networks</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="darts.models.forecasting.torch_forecasting_model.html" title="next page">
+    <a class='right-next' id="next-link" href="darts.models.forecasting.tcn_model.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">&lt;no title&gt;</p>
+        <p class="prev-next-title">Temporal Convolutional Network</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

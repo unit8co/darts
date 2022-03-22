@@ -223,7 +223,7 @@
 <span class="kn">from</span> <span class="nn">torch.distributions.kl</span> <span class="kn">import</span> <span class="n">kl_divergence</span>
 
 <span class="c1"># TODO: Table on README listing distribution, possible priors and wiki article</span>
-<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">_check_quantiles</span><span class="p">,</span> <span class="n">raise_if_not</span>
 
 <span class="n">MIN_CAUCHY_GAMMA_SAMPLING</span> <span class="o">=</span> <span class="mf">1e-100</span>
 
@@ -1160,7 +1160,7 @@
             <span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">_check_quantiles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
+        <span class="n">_check_quantiles</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">first</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">quantiles_tensor</span> <span class="o">=</span> <span class="kc">None</span>
@@ -1237,29 +1237,6 @@
         <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">losses</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="n">dim_q</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span></div>
-
-    <span class="nd">@staticmethod</span>
-    <span class="k">def</span> <span class="nf">_check_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">):</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">([</span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">q</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantiles</span><span class="p">]),</span>
-            <span class="s2">&quot;All provided quantiles must be between 0 and 1.&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
-
-        <span class="c1"># we require the median to be present and the quantiles to be symmetric around it,</span>
-        <span class="c1"># for correctness of sampling.</span>
-        <span class="n">median_q</span> <span class="o">=</span> <span class="mf">0.5</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="n">median_q</span> <span class="ow">in</span> <span class="n">quantiles</span><span class="p">,</span> <span class="s2">&quot;median quantile `q=0.5` must be in `quantiles`&quot;</span>
-        <span class="p">)</span>
-        <span class="n">is_centered</span> <span class="o">=</span> <span class="p">[</span>
-            <span class="o">-</span><span class="mf">1e-6</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">median_q</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">median_q</span> <span class="o">-</span> <span class="n">right_q</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span>
-            <span class="k">for</span> <span class="n">left_q</span><span class="p">,</span> <span class="n">right_q</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">quantiles</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-        <span class="p">]</span>
-        <span class="n">raise_if_not</span><span class="p">(</span>
-            <span class="nb">all</span><span class="p">(</span><span class="n">is_centered</span><span class="p">),</span>
-            <span class="s2">&quot;quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles &quot;</span>
-            <span class="s2">&quot;higher than `q=0.5`&quot;</span><span class="p">,</span>
-        <span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">_distr_from_params</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">params</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># This should not be called in this class (we are abusing Likelihood)</span>

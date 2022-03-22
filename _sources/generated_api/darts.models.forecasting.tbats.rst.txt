@@ -1,0 +1,4 @@
+
+.. automodule:: darts.models.forecasting.tbats
+   :members:
+   :undoc-members:

@@ -172,23 +172,29 @@
 <span class="sd">A forecasting model using a linear regression of some of the target series&#39; lags, as well as optionally some</span>
 <span class="sd">covariate series&#39; lags in order to obtain a forecast.</span>
 <span class="sd">&quot;&quot;&quot;</span>
-<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
 
-<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">scipy.optimize</span> <span class="kn">import</span> <span class="n">linprog</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span><span class="p">,</span> <span class="n">PoissonRegressor</span><span class="p">,</span> <span class="n">QuantileRegressor</span>
 
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
-<span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.regression_model</span> <span class="kn">import</span> <span class="n">RegressionModel</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span>
+<span class="kn">from</span> <span class="nn">darts.timeseries</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 
-<div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">[docs]</a><span class="k">class</span> <span class="nc">LinearRegressionModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">):</span>
+<div class="viewcode-block" id="LinearRegressionModel"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel">[docs]</a><span class="k">class</span> <span class="nc">LinearRegressionModel</span><span class="p">(</span><span class="n">RegressionModel</span><span class="p">,</span> <span class="n">_LikelihoodMixin</span><span class="p">):</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">lags</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_past_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">lags_future_covariates</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">likelihood</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">quantiles</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Linear regression model.</span>
@@ -211,20 +217,195 @@
 <span class="sd">            Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast</span>
 <span class="sd">            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may</span>
 <span class="sd">            be useful if the covariates don&#39;t extend far enough into the future.</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            Can be set to `quantile` or &#39;poisson&#39;. If set, the model will be probabilistic, allowing sampling at</span>
+<span class="sd">            prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if</span>
+<span class="sd">            set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.</span>
+<span class="sd">        quantiles</span>
+<span class="sd">            Fit the model to these quantiles if the `likelihood` is set to `quantile`.</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of the sampling. Used as seed for</span>
+<span class="sd">            `link &lt;https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator&gt;`_ . Ignored when</span>
+<span class="sd">             no`likelihood` is set.</span>
+<span class="sd">            Default: ``None``.</span>
 <span class="sd">        **kwargs</span>
-<span class="sd">            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression`.</span>
+<span class="sd">            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to</span>
+<span class="sd">            `sklearn.linear_model.PoissonRegressor` (if `likelihood=&quot;poisson&quot;`), or to</span>
+<span class="sd">             `sklearn.linear_model.QuantileRegressor` (if `likelihood=&quot;quantile&quot;`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">=</span> <span class="n">likelihood</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># parse likelihood</span>
+        <span class="n">available_likelihoods</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="s2">&quot;poisson&quot;</span><span class="p">]</span>  <span class="c1"># to be extended</span>
+        <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_likelihood</span><span class="p">(</span><span class="n">likelihood</span><span class="p">,</span> <span class="n">available_likelihoods</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_rng</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">PoissonRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+                <span class="n">model</span> <span class="o">=</span> <span class="n">QuantileRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_model_container</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
             <span class="n">lags</span><span class="o">=</span><span class="n">lags</span><span class="p">,</span>
             <span class="n">lags_past_covariates</span><span class="o">=</span><span class="n">lags_past_covariates</span><span class="p">,</span>
             <span class="n">lags_future_covariates</span><span class="o">=</span><span class="n">lags_future_covariates</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">output_chunk_length</span><span class="p">,</span>
-            <span class="n">model</span><span class="o">=</span><span class="n">LinearRegression</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">),</span>
+            <span class="n">model</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
         <span class="p">)</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;LinearRegression(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
+            <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;LinearRegression(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">, likelihood=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="si">}</span><span class="s2">)&quot;</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;LinearRegression(lags=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">lags</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+<div class="viewcode-block" id="LinearRegressionModel.fit"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]],</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_jobs_multioutput_wrapper</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit/train the model on one or multiple series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        series</span>
+<span class="sd">            TimeSeries or Sequence[TimeSeries] object containing the target values.</span>
+<span class="sd">        past_covariates</span>
+<span class="sd">            Optionally, a series or sequence of series specifying past-observed covariates</span>
+<span class="sd">        future_covariates</span>
+<span class="sd">            Optionally, a series or sequence of series specifying future-known covariates</span>
+<span class="sd">        max_samples_per_ts</span>
+<span class="sd">            This is an integer upper bound on the number of tuples that can be produced</span>
+<span class="sd">            per time series. It can be used in order to have an upper bound on the total size of the dataset and</span>
+<span class="sd">            ensure proper sampling. If `None`, it will read all of the individual time series in advance (at dataset</span>
+<span class="sd">            creation) to know their sizes, which might be expensive on big datasets.</span>
+<span class="sd">            If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the</span>
+<span class="sd">            most recent `max_samples_per_ts` samples will be considered.</span>
+<span class="sd">        n_jobs_multioutput_wrapper</span>
+<span class="sd">            Number of jobs of the MultiOutputRegressor wrapper to run in parallel. Only used if the model doesn&#39;t</span>
+<span class="sd">            support multi-output regression natively.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Additional keyword arguments passed to the `fit` method of the model.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+            <span class="c1"># set solver for linear program</span>
+            <span class="k">if</span> <span class="s2">&quot;solver&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">:</span>
+                <span class="c1"># set default fast solver</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;solver&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;highs&quot;</span>
+
+            <span class="c1"># test solver availability with dummy problem</span>
+            <span class="n">c</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">linprog</span><span class="p">(</span><span class="n">c</span><span class="o">=</span><span class="n">c</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;solver&quot;</span><span class="p">])</span>
+            <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">ve</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">ve</span><span class="si">}</span><span class="s2">. Upgrading scipy enables significantly faster solvers&quot;</span>
+                <span class="p">)</span>
+                <span class="c1"># set solver to slow legacy</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;solver&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;interior-point&quot;</span>
+
+            <span class="c1"># empty model container in case of multiple calls to fit, e.g. when backtesting</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+
+            <span class="k">for</span> <span class="n">quantile</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;quantile&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">quantile</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">QuantileRegressor</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                    <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                    <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                    <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                    <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+                    <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+                <span class="p">)</span>
+
+                <span class="bp">self</span><span class="o">.</span><span class="n">_model_container</span><span class="p">[</span><span class="n">quantile</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">model</span>
+
+            <span class="k">return</span> <span class="bp">self</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">max_samples_per_ts</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="LinearRegressionModel.predict"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.linear_regression_model.html#darts.models.forecasting.linear_regression_model.LinearRegressionModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">n</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">series</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">past_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">future_covariates</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">num_samples</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;Forecasts values for `n` time steps after the end of the series.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        n : int</span>
+<span class="sd">            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.</span>
+<span class="sd">        series : TimeSeries or list of TimeSeries, optional</span>
+<span class="sd">            Optionally, one or several input `TimeSeries`, representing the history of the target series whose future</span>
+<span class="sd">            is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method</span>
+<span class="sd">            returns the forecast of the (single) training series.</span>
+<span class="sd">        past_covariates : TimeSeries or list of TimeSeries, optional</span>
+<span class="sd">            Optionally, the past-observed covariates series needed as inputs for the model.</span>
+<span class="sd">            They must match the covariates used for training in terms of dimension and type.</span>
+<span class="sd">        future_covariates : TimeSeries or list of TimeSeries, optional</span>
+<span class="sd">            Optionally, the future-known covariates series needed as inputs for the model.</span>
+<span class="sd">            They must match the covariates used for training in terms of dimension and type.</span>
+<span class="sd">        num_samples : int, default: 1</span>
+<span class="sd">            Specifies the numer of samples to obtain from the model. Should be set to 1 if no `likelihood` is specified.</span>
+<span class="sd">        **kwargs : dict, optional</span>
+<span class="sd">            Additional keyword arguments passed to the `predict` method of the model. Only works with</span>
+<span class="sd">            univariate target series.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_quantiles</span><span class="p">(</span>
+                <span class="n">superfun</span><span class="o">=</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">,</span>
+                <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="o">==</span> <span class="s2">&quot;poisson&quot;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_predict_poisson</span><span class="p">(</span>
+                <span class="n">superfun</span><span class="o">=</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">,</span>
+                <span class="n">n</span><span class="o">=</span><span class="n">n</span><span class="p">,</span>
+                <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
+                <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
+                <span class="n">future_covariates</span><span class="o">=</span><span class="n">future_covariates</span><span class="p">,</span>
+                <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+                <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                <span class="n">n</span><span class="p">,</span> <span class="n">series</span><span class="p">,</span> <span class="n">past_covariates</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+            <span class="p">)</span></div></div>
 </pre></div>
 
               </div>

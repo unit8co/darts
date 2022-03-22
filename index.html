@@ -212,33 +212,9 @@
     </a>
    </li>
    <li class="toc-h2 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#id3">
-     Installation Guide
+    <a class="reference internal nav-link" href="#contribute">
+     Contribute
     </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h3 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#macos-issues-with-lightgbm">
-       MacOS Issues with LightGBM
-      </a>
-      <ul class="nav section-nav flex-column">
-       <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#running-the-examples-only-without-installing">
-         Running the examples only, without installing:
-        </a>
-       </li>
-       <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#tests">
-         Tests
-        </a>
-       </li>
-       <li class="toc-h4 nav-item toc-entry">
-        <a class="reference internal nav-link" href="#id4">
-         Documentation
-        </a>
-       </li>
-      </ul>
-     </li>
-    </ul>
    </li>
    <li class="toc-h2 nav-item toc-entry">
     <a class="reference internal nav-link" href="#citation">
@@ -293,9 +269,10 @@
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
-and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models. The ML-based models can be trained
-on multiple time series, and some of the models offer probabilistic forecasts.</p>
+combine the predictions of several models, and take external data into account.
+Darts supports both univariate and multivariate time series and models.
+The ML-based models can be trained on potentially large datasets containing multiple time
+series, and some of the models offer a rich support for probabilistic forecasting.</p>
 <section id="documentation">
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
@@ -307,7 +284,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.</
 <h3>High Level Introductions<a class="headerlink" href="#high-level-introductions" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878">Introductory Blog Post</a></p></li>
-<li><p><a class="reference external" href="https://youtu.be/g6OXDnXEtFA">Introductory Video</a></p></li>
+<li><p><a class="reference external" href="https://youtu.be/g6OXDnXEtFA">Introduction to Darts at PyData Global 2021</a></p></li>
 </ul>
 </section>
 <section id="articles-on-selected-topics">
@@ -330,7 +307,8 @@ or without <a class="reference external" href="https://virtualenvwrapper.readthe
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">darts</span>
 </pre></div>
 </div>
-<p>For more detailed install instructions you can refer to our <a class="reference external" href="#installation-guide">installation guide</a> at the end of this page.</p>
+<p>For more details you can refer to our
+<a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md">installation instructions</a>.</p>
 </section>
 <section id="example-usage">
 <h2>Example Usage<a class="headerlink" href="#example-usage" title="Permalink to this headline">¶</a></h2>
@@ -366,30 +344,33 @@ or without <a class="reference external" href="https://virtualenvwrapper.readthe
 </div>
 <div style="text-align:center;">
 <img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
-</div><p>We invite you to go over the example and tutorial notebooks in
-the <a class="reference external" href="https://github.com/unit8co/darts/tree/master/examples">examples</a> directory.</p>
-</section>
+</div></section>
 <section id="features">
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
-<p>Currently, the library contains the following features:</p>
-<p><strong>Forecasting Models:</strong> A large collection of forecasting models; from statistical models (such as
-ARIMA) to deep learning models (such as N-BEATS). See table of models below.</p>
-<p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)</p>
-<p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
-from R2-scores to Mean Absolute Scaled Error.</p>
-<p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p>
-<p><strong>Regression Models:</strong> Possibility to predict a time series from lagged versions of itself
-and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).</p>
-<p><strong>Multiple series training:</strong> All neural networks, as well as <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s (incl. <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and
-<code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>) support being trained on multiple series.</p>
-<p><strong>Past and Future Covariates support:</strong> Some models support past-observed and/or future-known covariate time series
-as inputs for producing forecasts.</p>
-<p><strong>Multivariate Support:</strong> Tools to create, manipulate and forecast multivariate time series.</p>
-<p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
-time series; this can for instance be used to get confidence intervals.</p>
-<p><strong>Filtering Models:</strong> Darts offers three filtering models: <code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>,
+<ul class="simple">
+<li><p><strong>Forecasting Models:</strong> A large collection of forecasting models; from statistical models (such as
+ARIMA) to deep learning models (such as N-BEATS). See table of models below.</p></li>
+<li><p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on
+time series data (scaling, boxcox, …)</p></li>
+<li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
+from R2-scores to Mean Absolute Scaled Error.</p></li>
+<li><p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p></li>
+<li><p><strong>Regression Models:</strong> Possibility to predict a time series from lagged versions of itself
+and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).</p></li>
+<li><p><strong>Multiple series training:</strong> All machine learning based models (incl.all neural networks)
+support being trained on multiple series.</p></li>
+<li><p><strong>Past and Future Covariates support:</strong> Some models support past-observed and/or future-known covariate time series
+as inputs for producing forecasts.</p></li>
+<li><p><strong>Multivariate Support:</strong> Tools to create, manipulate and forecast multivariate time series.</p></li>
+<li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
+time series; this can for instance be used to get confidence intervals, and several models
+support different flavours of probabilistic forecasting.</p></li>
+<li><p><strong>PyTorch Lightning Support:</strong> All deep learning models are implemented using PyTorch Lightning,
+supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.</p></li>
+<li><p><strong>Filtering Models:</strong> Darts offers three filtering models: <code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">MovingAverage</span></code>, which allow to filter time series, and in some cases obtain probabilistic
-inferences of the underlying states/values.</p>
+inferences of the underlying states/values.</p></li>
+</ul>
 </section>
 <section id="forecasting-models">
 <h2>Forecasting Models<a class="headerlink" href="#forecasting-models" title="Permalink to this headline">¶</a></h2>
@@ -454,7 +435,16 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
+<td><p>✅</p></td>
+<td></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -463,7 +453,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
@@ -472,7 +462,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -481,7 +471,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> using the Kalman filter and N4SID for system identification</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> using the Kalman filter and N4SID for system identification</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -490,10 +480,37 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf">N4SID paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> (incl <code class="docutils literal notranslate"><span class="pre">RandomForest</span></code>, <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>; generic wrapper around any sklearn regression model</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RandomForest</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -574,101 +591,14 @@ or have a feature request, Github issues are also welcome.</p>
 feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for
 darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other
 inquiries.</p>
-<p>The development is ongoing, and there are many new features that we want to add.
-We welcome pull requests and issues on Github.</p>
-<dl class="simple">
-<dt>Before working on a contribution (a new feature or a fix),</dt><dd><p><a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">check our contribution guidelines</a>.</p>
-</dd>
-</dl>
 </section>
-<section id="id3">
-<h2>Installation Guide<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h2>
-<p>Some of the models depend on <code class="docutils literal notranslate"><span class="pre">prophet</span></code> and <code class="docutils literal notranslate"><span class="pre">torch</span></code>, which have non-Python dependencies.
-A Conda environment is thus recommended because it will handle all of those in one go.</p>
-<p>Currently only the x86_64 architecture with Python 3.7-3.9
-is fully supported with conda; consider using PyPI if you are running into troubles.</p>
-<p>To create a conda environment for Python 3.7
-(after installing <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">conda</a>):</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">--</span><span class="n">name</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.7</span>
-</pre></div>
-</div>
-<p>Don’t forget to activate your virtual environment</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="o">&lt;</span><span class="n">env</span><span class="o">-</span><span class="n">name</span><span class="o">&gt;</span>
-</pre></div>
-</div>
-<p>As some models have relatively heavy dependencies, we provide two conda-forge packages:</p>
-<ul class="simple">
-<li><p>Install darts with all available models (recommended): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">-c</span> <span class="pre">pytorch</span> <span class="pre">u8darts-all</span></code>.</p></li>
-<li><p>Install core + neural networks (PyTorch): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">-c</span> <span class="pre">pytorch</span> <span class="pre">u8darts-torch</span></code></p></li>
-<li><p>Install core only (without neural networks, Prophet or AutoARIMA): <code class="docutils literal notranslate"><span class="pre">conda</span> <span class="pre">install</span> <span class="pre">-c</span> <span class="pre">conda-forge</span> <span class="pre">u8darts</span></code></p></li>
-</ul>
-<p>For GPU support, please follow the instructions to install CUDA in the <a class="reference external" href="https://pytorch.org/get-started/locally/">PyTorch installation guide</a>.</p>
-<p>Install darts with all available models: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">darts</span></code>.</p>
-<p>If this fails on your platform, please follow the official installation guides for
-<a class="reference external" href="https://facebook.github.io/prophet/docs/installation.html#python">prophet</a>
-and <a class="reference external" href="https://pytorch.org/get-started/locally/">torch</a>, then try installing Darts again.</p>
-<p>As some models have relatively heavy (or non-Python) dependencies,
-we also maintain the <code class="docutils literal notranslate"><span class="pre">u8darts</span></code> package, which provides the following alternate lighter install options:</p>
-<ul class="simple">
-<li><p>Install core only (without neural networks, Prophet or AutoARIMA): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">u8darts</span></code></p></li>
-<li><p>Install core + neural networks (PyTorch): <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;u8darts[torch]&quot;</span></code></p></li>
-<li><p>Install core + Facebook Prophet: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;u8darts[prophet]&quot;</span></code></p></li>
-<li><p>Install core + AutoARIMA: <code class="docutils literal notranslate"><span class="pre">pip</span> <span class="pre">install</span> <span class="pre">&quot;u8darts[pmdarima]&quot;</span></code></p></li>
-</ul>
-<p>To enable support for LightGBM in Darts, please follow the
-<a class="reference external" href="https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html">installation instructions</a> for your OS.</p>
-<section id="macos-issues-with-lightgbm">
-<h3>MacOS Issues with LightGBM<a class="headerlink" href="#macos-issues-with-lightgbm" title="Permalink to this headline">¶</a></h3>
-<p>At the time of writing, there is an issue with <code class="docutils literal notranslate"><span class="pre">libomp</span></code> 12.0.1 that results in
-<a class="reference external" href="https://github.com/microsoft/LightGBM/issues/4229">segmentation fault on Mac OS Big Sur</a>.
-Here’s the procedure to downgrade the <code class="docutils literal notranslate"><span class="pre">libomp</span></code> library (from the
-<a class="reference external" href="https://github.com/microsoft/LightGBM/issues/4229#issue-867528353">original Github issue</a>):</p>
-<ul>
-<li><p><a class="reference external" href="https://brew.sh/">Install brew</a> if you don’t already have it.</p></li>
-<li><p>Install <code class="docutils literal notranslate"><span class="pre">wget</span></code> if you don’t already have it : <code class="docutils literal notranslate"><span class="pre">brew</span> <span class="pre">install</span> <span class="pre">wget</span></code>.</p></li>
-<li><p>Run the commands below:
-.. code-block:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">wget</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">raw</span><span class="o">.</span><span class="n">githubusercontent</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">Homebrew</span><span class="o">/</span><span class="n">homebrew</span><span class="o">-</span><span class="n">core</span><span class="o">/</span><span class="n">fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0</span><span class="o">/</span><span class="n">Formula</span><span class="o">/</span><span class="n">libomp</span><span class="o">.</span><span class="n">rb</span>
-<span class="n">brew</span> <span class="n">unlink</span> <span class="n">libomp</span>
-<span class="n">brew</span> <span class="n">install</span> <span class="n">libomp</span><span class="o">.</span><span class="n">rb</span>
-</pre></div>
-</div>
-</li>
-</ul>
-<section id="running-the-examples-only-without-installing">
-<h4>Running the examples only, without installing:<a class="headerlink" href="#running-the-examples-only-without-installing" title="Permalink to this headline">¶</a></h4>
-<p>If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
-To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew docker <span class="o">&amp;&amp;</span> ./gradlew dockerRun
-</pre></div>
-</div>
-<p>Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.</p>
-<p>For this setup to work you need to have a Docker service installed. You can get it at <a class="reference external" href="https://docs.docker.com/get-docker/">Docker website</a>.</p>
-</section>
-<section id="tests">
-<h4>Tests<a class="headerlink" href="#tests" title="Permalink to this headline">¶</a></h4>
-<p>The gradle setup works best when used in a python environment, but the only requirement is to have <code class="docutils literal notranslate"><span class="pre">pip</span></code> installed for Python 3+</p>
-<p>To run all tests at once just run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew test_all
-</pre></div>
-</div>
-<p>alternatively you can run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew unitTest_all <span class="c1"># to run only unittests</span>
-./gradlew coverageTest <span class="c1"># to run coverage</span>
-./gradlew lint         <span class="c1"># to run linter</span>
-</pre></div>
-</div>
-<p>To run the tests for specific flavours of the library, replace <code class="docutils literal notranslate"><span class="pre">_all</span></code> with <code class="docutils literal notranslate"><span class="pre">_core</span></code>, <code class="docutils literal notranslate"><span class="pre">_prophet</span></code>, <code class="docutils literal notranslate"><span class="pre">_pmdarima</span></code> or <code class="docutils literal notranslate"><span class="pre">_torch</span></code>.</p>
-</section>
-<section id="id4">
-<h4>Documentation<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
-<p>To build documentation locally just run</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>./gradlew buildDocs
-</pre></div>
-</div>
-<p>After that docs will be available in <code class="docutils literal notranslate"><span class="pre">./docs/build/html</span></code> directory. You can just open <code class="docutils literal notranslate"><span class="pre">./docs/build/html/index.html</span></code> using your favourite browser.</p>
-</section>
-</section>
+<section id="contribute">
+<h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h2>
+<p>The development is ongoing, and we welcome suggestions, pull requests and issues on Github.
+All contributors will be acknowledged on the
+<a class="reference external" href="https://github.com/unit8co/darts/blob/master/CHANGELOG.md">change log page</a>.</p>
+<p>Before working on a contribution (a new feature or a fix),
+<a class="reference external" href="https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md">check our contribution guidelines</a>.</p>
 </section>
 <section id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>

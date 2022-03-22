@@ -276,7 +276,7 @@
         <span class="c1"># determine the index of the time series.</span>
         <span class="n">ts_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span>
         <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span>
-        <span class="n">target_vals</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">target_vals</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">target_vals</span><span class="p">)</span>
@@ -335,7 +335,9 @@
                 <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">-th sample)&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="n">covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">cov_start</span><span class="p">:</span><span class="n">cov_end</span><span class="p">]</span>
+            <span class="n">covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span>
+                <span class="n">cov_start</span><span class="p">:</span><span class="n">cov_end</span>
+            <span class="p">]</span>
 
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="nb">len</span><span class="p">(</span><span class="n">covariate</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">past_target</span><span class="p">),</span>

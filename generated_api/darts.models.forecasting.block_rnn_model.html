@@ -365,6 +365,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
        Temporal Convolutional Network
       </a>
@@ -453,6 +458,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
     </a>
    </li>
    <li class="toctree-l2">
@@ -561,27 +571,28 @@ Darts’ <code class="xref py py-class docutils literal notranslate"><span class
 <li><p><strong>loss_fn</strong> – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
-<li><p><strong>likelihood</strong> – The likelihood model to be used for probabilistic forecasts.</p></li>
-<li><p><strong>optimizer_cls</strong> – The PyTorch optimizer class to be used (default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>).</p></li>
+<li><p><strong>likelihood</strong> – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
+probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>optimizer_cls</strong> – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
 <li><p><strong>optimizer_kwargs</strong> – Optionally, some keyword arguments for the PyTorch optimizer (e.g., <code class="docutils literal notranslate"><span class="pre">{'lr':</span> <span class="pre">1e-3}</span></code>
 for specifying a learning rate). Otherwise the default values of the selected <code class="docutils literal notranslate"><span class="pre">optimizer_cls</span></code>
-will be used.</p></li>
+will be used. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>lr_scheduler_cls</strong> – Optionally, the PyTorch learning rate scheduler class to be used. Specifying <code class="docutils literal notranslate"><span class="pre">None</span></code> corresponds
-to using a constant learning rate.</p></li>
-<li><p><strong>lr_scheduler_kwargs</strong> – Optionally, some keyword arguments for the PyTorch learning rate scheduler.</p></li>
-<li><p><strong>batch_size</strong> – Number of time series (input and output sequences) used in each training pass.</p></li>
-<li><p><strong>n_epochs</strong> – Number of epochs over which to train the model.</p></li>
+to using a constant learning rate. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>lr_scheduler_kwargs</strong> – Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>batch_size</strong> – Number of time series (input and output sequences) used in each training pass. Default: <code class="docutils literal notranslate"><span class="pre">32</span></code>.</p></li>
+<li><p><strong>n_epochs</strong> – Number of epochs over which to train the model. Default: <code class="docutils literal notranslate"><span class="pre">100</span></code>.</p></li>
 <li><p><strong>model_name</strong> – Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,
 defaults to the following string <code class="docutils literal notranslate"><span class="pre">&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;</span></code>, where the initial part
 of the name is formatted with the local date and time, while PID is the processed ID (preventing models
 spawned at the same time by different processes to share the same model_name). E.g.,
 <code class="docutils literal notranslate"><span class="pre">&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;</span></code>.</p></li>
 <li><p><strong>work_dir</strong> – Path of the working directory, where to save checkpoints and Tensorboard summaries.
-(default: current working directory).</p></li>
+Default: current working directory.</p></li>
 <li><p><strong>log_tensorboard</strong> – If set, use Tensorboard to log the different parameters. The logs will be located in:
-<code class="docutils literal notranslate"><span class="pre">&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;</span></code>.</p></li>
+<code class="docutils literal notranslate"><span class="pre">&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>nr_epochs_val_period</strong> – Number of epochs to wait before evaluating the validation loss (if a validation
-<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is passed to the <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.fit" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> method).</p></li>
+<code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is passed to the <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.fit" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> method). Default: <code class="docutils literal notranslate"><span class="pre">1</span></code>.</p></li>
 <li><p><strong>torch_device_str</strong> – <p>Optionally, a string indicating the torch device to use. By default, <code class="docutils literal notranslate"><span class="pre">torch_device_str</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
 which will run on CPU. Set it to <code class="docutils literal notranslate"><span class="pre">&quot;cuda&quot;</span></code> to use all available GPUs or <code class="docutils literal notranslate"><span class="pre">&quot;cuda:i&quot;</span></code> to only use
 GPU <code class="docutils literal notranslate"><span class="pre">i</span></code> (<code class="docutils literal notranslate"><span class="pre">i</span></code> must be an integer). For example “cuda:0” will use the first GPU only.</p>
@@ -601,19 +612,19 @@ dict:</p>
 </div>
 </p></li>
 <li><p><strong>force_reset</strong> – If set to <code class="docutils literal notranslate"><span class="pre">True</span></code>, any previously-existing model with the same name will be reset (all checkpoints will
-be discarded).</p></li>
+be discarded). Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>save_checkpoints</strong> – Whether or not to automatically save the untrained model and checkpoints from training.
 To load the model from checkpoint, call <code class="xref py py-func docutils literal notranslate"><span class="pre">MyModelClass.load_from_checkpoint()</span></code>, where
 <code class="xref py py-class docutils literal notranslate"><span class="pre">MyModelClass</span></code> is the <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> class that was used (such as <code class="xref py py-class docutils literal notranslate"><span class="pre">TFTModel</span></code>,
 <code class="xref py py-class docutils literal notranslate"><span class="pre">NBEATSModel</span></code>, etc.). If set to <code class="docutils literal notranslate"><span class="pre">False</span></code>, the model can still be manually saved using
-<a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.save_model" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.save_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_model()</span></code></a> and loaded using <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.load_model" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.load_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_model()</span></code></a>.</p></li>
+<a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.save_model" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.save_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">save_model()</span></code></a> and loaded using <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.load_model" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.load_model"><code class="xref py py-func docutils literal notranslate"><span class="pre">load_model()</span></code></a>. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 <li><p><strong>add_encoders</strong> – <p>A large number of past and future covariates can be automatically generated with <cite>add_encoders</cite>.
 This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
 will be used as index encoders. Additionally, a transformer such as Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">Scaler</span></code> can be added to
 transform the generated covariates. This happens all under one hood and only needs to be specified at
 model creation.
 Read <a class="reference internal" href="darts.utils.data.encoders.html#darts.utils.data.encoders.SequentialEncoder" title="darts.utils.data.encoders.SequentialEncoder"><code class="xref py py-meth docutils literal notranslate"><span class="pre">SequentialEncoder</span></code></a> to find out more about
-<code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>. An example showing some of <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> features:</p>
+<code class="docutils literal notranslate"><span class="pre">add_encoders</span></code>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>. An example showing some of <code class="docutils literal notranslate"><span class="pre">add_encoders</span></code> features:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">add_encoders</span><span class="o">=</span><span class="p">{</span>
     <span class="s1">&#39;cyclic&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;month&#39;</span><span class="p">]},</span>
     <span class="s1">&#39;datetime_attribute&#39;</span><span class="p">:</span> <span class="p">{</span><span class="s1">&#39;future&#39;</span><span class="p">:</span> <span class="p">[</span><span class="s1">&#39;hour&#39;</span><span class="p">,</span> <span class="s1">&#39;dayofweek&#39;</span><span class="p">]},</span>
@@ -625,13 +636,14 @@ Read <a class="reference internal" href="darts.utils.data.encoders.html#darts.ut
 </div>
 </p></li>
 <li><p><strong>random_state</strong> – Control the randomness of the weights initialization. Check this
-<a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random_state">link</a> for more details.</p></li>
+<a class="reference external" href="https://scikit-learn.org/stable/glossary.html#term-random_state">link</a> for more details.
+Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>pl_trainer_kwargs</strong> – <p>By default <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code> creates a PyTorch Lightning Trainer with several useful presets
 that performs the training, validation and prediction processes. These presets include automatic
 checkpointing, tensorboard logging, setting the torch device and more.
 With <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> you can add additional kwargs to instantiate the PyTorch Lightning trainer
 object. Check the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html">PL Trainer documentation</a> for more information about the
-supported kwargs.
+supported kwargs. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.
 With parameter <code class="docutils literal notranslate"><span class="pre">&quot;callbacks&quot;</span></code> you can add custom or PyTorch-Lightning built-in callbacks to Darts’
 <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>. Below is an example for adding EarlyStopping to the training process.
 The model will stop training early if the validation loss <cite>val_loss</cite> does not improve beyond
@@ -655,7 +667,7 @@ specifications. For more information on callbacks, visit:
 parameter <code class="docutils literal notranslate"><span class="pre">trainer</span></code> in <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.fit" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> and <a class="reference internal" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.predict" title="darts.models.forecasting.block_rnn_model.BlockRNNModel.predict"><code class="xref py py-func docutils literal notranslate"><span class="pre">predict()</span></code></a>.</p>
 </p></li>
 <li><p><strong>show_warnings</strong> – whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
-your forecasting use case.</p></li>
+your forecasting use case. Default: <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
 </ul>
 </dd>
 </dl>
@@ -733,7 +745,7 @@ your forecasting use case.</p></li>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.backtest">
-<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.backtest" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute error values that the model would have produced when
 used on <cite>series</cite>.</p>
 <p>It repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -758,6 +770,10 @@ newly expanded input sequence will be fed to the model to produce the new output
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
+<li><p><strong>train_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Number of time steps in our training set (size of backtesting window to train on).
+Default is set to train_length=None where it takes all available time steps up until prediction time,
+otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+up until prediction time are used, as in default case. Needs to be at least min_train_series_length.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The first prediction time, at which a prediction is computed for a future time.
 This parameter supports 3 different types: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>.
 In the case of <code class="docutils literal notranslate"><span class="pre">float</span></code>, the parameter will be treated as the proportion of the time series
@@ -976,17 +992,18 @@ be between <cite>0</cite> and <cite>1</cite>. Defaults to <cite>None</cite>, for
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A tuple containing an untrained <cite>model_class</cite> instance created from the best-performing hyper-parameters,
-along with a dictionary containing these best hyper-parameters.</p>
+along with a dictionary containing these best hyper-parameters,
+and metric score for the best hyper-parameters.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>ForecastingModel, Dict</p>
+<dd class="field-odd"><p>ForecastingModel, Dict, float</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p>
 <p>This method uses an expanding training window;
 it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
@@ -1009,6 +1026,10 @@ supported by all models.</p>
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
+<li><p><strong>train_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Number of time steps in our training set (size of backtesting window to train on).
+Default is set to train_length=None where it takes all available time steps up until prediction time,
+otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+up until prediction time are used, as in default case. Needs to be at least min_train_series_length.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The first point of time at which a prediction is computed for a future time.
 This parameter supports 3 different data types: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>.
 In the case of <code class="docutils literal notranslate"><span class="pre">float</span></code>, the parameter will be treated as the proportion of the time series
@@ -1062,8 +1083,17 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.load_from_checkpoint">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_from_checkpoint</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">work_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">best</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.load_from_checkpoint" title="Permalink to this definition">¶</a></dt>
 <dd><p>Load the model from automatically saved checkpoints under ‘{work_dir}/darts_logs/{model_name}/checkpoints/’.
-This method is used for models that were created with <code class="docutils literal notranslate"><span class="pre">save_checkpoints=True</span></code>.
-If you manually saved your model, consider using <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_model()</span></code>.</p>
+This method is used for models that were created with <code class="docutils literal notranslate"><span class="pre">save_checkpoints=True</span></code>.</p>
+<p>If you manually saved your model, consider using <code class="xref py py-meth docutils literal notranslate"><span class="pre">load_model()</span></code>.</p>
+<p>Example for loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code> from checkpoint (<code class="docutils literal notranslate"><span class="pre">model_name</span></code> is the <code class="docutils literal notranslate"><span class="pre">model_name</span></code> used at model
+creation):</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_from_checkpoint</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">best</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
 <p>If <code class="docutils literal notranslate"><span class="pre">file_name</span></code> is given, returns the model saved under
 ‘{work_dir}/darts_logs/{model_name}/checkpoints/{file_name}’.</p>
 <p>If <code class="docutils literal notranslate"><span class="pre">file_name</span></code> is not given, will try to restore the best checkpoint (if <code class="docutils literal notranslate"><span class="pre">best</span></code> is <code class="docutils literal notranslate"><span class="pre">True</span></code>) or the most
@@ -1091,6 +1121,14 @@ is ignored when <code class="docutils literal notranslate"><span class="pre">fil
 <dt class="sig sig-object py" id="darts.models.forecasting.block_rnn_model.BlockRNNModel.load_model">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">load_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.block_rnn_model.BlockRNNModel.load_model" title="Permalink to this definition">¶</a></dt>
 <dd><p>loads a model from a given file path. The file name should end with ‘.pth.tar’</p>
+<p>Example for loading a <code class="xref py py-class docutils literal notranslate"><span class="pre">RNNModel</span></code>:</p>
+<blockquote>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">RNNModel</span>
+
+<span class="n">model_loaded</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="s2">&quot;my_model.pth.tar&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div></blockquote>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>path</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – Path under which to save the model at its current state. The path should end with ‘.pth.tar’</p>

@@ -363,6 +363,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
        Temporal Convolutional Network
       </a>
@@ -451,6 +456,11 @@
    <li class="toctree-l2">
     <a class="reference internal" href="darts.utils.likelihood_models.html">
      Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
     </a>
    </li>
    <li class="toctree-l2">
@@ -600,7 +610,7 @@ although this will have no effect on the Kalman filter.</p></li>
 </table>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.kalman_forecaster.KalmanForecaster.backtest">
-<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.kalman_forecaster.KalmanForecaster.backtest" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">backtest</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start=0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride=1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain=True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only=False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metric=&lt;function</span> <span class="pre">mape&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reduction=&lt;function</span> <span class="pre">mean&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.kalman_forecaster.KalmanForecaster.backtest" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute error values that the model would have produced when
 used on <cite>series</cite>.</p>
 <p>It repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the current model on
@@ -625,6 +635,10 @@ newly expanded input sequence will be fed to the model to produce the new output
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
+<li><p><strong>train_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Number of time steps in our training set (size of backtesting window to train on).
+Default is set to train_length=None where it takes all available time steps up until prediction time,
+otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+up until prediction time are used, as in default case. Needs to be at least min_train_series_length.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The first prediction time, at which a prediction is computed for a future time.
 This parameter supports 3 different types: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>.
 In the case of <code class="docutils literal notranslate"><span class="pre">float</span></code>, the parameter will be treated as the proportion of the time series
@@ -748,17 +762,18 @@ be between <cite>0</cite> and <cite>1</cite>. Defaults to <cite>None</cite>, for
 </dd>
 <dt class="field-even">Returns</dt>
 <dd class="field-even"><p>A tuple containing an untrained <cite>model_class</cite> instance created from the best-performing hyper-parameters,
-along with a dictionary containing these best hyper-parameters.</p>
+along with a dictionary containing these best hyper-parameters,
+and metric score for the best hyper-parameters.</p>
 </dd>
 <dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>ForecastingModel, Dict</p>
+<dd class="field-odd"><p>ForecastingModel, Dict, float</p>
 </dd>
 </dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.kalman_forecaster.KalmanForecaster.historical_forecasts">
-<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.kalman_forecaster.KalmanForecaster.historical_forecasts" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">historical_forecasts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">train_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">forecast_horizon</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">stride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">retrain</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">overlap_end</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">last_points_only</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.kalman_forecaster.KalmanForecaster.historical_forecasts" title="Permalink to this definition">¶</a></dt>
 <dd><p>Compute the historical forecasts that would have been obtained by this model on the <cite>series</cite>.</p>
 <p>This method uses an expanding training window;
 it repeatedly builds a training set from the beginning of <cite>series</cite>. It trains the
@@ -781,6 +796,10 @@ supported by all models.</p>
 <li><p><strong>future_covariates</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]) – An optional future-known covariate series. This applies only if the model supports future covariates.</p></li>
 <li><p><strong>num_samples</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
 for deterministic models.</p></li>
+<li><p><strong>train_length</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – Number of time steps in our training set (size of backtesting window to train on).
+Default is set to train_length=None where it takes all available time steps up until prediction time,
+otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+up until prediction time are used, as in default case. Needs to be at least min_train_series_length.</p></li>
 <li><p><strong>start</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Timestamp</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>]) – The first point of time at which a prediction is computed for a future time.
 This parameter supports 3 different data types: <code class="docutils literal notranslate"><span class="pre">float</span></code>, <code class="docutils literal notranslate"><span class="pre">int</span></code> and <code class="docutils literal notranslate"><span class="pre">pandas.Timestamp</span></code>.
 In the case of <code class="docutils literal notranslate"><span class="pre">float</span></code>, the parameter will be treated as the proportion of the time series

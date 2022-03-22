@@ -776,20 +776,20 @@
 <span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
 
 <span class="sd">        optimizer_cls</span>
-<span class="sd">            The PyTorch optimizer class to be used (default: ``torch.optim.Adam``).</span>
+<span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
 <span class="sd">        optimizer_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
 <span class="sd">            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``</span>
-<span class="sd">            will be used.</span>
+<span class="sd">            will be used. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_cls</span>
 <span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds</span>
-<span class="sd">            to using a constant learning rate.</span>
+<span class="sd">            to using a constant learning rate. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_kwargs</span>
-<span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler.</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
 <span class="sd">        batch_size</span>
-<span class="sd">            Number of time series (input and output sequences) used in each training pass.</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
 <span class="sd">        n_epochs</span>
-<span class="sd">            Number of epochs over which to train the model.</span>
+<span class="sd">            Number of epochs over which to train the model. Default: ``100``.</span>
 <span class="sd">        model_name</span>
 <span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
 <span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part</span>
@@ -798,13 +798,13 @@
 <span class="sd">            ``&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;``.</span>
 <span class="sd">        work_dir</span>
 <span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
-<span class="sd">            (default: current working directory).</span>
+<span class="sd">            Default: current working directory.</span>
 <span class="sd">        log_tensorboard</span>
 <span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
-<span class="sd">            ``&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;``.</span>
+<span class="sd">            ``&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;``. Default: ``False``.</span>
 <span class="sd">        nr_epochs_val_period</span>
 <span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
-<span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method).</span>
+<span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.</span>
 <span class="sd">        torch_device_str</span>
 <span class="sd">            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``</span>
 <span class="sd">            which will run on CPU. Set it to ``&quot;cuda&quot;`` to use all available GPUs or ``&quot;cuda:i&quot;`` to only use</span>
@@ -825,13 +825,13 @@
 <span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices</span>
 <span class="sd">        force_reset</span>
 <span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
-<span class="sd">            be discarded).</span>
+<span class="sd">            be discarded). Default: ``False``.</span>
 <span class="sd">        save_checkpoints</span>
 <span class="sd">            Whether or not to automatically save the untrained model and checkpoints from training.</span>
 <span class="sd">            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where</span>
 <span class="sd">            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,</span>
 <span class="sd">            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using</span>
-<span class="sd">            :func:`save_model()` and loaded using :func:`load_model()`.</span>
+<span class="sd">            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.</span>
 <span class="sd">        add_encoders</span>
 <span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
 <span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
@@ -839,7 +839,7 @@
 <span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
 <span class="sd">            model creation.</span>
 <span class="sd">            Read :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;` to find out more about</span>
-<span class="sd">            ``add_encoders``. An example showing some of ``add_encoders`` features:</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
 
 <span class="sd">            .. highlight:: python</span>
 <span class="sd">            .. code-block:: python</span>
@@ -855,6 +855,7 @@
 <span class="sd">        random_state</span>
 <span class="sd">            Control the randomness of the weights initialization. Check this</span>
 <span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random_state&gt;`_ for more details.</span>
+<span class="sd">            Default: ``None``.</span>
 <span class="sd">        pl_trainer_kwargs</span>
 <span class="sd">            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets</span>
 <span class="sd">            that performs the training, validation and prediction processes. These presets include automatic</span>
@@ -862,7 +863,7 @@
 <span class="sd">            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer</span>
 <span class="sd">            object. Check the `PL Trainer documentation</span>
 <span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`_ for more information about the</span>
-<span class="sd">            supported kwargs.</span>
+<span class="sd">            supported kwargs. Default: ``None``.</span>
 <span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
 <span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
 <span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>
@@ -891,7 +892,7 @@
 <span class="sd">            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.</span>
 <span class="sd">        show_warnings</span>
 <span class="sd">            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of</span>
-<span class="sd">            your forecasting use case.</span>
+<span class="sd">            your forecasting use case. Default: ``False``.</span>
 
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>

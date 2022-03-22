@@ -191,6 +191,7 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">add_seasonalities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">dict</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">country_holidays</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">suppress_stdout_stderror</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
         <span class="o">**</span><span class="n">prophet_kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Facebook Prophet</span>
@@ -233,6 +234,8 @@
 <span class="sd">            countries: Brazil (BR), Indonesia (ID), India (IN), Malaysia (MY), Vietnam (VN),</span>
 <span class="sd">            Thailand (TH), Philippines (PH), Turkey (TU), Pakistan (PK), Bangladesh (BD),</span>
 <span class="sd">            Egypt (EG), China (CN), and Russia (RU).</span>
+<span class="sd">        suppress_stdout_stderror</span>
+<span class="sd">            Optionally suppress the log output produced by Prophet during training.</span>
 <span class="sd">        prophet_kwargs</span>
 <span class="sd">            Some optional keyword arguments for Prophet.</span>
 <span class="sd">            For information about the parameters see:</span>
@@ -255,6 +258,10 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">country_holidays</span> <span class="o">=</span> <span class="n">country_holidays</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prophet_kwargs</span> <span class="o">=</span> <span class="n">prophet_kwargs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">suppress_stdout_stderr</span> <span class="o">=</span> <span class="n">suppress_stdout_stderror</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_execute_and_suppress_output</span> <span class="o">=</span> <span class="n">execute_and_suppress_output</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_model_builder</span> <span class="o">=</span> <span class="n">prophet</span><span class="o">.</span><span class="n">Prophet</span>
 
     <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="s2">&quot;Prophet&quot;</span>
@@ -268,7 +275,7 @@
             <span class="n">data</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;ds&quot;</span><span class="p">:</span> <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="n">series</span><span class="o">.</span><span class="n">univariate_values</span><span class="p">()}</span>
         <span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">prophet</span><span class="o">.</span><span class="n">Prophet</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">prophet_kwargs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model_builder</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">prophet_kwargs</span><span class="p">)</span>
 
         <span class="c1"># add user defined seasonalities (from model creation and/or pre-fit self.add_seasonalities())</span>
         <span class="n">interval_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_freq_to_days</span><span class="p">(</span><span class="n">series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">)</span>
@@ -294,7 +301,12 @@
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">country_holidays</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">add_country_holidays</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">country_holidays</span><span class="p">)</span>
 
-        <span class="n">execute_and_suppress_output</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span> <span class="n">fit_df</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">suppress_stdout_stderr</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_execute_and_suppress_output</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">,</span> <span class="n">logger</span><span class="p">,</span> <span class="n">logging</span><span class="o">.</span><span class="n">WARNING</span><span class="p">,</span> <span class="n">fit_df</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">fit_df</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span>
 
@@ -549,11 +561,11 @@
         <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;S&quot;</span><span class="p">]:</span>  <span class="c1"># second</span>
             <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">seconds_per_day</span>
         <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;L&quot;</span><span class="p">,</span> <span class="s2">&quot;ms&quot;</span><span class="p">]:</span>  <span class="c1"># millisecond</span>
-            <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">seconds_per_day</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">3</span><span class="p">)</span>
+            <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">seconds_per_day</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;U&quot;</span><span class="p">,</span> <span class="s2">&quot;us&quot;</span><span class="p">]:</span>  <span class="c1"># microsecond</span>
-            <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">seconds_per_day</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span><span class="p">)</span>
+            <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">seconds_per_day</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">6</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">freq</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;N&quot;</span><span class="p">]:</span>  <span class="c1"># nanosecond</span>
-            <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">seconds_per_day</span> <span class="o">*</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">9</span><span class="p">)</span>
+            <span class="n">days</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">seconds_per_day</span> <span class="o">*</span> <span class="mi">10</span><span class="o">**</span><span class="mi">9</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
                 <span class="s2">&quot;freq </span><span class="si">{}</span><span class="s2"> not understood. Please report if you think this is in error.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>

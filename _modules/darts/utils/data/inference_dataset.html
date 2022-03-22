@@ -330,7 +330,9 @@
         <span class="p">)</span>
 
         <span class="c1"># extract past target values</span>
-        <span class="n">past_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="p">:]</span>
+        <span class="n">past_target</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span>
+            <span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="p">:</span>
+        <span class="p">]</span>
 
         <span class="c1"># optionally, extract covariates</span>
         <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
@@ -348,7 +350,9 @@
             <span class="p">)</span>
 
             <span class="c1"># extract covariate values and split into a past (historic) and future part</span>
-            <span class="n">covariate</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="n">cov_start</span><span class="p">:</span><span class="n">cov_end</span><span class="p">]</span>
+            <span class="n">covariate</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span>
+                <span class="n">cov_start</span><span class="p">:</span><span class="n">cov_end</span>
+            <span class="p">]</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># regular models</span>
                 <span class="n">cov_past</span><span class="p">,</span> <span class="n">cov_future</span> <span class="o">=</span> <span class="p">(</span>
                     <span class="n">covariate</span><span class="p">[:</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">],</span>

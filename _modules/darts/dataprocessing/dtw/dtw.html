@@ -467,7 +467,7 @@
     <span class="k">if</span> <span class="p">(</span>
         <span class="n">multi_grid_radius</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span>
         <span class="ow">and</span> <span class="nb">type</span><span class="p">(</span><span class="n">window</span><span class="p">)</span> <span class="ow">is</span> <span class="n">NoWindow</span>
-        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">series1</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span> <span class="o">**</span> <span class="mi">6</span>
+        <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">series1</span><span class="p">)</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">10</span><span class="o">**</span><span class="mi">6</span>
     <span class="p">):</span>
         <span class="n">logger</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
             <span class="s2">&quot;Exact evaluation will result in poor performance on large datasets.&quot;</span>

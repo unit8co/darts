@@ -460,6 +460,29 @@
         <span class="n">delayed</span><span class="p">(</span><span class="n">fn</span><span class="p">)(</span><span class="o">*</span><span class="n">sample</span><span class="p">,</span> <span class="o">*</span><span class="n">fn_args</span><span class="p">,</span> <span class="o">**</span><span class="n">fn_kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">sample</span> <span class="ow">in</span> <span class="n">iterator</span>
     <span class="p">)</span>
     <span class="k">return</span> <span class="n">returned_data</span>
+
+
+<span class="k">def</span> <span class="nf">_check_quantiles</span><span class="p">(</span><span class="n">quantiles</span><span class="p">):</span>
+    <span class="n">raise_if_not</span><span class="p">(</span>
+        <span class="nb">all</span><span class="p">([</span><span class="mi">0</span> <span class="o">&lt;</span> <span class="n">q</span> <span class="o">&lt;</span> <span class="mi">1</span> <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="n">quantiles</span><span class="p">]),</span>
+        <span class="s2">&quot;All provided quantiles must be between 0 and 1.&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="c1"># we require the median to be present and the quantiles to be symmetric around it,</span>
+    <span class="c1"># for correctness of sampling.</span>
+    <span class="n">median_q</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">raise_if_not</span><span class="p">(</span>
+        <span class="n">median_q</span> <span class="ow">in</span> <span class="n">quantiles</span><span class="p">,</span> <span class="s2">&quot;median quantile `q=0.5` must be in `quantiles`&quot;</span>
+    <span class="p">)</span>
+    <span class="n">is_centered</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="o">-</span><span class="mf">1e-6</span> <span class="o">&lt;</span> <span class="p">(</span><span class="n">median_q</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="n">median_q</span> <span class="o">-</span> <span class="n">right_q</span><span class="p">)</span> <span class="o">&lt;</span> <span class="mf">1e-6</span>
+        <span class="k">for</span> <span class="n">left_q</span><span class="p">,</span> <span class="n">right_q</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">quantiles</span><span class="p">,</span> <span class="n">quantiles</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="p">]</span>
+    <span class="n">raise_if_not</span><span class="p">(</span>
+        <span class="nb">all</span><span class="p">(</span><span class="n">is_centered</span><span class="p">),</span>
+        <span class="s2">&quot;quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles &quot;</span>
+        <span class="s2">&quot;higher than `q=0.5`&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
 </pre></div>
 
               </div>
