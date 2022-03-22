@@ -18,9 +18,10 @@
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using `fit()` and `predict()` functions,
 similar to scikit-learn. The library also makes it easy to backtest models,
-and combine the predictions of several models and external regressors. Darts supports both
-univariate and multivariate time series and models. The ML-based models can be trained
-on multiple time series, and some of the models offer probabilistic forecasts.
+combine the predictions of several models, and take external data into account. 
+Darts supports both univariate and multivariate time series and models. 
+The ML-based models can be trained on potentially large datasets containing multiple time
+series, and some of the models offer a rich support for probabilistic forecasting.
 
 ## Documentation
 * [Quickstart](https://unit8co.github.io/darts/quickstart/00-quickstart.html)
@@ -29,7 +30,7 @@ on multiple time series, and some of the models offer probabilistic forecasts.
 
 ##### High Level Introductions
 * [Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
-* [Introductory Video](https://youtu.be/g6OXDnXEtFA)
+* [Introduction to Darts at PyData Global 2021](https://youtu.be/g6OXDnXEtFA)
 
 ##### Articles on Selected Topics
 * [Training Models on Multiple Time Series](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844)
@@ -48,7 +49,8 @@ Once your environment is set up you can install darts using pip:
 
     pip install darts
 
-For more detailed install instructions you can refer to our [installation guide](#installation-guide) at the end of this page.
+For more details you can refer to our 
+[installation instructions](https://github.com/unit8co/darts/blob/master/INSTALL.md).
 
 ## Example Usage
 
@@ -90,41 +92,29 @@ plt.legend()
 <img src="https://github.com/unit8co/darts/raw/master/static/images/example.png" alt="darts forecast example" />
 </div>
 
-We invite you to go over the example and tutorial notebooks in
-the [examples](https://github.com/unit8co/darts/tree/master/examples) directory.
-
-
 ## Features
-
-Currently, the library contains the following features:
-
-**Forecasting Models:** A large collection of forecasting models; from statistical models (such as
-ARIMA) to deep learning models (such as N-BEATS). See table of models below.
-
-**Data processing:** Tools to easily apply (and revert) common transformations on time series data (scaling, boxcox, …)
-
-**Metrics:** A variety of metrics for evaluating time series' goodness of fit;
-from R2-scores to Mean Absolute Scaled Error.
-
-**Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
-
-**Regression Models:** Possibility to predict a time series from lagged versions of itself
-and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).
-
-**Multiple series training:** All neural networks, as well as `RegressionModel`s (incl. `LinearRegressionModel` and
-`RandomForest`) support being trained on multiple series.
-
-**Past and Future Covariates support:** Some models support past-observed and/or future-known covariate time series
-as inputs for producing forecasts.
-
-**Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
-
-**Probabilistic Support:** `TimeSeries` objects can (optionally) represent stochastic
-time series; this can for instance be used to get confidence intervals.
-
-**Filtering Models:** Darts offers three filtering models: `KalmanFilter`, `GaussianProcessFilter`,
-and `MovingAverage`, which allow to filter time series, and in some cases obtain probabilistic
-inferences of the underlying states/values.
+* **Forecasting Models:** A large collection of forecasting models; from statistical models (such as
+  ARIMA) to deep learning models (such as N-BEATS). See table of models below.
+* **Data processing:** Tools to easily apply (and revert) common transformations on
+  time series data (scaling, boxcox, ...)
+* **Metrics:** A variety of metrics for evaluating time series' goodness of fit;
+  from R2-scores to Mean Absolute Scaled Error.
+* **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
+* **Regression Models:** Possibility to predict a time series from lagged versions of itself
+  and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).
+* **Multiple series training:** All machine learning based models (incl.\ all neural networks) 
+  support being trained on multiple series.
+* **Past and Future Covariates support:** Some models support past-observed and/or future-known covariate time series
+  as inputs for producing forecasts.
+* **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
+* **Probabilistic Support:** `TimeSeries` objects can (optionally) represent stochastic
+  time series; this can for instance be used to get confidence intervals, and several models
+  support different flavours of probabilistic forecasting.
+* **PyTorch Lightning Support:** All deep learning models are implemented using PyTorch Lightning,
+  supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.
+* **Filtering Models:** Darts offers three filtering models: `KalmanFilter`, `GaussianProcessFilter`,
+  and `MovingAverage`, which allow to filter time series, and in some cases obtain probabilistic
+  inferences of the underlying states/values.
 
 ## Forecasting Models
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
@@ -136,11 +126,15 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `VARIMA` | ✅ | ✅ | | | | ✅ |
 `AutoARIMA` | ✅ | | | | | ✅ |
 `ExponentialSmoothing` | ✅ | | ✅ | | | |
+`BATS` and `TBATS` | ✅ | | ✅ | | | | [TBATS paper](https://robjhyndman.com/papers/ComplexSeasonality.pdf)
 `Theta` and `FourTheta` | ✅ | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
 `Prophet` | ✅ | | ✅ | | | ✅ | [Prophet repo](https://github.com/facebook/prophet)
 `FFT` (Fast Fourier Transform) | ✅ | | | | | |
 `KalmanForecaster` using the Kalman filter and N4SID for system identification | ✅ | ✅ | ✅ | | | ✅ | [N4SID paper](https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf)
-`RegressionModel` (incl `RandomForest`, `LinearRegressionModel` and `LightGBMModel`) | ✅ | ✅ | | ✅ | ✅ | ✅ |
+`RegressionModel`; generic wrapper around any sklearn regression model | ✅ | ✅ | | ✅ | ✅ | ✅ |
+`RandomForest` | ✅ | ✅ | | ✅ | ✅ | ✅ |
+`LinearRegressionModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+`LightGBMModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 `RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | [DeepAR paper](https://arxiv.org/abs/1704.04110)
 `BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `NBEATSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
@@ -151,7 +145,6 @@ Naive Baselines | ✅ | | | | | |
 
 
 ## Community & Contact
-
 Anyone is welcome to join our [Discord server](https://discord.gg/Um3jBTYFsA) to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
 or have a feature request, Github issues are also welcome.
@@ -161,116 +154,13 @@ feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co<
 darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other
 inquiries.
 
-### Contribute
-
-The development is ongoing, and there are many new features that we want to add.
-We welcome pull requests and issues on Github.
+## Contribute
+The development is ongoing, and we welcome suggestions, pull requests and issues on Github.
+All contributors will be acknowledged on the
+[change log page](https://github.com/unit8co/darts/blob/master/CHANGELOG.md).
 
 Before working on a contribution (a new feature or a fix),
- [check our contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md).
-
-
-## Installation Guide
-
-Some of the models depend on `prophet` and `torch`, which have non-Python dependencies.
-A Conda environment is thus recommended because it will handle all of those in one go.
-
-### From conda-forge
-Currently only the x86_64 architecture with Python 3.7-3.9
-is fully supported with conda; consider using PyPI if you are running into troubles.
-
-To create a conda environment for Python 3.7
-(after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
-
-    conda create --name <env-name> python=3.7
-
-Don't forget to activate your virtual environment
-
-    conda activate <env-name>
-
-As some models have relatively heavy dependencies, we provide two conda-forge packages:
-
-* Install darts with all available models (recommended): `conda install -c conda-forge -c pytorch u8darts-all`.
-* Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
-* Install core only (without neural networks, Prophet or AutoARIMA): `conda install -c conda-forge u8darts`
-
-For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
-
-
-### From PyPI
-Install darts with all available models: `pip install darts`.
-
-If this fails on your platform, please follow the official installation guides for
-[prophet](https://facebook.github.io/prophet/docs/installation.html#python)
-and [torch](https://pytorch.org/get-started/locally/), then try installing Darts again.
-
-As some models have relatively heavy (or non-Python) dependencies,
-we also maintain the `u8darts` package, which provides the following alternate lighter install options:
-
-* Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
-* Install core + neural networks (PyTorch): `pip install "u8darts[torch]"`
-* Install core + Facebook Prophet: `pip install "u8darts[prophet]"`
-* Install core + AutoARIMA: `pip install "u8darts[pmdarima]"`
-
-#### Enabling Support for LightGBM
-
-To enable support for LightGBM in Darts, please follow the
-[installation instructions](https://lightgbm.readthedocs.io/en/latest/Installation-Guide.html) for your OS.
-
-##### MacOS Issues with LightGBM
-At the time of writing, there is an issue with ``libomp`` 12.0.1 that results in
-[segmentation fault on Mac OS Big Sur](https://github.com/microsoft/LightGBM/issues/4229).
-Here's the procedure to downgrade the ``libomp`` library (from the
-[original Github issue](https://github.com/microsoft/LightGBM/issues/4229#issue-867528353)):
-* [Install brew](https://brew.sh/) if you don't already have it.
-* Install `wget` if you don't already have it : `brew install wget`.
-* Run the commands below:
-```
-wget https://raw.githubusercontent.com/Homebrew/homebrew-core/fb8323f2b170bd4ae97e1bac9bf3e2983af3fdb0/Formula/libomp.rb
-brew unlink libomp
-brew install libomp.rb
-```
-
-
-### Running the examples only, without installing:
-
-If the conda setup is causing too many problems, we also provide a Docker image with everything set up for you and ready-to-use Python notebooks with demo examples.
-To run the example notebooks without installing our libraries natively on your machine, you can use our Docker image:
-```bash
-./gradlew docker && ./gradlew dockerRun
-```
-
-Then copy and paste the URL provided by the docker container into your browser to access Jupyter notebook.
-
-For this setup to work you need to have a Docker service installed. You can get it at [Docker website](https://docs.docker.com/get-docker/).
-
-
-### Tests
-
-The gradle setup works best when used in a python environment, but the only requirement is to have `pip` installed for Python 3+
-
-To run all tests at once just run
-```bash
-./gradlew test_all
-```
-
-alternatively you can run
-```bash
-./gradlew unitTest_all # to run only unittests
-./gradlew coverageTest # to run coverage
-./gradlew lint         # to run linter
-```
-
-To run the tests for specific flavours of the library, replace `_all` with `_core`, `_prophet`, `_pmdarima` or `_torch`.
-
-### Documentation
-
-To build documentation locally just run
-```bash
-./gradlew buildDocs
-```
-After that docs will be available in `./docs/build/html` directory. You can just open `./docs/build/html/index.html` using your favourite browser.
-
+[check our contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md).
 
 ## Citation
 If you are using Darts in your scientific work, we would appreciate citations to the following paper.
