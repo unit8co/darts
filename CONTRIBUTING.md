@@ -52,7 +52,13 @@ and discuss it with some of the core team.
 8. Verify your tests coverage by running `./gradlew coverageTest`
     * Additionally you can generate an xml report and use VSCode Coverage gutter to identify untested
     lines with `./coverage.sh xml`
-9. If your contribution introduces a significant change, add it to `CHANGELOG.md` under the "Unreleased" section.
+9. If your contribution introduces a non-negligible change, add it to `CHANGELOG.md` under the "Unreleased" section.
+   You can already refer to the pull request. In addition, for tracking contributions we are happy if you provide 
+   your full name (if you want to) and link to your Github handle. Example:
+   ```
+   - Added new feature XYZ. [#001](https://https://github.com/unit8co/darts/pull/001)
+     by [<Your Name>](https://github.com/<your-handle>).
+   ```
 10. Create a pull request from your new branch into the **master** branch.
 
 
