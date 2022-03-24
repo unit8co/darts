@@ -1,7 +1,7 @@
 # Use Torch Forecasting Models with GPU and TPU
-This document was written for darts version 0.17.0.
+This guide was written for Darts 0.17.0 and later.
 
-We assume that you already know about Torch Forecasting Models in Darts. If you're new to the topic we recommend you to read our [guide on Torch Forecasting Models](https://unit8co.github.io/darts/userguide/torch_forecasting_models.html) first. Here is also an [Recurrent Neural Network (RNN) Model example](https://unit8co.github.io/darts/examples/04-RNN-examples.html), in which this guide is going to be based on.
+We assume that you already know about Torch Forecasting Models in Darts. If you're new to the topic we recommend you to read the [guide on Torch Forecasting Models](https://unit8co.github.io/darts/userguide/torch_forecasting_models.html) first. To get good performance when training models, we also recomment the [performance recommendations section](https://unit8co.github.io/darts/userguide/performance.html) of the user guie. Here is also an [Recurrent Neural Network (RNN) Model example](https://unit8co.github.io/darts/examples/04-RNN-examples.html), on which this guide is going to be based on.
 
 ## Use CPU
 
