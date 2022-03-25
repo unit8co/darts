@@ -697,26 +697,61 @@ class _LikelihoodMixin:
         model_output is of shape (n_timesteps, n_components, n_quantiles)
         """
         raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
-        quantiles = np.tile(np.array(self.quantiles), (num_samples, 1))
-        probas = np.tile(
-            self._rng.uniform(size=(num_samples,)), (len(self.quantiles), 1)
-        )
-
-        quantile_idxs = np.sum(probas.T > quantiles, axis=1)
-
-        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
-        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
-        # too often as it would capture the "probability buckets" preceding and following it.
-        #
-        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
-        quantile_idxs = np.where(
-            quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
-        )
 
         if num_samples == 1:  # return median
             return model_output[:, :, [self._median_idx]]
 
-        return model_output[:, :, quantile_idxs]
+        n_timesteps, n_components, n_quantiles = model_output.shape
+
+        # obtain samples
+        probs = self._rng.uniform(
+            size=(
+                n_timesteps,
+                n_components,
+                num_samples,
+            )
+        )
+
+        # add dummy dim
+        probas = np.expand_dims(probs, axis=-2)
+
+        # tile and transpose
+        p = np.tile(probas, (1, 1, n_quantiles, 1))
+        trans = p.transpose((0, 1, 3, 2))
+
+        # prepare quantiles
+        shape = (1, 1, num_samples, 1)
+        tquantiles = np.tile(np.array(self.quantiles), shape)
+
+        # calculate index of biggest quantile smaller than the sampled value
+        left_idx = np.sum(trans > tquantiles, axis=-1)
+
+        # obtain index of smallest quantile bigger than sampled value
+        right_idx = left_idx + 1
+
+        # repeat the model output on the edges
+        repeat_count = [1] * n_quantiles
+        repeat_count[0] = 2
+        repeat_count[-1] = 2
+        shifted_output = np.repeat(model_output, repeat_count, axis=-1)
+
+        # obtain model output values corresponding to the quantiles left and right of the sampled value
+        left_value = np.take_along_axis(shifted_output, left_idx, axis=-1)
+        right_value = np.take_along_axis(shifted_output, right_idx, axis=-1)
+
+        # add 0 and 1 to quantiles
+        ext_quantiles = [0] + self.quantiles + [1]
+        expanded_q = np.tile(np.array(ext_quantiles), shape)
+
+        # calculate closest quantiles to the sampled value
+        left_q = np.take(expanded_q, left_idx)
+        right_q = np.take(expanded_q, right_idx)
+
+        # linear interpolation
+        weights = (probs - left_q) / (right_q - left_q)
+        inter = left_value + weights * (right_value - left_value)
+
+        return inter
 
     def _sample_poisson(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
         raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))

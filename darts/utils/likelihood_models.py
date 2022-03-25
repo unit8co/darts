@@ -1004,29 +1004,62 @@ class QuantileRegression(Likelihood):
 
         model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
         """
-        batch_size, length = model_output.shape[:2]
+        device = model_output.device
+        batch_size, length, n_components, n_quantiles = model_output.shape
         model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
 
-        device = model_output.device
+        num_samples = batch_size
+        n_timesteps = length
 
-        quantiles = torch.tile(torch.tensor(self.quantiles), (batch_size, 1)).to(device)
-        probas = torch.tile(
-            torch.rand(size=(batch_size,)), (len(self.quantiles), 1)
+        # obtain samples
+        probs = torch.rand(
+            size=(
+                num_samples,
+                n_timesteps,
+                n_components,
+                1,
+            )
         ).to(device)
+        # add dummy dim
+        probas = probs.unsqueeze(-2)
 
-        quantile_idxs = torch.sum(probas.T > quantiles, axis=1)
+        # tile and transpose
+        p = torch.tile(probas, (1, 1, 1, n_quantiles, 1))
+        trans = p.transpose(4, 3)
 
-        # To make the sampling symmetric around the median, we assign the two "probability buckets" before and after
-        # the median to the median value. If we don't do that, the highest quantile would be wrongly sampled
-        # too often as it would capture the "probability buckets" preceding and following it.
-        #
-        # Example; the arrows shows how the buckets map to values: [--> 0.1 --> 0.25 --> 0.5 <-- 0.75 <-- 0.9 <--]
-        quantile_idxs = torch.where(
-            quantile_idxs <= self._median_idx, quantile_idxs, quantile_idxs - 1
-        )
+        # prepare quantiles
+        tquantiles = torch.tensor(self.quantiles).reshape((1, 1, 1, -1)).to(device)
 
-        batch_idx = torch.tensor(range(batch_size)).to(device)
-        return model_output[batch_idx, :, :, quantile_idxs]
+        # calculate index of biggest quantile smaller than the sampled value
+        left_idx = torch.sum(trans > tquantiles, dim=-1)
+
+        # obtain index of smallest quantile bigger than sampled value
+        right_idx = left_idx + 1
+
+        # repeat the model output on the edges
+        repeat_count = [1] * n_quantiles
+        repeat_count[0] = 2
+        repeat_count[-1] = 2
+        repeat_count = torch.tensor(repeat_count).to(device)
+        shifted_output = torch.repeat_interleave(model_output, repeat_count, dim=-1)
+
+        # obtain model output values corresponding to the quantiles left and right of the sampled value
+        left_value = torch.gather(shifted_output, index=left_idx, dim=-1)
+        right_value = torch.gather(shifted_output, index=right_idx, dim=-1)
+
+        # add 0 and 1 to quantiles
+        ext_quantiles = [0.0] + self.quantiles + [1.0]
+        expanded_q = torch.tile(torch.tensor(ext_quantiles), left_idx.shape).to(device)
+
+        # calculate closest quantiles to the sampled value
+        left_q = torch.gather(expanded_q, index=left_idx, dim=-1)
+        right_q = torch.gather(expanded_q, index=right_idx, dim=-1)
+
+        # linear interpolation
+        weights = (probs - left_q) / (right_q - left_q)
+        inter = left_value + weights * (right_value - left_value)
+
+        return inter.squeeze(-1)
 
     @property
     def num_parameters(self) -> int:
