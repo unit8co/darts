@@ -30,7 +30,7 @@ errors will be raised during training. You can refer to the individual likelihoo
 to see what is the support. Similarly, the prior parameters also have to lie in some pre-defined domains.
 """
 
-import collections
+import collections.abc
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
@@ -65,7 +65,7 @@ MIN_CAUCHY_GAMMA_SAMPLING = 1e-100
 def _check(param, predicate, param_name, condition_str):
     if param is None:
         return
-    if isinstance(param, (collections.Sequence, np.ndarray)):
+    if isinstance(param, (collections.abc.Sequence, np.ndarray)):
         raise_if_not(
             all(predicate(p) for p in param),
             f"All provided parameters {param_name} must be {condition_str}.",
