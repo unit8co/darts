@@ -70,4 +70,4 @@ Behind the scenes, `TimeSeries` is wrapping around a 3-dimensional `xarray.DataA
 * [`TimeSeries.all_values()`](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.all_values) to export a NumPy array contaning the values of all samples of a stochastic series.
 
 ## More information and documentation
-The full list of attributes and methods of the `TimeSeries` class is listed in the [API Documentation](https://unit8co.github.io/darts/generated_api/darts.timeseries.html)
+The full list of attributes and methods of the `TimeSeries` class is listed in the [API Documentation](https://unit8co.github.io/darts/generated_api/darts.timeseries.html). In addition, the [Quickstart](https://unit8co.github.io/darts/quickstart/00-quickstart.html#Building-and-manipulating-TimeSeries) contains some examples of `TimeSeries` manipulation.
