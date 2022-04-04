@@ -324,11 +324,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @property
     def epochs_trained(self):
-        # trained epochs are only 0 when global step and current epoch are 0, else current epoch + 1
-        current_epoch = self.current_epoch
-        if self.current_epoch or self.global_step:
-            current_epoch += 1
-        return current_epoch
+        return self.current_epoch
 
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
