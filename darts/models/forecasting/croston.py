@@ -1,3 +1,8 @@
+"""
+Croston method
+--------------
+"""
+
 import numpy as np
 from statsforecast.models import croston_classic, croston_optimized
 
@@ -6,8 +11,20 @@ from darts.timeseries import TimeSeries
 
 
 class Croston(ForecastingModel):
-    def __init__(self, optimized=False):
-        """ """
+    def __init__(self, optimized: bool = False):
+        """An implementation of the `Croston method
+        <https://otexts.com/fpp3/counts.html>`_.
+
+        Relying on the implementation of `Statsforecasts package
+        <https://github.com/Nixtla/statsforecast>`_.
+
+        Parameters
+        ----------
+        optimized
+            Whether to use the ``croston_optimized`` method, which searches
+            for the optimal ``alpha`` smoothing parameter and can take longer
+            to run. Otherwise, a fixed value of ``alpha=0.1`` is used.
+        """
         super().__init__()
         self.method = croston_optimized if optimized else croston_classic
 
