@@ -123,7 +123,6 @@ if TORCH_AVAILABLE:
             checkpoint_path_manual = os.path.join(model_dir, manual_name)
             os.mkdir(checkpoint_path_manual)
 
-            # save manually saved model
             checkpoint_file_name = "checkpoint_0.pth.tar"
             model_path_manual = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name
@@ -132,6 +131,9 @@ if TORCH_AVAILABLE:
             model_path_manual_ckpt = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name_cpkt
             )
+
+            # save manually saved model
+            model_manual_save.save_model(model_path_manual)
             self.assertTrue(os.path.exists(model_path_manual))
 
             # check that the PTL checkpoint path is also there
