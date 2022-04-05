@@ -128,8 +128,14 @@ if TORCH_AVAILABLE:
             model_path_manual = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name
             )
-            model_manual_save.save_model(model_path_manual)
+            checkpoint_file_name_cpkt = "checkpoint_0_ptl-ckpt.pth.tar"
+            model_path_manual_ckpt = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name_cpkt
+            )
             self.assertTrue(os.path.exists(model_path_manual))
+
+            # check that the PTL checkpoint path is also there
+            self.assertTrue(os.path.exists(model_path_manual_ckpt))
 
             # load manual save model and compare with automatic model results
             model_manual_save = RNNModel.load_model(model_path_manual)
