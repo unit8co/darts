@@ -13,7 +13,8 @@ from darts.timeseries import TimeSeries
 class Croston(ForecastingModel):
     def __init__(self, optimized: bool = False):
         """An implementation of the `Croston method
-        <https://otexts.com/fpp3/counts.html>`_.
+        <https://otexts.com/fpp3/counts.html>`_. for intermittent
+        count series.
 
         Relying on the implementation of `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.

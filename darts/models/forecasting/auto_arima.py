@@ -1,6 +1,6 @@
 """
-Auto-ARIMA
-----------
+AutoARIMA
+---------
 """
 
 from typing import Optional
