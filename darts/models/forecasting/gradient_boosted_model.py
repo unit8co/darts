@@ -169,60 +169,13 @@ class LightGBMModel(RegressionModel, _LikelihoodMixin):
 
         return self
 
-    def predict(
-        self,
-        n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        num_samples: int = 1,
-        **kwargs,
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
-        """Forecasts values for `n` time steps after the end of the series.
-
-        Parameters
-        ----------
-        n : int
-            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
-        series : TimeSeries or list of TimeSeries, optional
-            Optionally, one or several input `TimeSeries`, representing the history of the target series whose future
-            is to be predicted. If specified, the method returns the forecasts of these series. Otherwise, the method
-            returns the forecast of the (single) training series.
-        past_covariates : TimeSeries or list of TimeSeries, optional
-            Optionally, the past-observed covariates series needed as inputs for the model.
-            They must match the covariates used for training in terms of dimension and type.
-        future_covariates : TimeSeries or list of TimeSeries, optional
-            Optionally, the future-known covariates series needed as inputs for the model.
-            They must match the covariates used for training in terms of dimension and type.
-        num_samples : int, default: 1
-            Specifies the numer of samples to obtain from the model. Should be set to 1 if no `likelihood` is specified.
-        **kwargs : dict, optional
-            Additional keyword arguments passed to the `predict` method of the model. Only works with
-            univariate target series.
-        """
-
+    def predict_and_sample(self, x, num_samples, **kwargs):
         if self.likelihood == "quantile":
-            return self._predict_quantiles(
-                superfun=super().predict,
-                n=n,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                **kwargs,
-            )
+            return self._predict_quantiles(x, num_samples, **kwargs)
+        elif self.likelihood == "poisson":
+            return self._predict_poisson(x, num_samples, **kwargs)
+        else:
+            return super().predict_and_sample(x, num_samples, **kwargs)
 
-        if self.likelihood == "poisson":
-            return self._predict_poisson(
-                superfun=super().predict,
-                n=n,
-                series=series,
-                past_covariates=past_covariates,
-                future_covariates=future_covariates,
-                num_samples=num_samples,
-                **kwargs,
-            )
-
-        return super().predict(
-            n, series, past_covariates, future_covariates, num_samples, **kwargs
-        )
+    def _is_probabilistic(self) -> bool:
+        return self.likelihood is not None

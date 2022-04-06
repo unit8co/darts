@@ -1024,14 +1024,13 @@ class QuantileRegression(Likelihood):
         probas = probs.unsqueeze(-2)
 
         # tile and transpose
-        p = torch.tile(probas, (1, 1, 1, n_quantiles, 1))
-        trans = p.transpose(4, 3)
+        p = torch.tile(probas, (1, 1, 1, n_quantiles, 1)).transpose(4, 3)
 
         # prepare quantiles
         tquantiles = torch.tensor(self.quantiles).reshape((1, 1, 1, -1)).to(device)
 
         # calculate index of biggest quantile smaller than the sampled value
-        left_idx = torch.sum(trans > tquantiles, dim=-1)
+        left_idx = torch.sum(p > tquantiles, dim=-1)
 
         # obtain index of smallest quantile bigger than sampled value
         right_idx = left_idx + 1

@@ -25,11 +25,10 @@ denoting past lags and positive values including 0 denoting future lags).
 
 import math
 from collections import OrderedDict
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
-import xarray as xr
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputRegressor
 
@@ -172,7 +171,7 @@ class RegressionModel(GlobalForecastingModel):
         if isinstance(lags_future_covariates, tuple):
             raise_if_not(
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                f"`lags_past_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
+                f"`lags_future_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
             )
             if (
                 lags_future_covariates[0] is not None
@@ -462,8 +461,101 @@ class RegressionModel(GlobalForecastingModel):
             Additional keyword arguments passed to the `predict` method of the model. Only works with
             univariate target series.
         """
+        raise_if(
+            not self._is_probabilistic() and num_samples > 1,
+            "`num_samples > 1` is only supported for probabilistic models.",
+            logger,
+        )
+
         super().predict(n, series, past_covariates, future_covariates, num_samples)
 
+        (
+            series,
+            series_matrix,
+            covariate_matrices,
+            relative_cov_lags,
+            called_with_single_series,
+        ) = self._prepare_prediction(
+            n,
+            series,
+            past_covariates,
+            future_covariates,
+        )
+        # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
+        # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
+        series_matrix = np.repeat(series_matrix, num_samples, axis=0)
+
+        # same for covariate matrices
+        for cov_type, data in covariate_matrices.items():
+            covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
+        # prediction
+        predictions = []
+        # t_pred indicates the number of time steps after the first prediction
+        for t_pred in range(0, n, self.output_chunk_length):
+            np_X = []
+            # retrieve target lags
+            if "target" in self.lags:
+
+                target_matrix = (
+                    np.concatenate([series_matrix, *predictions], axis=1)
+                    if predictions
+                    else series_matrix
+                )
+                np_X.append(
+                    target_matrix[:, self.lags["target"]].reshape(
+                        len(series) * num_samples, -1
+                    )
+                )
+            # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
+            for cov_type in ["past", "future"]:
+                if cov_type in covariate_matrices:
+                    np_X.append(
+                        covariate_matrices[cov_type][
+                            :, relative_cov_lags[cov_type] + t_pred
+                        ].reshape(len(series) * num_samples, -1)
+                    )
+
+            # concatenate retrieved lags
+            X = np.concatenate(np_X, axis=1)
+            # X has shape (n_series * n_samples, n_regression_features)
+            prediction = self.predict_and_sample(X, num_samples, **kwargs)
+            # prediction shape (n_series * n_samples, output_chunk_length, n_components)
+            # append prediction to final predictions
+            predictions.append(prediction)
+
+        # concatenate and use first n points as prediction
+        predictions = np.concatenate(predictions, axis=1)[:, :n]
+
+        # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
+        predictions = np.moveaxis(
+            predictions.reshape(len(series), num_samples, n, -1), 1, -1
+        )
+        # build time series from the predicted values starting after end of series
+        predictions = [
+            self._build_forecast_series(row, input_tgt)
+            for row, input_tgt in zip(predictions, series)
+        ]
+
+        return predictions[0] if called_with_single_series else predictions
+
+    def predict_and_sample(self, X, num_samples, **kwargs):
+        prediction = self.model.predict(X, **kwargs)
+        k = X.shape[0]
+        return prediction.reshape(k, self.output_chunk_length, -1)
+
+    def _prepare_prediction(
+        self,
+        n: int,
+        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+    ) -> Tuple[
+        Sequence[TimeSeries],
+        Union[None, np.ndarray],
+        Union[dict, np.ndarray],
+        dict,
+        bool,
+    ]:
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             raise_if(
@@ -560,49 +652,13 @@ class RegressionModel(GlobalForecastingModel):
                 [ts[self.lags["target"][0] :].values() for ts in series]
             )
 
-        # prediction
-
-        predictions = []
-        # t_pred indicates the number of time steps after the first prediction
-        for t_pred in range(0, n, self.output_chunk_length):
-            np_X = []
-            # retrieve target lags
-            if "target" in self.lags:
-                target_matrix = (
-                    np.concatenate([series_matrix, *predictions], axis=1)
-                    if predictions
-                    else series_matrix
-                )
-                np_X.append(
-                    target_matrix[:, self.lags["target"]].reshape(len(series), -1)
-                )
-            # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
-            for cov_type in ["past", "future"]:
-                if cov_type in covariate_matrices:
-                    np_X.append(
-                        covariate_matrices[cov_type][
-                            :, relative_cov_lags[cov_type] + t_pred
-                        ].reshape(len(series), -1)
-                    )
-
-            # concatenate retrieved lags
-            X = np.concatenate(np_X, axis=1)
-            # X has shape (n_series, n_regression_features)
-            prediction = self.model.predict(X, **kwargs)
-            # reshape to (n_series, time (output_chunk_length), n_components)
-            prediction = prediction.reshape(len(series), self.output_chunk_length, -1)
-            # append prediction to final predictions
-            predictions.append(prediction)
-
-        # concatenate and use first n points as prediction
-        predictions = np.concatenate(predictions, axis=1)[:, :n]
-        # build time series from the predicted values starting after end of series
-        predictions = [
-            self._build_forecast_series(row, input_tgt)
-            for row, input_tgt in zip(predictions, series)
-        ]
-
-        return predictions[0] if called_with_single_series else predictions
+        return (
+            series,
+            series_matrix,
+            covariate_matrices,
+            relative_cov_lags,
+            called_with_single_series,
+        )
 
     def __str__(self):
         return self.model.__str__()
@@ -647,68 +703,73 @@ class _LikelihoodMixin:
         return quantiles, median_idx
 
     def _predict_quantiles(
-        self, superfun: Callable, num_samples: int, **kwargs
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-        predictions = []
-        for quantile, fitted in self._model_container.items():
-            self.model = fitted
-            prediction = superfun(**kwargs)
-            if not isinstance(prediction, Sequence):  # handles the single series case
-                prediction = [prediction]
-            predictions.append([p.all_values(copy=False) for p in prediction])
-        model_outputs = [
-            np.concatenate([m[i] for m in predictions], axis=-1)
-            for i in range(len(prediction))
-        ]
-        samples = [self._sample_quantiles(m, num_samples) for m in model_outputs]
-        # build timeseries from samples
-        return self._build_ts_from_samples(prediction, samples)
-
-    def _predict_poisson(
-        self, superfun: Callable, num_samples: int, **kwargs
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-        prediction = superfun(**kwargs)
-        if not isinstance(prediction, Sequence):  # handles the single series case
-            prediction = [prediction]
-
-        samples = [
-            self._sample_poisson(np.array(p.all_values(copy=False)), num_samples)
-            for p in prediction
-        ]
-        # build timeseries from samples
-        return self._build_ts_from_samples(prediction, samples)
-
-    def _build_ts_from_samples(
-        self, prediction: List[TimeSeries], samples: List[np.ndarray]
-    ) -> Union[TimeSeries, List[TimeSeries]]:
-        ts_list = [
-            self._ts_like(pred, sample) for pred, sample in zip(prediction, samples)
-        ]
-        if len(ts_list) == 1:
-            return ts_list[0]
-        else:
-            return ts_list
-
-    def _sample_quantiles(
-        self, model_output: np.ndarray, num_samples: int
+        self, x: np.ndarray, num_samples: int, **kwargs
     ) -> np.ndarray:
         """
-        This method is ported to numpy from the probabilistic torch models module
-        model_output is of shape (n_timesteps, n_components, n_quantiles)
+        X is of shape (n_series * n_samples, n_regression_features)
         """
-        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
+        k = x.shape[0]
+        if num_samples == 1:
+            # return median
+            fitted = self._model_container[0.5]
+            return fitted.predict(x, **kwargs).reshape(k, self.output_chunk_length, -1)
 
-        if num_samples == 1:  # return median
-            return model_output[:, :, [self._median_idx]]
+        model_outputs = []
+        for quantile, fitted in self._model_container.items():
+            self.model = fitted
+            # model output has shape (n_series * n_samples, output_chunk_length, n_components)
+            model_output = fitted.predict(x, **kwargs).reshape(
+                k, self.output_chunk_length, -1
+            )
+            model_outputs.append(model_output)
+        model_outputs = np.stack(model_outputs, axis=-1)
+        # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
 
-        n_timesteps, n_components, n_quantiles = model_output.shape
+        sampled = self._quantile_sampling(model_outputs)
+
+        # sampled has shape (n_series * n_samples, output_chunk_length, n_components)
+
+        return sampled
+
+    def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
+        """
+        X is of shape (n_series * n_samples, n_regression_features)
+        """
+        k = x.shape[0]
+
+        model_output = self.model.predict(x, **kwargs).reshape(
+            k, self.output_chunk_length, -1
+        )
+        if num_samples == 1:
+            return model_output
+
+        return self._poisson_sampling(model_output)
+
+    def _poisson_sampling(self, model_output):
+        """
+        Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
+        """
+
+        return self._rng.poisson(lam=model_output).astype(float)
+
+    def _quantile_sampling(self, model_output):
+        """
+        Select a quantile (for each batch example) and return this quantile (over time and components).
+
+        model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        """
+        num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
+        model_output = model_output.reshape(
+            num_samples, n_timesteps, -1, len(self.quantiles)
+        )
 
         # obtain samples
         probs = self._rng.uniform(
             size=(
+                num_samples,
                 n_timesteps,
                 n_components,
-                num_samples,
+                1,
             )
         )
 
@@ -716,23 +777,22 @@ class _LikelihoodMixin:
         probas = np.expand_dims(probs, axis=-2)
 
         # tile and transpose
-        p = np.tile(probas, (1, 1, n_quantiles, 1))
-        trans = p.transpose((0, 1, 3, 2))
+        p = np.tile(probas, (1, 1, 1, n_quantiles, 1)).transpose((0, 1, 2, 4, 3))
 
         # prepare quantiles
-        shape = (1, 1, num_samples, 1)
-        tquantiles = np.tile(np.array(self.quantiles), shape)
+        tquantiles = np.array(self.quantiles).reshape((1, 1, 1, -1))
 
-        # calculate index of biggest quantile smaller than the sampled value
-        left_idx = np.sum(trans > tquantiles, axis=-1)
+        # calculate index of the largest quantile smaller than the sampled value
+        left_idx = np.sum(p > tquantiles, axis=-1)
 
-        # obtain index of smallest quantile bigger than sampled value
+        # obtain index of the smallest quantile larger than the sampled value
         right_idx = left_idx + 1
 
         # repeat the model output on the edges
         repeat_count = [1] * n_quantiles
         repeat_count[0] = 2
         repeat_count[-1] = 2
+        repeat_count = np.array(repeat_count)
         shifted_output = np.repeat(model_output, repeat_count, axis=-1)
 
         # obtain model output values corresponding to the quantiles left and right of the sampled value
@@ -740,32 +800,18 @@ class _LikelihoodMixin:
         right_value = np.take_along_axis(shifted_output, right_idx, axis=-1)
 
         # add 0 and 1 to quantiles
-        ext_quantiles = [0] + self.quantiles + [1]
-        expanded_q = np.tile(np.array(ext_quantiles), shape)
+        ext_quantiles = [0.0] + self.quantiles + [1.0]
+        expanded_q = np.tile(np.array(ext_quantiles), left_idx.shape)
 
         # calculate closest quantiles to the sampled value
-        left_q = np.take(expanded_q, left_idx)
-        right_q = np.take(expanded_q, right_idx)
+        left_q = np.take_along_axis(expanded_q, left_idx, axis=-1)
+        right_q = np.take_along_axis(expanded_q, right_idx, axis=-1)
 
         # linear interpolation
         weights = (probs - left_q) / (right_q - left_q)
         inter = left_value + weights * (right_value - left_value)
 
-        return inter
-
-    def _sample_poisson(self, model_output: np.ndarray, num_samples: int) -> np.ndarray:
-        raise_if_not(all([isinstance(num_samples, int), num_samples > 0]))
-        if num_samples == 1:  # return mean
-            return model_output
-
-        return self._rng.poisson(
-            lam=model_output, size=(*model_output.shape[:2], num_samples)
-        ).astype(float)
-
-    @staticmethod
-    def _ts_like(other: TimeSeries, data: np.ndarray) -> TimeSeries:
-        new_xa = xr.DataArray(data, dims=other._xa.dims, coords=other._xa.coords)
-        return TimeSeries(new_xa)
+        return inter.squeeze(-1)
 
 
 class _QuantileModelContainer(OrderedDict):
