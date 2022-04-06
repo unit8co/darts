@@ -640,38 +640,77 @@ class NHiTS(PastCovariatesTorchModel):
         self.batch_norm = False
 
         self.dropout = dropout
-        self.pooling_kernel_sizes = pooling_kernel_sizes
-        self.n_freq_downsample = n_freq_downsample
 
-        if self.pooling_kernel_sizes is None:
+        # Check pooling and downsampling numbers or compute good defaults
+        sizes = NHiTS._prepare_pooling_downsampling(
+            pooling_kernel_sizes,
+            n_freq_downsample,
+            self.input_chunk_length,
+            self.output_chunk_length,
+            num_blocks,
+            num_stacks,
+        )
+        self.pooling_kernel_sizes, self.n_freq_downsample = sizes
+
+        if isinstance(layer_widths, int):
+            self.layer_widths = [layer_widths] * num_stacks
+
+    @staticmethod
+    def _prepare_pooling_downsampling(
+        pooling_kernel_sizes, n_freq_downsample, in_len, out_len, num_blocks, num_stacks
+    ):
+        def _check_sizes(tup, name):
+            raise_if_not(
+                len(tup) == num_stacks,
+                f"the length of {name} must match the number of stacks.",
+            )
+            raise_if_not(
+                all([len(i) == num_blocks for i in tup]),
+                "there must be num_blocks {} per stack (sizes of all inner tuples must be {})".format(
+                    name, num_blocks
+                ),
+            )
+
+        if pooling_kernel_sizes is None:
             # make stacks handle different frequencies
             # go from in_len/2 to 1 in num_stacks steps:
-            max_v = max(self.input_chunk_length // 2, 1)
-            self.pooling_kernel_sizes = tuple(
+            max_v = max(in_len // 2, 1)
+            pooling_kernel_sizes = tuple(
                 (int(v),) * num_blocks
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
                 "(N-HiTS): Using automatic kernel pooling size: {}.".format(
-                    self.pooling_kernel_sizes
+                    pooling_kernel_sizes
                 )
             )
+        else:
+            # check provided pooling format
+            _check_sizes(pooling_kernel_sizes, "pooling kernel sizes")
 
-        if self.n_freq_downsample is None:
+        if n_freq_downsample is None:
             # go from out_len/2 to 1 in num_stacks steps:
-            max_v = max(self.output_chunk_length // 2, 1)
-            self.n_freq_downsample = tuple(
+            max_v = max(out_len // 2, 1)
+            n_freq_downsample = tuple(
                 (int(v),) * num_blocks
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
                 "(N-HiTS):  Using automatic downsampling coefficients: {}.".format(
-                    self.n_freq_downsample
+                    n_freq_downsample
                 )
             )
+        else:
+            # check provided downsample format
+            _check_sizes(n_freq_downsample, "downsampling coefficients")
 
-        if isinstance(layer_widths, int):
-            self.layer_widths = [layer_widths] * num_stacks
+            # check that last value is 1
+            raise_if_not(
+                n_freq_downsample[-1][-1] == 1,
+                "the downsampling coefficient of the last block of the last stack must be 1.",
+            )
+
+        return pooling_kernel_sizes, n_freq_downsample
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
