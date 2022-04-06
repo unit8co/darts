@@ -30,7 +30,7 @@ class _Block(nn.Module):
         batch_norm: bool,
         dropout: float,
     ):
-        """PyTorch module implementing the basic building block of the N-BEATS architecture.
+        """PyTorch module implementing the basic building block of the N-HiTS architecture.
 
         The blocks produce outputs of size (target_length, nr_params); i.e.
         "one vector per parameter". The parameters are predicted only for forecast outputs.
@@ -38,22 +38,24 @@ class _Block(nn.Module):
 
         Parameters
         ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
         num_layers
             The number of fully connected layers preceding the final forking layers.
         layer_width
             The number of neurons that make up each fully connected layer.
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used)
-        expansion_coefficient_dim
-            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-            Used in the generic architecture and the trend module of the interpretable architecture, where it determines
-            the degree of the polynomial basis.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        target_length
-            The length of the forecast of the model.
-        g_type
-            The type of function that is implemented by the waveform generator.
+        pooling_kernel_size
+            The kernel size for the initial pooling layer
+        n_freq_downsample
+            The factor by which to downsample time at the output (before interpolating)
+        batch_norm
+            Whether to use batch norm
+        dropout
+            Dropout probability
 
         Inputs
         ------
@@ -83,10 +85,6 @@ class _Block(nn.Module):
 
         self.activation = nn.ReLU()  # TODO: make configurable?
 
-        # layer widths
-        in_len = int(np.ceil(input_chunk_length / pooling_kernel_size))
-        self.layer_widths = [in_len] + [self.layer_width] * self.num_layers
-
         # number of parameters theta for backcast and forecast
         """
         Note:
@@ -114,6 +112,10 @@ class _Block(nn.Module):
             ceil_mode=True,
         )
 
+        # layer widths
+        in_len = int(np.ceil(input_chunk_length / pooling_kernel_size))
+        self.layer_widths = [in_len] + [self.layer_width] * self.num_layers
+
         # FC layers
         layers = []
         for i in range(self.num_layers):
@@ -125,7 +127,7 @@ class _Block(nn.Module):
             )
             layers.append(self.activation)
 
-            # TODO: also add these two for NBEATS
+            # TODO: also add these two for NBEATS?
             if self.batch_norm:
                 layers.append(nn.BatchNorm1d(num_features=self.layer_widths[i + 1]))
 
@@ -165,21 +167,19 @@ class _Block(nn.Module):
         theta_backcast = theta_backcast.unsqueeze(1)
 
         # interpolate both backcast and forecast from the thetas
-        backcast = F.interpolate(
+        x_hat = F.interpolate(
             theta_backcast, size=self.input_chunk_length, mode="linear"
         )
-        forecast = F.interpolate(
+        y_hat = F.interpolate(
             theta_forecast, size=self.output_chunk_length, mode="linear"
         )
 
-        backcast = backcast.squeeze(1)  # TODO: Needed?
+        x_hat = x_hat.squeeze(1)  # remove 2nd dim we added before interpolation
 
         # Set the distribution parameters as the last dimension
-        forecast = forecast.reshape(
-            x.shape[0], self.output_chunk_length, self.nr_params
-        )
+        y_hat = y_hat.reshape(x.shape[0], self.output_chunk_length, self.nr_params)
 
-        return backcast, forecast
+        return x_hat, y_hat
 
 
 class _Stack(nn.Module):
@@ -200,6 +200,10 @@ class _Stack(nn.Module):
 
         Parameters
         ----------
+        input_chunk_length
+            The length of the input sequence fed to the model.
+        output_chunk_length
+            The length of the forecast of the model.
         num_blocks
             The number of blocks making up this stack.
         num_layers
@@ -208,14 +212,14 @@ class _Stack(nn.Module):
             The number of neurons that make up each fully connected layer in each block.
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used)
-        expansion_coefficient_dim
-            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-        input_chunk_length
-            The length of the input sequence fed to the model.
-        target_length
-            The length of the forecast of the model.
-        g_type
-            The function that is implemented by the waveform generators in each block.
+        pooling_kernel_sizes
+            sizes of pooling kernels for every block in this stack
+        n_freq_downsample
+            downsampling factors to apply for block in this stack
+        batch_norm
+            whether to apply batch norm on first block of this stack
+        dropout
+            Dropout probability
 
         Inputs
         ------
@@ -297,20 +301,18 @@ class _NHiTSModule(PLPastCovariatesModule):
         dropout: float,
         **kwargs,
     ):
-        """PyTorch module implementing the N-BEATS architecture.
+        """PyTorch module implementing the N-HiTS architecture.
 
         Parameters
         ----------
+        input_dim
+            The number of input components (target + optional covariate)
         output_dim
             Number of output components in the target
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
-        generic_architecture
-            Boolean value indicating whether the generic architecture of N-BEATS is used.
-            If not, the interpretable architecture outlined in the paper (consisting of one trend
-            and one seasonality stack with appropriate waveform generator functions).
         num_stacks
-            The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
+            The number of stacks that make up the whole model.
         num_blocks
             The number of blocks making up every stack.
         num_layers
@@ -321,6 +323,14 @@ class _NHiTSModule(PLPastCovariatesModule):
             If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds
             to the layer width of the corresponding stack. If an integer is passed, every stack will have blocks
             with FC layers of the same width.
+        pooling_kernel_sizes
+            size of pooling kernels for every stack and every block
+        n_freq_downsample
+            downsampling factors to apply for every stack and every block
+        batch_norm
+            Whether to apply batch norm on first block of the first stack
+        dropout
+            Dropout probability
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -422,18 +432,29 @@ class NHiTS(PastCovariatesTorchModel):
         layer_widths: Union[int, List[int]] = 512,
         pooling_kernel_sizes: Optional[Tuple[Tuple[int]]] = None,
         n_freq_downsample: Optional[Tuple[Tuple[int]]] = None,
-        batch_norm: bool = False,
         dropout: float = 0.0,
         **kwargs,
     ):
-        """N-HiTS, as outlined in [X]_.
+        """An implementation of the N-HiTS model, as presented in [1]_.
 
-        In addition to the univariate version presented in the paper, our implementation also
-        supports multivariate series (and covariates) by flattening the model inputs to a 1-D series
-        and reshaping the outputs to a tensor of appropriate dimensions. Furthermore, it also
+        N-HiTS is similar to N-BEATS (implemented in :class:`NBEATSModel`),
+        but attempts to provide better performance at lower computational cost by introducing
+        multi-rate sampling of the inputs and mulit-scale interpolation of the outputs.
+
+        Similar to :class:`NBEATSModel`, in addition to the univariate version presented in the paper,
+        this implementation also supports multivariate series (and covariates) by flattening the model inputs
+        to a 1-D series and reshaping the outputs to a tensor of appropriate dimensions. Furthermore, it also
         supports producing probabilistic forecasts (by specifying a `likelihood` parameter).
 
         This model supports past covariates (known for `input_chunk_length` points before prediction time).
+
+        The multi-rate sampling is done via MaxPooling, which is controlled by ``pooling_kernel_sizes``.
+        This parameter can be a tuple of tuples, of size (num_stacks x num_blocks), specifying the kernel
+        size for each block in each stack. If left to ``None``, some default values will be used based on
+        ``input_chunk_length``.
+        Similarly, the multi-scale interpolation is controled by ``n_freq_downsample``, which gives the
+        downsampling factors to be used in each block of each stack. If left to ``None``, some default
+        values will be used based on the ``output_chunk_length``.
 
         Parameters
         ----------
@@ -442,8 +463,7 @@ class NHiTS(PastCovariatesTorchModel):
         output_chunk_length
             The length of the forecast of the model.
         num_stacks
-            The number of stacks that make up the whole model. Only used if `generic_architecture` is set to `True`.
-            The interpretable architecture always uses two stacks - one for trend and one for seasonality.
+            The number of stacks that make up the whole model.
         num_blocks
             The number of blocks making up every stack.
         num_layers
@@ -454,12 +474,16 @@ class NHiTS(PastCovariatesTorchModel):
             If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds
             to the layer width of the corresponding stack. If an integer is passed, every stack will have blocks
             with FC layers of the same width.
-        expansion_coefficient_dim
-            The dimensionality of the waveform generator parameters, also known as expansion coefficients.
-            Only used if `generic_architecture` is set to `True`.
-        trend_polynomial_degree
-            The degree of the polynomial used as waveform generator in trend stacks. Only used if
-            `generic_architecture` is set to `False`.
+        pooling_kernel_sizes
+            If set, this parameter must be a tuple of tuples, of size (num_stacks x num_blocks), specifying the kernel
+            size for each block in each stack used for the input pooling layer.
+            If left to ``None``, some default values will be used based on ``input_chunk_length``.
+        n_freq_downsample
+            If set, this parameter must be a tuple of tuples, of size (num_stacks x num_blocks), specifying the
+            downsampling factors before interpolation, for each block in each stack.
+            If left to ``None``, some default values will be used based on ``output_chunk_length``.
+        dropout
+            The dropout probability to be used in the fully connected layers.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -592,7 +616,8 @@ class NHiTS(PastCovariatesTorchModel):
 
         References
         ----------
-        .. [1] https://openreview.net/forum?id=r1ecqn4YwB
+        .. [1] C. Challu et al. "N-HiTS: Neural Hierarchical Interpolation for Time Series Forecasting",
+               https://arxiv.org/abs/2201.12886
         """
         super().__init__(**self._extract_torch_model_params(**self.model_params))
 
@@ -610,15 +635,18 @@ class NHiTS(PastCovariatesTorchModel):
         self.num_blocks = num_blocks
         self.num_layers = num_layers
         self.layer_widths = layer_widths
-        self.batch_norm = batch_norm
+
+        # Currently batch norm is not an option as it seems to perform badly
+        self.batch_norm = False
+
         self.dropout = dropout
         self.pooling_kernel_sizes = pooling_kernel_sizes
         self.n_freq_downsample = n_freq_downsample
 
         if self.pooling_kernel_sizes is None:
             # make stacks handle different frequencies
-            # go from in_len to 1 in num_stacks steps:
-            max_v = self.input_chunk_length // 2
+            # go from in_len/2 to 1 in num_stacks steps:
+            max_v = max(self.input_chunk_length // 2, 1)
             self.pooling_kernel_sizes = tuple(
                 (int(v),) * num_blocks
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
@@ -630,8 +658,8 @@ class NHiTS(PastCovariatesTorchModel):
             )
 
         if self.n_freq_downsample is None:
-            # go from out_len to 1 in num_stacks steps:
-            max_v = self.output_chunk_length // 2
+            # go from out_len/2 to 1 in num_stacks steps:
+            max_v = max(self.output_chunk_length // 2, 1)
             self.n_freq_downsample = tuple(
                 (int(v),) * num_blocks
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
