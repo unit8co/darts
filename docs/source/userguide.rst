@@ -6,15 +6,6 @@ You will find here some more detailed informations about Darts.
 
 **Note:** The user guide is not yet complete and still under construction.
 
-TimeSeries objects
-==================
-
-.. toctree::
-   :maxdepth: 1
-
-   userguide/timeseries.md
-
-
 Neural Networks
 ===============
 
