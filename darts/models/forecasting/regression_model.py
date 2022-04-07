@@ -469,93 +469,6 @@ class RegressionModel(GlobalForecastingModel):
 
         super().predict(n, series, past_covariates, future_covariates, num_samples)
 
-        (
-            series,
-            series_matrix,
-            covariate_matrices,
-            relative_cov_lags,
-            called_with_single_series,
-        ) = self._prepare_prediction(
-            n,
-            series,
-            past_covariates,
-            future_covariates,
-        )
-        # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
-        # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
-        series_matrix = np.repeat(series_matrix, num_samples, axis=0)
-
-        # same for covariate matrices
-        for cov_type, data in covariate_matrices.items():
-            covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
-        # prediction
-        predictions = []
-        # t_pred indicates the number of time steps after the first prediction
-        for t_pred in range(0, n, self.output_chunk_length):
-            np_X = []
-            # retrieve target lags
-            if "target" in self.lags:
-
-                target_matrix = (
-                    np.concatenate([series_matrix, *predictions], axis=1)
-                    if predictions
-                    else series_matrix
-                )
-                np_X.append(
-                    target_matrix[:, self.lags["target"]].reshape(
-                        len(series) * num_samples, -1
-                    )
-                )
-            # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
-            for cov_type in ["past", "future"]:
-                if cov_type in covariate_matrices:
-                    np_X.append(
-                        covariate_matrices[cov_type][
-                            :, relative_cov_lags[cov_type] + t_pred
-                        ].reshape(len(series) * num_samples, -1)
-                    )
-
-            # concatenate retrieved lags
-            X = np.concatenate(np_X, axis=1)
-            # X has shape (n_series * n_samples, n_regression_features)
-            prediction = self._predict_and_sample(X, num_samples, **kwargs)
-            # prediction shape (n_series * n_samples, output_chunk_length, n_components)
-            # append prediction to final predictions
-            predictions.append(prediction)
-
-        # concatenate and use first n points as prediction
-        predictions = np.concatenate(predictions, axis=1)[:, :n]
-
-        # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
-        predictions = np.moveaxis(
-            predictions.reshape(len(series), num_samples, n, -1), 1, -1
-        )
-        # build time series from the predicted values starting after end of series
-        predictions = [
-            self._build_forecast_series(row, input_tgt)
-            for row, input_tgt in zip(predictions, series)
-        ]
-
-        return predictions[0] if called_with_single_series else predictions
-
-    def _predict_and_sample(self, X, num_samples, **kwargs):
-        prediction = self.model.predict(X, **kwargs)
-        k = X.shape[0]
-        return prediction.reshape(k, self.output_chunk_length, -1)
-
-    def _prepare_prediction(
-        self,
-        n: int,
-        series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-        future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
-    ) -> Tuple[
-        Sequence[TimeSeries],
-        Union[None, np.ndarray],
-        Union[dict, np.ndarray],
-        dict,
-        bool,
-    ]:
         if series is None:
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             raise_if(
@@ -652,13 +565,67 @@ class RegressionModel(GlobalForecastingModel):
                 [ts[self.lags["target"][0] :].values() for ts in series]
             )
 
-        return (
-            series,
-            series_matrix,
-            covariate_matrices,
-            relative_cov_lags,
-            called_with_single_series,
+        # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
+        # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
+        series_matrix = np.repeat(series_matrix, num_samples, axis=0)
+
+        # same for covariate matrices
+        for cov_type, data in covariate_matrices.items():
+            covariate_matrices[cov_type] = np.repeat(data, num_samples, axis=0)
+        # prediction
+        predictions = []
+        # t_pred indicates the number of time steps after the first prediction
+        for t_pred in range(0, n, self.output_chunk_length):
+            np_X = []
+            # retrieve target lags
+            if "target" in self.lags:
+
+                target_matrix = (
+                    np.concatenate([series_matrix, *predictions], axis=1)
+                    if predictions
+                    else series_matrix
+                )
+                np_X.append(
+                    target_matrix[:, self.lags["target"]].reshape(
+                        len(series) * num_samples, -1
+                    )
+                )
+            # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
+            for cov_type in ["past", "future"]:
+                if cov_type in covariate_matrices:
+                    np_X.append(
+                        covariate_matrices[cov_type][
+                            :, relative_cov_lags[cov_type] + t_pred
+                        ].reshape(len(series) * num_samples, -1)
+                    )
+
+            # concatenate retrieved lags
+            X = np.concatenate(np_X, axis=1)
+            # X has shape (n_series * n_samples, n_regression_features)
+            prediction = self._predict_and_sample(X, num_samples, **kwargs)
+            # prediction shape (n_series * n_samples, output_chunk_length, n_components)
+            # append prediction to final predictions
+            predictions.append(prediction)
+
+        # concatenate and use first n points as prediction
+        predictions = np.concatenate(predictions, axis=1)[:, :n]
+
+        # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
+        predictions = np.moveaxis(
+            predictions.reshape(len(series), num_samples, n, -1), 1, -1
         )
+        # build time series from the predicted values starting after end of series
+        predictions = [
+            self._build_forecast_series(row, input_tgt)
+            for row, input_tgt in zip(predictions, series)
+        ]
+
+        return predictions[0] if called_with_single_series else predictions
+
+    def _predict_and_sample(self, X, num_samples, **kwargs):
+        prediction = self.model.predict(X, **kwargs)
+        k = X.shape[0]
+        return prediction.reshape(k, self.output_chunk_length, -1)
 
     def __str__(self):
         return self.model.__str__()
