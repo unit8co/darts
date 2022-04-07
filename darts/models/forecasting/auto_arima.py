@@ -30,7 +30,7 @@ class AutoARIMA(DualCovariatesForecastingModel):
 
         .. note::
             For a faster and probabilistic version of AutoARIMA, checkout
-            the :class:`AutoARIMASF` model.
+            the :class:`StatsForecastAutoARIMA` model.
 
         Parameters
         ----------

@@ -1,5 +1,5 @@
 """
-AutoARIMASF
+StatsForecastAutoARIMA
 -----------
 """
 
@@ -12,7 +12,7 @@ from darts import TimeSeries
 from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
 
 
-class AutoARIMASF(DualCovariatesForecastingModel):
+class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
     def __init__(self, *autoarima_args, **autoarima_kwargs):
         """Auto-ARIMA based on `Statsforecasts package
         <https://github.com/Nixtla/statsforecast>`_.
