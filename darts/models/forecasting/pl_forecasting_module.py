@@ -17,6 +17,10 @@ from darts.utils.timeseries_generation import _build_forecast_series
 
 logger = get_logger(__name__)
 
+# Check whether we are running pytorch-lightning >= 1.6.0 or not:
+tokens = pl.__version__.split(".")
+pl_160_or_above = int(tokens[0]) >= 1 and int(tokens[1]) >= 6
+
 
 class PLForecastingModule(pl.LightningModule, ABC):
     @abstractmethod
@@ -324,10 +328,12 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
     @property
     def epochs_trained(self):
-        # trained epochs are only 0 when global step and current epoch are 0, else current epoch + 1
         current_epoch = self.current_epoch
-        if self.current_epoch or self.global_step:
+
+        # For PTL < 1.6.0 we have to adjust:
+        if not pl_160_or_above and (self.current_epoch or self.global_step):
             current_epoch += 1
+
         return current_epoch
 
 

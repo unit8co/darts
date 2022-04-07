@@ -1305,6 +1305,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path
             Path under which to save the model at its current state.
         """
+        # TODO: the parameters are saved twice currently, once with complete
+        # object, and once with PTL checkpointing.
 
         raise_if_not(
             path.endswith(".pth.tar"),
@@ -1312,8 +1314,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger,
         )
 
+        # We save the whole object to keep track of everything
         with open(path, "wb") as f_out:
             torch.save(self, f_out)
+
+        # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
+        if self.trainer is not None:
+            base_path = path[:-8]
+            path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
+            self.trainer.save_checkpoint(path_ptl_ckpt)
 
     @staticmethod
     def load_model(path: str) -> "TorchForecastingModel":
@@ -1343,6 +1352,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         with open(path, "rb") as fin:
             model = torch.load(fin)
+
+        # If a PTL checkpoint was saved, we also need to load it:
+        base_path = path[:-8]
+        path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
+        if os.path.exists(path_ptl_ckpt):
+            model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
+            model.trainer = model.model.trainer
+
         return model
 
     @staticmethod

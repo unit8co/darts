@@ -1172,8 +1172,13 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                 future_covariates.end_time() >= start, invalid_time_span_error, logger
             )
 
+            offset = (
+                n - 1
+                if isinstance(future_covariates.time_index, pd.DatetimeIndex)
+                else n
+            )
             future_covariates = future_covariates[
-                start : start + (n - 1) * self.training_series.freq
+                start : start + offset * self.training_series.freq
             ]
 
             raise_if_not(
