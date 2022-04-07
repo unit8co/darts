@@ -518,7 +518,7 @@ class RegressionModel(GlobalForecastingModel):
             # concatenate retrieved lags
             X = np.concatenate(np_X, axis=1)
             # X has shape (n_series * n_samples, n_regression_features)
-            prediction = self.predict_and_sample(X, num_samples, **kwargs)
+            prediction = self._predict_and_sample(X, num_samples, **kwargs)
             # prediction shape (n_series * n_samples, output_chunk_length, n_components)
             # append prediction to final predictions
             predictions.append(prediction)
@@ -538,7 +538,7 @@ class RegressionModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
-    def predict_and_sample(self, X, num_samples, **kwargs):
+    def _predict_and_sample(self, X, num_samples, **kwargs):
         prediction = self.model.predict(X, **kwargs)
         k = X.shape[0]
         return prediction.reshape(k, self.output_chunk_length, -1)
