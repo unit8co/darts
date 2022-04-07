@@ -622,9 +622,11 @@ class RegressionModel(GlobalForecastingModel):
 
         return predictions[0] if called_with_single_series else predictions
 
-    def _predict_and_sample(self, X, num_samples, **kwargs):
-        prediction = self.model.predict(X, **kwargs)
-        k = X.shape[0]
+    def _predict_and_sample(
+        self, x: np.ndarray, num_samples: int, **kwargs
+    ) -> np.ndarray:
+        prediction = self.model.predict(x, **kwargs)
+        k = x.shape[0]
         return prediction.reshape(k, self.output_chunk_length, -1)
 
     def __str__(self):
@@ -712,14 +714,14 @@ class _LikelihoodMixin:
 
         return self._poisson_sampling(model_output)
 
-    def _poisson_sampling(self, model_output):
+    def _poisson_sampling(self, model_output: np.ndarray) -> np.ndarray:
         """
         Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
         """
 
         return self._rng.poisson(lam=model_output).astype(float)
 
-    def _quantile_sampling(self, model_output):
+    def _quantile_sampling(self, model_output: np.ndarray) -> np.ndarray:
         """
         Select a quantile (for each batch example) and return this quantile (over time and components).
 

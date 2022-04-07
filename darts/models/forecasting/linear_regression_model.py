@@ -181,7 +181,9 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
             return self
 
-    def _predict_and_sample(self, x, num_samples, **kwargs):
+    def _predict_and_sample(
+        self, x: np.ndarray, num_samples: int, **kwargs
+    ) -> np.ndarray:
         if self.likelihood == "quantile":
             return self._predict_quantiles(x, num_samples, **kwargs)
         elif self.likelihood == "poisson":
