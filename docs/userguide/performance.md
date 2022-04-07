@@ -12,9 +12,9 @@ To achieve this, it is enough to build your `TimeSeries` from arrays (or Datafra
 ## Use a GPU
 In many cases using a GPU will provide a drastic speedup compared to CPU.
 It can also incur some overheads (for transferring data to/from the GPU),
-so some testing and tuning is often necessary. If a CUDA-enabled GPU is present on your
-system, Darts will attempt to use it by default. You can specify
-`torch_device_str` (giving a string such as `"cuda"` or `"cpu"`) to control this.
+so some testing and tuning is often necessary.
+We refer to our [GPU/TPU guide](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html)
+for more informations on how to setup a GPU (or a TPU) via PyTorch Lightning.
 
 ## Play with the batch size
 A larger batch size tends to speed up the training because it reduces the number

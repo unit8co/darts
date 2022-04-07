@@ -16,6 +16,7 @@ Neural Networks (PyTorch-based models)
 
    userguide/torch_forecasting_models.md
    userguide/performance.md
+   userguide/gpu_and_tpu_usage.md
 
 
 Covariates
