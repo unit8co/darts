@@ -1,4 +1,4 @@
-# Darts Covariates
+# Covariates
 This document was written for darts version 0.15.0.
 ## Summary - TL;DR
 In Darts, **covariates** refer to external data that can be used as inputs to models to help improve forecasts.

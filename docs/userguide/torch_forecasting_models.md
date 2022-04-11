@@ -1,5 +1,5 @@
-# In-depth look at Torch Forecasting Models
-This document was written for darts version 0.15.0.
+# Torch Forecasting Models
+This document was written for darts version 0.15.0 and later.
 
 We assume that you already know about covariates in Darts. If you're new to the topic we recommend you to read our [guide on covariates](https://unit8co.github.io/darts/userguide/covariates.html) first.
 
