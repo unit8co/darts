@@ -3,23 +3,23 @@ This document was written for darts version 0.15.0 and later.
 
 We assume that you already know about covariates in Darts. If you're new to the topic we recommend you to read our [guide on covariates](https://unit8co.github.io/darts/userguide/covariates.html) first.
 
-## Content of this document
+## Content of this section
 
-[Section 1](#11-introduction) covers the most important points about Torch Forecasting Models (TFMs):
+[The first subsection](#introduction) covers the most important points about Torch Forecasting Models (TFMs):
 - How to use TFMs
 - Top-level look at chunks
 - TFM covariates support
 - Time span requirements for target and covariate series
 
-[Section 2](#2-in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms) gives
+[The second subsection](#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms) gives
 an in-depth guide of how input data is used when training and predicting with TFMs.
 
-## 1.1. Introduction
+## Introduction
 In Darts, **Torch Forecasting Models (TFMs)** are broadly speaking "machine learning based" models, which denote PyTorch-based (deep learning) models.
 
 TFMs train and predict on fixed-length chunks (sub-samples) of your input `target` and `*_covariates` series (if supported). `Target` is the series for which we want to predict the future, `*_covariates` are the past and / or future covariates.
 
-Each chunk contains an input chunk - representing the sample's past - and an output chunk - the sample's future. The sample's prediction point lies at the end of the input chunk. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (more on chunks in [section 1.2.](#12-top-level-look-at-training-and-predicting-with-chunks)).
+Each chunk contains an input chunk - representing the sample's past - and an output chunk - the sample's future. The sample's prediction point lies at the end of the input chunk. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (more on chunks in [the next subsection](#top-level-look-at-training-and-predicting-with-chunks)).
 
 ```
 # model that looks 7 time steps back (past) and 1 time step ahead (future)
@@ -28,11 +28,11 @@ model = SomeTorchForecastingModel(input_chunk_length=7,
                                   **model_kwargs)
 ```
 
-All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [section 1.3.](#13-torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
+All TFMs can be trained on single or multiple `target` series and, depending on their covariate support (covered in [this subsection](#torch-forecasting-model-covariates-support)), `past_covariates` and / or `future_covariates`. When using covariates you have to supply one dedicated past and / or future covariates series for each target series.
 
-Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in [section 1.4.](#14-required-target-time-spans-for-training-validation-and-prediction))
+Optionally, you can use a validation set with dedicated covariates during training. If the covariates have the required time spans, you can use the same for training, validation and prediction. (covered in [this subsection](#required-target-time-spans-for-training-validation-and-prediction))
 
-```
+```python
 # fit the model on a single target series with optional past and / or future covariates
 model.fit(target,
           past_covariates=past_covariates,
@@ -50,7 +50,7 @@ model.fit([target, target2, ...],
 
 You can produce forecasts for any input `target` TimeSeries or for several targets given as a sequence of TimeSeries. This will also work on series that have not been seen during training, as long as each series contains at least `input_chunk_length` time steps.
 
-```
+```python
 # predict the next n=3 time steps for any input series with `series`
 prediction = model.predict(n=3,
                            series=target,
@@ -60,7 +60,7 @@ prediction = model.predict(n=3,
 
 If you want to know more about the training and prediction process of our Torch Forecasting Models and how they work with covariates, read on.
 
-## 1.2. Top level look at training and predicting with chunks
+## Top level look at training and predicting with chunks
 
 In Figure 1 you can see how your data is distributed to the input and output chunks for each sample when calling `fit()` or `predict()`. For this example we look at data with daily frequency. The input chunk extracts values from `target` and optionally from `past_covariates` and / or `future_covariates` that fall into the input chunk time span. These "past" values of `future_covariates` are called "historic future covariates".
 
@@ -75,7 +75,7 @@ All this information is used to predict the "future target" - the next `output_c
 
 When calling `predict()` and depending on your forecast horizon `n`, the model can either predict in one go (if `n <= output_chunk_length`), or auto-regressively, by predicting on multiple chunks in the future (if `n > output_chunk_length`). That is the reason why when predicting with `past_covariates` you might have to supply additional "future values of your `past_covariates`".
 
-## 1.3. Torch Forecasting Model Covariates Support
+## Torch Forecasting Model Covariates Support
 
 Under the hood, Darts has 5 types of `{X}CovariatesModel` classes implemented to cover different combinations of the covariate types mentioned before:
 
@@ -102,7 +102,7 @@ TFM | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
-## 1.4. Required target time spans for training, validation and prediction
+## Required target time spans for training, validation and prediction
 The relevant data is extracted automatically by the models, based on the time axes of the series.
 You can use the same covariates series for both `fit()` and `predict()` if they meet the requirements below.
 
@@ -116,8 +116,8 @@ For **prediction** you have to supply the `target` series that you wish to forec
 
 Side note: Our `*RNNModels` accept a `training_length` parameter at model creation instead of `output_chunk_length`. Internally the `output_chunk_length` for these models is automatically set to `1`. For training, past `target` must have a minimum length of `training_length + 1` and for prediction, a length of `input_chunk_length`.
 
-## 2. In-depth look at how input data is used when training and predicting with TFMs
-## 2.1. Training
+## In-depth look at how input data is used when training and predicting with TFMs
+### Training
 
 Let's have a look at how the models work under the hood.
 
@@ -167,7 +167,7 @@ This sequence-to-sequence process is repeated until all 365 days were covered.
 
 Side note: Having "long" `target` series can result in a very large number of training sequences / samples. You can set an upper bound for the number of sequences / samples per `target` that the model should be trained on with `fit()`-parameter `max_samples_per_ts`. This will take the most recent sequences for every `target` series (sequences closest to `target` end).
 
-```
+```python
 # fit only on the 10 "most recent" sequences
 model.fit(target, max_samples_per_ts=10)
 ```
@@ -176,11 +176,11 @@ model.fit(target, max_samples_per_ts=10)
 
 **Figure 4: Sequence-to-sequence: Move to next sequence and repeat training steps**
 
-### 2.1.1. Training with a validation dataset
+### Training with a validation dataset
 
 You can also train your models with a validation dataset:
 
-```
+```python
 # create train and validation sets
 ice_cream_sales_train, ice_cream_sales_val = ice_cream_sales.split_after(training_cutoff)
 
@@ -194,16 +194,16 @@ model.fit(series=ice_cream_sales_train,
 ```
 
 If you split your data, you have to define a `training_cutoff` (a date or fraction at which to split the dataset) so that both the train and validation datasets satisfy the minimum length requirements
-from [section 1.4.](#14-required-target-time-spans-for-training-validation-and-prediction)
+from [this subsection](#required-target-time-spans-for-training-validation-and-prediction)
 
 Instead of splitting by time, you can also use another subset of time series as validation set.
 
 The model trains itself the same way as before but additionally evaluates the loss on the validation dataset. If you want to keep track of the best performing model on the validation set, you have to enable checkpoint saving as shown next.
 
-### 2.1.2. Saving and Loading Model States
+### Saving and Loading Model States
 Per default, the models don't automatically save any checkpoints. If you want to keep track of the best performing model on the validation set and the latest 5 epochs, you have to enable checkpoint saving at model creation:
 
-```
+```python
 model = SomeTorchForecastingModel(..., model_name='MyModel', save_checkpoints=True)
 
 # checkpoints are saved automatically
@@ -214,13 +214,13 @@ best_model = model.load_from_checkpoint(model_name='MyModel', best=True)
 ```
 
 You can also save or load manually:
-```
+```python
 model.save_model(model_path)
 loaded_model = model.load_model(model_path)
 ```
 /!\ Warning /!\ At this stage of Darts development, we are not (yet) ensuring backward compatibility, so it might not always be possible to load a model saved by an older version of the library.
 
-## 2.2. Forecast/Prediction
+## Forecast/Prediction
 
 After having trained the model, we want to predict the future ice-cream sales for any number of days after our 365 days
 training data.
@@ -235,11 +235,11 @@ want to predict - the forecast horizon `n` - we distinguish between two cases:
 
   To do this we have to supply additional `past_covariates` for the next `n - output_chunk_length = 2` time steps (days) after the end of our 365 days training data. Unfortunately, we do not have measured `temperture` for the future. But let's assume we have access to temperature forecasts for the next 2 days. We can just append them to `temperature` and the prediction will work!
 
-  ```
+  ```python
   temperature = temperature.concatenate(temperature_forecast, axis=0)
   ```
 
-```
+```python
 prediction = model.predict(n=n,
                            series=ice_cream_sales_train,
                            past_covariates=temperature,
