@@ -145,9 +145,10 @@ Naive Baselines | ✅ | | | | | |
 
 
 ## Community & Contact
-Anyone is welcome to join our [Discord server](https://discord.gg/Um3jBTYFsA) to
+Anyone is welcome to join our ~~[Discord server](https://discord.gg/Um3jBTYFsA)~~ 
+[Gitter room](https://gitter.im/u8darts/darts) to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
-or have a feature request, Github issues are also welcome.
+or have suggestions, GitHub issues are also welcome.
 
 If what you want to tell us is not suitable for Discord or Github,
 feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for
@@ -155,7 +156,7 @@ darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for an
 inquiries.
 
 ## Contribute
-The development is ongoing, and we welcome suggestions, pull requests and issues on Github.
+The development is ongoing, and we welcome suggestions, pull requests and issues on GitHub.
 All contributors will be acknowledged on the
 [change log page](https://github.com/unit8co/darts/blob/master/CHANGELOG.md).
 
