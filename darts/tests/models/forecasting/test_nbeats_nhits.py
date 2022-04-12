@@ -59,6 +59,7 @@ if TORCH_AVAILABLE:
                     num_stacks=1,
                     num_blocks=1,
                     layer_widths=20,
+                    random_state=42,
                 )
                 model.fit(large_ts[:98])
                 pred = model.predict(n=2).values()[0]
@@ -71,6 +72,7 @@ if TORCH_AVAILABLE:
                     num_stacks=1,
                     num_blocks=1,
                     layer_widths=20,
+                    random_state=42,
                 )
                 model2.fit(small_ts[:98])
                 pred2 = model2.predict(n=2).values()[0]
@@ -88,7 +90,10 @@ if TORCH_AVAILABLE:
 
             for model_cls in [NBEATSModel, NHiTS]:
                 model = model_cls(
-                    input_chunk_length=3, output_chunk_length=1, n_epochs=20
+                    input_chunk_length=3,
+                    output_chunk_length=1,
+                    n_epochs=20,
+                    random_state=42,
                 )
 
                 model.fit(series_multivariate)
@@ -107,7 +112,10 @@ if TORCH_AVAILABLE:
                     tg.linear_timeseries(length=100, start_value=0, end_value=0.1)
                 )
                 model = model_cls(
-                    input_chunk_length=3, output_chunk_length=4, n_epochs=5
+                    input_chunk_length=3,
+                    output_chunk_length=4,
+                    n_epochs=5,
+                    random_state=42,
                 )
                 model.fit(series_multivariate, past_covariates=series_covariates)
 
@@ -140,6 +148,16 @@ if TORCH_AVAILABLE:
                     pooling_kernel_sizes=((1, 1), (1, 1)),
                     n_freq_downsample=((2, 1), (2, 2)),
                 )
+
+            # it shouldn't fail with the right number of coeffs
+            _ = NHiTS(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                num_stacks=2,
+                num_blocks=2,
+                pooling_kernel_sizes=((2, 1), (2, 1)),
+                n_freq_downsample=((2, 1), (2, 1)),
+            )
 
             # default freqs should be such that last one is 1
             model = NHiTS(
