@@ -100,7 +100,9 @@ It is not necessary to worry about the covariates series having the exact right 
 
 Models supporting past (resp. future) covariates are indicated with a "✅" under the `Past-observed covariates support` (resp. `Future-known covariates support`) columns on the [model list](https://github.com/unit8co/darts#forecasting-models),
 
-Have a look at [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
+To know more about covariates, please refer to the [covariates section of the user guide](https://unit8co.github.io/darts/userguide/covariates.html).
+
+In addition, you can have a look at [this article](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993) for some examples of how to use past and future covariates.
 
 ## Probabilistic forecasts
 
