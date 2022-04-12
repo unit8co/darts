@@ -686,7 +686,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
         else:
             # check provided pooling format
-            _check_sizes(pooling_kernel_sizes, "pooling kernel sizes")
+            _check_sizes(pooling_kernel_sizes, "`pooling_kernel_sizes`")
 
         if n_freq_downsample is None:
             # go from out_len/2 to 1 in num_stacks steps:
