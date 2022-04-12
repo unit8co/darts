@@ -702,7 +702,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
         else:
             # check provided downsample format
-            _check_sizes(n_freq_downsample, "downsampling coefficients")
+            _check_sizes(n_freq_downsample, "`n_freq_downsample`")
 
             # check that last value is 1
             raise_if_not(
