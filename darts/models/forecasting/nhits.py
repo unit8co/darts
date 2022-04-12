@@ -707,7 +707,8 @@ class NHiTS(PastCovariatesTorchModel):
             # check that last value is 1
             raise_if_not(
                 n_freq_downsample[-1][-1] == 1,
-                "the downsampling coefficient of the last block of the last stack must be 1 (i.e., `n_freq_downsample[-1][-1]`).",
+                "the downsampling coefficient of the last block of the last stack must be 1 "
+                + "(i.e., `n_freq_downsample[-1][-1]`).",
             )
 
         return pooling_kernel_sizes, n_freq_downsample
