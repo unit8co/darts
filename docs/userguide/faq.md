@@ -1,5 +1,10 @@
 # Frequently Asked Questions
 
+- *Is Darts just a wrapper around other libraries?*
+
+  No. When it makes sense, we reuse existing implementations (e.g. from statsforecasts), but we often write our 
+  own implementations (e.g., of neural networks). Furthermore, Darts models often have more features than their original counter-parts. For instance, unlike the original version, our implementation of N-BEATS supports multivariate time series, past covariates, and probabilistic forecasts.
+
 - *Darts looks like an awesome project, can I contribute?*
 
   Absolutely! We are constantly welcoming contributions from the community. If you contribute, you will be acknowledged in the [wall of fame (a.k.a the changelog)](https://github.com/unit8co/darts/blob/master/CHANGELOG.md)! Contributions don't have to be code only but can also be e.g., documentation. In addition, we're also happy to receive suggestions in the form of issues on Github. The best place to start for contributors is the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md).
@@ -26,8 +31,3 @@
 - *My forecasting models give bad results, can you help?*
 
   Getting good forecasts is about more than just calling the `fit()`/`predict()` functions, and always involves some data science work to understand which approaches are appropriate. We cannot give general answers, however if you have important forecasting problems or need help to industrialize your forecasts, Unit8 provides technical consulting. <a href="mailto:info@unit8.co">Feel free to contact us</a>.
-
-- *Is Darts just a wrapper around other libraries?*
-
-  No. When it makes sense, we reuse existing implementations (e.g. from statsforecasts), but we often write our 
-  own implementations (e.g., of neural networks). Furthermore, Darts models often have more features than their original counter-parts. For instance, unlike the original version, our implementation of N-BEATS supports multivariate time series, past covariates, and probabilistic forecasts.
