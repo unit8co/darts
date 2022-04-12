@@ -29,6 +29,19 @@ Data processing example notebook:
    examples/02-data-processing.ipynb
 
 
+Transfer Learning Tutorial
+==========================
+
+A self-contained notebook showcasing examples of training some bigger models
+on large datasets of time series, and using such models to forecast new time
+series that have not been seen during training:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/14-transfer-learning.ipynb
+
+
 Fast Fourier Transform
 ======================
 
