@@ -25,6 +25,7 @@ series, and some of the models offer a rich support for probabilistic forecastin
 
 ## Documentation
 * [Quickstart](https://unit8co.github.io/darts/quickstart/00-quickstart.html)
+* [User Guide](https://unit8co.github.io/darts/userguide.html)
 * [API Reference](https://unit8co.github.io/darts/generated_api/darts.html)
 * [Examples](https://unit8co.github.io/darts/examples.html)
 
