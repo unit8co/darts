@@ -4,6 +4,7 @@ Croston method
 """
 
 import numpy as np
+from numba.core import errors
 from statsforecast.models import croston_classic, croston_optimized, croston_sba
 from statsforecast.models import tsb as croston_tsb
 
@@ -85,8 +86,19 @@ class Croston(ForecastingModel):
                 h=1,
                 future_xreg=None,
                 alpha_d=self.alpha_d,
-                alpha_p=self.apha_p,
+                alpha_p=self.alpha_p,
             )
+        elif self.version == "sba":
+            try:
+                self.forecast_val = self.method(
+                    series.values(copy=False), h=1, future_xreg=None
+                )
+            except errors.TypingError:
+                raise_if(
+                    True,
+                    '"sba" version is not supported with your version of statsforecast.',
+                )
+
         else:
             self.forecast_val = self.method(
                 series.values(copy=False), h=1, future_xreg=None
