@@ -666,7 +666,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
             raise_if_not(
                 all([len(i) == num_blocks for i in tup]),
-                "there must be num_blocks {} per stack (sizes of all inner tuples must be {})".format(
+                "the length of each tuple in {} must be `num_blocks={}`".format(
                     name, num_blocks
                 ),
             )
