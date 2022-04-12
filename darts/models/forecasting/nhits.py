@@ -666,7 +666,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
             raise_if_not(
                 all([len(i) == num_blocks for i in tup]),
-                "there must be num_blocks {} per stack (sizes of all inner tuples must be {})".format(
+                "the length of each tuple in {} must be `num_blocks={}`".format(
                     name, num_blocks
                 ),
             )
@@ -686,7 +686,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
         else:
             # check provided pooling format
-            _check_sizes(pooling_kernel_sizes, "pooling kernel sizes")
+            _check_sizes(pooling_kernel_sizes, "`pooling_kernel_sizes`")
 
         if n_freq_downsample is None:
             # go from out_len/2 to 1 in num_stacks steps:
@@ -702,12 +702,12 @@ class NHiTS(PastCovariatesTorchModel):
             )
         else:
             # check provided downsample format
-            _check_sizes(n_freq_downsample, "downsampling coefficients")
+            _check_sizes(n_freq_downsample, "`n_freq_downsample`")
 
             # check that last value is 1
             raise_if_not(
                 n_freq_downsample[-1][-1] == 1,
-                "the downsampling coefficient of the last block of the last stack must be 1.",
+                "the downsampling coefficient of the last block of the last stack must be 1 (i.e., `n_freq_downsample[-1][-1]`).",
             )
 
         return pooling_kernel_sizes, n_freq_downsample
