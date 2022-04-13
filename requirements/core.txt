@@ -9,6 +9,7 @@ pandas>=1.0.5
 requests>=2.22.0
 scikit-learn>=1.0.1
 scipy>=1.3.2
+statsforecast>=0.5.2
 statsmodels>=0.13.0
 tqdm>=4.60.0
 xarray>=0.17.0
