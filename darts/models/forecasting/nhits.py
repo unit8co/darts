@@ -642,7 +642,7 @@ class NHiTS(PastCovariatesTorchModel):
         self.dropout = dropout
 
         # Check pooling and downsampling numbers or compute good defaults
-        sizes = NHiTS._prepare_pooling_downsampling(
+        sizes = self._prepare_pooling_downsampling(
             pooling_kernel_sizes,
             n_freq_downsample,
             self.input_chunk_length,
