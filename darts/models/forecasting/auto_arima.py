@@ -1,6 +1,6 @@
 """
-Auto-ARIMA
-----------
+AutoARIMA
+---------
 """
 
 from typing import Optional
@@ -28,12 +28,16 @@ class AutoARIMA(DualCovariatesForecastingModel):
         <https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html>`_
         for an extensive documentation and a list of supported parameters.
 
+        .. note::
+            For a faster and probabilistic version of AutoARIMA, checkout
+            the :class:`StatsForecastAutoARIMA` model.
+
         Parameters
         ----------
         autoarima_args
-            Positional arguments for the pmdarima.txt AutoARIMA model
+            Positional arguments for the pmdarima.AutoARIMA model
         autoarima_kwargs
-            Keyword arguments for the pmdarima.txt AutoARIMA model
+            Keyword arguments for the pmdarima.AutoARIMA model
         """
         super().__init__()
         self.model = PmdAutoARIMA(*autoarima_args, **autoarima_kwargs)
@@ -64,7 +68,7 @@ class AutoARIMA(DualCovariatesForecastingModel):
 
     @property
     def min_train_series_length(self) -> int:
-        return 30
+        return 10
 
     def _supports_range_index(self) -> bool:
         raise_if(
