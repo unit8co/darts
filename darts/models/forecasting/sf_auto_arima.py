@@ -61,7 +61,7 @@ class StatsForecastAutoARIMA(DualCovariatesForecastingModel):
 
         mu = forecast_df["mean"].values
         if num_samples > 1:
-            std = 2 * (forecast_df["hi_68%"].values - mu)
+            std = forecast_df["hi_68%"].values - mu
             samples = np.random.normal(loc=mu, scale=std, size=(num_samples, n)).T
             samples = np.expand_dims(samples, axis=1)
         else:
