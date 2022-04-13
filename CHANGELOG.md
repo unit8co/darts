@@ -4,9 +4,34 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.18.0...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.19.0...master)
 
-## [0.18.0](https://github.com/unit8co/darts/tree/0.17.1) (2022-03-22)
+## [0.19.0](https://github.com/unit8co/darts/tree/0.19.0) (2022-04-13)
+### For users of the library:
+
+**Improved**
+- New model: `NHiTS` implementing the N-HiTS model.
+  [#898](https://github.com/unit8co/darts/pull/898) by [Julien Herzen](https://github.com/hrzn).
+- New model: `StatsForecastAutoARIMA` implementing the (faster) AutoARIMA version of
+  [statsforecast](https://github.com/Nixtla/statsforecast).
+  [#893](https://github.com/unit8co/darts/pull/893) by [Julien Herzen](https://github.com/hrzn).
+- New model: `Croston` method.
+  [#893](https://github.com/unit8co/darts/pull/893) by [Julien Herzen](https://github.com/hrzn).
+- Better way to represent stochastic `TimeSeries` from distributions specified by quantiles.
+  [#899](https://github.com/unit8co/darts/pull/899) by [Gian Wiher](https://github.com/gnwhr).
+- Better sampling of trajectories for stochastic `RegressionModel`s.
+  [#899](https://github.com/unit8co/darts/pull/899) by [Gian Wiher](https://github.com/gnwhr).
+- Improved user guide with more sections. [#905](https://github.com/unit8co/darts/pull/905)
+  by [Julien Herzen](https://github.com/hrzn).
+- New notebook showcasing transfer learning and training forecasting models on large time
+  series datasets. [#885](https://github.com/unit8co/darts/pull/885) 
+  by [Julien Herzen](https://github.com/hrzn).
+
+**Fixed**
+- Some issues with PyTorch Lightning >= 1.6.0 [#888](https://github.com/unit8co/darts/pull/888)
+  by [Julien Herzen](https://github.com/hrzn).
+
+## [0.18.0](https://github.com/unit8co/darts/tree/0.18.0) (2022-03-22)
 ### For users of the library:
 
 **Improved**
