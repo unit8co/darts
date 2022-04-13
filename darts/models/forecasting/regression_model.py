@@ -723,14 +723,12 @@ class _LikelihoodMixin:
 
     def _quantile_sampling(self, model_output: np.ndarray) -> np.ndarray:
         """
-        Select a quantile (for each batch example) and return this quantile (over time and components).
+        Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
+        quantiles closest to the sampled value.
 
-        model_output is of shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
+        model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
         """
         num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
-        model_output = model_output.reshape(
-            num_samples, n_timesteps, -1, len(self.quantiles)
-        )
 
         # obtain samples
         probs = self._rng.uniform(

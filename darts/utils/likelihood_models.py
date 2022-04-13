@@ -1000,16 +1000,13 @@ class QuantileRegression(Likelihood):
 
     def sample(self, model_output: torch.Tensor) -> torch.Tensor:
         """
-        Select a quantile (for each batch example) and return this quantile (over time and components).
+        Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
+        quantiles closest to the sampled value.
 
         model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)
         """
         device = model_output.device
-        batch_size, length, n_components, n_quantiles = model_output.shape
-        model_output = model_output.view(batch_size, length, -1, len(self.quantiles))
-
-        num_samples = batch_size
-        n_timesteps = length
+        num_samples, n_timesteps, n_components, n_quantiles = model_output.shape
 
         # obtain samples
         probs = torch.rand(
