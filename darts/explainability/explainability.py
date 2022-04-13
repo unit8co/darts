@@ -69,9 +69,10 @@ class ForecastingModelExplainer(ABC):
                 "A background time series has to be provided for a model fitted on multiple time series, as"
                 "no training series has been saved by the model.")
         
-        self.background_series = self.model.training_series
-        self.background_past_covariates = self.model.past_covariate_series
-        self.background_future_covariates = self.model.future_covariate_series
+
+            self.background_series = self.model.training_series
+            self.background_past_covariates = self.model.past_covariate_series
+            self.background_future_covariates = self.model.future_covariate_series
 
         self.target_names = self.background_series.columns
         self.past_covariates_names = self.background_past_covariates.columns
@@ -98,8 +99,8 @@ class ForecastingModelExplainer(ABC):
             self.past_steps_explained = self.model.input_chunk_length
 
         if not self.test_stationarity():
-            logger.warning("The background time series is not stationary. Beware of wrong interpretation "
-            "with chosen explainability")
+            logger.warning("One time series component of the background time series is not stationary."
+            "Beware of wrong interpretation with chosen explainability")
 
     @abstractmethod
     def explain_from_input(        
