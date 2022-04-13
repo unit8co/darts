@@ -46,6 +46,7 @@ logger = get_logger(__name__)
 DIMS = ("time", "component", "sample")
 
 VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
+STATIC_COV_TAG = "static_covariates"
 
 
 class TimeSeries:
@@ -497,6 +498,73 @@ class TimeSeries:
         )
 
     @classmethod
+    def from_longitudinal_dataframe(
+        cls,
+        df: pd.DataFrame,
+        group_cols: Union[List[str], str],
+        time_col: Optional[str] = None,
+        value_cols: Optional[Union[List[str], str]] = None,
+        fill_missing_dates: Optional[bool] = False,
+        freq: Optional[str] = None,
+        fillna_value: Optional[float] = None,
+    ) -> Union["TimeSeries", List["TimeSeries"]]:
+        """
+        Build a list of TimeSeries instances grouped by a selection of columns from a DataFrame.
+        One column (or the DataFrame index) has to represent the time,
+        a list of columns `group_cols` must be used for extracting the individual TimeSeries by groups,
+        and a list of columns `value_cols` has to represent the values for the individual time series.
+
+        Parameters
+        ----------
+        df
+            The DataFrame
+        group_cols
+            A string or list of strings representing the columns from the DataFrame by which to extract the
+            individual TimeSeries groups.
+        time_col
+            The time column name. If set, the column will be cast to a pandas DatetimeIndex.
+            If not set, the DataFrame index will be used. In this case the DataFrame must contain an index that is
+            either a pandas DatetimeIndex or a pandas RangeIndex. If a DatetimeIndex is
+            used, it is better if it has no holes; alternatively setting `fill_missing_dates` can in some casees solve
+            these issues (filling holes with NaN, or with the provided `fillna_value` numeric value, if any).
+        value_cols
+            A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
+            `None`, the whole DataFrame will be used.
+        fill_missing_dates
+            Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
+            either a provided `freq` or the possibility to infer the frequency from the provided timestamps. See
+            :meth:`_fill_missing_dates() <TimeSeries._fill_missing_dates>` for more info.
+        freq
+            Optionally, a string representing the frequency of the Pandas DateTimeIndex. This is useful in order to
+            fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
+        fillna_value
+            Optionally, a numeric value to fill missing values (NaNs) with.
+
+        Returns
+        -------
+        TimeSeries
+            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+        """
+        # split df by groups and store group values (static covariates)
+        splits = [
+            (pd.Series(static_covs, index=group_cols), group.drop(columns=group_cols))
+            for static_covs, group in df.groupby(group_cols)
+        ]
+
+        # create a list with multiple TimeSeries and add static covariates
+        return [
+            TimeSeries.from_dataframe(
+                df=split,
+                time_col=time_col,
+                value_cols=value_cols,
+                fill_missing_dates=fill_missing_dates,
+                freq=freq,
+                fillna_value=fillna_value,
+            ).add_static_covariates(static_covs)
+            for static_covs, split in splits
+        ]
+
+    @classmethod
     def from_series(
         cls,
         pd_series: pd.Series,
@@ -704,6 +772,10 @@ class TimeSeries:
     Properties
     ==========
     """
+
+    @property
+    def static_covariates(self):
+        return self._xa.attrs.get(STATIC_COV_TAG, None)
 
     @property
     def n_samples(self):
@@ -2010,6 +2082,10 @@ class TimeSeries:
         new_xa = xr.DataArray(values, dims=self._xa.dims, coords=self._xa.coords)
 
         return self.__class__(new_xa)
+
+    def add_static_covariates(self, covariates: pd.Series):
+        self._xa.attrs["static_covariates"] = covariates
+        return self
 
     def stack(self, other: "TimeSeries") -> "TimeSeries":
         """
