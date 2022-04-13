@@ -1,0 +1,2415 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Transfer Learning for Time Series Forecasting with Darts &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Fast Fourier Transform Forecasting Model (FFT)" href="03-FFT-examples.html" />
+    <link rel="prev" title="Data (pre) processing using DataTransformer and Pipeline" href="02-data-processing.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="01-multi-time-series-and-covariates.html">
+   Multiple Time Series, Pre-trained Models and Covariates
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="02-data-processing.html">
+   Data (pre) processing using
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     DataTransformer
+    </span>
+   </code>
+   and
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     Pipeline
+    </span>
+   </code>
+  </a>
+ </li>
+</ul>
+<ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Transfer Learning for Time Series Forecasting with Darts
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="03-FFT-examples.html">
+   Fast Fourier Transform Forecasting Model (FFT)
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="04-RNN-examples.html">
+   Recurrent Neural Networks Models
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="05-TCN-examples.html">
+   Temporal Convolutional Network
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="06-Transformer-examples.html">
+   Transformer Model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="07-NBEATS-examples.html">
+   N-BEATS
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="08-DeepAR-examples.html">
+   Probabilistic RNN
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="09-DeepTCN-examples.html">
+   DeepTCN model
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="13-TFT-examples.html">
+   Temporal Fusion Transformer
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="10-Kalman-filter-examples.html">
+   Filtering and predicting using the darts filters
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="11-GP-filter-examples.html">
+   Filtering and predicting using the Gaussian Process filter
+  </a>
+ </li>
+</ul>
+<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="12-Dynamic-Time-Warping-example.html">
+   Dynamic Time Warping (DTW)
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Overview">
+   Overview
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Part-0:-Setup">
+   Part 0: Setup
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Datasets-loading-methods">
+     Datasets loading methods
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Part-1:-Local-models-on-the-air-dataset">
+   Part 1: Local models on the
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     air
+    </span>
+   </code>
+   dataset
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Inspecting-Data">
+     Inspecting Data
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#A-useful-function-to-evaluate-models">
+     A useful function to evaluate models
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Building-and-evaluating-models">
+     Building and evaluating models
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Comparing-models">
+     Comparing models
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Conclusions-so-far">
+     Conclusions so far
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Part-2:-Global-models-on-the-air-dataset">
+   Part 2: Global models on the
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     air
+    </span>
+   </code>
+   dataset
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Part-2.1:-Using-Darts-RegressionModels.">
+     Part 2.1: Using Darts
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       RegressionModel
+      </span>
+     </code>
+     s.
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Part-2.2:-Using-deep-learning">
+     Part 2.2: Using deep learning
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id1">
+     Conclusions so far
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Part-3:-Training-an-N-BEATS-model-on-m4-dataset-and-use-it-to-forecast-air-dataset">
+   Part 3: Training an N-BEATS model on
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     m4
+    </span>
+   </code>
+   dataset and use it to forecast
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     air
+    </span>
+   </code>
+   dataset
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#id2">
+     Conclusions so far
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#Try-training-other-global-models-on-m4-and-applying-on-airline-passengers">
+     Try training other global models on
+     <code class="docutils literal notranslate">
+      <span class="pre">
+       m4
+      </span>
+     </code>
+     and applying on airline passengers
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Part-4-and-recap:-Use-the-same-model-on-M3-dataset">
+   Part 4 and recap: Use the same model on M3 dataset
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#Conclusions">
+   Conclusions
+  </a>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+</style>
+<section id="Transfer-Learning-for-Time-Series-Forecasting-with-Darts">
+<h1>Transfer Learning for Time Series Forecasting with Darts<a class="headerlink" href="#Transfer-Learning-for-Time-Series-Forecasting-with-Darts" title="Permalink to this headline">¶</a></h1>
+<p>Authors: Julien Herzen, Florian Ravasi, Guillaume Raille, Gaël Grosch.</p>
+<section id="Overview">
+<h2>Overview<a class="headerlink" href="#Overview" title="Permalink to this headline">¶</a></h2>
+<p>The goal of this notebook is to explore transfer learning for time series forecasting – that is, training forecasting models on one time series dataset and using it on another. The notebook is 100% self-contained – i.e., it also contains the necessary commands to install dependencies and download the datasets being used.</p>
+<p>Depending on what constitutes a “learning task”, what we call transfer learning here can also be seen under the angle of meta-learning (or “learning to learn”), where models can adapt themselves to new tasks (e.g. forecasting a new time series) at inference time without further training [1].</p>
+<p>This notebook is an adaptation of a workshop on “Forecasting and Meta-Learning” that was given at the Applied Machine Learning Days conference in Lausanne, Switzerland, in March 2022. It contains the following parts:</p>
+<ul class="simple">
+<li><p><strong>Part 0:</strong> Initial setup - imports, functions to download data, etc.</p></li>
+<li><p><strong>Part 1:</strong> Forecasting passenger counts series for 300 airlines (<code class="docutils literal notranslate"><span class="pre">air</span></code> dataset). We will train one model per series.</p></li>
+<li><p><strong>Part 2:</strong> Using “global” models - i.e., models trained on all 300 series simultaneously.</p></li>
+<li><p><strong>Part 3:</strong> We will try some transfer learning, and see what happens if we train some global models on one (big) dataset (<code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset) and use them on another dataset.</p></li>
+<li><p><strong>Part 4:</strong> We will reuse our pre-trained model(s) of Part 3 on another new dataset (<code class="docutils literal notranslate"><span class="pre">m3</span></code> dataset) and see how it compares to models specifically trained on this dataset.</p></li>
+</ul>
+<p>The compute durations written for the different models have been obtained by running the notebook on a i9-10900K CPU, with an RTX 2080s GPU, with Python 3.9.7 and Darts 0.18.0.</p>
+</section>
+<section id="Part-0:-Setup">
+<h2>Part 0: Setup<a class="headerlink" href="#Part-0:-Setup" title="Permalink to this headline">¶</a></h2>
+<p>First, we need to have the right libraries and make the right imports. For the deep learning models, it helps to have a GPU, but this is not mandatory.</p>
+<p>The following two cells need to be run only once. They install the dependencies and download all the required datasets.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">!</span>pip install <span class="nv">darts</span><span class="o">==</span><span class="m">0</span>.18.0 <span class="p">&amp;</span>&gt; /dev/null
+<span class="o">!</span>pip install <span class="nv">xarray</span><span class="o">==</span><span class="m">0</span>.18.2 <span class="p">&amp;</span>&gt; /dev/null  # required to <span class="nb">read</span> pickle files
+<span class="o">!</span>pip install <span class="nv">xlrd</span><span class="o">==</span><span class="m">2</span>.0.1 <span class="p">&amp;</span>&gt; /dev/null
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Execute this cell once to download all three datasets</span>
+<span class="c1"># Some datasets are are in pickle for simplicity and speed.</span>
+<span class="o">!</span>curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/m3_dataset.xls<span class="se">\?</span>raw<span class="se">\=</span><span class="nb">true</span> -o m3_dataset.xls
+<span class="o">!</span>curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/passengers.pkl<span class="se">\?</span>raw<span class="se">\=</span><span class="nb">true</span> -o passengers.pkl
+<span class="o">!</span>curl -L https://github.com/unit8co/amld2022-forecasting-and-metalearning/blob/main/data/m4_monthly_scaled.pkl<span class="se">\?</span>raw<span class="se">\=</span><span class="nb">true</span> -o m4_monthly_scaled.pkl
+</pre></div>
+</div>
+</div>
+<p>And now we import everything. Don’t be afraid, we will uncover what these imports mean through the notebook :)</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[1]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="o">%</span><span class="k">matplotlib</span> inline
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">tqdm.auto</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">product</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">MaxAbsScaler</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">Ridge</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.utils.losses</span> <span class="kn">import</span> <span class="n">SmapeLoss</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.metrics</span> <span class="kn">import</span> <span class="n">smape</span>
+<span class="kn">from</span> <span class="nn">darts.utils.utils</span> <span class="kn">import</span> <span class="n">SeasonalityMode</span><span class="p">,</span> <span class="n">TrendMode</span><span class="p">,</span> <span class="n">ModelMode</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="o">*</span>
+</pre></div>
+</div>
+</div>
+<p>We define the forecast horizon here - for all of the (monthly) time series used in this notebook, we’ll be interested in forecasting 18 months in advance. We pick 18 months as this is what is used in the M3/M4 competitions for monthly series.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[2]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">HORIZON</span> <span class="o">=</span> <span class="mi">18</span>
+</pre></div>
+</div>
+</div>
+<section id="Datasets-loading-methods">
+<h3>Datasets loading methods<a class="headerlink" href="#Datasets-loading-methods" title="Permalink to this headline">¶</a></h3>
+<p>Here, we define some helper methods to load the three datasets we’ll be playing with: <code class="docutils literal notranslate"><span class="pre">air</span></code>, <code class="docutils literal notranslate"><span class="pre">m3</span></code> and <code class="docutils literal notranslate"><span class="pre">m4</span></code>.</p>
+<p>All the methods below return two list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>: one list of training series and one list of “test” series (of length <code class="docutils literal notranslate"><span class="pre">HORIZON</span></code>).</p>
+<p>For convenience, all the series are already scaled here, by multiplying each of them by a constant so that the largest value is 1. Such scaling is necessary for many models to work correctly (esp. deep learning models). It does not affect the sMAPE values, so we can evaluate the accuracy of our algorithms on the scaled series. In a real application, we would have to keep the Darts <code class="docutils literal notranslate"><span class="pre">Scaler</span></code> objects somewhere in order to inverse-scale the forecasts.</p>
+<p>If you are interested in seeing an example of how creating and scaling <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is done, you can inspect the function <code class="docutils literal notranslate"><span class="pre">load_m3()</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[3]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">load_m3</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;building M3 TimeSeries...&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Read DataFrame</span>
+    <span class="n">df_m3</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_excel</span><span class="p">(</span><span class="s2">&quot;m3_dataset.xls&quot;</span><span class="p">,</span> <span class="s2">&quot;M3Month&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Build TimeSeries</span>
+    <span class="n">m3_series</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">df_m3</span><span class="o">.</span><span class="n">iterrows</span><span class="p">()):</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">row</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">start_year</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;Starting Year&quot;</span><span class="p">])</span>
+        <span class="n">start_month</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">s</span><span class="p">[</span><span class="s2">&quot;Starting Month&quot;</span><span class="p">])</span>
+        <span class="n">values_series</span> <span class="o">=</span> <span class="n">s</span><span class="p">[</span><span class="mi">6</span><span class="p">:]</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">start_month</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">continue</span>
+
+        <span class="n">start_date</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="n">start_year</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="n">start_month</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">time_axis</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">date_range</span><span class="p">(</span><span class="n">start_date</span><span class="p">,</span> <span class="n">periods</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">values_series</span><span class="p">),</span> <span class="n">freq</span><span class="o">=</span><span class="s2">&quot;M&quot;</span><span class="p">)</span>
+        <span class="n">series</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
+            <span class="n">time_axis</span><span class="p">,</span> <span class="n">values_series</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+        <span class="n">m3_series</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">There are </span><span class="si">{}</span><span class="s2"> monthly series in the M3 dataset&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">m3_series</span><span class="p">)))</span>
+
+    <span class="c1"># Split train/test</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;splitting train/test...&quot;</span><span class="p">)</span>
+    <span class="n">m3_train</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m3_series</span><span class="p">]</span>
+    <span class="n">m3_test</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">:]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m3_series</span><span class="p">]</span>
+
+    <span class="c1"># Scale so that the largest value is 1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;scaling...&quot;</span><span class="p">)</span>
+    <span class="n">scaler_m3</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">scaler</span><span class="o">=</span><span class="n">MaxAbsScaler</span><span class="p">())</span>
+    <span class="n">m3_train_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_m3</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">m3_train</span><span class="p">)</span>
+    <span class="n">m3_test_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_m3</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">m3_test</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;done. There are </span><span class="si">{}</span><span class="s2"> series, with average training length </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">m3_train_scaled</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m3_train_scaled</span><span class="p">])</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">m3_train_scaled</span><span class="p">,</span> <span class="n">m3_test_scaled</span>
+
+
+<span class="k">def</span> <span class="nf">load_air</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="c1"># load TimeSeries</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loading air TimeSeries...&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;passengers.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">all_air_series</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="c1"># Split train/test</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;splitting train/test...&quot;</span><span class="p">)</span>
+    <span class="n">air_train</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[:</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">all_air_series</span><span class="p">]</span>
+    <span class="n">air_test</span> <span class="o">=</span> <span class="p">[</span><span class="n">s</span><span class="p">[</span><span class="o">-</span><span class="n">HORIZON</span><span class="p">:]</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">all_air_series</span><span class="p">]</span>
+
+    <span class="c1"># Scale so that the largest value is 1</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;scaling series...&quot;</span><span class="p">)</span>
+    <span class="n">scaler_air</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">scaler</span><span class="o">=</span><span class="n">MaxAbsScaler</span><span class="p">())</span>
+    <span class="n">air_train_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_air</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">air_train</span><span class="p">)</span>
+    <span class="n">air_test_scaled</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span> <span class="o">=</span> <span class="n">scaler_air</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">air_test</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;done. There are </span><span class="si">{}</span><span class="s2"> series, with average training length </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">air_train_scaled</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">air_train_scaled</span><span class="p">])</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">air_train_scaled</span><span class="p">,</span> <span class="n">air_test_scaled</span>
+
+
+<span class="k">def</span> <span class="nf">load_m4</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]]:</span>
+    <span class="c1"># load TimeSeries - the splitting and scaling has already been done</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;loading M4 TimeSeries...&quot;</span><span class="p">)</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="s2">&quot;m4_monthly_scaled.pkl&quot;</span><span class="p">,</span> <span class="s2">&quot;rb&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+        <span class="n">m4_series</span> <span class="o">=</span> <span class="n">pickle</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
+
+    <span class="c1"># filter and keep only series that contain at least 48 training points</span>
+    <span class="n">m4_series</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">t</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">48</span><span class="p">,</span> <span class="n">m4_series</span><span class="p">))</span>
+
+    <span class="n">m4_train_scaled</span><span class="p">,</span> <span class="n">m4_test_scaled</span> <span class="o">=</span> <span class="nb">zip</span><span class="p">(</span><span class="o">*</span><span class="n">m4_series</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="s2">&quot;done. There are </span><span class="si">{}</span><span class="s2"> series, with average training length </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">m4_train_scaled</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">m4_train_scaled</span><span class="p">])</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">m4_train_scaled</span><span class="p">,</span> <span class="n">m4_test_scaled</span>
+</pre></div>
+</div>
+</div>
+<p>Finally, we define a handy function to tell us how good a bunch of forecasted series are:</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[4]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">eval_forecasts</span><span class="p">(</span>
+    <span class="n">pred_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">test_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">]:</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;computing sMAPEs...&quot;</span><span class="p">)</span>
+    <span class="n">smapes</span> <span class="o">=</span> <span class="n">smape</span><span class="p">(</span><span class="n">test_series</span><span class="p">,</span> <span class="n">pred_series</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">smapes</span><span class="p">,</span> <span class="n">bins</span><span class="o">=</span><span class="mi">50</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;Count&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;sMAPE&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s2">&quot;Median sMAPE: </span><span class="si">%.3f</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">smapes</span><span class="p">))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">smapes</span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+<section id="Part-1:-Local-models-on-the-air-dataset">
+<h2>Part 1: Local models on the <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-1:-Local-models-on-the-air-dataset" title="Permalink to this headline">¶</a></h2>
+<section id="Inspecting-Data">
+<h3>Inspecting Data<a class="headerlink" href="#Inspecting-Data" title="Permalink to this headline">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset contains the number of air passengers that flew in or out of the USA per carrier (or airline company) from the year 2000 until 2019.</p>
+<p>First, we can load the train and test series by calling <code class="docutils literal notranslate"><span class="pre">load_air()</span></code> function that we have defined above.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[5]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span> <span class="o">=</span> <span class="n">load_air</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+loading air TimeSeries...
+splitting train/test...
+scaling series...
+done. There are 301 series, with average training length 136.83388704318938
+</pre></div></div>
+</div>
+<p>It’s a good idea to start by visualising a few of the series to get a sense of what they look like. We can plot a series by calling <code class="docutils literal notranslate"><span class="pre">series.plot()</span></code>.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[6]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">figure</span><span class="p">,</span> <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">idx</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">250</span><span class="p">,</span> <span class="mi">300</span><span class="p">]):</span>
+    <span class="n">axis</span> <span class="o">=</span> <span class="n">ax</span><span class="p">[</span><span class="n">i</span> <span class="o">%</span> <span class="mi">3</span><span class="p">,</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span><span class="p">]</span>
+    <span class="n">air_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">air_train</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">.</span><span class="n">components</span><span class="p">)</span>
+    <span class="n">axis</span><span class="o">.</span><span class="n">set_title</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+No handles with labels found to put in legend.
+No handles with labels found to put in legend.
+No handles with labels found to put in legend.
+No handles with labels found to put in legend.
+No handles with labels found to put in legend.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_14_1.png" src="../_images/examples_14-transfer-learning_14_1.png" />
+</div>
+</div>
+<p>We can see that most series look quite different, and they even have different time axes! For example some series start in Jan 2001 and others in April 2010.</p>
+<p>Let’s see what is the shortest train series available:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nb">min</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">s</span><span class="p">)</span> <span class="k">for</span> <span class="n">s</span> <span class="ow">in</span> <span class="n">air_train</span><span class="p">])</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[7]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+36
+</pre></div></div>
+</div>
+</section>
+<section id="A-useful-function-to-evaluate-models">
+<h3>A useful function to evaluate models<a class="headerlink" href="#A-useful-function-to-evaluate-models" title="Permalink to this headline">¶</a></h3>
+<p>Below, we write a small function that will make our life easier for quickly trying and comparing different local models. We loop through each serie, fit a model and then evaluate on our test dataset.</p>
+<blockquote>
+<div><p>⚠️ <code class="docutils literal notranslate"><span class="pre">tqdm</span></code> is optional and is only there to help display the training progress (as you will see it can take some time when training 300+ time series)</p>
+</div></blockquote>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[8]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">eval_local_model</span><span class="p">(</span>
+    <span class="n">train_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">test_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">model_cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">series</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">train_series</span><span class="p">):</span>
+        <span class="n">model</span> <span class="o">=</span> <span class="n">model_cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>
+        <span class="n">preds</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">pred</span><span class="p">)</span>
+    <span class="n">elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+    <span class="n">smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">test_series</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">smapes</span><span class="p">,</span> <span class="n">elapsed_time</span>
+</pre></div>
+</div>
+</div>
+</section>
+<section id="Building-and-evaluating-models">
+<h3>Building and evaluating models<a class="headerlink" href="#Building-and-evaluating-models" title="Permalink to this headline">¶</a></h3>
+<p>We can now try a first forecasting model on this dataset. As a first step, it is usually a good practice to see how a (very) naive model blindly repeating the last value of the training series performs. This can be done in Darts using a <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.baselines.html#darts.models.forecasting.baselines.NaiveSeasonal">NaiveSeasonal</a> model:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[9]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">naive1_smapes</span><span class="p">,</span> <span class="n">naive1_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "48a496f3bef0411b87a4f33328cd7ca2", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_20_2.png" src="../_images/examples_14-transfer-learning_20_2.png" />
+</div>
+</div>
+<p>So the most naive model gives us a median sMAPE of about 29.4.</p>
+<p>Can we do better with a “less naive” model exploiting the fact that most monthly series have a seasonality of 12?</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[10]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">naive12_smapes</span><span class="p">,</span> <span class="n">naive12_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
+    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">12</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "99e1248113684563a05663ed93fcc603", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_22_2.png" src="../_images/examples_14-transfer-learning_22_2.png" />
+</div>
+</div>
+<p>This is better. Let’s try ExponentialSmoothing (by default, for monthly series, it will use a seasonality of 12):</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[11]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ets_smapes</span><span class="p">,</span> <span class="n">ets_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d8624f38fbf84cdbbd92aa8ad7e4ea69", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_24_2.png" src="../_images/examples_14-transfer-learning_24_2.png" />
+</div>
+</div>
+<p>The median is better for with the naive seasonal. Another model that we can quickly is the <code class="docutils literal notranslate"><span class="pre">Theta</span></code> method which has won the M3 competition:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[12]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">theta_smapes</span><span class="p">,</span> <span class="n">theta_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">Theta</span><span class="p">,</span> <span class="n">theta</span><span class="o">=</span><span class="mf">1.5</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ff496c1fac6f4b1589bb986edf9e5e83", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_26_2.png" src="../_images/examples_14-transfer-learning_26_2.png" />
+</div>
+</div>
+<p>And how about ARIMA?</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[13]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># ARIMA generates lots of warnings</span>
+<span class="n">arima_smapes</span><span class="p">,</span> <span class="n">arima_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">ARIMA</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "aa67824da19d4f64a21f9ebf9ef2a9b4", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_28_2.png" src="../_images/examples_14-transfer-learning_28_2.png" />
+</div>
+</div>
+<p>Or the Kalman Filter? (in Darts, fitting Kalman filters uses the N4SID system identification algorithm)</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[14]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">kf_smapes</span><span class="p">,</span> <span class="n">kf_time</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">KalmanForecaster</span><span class="p">,</span> <span class="n">dim_x</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a05084cf04f4477fb117ea4cb1321b25", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_30_2.png" src="../_images/examples_14-transfer-learning_30_2.png" />
+</div>
+</div>
+</section>
+<section id="Comparing-models">
+<h3>Comparing models<a class="headerlink" href="#Comparing-models" title="Permalink to this headline">¶</a></h3>
+<p>Below, we define a function that will be useful to visualise how models compare to each other in terms of median sMAPE, and time required to obtain the forecasts.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[15]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">plot_models</span><span class="p">(</span><span class="n">method_to_elapsed_times</span><span class="p">,</span> <span class="n">method_to_smapes</span><span class="p">):</span>
+    <span class="n">shapes</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;o&quot;</span><span class="p">,</span> <span class="s2">&quot;s&quot;</span><span class="p">,</span> <span class="s2">&quot;*&quot;</span><span class="p">]</span>
+    <span class="n">colors</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;tab:blue&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:orange&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:green&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:red&quot;</span><span class="p">,</span> <span class="s2">&quot;tab:purple&quot;</span><span class="p">]</span>
+    <span class="n">styles</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">product</span><span class="p">(</span><span class="n">shapes</span><span class="p">,</span> <span class="n">colors</span><span class="p">))</span>
+
+    <span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">method</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">method_to_elapsed_times</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">method_to_elapsed_times</span><span class="p">[</span><span class="n">method</span><span class="p">]</span>
+        <span class="n">s</span> <span class="o">=</span> <span class="n">styles</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">semilogx</span><span class="p">(</span>
+            <span class="p">[</span><span class="n">t</span><span class="p">],</span>
+            <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">median</span><span class="p">(</span><span class="n">method_to_smapes</span><span class="p">[</span><span class="n">method</span><span class="p">])],</span>
+            <span class="n">s</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="n">color</span><span class="o">=</span><span class="n">s</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+            <span class="n">label</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">markersize</span><span class="o">=</span><span class="mi">13</span><span class="p">,</span>
+        <span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;elapsed time [s]&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;median sMAPE over all series&quot;</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">bbox_to_anchor</span><span class="o">=</span><span class="p">(</span><span class="mf">1.4</span><span class="p">,</span> <span class="mf">1.0</span><span class="p">),</span> <span class="n">frameon</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[16]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">smapes</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_smapes</span><span class="p">,</span>
+    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_smapes</span><span class="p">,</span>
+    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_smapes</span><span class="p">,</span>
+    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_smapes</span><span class="p">,</span>
+    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_smapes</span><span class="p">,</span>
+    <span class="s2">&quot;Kalman Filter&quot;</span><span class="p">:</span> <span class="n">kf_smapes</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">elapsed_times</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_time</span><span class="p">,</span>
+    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_time</span><span class="p">,</span>
+    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_time</span><span class="p">,</span>
+    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_time</span><span class="p">,</span>
+    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_time</span><span class="p">,</span>
+    <span class="s2">&quot;Kalman Filter&quot;</span><span class="p">:</span> <span class="n">kf_time</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times</span><span class="p">,</span> <span class="n">smapes</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_33_0.png" src="../_images/examples_14-transfer-learning_33_0.png" />
+</div>
+</div>
+</section>
+<section id="Conclusions-so-far">
+<h3>Conclusions so far<a class="headerlink" href="#Conclusions-so-far" title="Permalink to this headline">¶</a></h3>
+<p>ARIMA gives the best results, but it is also (by far) the most time-consuming model. The Theta method provides an interesting tradeoff, with good forecasting accuracy and about 50x faster than ARIMA. Can we maybe find a better compromise by considering <em>global</em> models - i.e., models that are trained only once, jointly on all time series?</p>
+</section>
+</section>
+<section id="Part-2:-Global-models-on-the-air-dataset">
+<h2>Part 2: Global models on the <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-2:-Global-models-on-the-air-dataset" title="Permalink to this headline">¶</a></h2>
+<p>In this section we will use “global models” - that is, models that are fit on multiple series at once. Darts has essentially two kinds of global models:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">RegressionModels</span></code> which are wrappers around sklearn-like regression models (Part 2.1).</p></li>
+<li><p>PyTorch-based models, which offer various deep learning models (Part 2.2).</p></li>
+</ul>
+<p>Both models can be trained on multiple series by “tabularizing” the data - i.e., taking many (input, output) sub-slices from all the training series, and training machine learning models in a supervised fashion to predict the output based on the input.</p>
+<p>We start by defining a function <code class="docutils literal notranslate"><span class="pre">eval_global_model()</span></code> which works similarly to <code class="docutils literal notranslate"><span class="pre">eval_local_model()</span></code>, but on global models.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[17]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">eval_global_model</span><span class="p">(</span>
+    <span class="n">train_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">test_series</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">],</span> <span class="n">model_cls</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span> <span class="nb">float</span><span class="p">]:</span>
+
+    <span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model_cls</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_series</span><span class="p">)</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">train_series</span><span class="p">)</span>
+
+    <span class="n">elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+    <span class="n">smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">test_series</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">smapes</span><span class="p">,</span> <span class="n">elapsed_time</span>
+</pre></div>
+</div>
+</div>
+<section id="Part-2.1:-Using-Darts-RegressionModels.">
+<h3>Part 2.1: Using Darts <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s.<a class="headerlink" href="#Part-2.1:-Using-Darts-RegressionModels." title="Permalink to this headline">¶</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code> in Darts are forecasting models that can wrap around any “scikit-learn compatible” regression model to obtain forecasts. Compared to deep learning, they represent good “go-to” global models because they typically don’t have many hyper-parameters and can be faster to train. In addition, Darts also offers some “pre-packaged” regression models such as <code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code> and <code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code>.</p>
+<p>We’ll now use our function <code class="docutils literal notranslate"><span class="pre">eval_global_models()</span></code>. In the following cells, we will try using some regression models, for example:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">RegressionModel(some_sklearn_model)</span></code></p></li>
+</ul>
+<p>You can refer to <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.regression_model.html">the API doc</a> for how to use them.</p>
+<p>Important parameters are <code class="docutils literal notranslate"><span class="pre">lags</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code>. They determine respectively the length of the lookback and “lookforward” windows used by the model, and they correspond to the lengths of the input/output subslices used for training. For instance <code class="docutils literal notranslate"><span class="pre">lags=24</span></code> and <code class="docutils literal notranslate"><span class="pre">output_chunk_length=12</span></code> mean that the model will consume the past 24 lags in order to predict the next 12. In our case, because the shortest training series has length 36, we must have
+<code class="docutils literal notranslate"><span class="pre">lags</span> <span class="pre">+</span> <span class="pre">output_chunk_length</span> <span class="pre">&lt;=</span> <span class="pre">36</span></code>. (Note that <code class="docutils literal notranslate"><span class="pre">lags</span></code> can also be a list of integers representing the individual lags to be consumed by the model instead of the window length).</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[18]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">lr_smapes</span><span class="p">,</span> <span class="n">lr_time</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
+    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_37_1.png" src="../_images/examples_14-transfer-learning_37_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[19]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">lgbm_smapes</span><span class="p">,</span> <span class="n">lgbm_time</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
+    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">LightGBMModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">&quot;mape&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_38_1.png" src="../_images/examples_14-transfer-learning_38_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[20]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">rf_smapes</span><span class="p">,</span> <span class="n">rf_time</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
+    <span class="n">air_train</span><span class="p">,</span> <span class="n">air_test</span><span class="p">,</span> <span class="n">RandomForest</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_39_1.png" src="../_images/examples_14-transfer-learning_39_1.png" />
+</div>
+</div>
+</section>
+<section id="Part-2.2:-Using-deep-learning">
+<h3>Part 2.2: Using deep learning<a class="headerlink" href="#Part-2.2:-Using-deep-learning" title="Permalink to this headline">¶</a></h3>
+<p>Below, we will train an N-BEATS model on our <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset. Again, you can refer to <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.nbeats.html">the API doc</a> for documentation on the hyper-parameters. The following hyper-parameters should be a good starting point, and training should take in the order of a minute or two if you’re using a (somewhat slow) Colab GPU.</p>
+<p>During training, you can have a look at the <a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[21]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1">### Possible N-BEATS hyper-parameters</span>
+
+<span class="c1"># Slicing hyper-params:</span>
+<span class="n">IN_LEN</span> <span class="o">=</span> <span class="mi">30</span>
+<span class="n">OUT_LEN</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># Architecture hyper-params:</span>
+<span class="n">NUM_STACKS</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">NUM_BLOCKS</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">NUM_LAYERS</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">LAYER_WIDTH</span> <span class="o">=</span> <span class="mi">136</span>
+<span class="n">COEFFS_DIM</span> <span class="o">=</span> <span class="mi">11</span>
+
+<span class="c1"># Training settings:</span>
+<span class="n">LR</span> <span class="o">=</span> <span class="mf">1e-3</span>
+<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="n">MAX_SAMPLES_PER_TS</span> <span class="o">=</span> <span class="mi">10</span>
+<span class="n">NUM_EPOCHS</span> <span class="o">=</span> <span class="mi">10</span>
+</pre></div>
+</div>
+</div>
+<p>Let’s now build, train and predict using an N-BEATS model:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[22]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># reproducibility</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+
+<span class="n">nbeats_model_air</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">IN_LEN</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">OUT_LEN</span><span class="p">,</span>
+    <span class="n">num_stacks</span><span class="o">=</span><span class="n">NUM_STACKS</span><span class="p">,</span>
+    <span class="n">num_blocks</span><span class="o">=</span><span class="n">NUM_BLOCKS</span><span class="p">,</span>
+    <span class="n">num_layers</span><span class="o">=</span><span class="n">NUM_LAYERS</span><span class="p">,</span>
+    <span class="n">layer_widths</span><span class="o">=</span><span class="n">LAYER_WIDTH</span><span class="p">,</span>
+    <span class="n">expansion_coefficient_dim</span><span class="o">=</span><span class="n">COEFFS_DIM</span><span class="p">,</span>
+    <span class="n">loss_fn</span><span class="o">=</span><span class="n">SmapeLoss</span><span class="p">(),</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
+    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">LR</span><span class="p">},</span>
+    <span class="c1"># remove this one if your notebook does run in a GPU environment:</span>
+    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;enable_progress_bar&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gpus&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;auto_select_gpus&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">nbeats_model_air</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">air_train</span><span class="p">,</span> <span class="n">num_loader_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">)</span>
+
+<span class="c1"># get predictions</span>
+<span class="n">nb_preds</span> <span class="o">=</span> <span class="n">nbeats_model_air</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>
+<span class="n">nbeats_elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+<span class="n">nbeats_smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">nb_preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2022-04-07 17:04:05,386] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 53277 samples.
+[2022-04-07 17:04:05,386] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 53277 samples.
+[2022-04-07 17:04:05,403] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-04-07 17:04:05,403] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name      | Type       | Params
+-----------------------------------------
+0 | criterion | SmapeLoss  | 0
+1 | stacks    | ModuleList | 525 K
+-----------------------------------------
+523 K     Trainable params
+1.9 K     Non-trainable params
+525 K     Total params
+2.102     Total estimated model params size (MB)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "e3e2791cdc1a4499af7628ff155e7c26", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "950e38453a094cb885a6ae213b06017b", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_43_5.png" src="../_images/examples_14-transfer-learning_43_5.png" />
+</div>
+</div>
+<p>Let’s now look again at our errors -vs- time plot:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[23]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">smapes_2</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="o">**</span><span class="n">smapes</span><span class="p">,</span>
+    <span class="o">**</span><span class="p">{</span>
+        <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_smapes</span><span class="p">,</span>
+        <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_smapes</span><span class="p">,</span>
+        <span class="s2">&quot;Random Forest&quot;</span><span class="p">:</span> <span class="n">rf_smapes</span><span class="p">,</span>
+        <span class="s2">&quot;NBeats&quot;</span><span class="p">:</span> <span class="n">nbeats_smapes</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">elapsed_times_2</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="o">**</span><span class="n">elapsed_times</span><span class="p">,</span>
+    <span class="o">**</span><span class="p">{</span>
+        <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_time</span><span class="p">,</span>
+        <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_time</span><span class="p">,</span>
+        <span class="s2">&quot;Random Forest&quot;</span><span class="p">:</span> <span class="n">rf_time</span><span class="p">,</span>
+        <span class="s2">&quot;NBeats&quot;</span><span class="p">:</span> <span class="n">nbeats_elapsed_time</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times_2</span><span class="p">,</span> <span class="n">smapes_2</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_45_0.png" src="../_images/examples_14-transfer-learning_45_0.png" />
+</div>
+</div>
+</section>
+<section id="id1">
+<h3>Conclusions so far<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>So it looks like a linear regression model trained jointly on all series is now providing the best tradeoff between accuracy and speed (about 85x faster than ARIMA for similar accuracy). Linear regression is often the way to go!</p>
+<p>Our deep learning model N-BEATS is not doing great. Note that we haven’t tried to tune it to this problem explicitly, doing so might have produced more accurate results. Instead of spending time tuning it though, in the next part we will see if it can do better by being trained on an entirely different dataset.</p>
+</section>
+</section>
+<section id="Part-3:-Training-an-N-BEATS-model-on-m4-dataset-and-use-it-to-forecast-air-dataset">
+<h2>Part 3: Training an N-BEATS model on <code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset and use it to forecast <code class="docutils literal notranslate"><span class="pre">air</span></code> dataset<a class="headerlink" href="#Part-3:-Training-an-N-BEATS-model-on-m4-dataset-and-use-it-to-forecast-air-dataset" title="Permalink to this headline">¶</a></h2>
+<p>Deep learning models often do better when trained on <em>large</em> datasets. Let’s try to load all 48,000 monthly time series in the M4 dataset and train our model once more on this larger dataset.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[24]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">m4_train</span><span class="p">,</span> <span class="n">m4_test</span> <span class="o">=</span> <span class="n">load_m4</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+loading M4 TimeSeries...
+done. There are 47992 series, with average training length 216.32901316886148
+</pre></div></div>
+</div>
+<p>We can start from the same hyper-parameters as before.</p>
+<p>With 48,000 M4 training series being on average ~200 time steps long, we would end up with ~10M training samples. With such a number of training samples, each epoch would take too long. So here, we’ll limit the number of training samples used per series. This is done when calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> with the parameter <code class="docutils literal notranslate"><span class="pre">max_samples_per_ts</span></code>. We add a new hyper-parameter <code class="docutils literal notranslate"><span class="pre">MAX_SAMPLES_PER_TS</span></code> to capture this.</p>
+<p>Since the M4 training series are all slightly longer, we can also use a slightly longer <code class="docutils literal notranslate"><span class="pre">input_chunk_length</span></code>.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[25]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Slicing hyper-params:</span>
+<span class="n">IN_LEN</span> <span class="o">=</span> <span class="mi">36</span>
+<span class="n">OUT_LEN</span> <span class="o">=</span> <span class="mi">4</span>
+
+<span class="c1"># Architecture hyper-params:</span>
+<span class="n">NUM_STACKS</span> <span class="o">=</span> <span class="mi">20</span>
+<span class="n">NUM_BLOCKS</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">NUM_LAYERS</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">LAYER_WIDTH</span> <span class="o">=</span> <span class="mi">136</span>
+<span class="n">COEFFS_DIM</span> <span class="o">=</span> <span class="mi">11</span>
+
+<span class="c1"># Training settings:</span>
+<span class="n">LR</span> <span class="o">=</span> <span class="mf">1e-3</span>
+<span class="n">BATCH_SIZE</span> <span class="o">=</span> <span class="mi">1024</span>
+<span class="n">MAX_SAMPLES_PER_TS</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="mi">10</span>  <span class="c1"># &lt;-- new parameter, limiting the number of training samples per series</span>
+<span class="p">)</span>
+<span class="n">NUM_EPOCHS</span> <span class="o">=</span> <span class="mi">5</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># reproducibility</span>
+<span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+<span class="n">torch</span><span class="o">.</span><span class="n">manual_seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">nbeats_model_m4</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">IN_LEN</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="n">OUT_LEN</span><span class="p">,</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">BATCH_SIZE</span><span class="p">,</span>
+    <span class="n">num_stacks</span><span class="o">=</span><span class="n">NUM_STACKS</span><span class="p">,</span>
+    <span class="n">num_blocks</span><span class="o">=</span><span class="n">NUM_BLOCKS</span><span class="p">,</span>
+    <span class="n">num_layers</span><span class="o">=</span><span class="n">NUM_LAYERS</span><span class="p">,</span>
+    <span class="n">layer_widths</span><span class="o">=</span><span class="n">LAYER_WIDTH</span><span class="p">,</span>
+    <span class="n">expansion_coefficient_dim</span><span class="o">=</span><span class="n">COEFFS_DIM</span><span class="p">,</span>
+    <span class="n">loss_fn</span><span class="o">=</span><span class="n">SmapeLoss</span><span class="p">(),</span>
+    <span class="n">optimizer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;lr&quot;</span><span class="p">:</span> <span class="n">LR</span><span class="p">},</span>
+    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span>
+        <span class="s2">&quot;enable_progress_bar&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+        <span class="s2">&quot;accelerator&quot;</span><span class="p">:</span> <span class="s2">&quot;gpu&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;gpus&quot;</span><span class="p">:</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="s2">&quot;auto_select_gpus&quot;</span><span class="p">:</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="c1"># Train</span>
+<span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">m4_train</span><span class="p">,</span>
+    <span class="n">num_loader_workers</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span>
+    <span class="n">epochs</span><span class="o">=</span><span class="n">NUM_EPOCHS</span><span class="p">,</span>
+    <span class="n">max_samples_per_ts</span><span class="o">=</span><span class="n">MAX_SAMPLES_PER_TS</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+[2022-04-07 17:04:39,614] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 479920 samples.
+[2022-04-07 17:04:39,614] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 479920 samples.
+[2022-04-07 17:04:39,626] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-04-07 17:04:39,626] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+GPU available: True, used: True
+TPU available: False, using: 0 TPU cores
+IPU available: False, using: 0 IPUs
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+
+  | Name      | Type       | Params
+-----------------------------------------
+0 | criterion | SmapeLoss  | 0
+1 | stacks    | ModuleList | 543 K
+-----------------------------------------
+541 K     Trainable params
+1.9 K     Non-trainable params
+543 K     Total params
+2.173     Total estimated model params size (MB)
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "7db7b713577e434e9536d7f74b1cb2c6", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[26]:
+</pre></div>
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+&lt;darts.models.forecasting.nbeats.NBEATSModel at 0x7f1e17d40790&gt;
+</pre></div></div>
+</div>
+<p>We can now use our M4-trained model to get forecasts for the air passengers series. As we use the model in a “meta learning” (or transfer learning) way here, we will be timing only the inference part.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[27]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
+<span class="n">nbeats_m4_elapsed_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+<span class="n">nbeats_m4_smapes</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "c44763c7ef284e809a618fd71c4c051e", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_52_3.png" src="../_images/examples_14-transfer-learning_52_3.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[28]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">smapes_3</span> <span class="o">=</span> <span class="p">{</span><span class="o">**</span><span class="n">smapes_2</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_smapes</span><span class="p">}}</span>
+
+<span class="n">elapsed_times_3</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="o">**</span><span class="n">elapsed_times_2</span><span class="p">,</span>
+    <span class="o">**</span><span class="p">{</span><span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_elapsed_time</span><span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times_3</span><span class="p">,</span> <span class="n">smapes_3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_53_0.png" src="../_images/examples_14-transfer-learning_53_0.png" />
+</div>
+</div>
+<section id="id2">
+<h3>Conclusions so far<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<p>Although it’s not the absolute best in terms of accuracy, our N-BEATS model trained on <code class="docutils literal notranslate"><span class="pre">m4</span></code> reaches competitive accuracies. This is quite remarkable because this model has <em>not</em> been trained on <em>any</em> of the <code class="docutils literal notranslate"><span class="pre">air</span></code> series we’ve asked it to forecast! The forecasting step with N-BEATS is ~350x faster than the fit-predict step we needed with ARIMA, and about 4x faster than the fit-predict step of linear regression.</p>
+<p>Just for the fun, we can also inspect manually how this model does on another series – for example, the monthly milk production series available in <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code>:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[29]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">MonthlyMilkDataset</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">MonthlyMilkDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">24</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">24</span><span class="p">:]</span>
+
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">(</span><span class="n">scaler</span><span class="o">=</span><span class="n">MaxAbsScaler</span><span class="p">())</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">24</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;actual&quot;</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s2">&quot;0-shot forecast&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "183a8719199e428098d6a8fc8624ef93", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_55_2.png" src="../_images/examples_14-transfer-learning_55_2.png" />
+</div>
+</div>
+</section>
+<section id="Try-training-other-global-models-on-m4-and-applying-on-airline-passengers">
+<h3>Try training other global models on <code class="docutils literal notranslate"><span class="pre">m4</span></code> and applying on airline passengers<a class="headerlink" href="#Try-training-other-global-models-on-m4-and-applying-on-airline-passengers" title="Permalink to this headline">¶</a></h3>
+<p>Let’s now try to train other global models on the M4 dataset in order to see if we can get similar results. Below, we will train some <code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>s on the full <code class="docutils literal notranslate"><span class="pre">m4</span></code> dataset. This can be quite slow. To have faster training we could use e.g., <code class="docutils literal notranslate"><span class="pre">random.choices(m4_train,</span> <span class="pre">k=5000)</span></code> instead of <code class="docutils literal notranslate"><span class="pre">m4_train</span></code> to limit the size of the training set. We could also specify some small enough value for <code class="docutils literal notranslate"><span class="pre">max_samples_per_ts</span></code> in order to limit the number of training samples.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[30]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">lr_model_m4</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">lr_model_m4</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">m4_train</span><span class="p">)</span>
+
+<span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">lr_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">)</span>
+<span class="n">lr_time_transfer</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
+
+<span class="n">lr_smapes_transfer</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_57_1.png" src="../_images/examples_14-transfer-learning_57_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[31]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span>
+
+<span class="n">lgbm_model_m4</span> <span class="o">=</span> <span class="n">LightGBMModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">&quot;mape&quot;</span><span class="p">)</span>
+<span class="n">lgbm_model_m4</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">m4_train</span><span class="p">)</span>
+
+<span class="n">tic</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">lgbm_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">,</span> <span class="n">series</span><span class="o">=</span><span class="n">air_train</span><span class="p">)</span>
+<span class="n">lgbm_time_transfer</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">tic</span>
+
+<span class="n">lgbm_smapes_transfer</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">air_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_58_1.png" src="../_images/examples_14-transfer-learning_58_1.png" />
+</div>
+</div>
+<p>Finally, let’s plot these new results as well:</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[32]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">smapes_4</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="o">**</span><span class="n">smapes_3</span><span class="p">,</span>
+    <span class="o">**</span><span class="p">{</span>
+        <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_smapes_transfer</span><span class="p">,</span>
+        <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_smapes_transfer</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">elapsed_times_4</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="o">**</span><span class="n">elapsed_times_3</span><span class="p">,</span>
+    <span class="o">**</span><span class="p">{</span>
+        <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_time_transfer</span><span class="p">,</span>
+        <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_time_transfer</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">plot_models</span><span class="p">(</span><span class="n">elapsed_times_4</span><span class="p">,</span> <span class="n">smapes_4</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_60_0.png" src="../_images/examples_14-transfer-learning_60_0.png" />
+</div>
+</div>
+<p>Linear regression offers competitive performance too. It is somewhat slower probably only because the inference with N-BEATS is efficiently batched across batches of time series and performed on GPU.</p>
+</section>
+</section>
+<section id="Part-4-and-recap:-Use-the-same-model-on-M3-dataset">
+<h2>Part 4 and recap: Use the same model on M3 dataset<a class="headerlink" href="#Part-4-and-recap:-Use-the-same-model-on-M3-dataset" title="Permalink to this headline">¶</a></h2>
+<p>OK, now, were we lucky with the airline passengers dataset? Let’s see by repeating the entire process on a new dataset :) You will see that it actually requires very few lines of code. As a new dataset, we will use <code class="docutils literal notranslate"><span class="pre">m3</span></code>, which contains about 1,400 monthly series from the M3 competition.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span> <span class="o">=</span> <span class="n">load_m3</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+building M3 TimeSeries...
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bc0f5def73af4e8aae58f1fdd6eb0edc", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+
+There are 1399 monthly series in the M3 dataset
+splitting train/test...
+scaling...
+done. There are 1399 series, with average training length 100.30092923516797
+</pre></div></div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">naive1_smapes_m3</span><span class="p">,</span> <span class="n">naive1_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
+    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "2b182fceabd24df2b54189aff50f6793", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_64_2.png" src="../_images/examples_14-transfer-learning_64_2.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[35]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">naive12_smapes_m3</span><span class="p">,</span> <span class="n">naive12_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
+    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">NaiveSeasonal</span><span class="p">,</span> <span class="n">K</span><span class="o">=</span><span class="mi">12</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "49228cd52eb849dba2318bd6627f4916", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_65_2.png" src="../_images/examples_14-transfer-learning_65_2.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[36]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">ets_smapes_m3</span><span class="p">,</span> <span class="n">ets_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">ExponentialSmoothing</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "8e1a94f8b393461dbf876fb36e8bf0d4", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_66_2.png" src="../_images/examples_14-transfer-learning_66_2.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[37]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">theta_smapes_m3</span><span class="p">,</span> <span class="n">theta_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">Theta</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "64ddb410426444269d02937d414479d0", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_67_2.png" src="../_images/examples_14-transfer-learning_67_2.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[38]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>  <span class="c1"># ARIMA generates lots of warnings</span>
+
+<span class="c1"># Note: using q=1 here generates errors for some series, so we use q=0</span>
+<span class="n">arima_smapes_m3</span><span class="p">,</span> <span class="n">arima_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
+    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">ARIMA</span><span class="p">,</span> <span class="n">p</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">d</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">q</span><span class="o">=</span><span class="mi">0</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "e4a654e9f89f47bf86d07e1e4097aea1", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_68_2.png" src="../_images/examples_14-transfer-learning_68_2.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[39]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">kf_smapes_m3</span><span class="p">,</span> <span class="n">kf_time_m3</span> <span class="o">=</span> <span class="n">eval_local_model</span><span class="p">(</span>
+    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">KalmanForecaster</span><span class="p">,</span> <span class="n">dim_x</span><span class="o">=</span><span class="mi">12</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "905d3d78ba4140dbacd0f86dcf03408f", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_69_2.png" src="../_images/examples_14-transfer-learning_69_2.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[40]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">lr_smapes_m3</span><span class="p">,</span> <span class="n">lr_time_m3</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
+    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">LinearRegressionModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_70_1.png" src="../_images/examples_14-transfer-learning_70_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[41]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">lgbm_smapes_m3</span><span class="p">,</span> <span class="n">lgbm_time_m3</span> <span class="o">=</span> <span class="n">eval_global_model</span><span class="p">(</span>
+    <span class="n">m3_train</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">,</span> <span class="n">LightGBMModel</span><span class="p">,</span> <span class="n">lags</span><span class="o">=</span><span class="mi">35</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">objective</span><span class="o">=</span><span class="s2">&quot;mape&quot;</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_71_1.png" src="../_images/examples_14-transfer-learning_71_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Get forecasts with our pre-trained N-BEATS</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">nbeats_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
+<span class="n">nbeats_m4_elapsed_time_m3</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+<span class="n">nbeats_m4_smapes_m3</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+LOCAL_RANK: 0 - CUDA_VISIBLE_DEVICES: [0]
+</pre></div></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "9afcb447a9024770bc0ccd86ceca1be5", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_72_3.png" src="../_images/examples_14-transfer-learning_72_3.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Get forecasts with our pre-trained linear regression model</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">lr_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
+<span class="n">lr_m4_elapsed_time_m3</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+<span class="n">lr_m4_smapes_m3</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_73_1.png" src="../_images/examples_14-transfer-learning_73_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[44]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="c1"># Get forecasts with our pre-trained LightGBM model</span>
+
+<span class="n">start_time</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+<span class="n">preds</span> <span class="o">=</span> <span class="n">lgbm_model_m4</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="n">m3_train</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="n">HORIZON</span><span class="p">)</span>  <span class="c1"># get forecasts</span>
+<span class="n">lgbm_m4_elapsed_time_m3</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start_time</span>
+
+<span class="n">lgbm_m4_smapes_m3</span> <span class="o">=</span> <span class="n">eval_forecasts</span><span class="p">(</span><span class="n">preds</span><span class="p">,</span> <span class="n">m3_test</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+computing sMAPEs...
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_74_1.png" src="../_images/examples_14-transfer-learning_74_1.png" />
+</div>
+</div>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">smapes_m3</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Kalman filter&quot;</span><span class="p">:</span> <span class="n">kf_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_m4_smapes_m3</span><span class="p">,</span>
+    <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_m4_smapes_m3</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">times_m3</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;naive-last&quot;</span><span class="p">:</span> <span class="n">naive1_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;naive-seasonal&quot;</span><span class="p">:</span> <span class="n">naive12_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Exponential Smoothing&quot;</span><span class="p">:</span> <span class="n">ets_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;ARIMA&quot;</span><span class="p">:</span> <span class="n">arima_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Theta&quot;</span><span class="p">:</span> <span class="n">theta_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Kalman filter&quot;</span><span class="p">:</span> <span class="n">kf_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Linear Regression&quot;</span><span class="p">:</span> <span class="n">lr_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;LGBM&quot;</span><span class="p">:</span> <span class="n">lgbm_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;N-BEATS (M4-trained)&quot;</span><span class="p">:</span> <span class="n">nbeats_m4_elapsed_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;Linear Reg (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lr_m4_elapsed_time_m3</span><span class="p">,</span>
+    <span class="s2">&quot;LGBM (M4-trained)&quot;</span><span class="p">:</span> <span class="n">lgbm_m4_elapsed_time_m3</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">plot_models</span><span class="p">(</span><span class="n">times_m3</span><span class="p">,</span> <span class="n">smapes_m3</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<img alt="../_images/examples_14-transfer-learning_75_0.png" src="../_images/examples_14-transfer-learning_75_0.png" />
+</div>
+</div>
+<p>Here too, the pre-trained N-BEATS model obtains reasonable accuracy, although not as good as the most accurate models. Note that two models out of the 3 most accurate (Exponential Smoothing and Kalman Filter) did not perform so well when used on the air passengers series. ARIMA performs best but is about 170x slower than N-BEATS, which didn’t require any training and takes about 15 ms per time series to produce its forecasts. Recall that this N-BEATS model has <em>never</em> been trained on <em>any</em> of
+the series we’re asking it to forecast.</p>
+</section>
+<section id="Conclusions">
+<h2>Conclusions<a class="headerlink" href="#Conclusions" title="Permalink to this headline">¶</a></h2>
+<p>Transfer learning and meta learning is definitely an interesting phenomenon that is at the moment under-explored in time series forecasting. When does it succeed? When does it fail? Can fine tuning help? When should it be used? Many of these questions still have to be explored but we hope to have shown that doing so is quite easy with Darts models.</p>
+<p>Now, which method is best for your case? As always, it depends. If you’re dealing mostly with isolated series that have a sufficient history, classical methods such as ARIMA will get you a long way. Even on larger datasets, if compute power is not too much an issue, they can represent interesting out-of-the-box options. On the other hand if you’re dealing with larger number of series, or series of higher dimensionalities, ML methods and global models will often be the way to go. They can capture
+patterns across wide ranges of different time series, and are in general faster to run. Don’t under-estimate linear regression based models in this category! If you have reasons to believe you need to capture more complex patterns, or if inference speed is <em>really</em> important for you, give deep learning methods a shot. N-BEATS has proved its worth for meta-learning [1], but this can potentially work with other models too.</p>
+<p>[1] Oreshkin et al., “Meta-learning framework with applications to zero-shot time-series forecasting”, 2020, <a class="reference external" href="https://arxiv.org/abs/2002.02887">https://arxiv.org/abs/2002.02887</a></p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span>
+</pre></div>
+</div>
+</div>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="02-data-processing.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Data (pre) processing using <code class="docutils literal notranslate"><span class="pre">DataTransformer</span></code> and <code class="docutils literal notranslate"><span class="pre">Pipeline</span></code></p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="03-FFT-examples.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Fast Fourier Transform Forecasting Model (FFT)</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

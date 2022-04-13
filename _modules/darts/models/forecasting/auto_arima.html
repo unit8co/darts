@@ -166,8 +166,8 @@
                 
   <h1>Source code for darts.models.forecasting.auto_arima</h1><div class="highlight"><pre>
 <span></span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">Auto-ARIMA</span>
-<span class="sd">----------</span>
+<span class="sd">AutoARIMA</span>
+<span class="sd">---------</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
@@ -195,12 +195,16 @@
 <span class="sd">        &lt;https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html&gt;`_</span>
 <span class="sd">        for an extensive documentation and a list of supported parameters.</span>
 
+<span class="sd">        .. note::</span>
+<span class="sd">            For a faster and probabilistic version of AutoARIMA, checkout</span>
+<span class="sd">            the :class:`StatsForecastAutoARIMA` model.</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        autoarima_args</span>
-<span class="sd">            Positional arguments for the pmdarima.txt AutoARIMA model</span>
+<span class="sd">            Positional arguments for the pmdarima.AutoARIMA model</span>
 <span class="sd">        autoarima_kwargs</span>
-<span class="sd">            Keyword arguments for the pmdarima.txt AutoARIMA model</span>
+<span class="sd">            Keyword arguments for the pmdarima.AutoARIMA model</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">PmdAutoARIMA</span><span class="p">(</span><span class="o">*</span><span class="n">autoarima_args</span><span class="p">,</span> <span class="o">**</span><span class="n">autoarima_kwargs</span><span class="p">)</span>
@@ -231,7 +235,7 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">min_train_series_length</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
-        <span class="k">return</span> <span class="mi">30</span>
+        <span class="k">return</span> <span class="mi">10</span>
 
     <span class="k">def</span> <span class="nf">_supports_range_index</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
         <span class="n">raise_if</span><span class="p">(</span>

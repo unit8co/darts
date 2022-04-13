@@ -1,0 +1,506 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Overview of Forecasting Models &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Torch Forecasting Models" href="torch_forecasting_models.html" />
+    <link rel="prev" title="TimeSeries" href="timeseries.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="timeseries.html">
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     TimeSeries
+    </span>
+   </code>
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Overview of Forecasting Models
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="torch_forecasting_models.html">
+   Torch Forecasting Models
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="gpu_and_tpu_usage.html">
+   Using Torch Models with GPUs and TPUs
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="covariates.html">
+   Covariates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="faq.html">
+   Frequently Asked Questions
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+<div class="tocsection onthispage pt-5 pb-3">
+    <i class="fas fa-list"></i> On this page
+</div>
+
+<nav id="bd-toc-nav">
+    <ul class="visible nav section-nav flex-column">
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#generalities">
+   Generalities
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#support-for-multivariate-series">
+   Support for multivariate series
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#handling-multiple-series">
+   Handling multiple series
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#support-for-covariates">
+   Support for Covariates
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#probabilistic-forecasts">
+   Probabilistic forecasts
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#probabilistic-neural-networks">
+     Probabilistic neural networks
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#probabilistic-regression-models">
+     Probabilistic regression models
+    </a>
+   </li>
+  </ul>
+ </li>
+</ul>
+
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <section id="overview-of-forecasting-models">
+<h1>Overview of Forecasting Models<a class="headerlink" href="#overview-of-forecasting-models" title="Permalink to this headline">¶</a></h1>
+<p>Forecasting models are models that can produce predictions about future values of some time series, given the history of this series.
+The forecasting models in Darts are <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">listed on the README</a>. They have different capabilities and features. For example, some models work on multidimensional series, return probabilistic forecasts, or accept other kinds of external <em>covariates</em> data in input.</p>
+<p>Below, we give an overview of what these features mean.</p>
+<section id="generalities">
+<h2>Generalities<a class="headerlink" href="#generalities" title="Permalink to this headline">¶</a></h2>
+<p>All forecasting models work in the same way: first they are built (taking some hyper-paramers in argument), then they are fit on one or several series
+by calling the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function, and finally they are used to obtain one or several forecasts by calling the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NaiveSeasonal</span>
+
+<span class="n">naive_model</span> <span class="o">=</span> <span class="n">NaiveSeasonal</span><span class="p">(</span><span class="n">K</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>            <span class="c1"># init</span>
+<span class="n">naive_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>                      <span class="c1"># fit</span>
+<span class="n">naive_forecast</span> <span class="o">=</span> <span class="n">naive_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">)</span>  <span class="c1"># predict</span>
+</pre></div>
+</div>
+<p>The argument <code class="docutils literal notranslate"><span class="pre">n</span></code> of <code class="docutils literal notranslate"><span class="pre">predict()</span></code> indicates the number of time stamps to predict.
+When <code class="docutils literal notranslate"><span class="pre">fit()</span></code> is provided with only one training <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>, this series is stored, and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> will return forecasts for this series.
+On the other hand, some models support calling <code class="docutils literal notranslate"><span class="pre">fit()</span></code> on multiple time series (a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code>). In such cases, one or several series must
+be provided to <code class="docutils literal notranslate"><span class="pre">predict()</span></code>, and the model will produce forecasts for this/these time series.</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>                 <span class="c1"># init</span>
+                    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">series1</span><span class="p">,</span> <span class="n">series2</span><span class="p">])</span>                              <span class="c1"># fit on two series</span>
+<span class="n">forecast</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">series</span><span class="o">=</span><span class="p">[</span><span class="n">series3</span><span class="p">,</span> <span class="n">series4</span><span class="p">],</span> <span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">)</span>  <span class="c1"># predict potentially different series</span>
+</pre></div>
+</div>
+<p>Furthermore, we define the following types of time series consummed by the models:</p>
+<ul class="simple">
+<li><p><strong>Target series:</strong> the series that we are interested in forecasting.</p></li>
+<li><p><strong>Covariate series:</strong> some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.</p></li>
+</ul>
+</section>
+<section id="support-for-multivariate-series">
+<h2>Support for multivariate series<a class="headerlink" href="#support-for-multivariate-series" title="Permalink to this headline">¶</a></h2>
+<p>Some models support multivariate time series. This means that the target (and potential covariates) series provided to the model
+during fit and predict stage can have multiple dimensions. The model will then in turn produce multivariate forecasts.</p>
+<p>Here is an example, using a <code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> to forecast a single multivariate series made of 2 components:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">darts.utils.timeseries_generation</span> <span class="k">as</span> <span class="nn">tg</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">KalmanForecaster</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
+
+<span class="n">series1</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">sine_timeseries</span><span class="p">(</span><span class="n">value_frequency</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.1</span> <span class="o">*</span> <span class="n">tg</span><span class="o">.</span><span class="n">gaussian_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="n">series2</span> <span class="o">=</span> <span class="n">tg</span><span class="o">.</span><span class="n">sine_timeseries</span><span class="p">(</span><span class="n">value_frequency</span><span class="o">=</span><span class="mf">0.02</span><span class="p">,</span> <span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.2</span> <span class="o">*</span> <span class="n">tg</span><span class="o">.</span><span class="n">gaussian_timeseries</span><span class="p">(</span><span class="n">length</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="n">multivariate_series</span> <span class="o">=</span> <span class="n">series1</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">series2</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">KalmanForecaster</span><span class="p">(</span><span class="n">dim_x</span><span class="o">=</span><span class="mi">4</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">multivariate_series</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">multivariate_series</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">lw</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference external image-reference" href="./images/forecast_multiv.png"><img alt="Forecasting a multivariate series" src="../_images/forecast_multiv.png" /></a>
+<p>These models are shown with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Multivariate</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.</p>
+</section>
+<section id="handling-multiple-series">
+<h2>Handling multiple series<a class="headerlink" href="#handling-multiple-series" title="Permalink to this headline">¶</a></h2>
+<p>Some models support being fit on multiple time series. To do this, it is enough to simply provide a Python <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (for instance a list of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>. When a model is fit this way, the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function will expect the argument <code class="docutils literal notranslate"><span class="pre">series</span></code> to be set, containing
+one or several <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (i.e., a single or a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> of <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>) that need to be forecasted.
+The advantage of training on multiple series is that a single model can be exposed to more patterns occuring across all series in the training dataset. That can often be beneficial, especially for more expre based models.</p>
+<p>In turn, the advantage of having <code class="docutils literal notranslate"><span class="pre">predict()</span></code> providing forecasts for potentially several series at once is that the computation can often be batched and vectorized across the multiple series, which is computationally faster than calling <code class="docutils literal notranslate"><span class="pre">predict()</span></code> multiple times on isolated series.</p>
+<p>These models are shown with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Multiple-series</span> <span class="pre">training</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.</p>
+<p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844">This article</a> provides more explanations about training models on multiple series.</p>
+</section>
+<section id="support-for-covariates">
+<h2>Support for Covariates<a class="headerlink" href="#support-for-covariates" title="Permalink to this headline">¶</a></h2>
+<p>Some models support <em>covariate series</em>. Covariate series are time series that the models can take as inputs, but will not forecast.
+We distinguish between <em>past covariates</em> and <em>future covariates</em>:</p>
+<ul class="simple">
+<li><p>Past covariates are covariate time series whose values are <strong>not</strong> known into the future at prediction time. Those can for instance represent signals that have to be measured and are not known upfront. Models do not use the future values of <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> when making forecasts.</p></li>
+<li><p>Future covariates are covariate time series whose values are known into the future at prediction time (up until the forecast horizon). These can represent signals such as calendar information, holidays, weather forecasts, etc. Models that accept <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> will consume the future values (up to the forecast horizon) when making forecasts.</p></li>
+</ul>
+<a class="reference external image-reference" href="./images/covariates/covariates-highlevel.png"><img alt="covariates" src="../_images/covariates-highlevel1.png" /></a>
+<p>Past and future covariates can be used by providing respectively <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> and <code class="docutils literal notranslate"><span class="pre">future_covariates</span></code> arguments to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code>.
+When a model is trained on multiple target series, one covariate has to be provided per target series. The covariate series themselves can be multivariate
+and contain multiple “covariate dimensions”; see the <a class="reference external" href="https://unit8co.github.io/darts/userguide/timeseries.html">TimeSeries guide</a> for how to build multivariate series.</p>
+<p>It is not necessary to worry about the covariates series having the exact right time spans (e.g., so that the last timestamp of future covariates matches the forecast horizon). Darts takes care of slicing the covariates behind the scenes, based on the time axes of the target(s) and that of the covariates.</p>
+<p>Models supporting past (resp. future) covariates are indicated with a “✅” under the <code class="docutils literal notranslate"><span class="pre">Past-observed</span> <span class="pre">covariates</span> <span class="pre">support</span></code> (resp. <code class="docutils literal notranslate"><span class="pre">Future-known</span> <span class="pre">covariates</span> <span class="pre">support</span></code>) columns on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>,</p>
+<p>To know more about covariates, please refer to the <a class="reference external" href="https://unit8co.github.io/darts/userguide/covariates.html">covariates section of the user guide</a>.</p>
+<p>In addition, you can have a look at <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">this article</a> for some examples of how to use past and future covariates.</p>
+</section>
+<section id="probabilistic-forecasts">
+<h2>Probabilistic forecasts<a class="headerlink" href="#probabilistic-forecasts" title="Permalink to this headline">¶</a></h2>
+<p>Some of the models in Darts can produce probabilistic forecasts. For these models, the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> returned by <code class="docutils literal notranslate"><span class="pre">predict()</span></code> will be probabilistic, and contain a certain number of Monte Carlo samples describing the joint distribution over time and components. The number of samples can be directly determined by the argument <code class="docutils literal notranslate"><span class="pre">num_samples</span></code> of the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function (leaving <code class="docutils literal notranslate"><span class="pre">num_samples=1</span></code> will return a deterministic <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>).</p>
+<p>Models supporting probabilistic forecasts are indicated with a “✅” in the <code class="docutils literal notranslate"><span class="pre">Probabilistic</span></code> column on the <a class="reference external" href="https://github.com/unit8co/darts#forecasting-models">model list</a>.
+The actual probabilistic distribution of the forecasts depends on the model.</p>
+<p>Some models such as ARIMA, Exponential Smoothing, (T)BATS or KalmanForecaster make normality assumptions and the resulting distribution is a Gaussian with time-dependent parameters. For example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">ExponentialSmoothing</span><span class="p">()</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference external image-reference" href="./images/probabilistic/example_ets.png"><img alt="Exponential Smoothing" src="../_images/example_ets.png" /></a>
+<section id="probabilistic-neural-networks">
+<h3>Probabilistic neural networks<a class="headerlink" href="#probabilistic-neural-networks" title="Permalink to this headline">¶</a></h3>
+<p>All neural networks (torch-based models) in Darts have a rich support to fit different kinds of probability distributions.
+When creating the model, it is possible to provide one of the <em>likelihood models</em> available in <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html">darts.utils.likelihood_models</a>, which determine the distribution that will be fit by the model.
+In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples.
+Most of the likelihood models also support prior values for the distribution’s parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.</p>
+<p>For example, the code below trains a TCNModel to fit a Laplace distribution. So the neural network outputs 2 parameters (location and scale) of the Laplace distribution. We also specify a prior value of 0.1 on the scale parameter.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">LaplaceLikelihood</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                 <span class="n">likelihood</span><span class="o">=</span><span class="n">LaplaceLikelihood</span><span class="p">(</span><span class="n">prior_b</span><span class="o">=</span><span class="mf">0.1</span><span class="p">))</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference external image-reference" href="./images/probabilistic/example_tcn_laplace.png"><img alt="TCN Laplace regression" src="../_images/example_tcn_laplace.png" /></a>
+<p>It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">darts.utils.likelihood_models.QuantileRegression</a>, in which case the network will be trained with the pinball loss.
+For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                 <span class="n">likelihood</span><span class="o">=</span><span class="n">QuantileRegression</span><span class="p">(</span><span class="n">quantiles</span><span class="o">=</span><span class="p">[</span><span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">,</span> <span class="mf">0.99</span><span class="p">]))</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference external image-reference" href="./images/probabilistic/example_tcn_quantile.png"><img alt="TCN quantile regression" src="../_images/example_tcn_quantile.png" /></a>
+</section>
+<section id="probabilistic-regression-models">
+<h3>Probabilistic regression models<a class="headerlink" href="#probabilistic-regression-models" title="Permalink to this headline">¶</a></h3>
+<p>Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html">LinearRegressionModel</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.gradient_boosted_model.html">LightGBMModel</a> support a <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> argument. When set to <code class="docutils literal notranslate"><span class="pre">&quot;poisson&quot;</span></code> the model will fit a Poisson distribution, and when set to <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the <code class="docutils literal notranslate"><span class="pre">quantiles</span></code> argument).</p>
+<p>Example:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">LinearRegressionModel</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">LinearRegressionModel</span><span class="p">(</span><span class="n">lags</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                              <span class="n">likelihood</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span>
+                              <span class="n">quantiles</span><span class="o">=</span><span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.25</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.75</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">])</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference external image-reference" href="./images/probabilistic/example_linreg_quantile.png"><img alt="quantile linear regression" src="../_images/example_linreg_quantile.png" /></a>
+</section>
+</section>
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="timeseries.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="torch_forecasting_models.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Torch Forecasting Models</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

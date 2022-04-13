@@ -252,6 +252,7 @@
 <a class="reference external image-reference" href="https://pepy.tech/project/darts"><img alt="Downloads" src="https://pepy.tech/badge/darts" /></a>
 <a class="reference external image-reference" href="https://codecov.io/gh/unit8co/darts"><img alt="codecov" src="https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW" /></a>
 <a class="reference external image-reference" href="https://github.com/psf/black"><img alt="Code style: black" src="https://img.shields.io/badge/code%20style-black-000000.svg" /></a>
+<a class="reference external image-reference" href="https://gitter.im/u8darts/darts?utm_source=badge&amp;utm_medium=badge&amp;utm_campaign=pr-badge&amp;utm_content=badge"><img alt="Join the chat at https://gitter.im/u8darts/darts" src="https://badges.gitter.im/u8darts/darts.svg" /></a>
 <p><strong>darts</strong> is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
 The models can all be used in the same way, using <code class="docutils literal notranslate"><span class="pre">fit()</span></code> and <code class="docutils literal notranslate"><span class="pre">predict()</span></code> functions,
@@ -264,6 +265,7 @@ series, and some of the models offer a rich support for probabilistic forecastin
 <h2>Documentation<a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/quickstart/00-quickstart.html">Quickstart</a></p></li>
+<li><p><a class="reference external" href="https://unit8co.github.io/darts/userguide.html">User Guide</a></p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.html">API Reference</a></p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/examples.html">Examples</a></p></li>
 </ul>
@@ -413,7 +415,16 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoARIMA</span></code> (faster AutoARIMA)</p></td>
+<td><p>✅</p></td>
+<td></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+<td><p>✅</p></td>
+<td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">statsforecast</a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
@@ -422,7 +433,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BATS</span></code> and <code class="docutils literal notranslate"><span class="pre">TBATS</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
@@ -431,7 +442,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -440,7 +451,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
@@ -449,7 +460,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -458,7 +469,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> using the Kalman filter and N4SID for system identification</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">KalmanForecaster</span></code> using the Kalman filter and N4SID for system identification</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -466,6 +477,15 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf">N4SID paper</a></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Croston</span></code> method</p></td>
+<td><p>✅</p></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RegressionModel</span></code>; generic wrapper around any sklearn regression model</p></td>
 <td><p>✅</p></td>
@@ -530,7 +550,16 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTS</span></code></p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td></td>
+<td><p><a class="reference external" href="https://arxiv.org/abs/2201.12886">N-HiTS paper</a></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -539,7 +568,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -548,7 +577,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -557,7 +586,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p><a class="reference external" href="https://arxiv.org/pdf/1912.09363.pdf">TFT paper</a>, <a class="reference external" href="https://pytorch-forecasting.readthedocs.io/en/latest/models.html">PyTorch Forecasting</a></p></td>
 </tr>
-<tr class="row-odd"><td><p>Naive Baselines</p></td>
+<tr class="row-even"><td><p>Naive Baselines</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
@@ -571,9 +600,10 @@ on bringing more models and features.</p>
 </section>
 <section id="community-contact">
 <h2>Community &amp; Contact<a class="headerlink" href="#community-contact" title="Permalink to this headline">¶</a></h2>
-<p>Anyone is welcome to join our <a class="reference external" href="https://discord.gg/Um3jBTYFsA">Discord server</a> to
+<p>Anyone is welcome to join our <a href="#id2"><span class="problematic" id="id3">:raw-html-m2r:`&lt;del&gt;\ `Discord server &lt;https://discord.gg/Um3jBTYFsA&gt;`_</span></a>&lt;/del&gt;`
+<a class="reference external" href="https://gitter.im/u8darts/darts">Gitter room</a> to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
-or have a feature request, Github issues are also welcome.</p>
+or have suggestions, GitHub issues are also welcome.</p>
 <p>If what you want to tell us is not suitable for Discord or Github,
 feel free to send us an email at <span class="raw-html-m2r"><a href="mailto:darts@unit8.co">darts@unit8.co</a></span> for
 darts related matters or <span class="raw-html-m2r"><a href="mailto:info@unit8.co">info@unit8.co</a></span> for any other
@@ -581,7 +611,7 @@ inquiries.</p>
 </section>
 <section id="contribute">
 <h2>Contribute<a class="headerlink" href="#contribute" title="Permalink to this headline">¶</a></h2>
-<p>The development is ongoing, and we welcome suggestions, pull requests and issues on Github.
+<p>The development is ongoing, and we welcome suggestions, pull requests and issues on GitHub.
 All contributors will be acknowledged on the
 <a class="reference external" href="https://github.com/unit8co/darts/blob/master/CHANGELOG.md">change log page</a>.</p>
 <p>Before working on a contribution (a new feature or a fix),

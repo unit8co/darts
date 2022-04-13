@@ -296,7 +296,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       Auto-ARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
@@ -307,6 +307,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
        Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -340,6 +345,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
        Facebook Prophet
       </a>
@@ -362,6 +372,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
@@ -1830,7 +1845,7 @@ representing the likelihood of a well defined distribution.</p>
 <td><p>We are re-defining a custom loss (which is not a likelihood loss) compared to Likelihood</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.utils.likelihood_models.QuantileRegression.sample" title="darts.utils.likelihood_models.QuantileRegression.sample"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sample</span></code></a>(model_output)</p></td>
-<td><p>Select a quantile (for each batch example) and return this quantile (over time and components).</p></td>
+<td><p>Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted quantiles closest to the sampled value.</p></td>
 </tr>
 </tbody>
 </table>
@@ -1863,7 +1878,8 @@ target value.</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.utils.likelihood_models.QuantileRegression.sample">
 <span class="sig-name descname"><span class="pre">sample</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model_output</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/likelihood_models.html#QuantileRegression.sample"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.likelihood_models.QuantileRegression.sample" title="Permalink to this definition">¶</a></dt>
-<dd><p>Select a quantile (for each batch example) and return this quantile (over time and components).</p>
+<dd><p>Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted
+quantiles closest to the sampled value.</p>
 <p>model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Return type</dt>

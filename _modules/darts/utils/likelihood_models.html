@@ -1167,33 +1167,62 @@
 
 <div class="viewcode-block" id="QuantileRegression.sample"><a class="viewcode-back" href="../../../generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression.sample">[docs]</a>    <span class="k">def</span> <span class="nf">sample</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model_output</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Select a quantile (for each batch example) and return this quantile (over time and components).</span>
+<span class="sd">        Sample uniformly between [0, 1] (for each batch example) and return the linear interpolation between the fitted</span>
+<span class="sd">        quantiles closest to the sampled value.</span>
 
 <span class="sd">        model_output is of shape (batch_size, n_timesteps, n_components, n_quantiles)</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">batch_size</span><span class="p">,</span> <span class="n">length</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span><span class="p">[:</span><span class="mi">2</span><span class="p">]</span>
-        <span class="n">model_output</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">))</span>
-
         <span class="n">device</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">device</span>
+        <span class="n">num_samples</span><span class="p">,</span> <span class="n">n_timesteps</span><span class="p">,</span> <span class="n">n_components</span><span class="p">,</span> <span class="n">n_quantiles</span> <span class="o">=</span> <span class="n">model_output</span><span class="o">.</span><span class="n">shape</span>
 
-        <span class="n">quantiles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">),</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-        <span class="n">probas</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span>
-            <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,)),</span> <span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># obtain samples</span>
+        <span class="n">probs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span>
+            <span class="n">size</span><span class="o">=</span><span class="p">(</span>
+                <span class="n">num_samples</span><span class="p">,</span>
+                <span class="n">n_timesteps</span><span class="p">,</span>
+                <span class="n">n_components</span><span class="p">,</span>
+                <span class="mi">1</span><span class="p">,</span>
+            <span class="p">)</span>
         <span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># add dummy dim</span>
+        <span class="n">probas</span> <span class="o">=</span> <span class="n">probs</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="o">-</span><span class="mi">2</span><span class="p">)</span>
 
-        <span class="n">quantile_idxs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">probas</span><span class="o">.</span><span class="n">T</span> <span class="o">&gt;</span> <span class="n">quantiles</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># tile and transpose</span>
+        <span class="n">p</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">probas</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">n_quantiles</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
 
-        <span class="c1"># To make the sampling symmetric around the median, we assign the two &quot;probability buckets&quot; before and after</span>
-        <span class="c1"># the median to the median value. If we don&#39;t do that, the highest quantile would be wrongly sampled</span>
-        <span class="c1"># too often as it would capture the &quot;probability buckets&quot; preceding and following it.</span>
-        <span class="c1">#</span>
-        <span class="c1"># Example; the arrows shows how the buckets map to values: [--&gt; 0.1 --&gt; 0.25 --&gt; 0.5 &lt;-- 0.75 &lt;-- 0.9 &lt;--]</span>
-        <span class="n">quantile_idxs</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">where</span><span class="p">(</span>
-            <span class="n">quantile_idxs</span> <span class="o">&lt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span><span class="p">,</span> <span class="n">quantile_idxs</span><span class="p">,</span> <span class="n">quantile_idxs</span> <span class="o">-</span> <span class="mi">1</span>
-        <span class="p">)</span>
+        <span class="c1"># prepare quantiles</span>
+        <span class="n">tquantiles</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
 
-        <span class="n">batch_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">model_output</span><span class="p">[</span><span class="n">batch_idx</span><span class="p">,</span> <span class="p">:,</span> <span class="p">:,</span> <span class="n">quantile_idxs</span><span class="p">]</span></div>
+        <span class="c1"># calculate index of biggest quantile smaller than the sampled value</span>
+        <span class="n">left_idx</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">p</span> <span class="o">&gt;</span> <span class="n">tquantiles</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># obtain index of smallest quantile bigger than sampled value</span>
+        <span class="n">right_idx</span> <span class="o">=</span> <span class="n">left_idx</span> <span class="o">+</span> <span class="mi">1</span>
+
+        <span class="c1"># repeat the model output on the edges</span>
+        <span class="n">repeat_count</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">n_quantiles</span>
+        <span class="n">repeat_count</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">repeat_count</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+        <span class="n">repeat_count</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">repeat_count</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">shifted_output</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">repeat_interleave</span><span class="p">(</span><span class="n">model_output</span><span class="p">,</span> <span class="n">repeat_count</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># obtain model output values corresponding to the quantiles left and right of the sampled value</span>
+        <span class="n">left_value</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">shifted_output</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">left_idx</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">right_value</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">shifted_output</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">right_idx</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># add 0 and 1 to quantiles</span>
+        <span class="n">ext_quantiles</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.0</span><span class="p">]</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">quantiles</span> <span class="o">+</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">]</span>
+        <span class="n">expanded_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">ext_quantiles</span><span class="p">),</span> <span class="n">left_idx</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># calculate closest quantiles to the sampled value</span>
+        <span class="n">left_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">expanded_q</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">left_idx</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">right_q</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">gather</span><span class="p">(</span><span class="n">expanded_q</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="n">right_idx</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># linear interpolation</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="p">(</span><span class="n">probs</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">right_q</span> <span class="o">-</span> <span class="n">left_q</span><span class="p">)</span>
+        <span class="n">inter</span> <span class="o">=</span> <span class="n">left_value</span> <span class="o">+</span> <span class="n">weights</span> <span class="o">*</span> <span class="p">(</span><span class="n">right_value</span> <span class="o">-</span> <span class="n">left_value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">inter</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span></div>
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">num_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>

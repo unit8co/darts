@@ -1,0 +1,4 @@
+
+.. automodule:: darts.models.forecasting.sf_auto_arima
+   :members:
+   :undoc-members:

@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Use Torch Forecasting Models with GPU and TPU &#8212; darts  documentation</title>
+    <title>Using Torch Models with GPUs and TPUs &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -37,6 +37,8 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Covariates" href="covariates.html" />
+    <link rel="prev" title="Torch Forecasting Models" href="torch_forecasting_models.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -85,7 +87,7 @@
  </a>
 </li>
 
-<li class="toctree-l1 nav-item">
+<li class="toctree-l1 current active nav-item">
  <a class="reference internal nav-link" href="../userguide.html">
   User Guide
  </a>
@@ -144,7 +146,43 @@
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="timeseries.html">
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     TimeSeries
+    </span>
+   </code>
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="forecasting_overview.html">
+   Overview of Forecasting Models
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="torch_forecasting_models.html">
+   Torch Forecasting Models
+  </a>
+ </li>
+ <li class="toctree-l1 current active">
+  <a class="current reference internal" href="#">
+   Using Torch Models with GPUs and TPUs
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="covariates.html">
+   Covariates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="faq.html">
+   Frequently Asked Questions
+  </a>
+ </li>
+</ul>
+
   </div>
 </nav>
             </div>
@@ -199,14 +237,14 @@
               
               <div>
                 
-  <section id="use-torch-forecasting-models-with-gpu-and-tpu">
-<h1>Use Torch Forecasting Models with GPU and TPU<a class="headerlink" href="#use-torch-forecasting-models-with-gpu-and-tpu" title="Permalink to this headline">¶</a></h1>
-<p>This document was written for darts version 0.17.0.</p>
-<p>We assume that you already know about Torch Forecasting Models in Darts. If you’re new to the topic we recommend you to read our <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html">guide on Torch Forecasting Models</a> first. Here is also an <a class="reference external" href="https://unit8co.github.io/darts/examples/04-RNN-examples.html">Recurrent Neural Network (RNN) Model example</a>, in which this guide is going to be based on.</p>
+  <section id="using-torch-models-with-gpus-and-tpus">
+<h1>Using Torch Models with GPUs and TPUs<a class="headerlink" href="#using-torch-models-with-gpus-and-tpus" title="Permalink to this headline">¶</a></h1>
+<p>This section was written for Darts 0.17.0 and later.</p>
+<p>We assume that you already know about Torch Forecasting Models in Darts. If you’re new to the topic we recommend you to read the <a class="reference external" href="https://unit8co.github.io/darts/userguide/torch_forecasting_models.html">guide on Torch Forecasting Models</a> first. This guide also contains a section about performance recommendations, which we recommend reading first. Finally, here is also an <a class="reference external" href="https://unit8co.github.io/darts/examples/04-RNN-examples.html">Recurrent Neural Network (RNN) Model example</a>, on which this section is going to be based on.</p>
 <section id="use-cpu">
 <h2>Use CPU<a class="headerlink" href="#use-cpu" title="Permalink to this headline">¶</a></h2>
 <p>By default all models will run on CPU. As shown in the RNN example above, we’ll import the Air Passenger dataset, as well as other necessary modules.</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 <span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
 
 <span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="nn">plt</span>
@@ -218,7 +256,7 @@
 </pre></div>
 </div>
 <p>Now we read and scale the data like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read data:</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># Read data:</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
 <span class="n">series</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
 
@@ -233,7 +271,7 @@
 </pre></div>
 </div>
 <p>Next we will create our RNN like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
     <span class="n">hidden_dim</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span>
     <span class="n">dropout</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
@@ -250,7 +288,7 @@
 </pre></div>
 </div>
 <p>and fit it to the data:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_transformed</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">)</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_transformed</span><span class="p">,</span> <span class="n">val_series</span><span class="o">=</span><span class="n">val_transformed</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>where in the output we can see that no other processing unit is used to train our model:</p>
@@ -278,7 +316,7 @@
 <section id="use-a-gpu">
 <h2>Use a GPU<a class="headerlink" href="#use-a-gpu" title="Permalink to this headline">¶</a></h2>
 <p>GPUs can dramatically improve the performance of your model in terms of processing time. By using an Accelarator in the <a class="reference external" href="https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#accelerator">Pytorch Lightning Trainer</a>, we can enjoy the benefits of a GPU. We only need to instruct our model to use our machine’s GPU through PyTorch Lightning Trainer parameters, which are expressed as the <code class="docutils literal notranslate"><span class="pre">pl_trainer_kwargs</span></code> dictionary, like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
     <span class="o">...</span>
     <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -328,7 +366,7 @@
 </pre></div>
 </div>
 <p>and then instruct our model to use a TPU or more. In our example we are using four TPUs, like this:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">my_model</span> <span class="o">=</span> <span class="n">RNNModel</span><span class="p">(</span>
     <span class="n">model</span><span class="o">=</span><span class="s2">&quot;RNN&quot;</span><span class="p">,</span>
     <span class="o">...</span>
     <span class="n">force_reset</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -368,7 +406,21 @@
               
               
               <!-- Previous / next buttons -->
-<div class='prev-next-area'>
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="torch_forecasting_models.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Torch Forecasting Models</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="covariates.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Covariates</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
 </div>
               
           </main>

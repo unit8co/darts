@@ -184,6 +184,10 @@
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
+<span class="c1"># Check whether we are running pytorch-lightning &gt;= 1.6.0 or not:</span>
+<span class="n">tokens</span> <span class="o">=</span> <span class="n">pl</span><span class="o">.</span><span class="n">__version__</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+<span class="n">pl_160_or_above</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">1</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">tokens</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">&gt;=</span> <span class="mi">6</span>
+
 
 <div class="viewcode-block" id="PLForecastingModule"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.pl_forecasting_module.html#darts.models.forecasting.pl_forecasting_module.PLForecastingModule">[docs]</a><span class="k">class</span> <span class="nc">PLForecastingModule</span><span class="p">(</span><span class="n">pl</span><span class="o">.</span><span class="n">LightningModule</span><span class="p">,</span> <span class="n">ABC</span><span class="p">):</span>
     <span class="nd">@abstractmethod</span>
@@ -491,10 +495,12 @@
 
     <span class="nd">@property</span>
     <span class="k">def</span> <span class="nf">epochs_trained</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="c1"># trained epochs are only 0 when global step and current epoch are 0, else current epoch + 1</span>
         <span class="n">current_epoch</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_step</span><span class="p">:</span>
+
+        <span class="c1"># For PTL &lt; 1.6.0 we have to adjust:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">pl_160_or_above</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">current_epoch</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">global_step</span><span class="p">):</span>
             <span class="n">current_epoch</span> <span class="o">+=</span> <span class="mi">1</span>
+
         <span class="k">return</span> <span class="n">current_epoch</span></div>
 
 

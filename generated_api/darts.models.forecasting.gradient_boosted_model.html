@@ -294,7 +294,7 @@
      </li>
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
-       Auto-ARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
@@ -305,6 +305,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
        Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -338,6 +343,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
        Facebook Prophet
       </a>
@@ -360,6 +370,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
@@ -846,7 +861,7 @@ If <cite>last_points_only</cite> is set to False, a list of the historical forec
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.gradient_boosted_model.LightGBMModel.predict">
-<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/gradient_boosted_model.html#LightGBMModel.predict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.gradient_boosted_model.LightGBMModel.predict" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">predict</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">series</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">past_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">future_covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.gradient_boosted_model.LightGBMModel.predict" title="Permalink to this definition">¶</a></dt>
 <dd><p>Forecasts values for <cite>n</cite> time steps after the end of the series.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
@@ -859,7 +874,7 @@ returns the forecast of the (single) training series.</p></li>
 They must match the covariates used for training in terms of dimension and type.</p></li>
 <li><p><strong>future_covariates</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><em>TimeSeries</em></a><em> or </em><em>list of TimeSeries</em><em>, </em><em>optional</em>) – Optionally, the future-known covariates series needed as inputs for the model.
 They must match the covariates used for training in terms of dimension and type.</p></li>
-<li><p><strong>num_samples</strong> (<em>int</em><em>, </em><em>default: 1</em>) – Specifies the numer of samples to obtain from the model. Should be set to 1 if no <cite>likelihood</cite> is specified.</p></li>
+<li><p><strong>num_samples</strong> (<em>int</em><em>, </em><em>default: 1</em>) – Currently this parameter is ignored for regression models.</p></li>
 <li><p><strong>**kwargs</strong> (<em>dict</em><em>, </em><em>optional</em>) – Additional keyword arguments passed to the <cite>predict</cite> method of the model. Only works with
 univariate target series.</p></li>
 </ul>

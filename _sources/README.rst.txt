@@ -62,6 +62,10 @@ Time Series Made Easy in Python
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
    :target: https://github.com/psf/black
    :alt: Code style: black
+ 
+.. image:: https://badges.gitter.im/u8darts/darts.svg
+   :target: https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+   :alt: Join the chat at https://gitter.im/u8darts/darts
 
 
 **darts** is a Python library for easy manipulation and forecasting of time series.
@@ -78,6 +82,7 @@ Documentation
 
 
 * `Quickstart <https://unit8co.github.io/darts/quickstart/00-quickstart.html>`_
+* `User Guide <https://unit8co.github.io/darts/userguide.html>`_
 * `API Reference <https://unit8co.github.io/darts/generated_api/darts.html>`_
 * `Examples <https://unit8co.github.io/darts/examples.html>`_
 
@@ -230,6 +235,14 @@ on bringing more models and features.
      - 
      - ✅
      - 
+   * - ``StatsForecastAutoARIMA`` (faster AutoARIMA)
+     - ✅
+     - 
+     - ✅
+     - 
+     - 
+     - ✅
+     - `statsforecast <https://github.com/Nixtla/statsforecast>`_
    * - ``ExponentialSmoothing``
      - ✅
      - 
@@ -278,6 +291,14 @@ on bringing more models and features.
      - 
      - ✅
      - `N4SID paper <https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf>`_
+   * - ``Croston`` method
+     - ✅
+     - 
+     - 
+     - 
+     - 
+     - 
+     - 
    * - ``RegressionModel``\ ; generic wrapper around any sklearn regression model
      - ✅
      - ✅
@@ -334,6 +355,14 @@ on bringing more models and features.
      - ✅
      - 
      - `N-BEATS paper <https://arxiv.org/abs/1905.10437>`_
+   * - ``NHiTS``
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - 
+     - `N-HiTS paper <https://arxiv.org/abs/2201.12886>`_
    * - ``TCNModel``
      - ✅
      - ✅
@@ -371,9 +400,10 @@ on bringing more models and features.
 Community & Contact
 -------------------
 
-Anyone is welcome to join our `Discord server <https://discord.gg/Um3jBTYFsA>`_ to
+Anyone is welcome to join our :raw-html-m2r:`<del>\ `Discord server <https://discord.gg/Um3jBTYFsA>`_\ </del>` 
+`Gitter room <https://gitter.im/u8darts/darts>`_ to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
-or have a feature request, Github issues are also welcome.
+or have suggestions, GitHub issues are also welcome.
 
 If what you want to tell us is not suitable for Discord or Github,
 feel free to send us an email at :raw-html-m2r:`<a href="mailto:darts@unit8.co">darts@unit8.co</a>` for
@@ -383,7 +413,7 @@ inquiries.
 Contribute
 ----------
 
-The development is ongoing, and we welcome suggestions, pull requests and issues on Github.
+The development is ongoing, and we welcome suggestions, pull requests and issues on GitHub.
 All contributors will be acknowledged on the
 `change log page <https://github.com/unit8co/darts/blob/master/CHANGELOG.md>`_.
 

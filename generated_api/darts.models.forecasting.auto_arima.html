@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Auto-ARIMA &#8212; darts  documentation</title>
+    <title>AutoARIMA &#8212; darts  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -294,7 +294,7 @@
      </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
-       Auto-ARIMA
+       AutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
@@ -305,6 +305,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
        Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
       </a>
      </li>
      <li class="toctree-l3">
@@ -338,6 +343,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
        Facebook Prophet
       </a>
@@ -360,6 +370,11 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
        Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
       </a>
      </li>
      <li class="toctree-l3">
@@ -536,8 +551,8 @@
               
               <div>
                 
-  <span class="target" id="module-darts.models.forecasting.auto_arima"></span><section id="auto-arima">
-<h1>Auto-ARIMA<a class="headerlink" href="#auto-arima" title="Permalink to this headline">¶</a></h1>
+  <span class="target" id="module-darts.models.forecasting.auto_arima"></span><section id="autoarima">
+<h1>AutoARIMA<a class="headerlink" href="#autoarima" title="Permalink to this headline">¶</a></h1>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.auto_arima.AutoARIMA">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.auto_arima.</span></span><span class="sig-name descname"><span class="pre">AutoARIMA</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/auto_arima.html#AutoARIMA"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.auto_arima.AutoARIMA" title="Permalink to this definition">¶</a></dt>
@@ -548,11 +563,16 @@ which provides functionality similar to R’s <a class="reference external" href
 <p>This model supports the same parameters as the pmdarima AutoARIMA model.
 See <a class="reference external" href="https://alkaline-ml.com/pmdarima/modules/generated/pmdarima.arima.AutoARIMA.html">pmdarima documentation</a>
 for an extensive documentation and a list of supported parameters.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For a faster and probabilistic version of AutoARIMA, checkout
+the <code class="xref py py-class docutils literal notranslate"><span class="pre">StatsForecastAutoARIMA</span></code> model.</p>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>autoarima_args</strong> – Positional arguments for the pmdarima.txt AutoARIMA model</p></li>
-<li><p><strong>autoarima_kwargs</strong> – Keyword arguments for the pmdarima.txt AutoARIMA model</p></li>
+<li><p><strong>autoarima_args</strong> – Positional arguments for the pmdarima.AutoARIMA model</p></li>
+<li><p><strong>autoarima_kwargs</strong> – Keyword arguments for the pmdarima.AutoARIMA model</p></li>
 </ul>
 </dd>
 </dl>

@@ -1,0 +1,939 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>darts.models.forecasting.nhits &#8212; darts  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../generated_api/darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for darts.models.forecasting.nhits</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">N-HiTS</span>
+<span class="sd">------</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="nn">F</span>
+
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLPastCovariatesModule</span>
+<span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">_Block</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">layer_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">pooling_kernel_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">n_freq_downsample</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">batch_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;PyTorch module implementing the basic building block of the N-HiTS architecture.</span>
+
+<span class="sd">        The blocks produce outputs of size (target_length, nr_params); i.e.</span>
+<span class="sd">        &quot;one vector per parameter&quot;. The parameters are predicted only for forecast outputs.</span>
+<span class="sd">        Backcast outputs are in the original &quot;domain&quot;.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers.</span>
+<span class="sd">        layer_width</span>
+<span class="sd">            The number of neurons that make up each fully connected layer.</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used)</span>
+<span class="sd">        pooling_kernel_size</span>
+<span class="sd">            The kernel size for the initial pooling layer</span>
+<span class="sd">        n_freq_downsample</span>
+<span class="sd">            The factor by which to downsample time at the output (before interpolating)</span>
+<span class="sd">        batch_norm</span>
+<span class="sd">            Whether to use batch norm</span>
+<span class="sd">        dropout</span>
+<span class="sd">            Dropout probability</span>
+
+<span class="sd">        Inputs</span>
+<span class="sd">        ------</span>
+<span class="sd">        x of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the input sequence.</span>
+
+<span class="sd">        Outputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        x_hat of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the &#39;backcast&#39; of the block, which represents an approximation of `x`</span>
+<span class="sd">            given the constraints of the functional space determined by `g`.</span>
+<span class="sd">        y_hat of shape `(batch_size, output_chunk_length)`</span>
+<span class="sd">            Tensor containing the forward forecast of the block.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_width</span> <span class="o">=</span> <span class="n">layer_width</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pooling_kernel_size</span> <span class="o">=</span> <span class="n">pooling_kernel_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_freq_downsample</span> <span class="o">=</span> <span class="n">n_freq_downsample</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="o">=</span> <span class="n">batch_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>  <span class="c1"># TODO: make configurable?</span>
+
+        <span class="c1"># number of parameters theta for backcast and forecast</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Note:</span>
+<span class="sd">        -----</span>
+<span class="sd">        We use two &quot;last&quot; layers, one for the backcast yielding n_theta_backcast outputs,</span>
+<span class="sd">        and one for the forecast yielding n_theta_forecast outputs.</span>
+
+<span class="sd">        In the original code, only one last layer yielding &quot;input_chunk_length + n_theta_forecast&quot; [1]</span>
+<span class="sd">        outputs is used. So they don&#39;t use interpolation for the backcast [2], contrary to what is</span>
+<span class="sd">        explained in the paper. Here we use what is explained in the paper.</span>
+
+<span class="sd">        [1] https://github.com/cchallu/n-hits/blob/4e929ed31e1d3ff5169b4aa0d3762a0040abb8db/</span>
+<span class="sd">        src/models/nhits/nhits.py#L263</span>
+<span class="sd">        [2] https://github.com/cchallu/n-hits/blob/4e929ed31e1d3ff5169b4aa0d3762a0040abb8db/</span>
+<span class="sd">        src/models/nhits/nhits.py#L66</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">n_theta_backcast</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">input_chunk_length</span> <span class="o">//</span> <span class="n">n_freq_downsample</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">n_theta_forecast</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">output_chunk_length</span> <span class="o">//</span> <span class="n">n_freq_downsample</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># entry pooling layer</span>
+        <span class="c1"># TODO: we could leave an option to do e.g. avg pooling</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pooling_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">MaxPool1d</span><span class="p">(</span>
+            <span class="n">kernel_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pooling_kernel_size</span><span class="p">,</span>
+            <span class="n">stride</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pooling_kernel_size</span><span class="p">,</span>
+            <span class="n">ceil_mode</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># layer widths</span>
+        <span class="n">in_len</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">ceil</span><span class="p">(</span><span class="n">input_chunk_length</span> <span class="o">/</span> <span class="n">pooling_kernel_size</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">in_len</span><span class="p">]</span> <span class="o">+</span> <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_width</span><span class="p">]</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span>
+
+        <span class="c1"># FC layers</span>
+        <span class="n">layers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">):</span>
+            <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+                    <span class="n">in_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                    <span class="n">out_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">],</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">)</span>
+
+            <span class="c1"># TODO: also add these two for NBEATS?</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">:</span>
+                <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">num_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]))</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">layers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">layers</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="n">layers</span><span class="p">)</span>
+
+        <span class="c1"># Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).</span>
+        <span class="c1"># The coefficients are emitted for each parameter of the likelihood for the forecast.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">n_theta_backcast</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+            <span class="n">in_features</span><span class="o">=</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">nr_params</span> <span class="o">*</span> <span class="n">n_theta_forecast</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># pooling</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pooling_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># fully connected layer stack</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">layers</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># forked linear layers producing waveform generator parameters</span>
+        <span class="n">theta_backcast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">theta_forecast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">forecast_linear_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+        <span class="c1"># set the expansion coefs in last dimension for the forecasts</span>
+        <span class="n">theta_forecast</span> <span class="o">=</span> <span class="n">theta_forecast</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># interpolate function expects (batch, &quot;channels&quot;, time)</span>
+        <span class="n">theta_backcast</span> <span class="o">=</span> <span class="n">theta_backcast</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="c1"># interpolate both backcast and forecast from the thetas</span>
+        <span class="n">x_hat</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span>
+            <span class="n">theta_backcast</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span>
+        <span class="p">)</span>
+        <span class="n">y_hat</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span>
+            <span class="n">theta_forecast</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;linear&quot;</span>
+        <span class="p">)</span>
+
+        <span class="n">x_hat</span> <span class="o">=</span> <span class="n">x_hat</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># remove 2nd dim we added before interpolation</span>
+
+        <span class="c1"># Set the distribution parameters as the last dimension</span>
+        <span class="n">y_hat</span> <span class="o">=</span> <span class="n">y_hat</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x_hat</span><span class="p">,</span> <span class="n">y_hat</span>
+
+
+<span class="k">class</span> <span class="nc">_Stack</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">layer_width</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">pooling_kernel_sizes</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">n_freq_downsample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">batch_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">        num_blocks</span>
+<span class="sd">            The number of blocks making up this stack.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers in each block.</span>
+<span class="sd">        layer_width</span>
+<span class="sd">            The number of neurons that make up each fully connected layer in each block.</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used)</span>
+<span class="sd">        pooling_kernel_sizes</span>
+<span class="sd">            sizes of pooling kernels for every block in this stack</span>
+<span class="sd">        n_freq_downsample</span>
+<span class="sd">            downsampling factors to apply for block in this stack</span>
+<span class="sd">        batch_norm</span>
+<span class="sd">            whether to apply batch norm on first block of this stack</span>
+<span class="sd">        dropout</span>
+<span class="sd">            Dropout probability</span>
+
+<span class="sd">        Inputs</span>
+<span class="sd">        ------</span>
+<span class="sd">        stack_input of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the input sequence.</span>
+
+<span class="sd">        Outputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        stack_residual of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the &#39;backcast&#39; of the block, which represents an approximation of `x`</span>
+<span class="sd">            given the constraints of the functional space determined by `g`.</span>
+<span class="sd">        stack_forecast of shape `(batch_size, output_chunk_length)`</span>
+<span class="sd">            Tensor containing the forward forecast of the stack.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">=</span> <span class="n">output_chunk_length</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
+
+        <span class="c1"># TODO: leave option to share weights across blocks?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">_Block</span><span class="p">(</span>
+                <span class="n">input_chunk_length</span><span class="p">,</span>
+                <span class="n">output_chunk_length</span><span class="p">,</span>
+                <span class="n">num_layers</span><span class="p">,</span>
+                <span class="n">layer_width</span><span class="p">,</span>
+                <span class="n">nr_params</span><span class="p">,</span>
+                <span class="n">pooling_kernel_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">n_freq_downsample</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">batch_norm</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">batch_norm</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span>
+                <span class="p">),</span>  <span class="c1"># batch norm only on first block of first stack</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">)</span>
+        <span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">blocks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="c1"># One forecast vector per parameter in the distribution</span>
+        <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">block</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span><span class="p">:</span>
+            <span class="c1"># pass input through block</span>
+            <span class="n">x_hat</span><span class="p">,</span> <span class="n">y_hat</span> <span class="o">=</span> <span class="n">block</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+            <span class="c1"># add block forecast to stack forecast</span>
+            <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">stack_forecast</span> <span class="o">+</span> <span class="n">y_hat</span>
+
+            <span class="c1"># subtract backcast from input to produce residual</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">x_hat</span>
+
+        <span class="n">stack_residual</span> <span class="o">=</span> <span class="n">x</span>
+
+        <span class="k">return</span> <span class="n">stack_residual</span><span class="p">,</span> <span class="n">stack_forecast</span>
+
+
+<span class="k">class</span> <span class="nc">_NHiTSModule</span><span class="p">(</span><span class="n">PLPastCovariatesModule</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">nr_params</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_stacks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_blocks</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">layer_widths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">pooling_kernel_sizes</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">n_freq_downsample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span>
+        <span class="n">batch_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;PyTorch module implementing the N-HiTS architecture.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_dim</span>
+<span class="sd">            The number of input components (target + optional covariate)</span>
+<span class="sd">        output_dim</span>
+<span class="sd">            Number of output components in the target</span>
+<span class="sd">        nr_params</span>
+<span class="sd">            The number of parameters of the likelihood (or 1 if no likelihood is used).</span>
+<span class="sd">        num_stacks</span>
+<span class="sd">            The number of stacks that make up the whole model.</span>
+<span class="sd">        num_blocks</span>
+<span class="sd">            The number of blocks making up every stack.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers in each block of every stack.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        layer_widths</span>
+<span class="sd">            Determines the number of neurons that make up each fully connected layer in each block of every stack.</span>
+<span class="sd">            If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds</span>
+<span class="sd">            to the layer width of the corresponding stack. If an integer is passed, every stack will have blocks</span>
+<span class="sd">            with FC layers of the same width.</span>
+<span class="sd">        pooling_kernel_sizes</span>
+<span class="sd">            size of pooling kernels for every stack and every block</span>
+<span class="sd">        n_freq_downsample</span>
+<span class="sd">            downsampling factors to apply for every stack and every block</span>
+<span class="sd">        batch_norm</span>
+<span class="sd">            Whether to apply batch norm on first block of the first stack</span>
+<span class="sd">        dropout</span>
+<span class="sd">            Dropout probability</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
+
+<span class="sd">        Inputs</span>
+<span class="sd">        ------</span>
+<span class="sd">        x of shape `(batch_size, input_chunk_length)`</span>
+<span class="sd">            Tensor containing the input sequence.</span>
+
+<span class="sd">        Outputs</span>
+<span class="sd">        -------</span>
+<span class="sd">        y of shape `(batch_size, output_chunk_length, target_size/output_dim, nr_params)`</span>
+<span class="sd">            Tensor containing the output of the NBEATS module.</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+        <span class="c1"># required for all modules -&gt; saves hparams for checkpoints</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_hyperparameters</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span> <span class="o">=</span> <span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">*</span> <span class="n">input_dim</span>
+
+        <span class="c1"># TODO: shouldn&#39;t this be output_dim?</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length_multi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="n">input_dim</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">_Stack</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length_multi</span><span class="p">,</span>
+                <span class="n">num_blocks</span><span class="p">,</span>
+                <span class="n">num_layers</span><span class="p">,</span>
+                <span class="n">layer_widths</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">nr_params</span><span class="p">,</span>
+                <span class="n">pooling_kernel_sizes</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">n_freq_downsample</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">batch_norm</span><span class="o">=</span><span class="p">(</span>
+                    <span class="n">batch_norm</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span>
+                <span class="p">),</span>  <span class="c1"># batch norm only on first block of first stack</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_stacks</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">)</span>
+
+        <span class="c1"># setting the last backcast &quot;branch&quot; to be not trainable (without next block/stack, it doesn&#39;t need to be</span>
+        <span class="c1"># backpropagated). Removing this lines would cause logtensorboard to crash, since no gradient is stored</span>
+        <span class="c1"># on this params (the last block backcast is not part of the final output of the net).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+
+        <span class="c1"># if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts</span>
+        <span class="c1"># we reshape into x1, y1, a1, x2, y2, a2... etc</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="c1"># squeeze last dimension (because model is univariate)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="c1"># One vector of length target_length per parameter in the distribution</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length_multi</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="n">dtype</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">stack</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">:</span>
+            <span class="c1"># compute stack output</span>
+            <span class="n">stack_residual</span><span class="p">,</span> <span class="n">stack_forecast</span> <span class="o">=</span> <span class="n">stack</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+            <span class="c1"># add stack forecast to final output</span>
+            <span class="n">y</span> <span class="o">=</span> <span class="n">y</span> <span class="o">+</span> <span class="n">stack_forecast</span>
+
+            <span class="c1"># set current stack residual as input for next stack</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">stack_residual</span>
+
+        <span class="c1"># In multivariate case, we get a result [x1_param1, x1_param2], [y1_param1, y1_param2], [x2..], [y2..], ...</span>
+        <span class="c1"># We want to reshape to original format. We also get rid of the covariates and keep only the target dimensions.</span>
+        <span class="c1"># The covariates are by construction added as extra time series on the right side. So we need to get rid of this</span>
+        <span class="c1"># right output (keeping only :self.output_dim).</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">view</span><span class="p">(</span>
+            <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_dim</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span>
+        <span class="p">)[:,</span> <span class="p">:,</span> <span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span> <span class="p">:]</span>
+
+        <span class="k">return</span> <span class="n">y</span>
+
+
+<div class="viewcode-block" id="NHiTS"><a class="viewcode-back" href="../../../../generated_api/darts.models.forecasting.nhits.html#darts.models.forecasting.nhits.NHiTS">[docs]</a><span class="k">class</span> <span class="nc">NHiTS</span><span class="p">(</span><span class="n">PastCovariatesTorchModel</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">num_stacks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">num_blocks</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">num_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">layer_widths</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">512</span><span class="p">,</span>
+        <span class="n">pooling_kernel_sizes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_freq_downsample</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;An implementation of the N-HiTS model, as presented in [1]_.</span>
+
+<span class="sd">        N-HiTS is similar to N-BEATS (implemented in :class:`NBEATSModel`),</span>
+<span class="sd">        but attempts to provide better performance at lower computational cost by introducing</span>
+<span class="sd">        multi-rate sampling of the inputs and mulit-scale interpolation of the outputs.</span>
+
+<span class="sd">        Similar to :class:`NBEATSModel`, in addition to the univariate version presented in the paper,</span>
+<span class="sd">        this implementation also supports multivariate series (and covariates) by flattening the model inputs</span>
+<span class="sd">        to a 1-D series and reshaping the outputs to a tensor of appropriate dimensions. Furthermore, it also</span>
+<span class="sd">        supports producing probabilistic forecasts (by specifying a `likelihood` parameter).</span>
+
+<span class="sd">        This model supports past covariates (known for `input_chunk_length` points before prediction time).</span>
+
+<span class="sd">        The multi-rate sampling is done via MaxPooling, which is controlled by ``pooling_kernel_sizes``.</span>
+<span class="sd">        This parameter can be a tuple of tuples, of size (num_stacks x num_blocks), specifying the kernel</span>
+<span class="sd">        size for each block in each stack. If left to ``None``, some default values will be used based on</span>
+<span class="sd">        ``input_chunk_length``.</span>
+<span class="sd">        Similarly, the multi-scale interpolation is controled by ``n_freq_downsample``, which gives the</span>
+<span class="sd">        downsampling factors to be used in each block of each stack. If left to ``None``, some default</span>
+<span class="sd">        values will be used based on the ``output_chunk_length``.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        input_chunk_length</span>
+<span class="sd">            The length of the input sequence fed to the model.</span>
+<span class="sd">        output_chunk_length</span>
+<span class="sd">            The length of the forecast of the model.</span>
+<span class="sd">        num_stacks</span>
+<span class="sd">            The number of stacks that make up the whole model.</span>
+<span class="sd">        num_blocks</span>
+<span class="sd">            The number of blocks making up every stack.</span>
+<span class="sd">        num_layers</span>
+<span class="sd">            The number of fully connected layers preceding the final forking layers in each block of every stack.</span>
+<span class="sd">            Only used if `generic_architecture` is set to `True`.</span>
+<span class="sd">        layer_widths</span>
+<span class="sd">            Determines the number of neurons that make up each fully connected layer in each block of every stack.</span>
+<span class="sd">            If a list is passed, it must have a length equal to `num_stacks` and every entry in that list corresponds</span>
+<span class="sd">            to the layer width of the corresponding stack. If an integer is passed, every stack will have blocks</span>
+<span class="sd">            with FC layers of the same width.</span>
+<span class="sd">        pooling_kernel_sizes</span>
+<span class="sd">            If set, this parameter must be a tuple of tuples, of size (num_stacks x num_blocks), specifying the kernel</span>
+<span class="sd">            size for each block in each stack used for the input pooling layer.</span>
+<span class="sd">            If left to ``None``, some default values will be used based on ``input_chunk_length``.</span>
+<span class="sd">        n_freq_downsample</span>
+<span class="sd">            If set, this parameter must be a tuple of tuples, of size (num_stacks x num_blocks), specifying the</span>
+<span class="sd">            downsampling factors before interpolation, for each block in each stack.</span>
+<span class="sd">            If left to ``None``, some default values will be used based on ``output_chunk_length``.</span>
+<span class="sd">        dropout</span>
+<span class="sd">            The dropout probability to be used in the fully connected layers.</span>
+<span class="sd">        **kwargs</span>
+<span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
+<span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
+
+<span class="sd">        loss_fn</span>
+<span class="sd">            PyTorch loss function used for training.</span>
+<span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
+<span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
+<span class="sd">        likelihood</span>
+<span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
+<span class="sd">            probabilistic forecasts. Default: ``None``.</span>
+<span class="sd">        optimizer_cls</span>
+<span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
+<span class="sd">        optimizer_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
+<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``</span>
+<span class="sd">            will be used. Default: ``None``.</span>
+<span class="sd">        lr_scheduler_cls</span>
+<span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds</span>
+<span class="sd">            to using a constant learning rate. Default: ``None``.</span>
+<span class="sd">        lr_scheduler_kwargs</span>
+<span class="sd">            Optionally, some keyword arguments for the PyTorch learning rate scheduler. Default: ``None``.</span>
+<span class="sd">        batch_size</span>
+<span class="sd">            Number of time series (input and output sequences) used in each training pass. Default: ``32``.</span>
+<span class="sd">        n_epochs</span>
+<span class="sd">            Number of epochs over which to train the model. Default: ``100``.</span>
+<span class="sd">        model_name</span>
+<span class="sd">            Name of the model. Used for creating checkpoints and saving tensorboard data. If not specified,</span>
+<span class="sd">            defaults to the following string ``&quot;YYYY-mm-dd_HH:MM:SS_torch_model_run_PID&quot;``, where the initial part</span>
+<span class="sd">            of the name is formatted with the local date and time, while PID is the processed ID (preventing models</span>
+<span class="sd">            spawned at the same time by different processes to share the same model_name). E.g.,</span>
+<span class="sd">            ``&quot;2021-06-14_09:53:32_torch_model_run_44607&quot;``.</span>
+<span class="sd">        work_dir</span>
+<span class="sd">            Path of the working directory, where to save checkpoints and Tensorboard summaries.</span>
+<span class="sd">            Default: current working directory.</span>
+<span class="sd">        log_tensorboard</span>
+<span class="sd">            If set, use Tensorboard to log the different parameters. The logs will be located in:</span>
+<span class="sd">            ``&quot;{work_dir}/darts_logs/{model_name}/logs/&quot;``. Default: ``False``.</span>
+<span class="sd">        nr_epochs_val_period</span>
+<span class="sd">            Number of epochs to wait before evaluating the validation loss (if a validation</span>
+<span class="sd">            ``TimeSeries`` is passed to the :func:`fit()` method). Default: ``1``.</span>
+<span class="sd">        torch_device_str</span>
+<span class="sd">            Optionally, a string indicating the torch device to use. By default, ``torch_device_str`` is ``None``</span>
+<span class="sd">            which will run on CPU. Set it to ``&quot;cuda&quot;`` to use all available GPUs or ``&quot;cuda:i&quot;`` to only use</span>
+<span class="sd">            GPU ``i`` (``i`` must be an integer). For example &quot;cuda:0&quot; will use the first GPU only.</span>
+
+<span class="sd">            .. deprecated:: v0.17.0</span>
+<span class="sd">                ``torch_device_str`` has been deprecated in v0.17.0 and will be removed in a future version.</span>
+<span class="sd">                Instead, specify this with keys ``&quot;accelerator&quot;, &quot;gpus&quot;, &quot;auto_select_gpus&quot;`` in your</span>
+<span class="sd">                ``pl_trainer_kwargs`` dict. Some examples for setting the devices inside the ``pl_trainer_kwargs``</span>
+<span class="sd">                dict:</span>
+
+<span class="sd">                - ``{&quot;accelerator&quot;: &quot;cpu&quot;}`` for CPU,</span>
+<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: [i]}`` to use only GPU ``i`` (``i`` must be an integer),</span>
+<span class="sd">                - ``{&quot;accelerator&quot;: &quot;gpu&quot;, &quot;gpus&quot;: -1, &quot;auto_select_gpus&quot;: True}`` to use all available GPUS.</span>
+
+<span class="sd">                For more info, see here:</span>
+<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#trainer-flags , and</span>
+<span class="sd">                https://pytorch-lightning.readthedocs.io/en/stable/advanced/multi_gpu.html#select-gpu-devices</span>
+<span class="sd">        force_reset</span>
+<span class="sd">            If set to ``True``, any previously-existing model with the same name will be reset (all checkpoints will</span>
+<span class="sd">            be discarded). Default: ``False``.</span>
+<span class="sd">        save_checkpoints</span>
+<span class="sd">            Whether or not to automatically save the untrained model and checkpoints from training.</span>
+<span class="sd">            To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where</span>
+<span class="sd">            :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,</span>
+<span class="sd">            :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using</span>
+<span class="sd">            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.</span>
+<span class="sd">        add_encoders</span>
+<span class="sd">            A large number of past and future covariates can be automatically generated with `add_encoders`.</span>
+<span class="sd">            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that</span>
+<span class="sd">            will be used as index encoders. Additionally, a transformer such as Darts&#39; :class:`Scaler` can be added to</span>
+<span class="sd">            transform the generated covariates. This happens all under one hood and only needs to be specified at</span>
+<span class="sd">            model creation.</span>
+<span class="sd">            Read :meth:`SequentialEncoder &lt;darts.utils.data.encoders.SequentialEncoder&gt;` to find out more about</span>
+<span class="sd">            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                add_encoders={</span>
+<span class="sd">                    &#39;cyclic&#39;: {&#39;future&#39;: [&#39;month&#39;]},</span>
+<span class="sd">                    &#39;datetime_attribute&#39;: {&#39;future&#39;: [&#39;hour&#39;, &#39;dayofweek&#39;]},</span>
+<span class="sd">                    &#39;position&#39;: {&#39;past&#39;: [&#39;absolute&#39;], &#39;future&#39;: [&#39;relative&#39;]},</span>
+<span class="sd">                    &#39;custom&#39;: {&#39;past&#39;: [lambda idx: (idx.year - 1950) / 50]},</span>
+<span class="sd">                    &#39;transformer&#39;: Scaler()</span>
+<span class="sd">                }</span>
+<span class="sd">            ..</span>
+<span class="sd">        random_state</span>
+<span class="sd">            Control the randomness of the weights initialization. Check this</span>
+<span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random_state&gt;`_ for more details.</span>
+<span class="sd">            Default: ``None``.</span>
+<span class="sd">        pl_trainer_kwargs</span>
+<span class="sd">            By default :class:`TorchForecastingModel` creates a PyTorch Lightning Trainer with several useful presets</span>
+<span class="sd">            that performs the training, validation and prediction processes. These presets include automatic</span>
+<span class="sd">            checkpointing, tensorboard logging, setting the torch device and more.</span>
+<span class="sd">            With ``pl_trainer_kwargs`` you can add additional kwargs to instantiate the PyTorch Lightning trainer</span>
+<span class="sd">            object. Check the `PL Trainer documentation</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html&gt;`_ for more information about the</span>
+<span class="sd">            supported kwargs. Default: ``None``.</span>
+<span class="sd">            With parameter ``&quot;callbacks&quot;`` you can add custom or PyTorch-Lightning built-in callbacks to Darts&#39;</span>
+<span class="sd">            :class:`TorchForecastingModel`. Below is an example for adding EarlyStopping to the training process.</span>
+<span class="sd">            The model will stop training early if the validation loss `val_loss` does not improve beyond</span>
+<span class="sd">            specifications. For more information on callbacks, visit:</span>
+<span class="sd">            `PyTorch Lightning Callbacks</span>
+<span class="sd">            &lt;https://pytorch-lightning.readthedocs.io/en/stable/extensions/callbacks.html&gt;`_</span>
+
+<span class="sd">            .. highlight:: python</span>
+<span class="sd">            .. code-block:: python</span>
+
+<span class="sd">                from pytorch_lightning.callbacks.early_stopping import EarlyStopping</span>
+
+<span class="sd">                # stop training when validation loss does not decrease more than 0.05 (`min_delta`) over</span>
+<span class="sd">                # a period of 5 epochs (`patience`)</span>
+<span class="sd">                my_stopper = EarlyStopping(</span>
+<span class="sd">                    monitor=&quot;val_loss&quot;,</span>
+<span class="sd">                    patience=5,</span>
+<span class="sd">                    min_delta=0.05,</span>
+<span class="sd">                    mode=&#39;min&#39;,</span>
+<span class="sd">                )</span>
+
+<span class="sd">                pl_trainer_kwargs={&quot;callbacks&quot;: [my_stopper]}</span>
+<span class="sd">            ..</span>
+
+<span class="sd">            Note that you can also use a custom PyTorch Lightning Trainer for training and prediction with optional</span>
+<span class="sd">            parameter ``trainer`` in :func:`fit()` and :func:`predict()`.</span>
+<span class="sd">        show_warnings</span>
+<span class="sd">            whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of</span>
+<span class="sd">            your forecasting use case. Default: ``False``.</span>
+
+<span class="sd">        References</span>
+<span class="sd">        ----------</span>
+<span class="sd">        .. [1] C. Challu et al. &quot;N-HiTS: Neural Hierarchical Interpolation for Time Series Forecasting&quot;,</span>
+<span class="sd">               https://arxiv.org/abs/2201.12886</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_extract_torch_model_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">))</span>
+
+        <span class="c1"># extract pytorch lightning module kwargs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_extract_pl_module_params</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="p">)</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_stacks</span><span class="p">,</span>
+            <span class="s2">&quot;Please pass an integer or a list of integers with length `num_stacks`&quot;</span>
+            <span class="s2">&quot;as value for the `layer_widths` argument.&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span> <span class="o">=</span> <span class="n">num_stacks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_blocks</span> <span class="o">=</span> <span class="n">num_blocks</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span> <span class="o">=</span> <span class="n">num_layers</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="n">layer_widths</span>
+
+        <span class="c1"># Currently batch norm is not an option as it seems to perform badly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+
+        <span class="c1"># Check pooling and downsampling numbers or compute good defaults</span>
+        <span class="n">sizes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_prepare_pooling_downsampling</span><span class="p">(</span>
+            <span class="n">pooling_kernel_sizes</span><span class="p">,</span>
+            <span class="n">n_freq_downsample</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
+            <span class="n">num_blocks</span><span class="p">,</span>
+            <span class="n">num_stacks</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_freq_downsample</span> <span class="o">=</span> <span class="n">sizes</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">layer_widths</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span> <span class="o">=</span> <span class="p">[</span><span class="n">layer_widths</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_stacks</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_prepare_pooling_downsampling</span><span class="p">(</span>
+        <span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="n">n_freq_downsample</span><span class="p">,</span> <span class="n">in_len</span><span class="p">,</span> <span class="n">out_len</span><span class="p">,</span> <span class="n">num_blocks</span><span class="p">,</span> <span class="n">num_stacks</span>
+    <span class="p">):</span>
+        <span class="k">def</span> <span class="nf">_check_sizes</span><span class="p">(</span><span class="n">tup</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">len</span><span class="p">(</span><span class="n">tup</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_stacks</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;the length of </span><span class="si">{</span><span class="n">name</span><span class="si">}</span><span class="s2"> must match the number of stacks.&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="nb">all</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">==</span> <span class="n">num_blocks</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">tup</span><span class="p">]),</span>
+                <span class="s2">&quot;the length of each tuple in </span><span class="si">{}</span><span class="s2"> must be `num_blocks=</span><span class="si">{}</span><span class="s2">`&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">name</span><span class="p">,</span> <span class="n">num_blocks</span>
+                <span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">pooling_kernel_sizes</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># make stacks handle different frequencies</span>
+            <span class="c1"># go from in_len/2 to 1 in num_stacks steps:</span>
+            <span class="n">max_v</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">in_len</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">pooling_kernel_sizes</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">),)</span> <span class="o">*</span> <span class="n">num_blocks</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">max_v</span> <span class="o">//</span> <span class="n">np</span><span class="o">.</span><span class="n">geomspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_v</span><span class="p">,</span> <span class="n">num_stacks</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;(N-HiTS): Using automatic kernel pooling size: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">pooling_kernel_sizes</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># check provided pooling format</span>
+            <span class="n">_check_sizes</span><span class="p">(</span><span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="s2">&quot;`pooling_kernel_sizes`&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">n_freq_downsample</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># go from out_len/2 to 1 in num_stacks steps:</span>
+            <span class="n">max_v</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">out_len</span> <span class="o">//</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">n_freq_downsample</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">v</span><span class="p">),)</span> <span class="o">*</span> <span class="n">num_blocks</span>
+                <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">max_v</span> <span class="o">//</span> <span class="n">np</span><span class="o">.</span><span class="n">geomspace</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_v</span><span class="p">,</span> <span class="n">num_stacks</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;(N-HiTS):  Using automatic downsampling coefficients: </span><span class="si">{}</span><span class="s2">.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                    <span class="n">n_freq_downsample</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># check provided downsample format</span>
+            <span class="n">_check_sizes</span><span class="p">(</span><span class="n">n_freq_downsample</span><span class="p">,</span> <span class="s2">&quot;`n_freq_downsample`&quot;</span><span class="p">)</span>
+
+            <span class="c1"># check that last value is 1</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="n">n_freq_downsample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="s2">&quot;the downsampling coefficient of the last block of the last stack must be 1 &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;(i.e., `n_freq_downsample[-1][-1]`).&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pooling_kernel_sizes</span><span class="p">,</span> <span class="n">n_freq_downsample</span>
+
+    <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
+        <span class="c1"># samples are made of (past_target, past_covariates, future_target)</span>
+        <span class="n">input_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span>
+            <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="k">if</span> <span class="n">train_sample</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="p">)</span>
+        <span class="n">output_dim</span> <span class="o">=</span> <span class="n">train_sample</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">nr_params</span> <span class="o">=</span> <span class="mi">1</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="o">.</span><span class="n">num_parameters</span>
+
+        <span class="k">return</span> <span class="n">_NHiTSModule</span><span class="p">(</span>
+            <span class="n">input_dim</span><span class="o">=</span><span class="n">input_dim</span><span class="p">,</span>
+            <span class="n">output_dim</span><span class="o">=</span><span class="n">output_dim</span><span class="p">,</span>
+            <span class="n">nr_params</span><span class="o">=</span><span class="n">nr_params</span><span class="p">,</span>
+            <span class="n">num_stacks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span><span class="p">,</span>
+            <span class="n">num_blocks</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_blocks</span><span class="p">,</span>
+            <span class="n">num_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_layers</span><span class="p">,</span>
+            <span class="n">layer_widths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span><span class="p">,</span>
+            <span class="n">pooling_kernel_sizes</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">pooling_kernel_sizes</span><span class="p">,</span>
+            <span class="n">n_freq_downsample</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">n_freq_downsample</span><span class="p">,</span>
+            <span class="n">batch_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
+        <span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

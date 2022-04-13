@@ -37,7 +37,7 @@
     <link rel="shortcut icon" href="_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="In-depth look at Torch Forecasting Models" href="userguide/torch_forecasting_models.html" />
+    <link rel="next" title="TimeSeries" href="userguide/timeseries.html" />
     <link rel="prev" title="Quickstart" href="quickstart/00-quickstart.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -148,20 +148,37 @@
   <div class="bd-toc-item active">
     <ul class="nav bd-sidenav">
  <li class="toctree-l1">
-  <a class="reference internal" href="userguide/torch_forecasting_models.html">
-   In-depth look at Torch Forecasting Models
+  <a class="reference internal" href="userguide/timeseries.html">
+   <code class="docutils literal notranslate">
+    <span class="pre">
+     TimeSeries
+    </span>
+   </code>
   </a>
  </li>
  <li class="toctree-l1">
-  <a class="reference internal" href="userguide/performance.html">
-   Neural Networks Performance Recommendations
+  <a class="reference internal" href="userguide/forecasting_overview.html">
+   Overview of Forecasting Models
   </a>
  </li>
-</ul>
-<ul class="nav bd-sidenav">
+ <li class="toctree-l1">
+  <a class="reference internal" href="userguide/torch_forecasting_models.html">
+   Torch Forecasting Models
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="userguide/gpu_and_tpu_usage.html">
+   Using Torch Models with GPUs and TPUs
+  </a>
+ </li>
  <li class="toctree-l1">
   <a class="reference internal" href="userguide/covariates.html">
-   Darts Covariates
+   Covariates
+  </a>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="userguide/faq.html">
+   Frequently Asked Questions
   </a>
  </li>
 </ul>
@@ -178,24 +195,9 @@
               
               <div class="toc-item">
                 
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
-</div>
 
 <nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#neural-networks">
-   Neural Networks
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#covariates">
-   Covariates
-  </a>
- </li>
-</ul>
-
+    
 </nav>
               </div>
               
@@ -219,45 +221,54 @@
 <h1>User Guide<a class="headerlink" href="#user-guide" title="Permalink to this headline">¶</a></h1>
 <p>You will find here some more detailed informations about Darts.</p>
 <p><strong>Note:</strong> The user guide is not yet complete and still under construction.</p>
-<section id="neural-networks">
-<h2>Neural Networks<a class="headerlink" href="#neural-networks" title="Permalink to this headline">¶</a></h2>
-<p>Neural Networks (PyTorch-based models)</p>
 <div class="toctree-wrapper compound">
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="userguide/torch_forecasting_models.html">In-depth look at Torch Forecasting Models</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#content-of-this-document">Content of this document</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#introduction">1.1. Introduction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#top-level-look-at-training-and-predicting-with-chunks">1.2. Top level look at training and predicting with chunks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#torch-forecasting-model-covariates-support">1.3. Torch Forecasting Model Covariates Support</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#required-target-time-spans-for-training-validation-and-prediction">1.4. Required target time spans for training, validation and prediction</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms">2. In-depth look at how input data is used when training and predicting with TFMs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#training">2.1. Training</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#forecast-prediction">2.2. Forecast/Prediction</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/timeseries.html"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="userguide/timeseries.html#multivariate-time-series-vs-multiple-time-series">Multivariate time series -vs- multiple time series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/timeseries.html#probabilistic-and-deterministic-series">Probabilistic and deterministic series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/timeseries.html#creating-timeseries">Creating <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/timeseries.html#implementation">Implementation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/timeseries.html#exporting-data-from-a-timeseries">Exporting data from a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/timeseries.html#more-information-and-documentation">More information and documentation</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="userguide/performance.html">Neural Networks Performance Recommendations</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#build-your-timeseries-using-32-bits-data">Build your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using 32-bits data</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#use-a-gpu">Use a GPU</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#play-with-the-batch-size">Play with the batch size</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#play-with-num-loader-workers">Play with <code class="docutils literal notranslate"><span class="pre">num_loader_workers</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#small-models-first">Small models first</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#data-in-memory-and-i-o-bottlenecks">Data in Memory and I/O bottlenecks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#do-not-use-all-possible-sub-series-for-training">Do not use <em>all</em> possible sub-series for training</a></li>
-<li class="toctree-l2"><a class="reference internal" href="userguide/performance.html#example-benchmark">Example Benchmark</a></li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/forecasting_overview.html">Overview of Forecasting Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="userguide/forecasting_overview.html#generalities">Generalities</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/forecasting_overview.html#support-for-multivariate-series">Support for multivariate series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/forecasting_overview.html#handling-multiple-series">Handling multiple series</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/forecasting_overview.html#support-for-covariates">Support for Covariates</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/forecasting_overview.html#probabilistic-forecasts">Probabilistic forecasts</a></li>
 </ul>
 </li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/torch_forecasting_models.html">Torch Forecasting Models</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#content-of-this-section">Content of this section</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#introduction">Introduction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#top-level-look-at-training-and-predicting-with-chunks">Top level look at training and predicting with chunks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#torch-forecasting-model-covariates-support">Torch Forecasting Model Covariates Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#required-target-time-spans-for-training-validation-and-prediction">Required target time spans for training, validation and prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#in-depth-look-at-how-input-data-is-used-when-training-and-predicting-with-tfms">In-depth look at how input data is used when training and predicting with TFMs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#forecast-prediction">Forecast/Prediction</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/torch_forecasting_models.html#performance-recommendations">Performance Recommendations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/gpu_and_tpu_usage.html">Using Torch Models with GPUs and TPUs</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="userguide/gpu_and_tpu_usage.html#use-cpu">Use CPU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/gpu_and_tpu_usage.html#use-a-gpu">Use a GPU</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/gpu_and_tpu_usage.html#use-a-tpu">Use a TPU</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/covariates.html">Covariates</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="userguide/covariates.html#summary-tl-dr">Summary - TL;DR</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/covariates.html#introduction-what-are-covariates-in-darts">Introduction - What are covariates (in Darts)?</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/covariates.html#forecasting-model-covariate-support">Forecasting Model Covariate Support</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/covariates.html#quick-guide-on-how-to-use-covariates-with-darts-forecasting-models">Quick guide on how to use covariates with Darts’ forecasting models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/covariates.html#covariate-time-span-requirements-for-local-and-global-forecasting-models">Covariate time span requirements for Local and Global Forecasting Models</a></li>
+<li class="toctree-l2"><a class="reference internal" href="userguide/covariates.html#examples">Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="userguide/faq.html">Frequently Asked Questions</a></li>
 </ul>
 </div>
-</section>
-<section id="covariates">
-<h2>Covariates<a class="headerlink" href="#covariates" title="Permalink to this headline">¶</a></h2>
-<p>Covariates in Darts:</p>
-<div class="toctree-wrapper compound">
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="userguide/covariates.html">Darts Covariates</a></li>
-</ul>
-</div>
-</section>
 </section>
 
 
@@ -273,10 +284,10 @@
             <p class="prev-next-title">Quickstart</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="userguide/torch_forecasting_models.html" title="next page">
+    <a class='right-next' id="next-link" href="userguide/timeseries.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">In-depth look at Torch Forecasting Models</p>
+        <p class="prev-next-title"><code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code></p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
