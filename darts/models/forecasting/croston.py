@@ -96,7 +96,7 @@ class Croston(ForecastingModel):
             except errors.TypingError:
                 raise_if(
                     True,
-                    '"sba" version is not supported with your version of statsforecast.',
+                    '"sba" version is not supported with this version of statsforecast.',
                 )
 
         else:
