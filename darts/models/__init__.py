@@ -7,13 +7,18 @@ from darts.logging import get_logger
 
 logger = get_logger(__name__)
 
-from darts.models.forecasting.arima import ARIMA
-
 # Forecasting
+from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.baselines import NaiveDrift, NaiveMean, NaiveSeasonal
+from darts.models.forecasting.croston import Croston
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
+from darts.models.forecasting.linear_regression_model import LinearRegressionModel
+from darts.models.forecasting.random_forest import RandomForest
+from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
+from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
 
@@ -38,6 +43,7 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
     from darts.models.forecasting.nbeats import NBEATSModel
+    from darts.models.forecasting.nhits import NHiTS
     from darts.models.forecasting.rnn_model import RNNModel
     from darts.models.forecasting.tcn_model import TCNModel
     from darts.models.forecasting.tft_model import TFTModel
@@ -46,22 +52,6 @@ try:
 except ModuleNotFoundError:
     logger.warning(
         "Support for Torch based models not available. "
-        'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
-        'or "u8darts-torch" or "u8darts-all" (with conda).'
-    )
-
-# Regression & RegressionEnsemble:
-try:
-    from darts.models.forecasting.linear_regression_model import LinearRegressionModel
-    from darts.models.forecasting.random_forest import RandomForest
-    from darts.models.forecasting.regression_ensemble_model import (
-        RegressionEnsembleModel,
-    )
-    from darts.models.forecasting.regression_model import RegressionModel
-except ModuleNotFoundError:
-    logger.warning(
-        "Support for Regression based models (incl. RegressionEnsembleModel) not available, "
-        "as they depend on PyTorch Datasets. "
         'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
         'or "u8darts-torch" or "u8darts-all" (with conda).'
     )

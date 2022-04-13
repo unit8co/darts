@@ -12,7 +12,7 @@
 [![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![Downloads](https://pepy.tech/badge/darts)](https://pepy.tech/project/darts)
 [![codecov](https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW)](https://codecov.io/gh/unit8co/darts)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Join the chat at https://gitter.im/u8darts/darts](https://badges.gitter.im/u8darts/darts.svg)](https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **darts** is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
@@ -146,9 +146,10 @@ Naive Baselines | ✅ | | | | | |
 
 
 ## Community & Contact
-Anyone is welcome to join our [Discord server](https://discord.gg/Um3jBTYFsA) to
+Anyone is welcome to join our ~~[Discord server](https://discord.gg/Um3jBTYFsA)~~ 
+[Gitter room](https://gitter.im/u8darts/darts) to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
-or have a feature request, Github issues are also welcome.
+or have suggestions, GitHub issues are also welcome.
 
 If what you want to tell us is not suitable for Discord or Github,
 feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for
@@ -156,7 +157,7 @@ darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for an
 inquiries.
 
 ## Contribute
-The development is ongoing, and we welcome suggestions, pull requests and issues on Github.
+The development is ongoing, and we welcome suggestions, pull requests and issues on GitHub.
 All contributors will be acknowledged on the
 [change log page](https://github.com/unit8co/darts/blob/master/CHANGELOG.md).
 
