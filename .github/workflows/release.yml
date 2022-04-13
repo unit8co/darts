@@ -40,7 +40,7 @@ jobs:
           pip install -q -r requirements/release.txt
 
       - name: "6. Determine next version"
-        uses: LeoTafti/github-tag-action@master
+        uses: hrzn/github-tag-action@master
         id: bump_dry
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
