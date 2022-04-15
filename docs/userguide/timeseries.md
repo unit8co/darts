@@ -27,7 +27,7 @@ In addition, some models can work on *multiple time series*, meaning that they c
 
 **Figure 1:** A single multivariate series. In Darts this is represented by a single `TimeSeries` object.
 
-![figure2](./images/timeseries/multivariate.png)
+![figure2](./images/timeseries/multiple-ts.png)
 
 **Figure 2:** Multiple time series. In Darts this is represented by multiple `TimeSeries` objects. The series may or may not share the same time axis, and may or may not be multivariate.
 
