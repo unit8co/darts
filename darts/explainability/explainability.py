@@ -4,15 +4,14 @@ Explainability Base Class
 
 TODO
 """
-from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.utils.statistics import stationarity_tests
-from darts.utils import retain_period_common_to_all
-
-from typing import Optional, Union, Sequence
 from abc import ABC, abstractmethod
+from typing import Optional, Sequence, Union
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_log, raise_if
+from darts.logging import get_logger, raise_if, raise_log
+from darts.models.forecasting.forecasting_model import ForecastingModel
+from darts.utils import retain_period_common_to_all
+from darts.utils.statistics import stationarity_tests
 
 logger = get_logger(__name__)
 

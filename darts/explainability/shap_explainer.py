@@ -3,26 +3,22 @@ Shap Explainability wrapper Class
 ------------------------------
 """
 
+from typing import Optional, Sequence, Union
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import shap
+from sklearn.multioutput import MultiOutputRegressor
+
+from darts import TimeSeries
 from darts.explainability.explainability import ForecastingModelExplainer
+from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import (
     ForecastingModel,
     GlobalForecastingModel,
 )
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.utils import retain_period_common_to_all
-from darts import TimeSeries
-from darts.logging import get_logger, raise_log, raise_if
-
-import matplotlib.pyplot as plt
-
-from typing import Optional, Union, Sequence
-
-import pandas as pd
-
-import shap
-
-from sklearn.multioutput import MultiOutputRegressor
-
 
 logger = get_logger(__name__)
 
