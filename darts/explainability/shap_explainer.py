@@ -9,7 +9,6 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.regression_model import RegressionModel
-from darts.models.forecasting.gradient_boosted_model import LightGBMModel
 from darts.utils import retain_period_common_to_all
 from darts import TimeSeries
 from darts.logging import get_logger, raise_log, raise_if
@@ -23,8 +22,6 @@ import pandas as pd
 import shap
 
 from sklearn.multioutput import MultiOutputRegressor
-
-import torch
 
 
 logger = get_logger(__name__)
