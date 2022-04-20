@@ -53,8 +53,8 @@ class ForecastingModelExplainer(ABC):
         if background_series is None:
 
             raise_if(
-                (not background_past_covariates is None)
-                or (not background_future_covariates is None),
+                (background_past_covariates is not None)
+                or (background_future_covariates is not None),
                 "There is background past or future covariates but no background series. Please provide one.",
             )
 
@@ -103,7 +103,8 @@ class ForecastingModelExplainer(ABC):
                     == 0,
                 ):
                     logger.warning(
-                        "Some series and their covariates don't share the same time index. We will take the time index common to all."
+                        "Some series and their covariates don't share the same time index. We will take "
+                        "the time index common to all."
                     )
 
                 (
