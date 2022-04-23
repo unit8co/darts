@@ -3,6 +3,8 @@ darts
 -----
 """
 
+import os
+
 import matplotlib as mpl
 from matplotlib import cycler
 
@@ -37,4 +39,5 @@ u8plots_mplstyle = {
 }
 
 
-mpl.rcParams.update(u8plots_mplstyle)
+if os.getenv("DARTS_CONFIGURE_MATPLOTLIB", "1") != "0":
+    mpl.rcParams.update(u8plots_mplstyle)
