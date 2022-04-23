@@ -31,7 +31,7 @@ from darts.utils.likelihood_models import Likelihood, QuantileRegression
 logger = get_logger(__name__)
 
 MixedCovariatesTrainTensorType = Tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
 
@@ -415,7 +415,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # Embedding and variable selection
         if static_covariates is not None:
-            # TODO: impelement static covariates
+            # TODO: implement static covariates
             # # static embeddings will be constant over entire batch
             # static_embedding = {name: input_vectors[name][:, 0] for name in self.static_variables}
             # static_embedding, static_covariate_var = self.static_covariates_vsn(static_embedding)
@@ -775,6 +775,7 @@ class TFTModel(MixedCovariatesTorchModel):
             historic_future_covariate,
             future_covariate,
             future_target,
+            static_covariates,
         ) = train_sample
 
         # add a covariate placeholder so that relative index will be included
@@ -800,7 +801,7 @@ class TFTModel(MixedCovariatesTorchModel):
                 axis=1,
             )
 
-        static_covariates = None  # placeholder for future
+        # static_covariates = None  # placeholder for future
 
         self.output_dim = (
             (future_target.shape[1], 1)

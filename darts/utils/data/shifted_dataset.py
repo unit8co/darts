@@ -518,7 +518,9 @@ class GenericShiftedDataset(TrainingDataset):
     def __len__(self):
         return self.ideal_nr_samples
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray, Optional[np.ndarray]]:
         # determine the index of the time series.
         ts_idx = idx // self.max_samples_per_ts
         ts_target = self.target_series[ts_idx]
@@ -598,4 +600,9 @@ class GenericShiftedDataset(TrainingDataset):
                 f"target series.",
             )
 
-        return past_target, covariate, future_target
+        static_covariate = (
+            ts_target.static_covariates.values
+            if ts_target.static_covariates is not None
+            else None
+        )
+        return past_target, covariate, future_target, static_covariate

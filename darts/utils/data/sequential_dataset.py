@@ -233,10 +233,22 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
-        past_target, past_covariate, future_target = self.ds_past[idx]
-        _, future_covariate, _ = self.ds_future[idx]
-        return past_target, past_covariate, future_covariate, future_target
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+        Optional[np.ndarray],
+    ]:
+        past_target, past_covariate, future_target, static_covariate = self.ds_past[idx]
+        _, future_covariate, _, static_covariate = self.ds_future[idx]
+        return (
+            past_target,
+            past_covariate,
+            future_covariate,
+            future_target,
+            static_covariate,
+        )
 
 
 class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
@@ -322,16 +334,24 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         np.ndarray,
+        Optional[np.ndarray],
     ]:
 
-        past_target, past_covariate, future_target = self.ds_past[idx]
-        _, historic_future_covariate, future_covariate, _ = self.ds_dual[idx]
+        past_target, past_covariate, future_target, static_covariate = self.ds_past[idx]
+        (
+            _,
+            historic_future_covariate,
+            future_covariate,
+            _,
+            static_covariate,
+        ) = self.ds_dual[idx]
         return (
             past_target,
             past_covariate,
             historic_future_covariate,
             future_covariate,
             future_target,
+            static_covariate,
         )
 
 
