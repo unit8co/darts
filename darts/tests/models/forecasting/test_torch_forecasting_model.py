@@ -324,7 +324,7 @@ if TORCH_AVAILABLE:
             series = TimeSeries.from_series(pd_series)
 
             lr_schedulers = [
-                (torch.optim.lr_scheduler.LinearLR, {}),
+                (torch.optim.lr_scheduler.StepLR, {"step_size": 10}),
                 (
                     torch.optim.lr_scheduler.ReduceLROnPlateau,
                     {"threshold": 0.001, "monitor": "train_loss"},
