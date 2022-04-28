@@ -223,31 +223,28 @@ class TransformerModel(PastCovariatesTorchModel):
 
         Parameters
         ----------
-        model
-            a custom PyTorch module with the same specifications as
-            `darts.models.transformer_model._TransformerModule` (default=None).
         input_chunk_length
-            Number of time steps to be input to the forecasting module (default=1).
+            Number of time steps to be input to the forecasting module.
         output_chunk_length
-            Number of time steps to be output by the forecasting module (default=1).
+            Number of time steps to be output by the forecasting module.
         d_model
-            the number of expected features in the transformer encoder/decoder inputs (default=512).
+            The number of expected features in the transformer encoder/decoder inputs (default=64).
         nhead
-            the number of heads in the multiheadattention model (default=8).
+            The number of heads in the multi-head attention mechanism (default=4).
         num_encoder_layers
-            the number of encoder layers in the encoder (default=6).
+            The number of encoder layers in the encoder (default=3).
         num_decoder_layers
-            the number of decoder layers in the decoder (default=6).
+            The number of decoder layers in the decoder (default=3).
         dim_feedforward
-            the dimension of the feedforward network model (default=2048).
+            The dimension of the feedforward network model (default=512).
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         activation
-            the activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
+            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
         custom_encoder
-            a custom user-provided encoder module for the transformer (default=None)
+            A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
-            a custom user-provided decoder module for the transformer (default=None)
+            A custom user-provided decoder module for the transformer (default=None).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
