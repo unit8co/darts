@@ -75,6 +75,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         """
         super().__init__()
 
+        # save hyper parameters for saving/loading
+        self.save_hyperparameters()
+
         raise_if(
             input_chunk_length is None or output_chunk_length is None,
             "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`",

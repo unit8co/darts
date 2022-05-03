@@ -5,6 +5,11 @@ Darts is still in an early development phase and we cannot always guarantee back
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
 [Full Changelog](https://github.com/unit8co/darts/compare/0.19.0...master)
+### For users of the library:
+
+**Improved**
+- Option to avoid global matplotlib configuration changes.
+  [#924](https://github.com/unit8co/darts/pull/924) by [Mike Richman](https://github.com/zgana).
 
 ## [0.19.0](https://github.com/unit8co/darts/tree/0.19.0) (2022-04-13)
 ### For users of the library:
