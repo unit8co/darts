@@ -358,9 +358,6 @@ class _NBEATSModule(PLPastCovariatesModule):
         """
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.nr_params = nr_params

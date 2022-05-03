@@ -124,9 +124,6 @@ class _TransformerModule(PLPastCovariatesModule):
 
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         self.input_size = input_size
         self.target_size = output_size
         self.nr_params = nr_params
