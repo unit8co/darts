@@ -73,9 +73,6 @@ class _RNNModule(PLDualCovariatesModule):
         # RNNModule doesn't really need input and output_chunk_length for PLModule
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         # Defining parameters
         self.target_size = target_size
         self.nr_params = nr_params
