@@ -89,6 +89,61 @@ jobs:
         with:
           fail_ci_if_error: true
           files: ./coverage.xml
+  tests_windows:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ windows-latest ]
+        python-version: [ 3.9 ]
+        flavour: [ 'all' ]
+
+    steps:
+      - name: "1. Clone repository"
+        uses: actions/checkout@v2
+
+      - name: "2. Set up Python ${{ matrix.python-version }}"
+        uses: actions/setup-python@v1
+        with:
+          python-version: ${{ matrix.python-version }}
+
+        # downloading gradle multiple times in parallel can yield to connection errors
+      - name: "3. Cache gradle distribution"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/wrapper/dists
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties') }}
+
+      - name: "3.1 Cache gradle packages"
+        uses: actions/cache@v2
+        with:
+          path: ~/.gradle/caches
+          key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build_win.gradle') }}
+
+      - name: "4. Setup pip"
+        run: |
+          ./gradlew installPipLatest
+
+      - name: "5. Install libomp (for LightGBM)"
+        run: |
+          ./.github/scripts/libomp-${{ runner.os }}.sh
+
+      - name: "6. Attach cache for pip"
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.cache/pip
+          key: tests-${{ runner.os }}-${{ matrix.python-version }}-pip-${{ hashFiles('requirements-latest.txt') }}
+
+      - name: "7. Tests"
+        run: |
+          ./gradlew "test_${{matrix.flavour}}"
+
+      - name: "8. Codecov upload"
+        if: ${{ matrix.flavour == 'all' }}
+        uses: codecov/codecov-action@v2
+        with:
+          fail_ci_if_error: true
+          files: ./coverage.xml
 
   docs:
     runs-on: ubuntu-latest

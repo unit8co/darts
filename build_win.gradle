@@ -64,7 +64,16 @@ task installPipLatest {
             commandLine "pip", "install", "pip-tools"
         }
         exec {
+            commandLine "pip", "install", "Cython" // for windows-latest
+        }
+        exec {
             commandLine "pip-compile", "-o", "requirements-latest.txt"
+        }
+        exec {
+            commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
+        }
+        exec {
+            commandLine "conda", "install", "libpython", "m2w64-toolchain", "-c", "msys2"
         }
         exec {
             commandLine "pip", "install", "-r", "requirements-latest.txt"
