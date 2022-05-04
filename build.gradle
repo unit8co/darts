@@ -54,16 +54,17 @@ dockerRun {
 
 // setup requirements
 task setupPip(type: Exec) {
-    commandLine "python", "-m", "pip", "install", "--upgrade"
-//     commandLine "python", "-m", "pip", "install", "--upgrade", "pip<22" // <22 is workaround for https://github.com/jazzband/pip-tools/issues/1558
+    commandLine "python", "-m", "pip", "install", "--upgrade", "pip<22" // <22 is workaround for https://github.com/jazzband/pip-tools/issues/1558
 }
 
 task installPipLatest {
     dependsOn setupPip
     doLast {
         exec {
-            commandLine "pip", "install", "pip-tools", "pip<22"
-//             commandLine "pip", "install", "pip-tools"
+            commandLine "pip", "install", "pip-tools"
+        }
+        exec {
+            commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
         }
         exec {
             commandLine "pip-compile", "-o", "requirements-latest.txt"
