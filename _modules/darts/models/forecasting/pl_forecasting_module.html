@@ -242,6 +242,9 @@
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
 
+        <span class="c1"># save hyper parameters for saving/loading</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">save_hyperparameters</span><span class="p">()</span>
+
         <span class="n">raise_if</span><span class="p">(</span>
             <span class="n">input_chunk_length</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">output_chunk_length</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">,</span>
             <span class="s2">&quot;Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`&quot;</span><span class="p">,</span>

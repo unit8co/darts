@@ -569,19 +569,17 @@ very suitable to be trained with GPUs.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> – a custom PyTorch module with the same specifications as
-<cite>darts.models.transformer_model._TransformerModule</cite> (default=None).</p></li>
-<li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of time steps to be input to the forecasting module (default=1).</p></li>
-<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of time steps to be output by the forecasting module (default=1).</p></li>
-<li><p><strong>d_model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the number of expected features in the transformer encoder/decoder inputs (default=512).</p></li>
-<li><p><strong>nhead</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the number of heads in the multiheadattention model (default=8).</p></li>
-<li><p><strong>num_encoder_layers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the number of encoder layers in the encoder (default=6).</p></li>
-<li><p><strong>num_decoder_layers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the number of decoder layers in the decoder (default=6).</p></li>
-<li><p><strong>dim_feedforward</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – the dimension of the feedforward network model (default=2048).</p></li>
+<li><p><strong>input_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of time steps to be input to the forecasting module.</p></li>
+<li><p><strong>output_chunk_length</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – Number of time steps to be output by the forecasting module.</p></li>
+<li><p><strong>d_model</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of expected features in the transformer encoder/decoder inputs (default=64).</p></li>
+<li><p><strong>nhead</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of heads in the multi-head attention mechanism (default=4).</p></li>
+<li><p><strong>num_encoder_layers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of encoder layers in the encoder (default=3).</p></li>
+<li><p><strong>num_decoder_layers</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of decoder layers in the decoder (default=3).</p></li>
+<li><p><strong>dim_feedforward</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The dimension of the feedforward network model (default=512).</p></li>
 <li><p><strong>dropout</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">float</span></code>) – Fraction of neurons affected by Dropout (default=0.1).</p></li>
-<li><p><strong>activation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – the activation function of encoder/decoder intermediate layer, ‘relu’ or ‘gelu’ (default=’relu’).</p></li>
-<li><p><strong>custom_encoder</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]) – a custom user-provided encoder module for the transformer (default=None)</p></li>
-<li><p><strong>custom_decoder</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]) – a custom user-provided decoder module for the transformer (default=None)</p></li>
+<li><p><strong>activation</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The activation function of encoder/decoder intermediate layer, ‘relu’ or ‘gelu’ (default=’relu’).</p></li>
+<li><p><strong>custom_encoder</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]) – A custom user-provided encoder module for the transformer (default=None).</p></li>
+<li><p><strong>custom_decoder</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Module</span></code>]) – A custom user-provided decoder module for the transformer (default=None).</p></li>
 <li><p><strong>**kwargs</strong> – Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
 Darts’ <code class="xref py py-class docutils literal notranslate"><span class="pre">TorchForecastingModel</span></code>.</p></li>
 <li><p><strong>loss_fn</strong> – PyTorch loss function used for training.

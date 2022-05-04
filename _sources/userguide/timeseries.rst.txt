@@ -38,8 +38,8 @@ In addition, some models can work on *multiple time series*\ , meaning that they
 **Figure 1:** A single multivariate series. In Darts this is represented by a single ``TimeSeries`` object.
 
 
-.. image:: ./images/timeseries/multivariate.png
-   :target: ./images/timeseries/multivariate.png
+.. image:: ./images/timeseries/multiple-ts.png
+   :target: ./images/timeseries/multiple-ts.png
    :alt: figure2
 
 
