@@ -73,6 +73,9 @@ task installPipLatest {
             commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
         }
         exec {
+            commandLine 'set', 'PATH=%PATH%;C:\Anaconda3;C:\Anaconda3\Scripts'
+        }
+        exec {
             commandLine "conda", "install", "libpython", "m2w64-toolchain", "-c", "msys2"
         }
         exec {
