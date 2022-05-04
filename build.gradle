@@ -54,7 +54,8 @@ dockerRun {
 
 // setup requirements
 task setupPip(type: Exec) {
-    commandLine "python", "-m", "pip", "install", "--upgrade", "pip<22" // <22 is workaround for https://github.com/jazzband/pip-tools/issues/1558
+    commandLine "python", "-m", "pip", "install", "--upgrade"
+//     commandLine "python", "-m", "pip", "install", "--upgrade", "pip<22" // <22 is workaround for https://github.com/jazzband/pip-tools/issues/1558
 }
 
 task installPipLatest {
