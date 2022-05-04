@@ -64,10 +64,10 @@ task installPipLatest {
             commandLine "pip", "install", "pip-tools"
         }
         exec {
-            commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
+            commandLine "pip-compile", "-o", "requirements-latest.txt"
         }
         exec {
-            commandLine "pip-compile", "-o", "requirements-latest.txt"
+            commandLine "python", "-m", "pip", "install", "--upgrade", "pip"
         }
         exec {
             commandLine "pip", "install", "-r", "requirements-latest.txt"
