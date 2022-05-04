@@ -62,7 +62,8 @@ task installPipLatest {
     dependsOn setupPip
     doLast {
         exec {
-            commandLine "pip", "install", "pip-tools"
+            commandLine "pip", "install", "pip-tools", "pip<22"
+//             commandLine "pip", "install", "pip-tools"
         }
         exec {
             commandLine "pip-compile", "-o", "requirements-latest.txt"
