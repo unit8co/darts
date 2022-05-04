@@ -38,7 +38,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
+        os: [macos-latest, ubuntu-latest]
         python-version: [3.9]
         flavour: ['all']
 
@@ -121,7 +121,7 @@ jobs:
 
       - name: "4. Setup pip"
         run: |
-          ./gradlew installPipLatest
+          ./gradlew.bat --build-file=build_win.gradle installPipLatest
 
       - name: "5. Install libomp (for LightGBM)"
         run: |
