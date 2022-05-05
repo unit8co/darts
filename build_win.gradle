@@ -58,7 +58,6 @@ task setupPip(type: Exec) {
 }
 
 task installPipLatest {
-    environment "PATH", "$System.env.PATH" + "C:\Anaconda3;C:\Anaconda3\Scripts"
     dependsOn setupPip
     doLast {
         exec {
