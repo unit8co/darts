@@ -119,6 +119,10 @@ jobs:
           path: ~/.gradle/caches
           key: tests-${{ runner.os }}-gradle-${{ hashFiles('gradle/wrapper/gradle-wrapper.properties', 'build_win.gradle') }}
 
+      - name: "Add clang path to $PATH env"
+        run: |
+          echo "C:\msys64\mingw32\bin" >> $GITHUB_PATH
+
       - name: "4. Setup pip"
         run: |
           ./gradlew.bat --build-file=build_win.gradle installPipLatest
