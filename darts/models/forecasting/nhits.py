@@ -29,7 +29,8 @@ class _Block(nn.Module):
         n_freq_downsample: int,
         batch_norm: bool,
         dropout: float,
-        activation: str,
+        activation: nn.Module,
+        MaxPool1d: bool,
     ):
         """PyTorch module implementing the basic building block of the N-HiTS architecture.
 
@@ -58,7 +59,9 @@ class _Block(nn.Module):
         dropout
             Dropout probability
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
+            The activation function of encoder/decoder intermediate layer.
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
         Inputs
         ------
         x of shape `(batch_size, input_chunk_length)`
@@ -84,11 +87,8 @@ class _Block(nn.Module):
         self.n_freq_downsample = n_freq_downsample
         self.batch_norm = batch_norm
         self.dropout = dropout
-
-        if activation == "relu":
-            self.activation = nn.ReLU()
-        else:
-            self.activation = nn.GELU()
+        self.MaxPool1d = MaxPool1d
+        self.activation = activation()
 
         # number of parameters theta for backcast and forecast
         """
@@ -109,9 +109,9 @@ class _Block(nn.Module):
         n_theta_backcast = max(input_chunk_length // n_freq_downsample, 1)
         n_theta_forecast = max(output_chunk_length // n_freq_downsample, 1)
 
-        # entry pooling layer
-        # TODO: we could leave an option to do e.g. avg pooling
-        self.pooling_layer = nn.MaxPool1d(
+        # entry pooling layerg
+        pool1d = nn.MaxPool1d if self.MaxPool1d else nn.AvgPool1d
+        self.pooling_layer = pool1d(
             kernel_size=self.pooling_kernel_size,
             stride=self.pooling_kernel_size,
             ceil_mode=True,
@@ -199,7 +199,8 @@ class _Stack(nn.Module):
         n_freq_downsample: Tuple[int],
         batch_norm: bool,
         dropout: float,
-        activation: str,
+        activation: nn.Module,
+        MaxPool1d: bool,
     ):
         """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
 
@@ -226,7 +227,9 @@ class _Stack(nn.Module):
         dropout
             Dropout probability
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
+            The activation function of encoder/decoder intermediate layer.
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
 
         Inputs
         ------
@@ -263,6 +266,7 @@ class _Stack(nn.Module):
                 ),  # batch norm only on first block of first stack
                 dropout=dropout,
                 activation=activation,
+                MaxPool1d=MaxPool1d,
             )
             for i in range(num_blocks)
         ]
@@ -307,7 +311,8 @@ class _NHiTSModule(PLPastCovariatesModule):
         n_freq_downsample: Tuple[Tuple[int]],
         batch_norm: bool,
         dropout: float,
-        activation: str,
+        activation: nn.Module,
+        MaxPool1d: bool,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -341,7 +346,9 @@ class _NHiTSModule(PLPastCovariatesModule):
         dropout
             Dropout probability
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
+            The activation function of encoder/decoder intermediate layer.
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -381,6 +388,7 @@ class _NHiTSModule(PLPastCovariatesModule):
                 ),  # batch norm only on first block of first stack
                 dropout=dropout,
                 activation=activation,
+                MaxPool1d=MaxPool1d,
             )
             for i in range(num_stacks)
         ]
@@ -442,7 +450,8 @@ class NHiTS(PastCovariatesTorchModel):
         pooling_kernel_sizes: Optional[Tuple[Tuple[int]]] = None,
         n_freq_downsample: Optional[Tuple[Tuple[int]]] = None,
         dropout: float = 0.1,
-        activation: str = "relu",
+        activation: nn.Module = nn.ReLU,
+        MaxPool1d: bool = True,
         **kwargs,
     ):
         """An implementation of the N-HiTS model, as presented in [1]_.
@@ -495,7 +504,11 @@ class NHiTS(PastCovariatesTorchModel):
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
+            The activation function of encoder/decoder intermediate layer (default=``nn.ReLU``). Full list of supported
+            activation functions can be found at:
+            https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -648,6 +661,7 @@ class NHiTS(PastCovariatesTorchModel):
         self.num_layers = num_layers
         self.layer_widths = layer_widths
         self.activation = activation
+        self.MaxPool1d = MaxPool1d
 
         # Currently batch norm is not an option as it seems to perform badly
         self.batch_norm = False
@@ -747,5 +761,6 @@ class NHiTS(PastCovariatesTorchModel):
             batch_norm=self.batch_norm,
             dropout=self.dropout,
             activation=self.activation,
+            MaxPool1d=self.MaxPool1d,
             **self.pl_module_params,
         )

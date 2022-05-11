@@ -81,6 +81,7 @@ class _Block(nn.Module):
         g_type: GTypes,
         batch_norm: bool,
         dropout: float,
+        activation: nn.Module,
     ):
         """PyTorch module implementing the basic building block of the N-BEATS architecture.
 
@@ -110,6 +111,8 @@ class _Block(nn.Module):
             Whether to use batch norm
         dropout
             Dropout probability
+        activation
+            The activation function of encoder/decoder intermediate layer.
 
         Inputs
         ------
@@ -132,9 +135,9 @@ class _Block(nn.Module):
         self.target_length = target_length
         self.nr_params = nr_params
         self.g_type = g_type
-        self.relu = nn.ReLU()
         self.dropout = dropout
         self.batch_norm = batch_norm
+        self.activation = activation()
 
         # fully connected stack before fork
         self.linear_layer_stack_list = [nn.Linear(input_chunk_length, layer_width)]
@@ -188,7 +191,7 @@ class _Block(nn.Module):
 
         # fully connected layer stack
         for layer in self.linear_layer_stack_list:
-            x = self.relu(layer(x))
+            x = self.activation(layer(x))
 
         # forked linear layers producing waveform generator parameters
         theta_backcast = self.backcast_linear_layer(x)
@@ -220,6 +223,7 @@ class _Stack(nn.Module):
         g_type: GTypes,
         batch_norm: bool,
         dropout: float,
+        activation: nn.Module,
     ):
         """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
 
@@ -245,6 +249,8 @@ class _Stack(nn.Module):
             whether to apply batch norm on first block of this stack
         dropout
             Dropout probability
+        activation
+            The activation function of encoder/decoder intermediate layer.
 
         Inputs
         ------
@@ -265,6 +271,9 @@ class _Stack(nn.Module):
         self.input_chunk_length = input_chunk_length
         self.target_length = target_length
         self.nr_params = nr_params
+        self.dropout = dropout
+        self.batch_norm = batch_norm
+        self.activation = activation
 
         if g_type == _GType.GENERIC:
             self.blocks_list = [
@@ -277,9 +286,10 @@ class _Stack(nn.Module):
                     target_length,
                     g_type,
                     batch_norm=(
-                        batch_norm and i == 0
+                        self.batch_norm and i == 0
                     ),  # batch norm only on first block of first stack
-                    dropout=dropout,
+                    dropout=self.dropout,
+                    activation=self.activation,
                 )
                 for i in range(num_blocks)
             ]
@@ -293,8 +303,9 @@ class _Stack(nn.Module):
                 input_chunk_length,
                 target_length,
                 g_type,
-                batch_norm=batch_norm,
-                dropout=dropout,
+                batch_norm=self.batch_norm,
+                dropout=self.dropout,
+                activation=self.activation,
             )
             self.blocks_list = [interpretable_block] * num_blocks
 
@@ -340,6 +351,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         trend_polynomial_degree: int,
         batch_norm: bool,
         dropout: float,
+        activation: nn.Module,
         **kwargs
     ):
         """PyTorch module implementing the N-BEATS architecture.
@@ -376,6 +388,8 @@ class _NBEATSModule(PLPastCovariatesModule):
             Whether to apply batch norm on first block of the first stack
         dropout
             Dropout probability
+        activation
+            The activation function of encoder/decoder intermediate layer.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -397,6 +411,9 @@ class _NBEATSModule(PLPastCovariatesModule):
         self.nr_params = nr_params
         self.input_chunk_length_multi = self.input_chunk_length * input_dim
         self.target_length = self.output_chunk_length * input_dim
+        self.dropout = dropout
+        self.batch_norm = batch_norm
+        self.activation = activation
 
         if generic_architecture:
             self.stacks_list = [
@@ -410,9 +427,10 @@ class _NBEATSModule(PLPastCovariatesModule):
                     self.target_length,
                     _GType.GENERIC,
                     batch_norm=(
-                        batch_norm and i == 0
+                        self.batch_norm and i == 0
                     ),  # batch norm only on first block of first stack
-                    dropout=dropout,
+                    dropout=self.dropout,
+                    activation=self.activation,
                 )
                 for i in range(num_stacks)
             ]
@@ -427,8 +445,9 @@ class _NBEATSModule(PLPastCovariatesModule):
                 self.input_chunk_length_multi,
                 self.target_length,
                 _GType.TREND,
-                batch_norm=batch_norm,
-                dropout=dropout,
+                batch_norm=self.batch_norm,
+                dropout=self.dropout,
+                activation=self.activation,
             )
             seasonality_stack = _Stack(
                 num_blocks,
@@ -439,8 +458,9 @@ class _NBEATSModule(PLPastCovariatesModule):
                 self.input_chunk_length_multi,
                 self.target_length,
                 _GType.SEASONALITY,
-                batch_norm=batch_norm,
-                dropout=dropout,
+                batch_norm=self.batch_norm,
+                dropout=self.dropout,
+                activation=self.activation,
             )
             self.stacks_list = [trend_stack, seasonality_stack]
 
@@ -503,6 +523,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
         dropout: float = 0.0,
+        activation: nn.Module = nn.ReLU,
         **kwargs
     ):
         """Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
@@ -546,7 +567,11 @@ class NBEATSModel(PastCovariatesTorchModel):
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
         dropout
-            The dropout probability to be used in the fully connected layers.
+            The dropout probability to be used in the fully connected layers (default=0.0).
+        activation
+            The activation function of encoder/decoder intermediate layer (default=``nn.ReLU``). Full list of supported
+            activation functions can be found at:
+            https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -705,6 +730,7 @@ class NBEATSModel(PastCovariatesTorchModel):
         self.batch_norm = False
 
         self.dropout = dropout
+        self.activation = activation
 
         if not generic_architecture:
             self.num_stacks = 2
@@ -733,5 +759,6 @@ class NBEATSModel(PastCovariatesTorchModel):
             trend_polynomial_degree=self.trend_polynomial_degree,
             batch_norm=self.batch_norm,
             dropout=self.dropout,
+            activation=self.activation,
             **self.pl_module_params,
         )
