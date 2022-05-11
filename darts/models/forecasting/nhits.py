@@ -29,6 +29,7 @@ class _Block(nn.Module):
         n_freq_downsample: int,
         batch_norm: bool,
         dropout: float,
+        activation: str,
     ):
         """PyTorch module implementing the basic building block of the N-HiTS architecture.
 
@@ -56,7 +57,8 @@ class _Block(nn.Module):
             Whether to use batch norm
         dropout
             Dropout probability
-
+        activation
+            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
         Inputs
         ------
         x of shape `(batch_size, input_chunk_length)`
@@ -83,7 +85,10 @@ class _Block(nn.Module):
         self.batch_norm = batch_norm
         self.dropout = dropout
 
-        self.activation = nn.ReLU()  # TODO: make configurable?
+        if activation == "relu":
+            self.activation = nn.ReLU()
+        else:
+            self.activation = nn.GELU()
 
         # number of parameters theta for backcast and forecast
         """
@@ -127,7 +132,6 @@ class _Block(nn.Module):
             )
             layers.append(self.activation)
 
-            # TODO: also add these two for NBEATS?
             if self.batch_norm:
                 layers.append(nn.BatchNorm1d(num_features=self.layer_widths[i + 1]))
 
@@ -195,6 +199,7 @@ class _Stack(nn.Module):
         n_freq_downsample: Tuple[int],
         batch_norm: bool,
         dropout: float,
+        activation: str,
     ):
         """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
 
@@ -220,6 +225,8 @@ class _Stack(nn.Module):
             whether to apply batch norm on first block of this stack
         dropout
             Dropout probability
+        activation
+            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
 
         Inputs
         ------
@@ -255,6 +262,7 @@ class _Stack(nn.Module):
                     batch_norm and i == 0
                 ),  # batch norm only on first block of first stack
                 dropout=dropout,
+                activation=activation,
             )
             for i in range(num_blocks)
         ]
@@ -299,6 +307,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         n_freq_downsample: Tuple[Tuple[int]],
         batch_norm: bool,
         dropout: float,
+        activation: str,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -331,6 +340,8 @@ class _NHiTSModule(PLPastCovariatesModule):
             Whether to apply batch norm on first block of the first stack
         dropout
             Dropout probability
+        activation
+            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -346,6 +357,9 @@ class _NHiTSModule(PLPastCovariatesModule):
 
         """
         super().__init__(**kwargs)
+
+        # required for all modules -> saves hparams for checkpoints
+        self.save_hyperparameters()
 
         self.input_dim = input_dim
         self.output_dim = output_dim
@@ -369,6 +383,7 @@ class _NHiTSModule(PLPastCovariatesModule):
                     batch_norm and i == 0
                 ),  # batch norm only on first block of first stack
                 dropout=dropout,
+                activation=activation,
             )
             for i in range(num_stacks)
         ]
@@ -429,7 +444,8 @@ class NHiTS(PastCovariatesTorchModel):
         layer_widths: Union[int, List[int]] = 512,
         pooling_kernel_sizes: Optional[Tuple[Tuple[int]]] = None,
         n_freq_downsample: Optional[Tuple[Tuple[int]]] = None,
-        dropout: float = 0.0,
+        dropout: float = 0.1,
+        activation: str = "relu",
         **kwargs,
     ):
         """An implementation of the N-HiTS model, as presented in [1]_.
@@ -480,7 +496,9 @@ class NHiTS(PastCovariatesTorchModel):
             downsampling factors before interpolation, for each block in each stack.
             If left to ``None``, some default values will be used based on ``output_chunk_length``.
         dropout
-            The dropout probability to be used in the fully connected layers.
+            Fraction of neurons affected by Dropout (default=0.1).
+        activation
+            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -632,6 +650,7 @@ class NHiTS(PastCovariatesTorchModel):
         self.num_blocks = num_blocks
         self.num_layers = num_layers
         self.layer_widths = layer_widths
+        self.activation = activation
 
         # Currently batch norm is not an option as it seems to perform badly
         self.batch_norm = False
@@ -730,5 +749,6 @@ class NHiTS(PastCovariatesTorchModel):
             n_freq_downsample=self.n_freq_downsample,
             batch_norm=self.batch_norm,
             dropout=self.dropout,
+            activation=self.activation,
             **self.pl_module_params,
         )
