@@ -142,7 +142,7 @@ class _Block(nn.Module):
         # fully connected stack before fork
         self.linear_layer_stack_list = [nn.Linear(input_chunk_length, layer_width)]
         for _ in range(num_layers - 1):
-            self.linear_layer_stack_list.append([nn.Linear(layer_width, layer_width)])
+            self.linear_layer_stack_list.append(nn.Linear(layer_width, layer_width))
 
             if self.batch_norm:
                 self.linear_layer_stack_list.append(
