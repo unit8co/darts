@@ -16,6 +16,19 @@ from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorch
 
 logger = get_logger(__name__)
 
+ACTIVATIONS = [
+    "ReLU",
+    "RReLU",
+    "PReLU",
+    "ELU",
+    "Softplus",
+    "Tanh",
+    "SELU",
+    "LeakyReLU",
+    "Sigmoid",
+    "GELU",
+]
+
 
 class _Block(nn.Module):
     def __init__(
@@ -29,7 +42,7 @@ class _Block(nn.Module):
         n_freq_downsample: int,
         batch_norm: bool,
         dropout: float,
-        activation: nn.Module,
+        activation: str,
         MaxPool1d: bool,
     ):
         """PyTorch module implementing the basic building block of the N-HiTS architecture.
@@ -88,7 +101,9 @@ class _Block(nn.Module):
         self.batch_norm = batch_norm
         self.dropout = dropout
         self.MaxPool1d = MaxPool1d
-        self.activation = activation()
+
+        assert activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}"
+        self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
         """
@@ -199,7 +214,7 @@ class _Stack(nn.Module):
         n_freq_downsample: Tuple[int],
         batch_norm: bool,
         dropout: float,
-        activation: nn.Module,
+        activation: str,
         MaxPool1d: bool,
     ):
         """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
@@ -311,7 +326,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         n_freq_downsample: Tuple[Tuple[int]],
         batch_norm: bool,
         dropout: float,
-        activation: nn.Module,
+        activation: str,
         MaxPool1d: bool,
         **kwargs,
     ):
@@ -450,7 +465,7 @@ class NHiTS(PastCovariatesTorchModel):
         pooling_kernel_sizes: Optional[Tuple[Tuple[int]]] = None,
         n_freq_downsample: Optional[Tuple[Tuple[int]]] = None,
         dropout: float = 0.1,
-        activation: nn.Module = nn.ReLU,
+        activation: str = "ReLU",
         MaxPool1d: bool = True,
         **kwargs,
     ):
@@ -504,9 +519,8 @@ class NHiTS(PastCovariatesTorchModel):
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         activation
-            The activation function of encoder/decoder intermediate layer (default=``nn.ReLU``). Full list of supported
-            activation functions can be found at:
-            https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
+            The activation function of encoder/decoder intermediate layer (default='ReLU').
+            Supported activations: ['ReLU','RReLU', 'PReLU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU',  'Sigmoid']
         MaxPool1d
             Use MaxPool1d pooling. False uses AvgPool1d
         **kwargs

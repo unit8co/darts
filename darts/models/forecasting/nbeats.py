@@ -17,6 +17,20 @@ from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorch
 logger = get_logger(__name__)
 
 
+ACTIVATIONS = [
+    "ReLU",
+    "RReLU",
+    "PReLU",
+    "ELU",
+    "Softplus",
+    "Tanh",
+    "SELU",
+    "LeakyReLU",
+    "Sigmoid",
+    "GELU",
+]
+
+
 class _GType(Enum):
     GENERIC = 1
     TREND = 2
@@ -81,7 +95,7 @@ class _Block(nn.Module):
         g_type: GTypes,
         batch_norm: bool,
         dropout: float,
-        activation: nn.Module,
+        activation: str,
     ):
         """PyTorch module implementing the basic building block of the N-BEATS architecture.
 
@@ -137,7 +151,9 @@ class _Block(nn.Module):
         self.g_type = g_type
         self.dropout = dropout
         self.batch_norm = batch_norm
-        self.activation = activation()
+
+        assert activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}"
+        self.activation = getattr(nn, activation)()
 
         # fully connected stack before fork
         self.linear_layer_stack_list = [nn.Linear(input_chunk_length, layer_width)]
@@ -223,7 +239,7 @@ class _Stack(nn.Module):
         g_type: GTypes,
         batch_norm: bool,
         dropout: float,
-        activation: nn.Module,
+        activation: str,
     ):
         """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
 
@@ -351,8 +367,8 @@ class _NBEATSModule(PLPastCovariatesModule):
         trend_polynomial_degree: int,
         batch_norm: bool,
         dropout: float,
-        activation: nn.Module,
-        **kwargs
+        activation: str,
+        **kwargs,
     ):
         """PyTorch module implementing the N-BEATS architecture.
 
@@ -523,8 +539,8 @@ class NBEATSModel(PastCovariatesTorchModel):
         expansion_coefficient_dim: int = 5,
         trend_polynomial_degree: int = 2,
         dropout: float = 0.0,
-        activation: nn.Module = nn.ReLU,
-        **kwargs
+        activation: str = "ReLU",
+        **kwargs,
     ):
         """Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).
 
@@ -569,9 +585,8 @@ class NBEATSModel(PastCovariatesTorchModel):
         dropout
             The dropout probability to be used in the fully connected layers (default=0.0).
         activation
-            The activation function of encoder/decoder intermediate layer (default=``nn.ReLU``). Full list of supported
-            activation functions can be found at:
-            https://pytorch.org/docs/stable/nn.html#non-linear-activations-weighted-sum-nonlinearity
+            The activation function of encoder/decoder intermediate layer (default='ReLU').
+            Supported activations: ['ReLU','RReLU', 'PReLU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU',  'Sigmoid']
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
