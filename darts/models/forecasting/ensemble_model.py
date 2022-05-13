@@ -33,8 +33,8 @@ class EnsembleModel(GlobalForecastingModel):
     ):
         raise_if_not(
             isinstance(models, list) and models,
-            "Cannot instantiate EnsembleModel with an empty list of models",
-            logger,
+            message="Cannot instantiate EnsembleModel with an empty list of models",
+            logger=logger,
         )
 
         is_local_ensemble = all(
@@ -48,15 +48,15 @@ class EnsembleModel(GlobalForecastingModel):
 
         raise_if_not(
             is_local_ensemble or self.is_global_ensemble,
-            "All models must either be GlobalForecastingModel instances, or none of them should be.",
-            logger,
+            message="All models must either be GlobalForecastingModel instances, or none of them should be.",
+            logger=logger,
         )
 
         raise_if(
             any([m._fit_called for m in models]),
-            "Cannot instantiate EnsembleModel with trained/fitted models. "
+            message="Cannot instantiate EnsembleModel with trained/fitted models. "
             "Consider resetting all models with `my_model.untrained_model()`",
-            logger,
+            logger=logger,
         )
 
         super().__init__()
@@ -76,13 +76,13 @@ class EnsembleModel(GlobalForecastingModel):
         """
         raise_if(
             not self.is_global_ensemble and not isinstance(series, TimeSeries),
-            "The models are not GlobalForecastingModel's and do not support training on multiple series.",
-            logger,
+            message="The models are not GlobalForecastingModel's and do not support training on multiple series.",
+            logger=logger,
         )
         raise_if(
             not self.is_global_ensemble and past_covariates is not None,
-            "The models are not GlobalForecastingModel's and do not support past covariates.",
-            logger,
+            message="The models are not GlobalForecastingModel's and do not support past covariates.",
+            logger=logger,
         )
 
         self.is_single_series = isinstance(series, TimeSeries)
@@ -98,8 +98,8 @@ class EnsembleModel(GlobalForecastingModel):
 
         raise_if(
             error,
-            "Both series and covariates have to be either univariate or multivariate.",
-            logger,
+            message="Both series and covariates have to be either univariate or multivariate.",
+            logger=logger,
         )
 
         super().fit(series, past_covariates, future_covariates)

@@ -50,15 +50,15 @@ def _generate_index(
     ]
     raise_if(
         len(constructors) != 2,
-        "index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
+        message="index can only be generated with exactly two of the following parameters: [`start`, `end`, `length`]. "
         f"Observed parameters: {constructors}. For generating an index with `end` and `length` consider setting "
         f"`start` to None.",
-        logger,
+        logger=logger,
     )
     raise_if(
         end is not None and start is not None and type(start) != type(end),
-        "index generation with `start` and `end` requires equal object types of `start` and `end`",
-        logger,
+        message="index generation with `start` and `end` requires equal object types of `start` and `end`",
+        logger=logger,
     )
 
     if isinstance(start, pd.Timestamp) or isinstance(end, pd.Timestamp):
@@ -293,16 +293,16 @@ def gaussian_timeseries(
     if type(mean) == np.ndarray:
         raise_if_not(
             mean.shape == (length,),
-            "If a vector of means is provided, "
+            message="If a vector of means is provided, "
             "it requires the same length as the TimeSeries.",
-            logger,
+            logger=logger,
         )
     if type(std) == np.ndarray:
         raise_if_not(
             std.shape == (length, length),
-            "If a matrix of standard deviations is provided, "
+            message="If a matrix of standard deviations is provided, "
             "its shape has to match the length of the TimeSeries.",
-            logger,
+            logger=logger,
         )
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
@@ -414,7 +414,7 @@ def autoregressive_timeseries(
     else:
         raise_if_not(
             len(start_values) == len(coef),
-            "start_values must have same length as coef.",
+            message="start_values must have same length as coef.",
         )
 
     index = _generate_index(start=start, end=end, freq=freq, length=length)
@@ -440,7 +440,9 @@ def _extend_time_index_until(
     if not add_length and not until:
         return time_index
 
-    raise_if(bool(add_length) and bool(until), "set only one of add_length and until")
+    raise_if(
+        bool(add_length) and bool(until), message="set only one of add_length and until"
+    )
 
     end = time_index[-1]
     freq = time_index.freq
@@ -448,7 +450,7 @@ def _extend_time_index_until(
     if add_length:
         raise_if_not(
             add_length >= 0,
-            f"Expected add_length, by which to extend the time series by, "
+            message=f"Expected add_length, by which to extend the time series by, "
             f"to be positive, got {add_length}",
         )
 
@@ -467,31 +469,31 @@ def _extend_time_index_until(
         if datetime_index:
             raise_if_not(
                 isinstance(until, (str, pd.Timestamp)),
-                "Expected valid timestamp for TimeSeries, "
+                message="Expected valid timestamp for TimeSeries, "
                 "indexed by DatetimeIndex, "
                 f"for parameter until, got {type(end)}",
-                logger,
+                logger=logger,
             )
         else:
             raise_if_not(
                 isinstance(until, int),
-                "Expected integer for TimeSeries, indexed by RangeIndex, ",
+                message="Expected integer for TimeSeries, indexed by RangeIndex, "
                 f"for parameter until, got {type(end)}",
-                logger,
+                logger=logger,
             )
 
         timestamp = pd.Timestamp(until) if datetime_index else until
 
         raise_if_not(
             timestamp > end,
-            f"Expected until, {timestamp} to lie past end of time index {end}",
+            message=f"Expected until, {timestamp} to lie past end of time index {end}",
         )
 
         ahead = timestamp - end
         raise_if_not(
             (ahead % freq) == pd.Timedelta(0),
-            f"End date must correspond with frequency {freq} of the time axis",
-            logger,
+            message=f"End date must correspond with frequency {freq} of the time axis",
+            logger=logger,
         )
 
         end = timestamp
@@ -608,13 +610,17 @@ def datetime_attribute_timeseries(
     raise_if_not(
         hasattr(pd.DatetimeIndex, attribute)
         or (attribute in ["week", "weekofyear", "week_of_year"]),
-        f"attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. "
+        message=f"attribute `{attribute}` needs to be an attribute of pd.DatetimeIndex. "
         "See all available attributes in "
         "https://pandas.pydata.org/pandas-docs/stable/reference/api/pandas.DatetimeIndex.html#pandas.DatetimeIndex",
-        logger,
+        logger=logger,
     )
 
-    raise_if(one_hot and cyclic, "set only one of one_hot or cyclic to true", logger)
+    raise_if(
+        one_hot and cyclic,
+        message="set only one of one_hot or cyclic to true",
+        logger=logger,
+    )
 
     num_values_dict = {
         "month": 12,
@@ -648,9 +654,9 @@ def datetime_attribute_timeseries(
     if one_hot or cyclic:
         raise_if_not(
             attribute in num_values_dict,
-            f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
+            message=f"Given datetime attribute `{attribute}` not supported with one-hot or cyclical encoding. "
             f"Supported datetime attribute: {list(num_values_dict.keys())}",
-            logger,
+            logger=logger,
         )
 
     if one_hot:

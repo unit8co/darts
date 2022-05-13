@@ -152,8 +152,8 @@ class InvertibleDataTransformer(BaseDataTransformer):
         if hasattr(self, "_fit_called"):
             raise_if_not(
                 self._fit_called,
-                "fit() must have been called before inverse_transform()",
-                logger,
+                message="fit() must have been called before inverse_transform()",
+                logger=logger,
             )
 
         desc = f"Inverse ({self._name})"

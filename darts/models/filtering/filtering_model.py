@@ -38,5 +38,5 @@ class FilteringModel(ABC):
         """
         raise_if_not(
             series.is_deterministic,
-            "The input series must be deterministic (observations).",
+            message="The input series must be deterministic (observations).",
         )

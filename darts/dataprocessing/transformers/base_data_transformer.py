@@ -63,7 +63,9 @@ class BaseDataTransformer(ABC):
         value
             New verbosity status
         """
-        raise_if_not(isinstance(value, bool), "Verbosity status must be a boolean.")
+        raise_if_not(
+            isinstance(value, bool), message="Verbosity status must be a boolean."
+        )
 
         self._verbose = value
 
@@ -76,7 +78,7 @@ class BaseDataTransformer(ABC):
             New n_jobs value.  Set to `-1` for using all the available cores.
         """
 
-        raise_if_not(isinstance(value, int), "n_jobs must be an integer")
+        raise_if_not(isinstance(value, int), message="n_jobs must be an integer")
         self._n_jobs = value
 
     @staticmethod
@@ -211,13 +213,13 @@ class BaseDataTransformer(ABC):
 
         raise_if_not(
             isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
-            "`component_mask` must be a boolean np.ndarray`",
-            logger,
+            message="`component_mask` must be a boolean np.ndarray`",
+            logger=logger,
         )
         raise_if_not(
             series.width == len(component_mask),
-            "mismatch between number of components in `series` and length of `component_mask`",
-            logger,
+            message="mismatch between number of components in `series` and length of `component_mask`",
+            logger=logger,
         )
 
         vals = series.all_values(copy=False)[:, component_mask, :]
@@ -252,8 +254,8 @@ class BaseDataTransformer(ABC):
             component_mask is None
             or isinstance(component_mask, np.ndarray)
             and component_mask.dtype == bool,
-            "If `component_mask` is given, must be a boolean np.ndarray`",
-            logger,
+            message="If `component_mask` is given, must be a boolean np.ndarray`",
+            logger=logger,
         )
 
         series_width = series.width if component_mask is None else component_mask.sum()
@@ -267,8 +269,8 @@ class BaseDataTransformer(ABC):
 
         raise_if_not(
             series.width == len(component_mask),
-            "mismatch between number of components in `series` and length of `component_mask`",
-            logger,
+            message="mismatch between number of components in `series` and length of `component_mask`",
+            logger=logger,
         )
 
         series_vals = series.all_values(copy=True)

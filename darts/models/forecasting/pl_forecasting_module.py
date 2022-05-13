@@ -80,8 +80,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         raise_if(
             input_chunk_length is None or output_chunk_length is None,
-            "Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`",
-            logger,
+            message="Both `input_chunk_length` and `output_chunk_length` must be passed to `PLForecastingModule`",
+            logger=logger,
         )
 
         self.input_chunk_length = input_chunk_length
@@ -324,9 +324,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
         else:
             raise_if(
                 True,
-                f"Trying to load dtype {dtype}. Loading for this type is not implemented yet. Please report this "
-                f"issue on https://github.com/unit8co/darts",
-                logger,
+                message=f"""Trying to load dtype {dtype}. Loading for this type is not implemented yet.
+                Please report this issue on https://github.com/unit8co/darts""",
+                logger=logger,
             )
 
     @property

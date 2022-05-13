@@ -61,7 +61,7 @@ class RegressionEnsembleModel(EnsembleModel):
         # check lags of the regression model
         raise_if_not(
             regression_model.lags == {"future": [0]},
-            f"`lags` and `lags_past_covariates` of regression model must be `None`"
+            message=f"`lags` and `lags_past_covariates` of regression model must be `None`"
             f"and `lags_future_covariates` must be [0]. Given:\n"
             f"{regression_model.lags}",
         )
@@ -97,9 +97,9 @@ class RegressionEnsembleModel(EnsembleModel):
 
         raise_if(
             train_n_points_too_big,
-            "regression_train_n_points parameter too big (must be smaller or "
+            message="regression_train_n_points parameter too big (must be smaller or "
             "equal to the number of points in training_series)",
-            logger,
+            logger=logger,
         )
 
         if self.is_single_series:

@@ -285,10 +285,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if checkpoint_exists and save_checkpoints:
             raise_if_not(
                 force_reset,
-                f"Some model data already exists for `model_name` '{self.model_name}'. Either load model to continue "
-                f"training or use `force_reset=True` to initialize anyway to start training from scratch and remove "
-                f"all the model data",
-                logger,
+                message=f"""Some model data already exists for `model_name` '{self.model_name}'.
+                Either load model to continue training or use `force_reset=True` to
+                initialize anyway to start training from scratch and remove all the model data""",
+                logger=logger,
             )
             self.reset_model()
         elif save_checkpoints:
@@ -382,9 +382,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     for device_str in ["cuda", "cpu", "auto"]
                 ]
             ),
-            f"unknown torch_device_str `{torch_device_str}`. String must contain one of `('cuda', 'cpu', 'auto') "
-            + device_warning,
-            logger,
+            message=f"""Unknown torch_device_str `{torch_device_str}`.
+            String must contain one of `('cuda', 'cpu', 'auto')
+            {device_warning}""",
+            logger=logger,
         )
         device_split = torch_device_str.split(":")
 
@@ -402,8 +403,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             raise_if(
                 True,
-                f"unknown torch_device_str `{torch_device_str}`. " + device_warning,
-                logger,
+                message=f"unknown torch_device_str `{torch_device_str}`. "
+                + device_warning,
+                logger=logger,
             )
         return accelerator, gpus, auto_select_gpus
 
@@ -422,7 +424,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         raise_if(
             len(invalid_kwargs) > 0,
-            f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs `{invalid_kwargs}`",
+            message=f"Invalid model creation parameters. Model `{cls.__name__}` has no args/kwargs `{invalid_kwargs}`",
             logger=logger,
         )
 
@@ -471,7 +473,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         raise_if(
             self.pl_module_params is None,
-            "`pl_module_params` must be extracted in __init__ method of `TorchForecastingModel` subclass after "
+            message="`pl_module_params` must be extracted in __init__ method of `TorchForecastingModel` subclass after "
             "calling `super.__init__(...)`. Do this with `self._extract_pl_module_params(**self.model_params).`",
         )
 
@@ -494,10 +496,11 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
         raise_if(
             precision_user is not None and precision_user != precision,
-            f"User-defined trainer_kwarg `precision={precision_user}`-bit does not match dtype: `{dtype}` of the "
-            f"underlying TimeSeries. Set `precision` to `{precision}` or cast your data to `{precision_user}-"
-            f"bit` with `TimeSeries.astype(np.float{precision_user})`.",
-            logger,
+            message=f"""User-defined trainer_kwarg `precision={precision_user}`-bit does not match dtype: `{dtype}`
+            of the underlying TimeSeries.
+            Set `precision` to `{precision}` or cast your data to `{precision_user}-bit`
+            with `TimeSeries.astype(np.float{precision_user})`.""",
+            logger=logger,
         )
 
         self.trainer_params["precision"] = precision
@@ -730,7 +733,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
             raise_if_not(
                 match,
-                "The dimensions of the series in the training set "
+                message="The dimensions of the series in the training set "
                 "and the validation set do not match.",
             )
 
@@ -834,13 +837,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._verify_train_dataset_type(train_dataset)
         raise_if(
             len(train_dataset) == 0,
-            "The provided training time series dataset is too short for obtaining even one training point.",
-            logger,
+            message="The provided training time series dataset is too short for obtaining even one training point.",
+            logger=logger,
         )
         raise_if(
             val_dataset is not None and len(val_dataset) == 0,
-            "The provided validation time series dataset is too short for obtaining even one training point.",
-            logger,
+            message="The provided validation time series dataset is too short for obtaining even one training point.",
+            logger=logger,
         )
 
         train_sample = train_dataset[0]
@@ -852,7 +855,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             # Check existing model has input/output dims matching what's provided in the training set.
             raise_if_not(
                 len(train_sample) == len(self.train_sample),
-                "The size of the training set samples (tuples) does not match what the model has been "
+                message="The size of the training set samples (tuples) does not match what the model has been "
                 "previously trained on. Trained on tuples of length {}, received tuples of length {}.".format(
                     len(self.train_sample), len(train_sample)
                 ),
@@ -862,7 +865,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             ) == tuple(s.shape[1] if s is not None else None for s in self.train_sample)
             raise_if_not(
                 same_dims,
-                "The dimensionality of the series in the training set do not match the dimensionality"
+                message="The dimensionality of the series in the training set do not match the dimensionality"
                 " of the series the model has previously been trained on. "
                 "Model input/output dimensions = {}, provided input/ouptput dimensions = {}".format(
                     tuple(
@@ -1051,7 +1054,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         if series is None:
             raise_if(
                 self.training_series is None,
-                "Input series has to be provided after fitting on multiple series.",
+                message="Input series has to be provided after fitting on multiple series.",
             )
             series = self.training_series
 
@@ -1183,11 +1186,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             raise_if_not(
                 0 < roll_size <= self.output_chunk_length,
-                "`roll_size` must be an integer between 1 and `self.output_chunk_length`.",
+                message="`roll_size` must be an integer between 1 and `self.output_chunk_length`.",
             )
 
         # check that `num_samples` is a positive integer
-        raise_if_not(num_samples > 0, "`num_samples` must be a positive integer.")
+        raise_if_not(
+            num_samples > 0, message="`num_samples` must be a positive integer."
+        )
 
         # iterate through batches to produce predictions
         batch_size = batch_size or self.batch_size
@@ -1304,8 +1309,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         raise_if_not(
             path.endswith(".pth.tar"),
-            "The given path should end with '.pth.tar'.",
-            logger,
+            message="The given path should end with '.pth.tar'.",
+            logger=logger,
         )
 
         # We save the whole object to keep track of everything
@@ -1340,8 +1345,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         raise_if_not(
             path.endswith(".pth.tar"),
-            "The given path should end with '.pth.tar'.",
-            logger,
+            message="The given path should end with '.pth.tar'.",
+            logger=logger,
         )
 
         with open(path, "rb") as fin:
@@ -1411,8 +1416,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         base_model_path = os.path.join(model_dir, INIT_MODEL_NAME)
         raise_if_not(
             os.path.exists(base_model_path),
-            f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
-            logger,
+            message=f"Could not find base model save file `{INIT_MODEL_NAME}` in {model_dir}.",
+            logger=logger,
         )
 
         model = TorchForecastingModel.load_model(base_model_path)
@@ -1470,7 +1475,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
-    raise_if_not(isinstance(obj, exp_type), msg.format(exp_type, type(obj)))
+    raise_if_not(isinstance(obj, exp_type), message=msg.format(exp_type, type(obj)))
 
 
 """
@@ -1493,23 +1498,23 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     tgt_pred, cov_pred = predict_sample[:2]
     raise_if_not(
         tgt_train.shape[-1] == tgt_pred.shape[-1],
-        "The provided target has a dimension (width) that does not match the dimension "
+        message="The provided target has a dimension (width) that does not match the dimension "
         "of the target this model has been trained on.",
     )
     raise_if(
         cov_train is not None and cov_pred is None,
-        "This model has been trained with covariates; some covariates of matching dimensionality are needed "
+        message="This model has been trained with covariates; some covariates of matching dimensionality are needed "
         "for prediction.",
     )
     raise_if(
         cov_train is None and cov_pred is not None,
-        "This model has been trained without covariates. No covariates should be provided for prediction.",
+        message="This model has been trained without covariates. No covariates should be provided for prediction.",
     )
     raise_if(
         cov_train is not None
         and cov_pred is not None
         and cov_train.shape[-1] != cov_pred.shape[-1],
-        "The provided covariates must have dimensionality matching that of the covariates used for training "
+        message="The provided covariates must have dimensionality matching that of the covariates used for training "
         "the model.",
     )
 
@@ -1542,7 +1547,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     tgt_train, tgt_pred = train_datasets[0], predict_datasets[0]
     raise_if_not(
         tgt_train.shape[-1] == tgt_pred.shape[-1],
-        "The provided target has a dimension (width) that does not match the dimension "
+        message="The provided target has a dimension (width) that does not match the dimension "
         "of the target this model has been trained on.",
     )
 
@@ -1551,18 +1556,18 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     ):
         raise_if(
             ds_in_train and not ds_in_predict and ds_in_train,
-            f"This model has been trained with {ds_name}; some {ds_name} of matching dimensionality are needed "
+            message=f"This model has been trained with {ds_name}; some {ds_name} of matching dimensionality are needed "
             f"for prediction.",
         )
         raise_if(
             ds_in_train and not ds_in_predict and ds_in_predict,
-            f"This model has been trained without {ds_name}; No {ds_name} should be provided for prediction.",
+            message=f"This model has been trained without {ds_name}; No {ds_name} should be provided for prediction.",
         )
         raise_if(
             ds_in_train
             and ds_in_predict
             and train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1],
-            f"The provided {ds_name} must have dimensionality that of the {ds_name} used for training the model.",
+            message=f"The provided {ds_name} must have dimensionality of the {ds_name} used for training the model.",
         )
 
 
@@ -1580,7 +1585,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
         raise_if_not(
             future_covariates is None,
-            "Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
+            message="Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
         )
 
         return PastCovariatesSequentialDataset(
@@ -1601,7 +1606,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
 
         raise_if_not(
             future_covariates is None,
-            "Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
+            message="Specified future_covariates for a PastCovariatesModel (only past_covariates are expected).",
         )
 
         return PastCovariatesInferenceDataset(
@@ -1624,7 +1629,7 @@ class PastCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         raise_if_not(
             future_covariates is None,
-            "Some future_covariates have been provided to a PastCovariates model. These models "
+            message="Some future_covariates have been provided to a PastCovariates model. These models "
             "support only past_covariates.",
         )
 
@@ -1655,7 +1660,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     ) -> FutureCovariatesTrainingDataset:
         raise_if_not(
             past_covariates is None,
-            "Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).",
+            message="Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).",
         )
 
         return FutureCovariatesSequentialDataset(
@@ -1675,7 +1680,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     ) -> FutureCovariatesInferenceDataset:
         raise_if_not(
             past_covariates is None,
-            "Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).",
+            message="Specified past_covariates for a FutureCovariatesModel (only future_covariates are expected).",
         )
 
         return FutureCovariatesInferenceDataset(
@@ -1697,7 +1702,7 @@ class FutureCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         raise_if_not(
             past_covariates is None,
-            "Some past_covariates have been provided to a PastCovariates model. These models "
+            message="Some past_covariates have been provided to a PastCovariates model. These models "
             "support only future_covariates.",
         )
 
@@ -1763,7 +1768,7 @@ class DualCovariatesTorchModel(TorchForecastingModel, ABC):
     def _verify_past_future_covariates(self, past_covariates, future_covariates):
         raise_if_not(
             past_covariates is None,
-            "Some past_covariates have been provided to a PastCovariates model. These models "
+            message="Some past_covariates have been provided to a PastCovariates model. These models "
             "support only future_covariates.",
         )
 

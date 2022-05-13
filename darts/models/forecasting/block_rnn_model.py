@@ -308,11 +308,11 @@ class BlockRNNModel(PastCovariatesTorchModel):
         if model not in ["RNN", "LSTM", "GRU"]:
             raise_if_not(
                 isinstance(model, nn.Module),
-                '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
+                message='{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
                 '"GRU", or give your own PyTorch nn.Module'.format(
                     model.__class__.__name__
                 ),
-                logger,
+                logger=logger,
             )
 
         self.rnn_type_or_module = model

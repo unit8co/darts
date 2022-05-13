@@ -128,7 +128,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             series._assert_univariate()
         raise_if_not(
             len(series) >= self.min_train_series_length,
-            "Train series only contains {} elements but {} model requires at least {} entries".format(
+            message="Train series only contains {} elements but {} model requires at least {} entries".format(
                 len(series), str(self), self.min_train_series_length
             ),
         )
@@ -377,10 +377,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         base_class_name = self.__class__.__base__.__name__
         raise_if(
             not retrain and not self._supports_non_retrainable_historical_forecasts(),
-            f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
+            message=f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
             f"Fore more information, read the documentation for `retrain` in `historical_forecastings()`",
-            logger,
+            logger=logger,
         )
 
         if train_length and not isinstance(train_length, int):
@@ -704,23 +704,23 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             + (val_series is not None)
             + use_fitted_values
             == 1,
-            "Please pass exactly one of the arguments 'forecast_horizon', "
+            message="Please pass exactly one of the arguments 'forecast_horizon', "
             "'val_target_series' or 'use_fitted_values'.",
-            logger,
+            logger=logger,
         )
 
         if use_fitted_values:
             raise_if_not(
                 hasattr(model_class(), "fitted_values"),
-                "The model must have a fitted_values attribute to compare with the train TimeSeries",
-                logger,
+                message="The model must have a fitted_values attribute to compare with the train TimeSeries",
+                logger=logger,
             )
 
         elif val_series is not None:
             raise_if_not(
                 series.width == val_series.width,
-                "Training and validation series require the same number of components.",
-                logger,
+                message="Training and validation series require the same number of components.",
+                logger=logger,
             )
 
         # TODO: here too I'd say we can leave these checks to the models
@@ -862,7 +862,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if isinstance(n_random_samples, int):
             raise_if_not(
                 (n_random_samples > 0) and (n_random_samples <= len(params)),
-                "If supplied as an integer, n_random_samples must be greater than 0 and less"
+                message="If supplied as an integer, n_random_samples must be greater than 0 and less"
                 "than or equal to the size of the cartesian product of the hyperparameters.",
             )
             return sample(params, n_random_samples)
@@ -870,7 +870,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if isinstance(n_random_samples, float):
             raise_if_not(
                 (n_random_samples > 0.0) and (n_random_samples <= 1.0),
-                "If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.",
+                message="If supplied as a float, n_random_samples must be greater than 0.0 and less than 1.0.",
             )
             return sample(params, int(n_random_samples * len(params)))
 
@@ -1103,9 +1103,9 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
             raise_if_not(
                 series.has_same_time_as(future_covariates),
-                "The provided `future_covariates` series must contain at least the same time steps/"
+                message="The provided `future_covariates` series must contain at least the same time steps/"
                 "indices as the target `series`.",
-                logger,
+                logger=logger,
             )
             self._expect_covariate = True
 
@@ -1169,7 +1169,9 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
             # we raise an error here already to avoid getting error from empty TimeSeries creation
             raise_if_not(
-                future_covariates.end_time() >= start, invalid_time_span_error, logger
+                future_covariates.end_time() >= start,
+                message=invalid_time_span_error,
+                logger=logger,
             )
 
             offset = (
@@ -1183,8 +1185,8 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
             raise_if_not(
                 len(future_covariates) == n and self._expect_covariate,
-                invalid_time_span_error,
-                logger,
+                message=invalid_time_span_error,
+                logger=logger,
             )
 
         return self._predict(

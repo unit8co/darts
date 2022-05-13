@@ -72,8 +72,8 @@ class NaiveSeasonal(ForecastingModel):
         super().fit(series)
         raise_if_not(
             len(series) >= self.K,
-            f"The time series requires at least K={self.K} points",
-            logger,
+            message=f"The time series requires at least K={self.K} points",
+            logger=logger,
         )
         self.last_k_vals = series.univariate_values()[-self.K :]
         return self

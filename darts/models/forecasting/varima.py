@@ -114,7 +114,7 @@ class VARIMA(DualCovariatesForecastingModel):
     def _supports_range_index(self) -> bool:
         raise_if(
             self.trend and self.trend != "c",
-            "'trend' is not None. Range indexing is not supported in that case.",
-            logger,
+            message="'trend' is not None. Range indexing is not supported in that case.",
+            logger=logger,
         )
         return True

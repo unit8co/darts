@@ -492,7 +492,7 @@ class GenericShiftedDataset(TrainingDataset):
 
         raise_if_not(
             covariates is None or len(self.target_series) == len(self.covariates),
-            "The provided sequence of target series must have the same length as "
+            message="The provided sequence of target series must have the same length as "
             "the provided sequence of covariate series.",
         )
 
@@ -529,7 +529,7 @@ class GenericShiftedDataset(TrainingDataset):
 
         raise_if_not(
             n_samples_in_ts >= 1,
-            "The dataset contains some time series that are too short to contain "
+            message="The dataset contains some time series that are too short to contain "
             "`max(self.input_chunk_length, self.shift + self.output_chunk_length)` "
             "({}-th series)".format(ts_idx),
         )
@@ -578,7 +578,7 @@ class GenericShiftedDataset(TrainingDataset):
         if self.covariates is not None:
             raise_if_not(
                 cov_end <= len(ts_covariate),
-                f"The dataset contains {main_cov_type.value} covariates "
+                message=f"The dataset contains {main_cov_type.value} covariates "
                 f"that don't extend far enough into the future. ({idx}-th sample)",
             )
 
@@ -593,7 +593,7 @@ class GenericShiftedDataset(TrainingDataset):
                     if self.shift_covariates
                     else self.input_chunk_length
                 ),
-                f"The dataset contains {main_cov_type.value} covariates "
+                message=f"The dataset contains {main_cov_type.value} covariates "
                 f"whose time axis doesn't allow to obtain the input (or output) chunk relative to the "
                 f"target series.",
             )

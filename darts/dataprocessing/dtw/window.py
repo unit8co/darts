@@ -147,15 +147,15 @@ class CRWindow:
         if ranges is not None:
             raise_if_not(
                 ranges.shape == (n, 2),
-                f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)",
+                message=f"Expects a 2d array with [start, end] for each column and shape = ({n}, 2)",
             )
 
             ranges = np.insert(ranges, 0, [0, 1], axis=0)
             start = ranges[:, 0]
             end = ranges[:, 1]
 
-            raise_if(np.any(start < 0), "Start must be >=0")
-            raise_if(np.any(end > m), "End must be <m")
+            raise_if(np.any(start < 0), message="Start must be >=0")
+            raise_if(np.any(end > m), message="End must be <m")
 
             diff = np.maximum(end - start, 0)
             self.length = np.sum(diff)
@@ -296,7 +296,7 @@ class Itakura(CRWindow):
         diagonal_slope = m / n  # rise over run
         raise_if_not(
             max_slope > diagonal_slope,
-            f"Itakura slope {max_slope} must be greater than {diagonal_slope} to form valid parallelogram.",
+            message=f"Itakura slope {max_slope} must be greater than {diagonal_slope} to form valid parallelogram.",
         )
 
         max_slope_angle = atan(max_slope)
@@ -359,7 +359,7 @@ class SakoeChiba(CRWindow):
         diff = abs(n - m)
         raise_if_not(
             diff < self.window_size,
-            f"Window size must at least cover size difference ({diff})",
+            message=f"Window size must at least cover size difference ({diff})",
         )
 
         ranges = np.repeat(np.arange(n), 2)

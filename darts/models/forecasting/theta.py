@@ -75,8 +75,8 @@ class Theta(ForecastingModel):
 
         raise_if_not(
             season_mode in SeasonalityMode,
-            f"Unknown value for season_mode: {season_mode}.",
-            logger,
+            message=f"Unknown value for season_mode: {season_mode}.",
+            logger=logger,
         )
 
         if self.theta == 0:
@@ -245,18 +245,18 @@ class FourTheta(ForecastingModel):
 
         raise_if_not(
             isinstance(model_mode, ModelMode),
-            f"Unknown value for model_mode: {model_mode}.",
-            logger,
+            message=f"Unknown value for model_mode: {model_mode}.",
+            logger=logger,
         )
         raise_if_not(
             isinstance(trend_mode, TrendMode),
-            f"Unknown value for trend_mode: {trend_mode}.",
-            logger,
+            message=f"Unknown value for trend_mode: {trend_mode}.",
+            logger=logger,
         )
         raise_if_not(
             isinstance(season_mode, SeasonalityMode),
-            f"Unknown value for season_mode: {season_mode}.",
-            logger,
+            message=f"Unknown value for season_mode: {season_mode}.",
+            logger=logger,
         )
 
     def fit(self, series):
@@ -268,8 +268,8 @@ class FourTheta(ForecastingModel):
             self.mean = series.pd_dataframe(copy=False).mean().mean()
             raise_if_not(
                 not np.isclose(self.mean, 0),
-                "The mean value of the provided series is too close to zero to perform normalization",
-                logger,
+                message="The mean value of the provided series is too close to zero to perform normalization",
+                logger=logger,
             )
             new_ts = series / self.mean
         else:

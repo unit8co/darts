@@ -53,7 +53,9 @@ def random_method(decorated: Callable[..., T]) -> Callable[..., T]:
     """
     # check that @random_method has been applied to a method.
     raise_if_not(
-        _is_method(decorated), "@random_method can only be used on methods.", logger
+        _is_method(decorated),
+        message="@random_method can only be used on methods.",
+        logger=logger,
     )
 
     @wraps(decorated)

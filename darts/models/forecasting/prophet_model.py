@@ -303,16 +303,16 @@ class Prophet(DualCovariatesForecastingModel):
         ]
         raise_if(
             len(missing_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
+            message=f'Seasonality `{add_seasonality_call["name"]}` has missing mandatory keywords or empty arguments: '
             f"{missing_kws}.",
-            logger,
+            logger=logger,
         )
 
         seasonality_name = add_seasonality_call["name"]
         raise_if(
             seasonality_name in self._auto_seasonalities
             or seasonality_name in self._add_seasonalities,
-            f"Adding seasonality with `name={seasonality_name}` failed. A seasonality with this name already "
+            message=f"Adding seasonality with `name={seasonality_name}` failed. A seasonality with this name already "
             f"exists.",
         )
 
@@ -321,9 +321,9 @@ class Prophet(DualCovariatesForecastingModel):
         ]
         raise_if(
             len(invalid_kws) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
+            message=f'Seasonality `{add_seasonality_call["name"]}` has invalid keywords: {invalid_kws}. Only the '
             f"following arguments are supported: {list(seasonality_default)}",
-            logger,
+            logger=logger,
         )
 
         invalid_types = [
@@ -334,9 +334,9 @@ class Prophet(DualCovariatesForecastingModel):
         ]
         raise_if(
             len(invalid_types) > 0,
-            f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
+            message=f'Seasonality `{add_seasonality_call["name"]}` has invalid value dtypes: {invalid_types} must be '
             f'of type {[seasonality_properties[kw]["dtype"] for kw in invalid_types]}.',
-            logger,
+            logger=logger,
         )
         self._add_seasonalities[seasonality_name] = add_seasonality_call
 
@@ -411,8 +411,8 @@ class Prophet(DualCovariatesForecastingModel):
         """Prophet does not support integer range index."""
         raise_if(
             True,
-            "Prophet does not support integer range index. The index of the TimeSeries must be of type "
+            message="Prophet does not support integer range index. The index of the TimeSeries must be of type "
             "pandas.DatetimeIndex",
-            logger,
+            logger=logger,
         )
         return False

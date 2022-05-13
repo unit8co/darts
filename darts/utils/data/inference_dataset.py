@@ -56,7 +56,7 @@ class InferenceDataset(ABC, Dataset):
 
         raise_if_not(
             main_cov_type in [CovariateType.PAST, CovariateType.FUTURE],
-            "`main_cov_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`",
+            message="`main_cov_type` must be one of `(CovariateType.PAST, CovariateType.FUTURE)`",
         )
 
         # we need to use the time index (datetime or integer) here to match the index with the covariate series
@@ -78,13 +78,13 @@ class InferenceDataset(ABC, Dataset):
         case_start = future_start if cov_type is CovariateType.FUTURE else past_start
         raise_if_not(
             covariate_series.start_time() <= case_start,
-            f"For the given forecasting case, the provided {main_cov_type.value} covariates at dataset index "
+            message=f"For the given forecasting case, the provided {main_cov_type.value} covariates at dataset index "
             f"`{ts_idx}` do not extend far enough into the past. The {main_cov_type.value} covariates must start at "
             f"time step `{case_start}`, whereas now they start at time step `{covariate_series.start_time()}`.",
         )
         raise_if_not(
             covariate_series.end_time() >= future_end,
-            f"For the given forecasting horizon `n={n}`, the provided {main_cov_type.value} covariates "
+            message=f"For the given forecasting horizon `n={n}`, the provided {main_cov_type.value} covariates "
             f"at dataset index `{ts_idx}` do not extend far enough into the future. As `"
             f"{'n > output_chunk_length' if n > output_chunk_length else 'n <= output_chunk_length'}"
             f"` the {main_cov_type.value} covariates must end at time step `{future_end}`, "
@@ -147,7 +147,7 @@ class GenericInferenceDataset(InferenceDataset):
 
         raise_if_not(
             (covariates is None or len(self.target_series) == len(self.covariates)),
-            "The number of target series must be equal to the number of covariates.",
+            message="The number of target series must be equal to the number of covariates.",
         )
 
     def __len__(self):
@@ -159,7 +159,7 @@ class GenericInferenceDataset(InferenceDataset):
         target_series = self.target_series[idx]
         raise_if_not(
             len(target_series) >= self.input_chunk_length,
-            f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length}).",
+            message=f"All input series must have length >= `input_chunk_length` ({self.input_chunk_length}).",
         )
 
         # extract past target values

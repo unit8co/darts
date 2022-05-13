@@ -162,12 +162,12 @@ def extract_trend_and_seasonality(
     ts._assert_univariate()
     raise_if_not(
         model in ModelMode or model in SeasonalityMode,
-        f"Unknown value for model_mode: {model}.",
-        logger,
+        message=f"Unknown value for model_mode: {model}.",
+        logger=logger,
     )
     raise_if_not(
         model is not SeasonalityMode.NONE,
-        "The model must be either MULTIPLICATIVE or ADDITIVE.",
+        message="The model must be either MULTIPLICATIVE or ADDITIVE.",
     )
 
     if method == "naive":
@@ -179,8 +179,8 @@ def extract_trend_and_seasonality(
     elif method == "STL":
         raise_if_not(
             model in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE],
-            f"Only ADDITIVE model is compatible with the STL method. Current model is {model}.",
-            logger,
+            message=f"Only ADDITIVE model is compatible with the STL method. Current model is {model}.",
+            logger=logger,
         )
 
         decomp = STL(
@@ -224,8 +224,8 @@ def remove_from_series(
     ts._assert_univariate()
     raise_if_not(
         model in ModelMode or model in SeasonalityMode,
-        f"Unknown value for model_mode: {model}.",
-        logger,
+        message=f"Unknown value for model_mode: {model}.",
+        logger=logger,
     )
 
     if model.value == "multiplicative":
@@ -283,12 +283,12 @@ def remove_seasonality(
     ts._assert_univariate()
     raise_if_not(
         model is not SeasonalityMode.NONE,
-        "The model must be either MULTIPLICATIVE or ADDITIVE.",
+        message="The model must be either MULTIPLICATIVE or ADDITIVE.",
     )
     raise_if(
         model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL",
-        f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
-        logger,
+        message=f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
+        logger=logger,
     )
 
     _, seasonality = extract_trend_and_seasonality(ts, freq, model, method, **kwargs)
@@ -331,8 +331,8 @@ def remove_trend(
 
     raise_if(
         model not in [SeasonalityMode.ADDITIVE, ModelMode.ADDITIVE] and method == "STL",
-        f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
-        logger,
+        message=f"Only ADDITIVE seasonality is compatible with the STL method. Current model is {model}.",
+        logger=logger,
     )
     trend, _ = extract_trend_and_seasonality(ts, model=model, method=method, **kwargs)
     new_ts = remove_from_series(ts, trend, model)
@@ -523,7 +523,7 @@ def granger_causality_tests(
 
     raise_if_not(
         ts_cause.freq == ts_effect.freq,
-        "ts_cause and ts_effect must have the same frequency.",
+        message="ts_cause and ts_effect must have the same frequency.",
     )
 
     if not ts_cause.has_same_time_as(ts_effect):
@@ -596,15 +596,15 @@ def plot_acf(
     ts._assert_univariate()
     raise_if(
         max_lag is None or not (1 <= max_lag < len(ts)),
-        "max_lag must be greater than or equal to 1 and less than len(ts).",
+        message="max_lag must be greater than or equal to 1 and less than len(ts).",
     )
     raise_if(
         m is not None and not (0 <= m <= max_lag),
-        "m must be greater than or equal to 0 and less than or equal to max_lag.",
+        message="m must be greater than or equal to 0 and less than or equal to max_lag.",
     )
     raise_if(
         alpha is None or not (0 < alpha < 1),
-        "alpha must be greater than 0 and less than 1.",
+        message="alpha must be greater than 0 and less than 1.",
     )
 
     r, confint = acf(
@@ -690,15 +690,15 @@ def plot_pacf(
     ts._assert_univariate()
     raise_if(
         max_lag is None or not (1 <= max_lag < len(ts) // 2),
-        "max_lag must be greater than or equal to 1 and less than len(ts)//2.",
+        message="max_lag must be greater than or equal to 1 and less than len(ts)//2.",
     )
     raise_if(
         m is not None and not (0 <= m <= max_lag),
-        "m must be greater than or equal to 0 and less than or equal to max_lag.",
+        message="m must be greater than or equal to 0 and less than or equal to max_lag.",
     )
     raise_if(
         alpha is None or not (0 < alpha < 1),
-        "alpha must be greater than 0 and less than 1.",
+        message="alpha must be greater than 0 and less than 1.",
     )
 
     r, confint = pacf(ts.values(), nlags=max_lag, method=method, alpha=alpha)

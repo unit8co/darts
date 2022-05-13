@@ -623,9 +623,9 @@ class NHiTS(PastCovariatesTorchModel):
 
         raise_if_not(
             isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
-            "Please pass an integer or a list of integers with length `num_stacks`"
+            message="Please pass an integer or a list of integers with length `num_stacks`"
             "as value for the `layer_widths` argument.",
-            logger,
+            logger=logger,
         )
 
         self.num_stacks = num_stacks
@@ -659,11 +659,11 @@ class NHiTS(PastCovariatesTorchModel):
         def _check_sizes(tup, name):
             raise_if_not(
                 len(tup) == num_stacks,
-                f"the length of {name} must match the number of stacks.",
+                message=f"the length of {name} must match the number of stacks.",
             )
             raise_if_not(
                 all([len(i) == num_blocks for i in tup]),
-                "the length of each tuple in {} must be `num_blocks={}`".format(
+                message="the length of each tuple in {} must be `num_blocks={}`".format(
                     name, num_blocks
                 ),
             )
@@ -704,7 +704,7 @@ class NHiTS(PastCovariatesTorchModel):
             # check that last value is 1
             raise_if_not(
                 n_freq_downsample[-1][-1] == 1,
-                "the downsampling coefficient of the last block of the last stack must be 1 "
+                message="the downsampling coefficient of the last block of the last stack must be 1 "
                 + "(i.e., `n_freq_downsample[-1][-1]`).",
             )
 

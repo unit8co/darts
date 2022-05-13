@@ -72,8 +72,8 @@ class Pipeline:
 
         raise_if_not(
             all((isinstance(t, BaseDataTransformer)) for t in transformers),
-            "transformers should be objects deriving from BaseDataTransformer",
-            logger,
+            message="transformers should be objects deriving from BaseDataTransformer",
+            logger=logger,
         )
 
         if transformers is None or len(transformers) == 0:
@@ -191,8 +191,8 @@ class Pipeline:
         if not partial:
             raise_if_not(
                 self._invertible,
-                "Not all transformers in the pipeline can perform inverse_transform",
-                logger,
+                message="Not all transformers in the pipeline can perform inverse_transform",
+                logger=logger,
             )
 
             for transformer in reversed(self._transformers):
@@ -233,8 +233,8 @@ class Pipeline:
         """
         raise_if_not(
             isinstance(key, int) or isinstance(key, slice),
-            "key must be either an int or a slice",
-            logger,
+            message="key must be either an int or a slice",
+            logger=logger,
         )
 
         if isinstance(key, int):
