@@ -308,3 +308,99 @@ class WoolyDataset(DatasetLoaderCSV):
                 format_time="%Y-%m-%d",
             )
         )
+
+
+class ETTh1Dataset(DatasetLoaderCSV):
+    """
+    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 taken hourly.
+    Source: [1][2]_
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTh1.csv",
+                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv",
+                hash="8381763947c85f4be6ac456c508460d6",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ETTh2Dataset(DatasetLoaderCSV):
+    """
+    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 taken hourly.
+    Source: [1][2]_
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTh2.csv",
+                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh2.csv",
+                hash="51a229a3fc13579dd939364fefe9c7ab",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ETTm1Dataset(DatasetLoaderCSV):
+    """
+    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
+    Source: [1][2]_
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTm1.csv",
+                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTm1.csv",
+                hash="82d6bd89109c63d075d99c1077b33f38",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ETTm2Dataset(DatasetLoaderCSV):
+    """
+    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
+    Source: [1][2]_
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTm2.csv",
+                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTm2.csv",
+                hash="7687e47825335860bf58bccb31be0c56",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )

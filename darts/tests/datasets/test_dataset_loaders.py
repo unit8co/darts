@@ -16,6 +16,10 @@ from darts.datasets import (
     USGasolineDataset,
     WineDataset,
     WoolyDataset,
+    ETTh1Dataset,
+    ETTh2Dataset,
+    ETTm1Dataset,
+    ETTm2Dataset,
 )
 from darts.datasets.dataset_loaders import (
     DatasetLoader,
@@ -40,6 +44,10 @@ datasets = [
     WoolyDataset,
     GasRateCO2Dataset,
     MonthlyMilkIncompleteDataset,
+    ETTh1Dataset,
+    ETTh2Dataset,
+    ETTm1Dataset,
+    ETTm2Dataset,
 ]
 
 width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1]
