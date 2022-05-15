@@ -4,7 +4,12 @@ from darts import TimeSeries
 from darts.datasets import (
     AirPassengersDataset,
     AusBeerDataset,
+    ElectricityDataset,
     EnergyDataset,
+    ETTh1Dataset,
+    ETTh2Dataset,
+    ETTm1Dataset,
+    ETTm2Dataset,
     GasRateCO2Dataset,
     HeartRateDataset,
     IceCreamHeaterDataset,
@@ -16,10 +21,6 @@ from darts.datasets import (
     USGasolineDataset,
     WineDataset,
     WoolyDataset,
-    ETTh1Dataset,
-    ETTh2Dataset,
-    ETTm1Dataset,
-    ETTm2Dataset,
 )
 from darts.datasets.dataset_loaders import (
     DatasetLoader,
@@ -48,9 +49,10 @@ datasets = [
     ETTh2Dataset,
     ETTm1Dataset,
     ETTm2Dataset,
+    ElectricityDataset,
 ]
 
-width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1]
+width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(

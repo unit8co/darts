@@ -4,6 +4,7 @@ Datasets
 
 A few popular time series datasets
 """
+from pathlib import Path
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
@@ -402,5 +403,36 @@ class ETTm2Dataset(DatasetLoaderCSV):
                 hash="7687e47825335860bf58bccb31be0c56",
                 header_time="date",
                 format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ElectricityDataset(DatasetLoaderCSV):
+    """
+    Measurements of electric power consumption in one household with a one-minute sampling rate over a period of almost
+    4 years. Different electrical quantities and some sub-metering values are available.
+    Source: [1]_
+
+    References
+    ----------
+    .. [1] https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014
+
+    """
+
+    def __init__(self):
+        def pre_proces_fn(extracted_dir, dataset_path):
+            with open(Path(extracted_dir, "LD2011_2014.TXT")) as fin:
+                with open(dataset_path, "wt") as fout:
+                    for line in fin:
+                        fout.write(line.replace(",", ".").replace(";", ","))
+
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "Electricity.csv",
+                uri="https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip",
+                hash="d17748042ea98fc9c5fb4db0946d5fa4",
+                header_time="Unnamed: 0",
+                format_time="%Y-%m-%d %H:%M:%S",
+                pre_process_fn=pre_proces_fn,
             )
         )
