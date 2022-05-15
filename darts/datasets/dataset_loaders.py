@@ -140,6 +140,10 @@ class DatasetLoader(ABC):
             raise DatasetLoadingException(
                 "Could not download the dataset. Reason:" + e.__repr__()
             ) from None
+        finally:
+            # clean up temp files
+            shutil.rmtree(extracted_dir)
+            os.remove(zip_path)
 
     @abstractmethod
     def _load_from_disk(

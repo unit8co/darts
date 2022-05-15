@@ -74,6 +74,28 @@ wrong_url_dataset = DatasetLoaderCSV(
     )
 )
 
+wrong_zip_url_dataset = DatasetLoaderCSV(
+    metadata=DatasetLoaderMetadata(
+        "wrong_zip_url",
+        uri="https://Electricity.zip",
+        hash="d17748042ea98fc9c5fb4db0946d5fa4",
+        header_time="Unnamed: 0",
+        format_time="%Y-%m-%d %H:%M:%S",
+        pre_process_fn=lambda x: x,
+    )
+)
+
+no_pre_process_fn_dataset = DatasetLoaderCSV(
+    metadata=DatasetLoaderMetadata(
+        "no_pre_process_fn",
+        uri="https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip",
+        hash="d17748042ea98fc9c5fb4db0946d5fa4",
+        header_time="Unnamed: 0",
+        format_time="%Y-%m-%d %H:%M:%S",
+        pre_process_fn=None,
+    )
+)
+
 
 class DatasetLoaderTestCase(DartsBaseTestClass):
     def tearDown(self):
@@ -96,3 +118,11 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
     def test_uri(self):
         with self.assertRaises(DatasetLoadingException):
             wrong_url_dataset.load()
+
+    def test_zip_uri(self):
+        with self.assertRaises(DatasetLoadingException):
+            wrong_zip_url_dataset.load()
+
+    def test_pre_process_fn(self):
+        with self.assertRaises(DatasetLoadingException):
+            no_pre_process_fn_dataset.load()
