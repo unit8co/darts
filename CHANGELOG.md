@@ -31,6 +31,8 @@ Darts is still in an early development phase and we cannot always guarantee back
 - New notebook showcasing transfer learning and training forecasting models on large time
   series datasets. [#885](https://github.com/unit8co/darts/pull/885) 
   by [Julien Herzen](https://github.com/hrzn).
+- New datasets: ETT and Electricity. [#617](https://github.com/unit8co/darts/pull/617) 
+  by [Greg DeVos](https://github.com/gdevos010)
 
 **Fixed**
 - Some issues with PyTorch Lightning >= 1.6.0 [#888](https://github.com/unit8co/darts/pull/888)
