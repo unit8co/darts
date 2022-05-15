@@ -3,11 +3,12 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+import torchmetrics
 from joblib import Parallel, delayed
 
 from darts.logging import get_logger, raise_if, raise_log
@@ -29,6 +30,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
+        custom_metrics: Optional[List[Callable]] = None,
         likelihood: Optional[Likelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
@@ -100,6 +102,18 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
 
+        # "metrics": ["mean_squared_error", "mean_absolute_percentage_error"],
+        # "metrics_params": [{}, {}],
+        self.custom_metrics = custom_metrics
+        self.metrics = []  # ["mean_squared_error", "mean_absolute_percentage_error"]
+        self.metrics_str = ["mean_squared_error", "mean_absolute_percentage_error"]
+        self.metrics_params = [{}, {}]
+        # if self.custom_metrics is not None:
+        #     config.metrics = [str(m) for m in self.custom_metrics]
+        #     config.metrics_params = [vars(m) for m in self.custom_metrics]
+
+        self._setup_metrics()
+
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
         self.pred_num_samples: Optional[int] = None
@@ -125,6 +139,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             -1
         ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
+        _ = self.calculate_metrics(output, target, tag="train")
         self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True)
         return loss
 
@@ -133,6 +148,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output = self._produce_train_output(val_batch[:-1])
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
+        _ = self.calculate_metrics(output, target, tag="valid")
         self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True)
         return loss
 
@@ -229,6 +245,46 @@ class PLForecastingModule(pl.LightningModule, ABC):
             # If there's no likelihood, nr_params=1 and we need to squeeze out the
             # last dimension of model output, for properly computing the loss.
             return self.criterion(output.squeeze(dim=-1), target)
+
+    def _setup_metrics(self):
+        if self.custom_metrics is None:
+            self.metrics = []
+            task_module = torchmetrics.functional
+            for metric in self.metrics_str:
+                try:
+                    self.metrics.append(getattr(task_module, metric))
+                except AttributeError as e:
+                    logger.error(
+                        f"{metric} is not a valid functional metric defined in the torchmetrics.functional module"
+                    )
+                    raise e
+        else:
+            self.metrics = self.custom_metrics
+            self.metrics_str = [m.__name__ for m in self.custom_metrics]
+
+    def calculate_metrics(self, y, y_hat, tag):
+        metrics = []
+        for metric, metric_str, metric_params in zip(
+            self.metrics, self.metrics_str, self.metrics_params
+        ):
+            if self.likelihood:
+                _metric = metric(y_hat, y, **metric_params)
+            else:
+                # If there's no likelihood, nr_params=1 and we need to squeeze out the
+                # last dimension of model output, for properly computing the metric.
+                _metric = metric(y_hat, y.squeeze(dim=-1), **metric_params)
+
+            metrics.append(_metric)
+
+            self.log(
+                f"{tag}_{metric_str}",
+                _metric,
+                on_epoch=True,
+                on_step=False,
+                logger=True,
+                prog_bar=True,
+            )
+        return metrics
 
     def configure_optimizers(self):
         """configures optimizers and learning rate schedulers for for model optimization."""
