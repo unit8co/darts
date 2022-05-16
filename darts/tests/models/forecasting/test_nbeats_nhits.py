@@ -214,4 +214,3 @@ if TORCH_AVAILABLE:
                         activation="invalid",
                     )
                     model.fit(ts)
-
