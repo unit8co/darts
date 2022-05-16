@@ -185,3 +185,33 @@ if TORCH_AVAILABLE:
                 )
                 model.fit(ts)
                 model.predict(n=2)
+
+        def test_activation_fns(self):
+            ts = tg.constant_timeseries(length=50, value=10)
+
+            for model_cls in [NBEATSModel, NHiTS]:
+                model = model_cls(
+                    input_chunk_length=1,
+                    output_chunk_length=1,
+                    n_epochs=10,
+                    num_stacks=1,
+                    num_blocks=1,
+                    layer_widths=20,
+                    random_state=42,
+                    activation="LeakyReLU",
+                )
+                model.fit(ts)
+
+                with self.assertRaises(ValueError):
+                    model = model_cls(
+                        input_chunk_length=1,
+                        output_chunk_length=1,
+                        n_epochs=10,
+                        num_stacks=1,
+                        num_blocks=1,
+                        layer_widths=20,
+                        random_state=42,
+                        activation="invalid",
+                    )
+                    model.fit(ts)
+
