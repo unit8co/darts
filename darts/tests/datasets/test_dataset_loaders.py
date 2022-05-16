@@ -2,6 +2,7 @@ import os
 
 from darts import TimeSeries
 from darts.datasets import (
+    _DEFAULT_PATH,
     AirPassengersDataset,
     AusBeerDataset,
     ElectricityDataset,
@@ -88,10 +89,9 @@ wrong_zip_url_dataset = DatasetLoaderCSV(
 no_pre_process_fn_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
         "no_pre_process_fn",
-        uri="https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip",
-        hash="d17748042ea98fc9c5fb4db0946d5fa4",
-        header_time="Unnamed: 0",
-        format_time="%Y-%m-%d %H:%M:%S",
+        uri=_DEFAULT_PATH + "/test.zip",
+        hash="167ffa96204a2b47339c21eea25baf32",
+        header_time="Month",
         pre_process_fn=None,
     )
 )

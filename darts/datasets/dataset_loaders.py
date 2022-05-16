@@ -133,17 +133,16 @@ class DatasetLoader(ABC):
             with zipfile.ZipFile(zip_path, "r") as zip_ref:
                 zip_ref.extractall(extracted_dir)
             self._metadata.pre_process_fn(extracted_dir, self._get_path_dataset())
-            # clean up temp files
-            shutil.rmtree(extracted_dir)
-            os.remove(zip_path)
         except Exception as e:
             raise DatasetLoadingException(
                 "Could not download the dataset. Reason:" + e.__repr__()
             ) from None
         finally:
             # clean up temp files
-            shutil.rmtree(extracted_dir)
-            os.remove(zip_path)
+            if extracted_dir.exists():
+                shutil.rmtree(extracted_dir)
+            if zip_path.exists():
+                os.remove(zip_path)
 
     @abstractmethod
     def _load_from_disk(
