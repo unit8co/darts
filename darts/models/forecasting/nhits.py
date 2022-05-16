@@ -102,7 +102,7 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.MaxPool1d = MaxPool1d
 
-        assert activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}"
+        raise_if_not(activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}")
         self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
