@@ -124,7 +124,7 @@ class _Block(nn.Module):
         n_theta_backcast = max(input_chunk_length // n_freq_downsample, 1)
         n_theta_forecast = max(output_chunk_length // n_freq_downsample, 1)
 
-        # entry pooling layerg
+        # entry pooling layer
         pool1d = nn.MaxPool1d if self.MaxPool1d else nn.AvgPool1d
         self.pooling_layer = pool1d(
             kernel_size=self.pooling_kernel_size,
