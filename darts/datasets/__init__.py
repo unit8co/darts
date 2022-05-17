@@ -421,7 +421,7 @@ class ElectricityDataset(DatasetLoaderCSV):
 
     def __init__(self):
         def pre_proces_fn(extracted_dir, dataset_path):
-            with open(Path(extracted_dir, "LD2011_2014.TXT")) as fin:
+            with open(Path(extracted_dir, "LD2011_2014.txt")) as fin:
                 with open(dataset_path, "wt") as fout:
                     for line in fin:
                         fout.write(line.replace(",", ".").replace(";", ","))
@@ -430,7 +430,7 @@ class ElectricityDataset(DatasetLoaderCSV):
             metadata=DatasetLoaderMetadata(
                 "Electricity.csv",
                 uri="https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip",
-                hash="d17748042ea98fc9c5fb4db0946d5fa4",
+                hash="acfe6783eea43905e510f537add940fd",
                 header_time="Unnamed: 0",
                 format_time="%Y-%m-%d %H:%M:%S",
                 pre_process_fn=pre_proces_fn,
