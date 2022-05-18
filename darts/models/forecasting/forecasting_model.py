@@ -191,8 +191,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if not self._fit_called:
             raise_log(
                 ValueError(
-                    "The model must be fit before calling `predict()`."
-                    "For global models, if `predict()` is called without specifying a series,"
+                    "The model must be fit before calling predict(). "
+                    "For global models, if predict() is called without specifying a series, "
                     "the model must have been fit on a single training series."
                 ),
                 logger,
@@ -1014,8 +1014,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        if series is None and past_covariates is None and future_covariates is None:
-            super().predict(n, num_samples)
+        super().predict(n, num_samples)
         if self._expect_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(

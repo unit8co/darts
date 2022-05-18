@@ -282,10 +282,14 @@ if TORCH_AVAILABLE:
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=100,
+                num_samples=(100 if model._is_probabilistic() else 1),
             )
+
             if isinstance(y_hat, TimeSeries):
-                y_hat = y_hat.quantile_timeseries(0.5)
+                y_hat = y_hat.quantile_timeseries(0.5) if y_hat.n_samples > 1 else y_hat
             else:
-                y_hat = [ts.quantile_timeseries(0.5) for ts in y_hat]
+                y_hat = [
+                    ts.quantile_timeseries(0.5) if ts.n_samples > 1 else ts
+                    for ts in y_hat
+                ]
             return y_hat
