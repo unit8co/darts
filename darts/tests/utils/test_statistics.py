@@ -2,11 +2,14 @@ import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
+from darts.datasets import AirPassengersDataset
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils.statistics import (
     check_seasonality,
     extract_trend_and_seasonality,
     granger_causality_tests,
+    plot_pacf,
+    plot_residuals_analysis,
     remove_seasonality,
     remove_trend,
     stationarity_test_adf,
@@ -193,3 +196,11 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
             calc_season = remove_trend(
                 self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
             )
+
+
+class PlotTestCase(DartsBaseTestClass):
+    series = AirPassengersDataset().load()
+
+    def test_statistics_plot(self):
+        plot_residuals_analysis(self.series)
+        plot_pacf(self.series)
