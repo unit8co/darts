@@ -1358,6 +1358,11 @@ class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
         result = self.ts.head(20, axis="sample")
         self.assertEqual(10, result.n_samples)
 
+    def test_head_numeric_time_index(self):
+        s = TimeSeries.from_values(self.ts.values())
+        # taking the head should not crash
+        s.head()
+
     def test_tail_overshot_time_axis(self):
         result = self.ts.tail(20)
         self.assertEqual(10, result.n_timesteps)
@@ -1370,6 +1375,11 @@ class TimeSeriesHeadTailTestCase(DartsBaseTestClass):
     def test_tail_overshot_sample_axis(self):
         result = self.ts.tail(20, axis="sample")
         self.assertEqual(10, result.n_samples)
+
+    def test_tail_numeric_time_index(self):
+        s = TimeSeries.from_values(self.ts.values())
+        # taking the tail should not crash
+        s.tail()
 
 
 class TimeSeriesFromDataFrameTestCase(DartsBaseTestClass):
