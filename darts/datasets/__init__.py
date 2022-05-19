@@ -313,9 +313,19 @@ class WoolyDataset(DatasetLoaderCSV):
 
 class ETTh1Dataset(DatasetLoaderCSV):
     """
-    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 taken hourly.
     Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
 
     References
     ----------
@@ -327,7 +337,7 @@ class ETTh1Dataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "ETTh1.csv",
-                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh1.csv",
+                uri=_DEFAULT_PATH + "/ETTh1.csv",
                 hash="8381763947c85f4be6ac456c508460d6",
                 header_time="date",
                 format_time="%Y-%m-%d %H:%M:%S",
@@ -337,9 +347,19 @@ class ETTh1Dataset(DatasetLoaderCSV):
 
 class ETTh2Dataset(DatasetLoaderCSV):
     """
-    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 taken hourly.
     Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
 
     References
     ----------
@@ -351,7 +371,7 @@ class ETTh2Dataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "ETTh2.csv",
-                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTh2.csv",
+                uri=_DEFAULT_PATH + "/ETTh2.csv",
                 hash="51a229a3fc13579dd939364fefe9c7ab",
                 header_time="date",
                 format_time="%Y-%m-%d %H:%M:%S",
@@ -361,9 +381,19 @@ class ETTh2Dataset(DatasetLoaderCSV):
 
 class ETTm1Dataset(DatasetLoaderCSV):
     """
-    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
     Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
 
     References
     ----------
@@ -375,7 +405,7 @@ class ETTm1Dataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "ETTm1.csv",
-                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTm1.csv",
+                uri=_DEFAULT_PATH + "/ETTm1.csv",
                 hash="82d6bd89109c63d075d99c1077b33f38",
                 header_time="date",
                 format_time="%Y-%m-%d %H:%M:%S",
@@ -385,9 +415,19 @@ class ETTm1Dataset(DatasetLoaderCSV):
 
 class ETTm2Dataset(DatasetLoaderCSV):
     """
-    The data of 2 Electricity Transformers at 2 stations, including load, oil temperature.
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
     The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
     Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
 
     References
     ----------
@@ -399,7 +439,7 @@ class ETTm2Dataset(DatasetLoaderCSV):
         super().__init__(
             metadata=DatasetLoaderMetadata(
                 "ETTm2.csv",
-                uri="https://raw.githubusercontent.com/zhouhaoyi/ETDataset/main/ETT-small/ETTm2.csv",
+                uri=_DEFAULT_PATH + "/ETTm2.csv",
                 hash="7687e47825335860bf58bccb31be0c56",
                 header_time="date",
                 format_time="%Y-%m-%d %H:%M:%S",
@@ -409,8 +449,8 @@ class ETTm2Dataset(DatasetLoaderCSV):
 
 class ElectricityDataset(DatasetLoaderCSV):
     """
-    Measurements of electric power consumption in one household with a one-minute sampling rate over a period of almost
-    4 years. Different electrical quantities and some sub-metering values are available.
+    Measurements of electric power consumption in one household with 15 minute sampling rate.
+    370 client's consumption are recorded in kW.
     Source: [1]_
 
     References
