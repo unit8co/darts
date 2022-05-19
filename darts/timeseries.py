@@ -504,6 +504,7 @@ class TimeSeries:
         group_cols: Union[List[str], str],
         time_col: Optional[str] = None,
         value_cols: Optional[Union[List[str], str]] = None,
+        static_cols: Optional[Union[List[str], str]] = None,
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
@@ -530,6 +531,11 @@ class TimeSeries:
         value_cols
             A string or list of strings representing the value column(s) to be extracted from the DataFrame. If set to
             `None`, the whole DataFrame will be used.
+        static_cols
+            A string or list of strings representing static variable columns from the DataFrame that should be
+            appended as static covariates to the resulting TimeSeries groups. Different to `group_cols`, the
+            DataFrame is not grouped by these columns. Note that for every group, there must be exactly one
+            unique value.
         fill_missing_dates
             Optionally, a boolean value indicating whether to fill missing dates with NaN values. This requires
             either a provided `freq` or the possibility to infer the frequency from the provided timestamps. See
@@ -545,11 +551,37 @@ class TimeSeries:
         TimeSeries
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
-        # split df by groups and store group values (static covariates)
-        splits = [
-            (pd.Series(static_covs, index=group_cols), group.drop(columns=group_cols))
-            for static_covs, group in df.groupby(group_cols)
-        ]
+        group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
+        static_cols = (
+            [static_cols]
+            if not isinstance(static_cols, list) and static_cols is not None
+            else []
+        )
+        static_cov_cols = group_cols + static_cols
+
+        # split df by groups, and store group values and static values (static covariates)
+        splits = []
+        for static_cov_vals, group in df.groupby(group_cols):
+            # check that for each group there is only one unique value per column in `static_cols`
+            if static_cols:
+                static_cols_valid = [
+                    len(group[col].unique()) == 1 for col in static_cols
+                ]
+                raise_if_not(
+                    all(static_cols_valid),
+                    f"Encountered more than one unique value in group {group} for given static columns: "
+                    f"{[static_col for static_col, is_valid in zip(static_cols, static_cols_valid) if not is_valid]}.",
+                    logger,
+                )
+                # add the static covariates to the group values
+                static_cov_vals += tuple(group[static_cols].values[0])
+            # store static covariate Series and group DataFrame (without static cov columns)
+            splits.append(
+                (
+                    pd.DataFrame(static_cov_vals, index=static_cov_cols),
+                    group.drop(columns=static_cov_cols),
+                )
+            )
 
         # create a list with multiple TimeSeries and add static covariates
         return [
@@ -2083,7 +2115,7 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
-    def add_static_covariates(self, covariates: pd.Series):
+    def add_static_covariates(self, covariates: Union[pd.Series, pd.DataFrame]):
         self._xa.attrs["static_covariates"] = covariates
         return self
 

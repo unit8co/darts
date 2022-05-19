@@ -478,7 +478,6 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         tuple
             ``(x_past, x_future)`` the input/past and output/future chunks.
         """
-
         (
             past_target,
             past_covariates,
