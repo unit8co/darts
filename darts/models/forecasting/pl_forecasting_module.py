@@ -139,8 +139,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
             -1
         ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
-        _ = self.calculate_metrics(output, target, tag="train")
         self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True)
+        _ = self.calculate_metrics(output, target, tag="train")
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
@@ -148,8 +148,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         output = self._produce_train_output(val_batch[:-1])
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
-        _ = self.calculate_metrics(output, target, tag="valid")
         self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True)
+        _ = self.calculate_metrics(output, target, tag="valid")
         return loss
 
     def predict_step(
@@ -268,7 +268,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             self.metrics, self.metrics_str, self.metrics_params
         ):
             if self.likelihood:
-                _metric = metric(y_hat, y, **metric_params)
+                _metric = metric(y_hat, self.likelihood.sample(y), **metric_params)
             else:
                 # If there's no likelihood, nr_params=1 and we need to squeeze out the
                 # last dimension of model output, for properly computing the metric.
