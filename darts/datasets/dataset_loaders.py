@@ -1,7 +1,6 @@
 import hashlib
 import os
-import shutil
-import sys
+import tempfile
 import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
@@ -124,30 +123,18 @@ class DatasetLoader(ABC):
 
     def _download_zip_dataset(self):
         os.makedirs(self._root_path, exist_ok=True)
-        extracted_dir = Path(DatasetLoader._DEFAULT_DIRECTORY, Path("temp_dir"))
-        zip_path = Path(DatasetLoader._DEFAULT_DIRECTORY, "temp.zip")
-
         try:
             request = requests.get(self._metadata.uri)
-            with open(zip_path, "wb") as f:
-                f.write(request.content)
-            with zipfile.ZipFile(zip_path, "r") as zip_ref:
-                zip_ref.extractall(extracted_dir)
-            self._metadata.pre_process_fn(extracted_dir, self._get_path_dataset())
+            with tempfile.TemporaryFile() as tf:
+                tf.write(request.content)
+                with tempfile.TemporaryDirectory() as td:
+                    with zipfile.ZipFile(tf, "r") as zip_ref:
+                        zip_ref.extractall(td)
+                        self._metadata.pre_process_fn(td, self._get_path_dataset())
         except Exception as e:
-
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, fname, exc_tb.tb_lineno)
             raise DatasetLoadingException(
                 "Could not download the dataset. Reason:" + e.__repr__()
             ) from None
-        finally:
-            # clean up temp files
-            if extracted_dir.exists():
-                shutil.rmtree(extracted_dir)
-            if zip_path.exists():
-                os.remove(zip_path)
 
     @abstractmethod
     def _load_from_disk(
