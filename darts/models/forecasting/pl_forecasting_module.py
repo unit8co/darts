@@ -339,7 +339,16 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(self, input_batch: Tuple):
-        past_target, past_covariate = input_batch
+        """
+        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset for
+        training.
+
+        Parameters:
+        ----------
+        input_batch
+            ``(past_target, past_covariates, static_covariates)``
+        """
+        past_target, past_covariate, _ = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
         inpt = (
             torch.cat([past_target, past_covariate], dim=2)
@@ -360,13 +369,13 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         n
             prediction length
         input_batch
-            (past_target, past_covariates, future_past_covariates)
+            ``(past_target, past_covariates, future_past_covariates, static_covariates)``
         roll_size
             roll input arrays after every sequence by ``roll_size``. Initially, ``roll_size`` is equivalent to
             ``self.output_chunk_length``
         """
         dim_component = 2
-        past_target, past_covariates, future_past_covariates = input_batch
+        past_target, past_covariates, future_past_covariates, _ = input_batch
 
         n_targets = past_target.shape[dim_component]
         n_past_covs = (
@@ -459,6 +468,15 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(
         self, input_batch: Tuple
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Feeds MixedCovariatesTorchModel with input and output chunks of a MixedCovariatesSequentialDataset for
+        training.
+
+        Parameters:
+        ----------
+        input_batch
+            ``(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates)``.
+        """
         return self(self._process_input_batch(input_batch))
 
     def _process_input_batch(
@@ -471,7 +489,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         Parameters
         ----------
         input_batch
-            ``(past_target, past_covariates, historic_future_covariates, future_covariates)``.
+            ``(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates)``.
 
         Returns
         -------
@@ -483,11 +501,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             past_covariates,
             historic_future_covariates,
             future_covariates,
+            static_covariates,
         ) = input_batch
         dim_variable = 2
-
-        # TODO: impelement static covariates
-        static_covariates = None
 
         x_past = torch.cat(
             [
@@ -541,6 +557,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             historic_future_covariates,
             future_covariates,
             future_past_covariates,
+            static_covariates,
         ) = input_batch
 
         n_targets = past_target.shape[dim_component]
