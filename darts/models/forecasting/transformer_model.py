@@ -108,7 +108,7 @@ class _TransformerModule(PLPastCovariatesModule):
         dropout
             Fraction of neurons affected by Dropout.
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
+            The activation function of encoder/decoder intermediate layer.
         custom_encoder
             A custom transformer encoder provided by the user (default=None).
         custom_decoder
@@ -252,7 +252,9 @@ class TransformerModel(PastCovariatesTorchModel):
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
+            The activation function of encoder/decoder intermediate layer, (default='relu').
+            can be one of the glu variant's FFN ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
+            or one the internal activations ["relu", "gelu"]
         custom_encoder
             A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
