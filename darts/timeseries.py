@@ -592,7 +592,7 @@ class TimeSeries:
                 fill_missing_dates=fill_missing_dates,
                 freq=freq,
                 fillna_value=fillna_value,
-            ).add_static_covariates(static_covs)
+            ).set_static_covariates(static_covs)
             for static_covs, split in splits
         ]
 
@@ -2120,8 +2120,12 @@ class TimeSeries:
 
         return self.__class__(new_xa)
 
-    def add_static_covariates(self, covariates: Union[pd.Series, pd.DataFrame]):
-        self._xa.attrs["static_covariates"] = covariates.astype(self.dtype)
+    def set_static_covariates(
+        self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
+    ):
+        self._xa.attrs["static_covariates"] = (
+            covariates.astype(self.dtype) if covariates is not None else covariates
+        )
         return self
 
     def stack(self, other: "TimeSeries") -> "TimeSeries":

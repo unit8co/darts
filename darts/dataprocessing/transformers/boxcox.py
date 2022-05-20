@@ -167,7 +167,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         )
         return series.with_values(
             BoxCox._reshape_out(series, transformed_vals, component_mask=component_mask)
-        )
+        ).set_static_covariates(series.static_covariates)
 
     @staticmethod
     def ts_inverse_transform(
@@ -185,7 +185,7 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             BoxCox._reshape_out(
                 series, inv_transformed_vals, component_mask=component_mask
             )
-        )
+        ).set_static_covariates(series.static_covariates)
 
     def fit(
         self, series: Union[TimeSeries, Sequence[TimeSeries]], **kwargs
