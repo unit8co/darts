@@ -9,11 +9,16 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger
+import darts.utils.activations as GLU_activations
+from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
+
+GLU_FFN = ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
+BUILT_IN = ["relu", "gelu"]
+FFN = GLU_FFN + BUILT_IN
 
 
 # This implementation of positional encoding is taken from the PyTorch documentation:
@@ -76,7 +81,7 @@ class _TransformerModule(PLPastCovariatesModule):
         activation: str,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
@@ -134,6 +139,16 @@ class _TransformerModule(PLPastCovariatesModule):
             d_model, dropout, self.input_chunk_length
         )
 
+        raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
+        if activation in GLU_FFN:
+            # use glu variant feedforward layers
+            self.activation = getattr(GLU_activations, activation)(
+                d_model=d_model, d_ff=dim_feedforward, dropout=dropout
+            )
+        else:
+            # use nn.Transformer built in feedforward layers
+            self.activation = activation
+
         # Defining the Transformer module
         self.transformer = nn.Transformer(
             d_model=d_model,
@@ -142,7 +157,7 @@ class _TransformerModule(PLPastCovariatesModule):
             num_decoder_layers=num_decoder_layers,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
-            activation=activation,
+            activation=self.activation,
             custom_encoder=custom_encoder,
             custom_decoder=custom_decoder,
         )
@@ -202,7 +217,7 @@ class TransformerModel(PastCovariatesTorchModel):
         activation: str = "relu",
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
 
         """Transformer model
