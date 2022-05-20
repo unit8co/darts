@@ -9,8 +9,8 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-import darts.utils.activations as GLU_activations
 from darts.logging import get_logger, raise_if_not
+from darts.models.components import glu_variants
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
@@ -142,7 +142,7 @@ class _TransformerModule(PLPastCovariatesModule):
         raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
         if activation in GLU_FFN:
             # use glu variant feedforward layers
-            self.activation = getattr(GLU_activations, activation)(
+            self.activation = getattr(glu_variants, activation)(
                 d_model=d_model, d_ff=dim_feedforward, dropout=dropout
             )
         else:

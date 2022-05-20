@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 
-from darts.utils.feed_forward import FeedForward
+from darts.models.components.feed_forward import FeedForward
 
 
 # GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
