@@ -453,8 +453,9 @@ class ElectricityDataset(DatasetLoaderCSV):
     370 client's consumption are recorded in kW.
     Source: [1]_
 
-    Loading this dataset will provide a timeseries with 370 columns for each household. the following
-    code can be used to convert the dataset to a list of timeseries, one for each household.
+    Loading this dataset will provide a multivariate timeseries with 370 columns for each household.
+    The following code can be used to convert the dataset to a list of univariate timeseries,
+    one for each household.
 
     .. highlight:: python
     .. code-block:: python
