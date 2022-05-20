@@ -111,7 +111,7 @@ if TORCH_AVAILABLE:
             series = tg.linear_timeseries(length=100)
             self.helper_test_pred_length(TransformerModel, series)
 
-        def test_ativations(self):
+        def test_activations(self):
             with self.assertRaises(ValueError):
                 model1 = TransformerModel(
                     input_chunk_length=1, output_chunk_length=1, activation="invalid"
