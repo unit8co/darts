@@ -846,7 +846,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         train_sample = train_dataset[0]
         if self.model is None:
             # Build model, based on the dimensions of the first series in the train set.
-            self.train_sample, self.output_dim = train_sample, train_sample[-2].shape[1]
+            self.train_sample, self.output_dim = train_sample, train_sample[-1].shape[1]
             self._init_model(trainer)
         else:
             # Check existing model has input/output dims matching what's provided in the training set.

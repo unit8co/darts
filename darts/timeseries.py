@@ -895,6 +895,11 @@ class TimeSeries:
         return not self._has_datetime_index
 
     @property
+    def has_static_covariates(self) -> bool:
+        """Whether this series contains static covariates."""
+        return self.static_covariates is not None
+
+    @property
     def duration(self) -> Union[pd.Timedelta, int]:
         """The duration of this time series (as a time delta or int)."""
         return self._time_index[-1] - self._time_index[0]
@@ -2116,7 +2121,7 @@ class TimeSeries:
         return self.__class__(new_xa)
 
     def add_static_covariates(self, covariates: Union[pd.Series, pd.DataFrame]):
-        self._xa.attrs["static_covariates"] = covariates
+        self._xa.attrs["static_covariates"] = covariates.astype(self.dtype)
         return self
 
     def stack(self, other: "TimeSeries") -> "TimeSeries":

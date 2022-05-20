@@ -184,7 +184,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         # TODO: we need think about the dimensionality of static covariates
         static_covariate = (
             target_series.static_covariates.T.values
-            if target_series.static_covariates is not None
+            if target_series.has_static_covariates
             else None
         )
 
