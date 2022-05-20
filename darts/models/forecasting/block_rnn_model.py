@@ -78,9 +78,6 @@ class _BlockRNNModule(PLPastCovariatesModule):
 
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         # Defining parameters
         self.hidden_dim = hidden_dim
         self.n_layers = num_layers

@@ -183,9 +183,6 @@ class _TCNModule(PLPastCovariatesModule):
 
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         # Defining parameters
         self.input_size = input_size
         self.n_filters = num_filters

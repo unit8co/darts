@@ -6,25 +6,29 @@ You will find here some more detailed informations about Darts.
 
 **Note:** The user guide is not yet complete and still under construction.
 
-Neural Networks
-===============
-
-Neural Networks (PyTorch-based models)
-
 .. toctree::
    :maxdepth: 2
 
+   userguide/timeseries.md
+
+   userguide/forecasting_overview.md
+
    userguide/torch_forecasting_models.md
-   userguide/performance.md
    userguide/gpu_and_tpu_usage.md
 
-
-Covariates
-==========
-
-Covariates in Darts:
-
-.. toctree::
-   :maxdepth: 1
+   .. userguide/regression_models.md
 
    userguide/covariates.md
+   .. userguide/probabilistic_forecasting.md
+
+   .. userguide/ensembling.md
+ 
+   .. userguide/filtering_models.md
+
+   .. userguide/preprocessing_and_pipelines.md
+
+   .. userguide/metrics.md
+
+   .. userguide/hyper_params.md
+
+   userguide/faq.md

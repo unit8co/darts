@@ -88,9 +88,6 @@ class _TFTModule(PLMixedCovariatesModule):
 
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         self.n_targets, self.loss_size = output_dim
         self.variables_meta = variables_meta
         self.hidden_size = hidden_size

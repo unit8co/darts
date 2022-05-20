@@ -985,6 +985,10 @@ if TORCH_AVAILABLE:
 
                 self.assertTrue((pred1 == pred2).all())
 
+                # test whether the next prediction of the same model is different
+                pred3 = model.predict(n=10, num_samples=2).values()
+                self.assertTrue((pred2 != pred3).any())
+
         def test_probabilistic_forecast_accuracy(self):
             for model_cls, model_kwargs, err in self.models_cls_kwargs_errs:
                 self.helper_test_probabilistic_forecast_accuracy(
