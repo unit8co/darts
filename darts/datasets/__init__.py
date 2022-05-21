@@ -497,7 +497,7 @@ class ElectricityDataset(DatasetLoaderCSV):
     def __init__(self):
         def pre_proces_fn(extracted_dir, dataset_path):
             with open(Path(extracted_dir, "LD2011_2014.txt")) as fin:
-                with open(dataset_path, "wt") as fout:
+                with open(dataset_path, "wt", newline="\n") as fout:
                     for line in fin:
                         fout.write(line.replace(",", ".").replace(";", ","))
 
