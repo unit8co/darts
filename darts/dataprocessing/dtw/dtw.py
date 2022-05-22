@@ -312,8 +312,8 @@ def dtw(
     if distance is None:
         raise_if_not(
             series1.n_components == series2.n_components,
-            message="Expected series to have same number of components, or to supply custom distance function",
-            logger=logger,
+            "Expected series to have same number of components, or to supply custom distance function",
+            logger,
         )
 
         distance = default_distance_uni if both_univariate else default_distance_multi
@@ -327,17 +327,17 @@ def dtw(
 
     raise_if(
         np.any(np.isnan(values_x)),
-        message="Dynamic Time Warping does not support nan values. "
+        "Dynamic Time Warping does not support nan values. "
         "You can use the module darts.utils.missing_values to fill them, "
         "before passing them to dtw.",
-        logger=logger,
+        logger,
     )
     raise_if(
         np.any(np.isnan(values_y)),
-        message="Dynamic Time Warping does not support nan values. "
+        "Dynamic Time Warping does not support nan values. "
         "You can use the module darts.utils.missing_values to fill them,"
         "before passing it into dtw",
-        logger=logger,
+        logger,
     )
 
     window = copy.deepcopy(window)
@@ -345,14 +345,14 @@ def dtw(
 
     raise_if(
         multi_grid_radius < -1,
-        message="Expected multi-grid radius to be positive or -1",
+        "Expected multi-grid radius to be positive or -1",
     )
 
     if multi_grid_radius >= 0:
         raise_if_not(
             isinstance(window, NoWindow),
-            message="Multi-grid solver does not currently support windows",
-            logger=logger,
+            "Multi-grid solver does not currently support windows",
+            logger,
         )
         cost_matrix = _fast_dtw(values_x, values_y, distance, multi_grid_radius)
     else:
