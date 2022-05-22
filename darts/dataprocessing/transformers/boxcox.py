@@ -91,8 +91,8 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         raise_if(
             not isinstance(optim_method, str)
             or optim_method not in ["mle", "pearsonr"],
-            message="optim_method parameter must be either 'mle' or 'pearsonr'",
-            logger=logger,
+            "optim_method parameter must be either 'mle' or 'pearsonr'",
+            logger,
         )
 
         self._lmbda = lmbda
@@ -106,9 +106,9 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
             # CASE 0: Sequence[Sequence[float]]
             raise_if(
                 len(self._lmbda) != len(series),
-                message="with multiple time series the number of lmbdas sequences must equal the number of time \
+                "with multiple time series the number of lmbdas sequences must equal the number of time \
                         series",
-                logger=logger,
+                logger,
             )
             return zip(series, self._lmbda)
         else:
@@ -143,8 +143,8 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         elif isinstance(lmbda, Sequence):
             raise_if(
                 len(lmbda) != series.width,
-                message="lmbda should have one value per dimension (ie. column or variable) of the time series",
-                logger=logger,
+                "lmbda should have one value per dimension (ie. column or variable) of the time series",
+                logger,
             )
         else:
             # Replicate lmbda to match dimensions of the time series

@@ -343,10 +343,7 @@ def dtw(
     window = copy.deepcopy(window)
     window.init_size(len(values_x), len(values_y))
 
-    raise_if(
-        multi_grid_radius < -1,
-        "Expected multi-grid radius to be positive or -1",
-    )
+    raise_if(multi_grid_radius < -1, "Expected multi-grid radius to be positive or -1")
 
     if multi_grid_radius >= 0:
         raise_if_not(

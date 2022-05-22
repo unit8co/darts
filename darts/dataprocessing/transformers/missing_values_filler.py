@@ -69,13 +69,13 @@ class MissingValuesFiller(BaseDataTransformer):
         """
         raise_if_not(
             isinstance(fill, str) or isinstance(fill, float),
-            message="`fill` should either be a string or a float",
-            logger=logger,
+            "`fill` should either be a string or a float",
+            logger,
         )
         raise_if(
             isinstance(fill, str) and fill != "auto",
-            message="invalid string for `fill`: can only be set to 'auto'",
-            logger=logger,
+            "invalid string for `fill`: can only be set to 'auto'",
+            logger,
         )
 
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)

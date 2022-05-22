@@ -107,7 +107,7 @@ def raise_if(
     ValueError
         if `condition` is satisfied
     """
-    raise_if_not(not condition, message=message, logger=logger)
+    raise_if_not(not condition, message, logger)
 
 
 def raise_log(exception: Exception, logger: logging.Logger = get_logger("main_logger")):
