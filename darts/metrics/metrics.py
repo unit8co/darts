@@ -797,7 +797,7 @@ def mase(
             "Expecting pred_series to be TimeSeries",
         )
         raise_if_not(
-            isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries",
+            isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries"
         )
         return _multivariate_mase(
             actual_series=actual_series,
