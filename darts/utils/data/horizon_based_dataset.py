@@ -85,12 +85,12 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         # Checks
         raise_if_not(
             self.max_lh >= self.min_lh >= 1,
-            message="The lh parameter should be an int tuple (min_lh, max_lh), "
+            "The lh parameter should be an int tuple (min_lh, max_lh), "
             "with 1 <= min_lh <= max_lh",
         )
         raise_if_not(
             covariates is None or len(self.target_series) == len(self.covariates),
-            message="The provided sequence of target series must have the same length as "
+            "The provided sequence of target series must have the same length as "
             "the provided sequence of covariate series.",
         )
 
@@ -114,7 +114,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         raise_if_not(
             len(target_vals)
             >= (self.lookback + self.max_lh) * self.output_chunk_length,
-            message="The dataset contains some input/target series that are shorter than "
+            "The dataset contains some input/target series that are shorter than "
             "`(lookback + max_lh) * H` ({}-th series)".format(ts_idx),
         )
 
@@ -164,7 +164,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         if self.covariates is not None:
             raise_if_not(
                 cov_end <= len(ts_covariate),
-                message=f"The dataset contains 'past' covariates that don't extend far enough into the future. "
+                f"The dataset contains 'past' covariates that don't extend far enough into the future. "
                 f"({idx}-th sample)",
             )
 
@@ -174,7 +174,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
             raise_if_not(
                 len(covariate) == len(past_target),
-                message="The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
+                "The dataset contains 'past' covariates whose time axis doesn't allow to obtain the "
                 "input (or output) chunk relative to the target series.",
             )
 

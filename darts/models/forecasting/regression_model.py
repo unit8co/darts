@@ -102,7 +102,7 @@ class RegressionModel(GlobalForecastingModel):
             (lags is None)
             and (lags_future_covariates is None)
             and (lags_past_covariates is None),
-            message="At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
+            "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
         )
 
         lags_type_checks = [
@@ -113,17 +113,17 @@ class RegressionModel(GlobalForecastingModel):
         for _lags, lags_name in lags_type_checks:
             raise_if_not(
                 isinstance(_lags, (int, list)) or _lags is None,
-                message=f"`{lags_name}` must be of type int or list. Given: {type(_lags)}.",
+                f"`{lags_name}` must be of type int or list. Given: {type(_lags)}.",
             )
             raise_if(
                 isinstance(_lags, bool),
-                message=f"`{lags_name}` must be of type int or list, not bool.",
+                f"`{lags_name}` must be of type int or list, not bool.",
             )
 
         raise_if_not(
             isinstance(lags_future_covariates, (tuple, list))
             or lags_future_covariates is None,
-            message=f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.",
+            f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.",
         )
 
         if isinstance(lags_future_covariates, tuple):
@@ -131,26 +131,24 @@ class RegressionModel(GlobalForecastingModel):
                 len(lags_future_covariates) == 2
                 and isinstance(lags_future_covariates[0], int)
                 and isinstance(lags_future_covariates[1], int),
-                message="`lags_future_covariates` tuple must be of length 2, and must contain two integers",
+                "`lags_future_covariates` tuple must be of length 2, and must contain two integers",
             )
             raise_if(
                 isinstance(lags_future_covariates[0], bool)
                 or isinstance(lags_future_covariates[1], bool),
-                message="`lags_future_covariates` tuple must contain intergers, not bool",
+                "`lags_future_covariates` tuple must contain intergers, not bool",
             )
 
         # set lags
         if isinstance(lags, int):
-            raise_if_not(
-                lags > 0, message=f"`lags` must be strictly positive. Given: {lags}."
-            )
+            raise_if_not(lags > 0, f"`lags` must be strictly positive. Given: {lags}.")
             # selecting last `lags` lags, starting from position 1 (skipping current, pos 0, the one we want to predict)
             self.lags["target"] = list(range(-lags, 0))
         elif isinstance(lags, list):
             for lag in lags:
                 raise_if(
                     not isinstance(lag, int) or (lag >= 0),
-                    message=f"Every element of `lags` must be a strictly negative integer. Given: {lags}.",
+                    f"Every element of `lags` must be a strictly negative integer. Given: {lags}.",
                 )
             if lags:
                 self.lags["target"] = sorted(lags)
@@ -158,15 +156,14 @@ class RegressionModel(GlobalForecastingModel):
         if isinstance(lags_past_covariates, int):
             raise_if_not(
                 lags_past_covariates > 0,
-                message=f"`lags_past_covariates` must be an integer > 0. Given: {lags_past_covariates}.",
+                f"`lags_past_covariates` must be an integer > 0. Given: {lags_past_covariates}.",
             )
             self.lags["past"] = list(range(-lags_past_covariates, 0))
         elif isinstance(lags_past_covariates, list):
             for lag in lags_past_covariates:
                 raise_if(
                     not isinstance(lag, int) or (lag >= 0),
-                    message=f"""Every element of `lags_covariates` must be an integer < 0.
-                    Given: {lags_past_covariates}""",
+                    f"Every element of `lags_covariates` must be an integer < 0. Given: {lags_past_covariates}.",
                 )
             if lags_past_covariates:
                 self.lags["past"] = sorted(lags_past_covariates)
@@ -174,7 +171,7 @@ class RegressionModel(GlobalForecastingModel):
         if isinstance(lags_future_covariates, tuple):
             raise_if_not(
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
-                message=f"`lags_future_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
+                f"`lags_future_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
             )
             if (
                 lags_future_covariates[0] is not None
@@ -190,8 +187,7 @@ class RegressionModel(GlobalForecastingModel):
             for lag in lags_future_covariates:
                 raise_if(
                     not isinstance(lag, int) or isinstance(lag, bool),
-                    message=f"""Every element of `lags_future_covariates` must be an integer.
-                    Given: {lags_future_covariates}.""",
+                    f"Every element of `lags_future_covariates` must be an integer. Given: {lags_future_covariates}.",
                 )
             if lags_future_covariates:
                 self.lags["future"] = sorted(lags_future_covariates)
@@ -199,7 +195,7 @@ class RegressionModel(GlobalForecastingModel):
         # check and set output_chunk_length
         raise_if_not(
             isinstance(output_chunk_length, int) and output_chunk_length > 0,
-            message=f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
+            f"output_chunk_length must be an integer greater than 0. Given: {output_chunk_length}",
         )
         self.output_chunk_length = output_chunk_length
 
@@ -295,7 +291,7 @@ class RegressionModel(GlobalForecastingModel):
 
             raise_if(
                 X_y.shape[0] == 0,
-                message="Unable to build any training samples of the target series "
+                "Unable to build any training samples of the target series "
                 + (f"at index {idx} " if len(target_series) > 1 else "")
                 + "and the corresponding covariate series; "
                 "There is no time step for which all required lags are available and are not NaN values.",
@@ -372,25 +368,24 @@ class RegressionModel(GlobalForecastingModel):
 
         raise_if(
             past_covariates is not None and "past" not in self.lags,
-            message="""`past_covariates` not None in `fit()` method call,
-            but `lags_past_covariates` is None in constructor.""",
+            "`past_covariates` not None in `fit()` method call, but `lags_past_covariates` is None in constructor.",
         )
 
         raise_if(
             past_covariates is None and "past" in self.lags,
-            message="`past_covariates` is None in `fit()` method call, but `lags_past_covariates` is not None in "
+            "`past_covariates` is None in `fit()` method call, but `lags_past_covariates` is not None in "
             "constructor.",
         )
 
         raise_if(
             future_covariates is not None and "future" not in self.lags,
-            message="`future_covariates` not None in `fit()` method call, but `lags_future_covariates` is None in "
+            "`future_covariates` not None in `fit()` method call, but `lags_future_covariates` is None in "
             "constructor.",
         )
 
         raise_if(
             future_covariates is None and "future" in self.lags,
-            message="`future_covariates` is None in `fit()` method call, but `lags_future_covariates` is not None in "
+            "`future_covariates` is None in `fit()` method call, but `lags_future_covariates` is not None in "
             "constructor.",
         )
 
@@ -468,8 +463,8 @@ class RegressionModel(GlobalForecastingModel):
         """
         raise_if(
             not self._is_probabilistic() and num_samples > 1,
-            message="`num_samples > 1` is only supported for probabilistic models.",
-            logger=logger,
+            "`num_samples > 1` is only supported for probabilistic models.",
+            logger,
         )
 
         super().predict(n, series, past_covariates, future_covariates, num_samples)
@@ -478,7 +473,7 @@ class RegressionModel(GlobalForecastingModel):
             # then there must be a single TS, and that was saved in super().fit as self.training_series
             raise_if(
                 self.training_series is None,
-                message="Input series has to be provided after fitting on multiple series.",
+                "Input series has to be provided after fitting on multiple series.",
             )
             series = self.training_series
 
@@ -505,7 +500,7 @@ class RegressionModel(GlobalForecastingModel):
         }
         raise_if_not(
             pred_input_dim == self.input_dim,
-            message=f"The number of components of the target series and the covariates provided for prediction doesn't "
+            f"The number of components of the target series and the covariates provided for prediction doesn't "
             f"match the number of components of the target series and the covariates this model has been "
             f"trained on.\n"
             f"Provided number of components for prediction: {pred_input_dim}\n"
@@ -544,12 +539,12 @@ class RegressionModel(GlobalForecastingModel):
                     raise_if_not(
                         cov.start_time() <= first_req_ts
                         and cov.end_time() >= last_req_ts,
-                        message=f"""The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently long.
-                        Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`,
-                        `max(lags_{cov_type}_covariates)={lags[-1]}` and
-                        `output_chunk_length={self.output_chunk_length}`
-                        the {cov_type}_covariate has to range from {first_req_ts} until {last_req_ts} (inclusive),
-                        but it ranges only from {cov.start_time()} until {cov.end_time()}.""",
+                        f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently long. "
+                        f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
+                        f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
+                        f"`output_chunk_length={self.output_chunk_length}`\n"
+                        f"the {cov_type}_covariate has to range from {first_req_ts} until {last_req_ts} (inclusive), "
+                        f"but it ranges only from {cov.start_time()} until {cov.end_time()}.",
                     )
 
                     if cov.has_datetime_index:
@@ -648,7 +643,7 @@ class _LikelihoodMixin:
     def _check_likelihood(likelihood, available_likelihoods):
         raise_if_not(
             likelihood in available_likelihoods,
-            message=f"If likelihood is specified it must be one of {available_likelihoods}",
+            f"If likelihood is specified it must be one of {available_likelihoods}",
         )
 
     @staticmethod

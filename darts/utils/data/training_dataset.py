@@ -145,7 +145,7 @@ class TrainingDataset(ABC, Dataset):
                 raise_if_not(
                     start_time in ts_covariate.time_index
                     and end_time in ts_covariate.time_index,
-                    message=f"Missing covariates; could not find {cov_type.value} covariates in index value range: "
+                    f"Missing covariates; could not find {cov_type.value} covariates in index value range: "
                     f"{start_time} - {end_time}.",
                 )
 

@@ -197,42 +197,38 @@ def _historical_forecasts_general_checks(series, kwargs):
     forecast_horizon = n.forecast_horizon
     raise_if_not(
         forecast_horizon > 0,
-        message="The provided forecasting horizon must be a positive integer.",
-        logger=logger,
+        "The provided forecasting horizon must be a positive integer.",
+        logger,
     )
 
     # check stride
     stride = n.stride
     raise_if_not(
-        stride > 0,
-        message="The provided stride parameter must be a positive integer.",
-        logger=logger,
+        stride > 0, "The provided stride parameter must be a positive integer.", logger
     )
 
     # check start parameter
     if hasattr(n, "start"):
         if isinstance(n.start, float):
             raise_if_not(
-                0.0 <= n.start < 1.0,
-                message="`start` should be between 0.0 and 1.0.",
-                logger=logger,
+                0.0 <= n.start < 1.0, "`start` should be between 0.0 and 1.0.", logger
             )
         elif isinstance(n.start, pd.Timestamp):
             raise_if(
                 n.start not in series,
-                message="`start` timestamp must be an entry in the time series' time index",
+                "`start` timestamp must be an entry in the time series' time index",
             )
             raise_if(
                 n.start == series.end_time(),
-                message="`start` timestamp is the last timestamp of the series",
-                logger=logger,
+                "`start` timestamp is the last timestamp of the series",
+                logger,
             )
         elif isinstance(n.start, (int, np.int64)):
             raise_if_not(n.start >= 0, logger=logger)
             raise_if(
                 n.start > len(series),
-                message="`start` index should be smaller than length of the series",
-                logger=logger,
+                "`start` index should be smaller than length of the series",
+                logger,
             )
         else:
             raise_log(
@@ -247,13 +243,13 @@ def _historical_forecasts_general_checks(series, kwargs):
     # check start parameter
     raise_if(
         start == series.end_time(),
-        message="`start` timestamp is the last timestamp of the series",
-        logger=logger,
+        "`start` timestamp is the last timestamp of the series",
+        logger,
     )
     raise_if(
         start == series.start_time(),
-        message="`start` corresponds to the first timestamp of the series, resulting in empty training set",
-        logger=logger,
+        "`start` corresponds to the first timestamp of the series, resulting in empty training set",
+        logger,
     )
 
     # check that overlap_end and start together form a valid combination
@@ -262,9 +258,9 @@ def _historical_forecasts_general_checks(series, kwargs):
     if not overlap_end:
         raise_if_not(
             start + series.freq * forecast_horizon in series,
-            message="`start` timestamp is too late in the series to make any predictions with"
+            "`start` timestamp is too late in the series to make any predictions with"
             "`overlap_end` set to `False`.",
-            logger=logger,
+            logger,
         )
 
 
@@ -302,14 +298,14 @@ def _parallel_apply(
 def _check_quantiles(quantiles):
     raise_if_not(
         all([0 < q < 1 for q in quantiles]),
-        message="All provided quantiles must be between 0 and 1.",
+        "All provided quantiles must be between 0 and 1.",
     )
 
     # we require the median to be present and the quantiles to be symmetric around it,
     # for correctness of sampling.
     median_q = 0.5
     raise_if_not(
-        median_q in quantiles, message="median quantile `q=0.5` must be in `quantiles`"
+        median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
     )
     is_centered = [
         -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
@@ -317,6 +313,6 @@ def _check_quantiles(quantiles):
     ]
     raise_if_not(
         all(is_centered),
-        message="quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
+        "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
         "higher than `q=0.5`",
     )

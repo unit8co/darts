@@ -894,11 +894,11 @@ class TFTModel(MixedCovariatesTorchModel):
 
         raise_if(
             future_covariates is None and not self.add_relative_index,
-            message="TFTModel requires future covariates. The model applies multi-head attention queries on future "
+            "TFTModel requires future covariates. The model applies multi-head attention queries on future "
             "inputs. Consider specifying a future encoder with `add_encoders` or setting `add_relative_index` "
             "to `True` at model creation (read TFT model docs for more information). "
             "These will automatically generate `future_covariates` from indexes.",
-            logger=logger,
+            logger,
         )
 
         return MixedCovariatesSequentialDataset(
@@ -913,7 +913,7 @@ class TFTModel(MixedCovariatesTorchModel):
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(
             isinstance(train_dataset, MixedCovariatesTrainingDataset),
-            message="TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.",
+            "TFTModel requires a training dataset of type MixedCovariatesTrainingDataset.",
         )
 
     def _build_inference_dataset(

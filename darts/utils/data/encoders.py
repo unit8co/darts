@@ -372,9 +372,9 @@ class IntegerIndexEncoder(SingleEncoder):
         """
         raise_if_not(
             isinstance(attribute, str) and attribute in INTEGER_INDEX_ATTRIBUTES,
-            message=f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
+            f"Encountered invalid encoder argument `{attribute}` for encoder `position`. "
             f'Attribute must be one of `("absolute", "relative")`.',
-            logger=logger,
+            logger,
         )
 
         super().__init__(index_generator)
@@ -529,9 +529,9 @@ class CallableIndexEncoder(SingleEncoder):
         """
         raise_if_not(
             callable(attribute),
-            message=f"Encountered invalid encoder argument `{attribute}` for encoder `callable`. "
+            f"Encountered invalid encoder argument `{attribute}` for encoder `callable`. "
             f"Attribute must be a callable that returns a `np.ndarray`.",
-            logger=logger,
+            logger,
         )
 
         super().__init__(index_generator)
@@ -1033,9 +1033,9 @@ class SequentialEncoder(Encoder):
         ]
         raise_if(
             len(invalid_encoders) > 0,
-            message=f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
+            f"Encountered invalid encoder types `{invalid_encoders}` in `add_encoders` parameter at model "
             f"creation. Supported encoder types are: `{ENCODER_KEYS + TRANSFORMER_KEYS}`.",
-            logger=logger,
+            logger,
         )
 
         encoders = {
@@ -1051,9 +1051,9 @@ class SequentialEncoder(Encoder):
 
         raise_if(
             len(invalid_time_params) > 0,
-            message=f"Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model "
+            f"Encountered invalid temporal types `{invalid_time_params}` in `add_encoders` parameter at model "
             f"creation. Supported temporal types are: `{VALID_TIME_PARAMS}`.",
-            logger=logger,
+            logger,
         )
 
         # convert into tuples of (encoder string identifier, encoder attribute)
@@ -1062,10 +1062,10 @@ class SequentialEncoder(Encoder):
             for enc_time, enc_attr in enc_params.items():
                 raise_if_not(
                     isinstance(enc_attr, VALID_ENCODER_DTYPES),
-                    message=f"Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder "
+                    f"Encountered value `{enc_attr}` of invalid type `{type(enc_attr)}` for encoder "
                     f"`{enc}` in `add_encoders` at model creation. Supported data types are: "
                     f"`{VALID_ENCODER_DTYPES}`.",
-                    logger=logger,
+                    logger,
                 )
                 attrs = [enc_attr] if isinstance(enc_attr, str) else enc_attr
                 for attr in attrs:
@@ -1111,10 +1111,10 @@ class SequentialEncoder(Encoder):
 
         raise_if_not(
             isinstance(transformer, VALID_TRANSFORMER_DTYPES),
-            message=f"Encountered `{TRANSFORMER_KEYS[0]}` of invalid type `{type(transformer)}` "
+            f"Encountered `{TRANSFORMER_KEYS[0]}` of invalid type `{type(transformer)}` "
             f"in `add_encoders` at model creation. Transformer must be an instance of "
             f"`{VALID_TRANSFORMER_DTYPES}`.",
-            logger=logger,
+            logger,
         )
 
         transform_past_mask = [

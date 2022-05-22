@@ -105,7 +105,7 @@ class KalmanFilter(FilteringModel, ABC):
             covariates = covariates.slice_intersect(series)
             raise_if_not(
                 series.has_same_time_as(covariates),
-                message="The number of timesteps in the series and the covariates must match.",
+                "The number of timesteps in the series and the covariates must match.",
             )
 
         # TODO: Handle multiple timeseries. Needs reimplementation of NFourSID?
@@ -170,36 +170,36 @@ class KalmanFilter(FilteringModel, ABC):
 
         raise_if(
             self.kf is None,
-            message="The Kalman filter has not been fitted yet. Call `fit()` first "
+            "The Kalman filter has not been fitted yet. Call `fit()` first "
             "or provide Kalman filter in constructor.",
         )
 
         raise_if_not(
             series.width == self.dim_y,
-            message="The provided TimeSeries dimensionality does not match "
+            "The provided TimeSeries dimensionality does not match "
             "the output dimensionality of the Kalman filter.",
         )
 
         raise_if(
             covariates is not None and not self._expect_covariates,
-            message="Covariates were provided, but the Kalman filter was not fitted with covariates.",
+            "Covariates were provided, but the Kalman filter was not fitted with covariates.",
         )
 
         if self._expect_covariates:
             raise_if(
                 covariates is None,
-                message="The Kalman filter was fitted with covariates, but these were not provided.",
+                "The Kalman filter was fitted with covariates, but these were not provided.",
             )
 
             raise_if_not(
                 covariates.is_deterministic,
-                message="The covariates must be deterministic (observations).",
+                "The covariates must be deterministic (observations).",
             )
 
             covariates = covariates.slice_intersect(series)
             raise_if_not(
                 series.has_same_time_as(covariates),
-                message="The number of timesteps in the series and the covariates must match.",
+                "The number of timesteps in the series and the covariates must match.",
             )
 
         kf = deepcopy(self.kf)

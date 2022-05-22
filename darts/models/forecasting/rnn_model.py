@@ -378,11 +378,11 @@ class RNNModel(DualCovariatesTorchModel):
         if model not in ["RNN", "LSTM", "GRU"]:
             raise_if_not(
                 isinstance(model, nn.Module),
-                message='{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
+                '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
                 '"GRU", or give your own PyTorch nn.Module'.format(
                     model.__class__.__name__
                 ),
-                logger=logger,
+                logger,
             )
 
         self.rnn_type_or_module = model
@@ -443,9 +443,9 @@ class RNNModel(DualCovariatesTorchModel):
     def _verify_train_dataset_type(self, train_dataset: TrainingDataset):
         raise_if_not(
             isinstance(train_dataset, DualCovariatesShiftedDataset),
-            message="RNNModel requires a training dataset of type DualCovariatesShiftedDataset.",
+            "RNNModel requires a training dataset of type DualCovariatesShiftedDataset.",
         )
         raise_if_not(
             train_dataset.ds_past.shift == 1,
-            message="RNNModel requires a shifted training dataset with shift=1.",
+            "RNNModel requires a shifted training dataset with shift=1.",
         )

@@ -52,7 +52,7 @@ class Croston(ForecastingModel):
         super().__init__()
         raise_if_not(
             version.lower() in ["classic", "optimized", "sba", "tsb"],
-            message='The provided "version" parameter must be set to "classic", "optimized", "sba" or "tsb".',
+            'The provided "version" parameter must be set to "classic", "optimized", "sba" or "tsb".',
         )
 
         if version == "classic":
@@ -64,7 +64,7 @@ class Croston(ForecastingModel):
         else:
             raise_if(
                 alpha_d is None or alpha_p is None,
-                message='alpha_d and alpha_p must be specified when using "tsb".',
+                'alpha_d and alpha_p must be specified when using "tsb".',
             )
             self.method = croston_tsb
             self.alpha_d = alpha_d
@@ -96,7 +96,7 @@ class Croston(ForecastingModel):
             except errors.TypingError:
                 raise_if(
                     True,
-                    message='"sba" version is not supported with this version of statsforecast.',
+                    '"sba" version is not supported with this version of statsforecast.',
                 )
 
         else:

@@ -728,9 +728,9 @@ class NBEATSModel(PastCovariatesTorchModel):
 
         raise_if_not(
             isinstance(layer_widths, int) or len(layer_widths) == num_stacks,
-            message="Please pass an integer or a list of integers with length `num_stacks`"
+            "Please pass an integer or a list of integers with length `num_stacks`"
             "as value for the `layer_widths` argument.",
-            logger=logger,
+            logger,
         )
 
         self.generic_architecture = generic_architecture

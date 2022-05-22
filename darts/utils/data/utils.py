@@ -31,7 +31,7 @@ def _get_matching_index(ts_target: TimeSeries, ts_covariate: TimeSeries, idx: in
     """
     raise_if_not(
         ts_target.freq == ts_covariate.freq,
-        message="The dataset contains some target/covariates series pair that have incompatible "
+        "The dataset contains some target/covariates series pair that have incompatible "
         'time axes (not the same "freq") and thus cannot be matched',
     )
 

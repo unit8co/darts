@@ -425,13 +425,13 @@ class TCNModel(PastCovariatesTorchModel):
 
         raise_if_not(
             kernel_size < input_chunk_length,
-            message="The kernel size must be strictly smaller than the input length.",
-            logger=logger,
+            "The kernel size must be strictly smaller than the input length.",
+            logger,
         )
         raise_if_not(
             output_chunk_length < input_chunk_length,
-            message="The output length must be strictly smaller than the input length",
-            logger=logger,
+            "The output length must be strictly smaller than the input length",
+            logger,
         )
 
         super().__init__(**self._extract_torch_model_params(**self.model_params))

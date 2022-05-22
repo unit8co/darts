@@ -68,12 +68,12 @@ def _check(param, predicate, param_name, condition_str):
     if isinstance(param, (collections.abc.Sequence, np.ndarray)):
         raise_if_not(
             all(predicate(p) for p in param),
-            message=f"All provided parameters {param_name} must be {condition_str}.",
+            f"All provided parameters {param_name} must be {condition_str}.",
         )
     else:
         raise_if_not(
             predicate(param),
-            message=f"The parameter {param_name} must be {condition_str}.",
+            f"The parameter {param_name} must be {condition_str}.",
         )
 
 
@@ -1084,11 +1084,11 @@ class QuantileRegression(Likelihood):
                 len(model_output.shape) == 4
                 and len(target.shape) == 3
                 and model_output.shape[:2] == target.shape[:2],
-                message="mismatch between predicted and target shape",
+                "mismatch between predicted and target shape",
             )
             raise_if_not(
                 model_output.shape[dim_q] == len(self.quantiles),
-                message="mismatch between number of predicted quantiles and target quantiles",
+                "mismatch between number of predicted quantiles and target quantiles",
             )
             self.quantiles_tensor = torch.tensor(self.quantiles).to(device)
             self.first = False
