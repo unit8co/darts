@@ -38,8 +38,8 @@ class LoggingTestCase(unittest.TestCase):
             logger = get_logger(__name__)
             logger.handlers = []
             try:
-                raise_if_not(True, message="test", logger=logger)
-                raise_if_not(False, message="test", logger=logger)
+                raise_if_not(True, "test", logger)
+                raise_if_not(False, "test", logger)
             except Exception:
                 exception_was_raised = True
 

@@ -55,13 +55,13 @@ def fill_missing_values(
     """
     raise_if_not(
         isinstance(fill, str) or isinstance(fill, float),
-        message="`fill` should either be a string or a float",
-        logger=logger,
+        "`fill` should either be a string or a float",
+        logger,
     )
     raise_if(
         isinstance(fill, str) and fill != "auto",
-        message="invalid string for `fill`: can only be set to 'auto'",
-        logger=logger,
+        "invalid string for `fill`: can only be set to 'auto'",
+        logger,
     )
 
     if fill == "auto":

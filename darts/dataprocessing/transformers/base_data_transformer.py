@@ -63,7 +63,7 @@ class BaseDataTransformer(ABC):
         value
             New verbosity status
         """
-        raise_if_not(isinstance(value, bool), message="Verbosity status must be a boolean.")
+        raise_if_not(isinstance(value, bool), "Verbosity status must be a boolean.")
 
         self._verbose = value
 
