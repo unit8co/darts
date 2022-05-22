@@ -57,7 +57,6 @@ def raise_deprecation_warning(
 
 def raise_if_not(
     condition: bool,
-    *,
     message: str = "",
     logger: logging.Logger = get_logger("main_logger"),
 ):
@@ -87,7 +86,6 @@ def raise_if_not(
 
 def raise_if(
     condition: bool,
-    *,
     message: str = "",
     logger: logging.Logger = get_logger("main_logger"),
 ):
