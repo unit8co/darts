@@ -3,6 +3,8 @@ from torch import nn
 
 from darts.models.components.feed_forward import FeedForward
 
+GLU_FFN = ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
+
 
 # GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
 class GLU(nn.Module):

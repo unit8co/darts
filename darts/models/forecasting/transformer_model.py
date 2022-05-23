@@ -11,12 +11,13 @@ import torch.nn as nn
 
 from darts.logging import get_logger, raise_if_not
 from darts.models.components import glu_variants
+from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
 
-GLU_FFN = ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
+
 BUILT_IN = ["relu", "gelu"]
 FFN = GLU_FFN + BUILT_IN
 
