@@ -50,7 +50,6 @@ $$x \Phi(x)$$ where $\Phi(x) = P(X \le x), X \sim \mathcal{N}(0,1)$
 
 This is a generic implementation that supports different variants including
 [Gated Linear Units](https://papers.labml.ai/paper/2002.05202) (GLU).
-We have also implemented experiments on these:
 """
 
 import torch
