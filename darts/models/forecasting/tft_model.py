@@ -249,6 +249,7 @@ class _TFTModule(PLMixedCovariatesModule):
                 f"'{self.feed_forward}' is not in {GLU_FFN + ['GatedResidualNetwork']}",
             )
             # use glu variant feedforward layers
+            # 4 is a commonly used feedforward multiplier
             self.feed_forward_block = getattr(glu_variants, self.feed_forward)(
                 d_model=self.hidden_size, d_ff=self.hidden_size * 4, dropout=dropout
             )
