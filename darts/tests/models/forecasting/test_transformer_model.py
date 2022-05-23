@@ -116,16 +116,16 @@ if TORCH_AVAILABLE:
                 model1 = TransformerModel(
                     input_chunk_length=1, output_chunk_length=1, activation="invalid"
                 )
-                model1.fit(self.series, epochs=2)
+                model1.fit(self.series, epochs=1)
 
             # internal activation function
             model2 = TransformerModel(
                 input_chunk_length=1, output_chunk_length=1, activation="gelu"
             )
-            model2.fit(self.series, epochs=2)
+            model2.fit(self.series, epochs=1)
 
             # glue variant FFN
             model3 = TransformerModel(
                 input_chunk_length=1, output_chunk_length=1, activation="SwiGLU"
             )
-            model3.fit(self.series, epochs=2)
+            model3.fit(self.series, epochs=1)
