@@ -12,6 +12,8 @@ from torch.nn import LSTM as _LSTM
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
+from darts.models.components import glu_variants
+from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
@@ -44,6 +46,7 @@ class _TFTModule(PLMixedCovariatesModule):
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
         full_attention: bool = False,
+        feed_forward: str = "GatedResidualNetwork",
         hidden_continuous_size: int = 8,
         dropout: float = 0.1,
         add_relative_index: bool = False,
@@ -59,7 +62,7 @@ class _TFTModule(PLMixedCovariatesModule):
         output_dim : Tuple[int, int]
             shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).
         variables_meta : Dict[str, Dict[str, List[str]]]
-            dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`
+            dict containing variable encoder, decoder variable names for mapping tensors in `_TFTModule.forward()`
         hidden_size : int
             hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
             architecture.
@@ -70,17 +73,20 @@ class _TFTModule(PLMixedCovariatesModule):
         full_attention : bool
             If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
             only queries on future part. Defaults to `False`.
+        feed_forward
+            Set the feedforward network block. default `GatedResidualNetwork` or one of the  glu variant.
+            Defaults to `GatedResidualNetwork`.
         hidden_continuous_size : int
-            default for hidden size for processing continuous variables
+            default for hidden size for processing continuous variables'
         dropout : float
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to `False`.
             This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.
             It gives a value to the position of each step from input and output chunk relative to the prediction
             point. The values are normalized with `input_chunk_length`.
         likelihood
-            The likelihood model to be used for probabilistic forecasts. By default the TFT uses
+            The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
@@ -95,6 +101,7 @@ class _TFTModule(PLMixedCovariatesModule):
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
         self.full_attention = full_attention
+        self.feed_forward = feed_forward
         self.dropout = dropout
         self.add_relative_index = add_relative_index
 
@@ -228,9 +235,23 @@ class _TFTModule(PLMixedCovariatesModule):
             dropout=self.dropout,
         )
         self.post_attn_gan = _GateAddNorm(self.hidden_size, dropout=self.dropout)
-        self.positionwise_feedforward_grn = _GatedResidualNetwork(
-            self.hidden_size, self.hidden_size, self.hidden_size, dropout=self.dropout
-        )
+
+        if self.feed_forward == "GatedResidualNetwork":
+            self.feed_forward_block = _GatedResidualNetwork(
+                self.hidden_size,
+                self.hidden_size,
+                self.hidden_size,
+                dropout=self.dropout,
+            )
+        else:
+            raise_if_not(
+                self.feed_forward in GLU_FFN,
+                f"'{self.feed_forward}' is not in {GLU_FFN + ['GatedResidualNetwork']}",
+            )
+            # use glu variant feedforward layers
+            self.feed_forward_block = getattr(glu_variants, self.feed_forward)(
+                d_model=self.hidden_size, d_ff=self.hidden_size * 4, dropout=dropout
+            )
 
         # output processing -> no dropout at this late stage
         self.pre_output_gan = _GateAddNorm(self.hidden_size, dropout=None)
@@ -348,7 +369,7 @@ class _TFTModule(PLMixedCovariatesModule):
         x_cont_past, x_cont_future = x
         dim_samples, dim_time, dim_variable = 0, 1, 2
 
-        # TODO: impelement static covariates
+        # TODO: implement static covariates
         static_covariates = None
 
         batch_size = x_cont_past.shape[dim_samples]
@@ -412,7 +433,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # Embedding and variable selection
         if static_covariates is not None:
-            # TODO: impelement static covariates
+            # TODO: implement static covariates
             # # static embeddings will be constant over entire batch
             # static_embedding = {name: input_vectors[name][:, 0] for name in self.static_variables}
             # static_embedding, static_covariate_var = self.static_covariates_vsn(static_embedding)
@@ -506,8 +527,8 @@ class _TFTModule(PLMixedCovariatesModule):
             skip=attn_input if self.full_attention else attn_input[:, encoder_length:],
         )
 
-        # position-wise feed-forward
-        out = self.positionwise_feedforward_grn(x=attn_out, context=None)
+        # feed-forward
+        out = self.feed_forward_block(x=attn_out)
 
         # skip connection over temporal fusion decoder from LSTM post _GateAddNorm
         out = self.pre_output_gan(
@@ -544,6 +565,7 @@ class TFTModel(MixedCovariatesTorchModel):
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
         full_attention: bool = False,
+        feed_forward: str = "GatedResidualNetwork",
         dropout: float = 0.1,
         hidden_continuous_size: int = 8,
         add_relative_index: bool = False,
@@ -585,8 +607,15 @@ class TFTModel(MixedCovariatesTorchModel):
         full_attention : bool
             If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,
             only queries on future part. Defaults to ``False``.
+        feed_forward: str
+            A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant's
+            FeedForward Network (FFN)[2]. The glu variant's FeedForward Network are a series of FFNs designed to work
+            better with Transformer based models. Defaults to ``"GatedResidualNetwork"``.
+                ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
+            or the TFT original FeedForward Network.
+                ["GatedResidualNetwork"]
         dropout : float
-            Fraction of neurons afected by Dropout.
+            Fraction of neurons affected by Dropout.
         hidden_continuous_size : int
             Default for hidden size for processing continuous variables
         add_relative_index : bool
@@ -595,11 +624,11 @@ class TFTModel(MixedCovariatesTorchModel):
             :func:`train()`. It gives a value to the position of each step from input and output chunk relative
             to the prediction point. The values are normalized with ``input_chunk_length``.
         loss_fn : nn.Module
-            PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``
-            instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None
-            and give a ``loss_fn`` argument.
+            PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a
+            ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `
+            `likelihood`` to None and give a ``loss_fn`` argument.
         likelihood
-            The likelihood model to be used for probabilistic forecasts. By default the TFT uses
+            The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
@@ -609,7 +638,7 @@ class TFTModel(MixedCovariatesTorchModel):
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
             Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{'lr': 1e-3}``
-            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``
+            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``
             will be used. Default: ``None``.
         lr_scheduler_cls
             Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds
@@ -683,7 +712,7 @@ class TFTModel(MixedCovariatesTorchModel):
                 }
             ..
         random_state
-            Control the randomness of the weights initialization. Check this
+            Control the randomness of the weight's initialization. Check this
             `link <https://scikit-learn.org/stable/glossary.html#term-random_state>`_ for more details.
             Default: ``None``.
         pl_trainer_kwargs
@@ -727,6 +756,7 @@ class TFTModel(MixedCovariatesTorchModel):
         References
         ----------
         .. [1] https://arxiv.org/pdf/1912.09363.pdf
+        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
         """
         model_kwargs = {key: val for key, val in self.model_params.items()}
         if likelihood is None and loss_fn is None:
@@ -743,6 +773,7 @@ class TFTModel(MixedCovariatesTorchModel):
         self.lstm_layers = lstm_layers
         self.num_attention_heads = num_attention_heads
         self.full_attention = full_attention
+        self.feed_forward = feed_forward
         self.dropout = dropout
         self.hidden_continuous_size = hidden_continuous_size
         self.add_relative_index = add_relative_index
@@ -879,6 +910,7 @@ class TFTModel(MixedCovariatesTorchModel):
             dropout=self.dropout,
             num_attention_heads=self.num_attention_heads,
             full_attention=self.full_attention,
+            feed_forward=self.feed_forward,
             hidden_continuous_size=self.hidden_continuous_size,
             add_relative_index=self.add_relative_index,
             **self.pl_module_params,

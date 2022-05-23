@@ -6,7 +6,8 @@ from darts.models.components.feed_forward import FeedForward
 GLU_FFN = ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
 
 
-# GLU Variants Improve Transformer https://arxiv.org/pdf/2002.05202.pdf
+# GLU Variants Improve Transformer
+# Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202
 class GLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
