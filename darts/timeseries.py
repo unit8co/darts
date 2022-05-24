@@ -552,27 +552,41 @@ class TimeSeries:
             A univariate or multivariate deterministic TimeSeries constructed from the inputs.
         """
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
-        static_cols = (
-            [static_cols]
-            if not isinstance(static_cols, list) and static_cols is not None
-            else []
-        )
+        if static_cols is not None:
+            static_cols = (
+                [static_cols] if not isinstance(static_cols, list) else static_cols
+            )
+        else:
+            static_cols = []
         static_cov_cols = group_cols + static_cols
 
         # split df by groups, and store group values and static values (static covariates)
         splits = []
         for static_cov_vals, group in df.groupby(group_cols):
+            static_cov_vals = (
+                (static_cov_vals,)
+                if not isinstance(static_cov_vals, tuple)
+                else static_cov_vals
+            )
             # check that for each group there is only one unique value per column in `static_cols`
             if static_cols:
                 static_cols_valid = [
                     len(group[col].unique()) == 1 for col in static_cols
                 ]
-                raise_if_not(
-                    all(static_cols_valid),
-                    f"Encountered more than one unique value in group {group} for given static columns: "
-                    f"{[static_col for static_col, is_valid in zip(static_cols, static_cols_valid) if not is_valid]}.",
-                    logger,
-                )
+                if not all(static_cols_valid):
+                    # encountered performance issues when evaluating the error message from below in every
+                    # iteration with `raise_if_not(all(static_cols_valid), message, logger)`
+                    invalid_cols = [
+                        static_col
+                        for static_col, is_valid in zip(static_cols, static_cols_valid)
+                        if not is_valid
+                    ]
+                    raise_if(
+                        True,
+                        f"Encountered more than one unique value in group {group} for given static columns: "
+                        f"{invalid_cols}.",
+                        logger,
+                    )
                 # add the static covariates to the group values
                 static_cov_vals += tuple(group[static_cols].values[0])
             # store static covariate Series and group DataFrame (without static cov columns)
@@ -2131,6 +2145,23 @@ class TimeSeries:
     def set_static_covariates(
         self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
     ):
+        raise_if(
+            not isinstance(covariates, (pd.Series, pd.DataFrame))
+            and covariates is not None,
+            "`covariates` must be either a pandas Series, DataFrame or None",
+            logger,
+        )
+        # check if valid static covariates multivariate TimeSeries static covariatesx
+        if isinstance(covariates, pd.DataFrame):
+            n_components = len(covariates.columns)
+            raise_if(
+                n_components > 1 and n_components != self.n_components,
+                "When passing a multi-column pandas DataFrame, the number of columns must match the number of "
+                "components of the TimeSeries object (multivariate static covariates must map to each component).",
+                logger,
+            )
+        elif isinstance(covariates, pd.Series):
+            covariates = covariates.to_frame()
         self._xa.attrs["static_covariates"] = (
             covariates.astype(self.dtype) if covariates is not None else covariates
         )
