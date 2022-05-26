@@ -25,23 +25,23 @@ class _PositionalEncoding(nn.Module):
         Parameters
         ----------
         d_model
-            the number of expected features in the transformer encoder/decoder inputs.
-            Last dimension of the input
+            The number of expected features in the transformer encoder/decoder inputs.
+            Last dimension of the input.
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         max_len
             The dimensionality of the computed positional encoding array.
-            Only its first "input_size" elements will be considered in the output
+            Only its first "input_size" elements will be considered in the output.
 
         Inputs
         ------
         x of shape `(batch_size, input_size, d_model)`
-            Tensor containing the embedded time series
+            Tensor containing the embedded time series.
 
         Outputs
         -------
         y of shape `(batch_size, input_size, d_model)`
-            Tensor containing the embedded time series enhanced with positional encoding
+            Tensor containing the embedded time series enhanced with positional encoding.
         """
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
@@ -91,25 +91,25 @@ class _TransformerModule(PLPastCovariatesModule):
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         d_model
-            the number of expected features in the transformer encoder/decoder inputs.
+            The number of expected features in the transformer encoder/decoder inputs.
         nhead
-            the number of heads in the multiheadattention model.
+            The number of heads in the multiheadattention model.
         num_encoder_layers
-            the number of encoder layers in the encoder.
+            The number of encoder layers in the encoder.
         num_decoder_layers
-            the number of decoder layers in the decoder.
+            The number of decoder layers in the decoder.
         dim_feedforward
-            the dimension of the feedforward network model.
+            The dimension of the feedforward network model.
         dropout
             Fraction of neurons affected by Dropout.
         activation
-            the activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
+            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
         custom_encoder
-            a custom transformer encoder provided by the user (default=None)
+            A custom transformer encoder provided by the user (default=None).
         custom_decoder
-            a custom transformer decoder provided by the user (default=None)
+            A custom transformer decoder provided by the user (default=None).
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            All parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------
@@ -123,9 +123,6 @@ class _TransformerModule(PLPastCovariatesModule):
         """
 
         super().__init__(**kwargs)
-
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
 
         self.input_size = input_size
         self.target_size = output_size
@@ -223,31 +220,28 @@ class TransformerModel(PastCovariatesTorchModel):
 
         Parameters
         ----------
-        model
-            a custom PyTorch module with the same specifications as
-            `darts.models.transformer_model._TransformerModule` (default=None).
         input_chunk_length
-            Number of time steps to be input to the forecasting module (default=1).
+            Number of time steps to be input to the forecasting module.
         output_chunk_length
-            Number of time steps to be output by the forecasting module (default=1).
+            Number of time steps to be output by the forecasting module.
         d_model
-            the number of expected features in the transformer encoder/decoder inputs (default=512).
+            The number of expected features in the transformer encoder/decoder inputs (default=64).
         nhead
-            the number of heads in the multiheadattention model (default=8).
+            The number of heads in the multi-head attention mechanism (default=4).
         num_encoder_layers
-            the number of encoder layers in the encoder (default=6).
+            The number of encoder layers in the encoder (default=3).
         num_decoder_layers
-            the number of decoder layers in the decoder (default=6).
+            The number of decoder layers in the decoder (default=3).
         dim_feedforward
-            the dimension of the feedforward network model (default=2048).
+            The dimension of the feedforward network model (default=512).
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         activation
-            the activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
+            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
         custom_encoder
-            a custom user-provided encoder module for the transformer (default=None)
+            A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
-            a custom user-provided decoder module for the transformer (default=None)
+            A custom user-provided decoder module for the transformer (default=None).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.

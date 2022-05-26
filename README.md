@@ -12,7 +12,7 @@
 [![Downloads](https://pepy.tech/badge/u8darts)](https://pepy.tech/project/u8darts)
 [![Downloads](https://pepy.tech/badge/darts)](https://pepy.tech/project/darts)
 [![codecov](https://codecov.io/gh/unit8co/darts/branch/master/graph/badge.svg?token=7F1TLUFHQW)](https://codecov.io/gh/unit8co/darts)
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black) [![Join the chat at https://gitter.im/u8darts/darts](https://badges.gitter.im/u8darts/darts.svg)](https://gitter.im/u8darts/darts?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 **darts** is a Python library for easy manipulation and forecasting of time series.
 It contains a variety of models, from classics such as ARIMA to deep neural networks.
@@ -25,6 +25,7 @@ series, and some of the models offer a rich support for probabilistic forecastin
 
 ## Documentation
 * [Quickstart](https://unit8co.github.io/darts/quickstart/00-quickstart.html)
+* [User Guide](https://unit8co.github.io/darts/userguide.html)
 * [API Reference](https://unit8co.github.io/darts/generated_api/darts.html)
 * [Examples](https://unit8co.github.io/darts/examples.html)
 
@@ -125,12 +126,14 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `ARIMA` | ✅ | | ✅ | | | ✅ |
 `VARIMA` | ✅ | ✅ | | | | ✅ |
 `AutoARIMA` | ✅ | | | | | ✅ |
+`StatsForecastAutoARIMA` (faster AutoARIMA) | ✅ | | ✅ | | | ✅ | [statsforecast](https://github.com/Nixtla/statsforecast)
 `ExponentialSmoothing` | ✅ | | ✅ | | | |
 `BATS` and `TBATS` | ✅ | | ✅ | | | | [TBATS paper](https://robjhyndman.com/papers/ComplexSeasonality.pdf)
 `Theta` and `FourTheta` | ✅ | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
 `Prophet` | ✅ | | ✅ | | | ✅ | [Prophet repo](https://github.com/facebook/prophet)
 `FFT` (Fast Fourier Transform) | ✅ | | | | | |
 `KalmanForecaster` using the Kalman filter and N4SID for system identification | ✅ | ✅ | ✅ | | | ✅ | [N4SID paper](https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf)
+`Croston` method | ✅ | | | | | |
 `RegressionModel`; generic wrapper around any sklearn regression model | ✅ | ✅ | | ✅ | ✅ | ✅ |
 `RandomForest` | ✅ | ✅ | | ✅ | ✅ | ✅ |
 `LinearRegressionModel` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -138,6 +141,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | [DeepAR paper](https://arxiv.org/abs/1704.04110)
 `BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `NBEATSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
+`NHiTS` | ✅ | ✅ | ✅ | ✅ | ✅ | | [N-HiTS paper](https://arxiv.org/abs/2201.12886)
 `TCNModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 `TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
@@ -145,9 +149,10 @@ Naive Baselines | ✅ | | | | | |
 
 
 ## Community & Contact
-Anyone is welcome to join our [Discord server](https://discord.gg/Um3jBTYFsA) to
+Anyone is welcome to join our ~~[Discord server](https://discord.gg/Um3jBTYFsA)~~ 
+[Gitter room](https://gitter.im/u8darts/darts) to
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
-or have a feature request, Github issues are also welcome.
+or have suggestions, GitHub issues are also welcome.
 
 If what you want to tell us is not suitable for Discord or Github,
 feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for
@@ -155,7 +160,7 @@ darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for an
 inquiries.
 
 ## Contribute
-The development is ongoing, and we welcome suggestions, pull requests and issues on Github.
+The development is ongoing, and we welcome suggestions, pull requests and issues on GitHub.
 All contributors will be acknowledged on the
 [change log page](https://github.com/unit8co/darts/blob/master/CHANGELOG.md).
 

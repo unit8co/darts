@@ -1266,8 +1266,12 @@ class TimeSeries:
         """
 
         axis_str = self._get_dim_name(axis)
-        display_n = range(min(size, self._xa.sizes[axis_str]))
-        return self.__class__(self._xa[{axis_str: display_n}])
+        display_n = min(size, self._xa.sizes[axis_str])
+
+        if axis_str == self._time_dim:
+            return self[:display_n]
+        else:
+            return self.__class__(self._xa[{axis_str: range(display_n)}])
 
     def tail(
         self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
@@ -1289,8 +1293,12 @@ class TimeSeries:
         """
 
         axis_str = self._get_dim_name(axis)
-        display_n = range(-min(size, self._xa.sizes[axis_str]), 0)
-        return self.__class__(self._xa[{axis_str: display_n}])
+        display_n = min(size, self._xa.sizes[axis_str])
+
+        if axis_str == self._time_dim:
+            return self[-display_n:]
+        else:
+            return self.__class__(self._xa[{axis_str: range(-display_n, 0)}])
 
     def concatenate(
         self,

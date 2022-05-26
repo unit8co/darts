@@ -40,7 +40,10 @@ from darts.logging import (
     raise_log,
     suppress_lightning_warnings,
 )
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    ForecastingModel,
+    GlobalForecastingModel,
+)
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
 from darts.utils.data.encoders import SequentialEncoder
@@ -836,7 +839,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-
+        self._fit_called = True
         self._verify_train_dataset_type(train_dataset)
         raise_if(
             len(train_dataset) == 0,
@@ -1179,6 +1182,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Sequence[TimeSeries]
             Returns one or more forecasts for time series.
         """
+
+        # We need to call super's super's method directly, because GlobalForecastingModel expects series:
+        ForecastingModel.predict(self, n, num_samples)
+
         self._verify_inference_dataset_type(input_series_dataset)
 
         # check that covariates and dimensions are matching what we had during training

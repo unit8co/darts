@@ -8,10 +8,12 @@ from darts.models import (
     ARIMA,
     FFT,
     VARIMA,
+    Croston,
     ExponentialSmoothing,
     FourTheta,
     KalmanForecaster,
     NaiveSeasonal,
+    StatsForecastAutoARIMA,
     Theta,
 )
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -36,6 +38,9 @@ models = [
     (ExponentialSmoothing(), 5.6),
     (ARIMA(12, 2, 1), 10),
     (ARIMA(1, 1, 1), 40),
+    (StatsForecastAutoARIMA(period=12), 4.8),
+    (Croston(version="classic"), 34),
+    (Croston(version="tsb", alpha_d=0.1, alpha_p=0.1), 34),
     (Theta(), 11.3),
     (Theta(1), 20.2),
     (Theta(-1), 9.8),
@@ -62,7 +67,7 @@ multivariate_models = [
     (KalmanForecaster(dim_x=30), 30.0),
 ]
 
-dual_models = [ARIMA()]
+dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
 
 
 try:
