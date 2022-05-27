@@ -508,6 +508,6 @@ class ElectricityDataset(DatasetLoaderCSV):
                 hash="acfe6783eea43905e510f537add940fd",
                 header_time="Unnamed: 0",
                 format_time="%Y-%m-%d %H:%M:%S",
-                pre_process_fn=pre_proces_fn,
+                pre_process_zipped_csv_fn=pre_proces_fn,
             )
         )
