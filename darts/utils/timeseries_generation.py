@@ -475,7 +475,7 @@ def _extend_time_index_until(
         else:
             raise_if_not(
                 isinstance(until, int),
-                "Expected integer for TimeSeries, indexed by RangeIndex, ",
+                "Expected integer for TimeSeries, indexed by RangeIndex, "
                 f"for parameter until, got {type(end)}",
                 logger,
             )

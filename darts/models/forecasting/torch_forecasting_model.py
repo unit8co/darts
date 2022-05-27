@@ -1569,7 +1569,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
             ds_in_train
             and ds_in_predict
             and train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1],
-            f"The provided {ds_name} must have dimensionality that of the {ds_name} used for training the model.",
+            f"The provided {ds_name} must have dimensionality of the {ds_name} used for training the model.",
         )
 
 
