@@ -6,12 +6,14 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Callable, Optional
+from darts.logging import get_logger
 
 import pandas as pd
 import requests
 
 from darts import TimeSeries
 
+logger = get_logger(__name__)
 
 @dataclass
 class DatasetLoaderMetadata:
@@ -29,7 +31,7 @@ class DatasetLoaderMetadata:
     # used to indicate the freq when we already know it
     freq: Optional[str] = None
     # a custom function to handling non-csv based datasets
-    pre_process_fn: Optional[Callable] = None
+    pre_process_zipped_csv_fn: Optional[Callable] = None
 
 
 class DatasetLoadingException(BaseException):
@@ -111,6 +113,8 @@ class DatasetLoader(ABC):
         Returns
         -------
         """
+        if self._metadata.pre_process_zipped_csv_fn:
+            logger.warning("Loading a CSV file does not use the pre_process_zipped_csv_fn")
         os.makedirs(self._root_path, exist_ok=True)
         try:
             request = requests.get(self._metadata.uri)
@@ -130,7 +134,7 @@ class DatasetLoader(ABC):
                 with tempfile.TemporaryDirectory() as td:
                     with zipfile.ZipFile(tf, "r") as zip_ref:
                         zip_ref.extractall(td)
-                        self._metadata.pre_process_fn(td, self._get_path_dataset())
+                        self._metadata.pre_process_zipped_csv_fn(td, self._get_path_dataset())
         except Exception as e:
             raise DatasetLoadingException(
                 "Could not download the dataset. Reason:" + e.__repr__()
