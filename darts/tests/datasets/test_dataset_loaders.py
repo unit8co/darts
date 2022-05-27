@@ -82,7 +82,7 @@ wrong_zip_url_dataset = DatasetLoaderCSV(
         hash="d17748042ea98fc9c5fb4db0946d5fa4",
         header_time="Unnamed: 0",
         format_time="%Y-%m-%d %H:%M:%S",
-        pre_process_fn=lambda x: x,
+        pre_process_zipped_csv_fn=lambda x: x,
     )
 )
 
@@ -92,7 +92,7 @@ no_pre_process_fn_dataset = DatasetLoaderCSV(
         uri=_DEFAULT_PATH + "/test.zip",
         hash="167ffa96204a2b47339c21eea25baf32",
         header_time="Month",
-        pre_process_fn=None,
+        pre_process_zipped_csv_fn=None,
     )
 )
 
