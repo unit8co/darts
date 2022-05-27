@@ -13,7 +13,7 @@ Darts is still in an early development phase and we cannot always guarantee back
 - Model Improvements: Option for changing activation function for NHiTs and NBEATS. NBEATS support for dropout. NHiTs Support for AvgPooling1d. [#955](https://github.com/unit8co/darts/pull/955) by [Greg DeVos](https://github.com/gdevos010)
 - New datasets: ETT and Electricity. [#617](https://github.com/unit8co/darts/pull/617) 
   by [Greg DeVos](https://github.com/gdevos010)
-- Implemented ["GLU Variants Improve Transformer"](https://arxiv.org/abs/2002.05202) for transformer based models (transformer and TFT). [#959](https://github.com/unit8co/darts/issues/959) 
+- Implemented ["GLU Variants Improve Transformer"](https://arxiv.org/abs/2002.05202) for transformer based models (transformer and TFT). [#959](https://github.com/unit8co/darts/issues/959)
   by [Greg DeVos](https://github.com/gdevos010)
 
 ## [0.19.0](https://github.com/unit8co/darts/tree/0.19.0) (2022-04-13)
