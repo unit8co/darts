@@ -508,32 +508,6 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         ) = input_batch
         dim_variable = 2
 
-        # TODO: remove when everything works
-        # x_past = torch.cat(
-        #     [
-        #         tensor
-        #         for tensor in [
-        #             past_target,
-        #             past_covariates,
-        #             historic_future_covariates,
-        #             static_covariates,
-        #         ]
-        #         if tensor is not None
-        #     ],
-        #     dim=dim_variable,
-        # )
-        #
-        # x_future = None
-        # if future_covariates is not None or static_covariates is not None:
-        #     x_future = torch.cat(
-        #         [
-        #             tensor
-        #             for tensor in [future_covariates, static_covariates]
-        #             if tensor is not None
-        #         ],
-        #         dim=dim_variable,
-        #     )
-
         x_past = torch.cat(
             [
                 tensor
@@ -546,10 +520,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             ],
             dim=dim_variable,
         )
-
-        x_future = future_covariates
-        x_static = static_covariates
-        return x_past, x_future, x_static
+        return x_past, future_covariates, static_covariates
 
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int

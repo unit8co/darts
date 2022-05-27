@@ -103,7 +103,7 @@ class _RNNModule(PLDualCovariatesModule):
         return predictions, last_hidden_state
 
     def _produce_train_output(self, input_batch: Tuple):
-        past_target, historic_future_covariates, future_covariates = input_batch
+        past_target, historic_future_covariates, future_covariates, _ = input_batch
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
         model_input = (
@@ -127,7 +127,7 @@ class _RNNModule(PLDualCovariatesModule):
         """
         This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
         """
-        past_target, historic_future_covariates, future_covariates = input_batch
+        past_target, historic_future_covariates, future_covariates, _ = input_batch
 
         if historic_future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates

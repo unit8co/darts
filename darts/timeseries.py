@@ -2151,13 +2151,14 @@ class TimeSeries:
             "`covariates` must be either a pandas Series, DataFrame or None",
             logger,
         )
-        # check if valid static covariates multivariate TimeSeries static covariatesx
+        # check if valid static covariates for multivariate TimeSeries
         if isinstance(covariates, pd.DataFrame):
             n_components = len(covariates.columns)
             raise_if(
                 n_components > 1 and n_components != self.n_components,
                 "When passing a multi-column pandas DataFrame, the number of columns must match the number of "
-                "components of the TimeSeries object (multivariate static covariates must map to each component).",
+                "components of the TimeSeries object (multivariate static covariates must map to each TimeSeries "
+                "component).",
                 logger,
             )
         elif isinstance(covariates, pd.Series):

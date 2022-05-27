@@ -792,8 +792,6 @@ class TFTModel(MixedCovariatesTorchModel):
                 axis=1,
             )
 
-        # static_covariates = None  # placeholder for future
-
         self.output_dim = (
             (future_target.shape[1], 1)
             if self.likelihood is None
