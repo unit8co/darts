@@ -9,11 +9,17 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not
+from darts.models.components import glu_variants
+from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
+
+
+BUILT_IN = ["relu", "gelu"]
+FFN = GLU_FFN + BUILT_IN
 
 
 # This implementation of positional encoding is taken from the PyTorch documentation:
@@ -76,7 +82,7 @@ class _TransformerModule(PLPastCovariatesModule):
         activation: str,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
@@ -103,7 +109,7 @@ class _TransformerModule(PLPastCovariatesModule):
         dropout
             Fraction of neurons affected by Dropout.
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
+            The activation function of encoder/decoder intermediate layer.
         custom_encoder
             A custom transformer encoder provided by the user (default=None).
         custom_decoder
@@ -134,6 +140,16 @@ class _TransformerModule(PLPastCovariatesModule):
             d_model, dropout, self.input_chunk_length
         )
 
+        raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
+        if activation in GLU_FFN:
+            # use glu variant feedforward layers
+            self.activation = getattr(glu_variants, activation)(
+                d_model=d_model, d_ff=dim_feedforward, dropout=dropout
+            )
+        else:
+            # use nn.Transformer built in feedforward layers
+            self.activation = activation
+
         # Defining the Transformer module
         self.transformer = nn.Transformer(
             d_model=d_model,
@@ -142,7 +158,7 @@ class _TransformerModule(PLPastCovariatesModule):
             num_decoder_layers=num_decoder_layers,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
-            activation=activation,
+            activation=self.activation,
             custom_encoder=custom_encoder,
             custom_decoder=custom_decoder,
         )
@@ -202,7 +218,7 @@ class TransformerModel(PastCovariatesTorchModel):
         activation: str = "relu",
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
 
         """Transformer model
@@ -237,7 +253,13 @@ class TransformerModel(PastCovariatesTorchModel):
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         activation
-            The activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
+            The activation function of encoder/decoder intermediate layer, (default='relu').
+            can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
+            fully-connected layer with an activation. The glu variant's FeedForward Network are a series
+            of FFNs designed to work better with Transformer based models.
+                ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
+            or one the pytorch internal activations
+                ["relu", "gelu"]
         custom_encoder
             A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
@@ -377,6 +399,7 @@ class TransformerModel(PastCovariatesTorchModel):
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
         and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
         pages 6000-6010. https://arxiv.org/abs/1706.03762.
+        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
 
         Notes
         -----
