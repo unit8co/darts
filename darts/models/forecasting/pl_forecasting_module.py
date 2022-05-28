@@ -30,11 +30,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-        custom_metrics: Optional[List[Callable]] = None,
+        torch_metrics: Optional[List[Callable]] = None,
         likelihood: Optional[Likelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
-        lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
+        lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
     ) -> None:
         """
@@ -60,6 +60,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            List of torch metrics to be used for evaluation. A full list of available metrics can be found at
+            https://torchmetrics.readthedocs.io/en/latest/.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
@@ -104,7 +107,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         # "metrics": ["mean_squared_error", "mean_absolute_percentage_error"],
         # "metrics_params": [{}, {}],
-        self.custom_metrics = custom_metrics
+        self.torch_metrics = torch_metrics
         self.metrics = []  # ["mean_squared_error", "mean_absolute_percentage_error"]
         self.metrics_str = ["mean_squared_error", "mean_absolute_percentage_error"]
         self.metrics_params = [{}, {}]
@@ -247,7 +250,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return self.criterion(output.squeeze(dim=-1), target)
 
     def _setup_metrics(self):
-        if self.custom_metrics is None:
+        if self.torch_metrics is None:
             self.metrics = []
             task_module = torchmetrics.functional
             for metric in self.metrics_str:
@@ -259,8 +262,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
                     )
                     raise e
         else:
-            self.metrics = self.custom_metrics
-            self.metrics_str = [m.__name__ for m in self.custom_metrics]
+            self.metrics = self.torch_metrics
+            self.metrics_str = [m.__name__ for m in self.torch_metrics]
 
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
