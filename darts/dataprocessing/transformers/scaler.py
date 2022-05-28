@@ -106,7 +106,8 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             values=transformed_vals,
             fill_missing_dates=False,
             columns=series.columns,
-        ).set_static_covariates(series.static_covariates)
+            static_covariates=series.static_covariates,
+        )
 
     @staticmethod
     def ts_inverse_transform(
@@ -126,7 +127,8 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             values=inv_transformed_vals,
             fill_missing_dates=False,
             columns=series.columns,
-        ).set_static_covariates(series.static_covariates)
+            static_covariates=series.static_covariates,
+        )
 
     @staticmethod
     def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:

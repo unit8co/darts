@@ -167,7 +167,7 @@ if TORCH_AVAILABLE:
 
         def test_static_covariates_support(self):
             target = tg.sine_timeseries(length=2, freq="h")
-            target = target.set_static_covariates(
+            target = target.with_static_covariates(
                 pd.Series([0.0, 1.0], index=["st1", "st2"])
             )
 
@@ -184,14 +184,14 @@ if TORCH_AVAILABLE:
             model.predict(n=1, series=target, verbose=False)
 
             # raise an error when trained with static covariates of wrong dimensionality
-            target = target.set_static_covariates(
+            target = target.with_static_covariates(
                 pd.concat([target.static_covariates] * 2, axis=0)
             )
             with pytest.raises(ValueError):
                 model.predict(n=1, series=target, verbose=False)
 
             # raise an error when trained with static covariates and trying to predict without
-            target = target.set_static_covariates(None)
+            target = target.with_static_covariates(None)
             with pytest.raises(ValueError):
                 model.predict(n=1, series=target, verbose=False)
 

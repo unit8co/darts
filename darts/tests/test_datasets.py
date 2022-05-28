@@ -36,10 +36,10 @@ except ImportError:
 if TORCH_AVAILABLE:
 
     class DatasetTestCase(DartsBaseTestClass):
-        target1 = gaussian_timeseries(length=100).set_static_covariates(
+        target1 = gaussian_timeseries(length=100).with_static_covariates(
             pd.Series([0, 1], index=["st1", "st2"])
         )
-        target2 = gaussian_timeseries(length=150).set_static_covariates(
+        target2 = gaussian_timeseries(length=150).with_static_covariates(
             pd.Series([2, 3], index=["st1", "st2"])
         )
         cov_st1 = target1.static_covariates.T.values
@@ -110,7 +110,7 @@ if TORCH_AVAILABLE:
 
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             short_cov = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
             )
@@ -148,7 +148,7 @@ if TORCH_AVAILABLE:
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40)
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             covariate = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
             )
@@ -197,7 +197,7 @@ if TORCH_AVAILABLE:
 
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             short_cov = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
             )
@@ -226,7 +226,7 @@ if TORCH_AVAILABLE:
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40)
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             covariate = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
             )
@@ -270,7 +270,7 @@ if TORCH_AVAILABLE:
 
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             short_cov = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
             )
@@ -308,7 +308,7 @@ if TORCH_AVAILABLE:
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40)
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             covariate = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
             )
@@ -336,7 +336,7 @@ if TORCH_AVAILABLE:
 
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             past_cov = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
             )
@@ -383,7 +383,7 @@ if TORCH_AVAILABLE:
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40)
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             past_cov = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
             )
@@ -417,7 +417,7 @@ if TORCH_AVAILABLE:
 
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             past_cov = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
             )
@@ -463,7 +463,7 @@ if TORCH_AVAILABLE:
             # Should also work for integer-indexed series
             target = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=10, stop=50, step=1), np.random.randn(40)
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             past_cov = TimeSeries.from_times_and_values(
                 pd.RangeIndex(start=20, stop=80, step=1), np.random.randn(60)
             )
@@ -567,7 +567,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20120101", end="20150101", freq="D")
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
             ds = PastCovariatesSequentialDataset(
                 target_series=target,
@@ -583,7 +583,7 @@ if TORCH_AVAILABLE:
             times2 = pd.RangeIndex(start=200, stop=400, step=1)
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
             ds = PastCovariatesSequentialDataset(
                 target_series=target,
@@ -599,7 +599,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20090101", end="20110106", freq="D")
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
             ds = PastCovariatesSequentialDataset(
                 target_series=target,
@@ -616,7 +616,7 @@ if TORCH_AVAILABLE:
             times2 = pd.RangeIndex(start=50, stop=250, step=1)
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
             ds = PastCovariatesSequentialDataset(
                 target_series=target,
@@ -680,10 +680,10 @@ if TORCH_AVAILABLE:
             # two targets and two covariates; covariates not aligned, must contain correct values
             target1 = TimeSeries.from_values(
                 np.random.randn(100)
-            ).set_static_covariates(self.cov_st2_df)
-            target2 = TimeSeries.from_values(np.random.randn(50)).set_static_covariates(
-                self.cov_st2_df
-            )
+            ).with_static_covariates(self.cov_st2_df)
+            target2 = TimeSeries.from_values(
+                np.random.randn(50)
+            ).with_static_covariates(self.cov_st2_df)
             cov1 = TimeSeries.from_values(np.random.randn(120))
             cov2 = TimeSeries.from_values(np.random.randn(80))
 
@@ -709,7 +709,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20090201", end="20090222", freq="D")
             target1 = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov1 = TimeSeries.from_times_and_values(
                 times2, np.random.randn(len(times2))
             )
@@ -727,7 +727,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][3], target1.values()[-2:])
 
             # Should fail if covariates are not long enough
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(7))
@@ -811,10 +811,10 @@ if TORCH_AVAILABLE:
             # two targets and two covariates; covariates not aligned, must contain correct values
             target1 = TimeSeries.from_values(
                 np.random.randn(100)
-            ).set_static_covariates(self.cov_st2_df)
-            target2 = TimeSeries.from_values(np.random.randn(50)).set_static_covariates(
-                self.cov_st2_df
-            )
+            ).with_static_covariates(self.cov_st2_df)
+            target2 = TimeSeries.from_values(
+                np.random.randn(50)
+            ).with_static_covariates(self.cov_st2_df)
             cov1 = TimeSeries.from_values(np.random.randn(120))
             cov2 = TimeSeries.from_values(np.random.randn(80))
 
@@ -842,7 +842,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20090201", end="20090222", freq="D")
             target1 = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov1 = TimeSeries.from_times_and_values(
                 times2, np.random.randn(len(times2))
             )
@@ -861,7 +861,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][4], target1.values()[-2:])
 
             # Should fail if covariates are not long enough
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(7))
@@ -948,7 +948,7 @@ if TORCH_AVAILABLE:
             )
 
             # Should contain correct values even when covariates are not aligned
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(10))
@@ -965,7 +965,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20090201", end="20090222", freq="D")
             target1 = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov1 = TimeSeries.from_times_and_values(
                 times2, np.random.randn(len(times2))
             )
@@ -978,7 +978,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][3], target1.values()[-3:])
 
             # Should fail if covariates are too short
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(5))
@@ -1060,7 +1060,7 @@ if TORCH_AVAILABLE:
             )
 
             # Should contain correct values even when covariates are not aligned
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(10))
@@ -1077,7 +1077,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20090201", end="20090222", freq="D")
             target1 = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov1 = TimeSeries.from_times_and_values(
                 times2, np.random.randn(len(times2))
             )
@@ -1090,7 +1090,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][3], target1.values()[-3:])
 
             # Should fail if covariates are too short
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(7))
@@ -1189,7 +1189,7 @@ if TORCH_AVAILABLE:
             )
 
             # Should contain correct values even when covariates are not aligned
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(10))
@@ -1207,7 +1207,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20090201", end="20090222", freq="D")
             target1 = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov1 = TimeSeries.from_times_and_values(
                 times2, np.random.randn(len(times2))
             )
@@ -1221,7 +1221,7 @@ if TORCH_AVAILABLE:
             np.testing.assert_almost_equal(ds[0][4], target1.values()[-3:])
 
             # Should fail if covariates are too short
-            target1 = TimeSeries.from_values(np.random.randn(8)).set_static_covariates(
+            target1 = TimeSeries.from_values(np.random.randn(8)).with_static_covariates(
                 self.cov_st2_df
             )
             cov1 = TimeSeries.from_values(np.random.randn(7))
@@ -1301,7 +1301,7 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20100101", end="20100320", freq="D")
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
             self.assertEqual(_get_matching_index(target, cov, idx=15), 5)
 
@@ -1310,14 +1310,14 @@ if TORCH_AVAILABLE:
             times2 = pd.date_range(start="20090101", end="20110601", freq="M")
             target = TimeSeries.from_times_and_values(
                 times1, np.random.randn(len(times1))
-            ).set_static_covariates(self.cov_st2_df)
+            ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
             self.assertEqual(_get_matching_index(target, cov, idx=15), 15 - 7)
 
             # check integer-indexed series
             times2 = pd.RangeIndex(start=10, stop=90)
-            target = TimeSeries.from_values(np.random.randn(100)).set_static_covariates(
-                self.cov_st2_df
-            )
+            target = TimeSeries.from_values(
+                np.random.randn(100)
+            ).with_static_covariates(self.cov_st2_df)
             cov = TimeSeries.from_times_and_values(times2, np.random.randn(len(times2)))
             self.assertEqual(_get_matching_index(target, cov, idx=15), 5)

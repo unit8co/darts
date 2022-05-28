@@ -198,8 +198,33 @@ class TimeSeries:
             self._freq = 1
             self._freq_str = None
 
-        if STATIC_COV_TAG not in self._xa.attrs:
-            self._xa.attrs[STATIC_COV_TAG] = None
+        # check static covariates
+        static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
+        raise_if_not(
+            isinstance(static_covariates, (pd.Series, pd.DataFrame))
+            or static_covariates is None,
+            "`static_covariates` must be either a pandas Series, DataFrame or None",
+            logger,
+        )
+        # check if valid static covariates for multivariate TimeSeries
+        if isinstance(static_covariates, pd.DataFrame):
+            n_components = len(static_covariates.columns)
+            raise_if(
+                n_components > 1 and n_components != self.n_components,
+                "When passing a multi-column pandas DataFrame, the number of columns must match the number of "
+                "components of the TimeSeries object (multivariate static covariates must map to each TimeSeries "
+                "component).",
+                logger,
+            )
+        elif isinstance(static_covariates, pd.Series):
+            static_covariates = static_covariates.to_frame()
+        else:  # None
+            pass
+        self._xa.attrs[STATIC_COV_TAG] = (
+            static_covariates.astype(self.dtype)
+            if static_covariates is not None
+            else static_covariates
+        )
 
     """
     Factory Methods
@@ -305,6 +330,7 @@ class TimeSeries:
                     time_index_name: xa_.get_index(time_index_name),
                     DIMS[1]: columns_list,
                 },
+                attrs=xa_.attrs,
             )
 
         # We cast the array to float
@@ -324,6 +350,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
         **kwargs,
     ) -> "TimeSeries":
         """
@@ -350,6 +377,9 @@ class TimeSeries:
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
+        static_covariates
+            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
+            pandas DataFrame with index representing the uni/multivariate static variables.
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
 
@@ -367,6 +397,7 @@ class TimeSeries:
             fill_missing_dates=fill_missing_dates,
             freq=freq,
             fillna_value=fillna_value,
+            static_covariates=static_covariates,
         )
 
     @classmethod
@@ -378,6 +409,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> "TimeSeries":
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -406,6 +438,9 @@ class TimeSeries:
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
+        static_covariates
+            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
+            pandas DataFrame with index representing the uni/multivariate static variables.
 
         Returns
         -------
@@ -491,6 +526,7 @@ class TimeSeries:
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
+            attrs={STATIC_COV_TAG: static_covariates},
         )
 
         return cls.from_xarray(
@@ -609,7 +645,8 @@ class TimeSeries:
                 fill_missing_dates=fill_missing_dates,
                 freq=freq,
                 fillna_value=fillna_value,
-            ).set_static_covariates(static_covs)
+                static_covariates=static_covs,
+            )
             for static_covs, split in splits
         ]
 
@@ -620,6 +657,7 @@ class TimeSeries:
         fill_missing_dates: Optional[bool] = False,
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> "TimeSeries":
         """
         Build a univariate deterministic series from a pandas Series.
@@ -642,6 +680,9 @@ class TimeSeries:
             fill in missing values if some dates are missing and `fill_missing_dates` is set to `True`.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
+        static_covariates
+            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
+            pandas DataFrame with index representing the uni/multivariate static variables.
 
         Returns
         -------
@@ -657,6 +698,7 @@ class TimeSeries:
             fill_missing_dates=fill_missing_dates,
             freq=freq,
             fillna_value=fillna_value,
+            static_covariates=static_covariates,
         )
 
     @classmethod
@@ -668,6 +710,7 @@ class TimeSeries:
         freq: Optional[str] = None,
         columns: Optional[pd._typing.Axes] = None,
         fillna_value: Optional[float] = None,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> "TimeSeries":
         """
         Build a series from a time index and value array.
@@ -694,6 +737,9 @@ class TimeSeries:
             Columns to be used by the underlying pandas DataFrame.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
+        static_covariates
+            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
+            pandas DataFrame with index representing the uni/multivariate static variables.
 
         Returns
         -------
@@ -720,7 +766,12 @@ class TimeSeries:
         if columns is not None:
             coords[DIMS[1]] = columns
 
-        xa = xr.DataArray(values, dims=(times_name,) + DIMS[-2:], coords=coords)
+        xa = xr.DataArray(
+            values,
+            dims=(times_name,) + DIMS[-2:],
+            coords=coords,
+            attrs={STATIC_COV_TAG: static_covariates},
+        )
 
         return cls.from_xarray(
             xa=xa,
@@ -735,6 +786,7 @@ class TimeSeries:
         values: np.ndarray,
         columns: Optional[pd._typing.Axes] = None,
         fillna_value: Optional[float] = None,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
     ) -> "TimeSeries":
         """
         Build an integer-indexed series from an array of values.
@@ -750,6 +802,9 @@ class TimeSeries:
             Columns to be used by the underlying pandas DataFrame.
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
+        static_covariates
+            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
+            pandas DataFrame with index representing the uni/multivariate static variables.
 
         Returns
         -------
@@ -768,6 +823,7 @@ class TimeSeries:
             freq=None,
             columns=columns,
             fillna_value=fillna_value,
+            static_covariates=static_covariates,
         )
 
     @classmethod
@@ -2081,6 +2137,7 @@ class TimeSeries:
                 self._time_dim: self._time_index.append(other.time_index),
                 DIMS[1]: self.components,
             },
+            attrs=self._xa.attrs,
         )
 
         # new_xa = xr.concat(objs=[self._xa, other_xa], dim=str(self._time_dim))
@@ -2142,35 +2199,23 @@ class TimeSeries:
             "Received: {}, expected: {}".format(values.shape, self._xa.values.shape),
         )
 
-        new_xa = xr.DataArray(values, dims=self._xa.dims, coords=self._xa.coords)
+        new_xa = xr.DataArray(
+            values, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
 
         return self.__class__(new_xa)
 
-    def set_static_covariates(
+    def with_static_covariates(
         self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
     ):
-        raise_if(
-            not isinstance(covariates, (pd.Series, pd.DataFrame))
-            and covariates is not None,
-            "`covariates` must be either a pandas Series, DataFrame or None",
-            logger,
-        )
-        # check if valid static covariates for multivariate TimeSeries
-        if isinstance(covariates, pd.DataFrame):
-            n_components = len(covariates.columns)
-            raise_if(
-                n_components > 1 and n_components != self.n_components,
-                "When passing a multi-column pandas DataFrame, the number of columns must match the number of "
-                "components of the TimeSeries object (multivariate static covariates must map to each TimeSeries "
-                "component).",
-                logger,
+        return self.__class__(
+            xr.DataArray(
+                self._xa.values,
+                dims=self._xa.dims,
+                coords=self._xa.coords,
+                attrs={STATIC_COV_TAG: covariates},
             )
-        elif isinstance(covariates, pd.Series):
-            covariates = covariates.to_frame()
-        self._xa.attrs["static_covariates"] = (
-            covariates.astype(self.dtype) if covariates is not None else covariates
         )
-        return self
 
     def stack(self, other: "TimeSeries") -> "TimeSeries":
         """
@@ -2215,7 +2260,7 @@ class TimeSeries:
             new_other_xa = other_xa
 
         new_xa = xr.concat((self._xa, new_other_xa), dim=DIMS[1])
-
+        new_xa.attrs[STATIC_COV_TAG] = _concat_static_covs([self, other])
         # we call the factory method here to disambiguate column names if needed.
         return self.__class__.from_xarray(new_xa, fill_missing_dates=False)
 
@@ -2680,6 +2725,7 @@ class TimeSeries:
             self._xa.values,
             dims=self._xa.dims,
             coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cols)},
+            attrs=self._xa.attrs,
         )
 
         return self.__class__(new_xa)
@@ -2721,7 +2767,9 @@ class TimeSeries:
 
         new_coords = self._get_agg_coords("components_mean", axis)
 
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def median(self, axis: int = 2) -> "TimeSeries":
@@ -2748,7 +2796,9 @@ class TimeSeries:
         )
         new_coords = self._get_agg_coords("components_median", axis)
 
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def sum(self, axis: int = 2) -> "TimeSeries":
@@ -2774,7 +2824,9 @@ class TimeSeries:
 
         new_coords = self._get_agg_coords("components_sum", axis)
 
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def min(self, axis: int = 2) -> "TimeSeries":
@@ -2800,7 +2852,9 @@ class TimeSeries:
         new_data = self._xa.values.min(axis=axis, keepdims=True)
         new_coords = self._get_agg_coords("components_min", axis)
 
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def max(self, axis: int = 2) -> "TimeSeries":
@@ -2825,7 +2879,9 @@ class TimeSeries:
         new_data = self._xa.values.max(axis=axis, keepdims=True)
         new_coords = self._get_agg_coords("components_max", axis)
 
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=new_coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def var(self, ddof: int = 1) -> "TimeSeries":
@@ -2848,7 +2904,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = self._xa.values.var(axis=2, ddof=ddof, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def std(self, ddof: int = 1) -> "TimeSeries":
@@ -2871,7 +2929,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = self._xa.values.std(axis=2, ddof=ddof, keepdims=True)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def skew(self, **kwargs) -> "TimeSeries":
@@ -2893,7 +2953,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = np.expand_dims(skew(self._xa.values, axis=2, **kwargs), axis=2)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def kurtosis(self, **kwargs) -> "TimeSeries":
@@ -2915,7 +2977,9 @@ class TimeSeries:
         """
         self._assert_stochastic()
         new_data = np.expand_dims(kurtosis(self._xa.values, axis=2, **kwargs), axis=2)
-        new_xa = xr.DataArray(new_data, dims=self._xa.dims, coords=self._xa.coords)
+        new_xa = xr.DataArray(
+            new_data, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+        )
         return self.__class__(new_xa)
 
     def quantile(self, quantile: float, **kwargs) -> "TimeSeries":
@@ -3117,6 +3181,7 @@ class TimeSeries:
             data=np.empty(shape=((len(resampled_time_index),) + xa.shape[1:])),
             dims=xa.dims,
             coords=coords,
+            attrs=xa.attrs,
         )
         resampled_xa[:] = np.nan
         resampled_xa[resampled_time_index.index.isin(time_index)] = sorted_xa.data
@@ -3517,6 +3582,46 @@ class TimeSeries:
                 return self.__class__(xa_)
 
         raise_log(IndexError("The type of your index was not matched."), logger)
+
+
+def _concat_static_covs(series: List[TimeSeries]) -> Optional[pd.DataFrame]:
+    """Concatenates static covariates."""
+
+    if not any([ts.has_static_covariates for ts in series]):
+        return None
+
+    only_first = series[0].has_static_covariates and not any(
+        [ts.has_static_covariates for ts in series[1:]]
+    )
+    all_have = all([ts.has_static_covariates for ts in series])
+
+    raise_if_not(
+        only_first or all_have,
+        "Either none, only the first or all TimeSeries must have `static_covariates`.",
+        logger,
+    )
+
+    if only_first:
+        return series[0].static_covariates
+
+    raise_if_not(
+        all([len(ts.static_covariates.columns) == ts.n_components for ts in series])
+        and all(
+            [
+                ts.static_covariates.index.equals(series[0].static_covariates.index)
+                for ts in series
+            ]
+        ),
+        "Concatenation of multiple TimeSeries with static covariates requires all `static_covariates` "
+        "DataFrames to have identical columns (static variable names), and the number of each TimeSeries' "
+        "components must match the number of corresponding static covariate components (the number of rows "
+        "in `series.static_covariates`).",
+        logger,
+    )
+
+    return pd.concat(
+        [ts.static_covariates for ts in series if ts.has_static_covariates], axis=1
+    )
 
 
 def concatenate(
