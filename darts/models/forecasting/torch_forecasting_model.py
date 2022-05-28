@@ -1496,29 +1496,37 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
     that training/inference datasets have target and a covariate in first and second position to do the checks.
     """
-    tgt_train, cov_train = train_sample[:2]
-    tgt_pred, cov_pred = predict_sample[:2]
+    tgt_train, cov_train, static_train = train_sample[:2] + (train_sample[-2],)
+    tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-2],)
     raise_if_not(
         tgt_train.shape[-1] == tgt_pred.shape[-1],
         "The provided target has a dimension (width) that does not match the dimension "
         "of the target this model has been trained on.",
     )
-    raise_if(
-        cov_train is not None and cov_pred is None,
-        "This model has been trained with covariates; some covariates of matching dimensionality are needed "
-        "for prediction.",
-    )
-    raise_if(
-        cov_train is None and cov_pred is not None,
-        "This model has been trained without covariates. No covariates should be provided for prediction.",
-    )
-    raise_if(
-        cov_train is not None
-        and cov_pred is not None
-        and cov_train.shape[-1] != cov_pred.shape[-1],
-        "The provided covariates must have dimensionality matching that of the covariates used for training "
-        "the model.",
-    )
+    for (c_train, c_pred), c_descr in zip(
+        [(cov_train, cov_pred), (static_train, static_pred)],
+        ["past or future covariates", "static covariates"],
+    ):
+        raise_if(
+            c_train is not None and c_pred is None,
+            f"This model has been trained with {c_descr}; covariates of matching dimensionality are required "
+            f"for prediction.",
+        )
+        raise_if(
+            c_train is None and c_pred is not None,
+            f"This model has been trained without {c_descr}. No {c_descr} should be provided for prediction.",
+        )
+        raise_if(
+            c_train is not None
+            and c_pred is not None
+            and (
+                c_train.shape[-1] != c_pred.shape[-1]
+                if c_descr != "static covariates"
+                else c_train.shape == c_pred.shape
+            ),
+            f"The provided {c_descr} must have dimensionality matching that of the covariates used for training "
+            "the model.",
+        )
 
 
 def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
@@ -1538,13 +1546,16 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
         "past_covariates",
         "historic_future_covariates",
         "future_covariates",
+        "static_covariates",
     ]
 
     train_has_ds = [ds is not None for ds in train_sample[:-1]]
-    predict_has_ds = [ds is not None for ds in predict_sample[:4]]
+    predict_has_ds = [
+        ds is not None for ds in predict_sample[:4] + (predict_sample[5],)
+    ]
 
     train_datasets = train_sample[:-1]
-    predict_datasets = predict_sample[:4]
+    predict_datasets = predict_sample[:4] + (predict_sample[5],)
 
     tgt_train, tgt_pred = train_datasets[0], predict_datasets[0]
     raise_if_not(
@@ -1558,18 +1569,18 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     ):
         raise_if(
             ds_in_train and not ds_in_predict and ds_in_train,
-            f"This model has been trained with {ds_name}; some {ds_name} of matching dimensionality are needed "
+            f"This model has been trained with `{ds_name}`; some `{ds_name}` of matching dimensionality are needed "
             f"for prediction.",
         )
         raise_if(
             ds_in_train and not ds_in_predict and ds_in_predict,
-            f"This model has been trained without {ds_name}; No {ds_name} should be provided for prediction.",
+            f"This model has been trained without `{ds_name}`; No `{ds_name}` should be provided for prediction.",
         )
         raise_if(
             ds_in_train
             and ds_in_predict
             and train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1],
-            f"The provided {ds_name} must have dimensionality that of the {ds_name} used for training the model.",
+            f"The provided `{ds_name}` must have equal dimensionality as the `{ds_name}` used for training the model.",
         )
 
 

@@ -410,7 +410,7 @@ class _TFTModule(PLMixedCovariatesModule):
         }
 
         # Embedding and variable selection
-        if x_static is not None:
+        if self.static_variables:
             static_embedding = {
                 name: x_static[:, 0, i].unsqueeze(-1)
                 for i, name in enumerate(self.static_variables)

@@ -161,7 +161,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
             static_covs[static_covs.columns[0]].to_frame()
         )
 
-        # from univariate static covariates
+        # from multivariate static covariates
         ts_multi = ts_multi.set_static_covariates(static_covs)
         assert ts_multi.static_covariates.equals(static_covs)
 

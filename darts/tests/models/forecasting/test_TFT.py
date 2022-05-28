@@ -1,4 +1,6 @@
 import numpy as np
+import pandas as pd
+import pytest
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import Scaler
@@ -162,6 +164,34 @@ if TORCH_AVAILABLE:
                 future_covariates=covariates,
                 kwargs_tft=kwargs_TFT_full_coverage,
             )
+
+        def test_static_covariates_support(self):
+            target = tg.sine_timeseries(length=2, freq="h")
+            target.set_static_covariates(pd.Series([0.0, 1.0], index=["st1", "st2"]))
+
+            # should work with cyclic encoding for time index
+            model = TFTModel(
+                input_chunk_length=1,
+                output_chunk_length=1,
+                add_encoders={"cyclic": {"future": "hour"}},
+                pl_trainer_kwargs={"fast_dev_run": True},
+            )
+            model.fit(target, verbose=False)
+            assert len(model.model.static_variables) == len(target.static_covariates)
+
+            model.predict(n=1, series=target, verbose=False)
+
+            # raise an error when trained with static covariates of wrong dimensionality
+            target.set_static_covariates(
+                pd.concat([target.static_covariates] * 2, axis=0)
+            )
+            with pytest.raises(ValueError):
+                model.predict(n=1, series=target, verbose=False)
+
+            # raise an error when trained with static covariates and trying to predict without
+            target.set_static_covariates(None)
+            with pytest.raises(ValueError):
+                model.predict(n=1, series=target, verbose=False)
 
         def helper_generate_multivariate_case_data(self, season_length, n_repeat):
             """generates multivariate test case data. Target series is a sine wave stacked with a repeating
