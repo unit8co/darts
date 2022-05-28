@@ -198,6 +198,9 @@ class TimeSeries:
             self._freq = 1
             self._freq_str = None
 
+        if STATIC_COV_TAG not in self._xa.attrs:
+            self._xa.attrs[STATIC_COV_TAG] = None
+
     """
     Factory Methods
     ===============
@@ -1151,6 +1154,7 @@ class TimeSeries:
             new_data,
             dims=self._xa.dims,
             coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cnames)},
+            attrs=self._xa.attrs,
         )
 
         return self.__class__(new_xa)

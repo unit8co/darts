@@ -126,7 +126,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         static_covs = pd.Series([0.0, 1.0], index=["st1", "st2"])
 
         # inplace from Series for chained calls
-        ts.set_static_covariates(static_covs)
+        ts = ts.set_static_covariates(static_covs)
         assert ts.static_covariates.equals(static_covs.to_frame())
 
         # from Series
@@ -143,12 +143,12 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
 
         # only pd.Series, pd.DataFrame or None
         with pytest.raises(ValueError):
-            ts.set_static_covariates([1, 2, 3])
+            _ = ts.set_static_covariates([1, 2, 3])
 
         # multivariate does not work with univariate TimeSeries
         with pytest.raises(ValueError):
             static_covs_multi = pd.concat([static_covs] * 2, axis=1)
-            ts.set_static_covariates(static_covs_multi)
+            _ = ts.set_static_covariates(static_covs_multi)
 
     def test_set_static_covariates_multivariate(self):
         ts = linear_timeseries(length=10)
@@ -168,3 +168,29 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         # raise an error if multivariate static covariates columns don't match the number of components in the series
         with pytest.raises(ValueError):
             _ = ts_multi.set_static_covariates(pd.concat([static_covs] * 2, axis=1))
+
+    def test_ts_methods_with_static_covariates(self):
+        ts = linear_timeseries(length=10).astype("float64")
+        static_covs = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
+        ts = ts.set_static_covariates(static_covs)
+
+        assert ts.static_covariates.dtypes[0] == "float64"
+        # ts = ts.astype("float32")
+        # assert ts.static_covariates.dtypes[0] == "float32"
+
+        ts_stochastic = ts.from_times_and_values(
+            times=ts.time_index, values=np.random.randn(10, 1, 3)
+        )
+        ts_stochastic = ts_stochastic.set_static_covariates(static_covs)
+
+        ts_check = ts.copy()
+        assert ts_check.static_covariates.equals(ts.static_covariates)
+
+        ts_check = ts.head()
+        assert ts_check.static_covariates.equals(ts.static_covariates)
+
+        ts_check = ts.tail()
+        assert ts_check.static_covariates.equals(ts.static_covariates)
+
+        ts_check = ts_stochastic.quantile_timeseries()
+        assert ts_check.static_covariates.equals(ts_stochastic.static_covariates)
