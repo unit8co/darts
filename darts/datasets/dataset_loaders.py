@@ -1,13 +1,19 @@
 import hashlib
 import os
+import tempfile
+import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable, Optional
 
 import pandas as pd
 import requests
 
 from darts import TimeSeries
+from darts.logging import get_logger
+
+logger = get_logger(__name__)
 
 
 @dataclass
@@ -19,12 +25,14 @@ class DatasetLoaderMetadata:
     # md5 hash of the file to be downloaded
     hash: str
     # used to parse the dataset file
-    header_time: str
+    header_time: Optional[str]
     # used to convert the string date to pd.Datetime
     # https://docs.python.org/3/library/datetime.html#strftime-and-strptime-behavior
-    format_time: str = None
+    format_time: Optional[str] = None
     # used to indicate the freq when we already know it
-    freq: str = None
+    freq: Optional[str] = None
+    # a custom function to handling non-csv based datasets
+    pre_process_zipped_csv_fn: Optional[Callable] = None
 
 
 class DatasetLoadingException(BaseException):
@@ -34,7 +42,7 @@ class DatasetLoadingException(BaseException):
 class DatasetLoader(ABC):
     """
     Class that downloads a dataset and caches it locally.
-    Assumes that the file can be downloaded (i.e. publicly available via an URI)
+    Assumes that the file can be downloaded (i.e. publicly available via a URI)
     """
 
     _DEFAULT_DIRECTORY = Path(os.path.join(Path.home(), Path(".darts/datasets/")))
@@ -62,7 +70,10 @@ class DatasetLoader(ABC):
             A TimeSeries object that contains the dataset
         """
         if not self._is_already_downloaded():
-            self._download_dataset()
+            if self._metadata.uri.endswith(".zip"):
+                self._download_zip_dataset()
+            else:
+                self._download_dataset()
         self._check_dataset_integrity_or_raise()
         return self._load_from_disk(self._get_path_dataset(), self._metadata)
 
@@ -103,11 +114,32 @@ class DatasetLoader(ABC):
         Returns
         -------
         """
+        if self._metadata.pre_process_zipped_csv_fn:
+            logger.warning(
+                "Loading a CSV file does not use the pre_process_zipped_csv_fn"
+            )
         os.makedirs(self._root_path, exist_ok=True)
         try:
             request = requests.get(self._metadata.uri)
             with open(self._get_path_dataset(), "wb") as f:
                 f.write(request.content)
+        except Exception as e:
+            raise DatasetLoadingException(
+                "Could not download the dataset. Reason:" + e.__repr__()
+            ) from None
+
+    def _download_zip_dataset(self):
+        os.makedirs(self._root_path, exist_ok=True)
+        try:
+            request = requests.get(self._metadata.uri)
+            with tempfile.TemporaryFile() as tf:
+                tf.write(request.content)
+                with tempfile.TemporaryDirectory() as td:
+                    with zipfile.ZipFile(tf, "r") as zip_ref:
+                        zip_ref.extractall(td)
+                        self._metadata.pre_process_zipped_csv_fn(
+                            td, self._get_path_dataset()
+                        )
         except Exception as e:
             raise DatasetLoadingException(
                 "Could not download the dataset. Reason:" + e.__repr__()
@@ -157,10 +189,15 @@ class DatasetLoaderCSV(DatasetLoader):
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
     ) -> TimeSeries:
+
         df = pd.read_csv(path_to_file)
+
         if metadata.header_time is not None:
             df = self._format_time_column(df)
             return TimeSeries.from_dataframe(
                 df=df, time_col=metadata.header_time, freq=metadata.freq
             )
+
+        df.sort_index(inplace=True)
+
         return TimeSeries.from_dataframe(df)

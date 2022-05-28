@@ -40,7 +40,10 @@ from darts.logging import (
     raise_log,
     suppress_lightning_warnings,
 )
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    ForecastingModel,
+    GlobalForecastingModel,
+)
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
 from darts.utils.data.encoders import SequentialEncoder
@@ -830,7 +833,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-
+        self._fit_called = True
         self._verify_train_dataset_type(train_dataset)
         raise_if(
             len(train_dataset) == 0,
@@ -1173,6 +1176,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Sequence[TimeSeries]
             Returns one or more forecasts for time series.
         """
+
+        # We need to call super's super's method directly, because GlobalForecastingModel expects series:
+        ForecastingModel.predict(self, n, num_samples)
+
         self._verify_inference_dataset_type(input_series_dataset)
 
         # check that covariates and dimensions are matching what we had during training
@@ -1562,7 +1569,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
             ds_in_train
             and ds_in_predict
             and train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1],
-            f"The provided {ds_name} must have dimensionality that of the {ds_name} used for training the model.",
+            f"The provided {ds_name} must have dimensionality of the {ds_name} used for training the model.",
         )
 
 
