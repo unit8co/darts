@@ -1360,7 +1360,7 @@ class TimeSeries:
         self._assert_deterministic()
         return self._xa.values[-1, :, 0].copy()
 
-    def values(self, copy=True, sample=0) -> np.ndarray:
+    def values(self, copy: bool = True, sample: int = 0) -> np.ndarray:
         """
         Return a 2-D array of shape (time, component), containing this series' values for one `sample`.
 
@@ -1388,7 +1388,7 @@ class TimeSeries:
         else:
             return self._xa.values[:, :, sample]
 
-    def random_component_values(self, copy=True) -> np.array:
+    def random_component_values(self, copy: bool = True) -> np.array:
         """
         Return a 2-D array of shape (time, component), containing the values for
         one sample taken uniformly at random among this series' samples.
@@ -1410,7 +1410,7 @@ class TimeSeries:
         else:
             return self._xa.values[:, :, sample]
 
-    def all_values(self, copy=True) -> np.ndarray:
+    def all_values(self, copy: bool = True) -> np.ndarray:
         """
         Return a 3-D array of dimension (time, component, sample),
         containing this series' values for all samples.
@@ -1431,7 +1431,7 @@ class TimeSeries:
         else:
             return self._xa.values
 
-    def univariate_values(self, copy=True, sample=0) -> np.ndarray:
+    def univariate_values(self, copy: bool = True, sample: int = 0) -> np.ndarray:
         """
         Return a 1-D Numpy array of shape (time,),
         containing this univariate series' values for one `sample`.
@@ -1440,6 +1440,8 @@ class TimeSeries:
         ----------
         copy
             Whether to return a copy of the values. Leave it to True unless you know what you are doing.
+        sample
+            For stochastic series, the sample for which to return values. Default: 0 (first sample).
 
         Returns
         -------
@@ -1452,6 +1454,25 @@ class TimeSeries:
             return np.copy(self._xa[:, 0, sample].values)
         else:
             return self._xa[:, 0, sample].values
+
+    def static_covariate_values(self, copy: bool = True) -> np.ndarray:
+        """
+        Return a 2-D array of dimension (component, static variable),
+        containing the static covariate values of the TimeSeries.
+
+        Parameters
+        ----------
+        copy
+            Whether to return a copy of the values, otherwise returns a view.
+            Can only return a view if all values have the same dtype.
+            Leave it to True unless you know what you are doing.
+
+        Returns
+        -------
+        numpy.ndarray
+            The values composing the time series.
+        """
+        return self.static_covariates.to_numpy(copy=copy)
 
     def head(
         self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
