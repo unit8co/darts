@@ -23,6 +23,11 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Have distinct components/columns names
     - Have a well defined frequency (for ``DateTimeIndex``)
     - Be non-empty.
+
+``TimeSeries`` can contain global or component-specific static covariate data. Static covariates in `darts` refers
+to external time-invariant data that can be used by some forecasting models to help improve predictions.
+Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/covariates.html>`__ and the
+``TimeSeries`` documentation for more information on covariates.
 """
 
 import pickle
@@ -59,6 +64,7 @@ class TimeSeries:
         See Also
         --------
         TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
+        TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
         TimeSeries.from_series : Create from a :class:`pandas.Series`.
         TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
         TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
@@ -553,7 +559,7 @@ class TimeSeries:
         )
 
     @classmethod
-    def from_longitudinal_dataframe(
+    def from_group_dataframe(
         cls,
         df: pd.DataFrame,
         group_cols: Union[List[str], str],
@@ -569,8 +575,9 @@ class TimeSeries:
         One column (or the DataFrame index) has to represent the time,
         a list of columns `group_cols` must be used for extracting the individual TimeSeries by groups,
         and a list of columns `value_cols` has to represent the values for the individual time series.
-        Add additional static covariates from columns `static_cols` to the individual TimeSeries without grouping by
-        these columns.
+        Values from columns ``group_cols`` and ``static_cols`` are added as static covariates to the resulting
+        TimeSeries objects. These can be viewed with `my_series.static_covariates`. Different to `group_cols`,
+        `static_cols` only adds the static values without using the to extract the TimeSeries groups.
 
         Parameters
         ----------
@@ -909,6 +916,24 @@ class TimeSeries:
 
     @property
     def static_covariates(self) -> pd.DataFrame:
+        """
+        Returns the static covariates contained in the series as a pandas DataFrame.
+        The columns represent the static variables and the rows represent the components of the uni/multivariate
+        series. If a single-row DataFrame, the covariates are globally 'applied' to all components of the
+        TimeSeries. If a multi-row DataFrame, the static covariates are component-specific, with the number of rows
+        matching the number of components of the series. Use below methods to add static covariates to your TimeSeries
+        objects.
+
+        See Also
+        --------
+        TimeSeries.with_static_covariates : Return a copy of a series with added static covariates
+        TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
+        TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
+        TimeSeries.from_series : Create from a :class:`pandas.Series`.
+        TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
+        TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
+        TimeSeries.from_csv : Create from a CSV file.
+        """
         return self._xa.attrs.get(STATIC_COV_TAG, pd.DataFrame())
 
     @property
@@ -2258,6 +2283,42 @@ class TimeSeries:
     def with_static_covariates(
         self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
     ):
+        """Returns a new TimeSeries object with added static covariates.
+
+        Parameters
+        ----------
+        covariates
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series, a pandas
+            DataFrame, or `None`. If `None`, will set the static covariates to `None`. If a Series, the index
+            represents the static variables. The covariates are then globally 'applied' to all components of the
+            TimeSeries. If a DataFrame, the columns represent the static variables and the rows represent the
+            components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates are globally
+            'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of rows must match the
+            number of components of the TimeSeries. This adds component-specific static covariates.
+
+        Examples
+        --------
+        >>> import pandas as pd
+        >>> from darts.utils.timeseries_generation import linear_timeseries
+        >>> # add global static covariates
+        >>> static_covs = pd.Series([0., 1.], index=["static_cov_1", "static_cov_2"])
+        >>> series = linear_timeseries(length=3)
+        >>> series_new1 = series.with_static_covariates(static_covs)
+        >>> series_new1.static_covariates
+                           static_cov_1  static_cov_2
+        component
+        linear              0.0           1.0
+
+        >>> # add component specific static covariates
+        >>> static_covs_multi = pd.DataFrame([[0., 1.], [2., 3.]], columns=["static_cov_1", "static_cov_2"])
+        >>> series_multi = series.stack(series)
+        >>> series_new2 = series_multi.with_static_covariates(static_covs_multi)
+        >>> series_new2.static_covariates
+                           static_cov_1  static_cov_2
+        component
+        linear              0.0           1.0
+        linear_1            2.0           3.0
+        """
         return self.__class__(
             xr.DataArray(
                 self._xa.values,

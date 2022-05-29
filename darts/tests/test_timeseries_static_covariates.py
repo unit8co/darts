@@ -56,7 +56,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
     def test_timeseries_from_longitudinal_df(self):
         # univariate static covs: only group by "st1", keep static covs "st1"
         value_cols = ["a", "b", "c"]
-        ts_groups1 = TimeSeries.from_longitudinal_dataframe(
+        ts_groups1 = TimeSeries.from_group_dataframe(
             df=self.df_long_uni,
             group_cols="st1",
             static_cols=None,
@@ -73,7 +73,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             assert (ts.static_covariate_values(copy=False) == [[i]]).all()
 
         # multivariate static covs: only group by "st1", keep static covs "st1", "constant"
-        ts_groups2 = TimeSeries.from_longitudinal_dataframe(
+        ts_groups2 = TimeSeries.from_group_dataframe(
             df=self.df_long_multi,
             group_cols=["st1"],
             static_cols="constant",
@@ -87,7 +87,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             assert (ts.static_covariate_values(copy=False) == [[i, 1]]).all()
 
         # multivariate static covs: group by "st1" and "st2", keep static covs "st1", "st2", "constant"
-        ts_groups3 = TimeSeries.from_longitudinal_dataframe(
+        ts_groups3 = TimeSeries.from_group_dataframe(
             df=self.df_long_multi,
             group_cols=["st1", "st2"],
             static_cols=["constant"],
@@ -108,7 +108,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         df.loc[:, "non_static"] = np.arange(len(df))
         # non static columns as static columns should raise an error
         with pytest.raises(ValueError):
-            _ = TimeSeries.from_longitudinal_dataframe(
+            _ = TimeSeries.from_group_dataframe(
                 df=df,
                 group_cols=["st1"],
                 static_cols=["non_static"],
@@ -118,7 +118,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
 
         # groups that are too short for TimeSeries requirements should raise an error
         with pytest.raises(ValueError):
-            _ = TimeSeries.from_longitudinal_dataframe(
+            _ = TimeSeries.from_group_dataframe(
                 df=df,
                 group_cols=["st1", "non_static"],
                 static_cols=None,
