@@ -47,6 +47,7 @@ DIMS = ("time", "component", "sample")
 
 VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 STATIC_COV_TAG = "static_covariates"
+DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
 
 
 class TimeSeries:
@@ -208,23 +209,28 @@ class TimeSeries:
         )
         # check if valid static covariates for multivariate TimeSeries
         if isinstance(static_covariates, pd.DataFrame):
-            n_components = len(static_covariates.columns)
+            n_components = len(static_covariates)
             raise_if(
                 n_components > 1 and n_components != self.n_components,
-                "When passing a multi-column pandas DataFrame, the number of columns must match the number of "
-                "components of the TimeSeries object (multivariate static covariates must map to each TimeSeries "
-                "component).",
+                "When passing a multi-row pandas DataFrame, the number of rows must match the number of "
+                "components of the TimeSeries object (multi-component/multi-row static covariates must map to each "
+                "TimeSeries component).",
                 logger,
             )
+            static_covariates = static_covariates.copy()
         elif isinstance(static_covariates, pd.Series):
-            static_covariates = static_covariates.to_frame()
+            static_covariates = static_covariates.to_frame().T
         else:  # None
-            pass
-        self._xa.attrs[STATIC_COV_TAG] = (
-            static_covariates.astype(self.dtype)
-            if static_covariates is not None
-            else static_covariates
-        )
+            static_covariates = pd.DataFrame()
+
+        if not static_covariates.empty:
+            static_covariates.index = (
+                self.components
+                if len(static_covariates) == self.n_components
+                else [DEFAULT_GLOBAL_STATIC_COV_NAME]
+            )
+
+        self._xa.attrs[STATIC_COV_TAG] = static_covariates.astype(self.dtype)
 
     """
     Factory Methods
@@ -378,8 +384,13 @@ class TimeSeries:
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
         static_covariates
-            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
-            pandas DataFrame with index representing the uni/multivariate static variables.
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
+            DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
+            to all components of the TimeSeries. If a DataFrame, the columns represent the static variables and the
+            rows represent the components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates
+            are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
+            rows must match the number of components of the TimeSeries (in this case, the number of columns in the CSV
+            file). This adds control for component-specific static covariates.
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
 
@@ -439,8 +450,13 @@ class TimeSeries:
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
         static_covariates
-            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
-            pandas DataFrame with index representing the uni/multivariate static variables.
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
+            DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
+            to all components of the TimeSeries. If a DataFrame, the columns represent the static variables and the
+            rows represent the components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates
+            are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
+            rows must match the number of components of the TimeSeries (in this case, the number of columns in
+            ``value_cols``). This adds control for component-specific static covariates.
 
         Returns
         -------
@@ -553,6 +569,8 @@ class TimeSeries:
         One column (or the DataFrame index) has to represent the time,
         a list of columns `group_cols` must be used for extracting the individual TimeSeries by groups,
         and a list of columns `value_cols` has to represent the values for the individual time series.
+        Add additional static covariates from columns `static_cols` to the individual TimeSeries without grouping by
+        these columns.
 
         Parameters
         ----------
@@ -631,7 +649,7 @@ class TimeSeries:
             # store static covariate Series and group DataFrame (without static cov columns)
             splits.append(
                 (
-                    pd.DataFrame(static_cov_vals, index=static_cov_cols),
+                    pd.DataFrame([static_cov_vals], columns=static_cov_cols),
                     group.drop(columns=static_cov_cols),
                 )
             )
@@ -681,8 +699,9 @@ class TimeSeries:
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
         static_covariates
-            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
-            pandas DataFrame with index representing the uni/multivariate static variables.
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a
+            single-row pandas DataFrame. If a Series, the index represents the static variables. If a DataFrame, the
+            columns represent the static variables and the single row represents the univariate TimeSeries component.
 
         Returns
         -------
@@ -738,8 +757,13 @@ class TimeSeries:
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
         static_covariates
-            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
-            pandas DataFrame with index representing the uni/multivariate static variables.
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
+            DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
+            to all components of the TimeSeries. If a DataFrame, the columns represent the static variables and the
+            rows represent the components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates
+            are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
+            rows must match the number of components of the TimeSeries (in this case, the number of columns in
+            ``values``). This adds control for component-specific static covariates.
 
         Returns
         -------
@@ -803,8 +827,13 @@ class TimeSeries:
         fillna_value
             Optionally, a numeric value to fill missing values (NaNs) with.
         static_covariates
-            Optionally, a set of static covariates to add to the TimeSeries. Either a pandas Series or a single-column
-            pandas DataFrame with index representing the uni/multivariate static variables.
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
+            DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
+            to all components of the TimeSeries. If a DataFrame, the columns represent the static variables and the
+            rows represent the components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates
+            are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
+            rows must match the number of components of the TimeSeries (in this case, the number of columns in
+            ``values``). This adds control for component-specific static covariates.
 
         Returns
         -------
@@ -879,8 +908,8 @@ class TimeSeries:
     """
 
     @property
-    def static_covariates(self):
-        return self._xa.attrs.get(STATIC_COV_TAG, None)
+    def static_covariates(self) -> pd.DataFrame:
+        return self._xa.attrs.get(STATIC_COV_TAG, pd.DataFrame())
 
     @property
     def n_samples(self):
@@ -970,7 +999,7 @@ class TimeSeries:
     @property
     def has_static_covariates(self) -> bool:
         """Whether this series contains static covariates."""
-        return self.static_covariates is not None
+        return not self.static_covariates.empty
 
     @property
     def duration(self) -> Union[pd.Timedelta, int]:
@@ -3605,10 +3634,10 @@ def _concat_static_covs(series: List[TimeSeries]) -> Optional[pd.DataFrame]:
         return series[0].static_covariates
 
     raise_if_not(
-        all([len(ts.static_covariates.columns) == ts.n_components for ts in series])
+        all([len(ts.static_covariates) == ts.n_components for ts in series])
         and all(
             [
-                ts.static_covariates.index.equals(series[0].static_covariates.index)
+                ts.static_covariates.columns.equals(series[0].static_covariates.columns)
                 for ts in series
             ]
         ),
@@ -3620,7 +3649,7 @@ def _concat_static_covs(series: List[TimeSeries]) -> Optional[pd.DataFrame]:
     )
 
     return pd.concat(
-        [ts.static_covariates for ts in series if ts.has_static_covariates], axis=1
+        [ts.static_covariates for ts in series if ts.has_static_covariates], axis=0
     )
 
 

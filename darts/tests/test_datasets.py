@@ -42,8 +42,8 @@ if TORCH_AVAILABLE:
         target2 = gaussian_timeseries(length=150).with_static_covariates(
             pd.Series([2, 3], index=["st1", "st2"])
         )
-        cov_st1 = target1.static_covariates.T.values
-        cov_st2 = target2.static_covariates.T.values
+        cov_st1 = target1.static_covariates.values
+        cov_st2 = target2.static_covariates.values
         cov_st2_df = pd.Series([2, 3], index=["st1", "st2"])
         vals1, vals2 = target1.values(), target2.values()
         cov1, cov2 = gaussian_timeseries(length=100), gaussian_timeseries(length=150)

@@ -633,7 +633,7 @@ class GenericShiftedDataset(TrainingDataset):
 
         # TODO: we need think about the dimensionality of static covariates
         static_covariate = (
-            target_series.static_covariates.T.values
+            target_series.static_covariates.values
             if target_series.has_static_covariates
             else None
         )

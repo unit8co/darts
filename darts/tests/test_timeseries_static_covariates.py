@@ -7,6 +7,7 @@ import pytest
 from darts import TimeSeries
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.tests.base_test_class import DartsBaseTestClass
+from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME
 from darts.utils.timeseries_generation import _generate_index, linear_timeseries
 
 
@@ -64,8 +65,11 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         )
         assert len(ts_groups1) == self.n_groups
         for i, ts in enumerate(ts_groups1):
+            assert ts.static_covariates.index.equals(
+                pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+            )
             assert ts.static_covariates.shape == (1, 1)
-            assert ts.static_covariates.index.equals(pd.Index(["st1"]))
+            assert ts.static_covariates.columns.equals(pd.Index(["st1"]))
             assert (ts.static_covariates.values == [[i]]).all()
 
         # multivariate static covs: only group by "st1", keep static covs "st1", "constant"
@@ -78,9 +82,9 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         )
         assert len(ts_groups2) == self.n_groups
         for i, ts in enumerate(ts_groups2):
-            assert ts.static_covariates.shape == (2, 1)
-            assert ts.static_covariates.index.equals(pd.Index(["st1", "constant"]))
-            assert (ts.static_covariates.values == [[i], [1]]).all()
+            assert ts.static_covariates.shape == (1, 2)
+            assert ts.static_covariates.columns.equals(pd.Index(["st1", "constant"]))
+            assert (ts.static_covariates.values == [[i, 1]]).all()
 
         # multivariate static covs: group by "st1" and "st2", keep static covs "st1", "st2", "constant"
         ts_groups3 = TimeSeries.from_longitudinal_dataframe(
@@ -94,11 +98,11 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         for idx, ts in enumerate(ts_groups3):
             i = idx // 2
             j = idx % 2
-            assert ts.static_covariates.shape == (3, 1)
-            assert ts.static_covariates.index.equals(
+            assert ts.static_covariates.shape == (1, 3)
+            assert ts.static_covariates.columns.equals(
                 pd.Index(["st1", "st2", "constant"])
             )
-            assert (ts.static_covariates.values == [[i], [j], [1]]).all()
+            assert (ts.static_covariates.values == [[i, j, 1]]).all()
 
         df = copy.deepcopy(self.df_long_multi)
         df.loc[:, "non_static"] = np.arange(len(df))
@@ -124,23 +128,34 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
 
     def test_with_static_covariates_univariate(self):
         ts = linear_timeseries(length=10)
-        static_covs = pd.Series([0.0, 1.0], index=["st1", "st2"])
+        static_covs_series = pd.Series([0.0, 1.0], index=["st1", "st2"])
+        static_covs_df = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
 
-        # inplace from Series for chained calls
-        ts = ts.with_static_covariates(static_covs)
-        assert ts.static_covariates.equals(static_covs.to_frame())
+        # check immutable
+        ts.with_static_covariates(static_covs_series)
+        assert not ts.has_static_covariates
 
         # from Series
-        ts = ts.with_static_covariates(static_covs)
-        assert ts.static_covariates.equals(static_covs.to_frame())
+        ts = ts.with_static_covariates(static_covs_series)
+        assert ts.has_static_covariates
+        np.testing.assert_almost_equal(
+            ts.static_covariates.values, np.expand_dims(static_covs_series.values, -1).T
+        )
+        assert ts.static_covariates.index.equals(ts.components)
 
         # from DataFrame
-        ts = ts.with_static_covariates(static_covs.to_frame())
-        assert ts.static_covariates.equals(static_covs.to_frame())
+        ts = ts.with_static_covariates(static_covs_df)
+        assert ts.has_static_covariates
+        np.testing.assert_almost_equal(
+            ts.static_covariates.values, static_covs_df.values
+        )
+        assert ts.static_covariates.index.equals(ts.components)
 
         # with None
         ts = ts.with_static_covariates(None)
-        assert ts.static_covariates is None
+        assert isinstance(ts.static_covariates, pd.DataFrame)
+        assert ts.static_covariates.empty
+        assert not ts.has_static_covariates
 
         # only pd.Series, pd.DataFrame or None
         with pytest.raises(ValueError):
@@ -148,53 +163,67 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
 
         # multivariate does not work with univariate TimeSeries
         with pytest.raises(ValueError):
-            static_covs_multi = pd.concat([static_covs] * 2, axis=1)
+            static_covs_multi = pd.concat([static_covs_series] * 2, axis=1).T
             _ = ts.with_static_covariates(static_covs_multi)
 
     def test_with_static_covariates_multivariate(self):
         ts = linear_timeseries(length=10)
         ts_multi = ts.stack(ts)
-        static_covs = pd.DataFrame([[0.0, 1.0], [0.0, 1.0]], index=["st1", "st2"])
+        static_covs = pd.DataFrame([[0.0, 1.0], [0.0, 1.0]], columns=["st1", "st2"])
 
         # from univariate static covariates
-        ts_multi = ts_multi.with_static_covariates(static_covs[static_covs.columns[0]])
-        assert ts_multi.static_covariates.equals(
-            static_covs[static_covs.columns[0]].to_frame()
+        ts_multi = ts_multi.with_static_covariates(static_covs.loc[0])
+        assert ts_multi.static_covariates.index.equals(
+            pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+        )
+        assert ts_multi.static_covariates.columns.equals(static_covs.columns)
+        np.testing.assert_almost_equal(
+            ts_multi.static_covariates.values, static_covs.loc[0:0].values
         )
 
         # from multivariate static covariates
         ts_multi = ts_multi.with_static_covariates(static_covs)
-        assert ts_multi.static_covariates.equals(static_covs)
+        assert ts_multi.static_covariates.index.equals(ts_multi.components)
+        assert ts_multi.static_covariates.columns.equals(static_covs.columns)
+        np.testing.assert_almost_equal(
+            ts_multi.static_covariates.values, static_covs.values
+        )
 
         # raise an error if multivariate static covariates columns don't match the number of components in the series
         with pytest.raises(ValueError):
-            _ = ts_multi.with_static_covariates(pd.concat([static_covs] * 2, axis=1))
+            _ = ts_multi.with_static_covariates(pd.concat([static_covs] * 2, axis=0))
 
     def test_stack(self):
         ts_uni = linear_timeseries(length=10)
         ts_multi = ts_uni.stack(ts_uni)
 
-        static_covs_uni1 = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
-        static_covs_uni2 = pd.Series([3, 4], index=["st3", "st4"]).astype(int)
-        static_covs_uni3 = pd.Series([2, 3, 4], index=["st1", "st2", "st3"]).astype(int)
+        static_covs_uni1 = pd.DataFrame([[0, 1]], columns=["st1", "st2"]).astype(int)
+        static_covs_uni2 = pd.DataFrame([[3, 4]], columns=["st3", "st4"]).astype(int)
+        static_covs_uni3 = pd.DataFrame(
+            [[2, 3, 4]], columns=["st1", "st2", "st3"]
+        ).astype(int)
 
-        static_covs_multi = pd.DataFrame([[0, 0], [1, 1]], index=["st1", "st2"]).astype(
-            int
-        )
+        static_covs_multi = pd.DataFrame(
+            [[0, 0], [1, 1]], columns=["st1", "st2"]
+        ).astype(int)
 
         ts_uni = ts_uni.with_static_covariates(static_covs_uni1)
         ts_multi = ts_multi.with_static_covariates(static_covs_multi)
 
         # valid static covariates for concatenation/stack
         ts_stacked1 = ts_uni.stack(ts_uni)
-        assert ts_stacked1.static_covariates.equals(
-            pd.concat([ts_uni.static_covariates] * 2, axis=1)
+        assert ts_stacked1.static_covariates.index.equals(ts_stacked1.components)
+        np.testing.assert_almost_equal(
+            ts_stacked1.static_covariates.values,
+            pd.concat([ts_uni.static_covariates] * 2, axis=0).values,
         )
 
         # valid static covariates for concatenation/stack: first only has static covs
         # -> this gives multivar ts with univar static covs
         ts_stacked2 = ts_uni.stack(ts_uni.with_static_covariates(None))
-        assert ts_stacked2.static_covariates.equals(ts_uni.static_covariates)
+        np.testing.assert_almost_equal(
+            ts_stacked2.static_covariates.values, ts_uni.static_covariates.values
+        )
 
         # mismatch between column names
         with pytest.raises(ValueError):
@@ -206,8 +235,11 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
 
         # valid univar ts with univar static covariates + multivar ts with multivar static covariates
         ts_stacked3 = ts_uni.stack(ts_multi)
-        assert ts_stacked3.static_covariates.equals(
-            pd.concat([ts_uni.static_covariates, ts_multi.static_covariates], axis=1)
+        np.testing.assert_almost_equal(
+            ts_stacked3.static_covariates.values,
+            pd.concat(
+                [ts_uni.static_covariates, ts_multi.static_covariates], axis=0
+            ).values,
         )
 
         # invalid univar ts with univar static covariates + multivar ts with univar static covariates
@@ -224,9 +256,10 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         assert ts.static_covariates.dtypes[0] == "float32"
 
         ts_stochastic = ts.from_times_and_values(
-            times=ts.time_index, values=np.random.randn(10, 1, 3)
+            times=ts.time_index,
+            values=np.random.randn(10, 1, 3),
+            static_covariates=static_covs,
         )
-        ts_stochastic = ts_stochastic.with_static_covariates(static_covs)
 
         ts_check = ts.copy()
         assert ts_check.static_covariates.equals(ts.static_covariates)
@@ -237,8 +270,13 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         ts_check = ts.tail()
         assert ts_check.static_covariates.equals(ts.static_covariates)
 
+        # same values but different component names ("0" vs. "0_quantiles")
         ts_check = ts_stochastic.quantile_timeseries()
-        assert ts_check.static_covariates.equals(ts_stochastic.static_covariates)
+        assert not ts_check.components.equals(ts_stochastic.components)
+        assert ts_stochastic.static_covariates.index.equals(ts_stochastic.components)
+        np.testing.assert_almost_equal(
+            ts_check.static_covariates.values, ts_stochastic.static_covariates.values
+        )
 
     def test_scalers_with_static_covariates(self):
         ts = linear_timeseries(start_value=1.0, end_value=2.0, length=10)

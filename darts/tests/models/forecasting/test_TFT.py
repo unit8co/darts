@@ -179,13 +179,15 @@ if TORCH_AVAILABLE:
                 pl_trainer_kwargs={"fast_dev_run": True},
             )
             model.fit(target, verbose=False)
-            assert len(model.model.static_variables) == len(target.static_covariates)
+            assert len(model.model.static_variables) == len(
+                target.static_covariates.columns
+            )
 
             model.predict(n=1, series=target, verbose=False)
 
             # raise an error when trained with static covariates of wrong dimensionality
             target = target.with_static_covariates(
-                pd.concat([target.static_covariates] * 2, axis=0)
+                pd.concat([target.static_covariates] * 2, axis=1)
             )
             with pytest.raises(ValueError):
                 model.predict(n=1, series=target, verbose=False)
