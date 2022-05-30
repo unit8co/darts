@@ -332,13 +332,13 @@ class _TFTModule(PLMixedCovariatesModule):
         return mask
 
     def forward(
-        self, x: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
     ) -> torch.Tensor:
         """TFT model forward pass.
 
         Parameters
         ----------
-        x
+        x_in
             comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
             is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
@@ -347,7 +347,7 @@ class _TFTModule(PLMixedCovariatesModule):
         torch.Tensor
             the output tensor
         """
-        x_cont_past, x_cont_future, x_static = x
+        x_cont_past, x_cont_future, x_static = x_in
         dim_samples, dim_time, dim_variable = 0, 1, 2
 
         batch_size = x_cont_past.shape[dim_samples]

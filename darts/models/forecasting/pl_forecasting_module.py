@@ -300,7 +300,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
 
-    def _produce_predict_output(self, x):
+    def _produce_predict_output(self, x: Tuple):
         if self.likelihood:
             output = self(x)
             return self.likelihood.sample(output)
@@ -351,12 +351,13 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         input_batch
             ``(past_target, past_covariates, static_covariates)``
         """
-        past_target, past_covariate, _ = input_batch
+        past_target, past_covariates, static_covariates = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
         inpt = (
-            torch.cat([past_target, past_covariate], dim=2)
-            if past_covariate is not None
-            else past_target
+            torch.cat([past_target, past_covariates], dim=2)
+            if past_covariates is not None
+            else past_target,
+            static_covariates,
         )
         return self(inpt)
 
@@ -378,7 +379,12 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             ``self.output_chunk_length``
         """
         dim_component = 2
-        past_target, past_covariates, future_past_covariates, _ = input_batch
+        (
+            past_target,
+            past_covariates,
+            future_past_covariates,
+            static_covariates,
+        ) = input_batch
 
         n_targets = past_target.shape[dim_component]
         n_past_covs = (
@@ -390,7 +396,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             dim=dim_component,
         )
 
-        out = self._produce_predict_output(input_past)[
+        out = self._produce_predict_output((input_past, static_covariates))[
             :, self.first_prediction_index :, :
         ]
 
@@ -439,7 +445,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 ] = future_past_covariates[:, left_past:right_past, :]
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(input_past)[
+            out = self._produce_predict_output((input_past, static_covariates))[
                 :, self.first_prediction_index :, :
             ]
             batch_prediction.append(out)

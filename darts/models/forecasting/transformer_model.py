@@ -161,7 +161,8 @@ class _TransformerModule(PLPastCovariatesModule):
 
         return src, tgt
 
-    def forward(self, data):
+    def forward(self, x_in: Tuple):
+        data, _ = x_in
         # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
         # side of the Transformer architecture
         src, tgt = self._create_transformer_inputs(data)
