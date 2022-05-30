@@ -35,9 +35,8 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         -----
         The scaler will not scale the series' static covariates. This has to be done either before constructing the
         series, or later on by extracting the covariates, transforming the values and then reapplying them to the
-        series. For this, see Timeseries properties/methods
-        `TimeSeries.static_covariates <darts.timeseries.static_covariates>`_ and
-        `TimeSeries.static_covariates() <darts.timeseries.static_covariates>`_
+        series. For this, see Timeseries properties `TimeSeries.static_covariates` and method
+        `TimeSeries.with_static_covariates()`
 
         Parameters
         ----------
