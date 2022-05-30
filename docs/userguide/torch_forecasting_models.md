@@ -363,3 +363,52 @@ We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 2           | 31s            |
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 4           | 31s            |
 
+-------------
+
+## Early Stop
+Early stop can be an efficient way to cut down on the training time.  Using early stop trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
+
+In this example the model reaches the lowest val_loss at epoch 10 and finishes training at epoch 15. 
+
+```python
+from darts.models import NBEATSModel
+from darts.datasets import AirPassengersDataset
+from pytorch_lightning.callbacks import EarlyStopping
+import pandas as pd
+from darts.dataprocessing.transformers import Scaler
+
+# Read data:
+series = AirPassengersDataset().load()
+
+# To use the early stop on the validation loss, create training and validation sets:
+train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
+
+# Normalize the time series (note: we avoid fitting the transformer on the validation set)
+transformer = Scaler()
+transformer.fit(train)
+train = transformer.transform(train)
+val = transformer.transform(val)
+
+# Early stop callback
+my_stopper = EarlyStopping(
+    monitor="val_loss",
+    patience=5,
+    min_delta=0.05,
+    mode='min',
+)
+pl_trainer_kwargs = {"callbacks": [my_stopper]}
+
+# Create the model
+model = NBEATSModel(
+    input_chunk_length=24,
+    output_chunk_length=12,
+    n_epochs=500,
+    pl_trainer_kwargs=pl_trainer_kwargs)
+
+# fit using a val_series
+model.fit(
+    series=train,
+    val_series=val,
+    )
+```
+
