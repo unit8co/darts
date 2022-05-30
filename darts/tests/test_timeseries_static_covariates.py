@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME
@@ -154,8 +154,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
 
         # with None
         ts = ts.with_static_covariates(None)
-        assert isinstance(ts.static_covariates, pd.DataFrame)
-        assert ts.static_covariates.empty
+        assert ts.static_covariates is None
         assert not ts.has_static_covariates
 
         # only pd.Series, pd.DataFrame or None
@@ -181,6 +180,9 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         vals = ts.static_covariate_values(copy=False)
         vals[:] = -1.0
         assert (ts.static_covariate_values(copy=False) == -1.0).all()
+
+        ts = ts.with_static_covariates(None)
+        assert ts.static_covariate_values() is None
 
     def test_with_static_covariates_multivariate(self):
         ts = linear_timeseries(length=10)
@@ -262,6 +264,121 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         # invalid univar ts with univar static covariates + multivar ts with univar static covariates
         with pytest.raises(ValueError):
             _ = ts_uni.stack(ts_multi.with_static_covariates(static_covs_uni1))
+
+    def test_concatenate_dim_component(self):
+        """
+        test concatenation with static covariates along component dimension (axis=1)
+        Along component dimension, we concatenate/transfer the static covariates the series only if one of
+        below cases applies:
+        1)  concatenate when for each series the number of static cov components is equal to the number of
+            components in the series. The static variable names (columns in series.static_covariates) must be
+            identical across all series
+        2)  if only the first series contains static covariates transfer only those
+        3)  if `ignore_static_covarites=True`, case 1) is ignored and only the static covariates of the first
+            series are transferred
+        """
+        ts_uni = linear_timeseries(length=10)
+        ts_multi = ts_uni.stack(ts_uni)
+
+        static_covs_uni1 = pd.DataFrame([[0, 1]], columns=["st1", "st2"]).astype(int)
+        static_covs_uni2 = pd.DataFrame([[3, 4]], columns=["st3", "st4"]).astype(int)
+        static_covs_uni3 = pd.DataFrame(
+            [[2, 3, 4]], columns=["st1", "st2", "st3"]
+        ).astype(int)
+
+        static_covs_multi = pd.DataFrame(
+            [[0, 0], [1, 1]], columns=["st1", "st2"]
+        ).astype(int)
+
+        ts_uni_static_uni1 = ts_uni.with_static_covariates(static_covs_uni1)
+        ts_uni_static_uni2 = ts_uni.with_static_covariates(static_covs_uni2)
+        ts_uni_static_uni3 = ts_uni.with_static_covariates(static_covs_uni3)
+
+        ts_multi_static_uni1 = ts_multi.with_static_covariates(static_covs_uni1)
+        ts_multi_static_multi = ts_multi.with_static_covariates(static_covs_multi)
+
+        # concatenation without covariates
+        ts_concat = concatenate([ts_uni, ts_uni], axis=1)
+        assert ts_concat.static_covariates is None
+
+        # concatenation along component dimension results in multi component static covariates
+        ts_concat = concatenate([ts_uni_static_uni1, ts_uni_static_uni1], axis=1)
+        assert ts_concat.static_covariates.shape == (2, 2)
+        assert ts_concat.components.equals(ts_concat.static_covariates.index)
+        np.testing.assert_almost_equal(
+            ts_concat.static_covariate_values(copy=False),
+            pd.concat([static_covs_uni1] * 2, axis=0).values,
+        )
+
+        # concatenation with inconsistent static variable names should fail ...
+        with pytest.raises(ValueError):
+            _ = concatenate([ts_uni_static_uni1, ts_uni_static_uni2], axis=1)
+
+        # ... by ignoring the static covariates, it should work and take only the covariates of the first series
+        ts_concat = concatenate(
+            [ts_uni_static_uni1, ts_uni_static_uni2],
+            axis=1,
+            ignore_static_covariates=True,
+        )
+        assert ts_concat.static_covariates.shape == (1, 2)
+        assert ts_concat.static_covariates.index.equals(
+            pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+        )
+        np.testing.assert_almost_equal(
+            ts_concat.static_covariate_values(copy=False),
+            ts_uni_static_uni1.static_covariate_values(copy=False),
+        )
+
+        # concatenation with inconsistent number of static covariates should fail ...
+        with pytest.raises(ValueError):
+            _ = concatenate([ts_uni_static_uni1, ts_uni_static_uni3], axis=1)
+
+        # concatenation will only work if for each series the number of static cov components is equal to the
+        # number of components in the series
+        with pytest.raises(ValueError):
+            _ = concatenate([ts_uni_static_uni1, ts_multi_static_uni1], axis=1)
+
+        ts_concat = concatenate([ts_uni_static_uni1, ts_multi_static_multi], axis=1)
+        assert ts_concat.static_covariates.shape == (ts_concat.n_components, 2)
+        assert ts_concat.components.equals(ts_concat.static_covariates.index)
+        np.testing.assert_almost_equal(
+            ts_concat.static_covariate_values(copy=False),
+            pd.concat([static_covs_uni1, static_covs_multi], axis=0),
+        )
+
+    def test_concatenate_dim_time(self):
+        """
+        Test concatenation with static covariates along time dimension (axis=0)
+        Along time dimension, we only take the static covariates of the first series (as static covariates are
+        time-independant).
+        """
+        static_covs_left = pd.DataFrame([[0, 1]], columns=["st1", "st2"]).astype(int)
+        static_covs_right = pd.DataFrame([[3, 4]], columns=["st3", "st4"]).astype(int)
+
+        ts_left = linear_timeseries(length=10).with_static_covariates(static_covs_left)
+        ts_right = linear_timeseries(
+            length=10, start=ts_left.end_time() + ts_left.freq
+        ).with_static_covariates(static_covs_right)
+
+        ts_concat = concatenate([ts_left, ts_right], axis=0)
+        assert ts_concat.static_covariates.equals(ts_left.static_covariates)
+
+    def test_concatenate_dim_samples(self):
+        """
+        Test concatenation with static covariates along sample dimension (axis=2)
+        Along sample dimension, we only take the static covariates of the first series (as we components and
+        time don't change).
+        """
+        static_covs_left = pd.DataFrame([[0, 1]], columns=["st1", "st2"]).astype(int)
+        static_covs_right = pd.DataFrame([[3, 4]], columns=["st3", "st4"]).astype(int)
+
+        ts_left = linear_timeseries(length=10).with_static_covariates(static_covs_left)
+        ts_right = linear_timeseries(length=10).with_static_covariates(
+            static_covs_right
+        )
+
+        ts_concat = concatenate([ts_left, ts_right], axis=2)
+        assert ts_concat.static_covariates.equals(ts_left.static_covariates)
 
     def test_ts_methods_with_static_covariates(self):
         ts = linear_timeseries(length=10).astype("float64")

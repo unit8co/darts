@@ -216,12 +216,7 @@ class GenericInferenceDataset(InferenceDataset):
                 else None
             )
 
-        # TODO: we need think about the dimensionality of static covariates
-        static_covariate = (
-            target_series.static_covariate_values(copy=False)
-            if target_series.has_static_covariates
-            else None
-        )
+        static_covariate = target_series.static_covariate_values(copy=False)
         return (
             past_target,
             past_covariate,

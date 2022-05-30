@@ -227,16 +227,17 @@ class TimeSeries:
         elif isinstance(static_covariates, pd.Series):
             static_covariates = static_covariates.to_frame().T
         else:  # None
-            static_covariates = pd.DataFrame()
+            pass
 
-        if not static_covariates.empty:
+        if static_covariates is None:
+            self._xa.attrs[STATIC_COV_TAG] = None
+        else:
             static_covariates.index = (
                 self.components
                 if len(static_covariates) == self.n_components
                 else [DEFAULT_GLOBAL_STATIC_COV_NAME]
             )
-
-        self._xa.attrs[STATIC_COV_TAG] = static_covariates.astype(self.dtype)
+            self._xa.attrs[STATIC_COV_TAG] = static_covariates.astype(self.dtype)
 
     """
     Factory Methods
@@ -915,7 +916,7 @@ class TimeSeries:
     """
 
     @property
-    def static_covariates(self) -> pd.DataFrame:
+    def static_covariates(self) -> Optional[pd.DataFrame]:
         """
         Returns the static covariates contained in the series as a pandas DataFrame.
         The columns represent the static variables and the rows represent the components of the uni/multivariate
@@ -934,7 +935,7 @@ class TimeSeries:
         TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
         TimeSeries.from_csv : Create from a CSV file.
         """
-        return self._xa.attrs.get(STATIC_COV_TAG, pd.DataFrame())
+        return self._xa.attrs.get(STATIC_COV_TAG, None)
 
     @property
     def n_samples(self):
@@ -1024,7 +1025,7 @@ class TimeSeries:
     @property
     def has_static_covariates(self) -> bool:
         """Whether this series contains static covariates."""
-        return not self.static_covariates.empty
+        return self.static_covariates is not None
 
     @property
     def duration(self) -> Union[pd.Timedelta, int]:
@@ -1480,7 +1481,7 @@ class TimeSeries:
         else:
             return self._xa[:, 0, sample].values
 
-    def static_covariate_values(self, copy: bool = True) -> np.ndarray:
+    def static_covariate_values(self, copy: bool = True) -> Optional[np.ndarray]:
         """
         Return a 2-D array of dimension (component, static variable),
         containing the static covariate values of the TimeSeries.
@@ -1494,10 +1495,14 @@ class TimeSeries:
 
         Returns
         -------
-        numpy.ndarray
-            The values composing the time series.
+        Optional[numpy.ndarray]
+            The static covariate values if the series has static covariates, else `None`.
         """
-        return self.static_covariates.to_numpy(copy=copy)
+        return (
+            self.static_covariates.to_numpy(copy=copy)
+            if self.has_static_covariates
+            else self.static_covariates
+        )
 
     def head(
         self, size: Optional[int] = 5, axis: Optional[Union[int, str]] = 0
@@ -3695,7 +3700,7 @@ class TimeSeries:
         raise_log(IndexError("The type of your index was not matched."), logger)
 
 
-def _concat_static_covs(series: List[TimeSeries]) -> Optional[pd.DataFrame]:
+def _concat_static_covs(series: Sequence["TimeSeries"]) -> Optional[pd.DataFrame]:
     """Concatenates static covariates."""
 
     if not any([ts.has_static_covariates for ts in series]):
@@ -3739,6 +3744,7 @@ def concatenate(
     series: Sequence["TimeSeries"],
     axis: Union[str, int] = 0,
     ignore_time_axis: bool = False,
+    ignore_static_covariates: bool = False,
 ):
     """Concatenates multiple ``TimeSeries`` along a given axis.
 
@@ -3758,6 +3764,9 @@ def concatenate(
         provided series). When done along time dimension, concatenation will work even if the time axes
         are not contiguous (in this case, the resulting series will have a start time matching the start time
         of the first provided series). Default: False.
+    ignore_static_covariates : bool
+        whether to ignore all requirements for static covariate concatenation and only transfer the static covariates
+        of the first TimeSeries element in `series` to the concatenated TimeSeries. Only effective when `axis=1`.
 
     Return
     -------
@@ -3823,6 +3832,7 @@ def concatenate(
             )
 
             da_concat = da_concat.assign_coords({time_dim_name: tindex})
+            da_concat.attrs[STATIC_COV_TAG] = series[0].static_covariates
 
     else:
         time_axes_equal = all(
@@ -3870,13 +3880,20 @@ def concatenate(
                         component_coords.append(new_comp_name)
                         existing_components.add(new_comp_name)
             component_index = pd.Index(component_coords)
+            static_covariates = (
+                _concat_static_covs(series)
+                if not ignore_static_covariates
+                else series[0].static_covariates
+            )
         else:
             component_index = da_sequence[0].get_index(DIMS[1])
+            static_covariates = series[0].static_covariates
 
         da_concat = xr.DataArray(
             concat_vals,
             dims=(time_dim_name,) + DIMS[-2:],
             coords={time_dim_name: series[0].time_index, DIMS[1]: component_index},
+            attrs={STATIC_COV_TAG: static_covariates},
         )
 
     return TimeSeries(da_concat)

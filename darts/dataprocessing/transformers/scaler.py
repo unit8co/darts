@@ -31,6 +31,14 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         The transformation is applied independently for each dimension (component) of the time series,
         effectively merging all samples of a component in order to compute the transform.
 
+        Notes
+        -----
+        The scaler will not scale the series' static covariates. This has to be done either before constructing the
+        series, or later on by extracting the covariates, transforming the values and then reapplying them to the
+        series. For this, see Timeseries properties/methods
+        `TimeSeries.static_covariates <darts.timeseries.static_covariates>`_ and
+        `TimeSeries.static_covariates() <darts.timeseries.static_covariates>`_
+
         Parameters
         ----------
         scaler
