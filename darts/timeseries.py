@@ -3596,6 +3596,12 @@ class TimeSeries:
                 else:
                     xa_.get_index(self._time_dim).freq = self._freq
 
+        adapt_covs_on_component = (
+            True
+            if self.has_static_covariates and len(self.static_covariates) > 1
+            else False
+        )
+
         # handle DatetimeIndex and RangeIndex:
         if isinstance(key, pd.DatetimeIndex):
             _check_dt()
@@ -3619,7 +3625,12 @@ class TimeSeries:
         # handle slices:
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
-                return self.__class__(self._xa.sel({DIMS[1]: key}))
+                xa_ = self._xa.sel({DIMS[1]: key})
+                if adapt_covs_on_component:
+                    xa_.attrs[STATIC_COV_TAG] = xa_.attrs[STATIC_COV_TAG][
+                        key.start : key.stop
+                    ]
+                return self.__class__(xa_)
             elif isinstance(key.start, (int, np.int64)) or isinstance(
                 key.stop, (int, np.int64)
             ):
@@ -3640,9 +3651,11 @@ class TimeSeries:
 
         # handle simple types:
         elif isinstance(key, str):
-            return self.__class__(
-                self._xa.sel({DIMS[1]: [key]})
-            )  # have to put key in a list not to drop the dimension
+            # have to put key in a list not to drop the dimension
+            xa_ = self._xa.sel({DIMS[1]: [key]})
+            if adapt_covs_on_component:
+                xa_.attrs[STATIC_COV_TAG] = xa_.attrs[STATIC_COV_TAG].loc[[key]]
+            return self.__class__(xa_)
         elif isinstance(key, (int, np.int64)):
             xa_ = self._xa.isel({self._time_dim: [key]})
 
@@ -3669,7 +3682,10 @@ class TimeSeries:
         if isinstance(key, list):
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
-                return self.__class__(self._xa.sel({DIMS[1]: key}))
+                xa_ = self._xa.sel({DIMS[1]: key})
+                if adapt_covs_on_component:
+                    xa_.attrs[STATIC_COV_TAG] = xa_.attrs[STATIC_COV_TAG].loc[key]
+                return self.__class__(xa_)
             elif all(isinstance(i, (int, np.int64)) for i in key):
                 xa_ = self._xa.isel({self._time_dim: key})
 

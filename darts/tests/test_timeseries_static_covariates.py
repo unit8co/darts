@@ -439,3 +439,64 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         ts = ts.astype(np.float32)
         assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
         assert ts.static_covariates.dtypes["cat"] == object
+
+    def test_get_item(self):
+        # multi component static covariates
+        static_covs = pd.DataFrame([["a", 0], ["b", 1]], columns=["cat", "num"])
+        ts = TimeSeries.from_values(
+            values=np.random.random((10, 2)), columns=["comp1", "comp2"]
+        ).with_static_covariates(static_covs)
+
+        assert ts.static_covariates.index.equals(ts.components)
+
+        ts0 = ts[0]
+        assert ts0.static_covariates.index.equals(ts.components)
+        assert isinstance(ts0.static_covariates, pd.DataFrame)
+        ts1 = ts["comp1"]
+        assert ts1.static_covariates.index.equals(pd.Index(["comp1"]))
+        assert isinstance(ts1.static_covariates, pd.DataFrame)
+        ts2 = ts["comp2"]
+        assert ts2.static_covariates.index.equals(pd.Index(["comp2"]))
+        assert isinstance(ts2.static_covariates, pd.DataFrame)
+        ts3 = ts["comp1":"comp2"]
+        assert ts3.static_covariates.index.equals(pd.Index(["comp1", "comp2"]))
+        assert isinstance(ts3.static_covariates, pd.DataFrame)
+        ts4 = ts[["comp1", "comp2"]]
+        assert ts4.static_covariates.index.equals(pd.Index(["comp1", "comp2"]))
+        assert isinstance(ts4.static_covariates, pd.DataFrame)
+
+        # uni/global component static covariates
+        static_covs = pd.DataFrame([["a", 0]], columns=["cat", "num"])
+        ts = TimeSeries.from_values(
+            values=np.random.random((10, 3)), columns=["comp1", "comp2", "comp3"]
+        ).with_static_covariates(static_covs)
+
+        # 1) when static covs have 1 component but series is multivariate -> static covariate component name is set to
+        # "global_components"
+        assert ts.static_covariates.index.equals(
+            pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+        )
+        ts0 = ts[0]
+        assert ts0.static_covariates.index.equals(
+            pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+        )
+        assert isinstance(ts0.static_covariates, pd.DataFrame)
+        ts1 = ts["comp1":"comp3"]
+        assert ts1.static_covariates.index.equals(
+            pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+        )
+        assert isinstance(ts1.static_covariates, pd.DataFrame)
+        ts2 = ts[["comp1", "comp2", "comp3"]]
+        assert ts2.static_covariates.index.equals(
+            pd.Index([DEFAULT_GLOBAL_STATIC_COV_NAME])
+        )
+        assert isinstance(ts2.static_covariates, pd.DataFrame)
+
+        # 2) if number of static cov components match the number of components in the series -> static covariate
+        # component names are set to be equal to series component names
+        ts3 = ts["comp1"]
+        assert ts3.static_covariates.index.equals(pd.Index(["comp1"]))
+        assert isinstance(ts3.static_covariates, pd.DataFrame)
+        ts4 = ts["comp2"]
+        assert ts4.static_covariates.index.equals(pd.Index(["comp2"]))
+        assert isinstance(ts4.static_covariates, pd.DataFrame)
