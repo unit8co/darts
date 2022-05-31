@@ -40,6 +40,7 @@ class _TFTModule(PLMixedCovariatesModule):
         self,
         output_dim: Tuple[int, int],
         variables_meta: Dict[str, Dict[str, List[str]]],
+        num_static_components: int,
         hidden_size: Union[int, List[int]] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
@@ -60,6 +61,9 @@ class _TFTModule(PLMixedCovariatesModule):
             shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).
         variables_meta : Dict[str, Dict[str, List[str]]]
             dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`
+        num_static_components
+            the number of static components (not variables) of the input target series. This is either equal to the
+            number of target components or 1.
         hidden_size : int
             hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
             architecture.
@@ -90,6 +94,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         self.n_targets, self.loss_size = output_dim
         self.variables_meta = variables_meta
+        self.num_static_components = num_static_components
         self.hidden_size = hidden_size
         self.hidden_continuous_size = hidden_continuous_size
         self.lstm_layers = lstm_layers
@@ -113,7 +118,11 @@ class _TFTModule(PLMixedCovariatesModule):
         # # processing inputs
         # continuous variable processing
         self.prescalers_linear = {
-            name: nn.Linear(1, self.hidden_continuous_size) for name in self.reals
+            name: nn.Linear(
+                1 if name not in self.static_variables else self.num_static_components,
+                self.hidden_continuous_size,
+            )
+            for name in self.reals
         }
 
         static_input_sizes = {
@@ -412,8 +421,7 @@ class _TFTModule(PLMixedCovariatesModule):
         # Embedding and variable selection
         if self.static_variables:
             static_embedding = {
-                name: x_static[:, 0, i].unsqueeze(-1)
-                for i, name in enumerate(self.static_variables)
+                name: x_static[:, :, i] for i, name in enumerate(self.static_variables)
             }
             static_embedding, static_covariate_var = self.static_covariates_vsn(
                 static_embedding
@@ -864,9 +872,13 @@ class TFTModel(MixedCovariatesTorchModel):
             dict.fromkeys(static_input)
         )
 
+        n_static_components = (
+            len(static_covariates) if static_covariates is not None else 0
+        )
         return _TFTModule(
-            variables_meta=variables_meta,
             output_dim=self.output_dim,
+            variables_meta=variables_meta,
+            num_static_components=n_static_components,
             hidden_size=self.hidden_size,
             lstm_layers=self.lstm_layers,
             dropout=self.dropout,
