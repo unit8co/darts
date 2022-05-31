@@ -152,7 +152,9 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.batch_norm = batch_norm
 
-        raise_if_not(activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}")
+        raise_if_not(
+            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
+        )
         self.activation = getattr(nn, activation)()
 
         # fully connected stack before fork

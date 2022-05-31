@@ -102,7 +102,9 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.MaxPool1d = MaxPool1d
 
-        raise_if_not(activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}")
+        raise_if_not(
+            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
+        )
         self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
@@ -708,9 +710,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
             raise_if_not(
                 all([len(i) == num_blocks for i in tup]),
-                "the length of each tuple in {} must be `num_blocks={}`".format(
-                    name, num_blocks
-                ),
+                f"the length of each tuple in {name} must be `num_blocks={num_blocks}`",
             )
 
         if pooling_kernel_sizes is None:
@@ -722,9 +722,7 @@ class NHiTS(PastCovariatesTorchModel):
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
-                "(N-HiTS): Using automatic kernel pooling size: {}.".format(
-                    pooling_kernel_sizes
-                )
+                f"(N-HiTS): Using automatic kernel pooling size: {pooling_kernel_sizes}."
             )
         else:
             # check provided pooling format
@@ -738,9 +736,7 @@ class NHiTS(PastCovariatesTorchModel):
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
-                "(N-HiTS):  Using automatic downsampling coefficients: {}.".format(
-                    n_freq_downsample
-                )
+                f"(N-HiTS):  Using automatic downsampling coefficients: {n_freq_downsample}."
             )
         else:
             # check provided downsample format

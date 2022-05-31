@@ -224,7 +224,7 @@ def _historical_forecasts_general_checks(series, kwargs):
                 logger,
             )
         elif isinstance(n.start, (int, np.int64)):
-            raise_if_not(n.start >= 0, logger)
+            raise_if_not(n.start >= 0, logger=logger)
             raise_if(
                 n.start > len(series),
                 "`start` index should be smaller than length of the series",
