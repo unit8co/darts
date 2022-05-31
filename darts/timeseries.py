@@ -237,7 +237,11 @@ class TimeSeries:
                 if len(static_covariates) == self.n_components
                 else [DEFAULT_GLOBAL_STATIC_COV_NAME]
             )
-            self._xa.attrs[STATIC_COV_TAG] = static_covariates.astype(self.dtype)
+            # convert numerical columns to same dtype as series
+            numeric_cols = static_covariates.select_dtypes(include=np.number).columns
+            self._xa.attrs[STATIC_COV_TAG] = static_covariates.astype(
+                {col: self.dtype for col in numeric_cols}
+            )
 
     """
     Factory Methods
@@ -3701,7 +3705,25 @@ class TimeSeries:
 
 
 def _concat_static_covs(series: Sequence["TimeSeries"]) -> Optional[pd.DataFrame]:
-    """Concatenates static covariates."""
+    """Concatenates static covariates. Some context for stacking or concatenating two or more TimeSeries with
+    static covariates:
+
+    Concat along axis=0 (time)
+        Along time dimension, we only take the static covariates of the first series (as static covariates are
+        time-independant).
+    Concat along axis=1 (components) or stacking
+        Along component dimension, we concatenate/transfer the static covariates of the series only if one of
+        below cases applies:
+        1)  concatenate when for each series the number of static covariate components is equal to the number of
+            components in the series. The static variable names (columns in series.static_covariates) must be
+            identical across all series
+        2)  if only the first series contains static covariates transfer only those
+        3)  if `ignore_static_covarites=True` (with `concatenate()`), case 1) is ignored and only the static
+            covariates of the first series are transferred
+    Concat along axis=2 (samples)
+        Along sample dimension, we only take the static covariates of the first series (as we components and
+        time don't change).
+    """
 
     if not any([ts.has_static_covariates for ts in series]):
         return None

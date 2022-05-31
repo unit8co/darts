@@ -268,7 +268,7 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
     def test_concatenate_dim_component(self):
         """
         test concatenation with static covariates along component dimension (axis=1)
-        Along component dimension, we concatenate/transfer the static covariates the series only if one of
+        Along component dimension, we concatenate/transfer the static covariates of the series only if one of
         below cases applies:
         1)  concatenate when for each series the number of static cov components is equal to the number of
             components in the series. The static variable names (columns in series.static_covariates) must be
@@ -425,3 +425,17 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
 
             ts_inv = scaler.inverse_transform(ts_scaled)
             assert ts_inv.static_covariates.equals(ts.static_covariates)
+
+    def test_non_numerical_static_covariates(self):
+        static_covs = pd.DataFrame([["a", 0], ["b", 1]], columns=["cat", "num"])
+        assert static_covs.dtypes["num"] == "int64"
+
+        ts = TimeSeries.from_values(
+            values=np.random.random((10, 2))
+        ).with_static_covariates(static_covs)
+        assert ts.static_covariates.dtypes["num"] == ts.dtype == "float64"
+        assert ts.static_covariates.dtypes["cat"] == object
+
+        ts = ts.astype(np.float32)
+        assert ts.static_covariates.dtypes["num"] == ts.dtype == "float32"
+        assert ts.static_covariates.dtypes["cat"] == object
