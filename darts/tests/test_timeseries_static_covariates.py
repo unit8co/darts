@@ -500,3 +500,42 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         ts4 = ts["comp2"]
         assert ts4.static_covariates.index.equals(pd.Index(["comp2"]))
         assert isinstance(ts4.static_covariates, pd.DataFrame)
+
+    def test_operations(self):
+        static_covs = pd.DataFrame([[0, 1]], columns=["st1", "st2"])
+        ts = TimeSeries.from_values(
+            values=np.random.random((10, 2))
+        ).with_static_covariates(static_covs)
+
+        ts_new = ts / 3
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts * 3
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts**3
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts + 3
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts - 3
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = abs(ts)
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+
+        ts_new = 3 * ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = 3 + ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = 3 - ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+
+        ts_new = ts / ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts * ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts**ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts + ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = ts - ts
+        assert ts_new.static_covariates.equals(ts.static_covariates)
+        ts_new = abs(ts)
+        assert ts_new.static_covariates.equals(ts.static_covariates)

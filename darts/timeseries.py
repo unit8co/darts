@@ -3354,7 +3354,9 @@ class TimeSeries:
 
     def __add__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return self.__class__(self._xa + other)
+            xa_ = self._xa + other
+            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 + s2)
         else:
@@ -3372,7 +3374,9 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return self.__class__(self._xa - other)
+            xa_ = self._xa - other
+            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 - s2)
         else:
@@ -3390,7 +3394,9 @@ class TimeSeries:
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            return self.__class__(self._xa * other)
+            xa_ = self._xa * other
+            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 * s2)
         else:
@@ -3409,7 +3415,9 @@ class TimeSeries:
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
             raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
-            return self.__class__(self._xa ** float(n))
+            xa_ = self._xa ** float(n)
+            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            return self.__class__(xa_)
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(n, lambda s1, s2: s1**s2)  # elementwise power
         else:
@@ -3426,7 +3434,9 @@ class TimeSeries:
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-            return self.__class__(self._xa / other)
+            xa_ = self._xa / other
+            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             if not (other.all_values(copy=False) != 0).all():
                 raise_log(
