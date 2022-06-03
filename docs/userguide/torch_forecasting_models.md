@@ -366,7 +366,7 @@ We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `
 -------------
 
 ## Early Stop
-Early stop can be an efficient way to cut down on the training time.  Using early stop trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
+Early stopping can be an efficient way to cut down on the training time.  Using early stopping trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
 
 In this example the model reaches the lowest val_loss at epoch 10 and finishes training at epoch 15. 
 
