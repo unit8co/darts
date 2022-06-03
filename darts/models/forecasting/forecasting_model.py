@@ -758,7 +758,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 fitted_values = TimeSeries.from_times_and_values(
                     series.time_index, model.fitted_values
                 )
-                error = metric(fitted_values, series)
+                error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(
                     series=series,
@@ -781,7 +781,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates,
                     num_samples=1,
                 )
-                error = metric(pred, val_series)
+                error = metric(val_series, pred)
 
             return float(error)
 
