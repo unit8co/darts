@@ -389,7 +389,7 @@ transformer.fit(train)
 train = transformer.transform(train)
 val = transformer.transform(val)
 
-# Early stop callback
+# Early stopping callback
 my_stopper = EarlyStopping(
     monitor="val_loss",
     patience=5,
