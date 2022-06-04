@@ -230,17 +230,19 @@ class TimeSeries:
             pass
 
         if static_covariates is None:
-            self._xa.attrs[STATIC_COV_TAG] = None
+            self._xa = _xarray_with_static_covariates(self._xa, None)
         else:
             static_covariates.index = (
                 self.components
                 if len(static_covariates) == self.n_components
                 else [DEFAULT_GLOBAL_STATIC_COV_NAME]
             )
+            static_covariates.columns.name = STATIC_COV_TAG
             # convert numerical columns to same dtype as series
             numeric_cols = static_covariates.select_dtypes(include=np.number).columns
-            self._xa.attrs[STATIC_COV_TAG] = static_covariates.astype(
-                {col: self.dtype for col in numeric_cols}
+            self._xa = _xarray_with_static_covariates(
+                self._xa,
+                static_covariates.astype({col: self.dtype for col in numeric_cols}),
             )
 
     """
@@ -868,7 +870,11 @@ class TimeSeries:
         )
 
     @classmethod
-    def from_json(cls, json_str: str) -> "TimeSeries":
+    def from_json(
+        cls,
+        json_str: str,
+        static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+    ) -> "TimeSeries":
         """
         Build a series from the JSON String representation of a ``TimeSeries``
         (produced using :func:`TimeSeries.to_json()`).
@@ -879,6 +885,14 @@ class TimeSeries:
         ----------
         json_str
             The JSON String to convert
+        static_covariates
+            Optionally, a set of static covariates to be added to the TimeSeries. Either a pandas Series or a pandas
+            DataFrame. If a Series, the index represents the static variables. The covariates are globally 'applied'
+            to all components of the TimeSeries. If a DataFrame, the columns represent the static variables and the
+            rows represent the components of the uni/multivariate TimeSeries. If a single-row DataFrame, the covariates
+            are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
+            rows must match the number of components of the TimeSeries (in this case, the number of columns in
+            ``value_cols``). This adds control for component-specific static covariates.
 
         Returns
         -------
@@ -886,7 +900,7 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient="split")
-        return cls.from_dataframe(df)
+        return cls.from_dataframe(df, static_covariates=static_covariates)
 
     @classmethod
     def from_pickle(cls, path: str) -> "TimeSeries":
@@ -1987,7 +2001,9 @@ class TimeSeries:
         new_start_idx = df.first_valid_index()
         new_end_idx = df.last_valid_index()
         new_series = df.loc[new_start_idx:new_end_idx]
-        return self.__class__.from_dataframe(new_series)
+        return self.__class__.from_dataframe(
+            new_series, static_covariates=self.static_covariates
+        )
 
     def longest_contiguous_slice(self, max_gap_size: int = 0) -> "TimeSeries":
         """
@@ -2258,7 +2274,10 @@ class TimeSeries:
 
         return self.append(
             self.__class__.from_times_and_values(
-                values=values, times=idx, fill_missing_dates=False
+                values=values,
+                times=idx,
+                fill_missing_dates=False,
+                static_covariates=self.static_covariates,
             )
         )
 
@@ -2380,7 +2399,9 @@ class TimeSeries:
             new_other_xa = other_xa
 
         new_xa = xr.concat((self._xa, new_other_xa), dim=DIMS[1])
-        new_xa.attrs[STATIC_COV_TAG] = _concat_static_covs([self, other])
+        new_xa = _xarray_with_static_covariates(
+            new_xa, _concat_static_covs([self, other])
+        )
         # we call the factory method here to disambiguate column names if needed.
         return self.__class__.from_xarray(new_xa, fill_missing_dates=False)
 
@@ -2625,6 +2646,11 @@ class TimeSeries:
         Return a JSON string representation of this deterministic series.
 
         At the moment this function works only on deterministic time series (i.e., made of 1 sample).
+
+        Notes
+        -----
+        Static covariates are not returned in the JSON string. When using `TimeSeries.from_json()`, the static
+        covariates can be added with input argument `static_covariates`.
 
         Returns
         -------
@@ -3298,7 +3324,9 @@ class TimeSeries:
         }
 
         resampled_xa = xr.DataArray(
-            data=np.empty(shape=((len(resampled_time_index),) + xa.shape[1:])),
+            data=np.empty(
+                shape=((len(resampled_time_index),) + xa.shape[1:]), dtype=xa.dtype
+            ),
             dims=xa.dims,
             coords=coords,
             attrs=xa.attrs,
@@ -3354,8 +3382,9 @@ class TimeSeries:
 
     def __add__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = self._xa + other
-            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            xa_ = _xarray_with_static_covariates(
+                self._xa + other, self.static_covariates
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 + s2)
@@ -3374,8 +3403,9 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = self._xa - other
-            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            xa_ = _xarray_with_static_covariates(
+                self._xa - other, self.static_covariates
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 - s2)
@@ -3394,8 +3424,9 @@ class TimeSeries:
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = self._xa * other
-            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            xa_ = _xarray_with_static_covariates(
+                self._xa * other, self.static_covariates
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(other, lambda s1, s2: s1 * s2)
@@ -3415,8 +3446,9 @@ class TimeSeries:
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
             raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
-            xa_ = self._xa ** float(n)
-            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            xa_ = _xarray_with_static_covariates(
+                self._xa ** float(n), self.static_covariates
+            )
             return self.__class__(xa_)
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
             return self._combine_arrays(n, lambda s1, s2: s1**s2)  # elementwise power
@@ -3434,8 +3466,9 @@ class TimeSeries:
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-            xa_ = self._xa / other
-            xa_.attrs[STATIC_COV_TAG] = self.static_covariates
+            xa_ = _xarray_with_static_covariates(
+                self._xa / other, self.static_covariates
+            )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
             if not (other.all_values(copy=False) != 0).all():
@@ -3471,9 +3504,13 @@ class TimeSeries:
 
     def __lt__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            series = self._xa < other
+            return _xarray_with_static_covariates(
+                self._xa < other, self.static_covariates
+            )
         elif isinstance(other, TimeSeries):
-            series = self._xa < other.data_array(copy=False)
+            return _xarray_with_static_covariates(
+                self._xa < other.data_array(copy=False), self.static_covariates
+            )
         else:
             raise_log(
                 TypeError(
@@ -3483,15 +3520,18 @@ class TimeSeries:
                 ),
                 logger,
             )
-        return series  # Note: we return a DataArray
 
     def __gt__(self, other) -> xr.DataArray:
+
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            series = self._xa > other
+            return _xarray_with_static_covariates(
+                self._xa > other, self.static_covariates
+            )
         elif isinstance(other, TimeSeries):
-            series = self._xa > other.data_array(copy=False)
+            return _xarray_with_static_covariates(
+                self._xa > other.data_array(copy=False), self.static_covariates
+            )
         else:
-            series = None
             raise_log(
                 TypeError(
                     "unsupported operand type(s) for < : '{}' and '{}'.".format(
@@ -3500,15 +3540,17 @@ class TimeSeries:
                 ),
                 logger,
             )
-        return series  # Note: we return a DataArray
 
     def __le__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            series = self._xa <= other
+            return _xarray_with_static_covariates(
+                self._xa <= other, self.static_covariates
+            )
         elif isinstance(other, TimeSeries):
-            series = self._xa <= other.data_array(copy=False)
+            return _xarray_with_static_covariates(
+                self._xa <= other.data_array(copy=False), self.static_covariates
+            )
         else:
-            series = None
             raise_log(
                 TypeError(
                     "unsupported operand type(s) for < : '{}' and '{}'.".format(
@@ -3517,15 +3559,17 @@ class TimeSeries:
                 ),
                 logger,
             )
-        return series  # Note: we return a DataArray
 
     def __ge__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            series = self._xa >= other
+            return _xarray_with_static_covariates(
+                self._xa >= other, self.static_covariates
+            )
         elif isinstance(other, TimeSeries):
-            series = self._xa >= other.data_array(copy=False)
+            return _xarray_with_static_covariates(
+                self._xa >= other.data_array(copy=False), self.static_covariates
+            )
         else:
-            series = None
             raise_log(
                 TypeError(
                     "unsupported operand type(s) for < : '{}' and '{}'.".format(
@@ -3534,7 +3578,6 @@ class TimeSeries:
                 ),
                 logger,
             )
-        return series  # Note: we return a DataArray
 
     def __str__(self):
         return str(self._xa).replace("xarray.DataArray", "TimeSeries (DataArray)")
@@ -3637,9 +3680,9 @@ class TimeSeries:
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 xa_ = self._xa.sel({DIMS[1]: key})
                 if adapt_covs_on_component:
-                    xa_.attrs[STATIC_COV_TAG] = xa_.attrs[STATIC_COV_TAG][
-                        key.start : key.stop
-                    ]
+                    xa_ = _xarray_with_static_covariates(
+                        xa_, xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
+                    )
                 return self.__class__(xa_)
             elif isinstance(key.start, (int, np.int64)) or isinstance(
                 key.stop, (int, np.int64)
@@ -3664,7 +3707,9 @@ class TimeSeries:
             # have to put key in a list not to drop the dimension
             xa_ = self._xa.sel({DIMS[1]: [key]})
             if adapt_covs_on_component:
-                xa_.attrs[STATIC_COV_TAG] = xa_.attrs[STATIC_COV_TAG].loc[[key]]
+                xa_ = _xarray_with_static_covariates(
+                    xa_, xa_.attrs[STATIC_COV_TAG].loc[[key]]
+                )
             return self.__class__(xa_)
         elif isinstance(key, (int, np.int64)):
             xa_ = self._xa.isel({self._time_dim: [key]})
@@ -3694,7 +3739,9 @@ class TimeSeries:
                 # when string(s) are provided, we consider it as (a list of) component(s)
                 xa_ = self._xa.sel({DIMS[1]: key})
                 if adapt_covs_on_component:
-                    xa_.attrs[STATIC_COV_TAG] = xa_.attrs[STATIC_COV_TAG].loc[key]
+                    xa_ = _xarray_with_static_covariates(
+                        xa_, xa_.attrs[STATIC_COV_TAG].loc[key]
+                    )
                 return self.__class__(xa_)
             elif all(isinstance(i, (int, np.int64)) for i in key):
                 xa_ = self._xa.isel({self._time_dim: key})
@@ -3730,25 +3777,35 @@ class TimeSeries:
         raise_log(IndexError("The type of your index was not matched."), logger)
 
 
-def _concat_static_covs(series: Sequence["TimeSeries"]) -> Optional[pd.DataFrame]:
-    """Concatenates static covariates. Some context for stacking or concatenating two or more TimeSeries with
-    static covariates:
+def _xarray_with_static_covariates(xa_, static_covariates):
+    """Return an DataArray instance with static covariates stored in the array's attributes.
+    Warning: This is an inplace operation (mutable) and should only be called from within TimeSeries construction
+    or to restore static covariates after operations in which static covariates did not get transferred.
+    """
+    xa_.attrs[STATIC_COV_TAG] = static_covariates
+    return xa_
 
-    Concat along axis=0 (time)
-        Along time dimension, we only take the static covariates of the first series (as static covariates are
-        time-independant).
-    Concat along axis=1 (components) or stacking
-        Along component dimension, we concatenate/transfer the static covariates of the series only if one of
-        below cases applies:
-        1)  concatenate when for each series the number of static covariate components is equal to the number of
-            components in the series. The static variable names (columns in series.static_covariates) must be
-            identical across all series
-        2)  if only the first series contains static covariates transfer only those
-        3)  if `ignore_static_covarites=True` (with `concatenate()`), case 1) is ignored and only the static
-            covariates of the first series are transferred
-    Concat along axis=2 (samples)
-        Along sample dimension, we only take the static covariates of the first series (as we components and
-        time don't change).
+
+def _concat_static_covs(series: Sequence["TimeSeries"]) -> Optional[pd.DataFrame]:
+    """Concatenates static covariates along component dimension (rows of static covariates). For stacking or
+    concatenating TimeSeries along component dimension (axis=1).
+
+    Some context for stacking or concatenating two or more TimeSeries with static covariates:
+        Concat along axis=0 (time)
+            Along time dimension, we only take the static covariates of the first series (as static covariates are
+            time-independent).
+        Concat along axis=1 (components) or stacking
+            Along component dimension, we either concatenate or transfer the static covariates of the series if one
+            of below cases applies:
+            1)  concatenate along component dimension (rows of static covariates) when for each series the number of
+                static covariate components is equal to the number of components in the series. The static variable
+                names (columns in series.static_covariates) must be identical across all series
+            2)  if only the first series contains static covariates transfer only those
+            3)  if `ignore_static_covarites=True` (with `concatenate()`), case 1) is ignored and only the static
+                covariates of the first series are transferred
+        Concat along axis=2 (samples)
+            Along sample dimension, we only take the static covariates of the first series (as we components and
+            time don't change).
     """
 
     if not any([ts.has_static_covariates for ts in series]):
@@ -3880,7 +3937,9 @@ def concatenate(
             )
 
             da_concat = da_concat.assign_coords({time_dim_name: tindex})
-            da_concat.attrs[STATIC_COV_TAG] = series[0].static_covariates
+            da_concat = _xarray_with_static_covariates(
+                da_concat, series[0].static_covariates
+            )
 
     else:
         time_axes_equal = all(

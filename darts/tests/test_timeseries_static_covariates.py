@@ -1,4 +1,7 @@
 import copy
+import os
+import shutil
+import tempfile
 
 import numpy as np
 import pandas as pd
@@ -7,7 +10,7 @@ import pytest
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import BoxCox, Scaler
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME
+from darts.timeseries import DEFAULT_GLOBAL_STATIC_COV_NAME, STATIC_COV_TAG
 from darts.utils.timeseries_generation import _generate_index, linear_timeseries
 
 
@@ -52,6 +55,68 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         cls.len_ts = len_ts
         cls.df_long_multi = df_long_multi
         cls.df_long_uni = df_long_uni
+
+    def setUp(self):
+        self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+    def tearDown(self):
+        super().tearDown()
+        shutil.rmtree(self.temp_work_dir)
+
+    def test_ts_from_x(self):
+        ts = linear_timeseries(length=10).with_static_covariates(
+            pd.Series([0.0, 1.0], index=["st1", "st2"])
+        )
+
+        self.helper_test_cov_transfer(ts, TimeSeries.from_xarray(ts.data_array()))
+        self.helper_test_cov_transfer(
+            ts,
+            TimeSeries.from_dataframe(
+                ts.pd_dataframe(), static_covariates=ts.static_covariates
+            ),
+        )
+        # ts.pd_series() loses component names -> static covariates have different components names
+        self.helper_test_cov_transfer_values(
+            ts,
+            TimeSeries.from_series(
+                ts.pd_series(), static_covariates=ts.static_covariates
+            ),
+        )
+        self.helper_test_cov_transfer(
+            ts,
+            TimeSeries.from_times_and_values(
+                times=ts.time_index,
+                values=ts.all_values(),
+                columns=ts.components,
+                static_covariates=ts.static_covariates,
+            ),
+        )
+
+        self.helper_test_cov_transfer(
+            ts,
+            TimeSeries.from_values(
+                values=ts.all_values(),
+                columns=ts.components,
+                static_covariates=ts.static_covariates,
+            ),
+        )
+
+        f_csv = os.path.join(self.temp_work_dir, "temp_ts.csv")
+        f_pkl = os.path.join(self.temp_work_dir, "temp_ts.pkl")
+        ts.to_csv(f_csv)
+        ts.to_pickle(f_pkl)
+        ts_json = ts.to_json()
+
+        self.helper_test_cov_transfer(
+            ts,
+            TimeSeries.from_csv(
+                f_csv, time_col="time", static_covariates=ts.static_covariates
+            ),
+        )
+        self.helper_test_cov_transfer(ts, TimeSeries.from_pickle(f_pkl))
+        self.helper_test_cov_transfer(
+            ts, TimeSeries.from_json(ts_json, static_covariates=ts.static_covariates)
+        )
 
     def test_timeseries_from_longitudinal_df(self):
         # univariate static covs: only group by "st1", keep static covs "st1"
@@ -380,39 +445,6 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
         ts_concat = concatenate([ts_left, ts_right], axis=2)
         assert ts_concat.static_covariates.equals(ts_left.static_covariates)
 
-    def test_ts_methods_with_static_covariates(self):
-        ts = linear_timeseries(length=10).astype("float64")
-        static_covs = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
-        ts = ts.with_static_covariates(static_covs)
-
-        assert ts.static_covariates.dtypes[0] == "float64"
-        ts = ts.astype("float32")
-        assert ts.static_covariates.dtypes[0] == "float32"
-
-        ts_stochastic = ts.from_times_and_values(
-            times=ts.time_index,
-            values=np.random.randn(10, 1, 3),
-            static_covariates=static_covs,
-        )
-
-        ts_check = ts.copy()
-        assert ts_check.static_covariates.equals(ts.static_covariates)
-
-        ts_check = ts.head()
-        assert ts_check.static_covariates.equals(ts.static_covariates)
-
-        ts_check = ts.tail()
-        assert ts_check.static_covariates.equals(ts.static_covariates)
-
-        # same values but different component names ("0" vs. "0_quantiles")
-        ts_check = ts_stochastic.quantile_timeseries()
-        assert not ts_check.components.equals(ts_stochastic.components)
-        assert ts_stochastic.static_covariates.index.equals(ts_stochastic.components)
-        np.testing.assert_almost_equal(
-            ts_check.static_covariate_values(copy=False),
-            ts_stochastic.static_covariate_values(copy=False),
-        )
-
     def test_scalers_with_static_covariates(self):
         ts = linear_timeseries(start_value=1.0, end_value=2.0, length=10)
         static_covs = pd.Series([0.0, 2.0], index=["st1", "st2"])
@@ -507,35 +539,125 @@ class TimeSeriesStaticCovariateTestCase(DartsBaseTestClass):
             values=np.random.random((10, 2))
         ).with_static_covariates(static_covs)
 
-        ts_new = ts / 3
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts * 3
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts**3
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts + 3
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts - 3
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = abs(ts)
+        # arithmetics with series (left) and non-series (right)
+        self.helper_test_cov_transfer(ts, ts / 3)
+        self.helper_test_cov_transfer(ts, ts * 3)
+        self.helper_test_cov_transfer(ts, ts**3)
+        self.helper_test_cov_transfer(ts, ts + 3)
+        self.helper_test_cov_transfer(ts, ts - 3)
+
+        # conditions
+        self.helper_test_cov_transfer_xa(ts, ts < 3)
+        self.helper_test_cov_transfer_xa(ts, ts >= 3)
+        self.helper_test_cov_transfer_xa(ts, ts > 3)
+        self.helper_test_cov_transfer_xa(ts, ts >= 3)
+
+        # arithmetics with non-series (left) and series (right)
+        self.helper_test_cov_transfer(ts, 3 * ts)
+        self.helper_test_cov_transfer(ts, 3 + ts)
+        self.helper_test_cov_transfer(ts, 3 - ts)
+        # conditions
+        self.helper_test_cov_transfer_xa(ts, 3 > ts)
+        self.helper_test_cov_transfer_xa(ts, 3 >= ts)
+        self.helper_test_cov_transfer_xa(ts, 3 < ts)
+        self.helper_test_cov_transfer_xa(ts, 3 <= ts)
+
+        # arithmetics with two series
+        self.helper_test_cov_transfer(ts, ts / ts)
+        self.helper_test_cov_transfer(ts, ts * ts)
+        self.helper_test_cov_transfer(ts, ts**ts)
+        self.helper_test_cov_transfer(ts, ts + ts)
+        self.helper_test_cov_transfer(ts, ts - ts)
+        # conditions
+        self.helper_test_cov_transfer_xa(ts, ts > ts)
+        self.helper_test_cov_transfer_xa(ts, ts >= ts)
+        self.helper_test_cov_transfer_xa(ts, ts < ts)
+        self.helper_test_cov_transfer_xa(ts, ts <= ts)
+
+        # other operations
+        self.helper_test_cov_transfer(ts, abs(ts))
+        self.helper_test_cov_transfer(ts, -ts)
+        self.helper_test_cov_transfer(ts, round(ts, 2))
+
+    def test_ts_methods_with_static_covariates(self):
+        ts = linear_timeseries(length=10, start_value=1.0, end_value=2.0).astype(
+            "float64"
+        )
+        static_covs = pd.Series([0, 1], index=["st1", "st2"]).astype(int)
+        ts = ts.with_static_covariates(static_covs)
+
+        assert ts.static_covariates.dtypes[0] == "float64"
+        ts = ts.astype("float32")
+        assert ts.static_covariates.dtypes[0] == "float32"
+
+        ts_stoch = ts.from_times_and_values(
+            times=ts.time_index,
+            values=np.ones((10, 1, 3)),
+            static_covariates=static_covs,
+        )
+        assert ts_stoch.static_covariates.index.equals(ts_stoch.components)
+
+        self.helper_test_cov_transfer(ts, ts.with_values(ts.all_values()))
+        self.helper_test_cov_transfer(
+            ts, ts.with_columns_renamed(ts.components.tolist(), ts.components.tolist())
+        )
+        self.helper_test_cov_transfer(ts, ts.copy())
+        self.helper_test_cov_transfer(ts, ts.mean())
+        self.helper_test_cov_transfer(ts, ts.median())
+        self.helper_test_cov_transfer(ts, ts.sum())
+        self.helper_test_cov_transfer(ts, ts.min())
+        self.helper_test_cov_transfer(ts, ts.max())
+        self.helper_test_cov_transfer(ts, ts.head())
+        self.helper_test_cov_transfer(ts, ts.tail())
+        self.helper_test_cov_transfer(ts, ts.split_after(0.5)[0])
+        self.helper_test_cov_transfer(ts, ts.split_after(0.5)[1])
+        self.helper_test_cov_transfer(ts, ts.split_before(0.5)[0])
+        self.helper_test_cov_transfer(ts, ts.split_before(0.5)[1])
+        self.helper_test_cov_transfer(ts, ts.drop_before(0.5))
+        self.helper_test_cov_transfer(ts, ts.drop_after(0.5))
+        self.helper_test_cov_transfer(
+            ts, ts.slice(ts.start_time() + ts.freq, ts.end_time() - ts.freq)
+        )
+        self.helper_test_cov_transfer(ts, ts.slice_n_points_after(ts.start_time(), 5))
+        self.helper_test_cov_transfer(ts, ts.slice_n_points_before(ts.end_time(), 5))
+        self.helper_test_cov_transfer(ts, ts.slice_intersect(ts[2:]))
+        self.helper_test_cov_transfer(ts, ts.strip())
+        self.helper_test_cov_transfer(ts, ts.longest_contiguous_slice())
+        self.helper_test_cov_transfer(ts, ts.rescale_with_value(2.0))
+        self.helper_test_cov_transfer(ts, ts.shift(2.0))
+        self.helper_test_cov_transfer(ts, ts.diff())
+        self.helper_test_cov_transfer(ts, ts.univariate_component(0))
+        self.helper_test_cov_transfer(ts, ts.map(lambda x: x + 1))
+        self.helper_test_cov_transfer(ts, ts.resample(ts.freq))
+        self.helper_test_cov_transfer(ts, ts[:5].append(ts[5:]))
+        self.helper_test_cov_transfer(ts, ts.append_values(ts.all_values()))
+
+        self.helper_test_cov_transfer(ts_stoch, ts_stoch.var())
+        self.helper_test_cov_transfer(ts_stoch, ts_stoch.std())
+        self.helper_test_cov_transfer(ts_stoch, ts_stoch.skew())
+        self.helper_test_cov_transfer(ts_stoch, ts_stoch.kurtosis())
+
+        # will append "_quantile" to component names
+        self.helper_test_cov_transfer_values(ts_stoch, ts_stoch.quantile_timeseries())
+        self.helper_test_cov_transfer_values(ts_stoch, ts_stoch.quantile(0.5))
+        # will change component names
+        self.helper_test_cov_transfer_values(ts, ts.add_datetime_attribute("hour"))
+        self.helper_test_cov_transfer_values(ts, ts.add_holidays("US"))
+
+    def helper_test_cov_transfer(self, ts, ts_new):
+        """static cov dataframes must be identical"""
         assert ts_new.static_covariates.equals(ts.static_covariates)
 
-        ts_new = 3 * ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = 3 + ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = 3 - ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
+    def helper_test_cov_transfer_xa(self, ts, xa_new):
+        """static cov dataframes must be identical between xarray and TimeSeries"""
+        assert xa_new.attrs[STATIC_COV_TAG].equals(ts.static_covariates)
 
-        ts_new = ts / ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts * ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts**ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts + ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = ts - ts
-        assert ts_new.static_covariates.equals(ts.static_covariates)
-        ts_new = abs(ts)
-        assert ts_new.static_covariates.equals(ts.static_covariates)
+    def helper_test_cov_transfer_values(self, ts, ts_new):
+        """values of static cov dataframes must match but not row index (component names).
+        I.e. series.quantile_timeseries() adds "_quantiles" to component names
+        """
+        assert not ts_new.static_covariates.index.equals(ts.components)
+        np.testing.assert_almost_equal(
+            ts_new.static_covariate_values(copy=False),
+            ts.static_covariate_values(copy=False),
+        )
