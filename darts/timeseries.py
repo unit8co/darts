@@ -2299,7 +2299,7 @@ class TimeSeries:
         self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
     ):
         """Returns a new TimeSeries object with added static covariates.
-        
+
         Static covariates contain data attached to the time series, but which are not varying with time.
 
         Parameters
