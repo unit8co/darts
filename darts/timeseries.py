@@ -25,7 +25,7 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Be non-empty.
 
 ``TimeSeries`` can contain global or component-specific static covariate data. Static covariates in `darts` refers
-to external time-invariant data that can be used by some forecasting models to help improve predictions.
+to external time-invariant data that can be used by some models to help improve predictions.
 Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/covariates.html>`__ and the
 ``TimeSeries`` documentation for more information on covariates.
 """
@@ -584,7 +584,7 @@ class TimeSeries:
         and a list of columns `value_cols` has to represent the values for the individual time series.
         Values from columns ``group_cols`` and ``static_cols`` are added as static covariates to the resulting
         TimeSeries objects. These can be viewed with `my_series.static_covariates`. Different to `group_cols`,
-        `static_cols` only adds the static values without using the to extract the TimeSeries groups.
+        `static_cols` only adds the static values but are not used to extract the TimeSeries groups.
 
         Parameters
         ----------
@@ -620,7 +620,7 @@ class TimeSeries:
         Returns
         -------
         TimeSeries
-            A univariate or multivariate deterministic TimeSeries constructed from the inputs.
+            A list containing a univariate or multivariate deterministic TimeSeries per group in the DataFrame.
         """
         group_cols = [group_cols] if not isinstance(group_cols, list) else group_cols
         if static_cols is not None:
@@ -2299,6 +2299,8 @@ class TimeSeries:
         self, covariates: Optional[Union[pd.Series, pd.DataFrame]]
     ):
         """Returns a new TimeSeries object with added static covariates.
+        
+        Static covariates contain data attached to the time series, but which are not varying with time.
 
         Parameters
         ----------
