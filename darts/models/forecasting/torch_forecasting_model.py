@@ -1522,7 +1522,7 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
             and (
                 c_train.shape[-1] != c_pred.shape[-1]
                 if c_descr != "static covariates"
-                else c_train.shape == c_pred.shape
+                else c_train.shape != c_pred.shape
             ),
             f"The provided {c_descr} must have dimensionality matching that of the covariates used for training "
             "the model.",
@@ -1568,18 +1568,22 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
         zip(train_has_ds, predict_has_ds, ds_names)
     ):
         raise_if(
-            ds_in_train and not ds_in_predict and ds_in_train,
+            ds_in_train and not ds_in_predict,
             f"This model has been trained with `{ds_name}`; some `{ds_name}` of matching dimensionality are needed "
             f"for prediction.",
         )
         raise_if(
-            ds_in_train and not ds_in_predict and ds_in_predict,
+            not ds_in_train and ds_in_predict,
             f"This model has been trained without `{ds_name}`; No `{ds_name}` should be provided for prediction.",
         )
         raise_if(
             ds_in_train
             and ds_in_predict
-            and train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1],
+            and (
+                train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1]
+                if ds_name != "static_covariates"
+                else train_datasets[idx].shape != predict_datasets[idx].shape
+            ),
             f"The provided `{ds_name}` must have equal dimensionality as the `{ds_name}` used for training the model.",
         )
 

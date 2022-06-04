@@ -216,7 +216,7 @@ class GenericInferenceDataset(InferenceDataset):
                 else None
             )
 
-        static_covariate = target_series.static_covariate_values(copy=False)
+        static_covariate = target_series.static_covariates_values(copy=False)
         return (
             past_target,
             past_covariate,

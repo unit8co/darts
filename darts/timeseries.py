@@ -938,20 +938,7 @@ class TimeSeries:
         """
         Returns the static covariates contained in the series as a pandas DataFrame.
         The columns represent the static variables and the rows represent the components of the uni/multivariate
-        series. If a single-row DataFrame, the covariates are globally 'applied' to all components of the
-        TimeSeries. If a multi-row DataFrame, the static covariates are component-specific, with the number of rows
-        matching the number of components of the series. Use below methods to add static covariates to your TimeSeries
-        objects.
-
-        See Also
-        --------
-        TimeSeries.with_static_covariates : Return a copy of a series with added static covariates
-        TimeSeries.from_dataframe : Create from a :class:`pandas.DataFrame`.
-        TimeSeries.from_group_dataframe : Create multiple TimeSeries by groups from a :class:`pandas.DataFrame`.
-        TimeSeries.from_series : Create from a :class:`pandas.Series`.
-        TimeSeries.from_values : Create from a NumPy :class:`ndarray`.
-        TimeSeries.from_times_and_values : Create from a time index and a Numpy :class:`ndarray`.
-        TimeSeries.from_csv : Create from a CSV file.
+        series.
         """
         return self._xa.attrs.get(STATIC_COV_TAG, None)
 
@@ -1499,7 +1486,7 @@ class TimeSeries:
         else:
             return self._xa[:, 0, sample].values
 
-    def static_covariate_values(self, copy: bool = True) -> Optional[np.ndarray]:
+    def static_covariates_values(self, copy: bool = True) -> Optional[np.ndarray]:
         """
         Return a 2-D array of dimension (component, static variable),
         containing the static covariate values of the TimeSeries.
@@ -3323,9 +3310,18 @@ class TimeSeries:
             xa.dims[1]: xa.coords[DIMS[1]],
         }
 
+        # convert to float as for instance integer arrays cannot accept nans
+        dtype = (
+            xa.dtype
+            if (
+                np.issubdtype(xa.values.dtype, np.float32)
+                or np.issubdtype(xa.values.dtype, np.float64)
+            )
+            else np.float64
+        )
         resampled_xa = xr.DataArray(
             data=np.empty(
-                shape=((len(resampled_time_index),) + xa.shape[1:]), dtype=xa.dtype
+                shape=((len(resampled_time_index),) + xa.shape[1:]), dtype=dtype
             ),
             dims=xa.dims,
             coords=coords,
