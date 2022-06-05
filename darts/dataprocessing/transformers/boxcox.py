@@ -38,6 +38,13 @@ class BoxCox(FittableDataTransformer, InvertibleDataTransformer):
         For stochastic series, it is done jointly over all samples, effectively merging all samples of
         a component in order to compute the transform.
 
+        Notes
+        -----
+        The scaler will not scale the series' static covariates. This has to be done either before constructing the
+        series, or later on by extracting the covariates, transforming the values and then reapplying them to the
+        series. For this, see TimeSeries properties `TimeSeries.static_covariates` and method
+        `TimeSeries.with_static_covariates()`
+
         Parameters
         ----------
         name

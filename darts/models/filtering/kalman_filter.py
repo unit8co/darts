@@ -250,5 +250,8 @@ class KalmanFilter(FilteringModel, ABC):
                 ).T
 
         return TimeSeries.from_times_and_values(
-            series.time_index, sampled_outputs, columns=series.columns
+            series.time_index,
+            sampled_outputs,
+            columns=series.columns,
+            static_covariates=series.static_covariates,
         )
