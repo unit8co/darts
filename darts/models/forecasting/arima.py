@@ -42,7 +42,7 @@ class ARIMA(DualCovariatesForecastingModel):
             Order (number of time lags) of the autoregressive model (AR).
         d : int
             The order of differentiation; i.e., the number of times the data
-            have had past values subtracted (I). 
+            have had past values subtracted (I).
         q : int
             The size of the moving average window (MA).
         seasonal_order: Tuple[int, int, int, int]
