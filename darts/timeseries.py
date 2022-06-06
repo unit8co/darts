@@ -33,7 +33,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 import pickle
 from collections import defaultdict
 from inspect import signature
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -53,6 +53,7 @@ DIMS = ("time", "component", "sample")
 VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 STATIC_COV_TAG = "static_covariates"
 DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
+HIERARCHY_TAG = "hierarchy"
 
 
 class TimeSeries:
@@ -244,6 +245,35 @@ class TimeSeries:
                 self._xa,
                 static_covariates.astype({col: self.dtype for col in numeric_cols}),
             )
+
+        # handle hierarchy
+        hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
+        self._top_level_component = None
+        self._bottom_level_components = None
+        if hierarchy is not None:
+            # raise_if_not(
+            #     len(hierarchy) == self.n_components - 1,
+            #     "The grouping keys must be all the components having at least one "
+            #     + "parent in the hierarchy; so there should be C-1 keys, where C is the number of components.",
+            # )
+
+            # pre-compute grouping informations
+            components_set = set(self.components)
+            children = set().union(*hierarchy.keys())
+            ancestors = set().union(*hierarchy.values())
+            hierarchy_top = components_set - children
+            raise_if_not(
+                len(hierarchy_top) == 1,
+                "The hierarchy must be such that only one component does "
+                + "not appear as a key (the top level component).",
+            )
+            self._top_level_component = hierarchy_top.pop()
+            bottom_level = components_set - ancestors
+
+            # maintain the same order as the original components
+            self._bottom_level_components = [
+                c for c in self.components if c in bottom_level
+            ]
 
     """
     Factory Methods
@@ -941,6 +971,52 @@ class TimeSeries:
         series.
         """
         return self._xa.attrs.get(STATIC_COV_TAG, None)
+
+    @property
+    def hierarchy(self) -> Optional[Dict]:
+        """
+        The hierarchy of this TimeSeries, if any.
+        If set, the hierarchy is encoded as a dictionary, whose keys are individual components
+        and values are the set of parent(s) of these components in the hierarchy.
+        """
+        return self._xa.attrs.get(HIERARCHY_TAG, None)
+
+    @property
+    def has_hierarchy(self) -> bool:
+        """Whether this series is hierarchical or not."""
+        return self.hierarchy is not None
+
+    @property
+    def top_level_component(self) -> Optional[str]:
+        """
+        The top level component name of this series, or None if the series has no hierarchy.
+        """
+        return self._top_level_component
+
+    @property
+    def bottom_level_components(self) -> Optional[list[str]]:
+        """
+        The bottom level component names of this series, or None if the series has no hierarchy.
+        """
+        return self._bottom_level_components
+
+    @property
+    def top_level_series(self) -> Optional["TimeSeries"]:
+        """
+        The univariate series containing the single top-level component of this series,
+        or None if the series has no hierarchy.
+        """
+        return self[self.top_level_component] if self.has_hierarchy else None
+
+    @property
+    def bottom_level_series(self) -> Optional[List["TimeSeries"]]:
+        """
+        The series containing the bottom-level components of this series,
+        or None if the series has no hierarchy.
+
+        The returned series will be multivariate if there are multiple bottom components.
+        """
+        return self[self.bottom_level_components] if self.has_hierarchy else None
 
     @property
     def n_samples(self):
@@ -2341,7 +2417,42 @@ class TimeSeries:
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs={STATIC_COV_TAG: covariates},
+                attrs=self._xa.attrs + {STATIC_COV_TAG: covariates},
+            )
+        )
+
+    def with_hierarchy(self, hierarchy: Dict):
+        """
+        TODO
+
+        Parameters
+        ----------
+        hierarchy
+            A dictionary mapping components to their parent(s) in the hierarchy.
+            For example, assume the series contains the components
+            ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
+            the following dictionary would encode the groupings shown on Figure 11.6
+            `here <https://otexts.com/fpp3/hts.html#grouped-time-series>`_:
+            .. code-block::
+
+                {'ax': ['a', 'x'],
+                 'ay': ['a', 'y'],
+                 'bx': ['b', 'x'],
+                 'by': ['b', 'y'],
+                 'a': ['total'],
+                 'b': ['total']}
+
+        Examples
+        --------
+        >>> TODO
+        """
+
+        return self.__class_(
+            xr.DataArray(
+                self._xa.values,
+                dims=self._xa.dims,
+                coords=self._xa.coords,
+                attrs=self._xa.attrs + {HIERARCHY_TAG: hierarchy},
             )
         )
 
