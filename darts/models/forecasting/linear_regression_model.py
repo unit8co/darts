@@ -58,7 +58,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
             Control the randomness of the sampling. Used as seed for
-            `numpy.random.Generator 
+            `numpy.random.Generator
             <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_. Ignored when
             no `likelihood` is set.
             Default: ``None``.
