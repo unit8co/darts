@@ -417,7 +417,8 @@ class _NHiTSModule(PLPastCovariatesModule):
         # on this params (the last block backcast is not part of the final output of the net).
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
-    def forward(self, x):
+    def forward(self, x_in: Tuple):
+        x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc

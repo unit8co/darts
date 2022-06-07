@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import pandas as pd
 
 from darts.dataprocessing import dtw
 from darts.metrics import dtw_metric, mae, mape
@@ -149,13 +150,16 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         xa1 = self.series1.data_array().rename({"time": "time1"})
         xa2 = self.series2.data_array().rename({"time": "time2"})
 
-        series1 = TimeSeries.from_xarray(xa1)
-        series2 = TimeSeries.from_xarray(xa2)
+        static_covs = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
+        series1 = TimeSeries.from_xarray(xa1).with_static_covariates(static_covs)
+        series2 = TimeSeries.from_xarray(xa2).with_static_covariates(static_covs)
 
         alignment = dtw.dtw(series1, series2)
 
         warped1, warped2 = alignment.warped()
         self.assertAlmostEqual(alignment.mean_distance(), mae(warped1, warped2))
+        assert warped1.static_covariates.equals(series1.static_covariates)
+        assert warped2.static_covariates.equals(series2.static_covariates)
 
         """
         See DTWAlignment.warped for why this functionality is currently disabled
