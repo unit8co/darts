@@ -366,7 +366,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
 
-    def _produce_predict_output(self, x):
+    def _produce_predict_output(self, x: Tuple):
         if self.likelihood:
             output = self(x)
             return self.likelihood.sample(output)
@@ -408,12 +408,22 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
 class PLPastCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(self, input_batch: Tuple):
-        past_target, past_covariate = input_batch
+        """
+        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset for
+        training.
+
+        Parameters:
+        ----------
+        input_batch
+            ``(past_target, past_covariates, static_covariates)``
+        """
+        past_target, past_covariates, static_covariates = input_batch
         # Currently all our PastCovariates models require past target and covariates concatenated
         inpt = (
-            torch.cat([past_target, past_covariate], dim=2)
-            if past_covariate is not None
-            else past_target
+            torch.cat([past_target, past_covariates], dim=2)
+            if past_covariates is not None
+            else past_target,
+            static_covariates,
         )
         return self(inpt)
 
@@ -429,13 +439,18 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         n
             prediction length
         input_batch
-            (past_target, past_covariates, future_past_covariates)
+            ``(past_target, past_covariates, future_past_covariates, static_covariates)``
         roll_size
             roll input arrays after every sequence by ``roll_size``. Initially, ``roll_size`` is equivalent to
             ``self.output_chunk_length``
         """
         dim_component = 2
-        past_target, past_covariates, future_past_covariates = input_batch
+        (
+            past_target,
+            past_covariates,
+            future_past_covariates,
+            static_covariates,
+        ) = input_batch
 
         n_targets = past_target.shape[dim_component]
         n_past_covs = (
@@ -447,7 +462,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
             dim=dim_component,
         )
 
-        out = self._produce_predict_output(input_past)[
+        out = self._produce_predict_output((input_past, static_covariates))[
             :, self.first_prediction_index :, :
         ]
 
@@ -496,7 +511,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 ] = future_past_covariates[:, left_past:right_past, :]
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(input_past)[
+            out = self._produce_predict_output((input_past, static_covariates))[
                 :, self.first_prediction_index :, :
             ]
             batch_prediction.append(out)
@@ -528,11 +543,20 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
     def _produce_train_output(
         self, input_batch: Tuple
     ) -> Tuple[torch.Tensor, torch.Tensor]:
+        """
+        Feeds MixedCovariatesTorchModel with input and output chunks of a MixedCovariatesSequentialDataset for
+        training.
+
+        Parameters:
+        ----------
+        input_batch
+            ``(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates)``.
+        """
         return self(self._process_input_batch(input_batch))
 
     def _process_input_batch(
         self, input_batch
-    ) -> Tuple[torch.Tensor, Optional[torch.Tensor]]:
+    ) -> Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]:
         """
         Converts output of MixedCovariatesDataset (training dataset) into an input/past- and
         output/future chunk.
@@ -540,24 +564,21 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         Parameters
         ----------
         input_batch
-            ``(past_target, past_covariates, historic_future_covariates, future_covariates)``.
+            ``(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates)``.
 
         Returns
         -------
         tuple
-            ``(x_past, x_future)`` the input/past and output/future chunks.
+            ``(x_past, x_future, x_static)`` the input/past and output/future chunks.
         """
-
         (
             past_target,
             past_covariates,
             historic_future_covariates,
             future_covariates,
+            static_covariates,
         ) = input_batch
         dim_variable = 2
-
-        # TODO: impelement static covariates
-        static_covariates = None
 
         x_past = torch.cat(
             [
@@ -566,25 +587,12 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                     past_target,
                     past_covariates,
                     historic_future_covariates,
-                    static_covariates,
                 ]
                 if tensor is not None
             ],
             dim=dim_variable,
         )
-
-        x_future = None
-        if future_covariates is not None or static_covariates is not None:
-            x_future = torch.cat(
-                [
-                    tensor
-                    for tensor in [future_covariates, static_covariates]
-                    if tensor is not None
-                ],
-                dim=dim_variable,
-            )
-
-        return x_past, x_future
+        return x_past, future_covariates, static_covariates
 
     def _get_batch_prediction(
         self, n: int, input_batch: Tuple, roll_size: int
@@ -611,6 +619,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             historic_future_covariates,
             future_covariates,
             future_past_covariates,
+            static_covariates,
         ) = input_batch
 
         n_targets = past_target.shape[dim_component]
@@ -623,7 +632,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
             else 0
         )
 
-        input_past, input_future = self._process_input_batch(
+        input_past, input_future, input_static = self._process_input_batch(
             (
                 past_target,
                 past_covariates,
@@ -631,10 +640,11 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 future_covariates[:, :roll_size, :]
                 if future_covariates is not None
                 else None,
+                static_covariates,
             )
         )
 
-        out = self._produce_predict_output(x=(input_past, input_future))[
+        out = self._produce_predict_output(x=(input_past, input_future, input_static))[
             :, self.first_prediction_index :, :
         ]
 
@@ -702,9 +712,9 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 input_future = future_covariates[:, left_future:right_future, :]
 
             # take only last part of the output sequence where needed
-            out = self._produce_predict_output(x=(input_past, input_future))[
-                :, self.first_prediction_index :, :
-            ]
+            out = self._produce_predict_output(
+                x=(input_past, input_future, input_static)
+            )[:, self.first_prediction_index :, :]
 
             batch_prediction.append(out)
             prediction_length += self.output_chunk_length

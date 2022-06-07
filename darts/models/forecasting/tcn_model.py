@@ -230,7 +230,8 @@ class _TCNModule(PLPastCovariatesModule):
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
-    def forward(self, x):
+    def forward(self, x_in: Tuple):
+        x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)

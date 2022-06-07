@@ -31,6 +31,13 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         The transformation is applied independently for each dimension (component) of the time series,
         effectively merging all samples of a component in order to compute the transform.
 
+        Notes
+        -----
+        The scaler will not scale the series' static covariates. This has to be done either before constructing the
+        series, or later on by extracting the covariates, transforming the values and then reapplying them to the
+        series. For this, see TimeSeries properties `TimeSeries.static_covariates` and method
+        `TimeSeries.with_static_covariates()`
+
         Parameters
         ----------
         scaler
@@ -106,6 +113,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             values=transformed_vals,
             fill_missing_dates=False,
             columns=series.columns,
+            static_covariates=series.static_covariates,
         )
 
     @staticmethod
@@ -126,6 +134,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             values=inv_transformed_vals,
             fill_missing_dates=False,
             columns=series.columns,
+            static_covariates=series.static_covariates,
         )
 
     @staticmethod

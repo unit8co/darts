@@ -195,7 +195,7 @@ def _get_values_or_raise(
 
     raise_if_not(
         series_a.width == series_b.width,
-        " The two time series must have the same number of components",
+        "The two time series must have the same number of components",
         logger,
     )
 

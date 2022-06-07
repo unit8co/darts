@@ -158,10 +158,14 @@ class NaiveEnsembleModel(EnsembleModel):
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         if isinstance(predictions, Sequence):
             return [
-                TimeSeries.from_series(p.pd_dataframe().sum(axis=1) / len(self.models))
+                TimeSeries.from_series(
+                    p.pd_dataframe().sum(axis=1) / len(self.models),
+                    static_covariates=p.static_covariates,
+                )
                 for p in predictions
             ]
         else:
             return TimeSeries.from_series(
-                predictions.pd_dataframe().sum(axis=1) / len(self.models)
+                predictions.pd_dataframe().sum(axis=1) / len(self.models),
+                static_covariates=predictions.static_covariates,
             )

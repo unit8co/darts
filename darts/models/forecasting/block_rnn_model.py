@@ -103,7 +103,8 @@ class _BlockRNNModule(PLPastCovariatesModule):
             last = feature
         self.fc = nn.Sequential(*feats)
 
-    def forward(self, x):
+    def forward(self, x_in: Tuple):
+        x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
 
