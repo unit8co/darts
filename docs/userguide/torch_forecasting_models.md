@@ -309,6 +309,56 @@ to see examples of how to do it.
 
 -------------
 
+## Early Stop
+Early stopping can be an efficient way to cut down on the training time.  Using early stopping trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
+
+Early stopping can be easily implemented on all Darts neural networks based models, by leveraging PyTorch Lightning's `EarlyStopping` callback, as shown in the example code below.
+```python
+from darts.models import NBEATSModel
+from darts.datasets import AirPassengersDataset
+from pytorch_lightning.callbacks import EarlyStopping
+import pandas as pd
+from darts.dataprocessing.transformers import Scaler
+
+# Read data:
+series = AirPassengersDataset().load()
+
+# To use the early stop on the validation loss, create training and validation sets:
+train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
+
+# Normalize the time series (note: we avoid fitting the transformer on the validation set)
+transformer = Scaler()
+transformer.fit(train)
+train = transformer.transform(train)
+val = transformer.transform(val)
+
+# Early stopping callback
+my_stopper = EarlyStopping(
+    monitor="val_loss",  # The metric to monitor
+    patience=5,          # Number of nr_epochs_val_period to wait
+    min_delta=0.05,      # Minimum change in the monitored metric
+    mode='min',          # Whether to monitor for the minimum or maximum value
+)
+pl_trainer_kwargs = {"callbacks": [my_stopper]}
+
+# Create the model
+model = NBEATSModel(
+    input_chunk_length=24,
+    output_chunk_length=12,
+    n_epochs=500,
+    nr_epochs_val_period=2,
+    pl_trainer_kwargs=pl_trainer_kwargs)
+
+# fit using a val_series
+model.fit(
+    series=train,
+    val_series=val,
+    )
+```
+
+
+-------------
+
 ### Example Benchmark
 As an example, we show here the time required to train one epoch on the first 80% of the energy dataset (`darts.datasets.EnergyDataset`), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
 We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `input_chunk_length=48` and `output_chunk_length=12` (which results in 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter `add_cyclic_encoder='hour'`. The tests are made on a Intel CPU i9-10900K CPU @ 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM. All `TimeSeries` are pre-loaded in memory and given to the models as a list.
@@ -363,52 +413,4 @@ We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 2           | 31s            |
 | `TFTModel`    | Energy  | 32    | yes  | 1024       | 4           | 31s            |
 
--------------
-
-## Early Stop
-Early stopping can be an efficient way to cut down on the training time.  Using early stopping trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
-
-In this example the model reaches the lowest val_loss at epoch 10 and finishes training at epoch 15. 
-
-```python
-from darts.models import NBEATSModel
-from darts.datasets import AirPassengersDataset
-from pytorch_lightning.callbacks import EarlyStopping
-import pandas as pd
-from darts.dataprocessing.transformers import Scaler
-
-# Read data:
-series = AirPassengersDataset().load()
-
-# To use the early stop on the validation loss, create training and validation sets:
-train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
-
-# Normalize the time series (note: we avoid fitting the transformer on the validation set)
-transformer = Scaler()
-transformer.fit(train)
-train = transformer.transform(train)
-val = transformer.transform(val)
-
-# Early stopping callback
-my_stopper = EarlyStopping(
-    monitor="val_loss",
-    patience=5,
-    min_delta=0.05,
-    mode='min',
-)
-pl_trainer_kwargs = {"callbacks": [my_stopper]}
-
-# Create the model
-model = NBEATSModel(
-    input_chunk_length=24,
-    output_chunk_length=12,
-    n_epochs=500,
-    pl_trainer_kwargs=pl_trainer_kwargs)
-
-# fit using a val_series
-model.fit(
-    series=train,
-    val_series=val,
-    )
-```
 
