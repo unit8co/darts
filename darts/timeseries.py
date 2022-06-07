@@ -251,15 +251,9 @@ class TimeSeries:
         self._top_level_component = None
         self._bottom_level_components = None
         if hierarchy is not None:
-            # raise_if_not(
-            #     len(hierarchy) == self.n_components - 1,
-            #     "The grouping keys must be all the components having at least one "
-            #     + "parent in the hierarchy; so there should be C-1 keys, where C is the number of components.",
-            # )
-
             # pre-compute grouping informations
             components_set = set(self.components)
-            children = set().union(*hierarchy.keys())
+            children = set().union(hierarchy.keys())
             ancestors = set().union(*hierarchy.values())
             hierarchy_top = components_set - children
             raise_if_not(
@@ -400,6 +394,7 @@ class TimeSeries:
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
         **kwargs,
     ) -> "TimeSeries":
         """
@@ -434,6 +429,27 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in the CSV
             file). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of this time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is `total` component, split both in two divisions `d1` and `d2`, and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
 
@@ -994,7 +1010,7 @@ class TimeSeries:
         return self._top_level_component
 
     @property
-    def bottom_level_components(self) -> Optional[list[str]]:
+    def bottom_level_components(self) -> Optional[List[str]]:
         """
         The bottom level component names of this series, or None if the series has no hierarchy.
         """
@@ -2417,7 +2433,7 @@ class TimeSeries:
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs=self._xa.attrs + {STATIC_COV_TAG: covariates},
+                attrs=dict({STATIC_COV_TAG: covariates}, **self._xa.attrs),
             )
         )
 
@@ -2447,12 +2463,12 @@ class TimeSeries:
         >>> TODO
         """
 
-        return self.__class_(
+        return self.__class__(
             xr.DataArray(
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs=self._xa.attrs + {HIERARCHY_TAG: hierarchy},
+                attrs=dict({HIERARCHY_TAG: hierarchy}, **self._xa.attrs),
             )
         )
 

@@ -1,4 +1,0 @@
-"""
-Posthoc Forecast Reconciliation
--------------------------------
-"""
