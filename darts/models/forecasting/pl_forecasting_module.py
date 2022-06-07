@@ -3,7 +3,7 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Dict, List, Optional, Sequence, Tuple
 
 import pytorch_lightning as pl
 import torch
@@ -30,7 +30,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
-        torch_metrics: Optional[List[Callable]] = None,
+        torch_metrics: Optional[List[str]] = None,
+        metrics_params: Optional[List[Dict]] = None,
         likelihood: Optional[Likelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
@@ -62,7 +63,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             Default: ``torch.nn.MSELoss()``.
         torch_metrics
             List of torch metrics to be used for evaluation. A full list of available metrics can be found at
-            https://torchmetrics.readthedocs.io/en/latest/.
+            https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
+        metrics_params
+            Dictionary of parameters to be passed to the metrics. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
@@ -105,15 +108,20 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
 
-        # "metrics": ["mean_squared_error", "mean_absolute_percentage_error"],
-        # "metrics_params": [{}, {}],
-        self.torch_metrics = torch_metrics
-        self.metrics = []  # ["mean_squared_error", "mean_absolute_percentage_error"]
-        self.metrics_str = ["mean_squared_error", "mean_absolute_percentage_error"]
-        self.metrics_params = [{}, {}]
-        # if self.custom_metrics is not None:
-        #     config.metrics = [str(m) for m in self.custom_metrics]
-        #     config.metrics_params = [vars(m) for m in self.custom_metrics]
+        self.metrics = []
+        self.metrics_str = torch_metrics if torch_metrics else []
+        self.metrics_params = metrics_params if metrics_params else []
+
+        if metrics_params:
+            raise_if(
+                len(self.metrics_params) != len(self.metrics_str),
+                "Number of metrics parameters must be equal to number of metrics.",
+                logger,
+            )
+        # create empty dict for each metric
+        if self.metrics_str and metrics_params is None:
+            for _ in self.metrics_str:
+                self.metrics_params.append(dict())
 
         self._setup_metrics()
 
@@ -250,20 +258,19 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return self.criterion(output.squeeze(dim=-1), target)
 
     def _setup_metrics(self):
-        if self.torch_metrics is None:
+        if self.metrics_str:
             self.metrics = []
             task_module = torchmetrics.functional
             for metric in self.metrics_str:
                 try:
                     self.metrics.append(getattr(task_module, metric))
                 except AttributeError as e:
-                    logger.error(
-                        f"{metric} is not a valid functional metric defined in the torchmetrics.functional module"
+                    raise_log(
+                        ValueError(
+                            f"{metric} is not a valid functional metric defined in the torchmetrics.functional module"
+                        )
                     )
                     raise e
-        else:
-            self.metrics = self.torch_metrics
-            self.metrics_str = [m.__name__ for m in self.torch_metrics]
 
     def calculate_metrics(self, y, y_hat, tag):
         metrics = []
