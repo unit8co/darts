@@ -33,7 +33,7 @@ from darts.utils.likelihood_models import Likelihood, QuantileRegression
 logger = get_logger(__name__)
 
 MixedCovariatesTrainTensorType = Tuple[
-    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
+    torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor, torch.Tensor
 ]
 
 
@@ -42,6 +42,7 @@ class _TFTModule(PLMixedCovariatesModule):
         self,
         output_dim: Tuple[int, int],
         variables_meta: Dict[str, Dict[str, List[str]]],
+        num_static_components: int,
         hidden_size: Union[int, List[int]] = 16,
         lstm_layers: int = 1,
         num_attention_heads: int = 4,
@@ -63,6 +64,9 @@ class _TFTModule(PLMixedCovariatesModule):
             shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).
         variables_meta : Dict[str, Dict[str, List[str]]]
             dict containing variable encoder, decoder variable names for mapping tensors in `_TFTModule.forward()`
+        num_static_components
+            the number of static components (not variables) of the input target series. This is either equal to the
+            number of target components or 1.
         hidden_size : int
             hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT
             architecture.
@@ -96,6 +100,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         self.n_targets, self.loss_size = output_dim
         self.variables_meta = variables_meta
+        self.num_static_components = num_static_components
         self.hidden_size = hidden_size
         self.hidden_continuous_size = hidden_continuous_size
         self.lstm_layers = lstm_layers
@@ -120,7 +125,11 @@ class _TFTModule(PLMixedCovariatesModule):
         # # processing inputs
         # continuous variable processing
         self.prescalers_linear = {
-            name: nn.Linear(1, self.hidden_continuous_size) for name in self.reals
+            name: nn.Linear(
+                1 if name not in self.static_variables else self.num_static_components,
+                self.hidden_continuous_size,
+            )
+            for name in self.reals
         }
 
         static_input_sizes = {
@@ -353,13 +362,15 @@ class _TFTModule(PLMixedCovariatesModule):
         )
         return mask
 
-    def forward(self, x: Tuple[torch.Tensor, Optional[torch.Tensor]]) -> torch.Tensor:
+    def forward(
+        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
+    ) -> torch.Tensor:
         """TFT model forward pass.
 
         Parameters
         ----------
-        x
-            comes as tuple `(x_past, x_future)` where `x_past` is the input/past chunk and `x_future`
+        x_in
+            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`
             is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`
 
         Returns
@@ -367,11 +378,8 @@ class _TFTModule(PLMixedCovariatesModule):
         torch.Tensor
             the output tensor
         """
-        x_cont_past, x_cont_future = x
+        x_cont_past, x_cont_future, x_static = x_in
         dim_samples, dim_time, dim_variable = 0, 1, 2
-
-        # TODO: implement static covariates
-        static_covariates = None
 
         batch_size = x_cont_past.shape[dim_samples]
         encoder_length = self.input_chunk_length
@@ -433,26 +441,19 @@ class _TFTModule(PLMixedCovariatesModule):
         }
 
         # Embedding and variable selection
-        if static_covariates is not None:
-            # TODO: implement static covariates
-            # # static embeddings will be constant over entire batch
-            # static_embedding = {name: input_vectors[name][:, 0] for name in self.static_variables}
-            # static_embedding, static_covariate_var = self.static_covariates_vsn(static_embedding)
-            raise NotImplementedError("Static covariates have yet to be defined")
+        if self.static_variables:
+            static_embedding = {
+                name: x_static[:, :, i] for i, name in enumerate(self.static_variables)
+            }
+            static_embedding, static_covariate_var = self.static_covariates_vsn(
+                static_embedding
+            )
         else:
             static_embedding = torch.zeros(
                 (x_cont_past.shape[0], self.hidden_size),
                 dtype=x_cont_past.dtype,
                 device=self.device,
             )
-
-            # # TODO: implement below when static covariates are supported
-            # # this is only to interpret the output
-            # static_covariate_var = torch.zeros(
-            #     (x_cont_past.shape[0], 0),
-            #     dtype=x_cont_past.dtype,
-            #     device=x_cont_past.device,
-            # )
 
         static_context_expanded = self.expand_static_context(
             context=self.static_context_grn(static_embedding), time_steps=time_steps
@@ -783,7 +784,8 @@ class TFTModel(MixedCovariatesTorchModel):
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
         """
         `train_sample` contains the following tensors:
-            (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)
+            (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
+            future_target)
 
             each tensor has shape (n_timesteps, n_variables)
             - past/historic tensors have shape (input_chunk_length, n_variables)
@@ -803,6 +805,7 @@ class TFTModel(MixedCovariatesTorchModel):
             past_covariate,
             historic_future_covariate,
             future_covariate,
+            static_covariates,
             future_target,
         ) = train_sample
 
@@ -828,8 +831,6 @@ class TFTModel(MixedCovariatesTorchModel):
                 ],
                 axis=1,
             )
-
-        static_covariates = None  # placeholder for future
 
         self.output_dim = (
             (future_target.shape[1], 1)
@@ -903,9 +904,13 @@ class TFTModel(MixedCovariatesTorchModel):
             dict.fromkeys(static_input)
         )
 
+        n_static_components = (
+            len(static_covariates) if static_covariates is not None else 0
+        )
         return _TFTModule(
-            variables_meta=variables_meta,
             output_dim=self.output_dim,
+            variables_meta=variables_meta,
+            num_static_components=n_static_components,
             hidden_size=self.hidden_size,
             lstm_layers=self.lstm_layers,
             dropout=self.dropout,

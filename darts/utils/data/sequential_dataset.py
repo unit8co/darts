@@ -30,7 +30,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
         max_samples_per_ts: Optional[int] = None,
     ):
         """
-        A time series dataset containing tuples of (past_target, past_covariates, future_target).
+        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
         length `output_chunk_length`. The "future" series are immediately consecutive to the "past" series.
         The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
@@ -83,7 +83,9 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -97,7 +99,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
         max_samples_per_ts: Optional[int] = None,
     ):
         """
-        A time series dataset containing tuples of (past_target, future_covariates, future_target).
+        A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
         length `output_chunk_length`. The "future" series are immediately consecutive to the "past" series.
         The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
@@ -150,7 +152,9 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+    def __getitem__(
+        self, idx
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -165,7 +169,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
     ):
         """
         A time series dataset containing tuples of
-        (past_target, historic_future_covariates, future_covariates, future_target).
+        (past_target, historic_future_covariates, future_covariates, static_covariates, future_target).
         The "past" series (incl `historic_future_covariates`) have length `input_chunk_length`
         and the "future" series have length `output_chunk_length`. The "future" series are immediately consecutive
         to the "past" series. The slicing of past and future covariates matches that of past and future targets,
@@ -233,10 +237,22 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
-        past_target, past_covariate, future_target = self.ds_past[idx]
-        _, future_covariate, _ = self.ds_future[idx]
-        return past_target, past_covariate, future_covariate, future_target
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
+        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
+        _, future_covariate, _, _ = self.ds_future[idx]
+        return (
+            past_target,
+            past_covariate,
+            future_covariate,
+            static_covariate,
+            future_target,
+        )
 
 
 class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
@@ -251,7 +267,7 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
     ):
         """
         A time series dataset containing tuples of
-        (past_target, past_covariates, historic_future_covariates, future_covariates, future_target).
+        (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates, future_target).
         The "past" series (incl `historic_future_covariates`) have length `input_chunk_length`
         and the "future" series have length `output_chunk_length`. The "future" series are immediately consecutive
         to the "past" series. The slicing of past and future covariates matches that of past and future targets,
@@ -321,16 +337,18 @@ class MixedCovariatesSequentialDataset(MixedCovariatesTrainingDataset):
         Optional[np.ndarray],
         Optional[np.ndarray],
         Optional[np.ndarray],
+        Optional[np.ndarray],
         np.ndarray,
     ]:
 
-        past_target, past_covariate, future_target = self.ds_past[idx]
-        _, historic_future_covariate, future_covariate, _ = self.ds_dual[idx]
+        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
+        _, historic_future_covariate, future_covariate, _, _ = self.ds_dual[idx]
         return (
             past_target,
             past_covariate,
             historic_future_covariate,
             future_covariate,
+            static_covariate,
             future_target,
         )
 
@@ -346,7 +364,8 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
         max_samples_per_ts: Optional[int] = None,
     ):
         """
-        A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target).
+        A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,
+        future_target).
         The "past" series have length `input_chunk_length` and the "future" series have
         length `output_chunk_length`. The "future" series are immediately consecutive to the "past" series.
         The slicing of past and future covariates matches that of past and future targets, respectively. The slicing
@@ -416,7 +435,19 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
-        past_target, past_covariate, future_target = self.ds_past[idx]
-        _, future_covariate, _ = self.ds_future[idx]
-        return past_target, past_covariate, future_covariate, future_target
+    ) -> Tuple[
+        np.ndarray,
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        Optional[np.ndarray],
+        np.ndarray,
+    ]:
+        past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
+        _, future_covariate, _, _ = self.ds_future[idx]
+        return (
+            past_target,
+            past_covariate,
+            future_covariate,
+            static_covariate,
+            future_target,
+        )

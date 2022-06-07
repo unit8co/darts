@@ -64,7 +64,8 @@ class VARIMA(DualCovariatesForecastingModel):
         )  # needed for back-transformation when d=1
         for _ in range(self.d):
             series = TimeSeries.from_dataframe(
-                series.pd_dataframe(copy=False).diff().dropna()
+                df=series.pd_dataframe(copy=False).diff().dropna(),
+                static_covariates=series.static_covariates,
             )
 
         super().fit(series, future_covariates)
