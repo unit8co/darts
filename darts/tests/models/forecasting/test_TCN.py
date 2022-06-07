@@ -106,12 +106,16 @@ if TORCH_AVAILABLE:
                         input_tensor = torch.zeros(
                             [1, input_chunk_length, 1], dtype=torch.float64
                         )
-                        zero_output = model.model.forward(input_tensor)[0, -1, 0]
+                        zero_output = model.model.forward((input_tensor, None))[
+                            0, -1, 0
+                        ]
 
                         # test for full coverage
                         for i in range(input_chunk_length):
                             input_tensor[0, i, 0] = 1
-                            curr_output = model.model.forward(input_tensor)[0, -1, 0]
+                            curr_output = model.model.forward((input_tensor, None))[
+                                0, -1, 0
+                            ]
                             self.assertNotEqual(zero_output, curr_output)
                             input_tensor[0, i, 0] = 0
 
@@ -145,7 +149,9 @@ if TORCH_AVAILABLE:
                         input_tensor = torch.zeros(
                             [1, input_chunk_length, 1], dtype=torch.float64
                         )
-                        zero_output = model_2.model.forward(input_tensor)[0, -1, 0]
+                        zero_output = model_2.model.forward((input_tensor, None))[
+                            0, -1, 0
+                        ]
 
                         # test for incomplete coverage
                         uncovered_input_found = False
@@ -153,7 +159,9 @@ if TORCH_AVAILABLE:
                             continue
                         for i in range(input_chunk_length):
                             input_tensor[0, i, 0] = 1
-                            curr_output = model_2.model.forward(input_tensor)[0, -1, 0]
+                            curr_output = model_2.model.forward((input_tensor, None))[
+                                0, -1, 0
+                            ]
                             if zero_output == curr_output:
                                 uncovered_input_found = True
                                 break

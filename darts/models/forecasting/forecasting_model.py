@@ -461,6 +461,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 return TimeSeries.from_times_and_values(
                     pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
                     np.array(last_points_values),
+                    static_covariates=series.static_covariates,
                 )
             else:
                 return TimeSeries.from_times_and_values(
@@ -470,6 +471,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         step=1,
                     ),
                     np.array(last_points_values),
+                    static_covariates=series.static_covariates,
                 )
 
         return forecasts
