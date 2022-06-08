@@ -514,7 +514,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
     def _setup_trainer(
-        self, trainer: Optional[pl.Trainer], verbose: Optional[bool] = None, epochs: int = 0
+        self,
+        trainer: Optional[pl.Trainer],
+        verbose: Optional[bool] = None,
+        epochs: int = 0,
     ) -> None:
         """Sets up the PyTorch-Lightning trainer for training or prediction."""
         trainer_params = {key: val for key, val in self.trainer_params.items()}
