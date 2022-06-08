@@ -323,7 +323,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             pl_loggers.TensorBoardLogger(save_dir=log_folder, name="", version="logs")
             if logger =='tensorboard'
             else pl_loggers.CometLogger(api_key=log_folder, workspace="", project_name="logs")
-            elif logger =='comet'
+            if logger =='comet'
             else False
         )
 
