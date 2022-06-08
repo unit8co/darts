@@ -430,9 +430,9 @@ class TimeSeries:
             rows must match the number of components of the TimeSeries (in this case, the number of columns in the CSV
             file). This adds control for component-specific static covariates.
         hierarchy
-            Optionally, a dictionary describing the grouping(s) of this time series. The keys are component names, and
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
             for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
-            if there is `total` component, split both in two divisions `d1` and `d2`, and in two regions `r1` and `r2`,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
             and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
             be encoded as follows.
 
@@ -450,6 +450,10 @@ class TimeSeries:
                     "r2": ["total"]
                 }
             ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
 
@@ -468,6 +472,7 @@ class TimeSeries:
             freq=freq,
             fillna_value=fillna_value,
             static_covariates=static_covariates,
+            hierarchy=hierarchy,
         )
 
     @classmethod
@@ -480,6 +485,7 @@ class TimeSeries:
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -516,6 +522,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``value_cols``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -601,7 +631,7 @@ class TimeSeries:
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
-            attrs={STATIC_COV_TAG: static_covariates},
+            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
         return cls.from_xarray(
@@ -790,6 +820,7 @@ class TimeSeries:
         columns: Optional[pd._typing.Axes] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build a series from a time index and value array.
@@ -824,6 +855,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``values``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -854,7 +909,7 @@ class TimeSeries:
             values,
             dims=(times_name,) + DIMS[-2:],
             coords=coords,
-            attrs={STATIC_COV_TAG: static_covariates},
+            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
         return cls.from_xarray(
@@ -871,6 +926,7 @@ class TimeSeries:
         columns: Optional[pd._typing.Axes] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build an integer-indexed series from an array of values.
@@ -894,6 +950,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``values``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -913,6 +993,7 @@ class TimeSeries:
             columns=columns,
             fillna_value=fillna_value,
             static_covariates=static_covariates,
+            hierarchy=hierarchy,
         )
 
     @classmethod
@@ -920,6 +1001,7 @@ class TimeSeries:
         cls,
         json_str: str,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build a series from the JSON String representation of a ``TimeSeries``
@@ -939,6 +1021,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``value_cols``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -946,7 +1052,9 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient="split")
-        return cls.from_dataframe(df, static_covariates=static_covariates)
+        return cls.from_dataframe(
+            df, static_covariates=static_covariates, hierarchy=hierarchy
+        )
 
     @classmethod
     def from_pickle(cls, path: str) -> "TimeSeries":
