@@ -120,7 +120,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         n_epochs: int = 100,
         model_name: str = None,
         work_dir: str = os.path.join(os.getcwd(), DEFAULT_DARTS_FOLDER),
-        log_tensorboard: bool = False,
+        api_key: str = None, #adding you api key
+        logger: str = Optional[str] = None, #'tensorboard' or 'comet'
         nr_epochs_val_period: int = 1,
         torch_device_str: Optional[str] = None,
         force_reset: bool = False,
@@ -320,7 +321,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # save tensorboard under 'darts_logs/model_name/logs/'
         model_logger = (
             pl_loggers.TensorBoardLogger(save_dir=log_folder, name="", version="logs")
-            if log_tensorboard
+            if logger =='tensorboard'
+            else pl_loggers.CometLogger(api_key=log_folder, workspace="", project_name="logs")
+            elif logger =='comet'
             else False
         )
 
