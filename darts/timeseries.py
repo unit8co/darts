@@ -254,7 +254,15 @@ class TimeSeries:
             # pre-compute grouping informations
             components_set = set(self.components)
             children = set().union(hierarchy.keys())
+            raise_if_not(
+                all(c in components_set for c in children),
+                "The keys of the hierarchy must be time series components",
+            )
             ancestors = set().union(*hierarchy.values())
+            raise_if_not(
+                all(a in components_set for a in ancestors),
+                "The values of the hierarchy must only contain component names matchine those of the series.",
+            )
             hierarchy_top = components_set - children
             raise_if_not(
                 len(hierarchy_top) == 1,
@@ -2481,7 +2489,7 @@ class TimeSeries:
         Return
         ------
         TimeSeries
-            A new TimeSeries with the new values and same index
+            A new TimeSeries with the new values and same index, static covariates and hierarchy
         """
         raise_if_not(
             values.shape == self._xa.values.shape,
@@ -2547,28 +2555,30 @@ class TimeSeries:
 
     def with_hierarchy(self, hierarchy: Dict):
         """
-        TODO
+        Adds a hierarchy to the TimeSeries.
 
         Parameters
         ----------
         hierarchy
-            A dictionary mapping components to their parent(s) in the hierarchy.
+            A dictionary mapping components to a list of their parent(s) in the hierarchy.
             For example, assume the series contains the components
             ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
-            the following dictionary would encode the groupings shown on Figure 11.6
-            `here <https://otexts.com/fpp3/hts.html#grouped-time-series>`_:
-            .. code-block::
+            the following dictionary would encode the groupings shown on
+            ` Figure 11.6 here <https://otexts.com/fpp3/hts.html#grouped-time-series>`_:
+
+            .. highlight:: python
+            .. code-block:: python
 
                 {'ax': ['a', 'x'],
                  'ay': ['a', 'y'],
                  'bx': ['b', 'x'],
                  'by': ['b', 'y'],
                  'a': ['total'],
-                 'b': ['total']}
+                 'b': ['total'],
+                 'x': ['total'],
+                 'y': ['total']}
+            ..
 
-        Examples
-        --------
-        >>> TODO
         """
 
         return self.__class__(
@@ -3053,7 +3063,8 @@ class TimeSeries:
         self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]
     ) -> "TimeSeries":
         """
-        Return a new ``TimeSeries`` instance with new columns/components names.
+        Return a new ``TimeSeries`` instance with new columns/components names. It also
+        adapts the names in the hierarchy, if any.
 
         Parameters
         -------
@@ -3086,16 +3097,26 @@ class TimeSeries:
             logger,
         )
 
-        cols = self.components
+        old2new = {old: new for (old, new) in zip(col_names, col_names_new)}
 
-        for (o, n) in zip(col_names, col_names_new):
-            cols = [n if (c == o) else c for c in cols]
+        # update component names
+        cols = [old2new[old] if old in old2new else old for old in self.components]
+
+        # update hierarchy names
+        hierarchy = {
+            (old2new[key] if key in old2new else key): [
+                old2new[old] if old in old2new else old for old in self.hierarchy[key]
+            ]
+            for key in self.hierarchy
+        }
+        new_attrs = self._xa.attrs
+        new_attrs[HIERARCHY_TAG] = hierarchy
 
         new_xa = xr.DataArray(
             self._xa.values,
             dims=self._xa.dims,
             coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cols)},
-            attrs=self._xa.attrs,
+            attrs=new_attrs,
         )
 
         return self.__class__(new_xa)
@@ -3123,6 +3144,8 @@ class TimeSeries:
         resulting single component will be renamed to "components_mean".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
 
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
+
         Parameters
         ----------
         axis
@@ -3138,7 +3161,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_mean", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -3150,6 +3176,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_median".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -3167,7 +3195,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_median", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -3179,6 +3210,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_sum".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -3195,7 +3228,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_sum", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -3207,6 +3243,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_min".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -3223,7 +3261,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_min", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -3235,6 +3276,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_max".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -3250,7 +3293,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_max", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -3916,6 +3962,10 @@ class TimeSeries:
                     xa_ = _xarray_with_static_covariates(
                         xa_, xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
                     )
+
+                # selecting a slice of components discards the hierarchy, if any
+                xa_.attrs = {k: v for k, v in xa_.attrs.items() if k != HIERARCHY_TAG}
+
                 return self.__class__(xa_)
             elif isinstance(key.start, (int, np.int64)) or isinstance(
                 key.stop, (int, np.int64)
@@ -3943,6 +3993,10 @@ class TimeSeries:
                 xa_ = _xarray_with_static_covariates(
                     xa_, xa_.attrs[STATIC_COV_TAG].loc[[key]]
                 )
+
+            # selecting a component discards the hierarchy, if any
+            xa_.attrs = {k: v for k, v in xa_.attrs.items() if k != HIERARCHY_TAG}
+
             return self.__class__(xa_)
         elif isinstance(key, (int, np.int64)):
             xa_ = self._xa.isel({self._time_dim: [key]})
@@ -3975,6 +4029,10 @@ class TimeSeries:
                     xa_ = _xarray_with_static_covariates(
                         xa_, xa_.attrs[STATIC_COV_TAG].loc[key]
                     )
+
+                # selecting components discards the hierarchy, if any
+                xa_.attrs = {k: v for k, v in xa_.attrs.items() if k != HIERARCHY_TAG}
+
                 return self.__class__(xa_)
             elif all(isinstance(i, (int, np.int64)) for i in key):
                 xa_ = self._xa.isel({self._time_dim: key})
@@ -3992,7 +4050,7 @@ class TimeSeries:
                         and key[-1] == max_idx
                         and max_idx + 1 - min_idx == len(key),
                         "Indexing a TimeSeries with a list requires the list to contain monotically "
-                        + "increasing integers without holes.",
+                        + "increasing integers with no gap.",
                     )
                     new_idx = orig_idx[min_idx : max_idx + 1]
                     xa_ = xa_.assign_coords({self._time_dim: new_idx})
