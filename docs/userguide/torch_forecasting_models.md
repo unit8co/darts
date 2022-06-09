@@ -314,45 +314,48 @@ Early stopping can be an efficient way to cut down on the training time.  Using 
 
 Early stopping can be easily implemented on all Darts neural networks based models, by leveraging PyTorch Lightning's `EarlyStopping` callback, as shown in the example code below.
 ```python
-from darts.models import NBEATSModel
-from darts.datasets import AirPassengersDataset
-from pytorch_lightning.callbacks import EarlyStopping
-import pandas as pd
-from darts.dataprocessing.transformers import Scaler
+    from darts.models import NBEATSModel
+    from darts.datasets import AirPassengersDataset
+    from pytorch_lightning.callbacks import EarlyStopping
+    from torchmetrics import MeanAbsolutePercentageError
+    import pandas as pd
+    from darts.dataprocessing.transformers import Scaler
 
-# Read data:
-series = AirPassengersDataset().load()
+    # Read data:
+    series = AirPassengersDataset().load()
 
-# To use the early stop on the validation loss, create training and validation sets:
-train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
+    # Create training and validation sets:
+    train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
 
-# Normalize the time series (note: we avoid fitting the transformer on the validation set)
-transformer = Scaler()
-transformer.fit(train)
-train = transformer.transform(train)
-val = transformer.transform(val)
+    # Normalize the time series (note: we avoid fitting the transformer on the validation set)
+    transformer = Scaler()
+    transformer.fit(train)
+    train = transformer.transform(train)
+    val = transformer.transform(val)
 
-# Early stopping callback
-my_stopper = EarlyStopping(
-    monitor="val_loss",  # The metric to monitor
-    patience=5,          # Number of nr_epochs_val_period to wait
-    min_delta=0.05,      # Minimum change in the monitored metric
-    mode='min',          # Whether to monitor for the minimum or maximum value
-)
-pl_trainer_kwargs = {"callbacks": [my_stopper]}
+    # A TorchMetric or val_loss can be used as the monitor
+    torch_metrics = MeanAbsolutePercentageError()
 
-# Create the model
-model = NBEATSModel(
-    input_chunk_length=24,
-    output_chunk_length=12,
-    n_epochs=500,
-    nr_epochs_val_period=2,
-    pl_trainer_kwargs=pl_trainer_kwargs)
+    # Early stop callback
+    my_stopper = EarlyStopping(
+        monitor="val_MeanAbsolutePercentageError",  # "val_loss",
+        patience=5,
+        min_delta=0.05,
+        mode='min',
+    )
+    pl_trainer_kwargs = {"callbacks": [my_stopper]}
 
-# fit using a val_series
-model.fit(
-    series=train,
-    val_series=val,
+    # Create the model
+    model = NBEATSModel(
+        input_chunk_length=24,
+        output_chunk_length=12,
+        n_epochs=500,
+        torch_metrics=torch_metrics,
+        pl_trainer_kwargs=pl_trainer_kwargs)
+
+    model.fit(
+        series=train,
+        val_series=val,
     )
 ```
 
