@@ -456,7 +456,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         return y
 
 
-class NHiTS(PastCovariatesTorchModel):
+class NHiTSModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,

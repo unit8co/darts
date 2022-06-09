@@ -11,7 +11,7 @@ logger = get_logger(__name__)
 
 try:
     from darts.models.forecasting.nbeats import NBEATSModel
-    from darts.models.forecasting.nhits import NHiTS
+    from darts.models.forecasting.nhits import NHiTSModel
 
     TORCH_AVAILABLE = True
 except ImportError:
@@ -39,7 +39,7 @@ if TORCH_AVAILABLE:
                 )
 
             with self.assertRaises(ValueError):
-                NHiTS(
+                NHiTSModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
                     num_stacks=3,
@@ -50,7 +50,7 @@ if TORCH_AVAILABLE:
             large_ts = tg.constant_timeseries(length=100, value=1000)
             small_ts = tg.constant_timeseries(length=100, value=10)
 
-            for model_cls in [NBEATSModel, NHiTS]:
+            for model_cls in [NBEATSModel, NHiTSModel]:
                 # Test basic fit and predict
                 model = model_cls(
                     input_chunk_length=1,
@@ -88,7 +88,7 @@ if TORCH_AVAILABLE:
                 tg.linear_timeseries(length=100, start_value=0, end_value=0.5)
             )
 
-            for model_cls in [NBEATSModel, NHiTS]:
+            for model_cls in [NBEATSModel, NHiTSModel]:
                 model = model_cls(
                     input_chunk_length=3,
                     output_chunk_length=1,
@@ -131,7 +131,7 @@ if TORCH_AVAILABLE:
             with self.assertRaises(ValueError):
 
                 # wrong number of coeffs for stacks and blocks
-                NHiTS(
+                NHiTSModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
                     num_stacks=1,
@@ -140,7 +140,7 @@ if TORCH_AVAILABLE:
                     n_freq_downsample=((1,), (1,)),
                 )
             with self.assertRaises(ValueError):
-                NHiTS(
+                NHiTSModel(
                     input_chunk_length=1,
                     output_chunk_length=1,
                     num_stacks=2,
@@ -150,7 +150,7 @@ if TORCH_AVAILABLE:
                 )
 
             # it shouldn't fail with the right number of coeffs
-            _ = NHiTS(
+            _ = NHiTSModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 num_stacks=2,
@@ -160,7 +160,7 @@ if TORCH_AVAILABLE:
             )
 
             # default freqs should be such that last one is 1
-            model = NHiTS(
+            model = NHiTSModel(
                 input_chunk_length=1,
                 output_chunk_length=1,
                 num_stacks=2,
@@ -189,7 +189,7 @@ if TORCH_AVAILABLE:
         def test_activation_fns(self):
             ts = tg.constant_timeseries(length=50, value=10)
 
-            for model_cls in [NBEATSModel, NHiTS]:
+            for model_cls in [NBEATSModel, NHiTSModel]:
                 model = model_cls(
                     input_chunk_length=1,
                     output_chunk_length=1,
