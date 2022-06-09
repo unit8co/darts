@@ -4,10 +4,16 @@ import tempfile
 from unittest.mock import patch
 
 import pandas as pd
+from torchmetrics import (
+    MeanAbsoluteError,
+    MeanAbsolutePercentageError,
+    MetricCollection,
+)
 
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
+from darts.utils.likelihood_models import GaussianLikelihood
 
 logger = get_logger(__name__)
 
@@ -350,43 +356,51 @@ if TORCH_AVAILABLE:
                 _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
 
         def test_metrics(self):
-            torch_metrics = ["mean_squared_error", "mean_absolute_percentage_error"]
-            model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=torch_metrics)
+            metric = MeanAbsolutePercentageError()
+            metric_collection = MetricCollection(
+                [MeanAbsolutePercentageError(), MeanAbsoluteError()]
+            )
+
+            model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric)
             model.fit(self.series)
 
-        def test_metrics_w_params(self):
-            torch_metrics = ["mean_squared_error", "mean_absolute_percentage_error"]
-            metrics_params = [{}, {}]
+            model = RNNModel(
+                12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric_collection
+            )
+            model.fit(self.series)
+
+        def test_metrics_w_likelihood(self):
+            metric = MeanAbsolutePercentageError()
+            metric_collection = MetricCollection(
+                [MeanAbsolutePercentageError(), MeanAbsoluteError()]
+            )
+
             model = RNNModel(
                 12,
                 "RNN",
                 10,
                 10,
                 n_epochs=1,
-                torch_metrics=torch_metrics,
-                metrics_params=metrics_params,
+                likelihood=GaussianLikelihood(),
+                torch_metrics=metric,
+            )
+            model.fit(self.series)
+
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                likelihood=GaussianLikelihood(),
+                torch_metrics=metric_collection,
             )
             model.fit(self.series)
 
         def test_invalid_metrics(self):
             torch_metrics = ["invalid"]
-            with self.assertRaises(ValueError):
+            with self.assertRaises(AttributeError):
                 model = RNNModel(
                     12, "RNN", 10, 10, n_epochs=1, torch_metrics=torch_metrics
-                )
-                model.fit(self.series)
-
-        def test_wrong_metrics_param_count(self):
-            torch_metrics = ["mean_squared_error", "mean_absolute_percentage_error"]
-            metrics_params = [{}]
-            with self.assertRaises(ValueError):
-                model = RNNModel(
-                    12,
-                    "RNN",
-                    10,
-                    10,
-                    n_epochs=1,
-                    torch_metrics=torch_metrics,
-                    metrics_params=metrics_params,
                 )
                 model.fit(self.series)
