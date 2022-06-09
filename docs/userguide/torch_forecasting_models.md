@@ -79,26 +79,26 @@ When calling `predict()` and depending on your forecast horizon `n`, the model c
 
 Under the hood, Darts has 5 types of `{X}CovariatesModel` classes implemented to cover different combinations of the covariate types mentioned before:
 
-Class | past covariates | future past covariates | future covariates | historic future covariates
---- | --- | --- | --- | ---
-`PastCovariatesModel` | ✅ | ✅ |  |
-`FutureCovariatesModel` |  |  | ✅ |
-`DualCovariatesModel` |  |  | ✅ | ✅
-`MixedCovariatesModel` | ✅ | ✅ | ✅ | ✅
-`SplitCovariatesModel` | ✅ | ✅ | ✅ |
+| Class                   | past covariates | future past covariates | future covariates | historic future covariates |
+|-------------------------|-----------------|------------------------|-------------------|----------------------------|
+| `PastCovariatesModel`   | ✅               | ✅                      |                   |                            |
+| `FutureCovariatesModel` |                 |                        | ✅                 |                            |
+| `DualCovariatesModel`   |                 |                        | ✅                 | ✅                          |
+| `MixedCovariatesModel`  | ✅               | ✅                      | ✅                 | ✅                          |
+| `SplitCovariatesModel`  | ✅               | ✅                      | ✅                 |                            |
 
 **Table 1: Darts' "{X}CovariatesModels" covariate support**
 
 Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate class names are abbreviated by the `X`-part):
 
-TFM | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
---- | --- | --- | --- | --- | ---
-`RNNModel` |  |  | ✅ |  |
-`BlockRNNModel` | ✅ |  |  |  |
-`NBEATSModel` | ✅ |  |  |  |
-`TCNModel` | ✅ |  |  |  |
-`TransformerModel` | ✅ |  |  |  |
-`TFTModel` |  |  |  | ✅ |
+| TFM                | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
+|--------------------|--------|----------|--------|---------|---------|
+| `RNNModel`         |        |          | ✅      |         |         |
+| `BlockRNNModel`    | ✅      |          |        |         |         |
+| `NBEATSModel`      | ✅      |          |        |         |         |
+| `TCNModel`         | ✅      |          |        |         |         |
+| `TransformerModel` | ✅      |          |        |         |         |
+| `TFTModel`         |        |          |        | ✅       |         |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
@@ -309,57 +309,108 @@ to see examples of how to do it.
 
 -------------
 
+## Early Stop
+Early stopping can be an efficient way to cut down on the training time.  Using early stopping trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of `nr_epochs_val_period`.
+
+Early stopping can be easily implemented on all Darts neural networks based models, by leveraging PyTorch Lightning's `EarlyStopping` callback, as shown in the example code below.
+```python
+from darts.models import NBEATSModel
+from darts.datasets import AirPassengersDataset
+from pytorch_lightning.callbacks import EarlyStopping
+import pandas as pd
+from darts.dataprocessing.transformers import Scaler
+
+# Read data:
+series = AirPassengersDataset().load()
+
+# To use the early stop on the validation loss, create training and validation sets:
+train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
+
+# Normalize the time series (note: we avoid fitting the transformer on the validation set)
+transformer = Scaler()
+transformer.fit(train)
+train = transformer.transform(train)
+val = transformer.transform(val)
+
+# Early stopping callback
+my_stopper = EarlyStopping(
+    monitor="val_loss",  # The metric to monitor
+    patience=5,          # Number of nr_epochs_val_period to wait
+    min_delta=0.05,      # Minimum change in the monitored metric
+    mode='min',          # Whether to monitor for the minimum or maximum value
+)
+pl_trainer_kwargs = {"callbacks": [my_stopper]}
+
+# Create the model
+model = NBEATSModel(
+    input_chunk_length=24,
+    output_chunk_length=12,
+    n_epochs=500,
+    nr_epochs_val_period=2,
+    pl_trainer_kwargs=pl_trainer_kwargs)
+
+# fit using a val_series
+model.fit(
+    series=train,
+    val_series=val,
+    )
+```
+
+
+-------------
+
 ### Example Benchmark
 As an example, we show here the time required to train one epoch on the first 80% of the energy dataset (`darts.datasets.EnergyDataset`), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
 We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `input_chunk_length=48` and `output_chunk_length=12` (which results in 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter `add_cyclic_encoder='hour'`. The tests are made on a Intel CPU i9-10900K CPU @ 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM. All `TimeSeries` are pre-loaded in memory and given to the models as a list.
 
-| Model         | Dataset| dtype | CUDA | Batch size | num workers  | time per epoch |
-| ------------- | ------ | ---- | ---- | ---------- | ------------ | -------------- |
-| `NBEATSModel` | Energy | 64   | no   | 32         | 0            | 283s           |
-| `NBEATSModel` | Energy | 64   | no   | 32         | 2            | 285s           |
-| `NBEATSModel` | Energy | 64   | no   | 32         | 4            | 282s           |
-| `NBEATSModel` | Energy | 64   | no   | 1024       | 0            | 58s            |
-| `NBEATSModel` | Energy | 64   | no   | 1024       | 2            | 57s            |
-| `NBEATSModel` | Energy | 64   | no   | 1024       | 4            | 58s            |
-| `NBEATSModel` | Energy | 64   | yes  | 32         | 0            | 63s            |
-| `NBEATSModel` | Energy | 64   | yes  | 32         | 2            | 62s            |
-| `NBEATSModel` | Energy | 64   | yes  | 1024       | 0            | 13.3s          |
-| `NBEATSModel` | Energy | 64   | yes  | 1024       | 2            | 12.1s          |
-| `NBEATSModel` | Energy | 64   | yes  | 1024       | 4            | 12.3s          |
-|               |                  |      |      |            |              |                |
-| `NBEATSModel` | Energy | 32   | no   | 32         | 0            | 117s           |
-| `NBEATSModel` | Energy | 32   | no   | 32         | 2            | 115s           |
-| `NBEATSModel` | Energy | 32   | no   | 32         | 4            | 117s           |
-| `NBEATSModel` | Energy | 32   | no   | 1024       | 0            | 28.4s          |
-| `NBEATSModel` | Energy | 32   | no   | 1024       | 2            | 27.4s          |
-| `NBEATSModel` | Energy | 32   | no   | 1024       | 4            | 27.5s          |
-| `NBEATSModel` | Energy | 32   | yes  | 32         | 0            | 41.5s          |
-| `NBEATSModel` | Energy | 32   | yes  | 32         | 2            | 40.6s          |
-| `NBEATSModel` | Energy | 32   | yes  | 1024       | 0            | 2.8s           |
-| `NBEATSModel` | Energy | 32   | yes  | 1024       | 2            | 1.65           |
-| `NBEATSModel` | Energy | 32   | yes  | 1024       | 4            | 1.8s           |
-|               |                  |      |      |            |              |                |
-| `TFTModel`  | Energy | 64   | no   | 32         | 0            | 78s            |
-| `TFTModel`  | Energy | 64   | no   | 32         | 2            | 72s            |
-| `TFTModel`  | Energy | 64   | no   | 32         | 4            | 72s            |
-| `TFTModel`  | Energy | 64   | no   | 1024       | 0            | 46s            |
-| `TFTModel`  | Energy | 64   | no   | 1024       | 2            | 38s            |
-| `TFTModel`  | Energy | 64   | no   | 1024       | 4            | 39s            |
-| `TFTModel`  | Energy | 64   | yes  | 32         | 0            | 125s           |
-| `TFTModel`  | Energy | 64   | yes  | 32         | 2            | 115s           |
-| `TFTModel`  | Energy | 64   | yes  | 1024       | 0            | 59s            |
-| `TFTModel`  | Energy | 64   | yes  | 1024       | 2            | 50s            |
-| `TFTModel`  | Energy | 64   | yes  | 1024       | 4            | 50s            |
-|               |                  |      |      |            |              |                |
-| `TFTModel`  | Energy | 32   | no   | 32         | 0            | 70s            |
-| `TFTModel`  | Energy | 32   | no   | 32         | 2            | 62.6s          |
-| `TFTModel`  | Energy | 32   | no   | 32         | 4            | 63.6           |
-| `TFTModel`  | Energy | 32   | no   | 1024       | 0            | 31.9s          |
-| `TFTModel`  | Energy | 32   | no   | 1024       | 2            | 45s            |
-| `TFTModel`  | Energy | 32   | no   | 1024       | 4            | 44s            |
-| `TFTModel`  | Energy | 32   | yes  | 32         | 0            | 73s            |
-| `TFTModel`  | Energy | 32   | yes  | 32         | 2            | 58s            |
-| `TFTModel`  | Energy | 32   | yes  | 1024       | 0            | 41s            |
-| `TFTModel`  | Energy | 32   | yes  | 1024       | 2            | 31s            |
-| `TFTModel`  | Energy | 32   | yes  | 1024       | 4            | 31s            |
+| Model         | Dataset | dtype | CUDA | Batch size | num workers | time per epoch |
+|---------------|---------|-------|------|------------|-------------|----------------|
+| `NBEATSModel` | Energy  | 64    | no   | 32         | 0           | 283s           |
+| `NBEATSModel` | Energy  | 64    | no   | 32         | 2           | 285s           |
+| `NBEATSModel` | Energy  | 64    | no   | 32         | 4           | 282s           |
+| `NBEATSModel` | Energy  | 64    | no   | 1024       | 0           | 58s            |
+| `NBEATSModel` | Energy  | 64    | no   | 1024       | 2           | 57s            |
+| `NBEATSModel` | Energy  | 64    | no   | 1024       | 4           | 58s            |
+| `NBEATSModel` | Energy  | 64    | yes  | 32         | 0           | 63s            |
+| `NBEATSModel` | Energy  | 64    | yes  | 32         | 2           | 62s            |
+| `NBEATSModel` | Energy  | 64    | yes  | 1024       | 0           | 13.3s          |
+| `NBEATSModel` | Energy  | 64    | yes  | 1024       | 2           | 12.1s          |
+| `NBEATSModel` | Energy  | 64    | yes  | 1024       | 4           | 12.3s          |
+|               |         |       |      |            |             |                |
+| `NBEATSModel` | Energy  | 32    | no   | 32         | 0           | 117s           |
+| `NBEATSModel` | Energy  | 32    | no   | 32         | 2           | 115s           |
+| `NBEATSModel` | Energy  | 32    | no   | 32         | 4           | 117s           |
+| `NBEATSModel` | Energy  | 32    | no   | 1024       | 0           | 28.4s          |
+| `NBEATSModel` | Energy  | 32    | no   | 1024       | 2           | 27.4s          |
+| `NBEATSModel` | Energy  | 32    | no   | 1024       | 4           | 27.5s          |
+| `NBEATSModel` | Energy  | 32    | yes  | 32         | 0           | 41.5s          |
+| `NBEATSModel` | Energy  | 32    | yes  | 32         | 2           | 40.6s          |
+| `NBEATSModel` | Energy  | 32    | yes  | 1024       | 0           | 2.8s           |
+| `NBEATSModel` | Energy  | 32    | yes  | 1024       | 2           | 1.65           |
+| `NBEATSModel` | Energy  | 32    | yes  | 1024       | 4           | 1.8s           |
+|               |         |       |      |            |             |                |
+| `TFTModel`    | Energy  | 64    | no   | 32         | 0           | 78s            |
+| `TFTModel`    | Energy  | 64    | no   | 32         | 2           | 72s            |
+| `TFTModel`    | Energy  | 64    | no   | 32         | 4           | 72s            |
+| `TFTModel`    | Energy  | 64    | no   | 1024       | 0           | 46s            |
+| `TFTModel`    | Energy  | 64    | no   | 1024       | 2           | 38s            |
+| `TFTModel`    | Energy  | 64    | no   | 1024       | 4           | 39s            |
+| `TFTModel`    | Energy  | 64    | yes  | 32         | 0           | 125s           |
+| `TFTModel`    | Energy  | 64    | yes  | 32         | 2           | 115s           |
+| `TFTModel`    | Energy  | 64    | yes  | 1024       | 0           | 59s            |
+| `TFTModel`    | Energy  | 64    | yes  | 1024       | 2           | 50s            |
+| `TFTModel`    | Energy  | 64    | yes  | 1024       | 4           | 50s            |
+|               |         |       |      |            |             |                |
+| `TFTModel`    | Energy  | 32    | no   | 32         | 0           | 70s            |
+| `TFTModel`    | Energy  | 32    | no   | 32         | 2           | 62.6s          |
+| `TFTModel`    | Energy  | 32    | no   | 32         | 4           | 63.6           |
+| `TFTModel`    | Energy  | 32    | no   | 1024       | 0           | 31.9s          |
+| `TFTModel`    | Energy  | 32    | no   | 1024       | 2           | 45s            |
+| `TFTModel`    | Energy  | 32    | no   | 1024       | 4           | 44s            |
+| `TFTModel`    | Energy  | 32    | yes  | 32         | 0           | 73s            |
+| `TFTModel`    | Energy  | 32    | yes  | 32         | 2           | 58s            |
+| `TFTModel`    | Energy  | 32    | yes  | 1024       | 0           | 41s            |
+| `TFTModel`    | Energy  | 32    | yes  | 1024       | 2           | 31s            |
+| `TFTModel`    | Energy  | 32    | yes  | 1024       | 4           | 31s            |
+
 
