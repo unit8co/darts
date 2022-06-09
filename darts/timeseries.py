@@ -2610,34 +2610,7 @@ class TimeSeries:
         TimeSeries
             A new multivariate TimeSeries instance.
         """
-        raise_if_not(
-            self.has_same_time_as(other),
-            "The indices of the two TimeSeries instances must be equal",
-            logger,
-        )
-        raise_if_not(
-            self.n_samples == other.n_samples,
-            "Two series can be stacked only if they "
-            "have the same number of samples.",
-            logger,
-        )
-
-        other_xa = other.data_array(copy=False)
-        if other_xa.dims[0] != self._time_dim:
-            new_other_xa = xr.DataArray(
-                other_xa.values,
-                dims=self._xa.dims,
-                coords={self._time_dim: self._time_index, DIMS[1]: other.components},
-            )
-        else:
-            new_other_xa = other_xa
-
-        new_xa = xr.concat((self._xa, new_other_xa), dim=DIMS[1])
-        new_xa = _xarray_with_static_covariates(
-            new_xa, _concat_static_covs([self, other])
-        )
-        # we call the factory method here to disambiguate column names if needed.
-        return self.__class__.from_xarray(new_xa, fill_missing_dates=False)
+        return concatenate([self, other], axis=1)
 
     def univariate_component(self, index: Union[str, int]) -> "TimeSeries":
         """
