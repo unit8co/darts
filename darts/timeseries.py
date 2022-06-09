@@ -22,7 +22,9 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Contain numeric types only
     - Have distinct components/columns names
     - Have a well defined frequency (for ``DateTimeIndex``)
-    - Be non-empty.
+    - Be non-empty
+    - Have static covariates consistent with their components, or no static covariates
+    - Have a hierarchy consistent with their components, or no hierarchy
 
 ``TimeSeries`` can contain global or component-specific static covariate data. Static covariates in `darts` refers
 to external time-invariant data that can be used by some models to help improve predictions.
@@ -205,6 +207,14 @@ class TimeSeries:
         else:
             self._freq = 1
             self._freq_str = None
+
+        # Fill in attributes if not set:
+        attrs = self._xa.attrs
+        if STATIC_COV_TAG not in attrs:
+            attrs[STATIC_COV_TAG] = None
+        if HIERARCHY_TAG not in attrs:
+            attrs[HIERARCHY_TAG] = None
+        self._xa.attrs = attrs
 
         # check static covariates
         static_covariates = self._xa.attrs.get(STATIC_COV_TAG, None)
@@ -2544,12 +2554,13 @@ class TimeSeries:
         linear              0.0           1.0
         linear_1            2.0           3.0
         """
+
         return self.__class__(
             xr.DataArray(
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs=dict({STATIC_COV_TAG: covariates}, **self._xa.attrs),
+                attrs={STATIC_COV_TAG: covariates, HIERARCHY_TAG: self.hierarchy},
             )
         )
 
@@ -2586,7 +2597,10 @@ class TimeSeries:
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs=dict({HIERARCHY_TAG: hierarchy}, **self._xa.attrs),
+                attrs={
+                    STATIC_COV_TAG: self.static_covariates,
+                    HIERARCHY_TAG: hierarchy,
+                },
             )
         )
 
@@ -3076,12 +3090,16 @@ class TimeSeries:
         cols = [old2new[old] if old in old2new else old for old in self.components]
 
         # update hierarchy names
-        hierarchy = {
-            (old2new[key] if key in old2new else key): [
-                old2new[old] if old in old2new else old for old in self.hierarchy[key]
-            ]
-            for key in self.hierarchy
-        }
+        if self.hierarchy is not None:
+            hierarchy = {
+                (old2new[key] if key in old2new else key): [
+                    old2new[old] if old in old2new else old
+                    for old in self.hierarchy[key]
+                ]
+                for key in self.hierarchy
+            }
+        else:
+            hierarchy = None
         new_attrs = self._xa.attrs
         new_attrs[HIERARCHY_TAG] = hierarchy
 

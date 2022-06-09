@@ -121,9 +121,9 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
             "0",
             "1",
             "2",
-            "0_1",
+            "1_0",
             "1_1",
-            "2_1",
+            "1_2",
         ]  # the names to expect after stacking
         self.assertTrue((seriesA.pd_dataframe() == dataframeA).all().all())
         self.assertEqual(
