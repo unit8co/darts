@@ -51,20 +51,21 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         likelihood
-            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at
+            Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
             prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if
             set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
             Control the randomness of the sampling. Used as seed for
-            `link <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_ . Ignored when
-             no`likelihood` is set.
+            `numpy.random.Generator
+            <https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator>`_. Ignored when
+            no `likelihood` is set.
             Default: ``None``.
         **kwargs
             Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to
             `sklearn.linear_model.PoissonRegressor` (if `likelihood="poisson"`), or to
-             `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
+            `sklearn.linear_model.QuantileRegressor` (if `likelihood="quantile"`).
         """
         self.kwargs = kwargs
         self._median_idx = None
