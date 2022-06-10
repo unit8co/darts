@@ -19,6 +19,7 @@ from darts.datasets import (
     SunspotsDataset,
     TaylorDataset,
     TemperatureDataset,
+    UberTLCDataset,
     USGasolineDataset,
     WineDataset,
     WoolyDataset,
@@ -51,9 +52,10 @@ datasets = [
     ETTm1Dataset,
     ETTm2Dataset,
     ElectricityDataset,
+    UberTLCDataset,
 ]
 
-width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370]
+width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370, 262]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
