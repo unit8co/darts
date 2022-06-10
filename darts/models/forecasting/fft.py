@@ -69,12 +69,8 @@ def _check_approximate_seasonality(
     approximated_period_ac = np.mean(r[approximation_interval])
 
     # compute the number of ac values larger than the approximated ac value for the given period
-    indices = list(range(int(frac * seasonality_period), left_bound)) + list(
-        range(right_bound + 1, len(r))
-    )
-    order = sum(
-        map(lambda ac_value: int(ac_value > approximated_period_ac), r[indices])
-    )
+    indices = list(range(int(frac * seasonality_period), left_bound)) + list(range(right_bound + 1, len(r)))
+    order = sum(map(lambda ac_value: int(ac_value > approximated_period_ac), r[indices]))
 
     return order <= max_seasonality_order
 
@@ -139,9 +135,7 @@ def _find_relevant_timestamp_attributes(series: TimeSeries) -> set:
     return relevant_attributes
 
 
-def _compare_timestamps_on_attributes(
-    ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set
-) -> bool:
+def _compare_timestamps_on_attributes(ts_1: pd.Timestamp, ts_2: pd.Timestamp, required_matches: set) -> bool:
     """Compares pd.Timestamp instances on attributes.
 
     Compares two timestamps according two a given set of attributes (such as minute, hour, day, etc.).
@@ -161,14 +155,10 @@ def _compare_timestamps_on_attributes(
     bool
         True if and only if `ts_1` and `ts_2` match in all attributes given in `required_matches`.
     """
-    return all(
-        map(lambda attr: getattr(ts_1, attr) == getattr(ts_2, attr), required_matches)
-    )
+    return all(map(lambda attr: getattr(ts_1, attr) == getattr(ts_2, attr), required_matches))
 
 
-def _crop_to_match_seasons(
-    series: TimeSeries, required_matches: Optional[set]
-) -> TimeSeries:
+def _crop_to_match_seasons(series: TimeSeries, required_matches: Optional[set]) -> TimeSeries:
     """Crops TimeSeries instance to contain full periods.
 
     Crops a given TimeSeries `series` that will be used as a training set in such
@@ -204,9 +194,7 @@ def _crop_to_match_seasons(
             new_series = series.drop_before(curr_ts)
             return new_series
 
-    logger.warning(
-        "No matching timestamp could be found, returning original TimeSeries."
-    )
+    logger.warning("No matching timestamp could be found, returning original TimeSeries.")
     return series
 
 
@@ -261,13 +249,7 @@ class FFT(ForecastingModel):
         self.trend_poly_degree = trend_poly_degree
 
     def __str__(self):
-        return (
-            "FFT(nr_freqs_to_keep="
-            + str(self.nr_freqs_to_keep)
-            + ", trend="
-            + str(self.trend)
-            + ")"
-        )
+        return "FFT(nr_freqs_to_keep=" + str(self.nr_freqs_to_keep) + ", trend=" + str(self.trend) + ")"
 
     def fit(self, series: TimeSeries):
         series = fill_missing_values(series)
@@ -276,38 +258,24 @@ class FFT(ForecastingModel):
 
         # determine trend
         if self.trend == "poly":
-            trend_coefficients = np.polyfit(
-                range(len(series)), series.univariate_values(), self.trend_poly_degree
-            )
+            trend_coefficients = np.polyfit(range(len(series)), series.univariate_values(), self.trend_poly_degree)
             self.trend_function = np.poly1d(trend_coefficients)
         elif self.trend == "exp":
-            trend_coefficients = np.polyfit(
-                range(len(series)), np.log(series.univariate_values()), 1
-            )
-            self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(
-                trend_coefficients[0] * x
-            )
+            trend_coefficients = np.polyfit(range(len(series)), np.log(series.univariate_values()), 1)
+            self.trend_function = lambda x: np.exp(trend_coefficients[1]) * np.exp(trend_coefficients[0] * x)
         else:
             self.trend_function = lambda x: 0
 
         # subtract trend
-        detrended_values = series.univariate_values() - self.trend_function(
-            range(len(series))
-        )
-        detrended_series = TimeSeries.from_times_and_values(
-            series.time_index, detrended_values
-        )
+        detrended_values = series.univariate_values() - self.trend_function(range(len(series)))
+        detrended_series = TimeSeries.from_times_and_values(series.time_index, detrended_values)
 
         # crop training set to match the seasonality of the first prediction point
         if self.required_matches is None:
-            curr_required_matches = _find_relevant_timestamp_attributes(
-                detrended_series
-            )
+            curr_required_matches = _find_relevant_timestamp_attributes(detrended_series)
         else:
             curr_required_matches = self.required_matches
-        cropped_series = _crop_to_match_seasons(
-            detrended_series, required_matches=curr_required_matches
-        )
+        cropped_series = _crop_to_match_seasons(detrended_series, required_matches=curr_required_matches)
 
         # perform dft
         self.fft_values = np.fft.fft(cropped_series.univariate_values())
@@ -317,15 +285,11 @@ class FFT(ForecastingModel):
         first_n = self.nr_freqs_to_keep
         if first_n is None or first_n < 1 or first_n > len(self.fft_values):
             first_n = len(self.fft_values)
-        self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[
-            -first_n:
-        ]
+        self.filtered_indices = np.argpartition(abs(self.fft_values), -first_n)[-first_n:]
 
         # set all other values in the frequency domain to 0
         self.fft_values_filtered = np.zeros(len(self.fft_values), dtype=np.complex_)
-        self.fft_values_filtered[self.filtered_indices] = self.fft_values[
-            self.filtered_indices
-        ]
+        self.fft_values_filtered[self.filtered_indices] = self.fft_values[self.filtered_indices]
 
         # precompute all possible predicted values using inverse dft
         self.predicted_values = np.fft.ifft(self.fft_values_filtered).real
@@ -334,10 +298,6 @@ class FFT(ForecastingModel):
 
     def predict(self, n: int, num_samples: int = 1):
         super().predict(n, num_samples)
-        trend_forecast = np.array(
-            [self.trend_function(i + len(self.training_series)) for i in range(n)]
-        )
-        periodic_forecast = np.array(
-            [self.predicted_values[i % len(self.predicted_values)] for i in range(n)]
-        )
+        trend_forecast = np.array([self.trend_function(i + len(self.training_series)) for i in range(n)])
+        periodic_forecast = np.array([self.predicted_values[i % len(self.predicted_values)] for i in range(n)])
         return self._build_forecast_series(periodic_forecast + trend_forecast)

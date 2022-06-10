@@ -62,9 +62,7 @@ if TORCH_AVAILABLE:
             model.fit(self.series, trainer=trainer)
 
             # load automatically saved model with manual load_model() and load_from_checkpoint()
-            model_loaded = RNNModel.load_from_checkpoint(
-                model_name=auto_name, work_dir=self.temp_work_dir, best=False
-            )
+            model_loaded = RNNModel.load_from_checkpoint(model_name=auto_name, work_dir=self.temp_work_dir, best=False)
 
             # compare prediction of loaded model with original model
             self.assertEqual(model.predict(n=4), model_loaded.predict(n=4))
@@ -165,25 +163,17 @@ if TORCH_AVAILABLE:
                 random_state=42,
                 work_dir=self.temp_work_dir,
                 save_checkpoints=True,
-                pl_trainer_kwargs={
-                    "callbacks": [CounterCallback(0), CounterCallback(2)]
-                },
+                pl_trainer_kwargs={"callbacks": [CounterCallback(0), CounterCallback(2)]},
             )
             # we expect 3 callbacks
             self.assertEqual(len(model.trainer_params["callbacks"]), 3)
 
             # first one is our Checkpointer
-            self.assertTrue(
-                isinstance(
-                    model.trainer_params["callbacks"][0], pl.callbacks.ModelCheckpoint
-                )
-            )
+            self.assertTrue(isinstance(model.trainer_params["callbacks"][0], pl.callbacks.ModelCheckpoint))
 
             # second and third are CounterCallbacks
             for i in range(1, 3):
-                self.assertTrue(
-                    isinstance(model.trainer_params["callbacks"][i], CounterCallback)
-                )
+                self.assertTrue(isinstance(model.trainer_params["callbacks"][i], CounterCallback))
 
         def test_early_stopping(self):
             my_stopper = pl.callbacks.early_stopping.EarlyStopping(

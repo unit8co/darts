@@ -18,9 +18,7 @@ logger = get_logger(__name__)
 
 
 class Scaler(InvertibleDataTransformer, FittableDataTransformer):
-    def __init__(
-        self, scaler=None, name="Scaler", n_jobs: int = 1, verbose: bool = False
-    ):
+    def __init__(self, scaler=None, name="Scaler", n_jobs: int = 1, verbose: bool = False):
         """Generic wrapper class for using scalers on time series.
 
         The underlying `scaler` has to implement the ``fit()``, ``transform()`` and
@@ -100,13 +98,9 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
     def ts_transform(series: TimeSeries, transformer, **kwargs) -> TimeSeries:
         component_mask = kwargs.get("component_mask", None)
 
-        tr_out = transformer.transform(
-            Scaler._reshape_in(series, component_mask=component_mask)
-        )
+        tr_out = transformer.transform(Scaler._reshape_in(series, component_mask=component_mask))
 
-        transformed_vals = Scaler._reshape_out(
-            series, tr_out, component_mask=component_mask
-        )
+        transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
 
         return TimeSeries.from_times_and_values(
             times=series.time_index,
@@ -117,17 +111,11 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         )
 
     @staticmethod
-    def ts_inverse_transform(
-        series: TimeSeries, transformer, *args, **kwargs
-    ) -> TimeSeries:
+    def ts_inverse_transform(series: TimeSeries, transformer, *args, **kwargs) -> TimeSeries:
         component_mask = kwargs.get("component_mask", None)
 
-        tr_out = transformer.inverse_transform(
-            Scaler._reshape_in(series, component_mask=component_mask)
-        )
-        inv_transformed_vals = Scaler._reshape_out(
-            series, tr_out, component_mask=component_mask
-        )
+        tr_out = transformer.inverse_transform(Scaler._reshape_in(series, component_mask=component_mask))
+        inv_transformed_vals = Scaler._reshape_out(series, tr_out, component_mask=component_mask)
 
         return TimeSeries.from_times_and_values(
             times=series.time_index,
@@ -142,27 +130,19 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
         # fit_parameter will receive the transformer object instance
         component_mask = kwargs.get("component_mask", None)
 
-        scaler = transformer.fit(
-            Scaler._reshape_in(series, component_mask=component_mask)
-        )
+        scaler = transformer.fit(Scaler._reshape_in(series, component_mask=component_mask))
         return scaler
 
-    def _fit_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
+    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # generator which returns deep copies of the 'scaler' argument
         new_scaler_gen = (deepcopy(self.transformer) for _ in range(len(series)))
         return zip(series, new_scaler_gen)
 
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
+    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # since '_ts_fit()' returns the scaler objects, the 'fit()' call will save transformers instance into
         # self._fitted_params
         return zip(series, self._fitted_params)
 
-    def _inverse_transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries, Any]]:
+    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries, Any]]:
         # the same self._fitted_params will be used also for the 'ts_inverse_transform()'
         return zip(series, self._fitted_params)

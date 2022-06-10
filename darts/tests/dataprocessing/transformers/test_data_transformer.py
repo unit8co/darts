@@ -45,9 +45,7 @@ class DataTransformerTestCase(unittest.TestCase):
         # test inverse transform
         series1_recovered = transformer2.inverse_transform(series1_tr2)
         series3_recovered = transformer2.inverse_transform(series3_tr2)
-        np.testing.assert_almost_equal(
-            series1_recovered.values().flatten(), self.series1.values().flatten()
-        )
+        np.testing.assert_almost_equal(series1_recovered.values().flatten(), self.series1.values().flatten())
         self.assertEqual(series1_recovered.width, self.series1.width)
         self.assertEqual(series3_recovered, series1_recovered[:1])
 
@@ -63,12 +61,8 @@ class DataTransformerTestCase(unittest.TestCase):
         for index in range(len(series_array)):
             self.assertAlmostEqual(min(series_array_tr1[index].values().flatten()), 0.0)
             self.assertAlmostEqual(max(series_array_tr1[index].values().flatten()), 2.0)
-            self.assertAlmostEqual(
-                np.mean(series_array_tr2[index].values().flatten()), 0.0
-            )
-            self.assertAlmostEqual(
-                np.std(series_array_tr2[index].values().flatten()), 1.0
-            )
+            self.assertAlmostEqual(np.mean(series_array_tr2[index].values().flatten()), 0.0)
+            self.assertAlmostEqual(np.std(series_array_tr2[index].values().flatten()), 1.0)
 
         series_array_rec1 = transformer1.inverse_transform(series_array_tr1)
         series_array_rec2 = transformer2.inverse_transform(series_array_tr2)
@@ -95,16 +89,12 @@ class DataTransformerTestCase(unittest.TestCase):
 
         # Test that the transform is done per component (i.e max value over each component should be 1 and min 0)
         np.testing.assert_allclose(
-            np.array(
-                [ss.all_values(copy=False)[:, i, :].max() for i in range(ss.width)]
-            ),
+            np.array([ss.all_values(copy=False)[:, i, :].max() for i in range(ss.width)]),
             np.array([1.0] * ss.width),
         )
 
         np.testing.assert_allclose(
-            np.array(
-                [ss.all_values(copy=False)[:, i, :].min() for i in range(ss.width)]
-            ),
+            np.array([ss.all_values(copy=False)[:, i, :].min() for i in range(ss.width)]),
             np.array([0.0] * ss.width),
         )
 

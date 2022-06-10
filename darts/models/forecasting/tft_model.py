@@ -132,9 +132,7 @@ class _TFTModule(PLMixedCovariatesModule):
             for name in self.reals
         }
 
-        static_input_sizes = {
-            name: self.hidden_continuous_size for name in self.static_variables
-        }
+        static_input_sizes = {name: self.hidden_continuous_size for name in self.static_variables}
 
         self.static_covariates_vsn = _VariableSelectionNetwork(
             input_sizes=static_input_sizes,
@@ -147,13 +145,9 @@ class _TFTModule(PLMixedCovariatesModule):
         )
 
         # variable selection for encoder and decoder
-        encoder_input_sizes = {
-            name: self.hidden_continuous_size for name in self.encoder_variables
-        }
+        encoder_input_sizes = {name: self.hidden_continuous_size for name in self.encoder_variables}
 
-        decoder_input_sizes = {
-            name: self.hidden_continuous_size for name in self.decoder_variables
-        }
+        decoder_input_sizes = {name: self.hidden_continuous_size for name in self.decoder_variables}
 
         self.encoder_vsn = _VariableSelectionNetwork(
             input_sizes=encoder_input_sizes,
@@ -315,9 +309,7 @@ class _TFTModule(PLMixedCovariatesModule):
         """
         Returns scaled time index relative to prediction point.
         """
-        index = torch.arange(
-            encoder_length + decoder_length, dtype=dtype, device=device
-        )
+        index = torch.arange(encoder_length + decoder_length, dtype=dtype, device=device)
         prediction_index = encoder_length - 1
         index[:encoder_length] = index[:encoder_length] / prediction_index
         index[encoder_length:] = index[encoder_length:] / prediction_index
@@ -348,9 +340,7 @@ class _TFTModule(PLMixedCovariatesModule):
         # do not attend to steps to self or after prediction
         decoder_mask = attend_step >= predict_step
         # do not attend to past input
-        encoder_mask = torch.zeros(
-            batch_size, encoder_length, dtype=torch.bool, device=device
-        )
+        encoder_mask = torch.zeros(batch_size, encoder_length, dtype=torch.bool, device=device)
         # combine masks along attended time - first encoder and then decoder
 
         mask = torch.cat(
@@ -362,9 +352,7 @@ class _TFTModule(PLMixedCovariatesModule):
         )
         return mask
 
-    def forward(
-        self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]
-    ) -> torch.Tensor:
+    def forward(self, x_in: Tuple[torch.Tensor, Optional[torch.Tensor], Optional[torch.Tensor]]) -> torch.Tensor:
         """TFT model forward pass.
 
         Parameters
@@ -415,39 +403,25 @@ class _TFTModule(PLMixedCovariatesModule):
 
         if self.add_relative_index:
             x_cont_past = torch.cat(
-                [
-                    ts[:, :encoder_length, :]
-                    for ts in [x_cont_past, self.relative_index]
-                    if ts is not None
-                ],
+                [ts[:, :encoder_length, :] for ts in [x_cont_past, self.relative_index] if ts is not None],
                 dim=dim_variable,
             )
             x_cont_future = torch.cat(
-                [
-                    ts[:, -decoder_length:, :]
-                    for ts in [x_cont_future, self.relative_index]
-                    if ts is not None
-                ],
+                [ts[:, -decoder_length:, :] for ts in [x_cont_future, self.relative_index] if ts is not None],
                 dim=dim_variable,
             )
 
         input_vectors_past = {
-            name: x_cont_past[..., idx].unsqueeze(-1)
-            for idx, name in enumerate(self.encoder_variables)
+            name: x_cont_past[..., idx].unsqueeze(-1) for idx, name in enumerate(self.encoder_variables)
         }
         input_vectors_future = {
-            name: x_cont_future[..., idx].unsqueeze(-1)
-            for idx, name in enumerate(self.decoder_variables)
+            name: x_cont_future[..., idx].unsqueeze(-1) for idx, name in enumerate(self.decoder_variables)
         }
 
         # Embedding and variable selection
         if self.static_variables:
-            static_embedding = {
-                name: x_static[:, :, i] for i, name in enumerate(self.static_variables)
-            }
-            static_embedding, static_covariate_var = self.static_covariates_vsn(
-                static_embedding
-            )
+            static_embedding = {name: x_static[:, :, i] for i, name in enumerate(self.static_variables)}
+            static_embedding, static_covariate_var = self.static_covariates_vsn(static_embedding)
         else:
             static_embedding = torch.zeros(
                 (x_cont_past.shape[0], self.hidden_size),
@@ -459,17 +433,13 @@ class _TFTModule(PLMixedCovariatesModule):
             context=self.static_context_grn(static_embedding), time_steps=time_steps
         )
 
-        embeddings_varying_encoder = {
-            name: input_vectors_past[name] for name in self.encoder_variables
-        }
+        embeddings_varying_encoder = {name: input_vectors_past[name] for name in self.encoder_variables}
         embeddings_varying_encoder, encoder_sparse_weights = self.encoder_vsn(
             x=embeddings_varying_encoder,
             context=static_context_expanded[:, :encoder_length],
         )
 
-        embeddings_varying_decoder = {
-            name: input_vectors_future[name] for name in self.decoder_variables
-        }
+        embeddings_varying_decoder = {name: input_vectors_future[name] for name in self.decoder_variables}
         embeddings_varying_decoder, decoder_sparse_weights = self.decoder_vsn(
             x=embeddings_varying_decoder,
             context=static_context_expanded[:, encoder_length:],
@@ -478,30 +448,20 @@ class _TFTModule(PLMixedCovariatesModule):
         # LSTM
         # calculate initial state
         input_hidden = (
-            self.static_context_hidden_encoder_grn(static_embedding)
-            .expand(self.lstm_layers, -1, -1)
-            .contiguous()
+            self.static_context_hidden_encoder_grn(static_embedding).expand(self.lstm_layers, -1, -1).contiguous()
         )
         input_cell = (
-            self.static_context_cell_encoder_grn(static_embedding)
-            .expand(self.lstm_layers, -1, -1)
-            .contiguous()
+            self.static_context_cell_encoder_grn(static_embedding).expand(self.lstm_layers, -1, -1).contiguous()
         )
 
         # run local lstm encoder
-        encoder_out, (hidden, cell) = self.lstm_encoder(
-            input=embeddings_varying_encoder, hx=(input_hidden, input_cell)
-        )
+        encoder_out, (hidden, cell) = self.lstm_encoder(input=embeddings_varying_encoder, hx=(input_hidden, input_cell))
 
         # run local lstm decoder
-        decoder_out, _ = self.lstm_decoder(
-            input=embeddings_varying_decoder, hx=(hidden, cell)
-        )
+        decoder_out, _ = self.lstm_decoder(input=embeddings_varying_decoder, hx=(hidden, cell))
 
         lstm_layer = torch.cat([encoder_out, decoder_out], dim=dim_time)
-        input_embeddings = torch.cat(
-            [embeddings_varying_encoder, embeddings_varying_decoder], dim=dim_time
-        )
+        input_embeddings = torch.cat([embeddings_varying_encoder, embeddings_varying_decoder], dim=dim_time)
 
         # post lstm GateAddNorm
         lstm_out = self.post_lstm_gan(x=lstm_layer, skip=input_embeddings)
@@ -510,9 +470,7 @@ class _TFTModule(PLMixedCovariatesModule):
         static_context_enriched = self.static_context_enrichment(static_embedding)
         attn_input = self.static_enrichment_grn(
             x=lstm_out,
-            context=self.expand_static_context(
-                context=static_context_enriched, time_steps=time_steps
-            ),
+            context=self.expand_static_context(context=static_context_enriched, time_steps=time_steps),
         )
 
         # multi-head attention
@@ -540,9 +498,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # generate output for n_targets and loss_size elements for loss evaluation
         out = self.output_layer(out[:, encoder_length:] if self.full_attention else out)
-        out = out.view(
-            batch_size, self.output_chunk_length, self.n_targets, self.loss_size
-        )
+        out = out.view(batch_size, self.output_chunk_length, self.n_targets, self.loss_size)
 
         # TODO: (Darts) remember this in case we want to output interpretation
         # return self.to_network_output(
@@ -866,9 +822,7 @@ class TFTModel(MixedCovariatesTorchModel):
         variables_meta = {
             "input": {
                 type_name: [f"{var_name}_{i}" for i in range(tensor.shape[1])]
-                for type_name, var_name, tensor in zip(
-                    type_names, variable_names, tensors
-                )
+                for type_name, var_name, tensor in zip(type_names, variable_names, tensors)
                 if tensor is not None
             },
             "model_config": {},
@@ -894,19 +848,11 @@ class TFTModel(MixedCovariatesTorchModel):
                     static_input += vars_meta
 
         variables_meta["model_config"]["reals_input"] = list(dict.fromkeys(reals_input))
-        variables_meta["model_config"]["time_varying_encoder_input"] = list(
-            dict.fromkeys(time_varying_encoder_input)
-        )
-        variables_meta["model_config"]["time_varying_decoder_input"] = list(
-            dict.fromkeys(time_varying_decoder_input)
-        )
-        variables_meta["model_config"]["static_input"] = list(
-            dict.fromkeys(static_input)
-        )
+        variables_meta["model_config"]["time_varying_encoder_input"] = list(dict.fromkeys(time_varying_encoder_input))
+        variables_meta["model_config"]["time_varying_decoder_input"] = list(dict.fromkeys(time_varying_decoder_input))
+        variables_meta["model_config"]["static_input"] = list(dict.fromkeys(static_input))
 
-        n_static_components = (
-            len(static_covariates) if static_covariates is not None else 0
-        )
+        n_static_components = len(static_covariates) if static_covariates is not None else 0
         return _TFTModule(
             output_dim=self.output_dim,
             variables_meta=variables_meta,

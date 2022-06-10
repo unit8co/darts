@@ -188,6 +188,4 @@ class InvertibleMapper(InvertibleDataTransformer):
         self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
     ) -> Union[TimeSeries, List[TimeSeries]]:
         # adding the inverse_fn param
-        return super().inverse_transform(
-            series, inverse_fn=self._inverse_fn, *args, **kwargs
-        )
+        return super().inverse_transform(series, inverse_fn=self._inverse_fn, *args, **kwargs)

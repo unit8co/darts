@@ -116,9 +116,7 @@ class NaiveDrift(ForecastingModel):
 
 
 class NaiveEnsembleModel(EnsembleModel):
-    def __init__(
-        self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]
-    ):
+    def __init__(self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]):
         """Naive combination model
 
         Naive implementation of `EnsembleModel`

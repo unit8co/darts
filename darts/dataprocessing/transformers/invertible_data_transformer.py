@@ -78,9 +78,7 @@ class InvertibleDataTransformer(BaseDataTransformer):
         """
         pass
 
-    def _inverse_transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries]]:
+    def _inverse_transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
         """Return an `Iterator` object with tuples of inputs for each single call to :func:`ts_inverse_transform()`.
 
         Additional `args` and `kwargs` from :func:`inverse_transform()` (that don't change across the calls to
@@ -178,6 +176,4 @@ class InvertibleDataTransformer(BaseDataTransformer):
             kwargs,
         )
 
-        return (
-            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
-        )
+        return transformed_data[0] if isinstance(series, TimeSeries) else transformed_data

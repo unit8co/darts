@@ -80,8 +80,7 @@ def dummy_timeseries(
         target_start_date = (
             series_idx * multiseries_offset
             if integer_index
-            else first_target_start_date
-            + pd.Timedelta(series_idx * multiseries_offset, unit=freq)
+            else first_target_start_date + pd.Timedelta(series_idx * multiseries_offset, unit=freq)
         )
         pcov_start_date = (
             target_start_date + pcov_offset
@@ -168,18 +167,14 @@ if TORCH_AVAILABLE:
             quantiles=[0.05, 0.5, 0.95],
             random_state=42,
         )
-        PoissonLightGBMModel = partialclass(
-            LightGBMModel, likelihood="poisson", random_state=42
-        )
+        PoissonLightGBMModel = partialclass(LightGBMModel, likelihood="poisson", random_state=42)
         QuantileLinearRegressionModel = partialclass(
             LinearRegressionModel,
             likelihood="quantile",
             quantiles=[0.05, 0.5, 0.95],
             random_state=42,
         )
-        PoissonLinearRegressionModel = partialclass(
-            LinearRegressionModel, likelihood="poisson", random_state=42
-        )
+        PoissonLinearRegressionModel = partialclass(LinearRegressionModel, likelihood="poisson", random_state=42)
         # targets for poisson regression must be positive, so we exclude them for some tests
         models.extend(
             [
@@ -220,17 +215,13 @@ if TORCH_AVAILABLE:
                 # TESTING SINGLE INT
                 # testing lags
                 model_instance = model(lags=5)
-                self.assertEqual(
-                    model_instance.lags.get("target"), [-5, -4, -3, -2, -1]
-                )
+                self.assertEqual(model_instance.lags.get("target"), [-5, -4, -3, -2, -1])
                 # testing lags_past_covariates
                 model_instance = model(lags=None, lags_past_covariates=3)
                 self.assertEqual(model_instance.lags.get("past"), [-3, -2, -1])
                 # testing lags_future covariates
                 model_instance = model(lags=None, lags_future_covariates=(3, 5))
-                self.assertEqual(
-                    model_instance.lags.get("future"), [-3, -2, -1, 0, 1, 2, 3, 4]
-                )
+                self.assertEqual(model_instance.lags.get("future"), [-3, -2, -1, 0, 1, 2, 3, 4])
 
                 # TESTING LIST of int
                 # lags
@@ -290,13 +281,9 @@ if TORCH_AVAILABLE:
 
             # checking number of dimensions
             self.assertEqual(len(training_samples.shape), 2)  # samples, features
-            self.assertEqual(
-                len(training_labels.shape), 2
-            )  # samples, components (multivariate)
+            self.assertEqual(len(training_labels.shape), 2)  # samples, components (multivariate)
             self.assertEqual(training_samples.shape[0], training_labels.shape[0])
-            self.assertEqual(
-                training_samples.shape[0], len(self.target_series) * max_samples_per_ts
-            )
+            self.assertEqual(training_samples.shape[0], len(self.target_series) * max_samples_per_ts)
             self.assertEqual(
                 training_samples.shape[1],
                 len(self.lags_1["target"]) * self.target_series[0].width
@@ -352,47 +339,32 @@ if TORCH_AVAILABLE:
                     covariate_matrices[cov_type] = []
                     for idx, (ts, cov) in enumerate(zip(series, covs)):
                         first_pred_ts = ts.end_time() + 1 * ts.freq
-                        last_pred_ts = (
-                            first_pred_ts
-                            + ((n_pred_steps - 1) * output_chunk_length) * ts.freq
-                        )
+                        last_pred_ts = first_pred_ts + ((n_pred_steps - 1) * output_chunk_length) * ts.freq
                         first_req_ts = first_pred_ts + lags[0] * ts.freq
                         last_req_ts = last_pred_ts + lags[-1] * ts.freq
 
                         # not enough covariate data checks excluded, they are tested elsewhere
 
                         if cov.has_datetime_index:
-                            covariate_matrices[cov_type].append(
-                                cov[first_req_ts:last_req_ts].values()
-                            )
+                            covariate_matrices[cov_type].append(cov[first_req_ts:last_req_ts].values())
                         else:
                             # include last_req_ts when slicing series with integer indices
-                            covariate_matrices[cov_type].append(
-                                cov[first_req_ts : last_req_ts + 1].values()
-                            )
+                            covariate_matrices[cov_type].append(cov[first_req_ts : last_req_ts + 1].values())
 
-                    covariate_matrices[cov_type] = np.stack(
-                        covariate_matrices[cov_type]
-                    )
+                    covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
             series_matrix = None
             if "target" in self.lags_1:
-                series_matrix = np.stack(
-                    [ts[self.lags_1["target"][0] :].values() for ts in series]
-                )
+                series_matrix = np.stack([ts[self.lags_1["target"][0] :].values() for ts in series])
             # prediction preprocessing end
 
             # tests
-            self.assertTrue(
-                all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags])
-            )
+            self.assertTrue(all([lag >= 0 for lags in relative_cov_lags.values() for lag in lags]))
             self.assertEqual(
                 covariate_matrices["past"].shape,
                 (
                     len(series),
-                    relative_cov_lags["past"][-1]
-                    + (n_pred_steps - 1) * output_chunk_length
-                    + 1,
+                    relative_cov_lags["past"][-1] + (n_pred_steps - 1) * output_chunk_length + 1,
                     covariates["past"][0][0].width,
                 ),
             )
@@ -400,9 +372,7 @@ if TORCH_AVAILABLE:
                 covariate_matrices["future"].shape,
                 (
                     len(series),
-                    relative_cov_lags["future"][-1]
-                    + (n_pred_steps - 1) * output_chunk_length
-                    + 1,
+                    relative_cov_lags["future"][-1] + (n_pred_steps - 1) * output_chunk_length + 1,
                     covariates["future"][0][0].width,
                 ),
             )
@@ -491,9 +461,7 @@ if TORCH_AVAILABLE:
                     past_covariates=self.sine_univariate1.stack(self.sine_univariate1),
                 )
 
-                self.assertEqual(
-                    model_instance.input_dim, {"target": 1, "past": 2, "future": None}
-                )
+                self.assertEqual(model_instance.input_dim, {"target": 1, "past": 2, "future": None})
 
                 with self.assertRaises(ValueError):
                     prediction = model_instance.predict(n=len(test_y) + 2)
@@ -512,9 +480,7 @@ if TORCH_AVAILABLE:
                 for series in [self.sine_univariate1, self.sine_multivariate2]:
                     with self.assertRaises(ValueError):
                         model_instance = model(lags=4, lags_past_covariates=4)
-                        model_instance.fit(
-                            series=series, past_covariates=self.sine_multivariate1
-                        )
+                        model_instance.fit(series=series, past_covariates=self.sine_multivariate1)
                         model_instance.predict(n=10)
 
                     model_instance = model(lags=12)
@@ -522,21 +488,15 @@ if TORCH_AVAILABLE:
                     self.assertEqual(model_instance.lags.get("past"), None)
 
                     model_instance = model(lags=12, lags_past_covariates=12)
-                    model_instance.fit(
-                        series=series, past_covariates=self.sine_multivariate1
-                    )
+                    model_instance.fit(series=series, past_covariates=self.sine_multivariate1)
                     self.assertEqual(len(model_instance.lags.get("past")), 12)
 
                     model_instance = model(lags=12, lags_future_covariates=(0, 1))
-                    model_instance.fit(
-                        series=series, future_covariates=self.sine_multivariate1
-                    )
+                    model_instance.fit(series=series, future_covariates=self.sine_multivariate1)
                     self.assertEqual(len(model_instance.lags.get("future")), 1)
 
                     model_instance = model(lags=12, lags_past_covariates=[-1, -4, -6])
-                    model_instance.fit(
-                        series=series, past_covariates=self.sine_multivariate1
-                    )
+                    model_instance.fit(series=series, past_covariates=self.sine_multivariate1)
                     self.assertEqual(len(model_instance.lags.get("past")), 3)
 
                     model_instance = model(
@@ -563,9 +523,7 @@ if TORCH_AVAILABLE:
                         lags_past_covariates=2,
                         output_chunk_length=output_chunk_length,
                     )
-                    model_instance.fit(
-                        series=train_series, past_covariates=train_past_covariates
-                    )
+                    model_instance.fit(series=train_series, past_covariates=train_past_covariates)
                     prediction = model_instance.predict(
                         n=len(test_series),
                         series=train_series,
@@ -636,9 +594,7 @@ if TORCH_AVAILABLE:
             )
             self.assertEqual(len(result), 21)
 
-            model = self.models[1](
-                lags=5, lags_past_covariates=5, output_chunk_length=5
-            )
+            model = self.models[1](lags=5, lags_past_covariates=5, output_chunk_length=5)
             result = model.historical_forecasts(
                 series=self.sine_univariate1,
                 past_covariates=self.sine_multivariate1,
@@ -688,22 +644,14 @@ if TORCH_AVAILABLE:
         def test_multiple_ts(self):
             lags = 4
             lags_past_covariates = 3
-            model = RegressionModel(
-                lags=lags, lags_past_covariates=lags_past_covariates
-            )
+            model = RegressionModel(lags=lags, lags_past_covariates=lags_past_covariates)
 
             target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
-            past_covariates = tg.linear_timeseries(
-                start_value=100, end_value=149, length=50
-            )
-            past_covariates = past_covariates.stack(
-                tg.linear_timeseries(start_value=400, end_value=449, length=50)
-            )
+            past_covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
+            past_covariates = past_covariates.stack(tg.linear_timeseries(start_value=400, end_value=449, length=50))
 
             target_train, target_test = target_series.split_after(0.7)
-            past_covariates_train, past_covariates_test = past_covariates.split_after(
-                0.7
-            )
+            past_covariates_train, past_covariates_test = past_covariates.split_after(0.7)
             model.fit(
                 series=[target_train, target_train + 0.5],
                 past_covariates=[past_covariates_train, past_covariates_train + 0.5],
@@ -715,9 +663,7 @@ if TORCH_AVAILABLE:
                 past_covariates=[past_covariates, past_covariates + 0.5],
             )
 
-            self.assertEqual(
-                len(predictions[0]), 10, f"Found {len(predictions)} instead"
-            )
+            self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions)} instead")
 
             # multiple TS, both future and past covariates, checking that both covariates lead to better results than
             # using a single one (target series = past_cov + future_cov + noise)
@@ -727,25 +673,17 @@ if TORCH_AVAILABLE:
             linear_ts_2 = tg.linear_timeseries(start_value=40, end_value=89, length=50)
 
             past_covariates = tg.sine_timeseries(length=50) * 10
-            future_covariates = (
-                tg.sine_timeseries(length=50, value_frequency=0.015) * 50
-            )
+            future_covariates = tg.sine_timeseries(length=50, value_frequency=0.015) * 50
 
             target_series_1 = linear_ts_1 + 4 * past_covariates + 2 * future_covariates
             target_series_2 = linear_ts_2 + 4 * past_covariates + 2 * future_covariates
 
             target_series_1_noise = (
-                linear_ts_1
-                + 4 * past_covariates
-                + 2 * future_covariates
-                + tg.gaussian_timeseries(std=7, length=50)
+                linear_ts_1 + 4 * past_covariates + 2 * future_covariates + tg.gaussian_timeseries(std=7, length=50)
             )
 
             target_series_2_noise = (
-                linear_ts_2
-                + 4 * past_covariates
-                + 2 * future_covariates
-                + tg.gaussian_timeseries(std=7, length=50)
+                linear_ts_2 + 4 * past_covariates + 2 * future_covariates + tg.gaussian_timeseries(std=7, length=50)
             )
 
             target_train_1, target_test_1 = target_series_1.split_after(0.7)
@@ -772,9 +710,7 @@ if TORCH_AVAILABLE:
                 past_covariates=[past_covariates] * 2,
             )
 
-            model = RegressionModel(
-                lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0)
-            )
+            model = RegressionModel(lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0))
             model.fit([target_train_1_noise], [past_covariates], [future_covariates])
             prediction_past_and_future = model.predict(
                 n=len(target_test_1),
@@ -796,9 +732,7 @@ if TORCH_AVAILABLE:
 
             self.assertTrue(error_past_only > error_both)
             # test 2: with both covariates, 2 TS should learn more than one (with little noise)
-            model = RegressionModel(
-                lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0)
-            )
+            model = RegressionModel(lags=3, lags_past_covariates=5, lags_future_covariates=(5, 0))
             model.fit(
                 [target_train_1_noise, target_train_2_noise],
                 [past_covariates] * 2,
@@ -824,9 +758,7 @@ if TORCH_AVAILABLE:
 
             target_series = tg.linear_timeseries(start_value=0, end_value=49, length=50)
             covariates = tg.linear_timeseries(start_value=100, end_value=149, length=50)
-            covariates = covariates.stack(
-                tg.linear_timeseries(start_value=400, end_value=449, length=50)
-            )
+            covariates = covariates.stack(tg.linear_timeseries(start_value=400, end_value=449, length=50))
 
             target_train, target_test = target_series.split_after(0.7)
             covariates_train, covariates_test = covariates.split_after(0.7)
@@ -841,21 +773,13 @@ if TORCH_AVAILABLE:
                 future_covariates=[covariates, covariates + 0.5],
             )
 
-            self.assertEqual(
-                len(predictions[0]), 10, f"Found {len(predictions[0])} instead"
-            )
+            self.assertEqual(len(predictions[0]), 10, f"Found {len(predictions[0])} instead")
 
         def test_not_enough_covariates(self):
 
-            target_series = tg.linear_timeseries(
-                start_value=0, end_value=100, length=50
-            )
-            past_covariates = tg.linear_timeseries(
-                start_value=100, end_value=200, length=50
-            )
-            future_covariates = tg.linear_timeseries(
-                start_value=200, end_value=300, length=50
-            )
+            target_series = tg.linear_timeseries(start_value=0, end_value=100, length=50)
+            past_covariates = tg.linear_timeseries(start_value=100, end_value=200, length=50)
+            future_covariates = tg.linear_timeseries(start_value=200, end_value=300, length=50)
 
             model = RegressionModel(
                 lags_past_covariates=[-10],
@@ -911,9 +835,7 @@ if TORCH_AVAILABLE:
                         future_covariates=future_covariates[: -26 + req_future_offset],
                     )
 
-        @patch.object(
-            darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit"
-        )
+        @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, "fit")
         # @patch.object(darts.models.forecasting.gradient_boosted_model.lgb.LGBMRegressor, 'fit')
         def test_gradient_boosted_model_with_eval_set(self, lgb_fit_patch):
             """Test whether these evaluation set parameters are passed to LGBRegressor"""
@@ -1007,9 +929,7 @@ if TORCH_AVAILABLE:
                         self.constant_noisy_multivar_ts,
                     )
 
-        def helper_test_probabilistic_forecast_accuracy(
-            self, model_cls, model_kwargs, err, ts, noisy_ts
-        ):
+        def helper_test_probabilistic_forecast_accuracy(self, model_cls, model_kwargs, err, ts, noisy_ts):
             model = model_cls(**model_kwargs)
             model.fit(noisy_ts[:100])
             pred = model.predict(n=100, num_samples=100)

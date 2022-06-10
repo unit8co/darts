@@ -15,9 +15,7 @@ class FFTTestCase(DartsBaseTestClass):
         for period, relevant_attributes in period_attributes_tuples:
 
             # test seasonal period with no noise
-            seasonal_ts = tg.sine_timeseries(
-                freq=freq, value_frequency=1 / period, length=length
-            )
+            seasonal_ts = tg.sine_timeseries(freq=freq, value_frequency=1 / period, length=length)
             self.assertEqual(
                 _find_relevant_timestamp_attributes(seasonal_ts),
                 relevant_attributes,
@@ -25,9 +23,7 @@ class FFTTestCase(DartsBaseTestClass):
             )
 
             # test seasonal period with no noise
-            seasonal_noisy_ts = seasonal_ts + tg.gaussian_timeseries(
-                freq=freq, length=length
-            )
+            seasonal_noisy_ts = seasonal_ts + tg.gaussian_timeseries(freq=freq, length=length)
             self.assertEqual(
                 _find_relevant_timestamp_attributes(seasonal_noisy_ts),
                 relevant_attributes,
@@ -42,9 +38,7 @@ class FFTTestCase(DartsBaseTestClass):
         self.helper_relevant_attributes("M", 150, [(12, {"month"})])
 
         # daily frequency
-        self.helper_relevant_attributes(
-            "D", 1000, [(365, {"month", "day"}), (30, {"day"}), (7, {"weekday"})]
-        )
+        self.helper_relevant_attributes("D", 1000, [(365, {"month", "day"}), (30, {"day"}), (7, {"weekday"})])
 
         # hourly frequency
         self.helper_relevant_attributes(

@@ -47,23 +47,15 @@ if TORCH_AVAILABLE:
         def test_creation(self):
             with self.assertRaises(ValueError):
                 # cannot choose any string
-                BlockRNNModel(
-                    input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?"
-                )
+                BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model="UnknownRNN?")
             # can give a custom module
-            model1 = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, model=self.module
-            )
-            model2 = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, model="RNN"
-            )
+            model1 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model=self.module)
+            model2 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model="RNN")
             self.assertEqual(model1.model.__repr__(), model2.model.__repr__())
 
         def test_fit(self):
             # Test basic fit()
-            model = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, n_epochs=2
-            )
+            model = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, n_epochs=2)
             model.fit(self.series)
 
             # Test fit-save-load cycle
@@ -90,9 +82,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(sum(pred1.values() - pred2.values()), 0.0)
 
             # Another random model should not
-            model3 = BlockRNNModel(
-                input_chunk_length=1, output_chunk_length=1, model="RNN", n_epochs=2
-            )
+            model3 = BlockRNNModel(input_chunk_length=1, output_chunk_length=1, model="RNN", n_epochs=2)
             model3.fit(self.series)
             pred3 = model3.predict(n=6)
             self.assertNotEqual(sum(pred1.values() - pred3.values()), 0.0)
@@ -107,9 +97,7 @@ if TORCH_AVAILABLE:
             self.assertEqual(len(pred4), 6)
 
         def helper_test_pred_length(self, pytorch_model, series):
-            model = pytorch_model(
-                input_chunk_length=1, output_chunk_length=3, n_epochs=1
-            )
+            model = pytorch_model(input_chunk_length=1, output_chunk_length=3, n_epochs=1)
             model.fit(series)
             pred = model.predict(7)
             self.assertEqual(len(pred), 7)

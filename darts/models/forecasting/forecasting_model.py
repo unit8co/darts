@@ -62,13 +62,7 @@ class ModelMeta(ABCMeta):
     def __call__(cls, *args, **kwargs):
         # 1) get all default values from class' __init__ signature
         sig = inspect.signature(cls.__init__)
-        all_params = OrderedDict(
-            [
-                (p.name, p.default)
-                for p in sig.parameters.values()
-                if not p.name == "self"
-            ]
-        )
+        all_params = OrderedDict([(p.name, p.default) for p in sig.parameters.values() if not p.name == "self"])
 
         # 2) fill params with positional args
         for param, arg in zip(all_params, args):
@@ -200,9 +194,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         if not self._is_probabilistic() and num_samples > 1:
             raise_log(
-                ValueError(
-                    "`num_samples > 1` is only supported for probabilistic models."
-                ),
+                ValueError("`num_samples > 1` is only supported for probabilistic models."),
                 logger,
             )
 
@@ -238,9 +230,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         """
         Generates `n` new dates after the end of the specified series
         """
-        input_series = (
-            input_series if input_series is not None else self.training_series
-        )
+        input_series = input_series if input_series is not None else self.training_series
         return _generate_new_dates(n=n, input_series=input_series)
 
     def _build_forecast_series(
@@ -252,9 +242,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Builds a forecast time series starting after the end of the training time series, with the
         correct time index (or after the end of the input series, if specified).
         """
-        input_series = (
-            input_series if input_series is not None else self.training_series
-        )
+        input_series = input_series if input_series is not None else self.training_series
         return _build_forecast_series(points_preds, input_series)
 
     def _historical_forecasts_sanity_checks(self, *args: Any, **kwargs: Any) -> None:
@@ -395,9 +383,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
         elif (train_length is not None) and train_length < self.min_train_series_length:
             raise_log(
-                ValueError(
-                    "train_length is too small for the training requirements of this model"
-                ),
+                ValueError("train_length is too small for the training requirements of this model"),
                 logger,
             )
 
@@ -405,9 +391,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         start = series.get_timestamp_at_point(start)
 
         # build the prediction times in advance (to be able to use tqdm)
-        last_valid_pred_time = self._get_last_prediction_time(
-            series, forecast_horizon, overlap_end
-        )
+        last_valid_pred_time = self._get_last_prediction_time(series, forecast_horizon, overlap_end)
 
         pred_times = [start]
         while pred_times[-1] < last_valid_pred_time:
@@ -702,10 +686,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             and metric score for the best hyper-parameters.
         """
         raise_if_not(
-            (forecast_horizon is not None)
-            + (val_series is not None)
-            + use_fitted_values
-            == 1,
+            (forecast_horizon is not None) + (val_series is not None) + use_fitted_values == 1,
             "Please pass exactly one of the arguments 'forecast_horizon', "
             "'val_target_series' or 'use_fitted_values'.",
             logger,
@@ -735,31 +716,21 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # If n_random_samples has been set, randomly select a subset of the full parameter cross product to search with
         if n_random_samples is not None:
-            params_cross_product = model_class._sample_params(
-                params_cross_product, n_random_samples
-            )
+            params_cross_product = model_class._sample_params(params_cross_product, n_random_samples)
 
         # iterate through all combinations of the provided parameters and choose the best one
-        iterator = _build_tqdm_iterator(
-            zip(params_cross_product), verbose, total=len(params_cross_product)
-        )
+        iterator = _build_tqdm_iterator(zip(params_cross_product), verbose, total=len(params_cross_product))
 
         def _evaluate_combination(param_combination) -> float:
-            param_combination_dict = dict(
-                list(zip(parameters.keys(), param_combination))
-            )
+            param_combination_dict = dict(list(zip(parameters.keys(), param_combination)))
             if param_combination_dict.get("model_name", None):
                 current_time = time.strftime("%Y-%m-%d_%H.%M.%S.%f", time.localtime())
-                param_combination_dict[
-                    "model_name"
-                ] = f"{current_time}_{param_combination_dict['model_name']}"
+                param_combination_dict["model_name"] = f"{current_time}_{param_combination_dict['model_name']}"
 
             model = model_class(**param_combination_dict)
             if use_fitted_values:  # fitted value mode
                 model._fit_wrapper(series, past_covariates, future_covariates)
-                fitted_values = TimeSeries.from_times_and_values(
-                    series.time_index, model.fitted_values
-                )
+                fitted_values = TimeSeries.from_times_and_values(series.time_index, model.fitted_values)
                 error = metric(fitted_values, series)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(
@@ -787,23 +758,17 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             return float(error)
 
-        errors: List[float] = _parallel_apply(
-            iterator, _evaluate_combination, n_jobs, {}, {}
-        )
+        errors: List[float] = _parallel_apply(iterator, _evaluate_combination, n_jobs, {}, {})
 
         min_error = min(errors)
 
-        best_param_combination = dict(
-            list(zip(parameters.keys(), params_cross_product[errors.index(min_error)]))
-        )
+        best_param_combination = dict(list(zip(parameters.keys(), params_cross_product[errors.index(min_error)])))
 
         logger.info("Chosen parameters: " + str(best_param_combination))
 
         return model_class(**best_param_combination), best_param_combination, min_error
 
-    def residuals(
-        self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False
-    ) -> TimeSeries:
+    def residuals(self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False) -> TimeSeries:
         """Compute the residuals produced by this model on a univariate time series.
 
         This function computes the difference between the actual observations from `series`
@@ -850,9 +815,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # compute residuals
         series_trimmed = series.slice_intersect(p)
-        residuals = series_trimmed - (
-            p.quantile_timeseries(quantile=0.5) if p.is_stochastic else p
-        )
+        residuals = series_trimmed - (p.quantile_timeseries(quantile=0.5) if p.is_stochastic else p)
 
         return residuals
 
@@ -887,9 +850,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
     @property
     def model_params(self) -> dict:
-        return (
-            self._model_params if hasattr(self, "_model_params") else self._model_call
-        )
+        return self._model_params if hasattr(self, "_model_params") else self._model_call
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
@@ -1057,9 +1018,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         self.fit(
             series=series,
             past_covariates=past_covariates if self.uses_past_covariates else None,
-            future_covariates=future_covariates
-            if self.uses_future_covariates
-            else None,
+            future_covariates=future_covariates if self.uses_future_covariates else None,
         )
 
     def _supports_non_retrainable_historical_forecasts(self) -> bool:
@@ -1169,18 +1128,10 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             )
 
             # we raise an error here already to avoid getting error from empty TimeSeries creation
-            raise_if_not(
-                future_covariates.end_time() >= start, invalid_time_span_error, logger
-            )
+            raise_if_not(future_covariates.end_time() >= start, invalid_time_span_error, logger)
 
-            offset = (
-                n - 1
-                if isinstance(future_covariates.time_index, pd.DatetimeIndex)
-                else n
-            )
-            future_covariates = future_covariates[
-                start : start + offset * self.training_series.freq
-            ]
+            offset = n - 1 if isinstance(future_covariates.time_index, pd.DatetimeIndex) else n
+            future_covariates = future_covariates[start : start + offset * self.training_series.freq]
 
             raise_if_not(
                 len(future_covariates) == n and self._expect_covariate,
@@ -1188,9 +1139,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                 logger,
             )
 
-        return self._predict(
-            n, future_covariates=future_covariates, num_samples=num_samples
-        )
+        return self._predict(n, future_covariates=future_covariates, num_samples=num_samples)
 
     @abstractmethod
     def _predict(
@@ -1220,6 +1169,4 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         future_covariates: Optional[TimeSeries],
         num_samples: int,
     ) -> TimeSeries:
-        return self.predict(
-            n, future_covariates=future_covariates, num_samples=num_samples
-        )
+        return self.predict(n, future_covariates=future_covariates, num_samples=num_samples)

@@ -65,9 +65,7 @@ def retain_period_common_to_all(series: List[TimeSeries]) -> List[TimeSeries]:
     first_last = min(map(lambda s: s.end_time(), series))
 
     if last_first >= first_last:
-        raise_log(
-            ValueError("The provided time series must have nonzero overlap"), logger
-        )
+        raise_log(ValueError("The provided time series must have nonzero overlap"), logger)
 
     return list(map(lambda s: s.slice(last_first, first_last), series))
 
@@ -155,13 +153,8 @@ def _with_sanity_checks(
                 only_args = all_as_kwargs.copy()
                 only_kwargs = all_as_kwargs.copy()
 
-                for param_name, param in signature(
-                    method_to_sanitize
-                ).parameters.items():
-                    if (
-                        param.default == Parameter.empty
-                        and param.kind != Parameter.VAR_POSITIONAL
-                    ):
+                for param_name, param in signature(method_to_sanitize).parameters.items():
+                    if param.default == Parameter.empty and param.kind != Parameter.VAR_POSITIONAL:
                         only_kwargs.pop(param_name)
                     else:
                         only_args.pop(param_name)
@@ -203,16 +196,12 @@ def _historical_forecasts_general_checks(series, kwargs):
 
     # check stride
     stride = n.stride
-    raise_if_not(
-        stride > 0, "The provided stride parameter must be a positive integer.", logger
-    )
+    raise_if_not(stride > 0, "The provided stride parameter must be a positive integer.", logger)
 
     # check start parameter
     if hasattr(n, "start"):
         if isinstance(n.start, float):
-            raise_if_not(
-                0.0 <= n.start < 1.0, "`start` should be between 0.0 and 1.0.", logger
-            )
+            raise_if_not(0.0 <= n.start < 1.0, "`start` should be between 0.0 and 1.0.", logger)
         elif isinstance(n.start, pd.Timestamp):
             raise_if(
                 n.start not in series,
@@ -232,9 +221,7 @@ def _historical_forecasts_general_checks(series, kwargs):
             )
         else:
             raise_log(
-                TypeError(
-                    "`start` needs to be either `float`, `int` or `pd.Timestamp`"
-                ),
+                TypeError("`start` needs to be either `float`, `int` or `pd.Timestamp`"),
                 logger,
             )
 
@@ -258,15 +245,12 @@ def _historical_forecasts_general_checks(series, kwargs):
     if not overlap_end:
         raise_if_not(
             start + series.freq * forecast_horizon in series,
-            "`start` timestamp is too late in the series to make any predictions with"
-            "`overlap_end` set to `False`.",
+            "`start` timestamp is too late in the series to make any predictions with" "`overlap_end` set to `False`.",
             logger,
         )
 
 
-def _parallel_apply(
-    iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs
-) -> List:
+def _parallel_apply(iterator: Iterator[Tuple], fn: Callable, n_jobs: int, fn_args, fn_kwargs) -> List:
     """
     Utility function that parallelise the execution of a function over an Iterator
 
@@ -289,9 +273,7 @@ def _parallel_apply(
 
     """
 
-    returned_data = Parallel(n_jobs=n_jobs)(
-        delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator
-    )
+    returned_data = Parallel(n_jobs=n_jobs)(delayed(fn)(*sample, *fn_args, **fn_kwargs) for sample in iterator)
     return returned_data
 
 
@@ -304,15 +286,11 @@ def _check_quantiles(quantiles):
     # we require the median to be present and the quantiles to be symmetric around it,
     # for correctness of sampling.
     median_q = 0.5
-    raise_if_not(
-        median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`"
-    )
+    raise_if_not(median_q in quantiles, "median quantile `q=0.5` must be in `quantiles`")
     is_centered = [
-        -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6
-        for left_q, right_q in zip(quantiles, quantiles[::-1])
+        -1e-6 < (median_q - left_q) + (median_q - right_q) < 1e-6 for left_q, right_q in zip(quantiles, quantiles[::-1])
     ]
     raise_if_not(
         all(is_centered),
-        "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles "
-        "higher than `q=0.5`",
+        "quantiles lower than `q=0.5` need to share same difference to `0.5` as quantiles " "higher than `q=0.5`",
     )

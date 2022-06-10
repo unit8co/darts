@@ -16,9 +16,7 @@ logger = get_logger(__name__)
 
 
 class BaseDataTransformer(ABC):
-    def __init__(
-        self, name: str = "BaseDataTransformer", n_jobs: int = 1, verbose: bool = False
-    ):
+    def __init__(self, name: str = "BaseDataTransformer", n_jobs: int = 1, verbose: bool = False):
         """Abstract class for data transformers.
 
         All the deriving classes have to implement the static method :func:`ts_transform`.
@@ -105,9 +103,7 @@ class BaseDataTransformer(ABC):
         """
         pass
 
-    def _transform_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries]]:
+    def _transform_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
         """
         Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_transform()`.
         Additional `args` and `kwargs` from :func:`transform()` (constant across all the calls to
@@ -180,18 +176,12 @@ class BaseDataTransformer(ABC):
             total=len(data),
         )
 
-        transformed_data = _parallel_apply(
-            input_iterator, self.__class__.ts_transform, self._n_jobs, args, kwargs
-        )
+        transformed_data = _parallel_apply(input_iterator, self.__class__.ts_transform, self._n_jobs, args, kwargs)
 
-        return (
-            transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
-        )
+        return transformed_data[0] if isinstance(series, TimeSeries) else transformed_data
 
     @staticmethod
-    def _reshape_in(
-        series: TimeSeries, component_mask: Optional[np.ndarray] = None
-    ) -> np.ndarray:
+    def _reshape_in(series: TimeSeries, component_mask: Optional[np.ndarray] = None) -> np.ndarray:
         """Reshapes the series' values to be fed in input to a transformer.
 
         The output is a 2-D matrix where each column corresponds to a component (dimension)
@@ -222,9 +212,7 @@ class BaseDataTransformer(ABC):
 
         vals = series.all_values(copy=False)[:, component_mask, :]
 
-        return np.stack(
-            [vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1
-        )
+        return np.stack([vals[:, i, :].reshape(-1) for i in range(component_mask.sum())], axis=1)
 
     @staticmethod
     def _reshape_out(
@@ -249,9 +237,7 @@ class BaseDataTransformer(ABC):
         """
 
         raise_if_not(
-            component_mask is None
-            or isinstance(component_mask, np.ndarray)
-            and component_mask.dtype == bool,
+            component_mask is None or isinstance(component_mask, np.ndarray) and component_mask.dtype == bool,
             "If `component_mask` is given, must be a boolean np.ndarray`",
             logger,
         )

@@ -40,15 +40,9 @@ def multi_ts_support(func):
 
     @wraps(func)
     def wrapper_multi_ts_support(*args, **kwargs):
-        actual_series = (
-            kwargs["actual_series"] if "actual_series" in kwargs else args[0]
-        )
+        actual_series = kwargs["actual_series"] if "actual_series" in kwargs else args[0]
         pred_series = (
-            kwargs["pred_series"]
-            if "pred_series" in kwargs
-            else args[0]
-            if "actual_series" in kwargs
-            else args[1]
+            kwargs["pred_series"] if "pred_series" in kwargs else args[0] if "actual_series" in kwargs else args[1]
         )
 
         n_jobs = kwargs.pop("n_jobs", signature(func).parameters["n_jobs"].default)
@@ -57,14 +51,8 @@ def multi_ts_support(func):
         raise_if_not(isinstance(n_jobs, int), "n_jobs must be an integer")
         raise_if_not(isinstance(verbose, bool), "verbose must be a bool")
 
-        actual_series = (
-            [actual_series]
-            if not isinstance(actual_series, Sequence)
-            else actual_series
-        )
-        pred_series = (
-            [pred_series] if not isinstance(pred_series, Sequence) else pred_series
-        )
+        actual_series = [actual_series] if not isinstance(actual_series, Sequence) else actual_series
+        pred_series = [pred_series] if not isinstance(pred_series, Sequence) else pred_series
 
         raise_if_not(
             len(actual_series) == len(pred_series),
@@ -72,9 +60,7 @@ def multi_ts_support(func):
             logger,
         )
 
-        num_series_in_args = int("actual_series" not in kwargs) + int(
-            "pred_series" not in kwargs
-        )
+        num_series_in_args = int("actual_series" not in kwargs) + int("pred_series" not in kwargs)
         kwargs.pop("actual_series", 0)
         kwargs.pop("pred_series", 0)
 
@@ -130,12 +116,7 @@ def multivariate_support(func):
         value_list = []
         for i in range(actual_series.width):
             value_list.append(
-                func(
-                    actual_series.univariate_component(i),
-                    pred_series.univariate_component(i),
-                    *args[2:],
-                    **kwargs
-                )
+                func(actual_series.univariate_component(i), pred_series.univariate_component(i), *args[2:], **kwargs)
             )  # [2:] since we already know the first two arguments are the series
         if "reduction" in kwargs:
             return kwargs["reduction"](value_list)
@@ -145,9 +126,7 @@ def multivariate_support(func):
     return wrapper_multivariate_support
 
 
-def _get_values(
-    series: TimeSeries, stochastic_quantile: Optional[float] = 0.5
-) -> np.ndarray:
+def _get_values(series: TimeSeries, stochastic_quantile: Optional[float] = 0.5) -> np.ndarray:
     """
     Returns the numpy values of a time series.
     For stochastic series, return either all sample values with (stochastic_quantile=None) or the quantile sample value
@@ -159,9 +138,7 @@ def _get_values(
         if stochastic_quantile is None:
             series_values = series.all_values(copy=False)
         else:
-            series_values = series.quantile_timeseries(
-                quantile=stochastic_quantile
-            ).univariate_values()
+            series_values = series.quantile_timeseries(quantile=stochastic_quantile).univariate_values()
     return series_values
 
 
@@ -208,9 +185,7 @@ def _get_values_or_raise(
         series_a_common.has_same_time_as(series_b_common),
         "The two time series (or their intersection) "
         "must have the same time index."
-        "\nFirst series: {}\nSecond series: {}".format(
-            series_a.time_index, series_b.time_index
-        ),
+        "\nFirst series: {}\nSecond series: {}".format(series_a.time_index, series_b.time_index),
         logger,
     )
 
@@ -224,12 +199,8 @@ def _get_values_or_raise(
     if b_is_deterministic:
         isnan_mask = np.logical_or(np.isnan(series_a_det), np.isnan(series_b_det))
     else:
-        isnan_mask = np.logical_or(
-            np.isnan(series_a_det), np.isnan(series_b_det).any(axis=2).flatten()
-        )
-    return np.delete(series_a_det, isnan_mask), np.delete(
-        series_b_det, isnan_mask, axis=0
-    )
+        isnan_mask = np.logical_or(np.isnan(series_a_det), np.isnan(series_b_det).any(axis=2).flatten())
+    return np.delete(series_a_det, isnan_mask), np.delete(series_b_det, isnan_mask, axis=0)
 
 
 @multi_ts_support
@@ -283,9 +254,7 @@ def mae(
         The Mean Absolute Error (MAE)
     """
 
-    y1, y2 = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     return np.mean(np.abs(y1 - y2))
 
 
@@ -340,9 +309,7 @@ def mse(
         The Mean Squared Error (MSE)
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     return np.mean((y_true - y_pred) ** 2)
 
 
@@ -452,9 +419,7 @@ def rmsle(
         The Root Mean Squared Log Error (RMSLE)
     """
 
-    y1, y2 = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     y1, y2 = np.log(y1 + 1), np.log(y2 + 1)
     return np.sqrt(np.mean((y1 - y2) ** 2))
 
@@ -514,11 +479,7 @@ def coefficient_of_variation(
         The Coefficient of Variation
     """
 
-    return (
-        100
-        * rmse(actual_series, pred_series, intersect)
-        / actual_series.pd_dataframe(copy=False).mean().mean()
-    )
+    return 100 * rmse(actual_series, pred_series, intersect) / actual_series.pd_dataframe(copy=False).mean().mean()
 
 
 @multi_ts_support
@@ -581,9 +542,7 @@ def mape(
         The Mean Absolute Percentage Error (MAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not(
         (y_true != 0).all(),
         "The actual series must be strictly positive to compute the MAPE.",
@@ -654,9 +613,7 @@ def smape(
         The symmetric Mean Absolute Percentage Error (sMAPE)
     """
 
-    y_true, y_hat = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not(
         np.logical_or(y_true != 0, y_hat != 0).all(),
         "The actual series must be strictly positive to compute the sMAPE.",
@@ -754,11 +711,7 @@ def mase(
             logger,
         )
 
-        insample_ = (
-            insample.quantile_timeseries(quantile=0.5)
-            if insample.is_stochastic
-            else insample
-        )
+        insample_ = insample.quantile_timeseries(quantile=0.5) if insample.is_stochastic else insample
 
         value_list = []
         for i in range(actual_series.width):
@@ -796,9 +749,7 @@ def mase(
             isinstance(pred_series, TimeSeries),
             "Expecting pred_series to be TimeSeries",
         )
-        raise_if_not(
-            isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries"
-        )
+        raise_if_not(isinstance(insample, TimeSeries), "Expecting insample to be TimeSeries")
         return _multivariate_mase(
             actual_series=actual_series,
             pred_series=pred_series,
@@ -808,13 +759,10 @@ def mase(
             reduction=reduction,
         )
 
-    elif isinstance(actual_series, Sequence) and isinstance(
-        actual_series[0], TimeSeries
-    ):
+    elif isinstance(actual_series, Sequence) and isinstance(actual_series[0], TimeSeries):
 
         raise_if_not(
-            isinstance(pred_series, Sequence)
-            and isinstance(pred_series[0], TimeSeries),
+            isinstance(pred_series, Sequence) and isinstance(pred_series[0], TimeSeries),
             "Expecting pred_series to be a Sequence[TimeSeries]",
         )
         raise_if_not(
@@ -822,8 +770,7 @@ def mase(
             "Expecting insample to be a Sequence[TimeSeries]",
         )
         raise_if_not(
-            len(pred_series) == len(actual_series)
-            and len(pred_series) == len(insample),
+            len(pred_series) == len(actual_series) and len(pred_series) == len(insample),
             "The TimeSeries sequences must have the same length.",
             logger,
         )
@@ -846,11 +793,7 @@ def mase(
         )
         return inter_reduction(value_list)
     else:
-        raise_log(
-            ValueError(
-                "Input type not supported, only TimeSeries and Sequence[TimeSeries] are accepted."
-            )
-        )
+        raise_log(ValueError("Input type not supported, only TimeSeries and Sequence[TimeSeries] are accepted."))
 
 
 @multi_ts_support
@@ -911,9 +854,7 @@ def ope(
         The Overall Percentage Error (OPE)
     """
 
-    y_true, y_pred = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_pred = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     y_true_sum, y_pred_sum = np.sum(y_true), np.sum(y_pred)
     raise_if_not(
         y_true_sum > 0,
@@ -981,13 +922,10 @@ def marre(
         The Mean Absolute Ranged Relative Error (MARRE)
     """
 
-    y_true, y_hat = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y_true, y_hat = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     raise_if_not(
         y_true.max() > y_true.min(),
-        "The difference between the max and min values must be strictly"
-        "positive to compute the MARRE.",
+        "The difference between the max and min values must be strictly" "positive to compute the MARRE.",
         logger,
     )
     true_range = y_true.max() - y_true.min()
@@ -1045,9 +983,7 @@ def r2_score(
     float
         The Coefficient of Determination :math:`R^2`
     """
-    y1, y2 = _get_values_or_raise(
-        actual_series, pred_series, intersect, remove_nan_union=True
-    )
+    y1, y2 = _get_values_or_raise(actual_series, pred_series, intersect, remove_nan_union=True)
     ss_errors = np.sum((y1 - y2) ** 2)
     y_hat = y1.mean()
     ss_tot = np.sum((y1 - y_hat) ** 2)

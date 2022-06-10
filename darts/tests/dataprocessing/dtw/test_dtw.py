@@ -11,20 +11,14 @@ from darts.utils import timeseries_generation as tg
 
 
 def _series_from_values(values):
-    return TimeSeries.from_values(
-        np.array(values) if isinstance(values, list) else values
-    )
+    return TimeSeries.from_values(np.array(values) if isinstance(values, list) else values)
 
 
 class DynamicTimeWarpingTestCase(DartsBaseTestClass):
     length = 20
     freq = 1 / length
-    series1 = tg.sine_timeseries(
-        length=length, value_frequency=freq, value_phase=0, value_y_offset=5
-    )
-    series2 = tg.sine_timeseries(
-        length=length, value_frequency=freq, value_phase=np.pi / 4, value_y_offset=5
-    )
+    series1 = tg.sine_timeseries(length=length, value_frequency=freq, value_phase=0, value_y_offset=5)
+    series2 = tg.sine_timeseries(length=length, value_frequency=freq, value_phase=np.pi / 4, value_y_offset=5)
 
     def test_shift(self):
         input1 = [
@@ -54,9 +48,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         input2 = [1] + input1[:-1]
 
         expected_path = (
-            [(0, 0)]
-            + list((i - 1, i) for i in range(1, len(input1)))
-            + [(len(input1) - 1, len(input2) - 1)]
+            [(0, 0)] + list((i - 1, i) for i in range(1, len(input1))) + [(len(input1) - 1, len(input2) - 1)]
         )
 
         series1 = _series_from_values(input1)
@@ -69,17 +61,13 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
             0,
             "Minimum cost between two shifted series should be 0",
         )
-        self.assertTrue(
-            np.array_equal(exact_alignment.path(), expected_path), "Incorrect path"
-        )
+        self.assertTrue(np.array_equal(exact_alignment.path(), expected_path), "Incorrect path")
 
     def test_multi_grid(self):
         size = 2**5 - 1  # test odd size
         freq = 1 / size
         input1 = np.cos(np.arange(size) * 2 * np.pi * freq)
-        input2 = np.sin(np.arange(size) * 2 * np.pi * freq) + 0.1 * np.random.random(
-            size=size
-        )
+        input2 = np.sin(np.arange(size) * 2 * np.pi * freq) + 0.1 * np.random.random(size=size)
 
         series1 = _series_from_values(input1)
         series2 = _series_from_values(input2)
@@ -91,9 +79,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
 
     def test_sakoe_chiba_window(self):
         window = 2
-        alignment = dtw.dtw(
-            self.series1, self.series2, window=dtw.SakoeChiba(window_size=2)
-        )
+        alignment = dtw.dtw(self.series1, self.series2, window=dtw.SakoeChiba(window_size=2))
         path = alignment.path()
 
         for i, j in path:
@@ -138,9 +124,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
             slope = m / n + 1
 
             series1 = tg.sine_timeseries(length=n, value_frequency=1 / n, value_phase=0)
-            series2 = tg.sine_timeseries(
-                length=m, value_frequency=1 / m, value_phase=np.pi / 4
-            )
+            series2 = tg.sine_timeseries(length=m, value_frequency=1 / m, value_phase=np.pi / 4)
 
             dist = dtw.dtw(series1, series2, window=dtw.Itakura(slope)).mean_distance()
             self.assertGreater(1, dist)
@@ -214,9 +198,7 @@ class DynamicTimeWarpingTestCase(DartsBaseTestClass):
         radius = 2
 
         alignment_uni = dtw.dtw(self.series1, self.series2, multi_grid_radius=radius)
-        alignment_multi = dtw.dtw(
-            multi_series1, multi_series2, multi_grid_radius=radius
-        )
+        alignment_multi = dtw.dtw(multi_series1, multi_series2, multi_grid_radius=radius)
 
         self.assertTrue(np.all(alignment_uni.path() == alignment_multi.path()))
 
@@ -236,9 +218,7 @@ def _benchmark_dtw():
     freq1 = 1 / size1
     freq2 = 1 / size2
     input1 = np.cos(np.arange(size1) * 2 * np.pi * freq1)
-    input2 = np.sin(np.arange(size2) * 2 * np.pi * freq2) + 0.1 * np.random.random(
-        size=size2
-    )
+    input2 = np.sin(np.arange(size2) * 2 * np.pi * freq2) + 0.1 * np.random.random(size=size2)
 
     global series1, series2
 

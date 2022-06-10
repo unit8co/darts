@@ -101,8 +101,4 @@ class LoggingTestCase(unittest.TestCase):
             _my_timed_fn()
 
         logged_message = lc.records[-1].getMessage()
-        self.assertTrue(
-            re.match(
-                "_my_timed_fn function ran for [0-9]+ milliseconds", logged_message
-            )
-        )
+        self.assertTrue(re.match("_my_timed_fn function ran for [0-9]+ milliseconds", logged_message))

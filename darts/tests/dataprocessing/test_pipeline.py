@@ -208,9 +208,7 @@ class PipelineTestCase(unittest.TestCase):
     def test_getitem(self):
         # given
 
-        transformers = [
-            self.PlusTenTransformer(name=f"+10 transformer{i}") for i in range(0, 10)
-        ]
+        transformers = [self.PlusTenTransformer(name=f"+10 transformer{i}") for i in range(0, 10)]
         p = Pipeline(transformers)
 
         # when & then
@@ -295,9 +293,7 @@ class PipelineTestCase(unittest.TestCase):
             return x + 10
 
         mapper = Mapper(fn=plus_ten, verbose=True)
-        mapper_inv = InvertibleMapper(
-            fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True
-        )
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, verbose=True)
 
         verbose_value = False
         pipeline = Pipeline([mapper, mapper_inv], verbose=verbose_value)
@@ -315,9 +311,7 @@ class PipelineTestCase(unittest.TestCase):
             return x + 10
 
         mapper = Mapper(fn=plus_ten, n_jobs=1)
-        mapper_inv = InvertibleMapper(
-            fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2
-        )
+        mapper_inv = InvertibleMapper(fn=lambda x: x + 2, inverse_fn=lambda x: x - 2, n_jobs=2)
 
         n_jobs_value = -1
         pipeline = Pipeline([mapper, mapper_inv], n_jobs=n_jobs_value)

@@ -46,10 +46,7 @@ class _TrendGenerator(nn.Module):
 
         # basis is of size (expansion_coefficient_dim, target_length)
         basis = torch.stack(
-            [
-                (torch.arange(target_length) / target_length) ** i
-                for i in range(expansion_coefficient_dim)
-            ],
+            [(torch.arange(target_length) / target_length) ** i for i in range(expansion_coefficient_dim)],
             dim=1,
         ).T
 
@@ -64,18 +61,14 @@ class _SeasonalityGenerator(nn.Module):
         super().__init__()
         half_minus_one = int(target_length / 2 - 1)
         cos_vectors = [
-            torch.cos(torch.arange(target_length) / target_length * 2 * np.pi * i)
-            for i in range(1, half_minus_one + 1)
+            torch.cos(torch.arange(target_length) / target_length * 2 * np.pi * i) for i in range(1, half_minus_one + 1)
         ]
         sin_vectors = [
-            torch.sin(torch.arange(target_length) / target_length * 2 * np.pi * i)
-            for i in range(1, half_minus_one + 1)
+            torch.sin(torch.arange(target_length) / target_length * 2 * np.pi * i) for i in range(1, half_minus_one + 1)
         ]
 
         # basis is of size (2 * int(target_length / 2 - 1) + 1, target_length)
-        basis = torch.stack(
-            [torch.ones(target_length)] + cos_vectors + sin_vectors, dim=1
-        ).T
+        basis = torch.stack([torch.ones(target_length)] + cos_vectors + sin_vectors, dim=1).T
 
         self.basis = nn.Parameter(basis, requires_grad=False)
 
@@ -152,9 +145,7 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.batch_norm = batch_norm
 
-        raise_if_not(
-            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
-        )
+        raise_if_not(activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}")
         self.activation = getattr(nn, activation)()
 
         # fully connected stack before fork
@@ -163,9 +154,7 @@ class _Block(nn.Module):
             self.linear_layer_stack_list.append(nn.Linear(layer_width, layer_width))
 
             if self.batch_norm:
-                self.linear_layer_stack_list.append(
-                    nn.BatchNorm1d(num_features=self.layer_width)
-                )
+                self.linear_layer_stack_list.append(nn.BatchNorm1d(num_features=self.layer_width))
 
             if self.dropout > 0:
                 self.linear_layer_stack_list.append(nn.Dropout(p=self.dropout))
@@ -175,28 +164,18 @@ class _Block(nn.Module):
         # Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).
         # The coefficients are emitted for each parameter of the likelihood.
         if g_type == _GType.SEASONALITY:
-            self.backcast_linear_layer = nn.Linear(
-                layer_width, 2 * int(input_chunk_length / 2 - 1) + 1
-            )
-            self.forecast_linear_layer = nn.Linear(
-                layer_width, nr_params * (2 * int(target_length / 2 - 1) + 1)
-            )
+            self.backcast_linear_layer = nn.Linear(layer_width, 2 * int(input_chunk_length / 2 - 1) + 1)
+            self.forecast_linear_layer = nn.Linear(layer_width, nr_params * (2 * int(target_length / 2 - 1) + 1))
         else:
-            self.backcast_linear_layer = nn.Linear(
-                layer_width, expansion_coefficient_dim
-            )
-            self.forecast_linear_layer = nn.Linear(
-                layer_width, nr_params * expansion_coefficient_dim
-            )
+            self.backcast_linear_layer = nn.Linear(layer_width, expansion_coefficient_dim)
+            self.forecast_linear_layer = nn.Linear(layer_width, nr_params * expansion_coefficient_dim)
 
         # waveform generator functions
         if g_type == _GType.GENERIC:
             self.backcast_g = nn.Linear(expansion_coefficient_dim, input_chunk_length)
             self.forecast_g = nn.Linear(expansion_coefficient_dim, target_length)
         elif g_type == _GType.TREND:
-            self.backcast_g = _TrendGenerator(
-                expansion_coefficient_dim, input_chunk_length
-            )
+            self.backcast_g = _TrendGenerator(expansion_coefficient_dim, input_chunk_length)
             self.forecast_g = _TrendGenerator(expansion_coefficient_dim, target_length)
         elif g_type == _GType.SEASONALITY:
             self.backcast_g = _SeasonalityGenerator(input_chunk_length)
@@ -303,9 +282,7 @@ class _Stack(nn.Module):
                     input_chunk_length,
                     target_length,
                     g_type,
-                    batch_norm=(
-                        self.batch_norm and i == 0
-                    ),  # batch norm only on first block of first stack
+                    batch_norm=(self.batch_norm and i == 0),  # batch norm only on first block of first stack
                     dropout=self.dropout,
                     activation=self.activation,
                 )
@@ -444,9 +421,7 @@ class _NBEATSModule(PLPastCovariatesModule):
                     self.input_chunk_length_multi,
                     self.target_length,
                     _GType.GENERIC,
-                    batch_norm=(
-                        self.batch_norm and i == 0
-                    ),  # batch norm only on first block of first stack
+                    batch_norm=(self.batch_norm and i == 0),  # batch norm only on first block of first stack
                     dropout=self.dropout,
                     activation=self.activation,
                 )
@@ -522,9 +497,7 @@ class _NBEATSModule(PLPastCovariatesModule):
         # We want to reshape to original format. We also get rid of the covariates and keep only the target dimensions.
         # The covariates are by construction added as extra time series on the right side. So we need to get rid of this
         # right output (keeping only :self.output_dim).
-        y = y.view(
-            y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params
-        )[:, :, : self.output_dim, :]
+        y = y.view(y.shape[0], self.output_chunk_length, self.input_dim, self.nr_params)[:, :, : self.output_dim, :]
 
         return y
 
@@ -758,9 +731,7 @@ class NBEATSModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

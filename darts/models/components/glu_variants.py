@@ -11,9 +11,7 @@ GLU_FFN = ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
 class GLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
-        self.ffn = FeedForward(
-            d_model, d_ff, dropout, nn.Sigmoid(), True, False, False, False
-        )
+        self.ffn = FeedForward(d_model, d_ff, dropout, nn.Sigmoid(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -22,9 +20,7 @@ class GLU(nn.Module):
 class Bilinear(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
-        self.ffn = FeedForward(
-            d_model, d_ff, dropout, nn.Identity(), True, False, False, False
-        )
+        self.ffn = FeedForward(d_model, d_ff, dropout, nn.Identity(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -33,9 +29,7 @@ class Bilinear(nn.Module):
 class ReGLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
-        self.ffn = FeedForward(
-            d_model, d_ff, dropout, nn.ReLU(), True, False, False, False
-        )
+        self.ffn = FeedForward(d_model, d_ff, dropout, nn.ReLU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -44,9 +38,7 @@ class ReGLU(nn.Module):
 class GEGLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
-        self.ffn = FeedForward(
-            d_model, d_ff, dropout, nn.GELU(), True, False, False, False
-        )
+        self.ffn = FeedForward(d_model, d_ff, dropout, nn.GELU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)
@@ -55,9 +47,7 @@ class GEGLU(nn.Module):
 class SwiGLU(nn.Module):
     def __init__(self, d_model: int, d_ff: int, dropout: float = 0.1):
         super().__init__()
-        self.ffn = FeedForward(
-            d_model, d_ff, dropout, nn.SiLU(), True, False, False, False
-        )
+        self.ffn = FeedForward(d_model, d_ff, dropout, nn.SiLU(), True, False, False, False)
 
     def forward(self, x: torch.Tensor):
         return self.ffn(x)

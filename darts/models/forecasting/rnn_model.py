@@ -79,9 +79,7 @@ class _RNNModule(PLDualCovariatesModule):
         self.name = name
 
         # Defining the RNN module
-        self.rnn = getattr(nn, name)(
-            input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout
-        )
+        self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
 
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
@@ -113,9 +111,7 @@ class _RNNModule(PLDualCovariatesModule):
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
         model_input = (
-            torch.cat([past_target, future_covariates], dim=2)
-            if future_covariates is not None
-            else past_target,
+            torch.cat([past_target, future_covariates], dim=2) if future_covariates is not None else past_target,
             static_covariates,
         )
         return self(model_input)[0]
@@ -128,9 +124,7 @@ class _RNNModule(PLDualCovariatesModule):
         else:
             return output.squeeze(dim=-1), hidden
 
-    def _get_batch_prediction(
-        self, n: int, input_batch: Tuple, roll_size: int
-    ) -> torch.Tensor:
+    def _get_batch_prediction(self, n: int, input_batch: Tuple, roll_size: int) -> torch.Tensor:
         """
         This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
         """
@@ -143,9 +137,7 @@ class _RNNModule(PLDualCovariatesModule):
 
         if historic_future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
-            all_covariates = torch.cat(
-                [historic_future_covariates[:, 1:, :], future_covariates], dim=1
-            )
+            all_covariates = torch.cat([historic_future_covariates[:, 1:, :], future_covariates], dim=1)
             cov_past, cov_future = (
                 all_covariates[:, : past_target.shape[1], :],
                 all_covariates[:, past_target.shape[1] :, :],
@@ -156,9 +148,7 @@ class _RNNModule(PLDualCovariatesModule):
             cov_future = None
 
         batch_prediction = []
-        out, last_hidden_state = self._produce_predict_output(
-            (input_series, static_covariates)
-        )
+        out, last_hidden_state = self._produce_predict_output((input_series, static_covariates))
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
@@ -178,9 +168,7 @@ class _RNNModule(PLDualCovariatesModule):
             )
 
             # feed new input to model, including the last hidden state from the previous iteration
-            out, last_hidden_state = self._produce_predict_output(
-                (new_input, static_covariates), last_hidden_state
-            )
+            out, last_hidden_state = self._produce_predict_output((new_input, static_covariates), last_hidden_state)
 
             # append prediction to batch prediction array, increase counter
             batch_prediction.append(out[:, -1:, :])
@@ -393,9 +381,7 @@ class RNNModel(DualCovariatesTorchModel):
             raise_if_not(
                 isinstance(model, nn.Module),
                 '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
-                '"GRU", or give your own PyTorch nn.Module'.format(
-                    model.__class__.__name__
-                ),
+                '"GRU", or give your own PyTorch nn.Module'.format(model.__class__.__name__),
                 logger,
             )
 
@@ -408,9 +394,7 @@ class RNNModel(DualCovariatesTorchModel):
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, historic_future_covariates, future_covariates, future_target)
         # historic_future_covariates and future_covariates have the same width
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

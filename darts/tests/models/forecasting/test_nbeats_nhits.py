@@ -101,11 +101,7 @@ if TORCH_AVAILABLE:
 
                 # the theoretical result should be [[1.01, 1.02], [0.505, 0.51]].
                 # We just test if the given result is not too far on average.
-                self.assertTrue(
-                    abs(
-                        np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03
-                    )
-                )
+                self.assertTrue(abs(np.average(res - np.array([[1.01, 1.02], [0.505, 0.51]])) < 0.03))
 
                 # Test Covariates
                 series_covariates = tg.linear_timeseries(length=100).stack(
@@ -119,9 +115,7 @@ if TORCH_AVAILABLE:
                 )
                 model.fit(series_multivariate, past_covariates=series_covariates)
 
-                res = model.predict(
-                    n=3, series=series_multivariate, past_covariates=series_covariates
-                ).values()
+                res = model.predict(n=3, series=series_multivariate, past_covariates=series_covariates).values()
 
                 self.assertEqual(len(res), 3)
                 self.assertTrue(abs(np.average(res)) < 5)

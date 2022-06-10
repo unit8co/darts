@@ -82,9 +82,7 @@ class MissingValuesFiller(BaseDataTransformer):
         self._fill = fill
 
     @staticmethod
-    def ts_transform(
-        series: TimeSeries, fill: Union[str, float], **kwargs
-    ) -> TimeSeries:
+    def ts_transform(series: TimeSeries, fill: Union[str, float], **kwargs) -> TimeSeries:
         return fill_missing_values(series, fill, **kwargs)
 
     def transform(

@@ -36,15 +36,11 @@ try:
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning(
-        "Torch models are not installed - will not be tested for backtesting"
-    )
+    logger.warning("Torch models are not installed - will not be tested for backtesting")
     TORCH_AVAILABLE = False
 
 
-def get_dummy_series(
-    ts_length: int, lt_end_value: int = 10, st_value_offset: int = 10
-) -> TimeSeries:
+def get_dummy_series(ts_length: int, lt_end_value: int = 10, st_value_offset: int = 10) -> TimeSeries:
     return (
         lt(length=ts_length, end_value=lt_end_value)
         + st(length=ts_length, value_y_offset=st_value_offset)
@@ -67,9 +63,7 @@ def compare_best_against_random(model_class, params, series, stride=1):
 
     # instantiate best model in split mode
     train, val = series.split_before(series.time_index[-10])
-    best_model_2, _, _ = model_class.gridsearch(
-        params, train, val_series=val, metric=mape
-    )
+    best_model_2, _, _ = model_class.gridsearch(params, train, val_series=val, metric=mape)
 
     # intantiate model with random parameters from 'params'
     random.seed(1)
@@ -79,12 +73,8 @@ def compare_best_against_random(model_class, params, series, stride=1):
     random_model = model_class(**random_param_choice)
 
     # perform backtest forecasting on both models
-    best_score_1 = best_model_1.backtest(
-        series, start=series.time_index[-21], forecast_horizon=10
-    )
-    random_score_1 = random_model.backtest(
-        series, start=series.time_index[-21], forecast_horizon=10
-    )
+    best_score_1 = best_model_1.backtest(series, start=series.time_index[-21], forecast_horizon=10)
+    random_score_1 = random_model.backtest(series, start=series.time_index[-21], forecast_horizon=10)
 
     # perform train/val evaluation on both models
     best_model_2.fit(train)
@@ -136,9 +126,7 @@ class BacktestingTestCase(DartsBaseTestClass):
             )
 
         # test that it also works for time series that are not Datetime-indexed
-        score = NaiveDrift().backtest(
-            linear_series_int, start=0.7, forecast_horizon=3, metric=r2_score
-        )
+        score = NaiveDrift().backtest(linear_series_int, start=0.7, forecast_horizon=3, metric=r2_score)
         self.assertEqual(score, 1.0)
 
         with self.assertRaises(ValueError):
@@ -148,9 +136,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                 forecast_horizon=3,
                 overlap_end=False,
             )
-        NaiveDrift().backtest(
-            linear_series, start=pd.Timestamp("20000216"), forecast_horizon=3
-        )
+        NaiveDrift().backtest(linear_series, start=pd.Timestamp("20000216"), forecast_horizon=3)
         NaiveDrift().backtest(
             linear_series,
             start=pd.Timestamp("20000217"),
@@ -160,9 +146,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         # Using forecast_horizon default value
         NaiveDrift().backtest(linear_series, start=pd.Timestamp("20000216"))
-        NaiveDrift().backtest(
-            linear_series, start=pd.Timestamp("20000217"), overlap_end=True
-        )
+        NaiveDrift().backtest(linear_series, start=pd.Timestamp("20000217"), overlap_end=True)
 
         # Using an int or float value for start
         NaiveDrift().backtest(linear_series, start=30)
@@ -191,21 +175,15 @@ class BacktestingTestCase(DartsBaseTestClass):
             NaiveDrift().backtest(linear_series, train_length="wrong type", start=0.5)
 
         with self.assertRaises(ValueError):
-            NaiveDrift().backtest(
-                linear_series, start=49, forecast_horizon=2, overlap_end=False
-            )
+            NaiveDrift().backtest(linear_series, start=49, forecast_horizon=2, overlap_end=False)
 
         # univariate model + multivariate series
         with self.assertRaises(AssertionError):
-            NaiveDrift().backtest(
-                linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3
-            )
+            NaiveDrift().backtest(linear_series_multi, start=pd.Timestamp("20000201"), forecast_horizon=3)
 
         # multivariate model + univariate series
         if TORCH_AVAILABLE:
-            tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1
-            )
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=1, batch_size=1, n_epochs=1)
             pred = tcn_model.historical_forecasts(
                 linear_series,
                 start=pd.Timestamp("20000125"),
@@ -225,9 +203,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                     verbose=False,
                 )
 
-            tcn_model = TCNModel(
-                input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1
-            )
+            tcn_model = TCNModel(input_chunk_length=12, output_chunk_length=3, batch_size=1, n_epochs=1)
             pred = tcn_model.historical_forecasts(
                 linear_series_multi,
                 start=pd.Timestamp("20000125"),
@@ -245,23 +221,17 @@ class BacktestingTestCase(DartsBaseTestClass):
         gaussian_series = gt(mean=2, length=50)
         sine_series = st(length=50)
         features = gaussian_series.stack(sine_series)
-        features_multivariate = (
-            (gaussian_series + sine_series).stack(gaussian_series).stack(sine_series)
-        )
+        features_multivariate = (gaussian_series + sine_series).stack(gaussian_series).stack(sine_series)
         target = sine_series
 
-        features = features.with_columns_renamed(
-            features.components, ["Value0", "Value1"]
-        )
+        features = features.with_columns_renamed(features.components, ["Value0", "Value1"])
 
         features_multivariate = features_multivariate.with_columns_renamed(
             features_multivariate.components, ["Value0", "Value1", "Value2"]
         )
 
         # univariate feature test
-        score = LinearRegressionModel(
-            lags=None, lags_future_covariates=[0, -1]
-        ).backtest(
+        score = LinearRegressionModel(lags=None, lags_future_covariates=[0, -1]).backtest(
             series=target,
             future_covariates=features,
             start=pd.Timestamp("20000201"),
@@ -272,9 +242,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.9)
 
         # univariate feature test + train length
-        score = LinearRegressionModel(
-            lags=None, lags_future_covariates=[0, -1]
-        ).backtest(
+        score = LinearRegressionModel(lags=None, lags_future_covariates=[0, -1]).backtest(
             series=target,
             future_covariates=features,
             start=pd.Timestamp("20000201"),
@@ -286,9 +254,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.9)
 
         # Using an int or float value for start
-        score = RandomForest(
-            lags=12, lags_future_covariates=[0], random_state=0
-        ).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0], random_state=0).backtest(
             series=target,
             future_covariates=features,
             start=30,
@@ -297,9 +263,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         )
         self.assertGreater(score, 0.9)
 
-        score = RandomForest(
-            lags=12, lags_future_covariates=[0], random_state=0
-        ).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0], random_state=0).backtest(
             series=target,
             future_covariates=features,
             start=0.5,
@@ -313,20 +277,14 @@ class BacktestingTestCase(DartsBaseTestClass):
             RandomForest(lags=12).backtest(series=target, start=0, forecast_horizon=3)
 
         with self.assertRaises(ValueError):
-            RandomForest(lags=12).backtest(
-                series=target, start=0.01, forecast_horizon=3
-            )
+            RandomForest(lags=12).backtest(series=target, start=0.01, forecast_horizon=3)
 
         # Using RandomForest's start default value
-        score = RandomForest(lags=12, random_state=0).backtest(
-            series=target, forecast_horizon=3, metric=r2_score
-        )
+        score = RandomForest(lags=12, random_state=0).backtest(series=target, forecast_horizon=3, metric=r2_score)
         self.assertGreater(score, 0.95)
 
         # multivariate feature test
-        score = RandomForest(
-            lags=12, lags_future_covariates=[0, -1], random_state=0
-        ).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0, -1], random_state=0).backtest(
             series=target,
             future_covariates=features_multivariate,
             start=pd.Timestamp("20000201"),
@@ -336,9 +294,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertGreater(score, 0.94)
 
         # multivariate feature test with train window 35
-        score_35 = RandomForest(
-            lags=12, lags_future_covariates=[0, -1], random_state=0
-        ).backtest(
+        score_35 = RandomForest(lags=12, lags_future_covariates=[0, -1], random_state=0).backtest(
             series=target,
             train_length=35,
             future_covariates=features_multivariate,
@@ -346,15 +302,11 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        logger.info(
-            "Score for multivariate feature test with train window 35 is: ", score_35
-        )
+        logger.info("Score for multivariate feature test with train window 35 is: ", score_35)
         self.assertGreater(score_35, 0.92)
 
         # multivariate feature test with train window 45
-        score_45 = RandomForest(
-            lags=12, lags_future_covariates=[0, -1], random_state=0
-        ).backtest(
+        score_45 = RandomForest(lags=12, lags_future_covariates=[0, -1], random_state=0).backtest(
             series=target,
             train_length=45,
             future_covariates=features_multivariate,
@@ -362,16 +314,12 @@ class BacktestingTestCase(DartsBaseTestClass):
             forecast_horizon=3,
             metric=r2_score,
         )
-        logger.info(
-            "Score for multivariate feature test with train window 45 is: ", score_45
-        )
+        logger.info("Score for multivariate feature test with train window 45 is: ", score_45)
         self.assertGreater(score_45, 0.94)
         self.assertGreater(score_45, score_35)
 
         # multivariate with stride
-        score = RandomForest(
-            lags=12, lags_future_covariates=[0], random_state=0
-        ).backtest(
+        score = RandomForest(lags=12, lags_future_covariates=[0], random_state=0).backtest(
             series=target,
             future_covariates=features_multivariate,
             start=pd.Timestamp("20000201"),
@@ -390,20 +338,14 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         theta_params = {"theta": list(range(3, 10))}
         self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series))
-        self.assertTrue(
-            compare_best_against_random(Theta, theta_params, dummy_series_int_index)
-        )
-        self.assertTrue(
-            compare_best_against_random(Theta, theta_params, dummy_series, stride=2)
-        )
+        self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series_int_index))
+        self.assertTrue(compare_best_against_random(Theta, theta_params, dummy_series, stride=2))
 
         fft_params = {"nr_freqs_to_keep": [10, 50, 100], "trend": [None, "poly", "exp"]}
         self.assertTrue(compare_best_against_random(FFT, fft_params, dummy_series))
 
         es_params = {"seasonal_periods": list(range(5, 10))}
-        self.assertTrue(
-            compare_best_against_random(ExponentialSmoothing, es_params, dummy_series)
-        )
+        self.assertTrue(compare_best_against_random(ExponentialSmoothing, es_params, dummy_series))
 
     def test_gridsearch_metric_score(self):
         np.random.seed(1)
@@ -438,9 +380,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         params = {"lags": param_range}
 
         model = RandomForest(lags=1)
-        result = model.gridsearch(
-            params, dummy_series, forecast_horizon=1, n_random_samples=5
-        )
+        result = model.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples=5)
 
         self.assertEqual(type(result[0]), RandomForest)
         self.assertEqual(type(result[1]["lags"]), int)
@@ -454,21 +394,13 @@ class BacktestingTestCase(DartsBaseTestClass):
         params = {"lags": list(range(1, 11)), "past_covariates": list(range(1, 11))}
 
         with self.assertRaises(ValueError):
-            RandomForest.gridsearch(
-                params, dummy_series, forecast_horizon=1, n_random_samples=-5
-            )
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples=-5)
         with self.assertRaises(ValueError):
-            RandomForest.gridsearch(
-                params, dummy_series, forecast_horizon=1, n_random_samples=105
-            )
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples=105)
         with self.assertRaises(ValueError):
-            RandomForest.gridsearch(
-                params, dummy_series, forecast_horizon=1, n_random_samples=-24.56
-            )
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples=-24.56)
         with self.assertRaises(ValueError):
-            RandomForest.gridsearch(
-                params, dummy_series, forecast_horizon=1, n_random_samples=1.5
-            )
+            RandomForest.gridsearch(params, dummy_series, forecast_horizon=1, n_random_samples=1.5)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_n_random_samples(self):
@@ -483,9 +415,7 @@ class BacktestingTestCase(DartsBaseTestClass):
         self.assertEqual(len(absolute_sampled_result), 10)
 
         # Test percentage sample
-        percentage_sampled_result = RandomForest._sample_params(
-            params_cross_product, 0.37
-        )
+        percentage_sampled_result = RandomForest._sample_params(params_cross_product, 0.37)
         self.assertEqual(len(percentage_sampled_result), 37)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
@@ -496,9 +426,7 @@ class BacktestingTestCase(DartsBaseTestClass):
 
         np.random.seed(1)
 
-        dummy_series = get_dummy_series(
-            ts_length=100, lt_end_value=1, st_value_offset=0
-        ).astype(np.float32)
+        dummy_series = get_dummy_series(ts_length=100, lt_end_value=1, st_value_offset=0).astype(np.float32)
         ts_train, ts_val = dummy_series.split_before(split_point=0.8)
 
         test_cases = [
@@ -512,9 +440,7 @@ class BacktestingTestCase(DartsBaseTestClass):
                     "input_chunk_length": [5, 10],
                     "output_chunk_length": [1, 3],
                     "n_epochs": [1, 5],
-                    "random_state": [
-                        42
-                    ],  # necessary to avoid randomness among runs with same parameters
+                    "random_state": [42],  # necessary to avoid randomness among runs with same parameters
                 },
             },
         ]
@@ -525,22 +451,16 @@ class BacktestingTestCase(DartsBaseTestClass):
             parameters = test["parameters"]
 
             np.random.seed(1)
-            _, best_params1, _ = model.gridsearch(
-                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1
-            )
+            _, best_params1, _ = model.gridsearch(parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=1)
 
             np.random.seed(1)
-            _, best_params2, _ = model.gridsearch(
-                parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1
-            )
+            _, best_params2, _ = model.gridsearch(parameters=parameters, series=ts_train, val_series=ts_val, n_jobs=-1)
 
             self.assertEqual(best_params1, best_params2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_gridsearch_multi(self):
-        dummy_series = st(length=40, value_y_offset=10).stack(
-            lt(length=40, end_value=20)
-        )
+        dummy_series = st(length=40, value_y_offset=10).stack(lt(length=40, end_value=20))
         tcn_params = {
             "input_chunk_length": [12],
             "output_chunk_length": [3],
@@ -556,16 +476,10 @@ class BacktestingTestCase(DartsBaseTestClass):
         # test zero residuals
         constant_ts = ct(length=20)
         residuals = model.residuals(constant_ts)
-        np.testing.assert_almost_equal(
-            residuals.univariate_values(), np.zeros(len(residuals))
-        )
+        np.testing.assert_almost_equal(residuals.univariate_values(), np.zeros(len(residuals)))
 
         # test constant, positive residuals
         linear_ts = lt(length=20)
         residuals = model.residuals(linear_ts)
-        np.testing.assert_almost_equal(
-            np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1)
-        )
-        np.testing.assert_array_less(
-            np.zeros(len(residuals)), residuals.univariate_values()
-        )
+        np.testing.assert_almost_equal(np.diff(residuals.univariate_values()), np.zeros(len(residuals) - 1))
+        np.testing.assert_array_less(np.zeros(len(residuals)), residuals.univariate_values())

@@ -36,9 +36,7 @@ if TORCH_AVAILABLE:
             model = RNNModel(12, "RNN", 10, 10)
             self.assertTrue(model._model_params, model.untrained_model()._model_params)
 
-        @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save_model"
-        )
+        @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save_model")
         def test_suppress_automatic_save(self, patch_save_model):
             model_name = "test_model"
             model1 = RNNModel(
@@ -111,26 +109,18 @@ if TORCH_AVAILABLE:
             model_dir = os.path.join(self.temp_work_dir)
 
             # check that file was not created with manual save
-            self.assertFalse(
-                os.path.exists(os.path.join(model_dir, manual_name, "checkpoints"))
-            )
+            self.assertFalse(os.path.exists(os.path.join(model_dir, manual_name, "checkpoints")))
             # check that file was created with automatic save
-            self.assertTrue(
-                os.path.exists(os.path.join(model_dir, auto_name, "checkpoints"))
-            )
+            self.assertTrue(os.path.exists(os.path.join(model_dir, auto_name, "checkpoints")))
 
             # create manually saved model checkpoints folder
             checkpoint_path_manual = os.path.join(model_dir, manual_name)
             os.mkdir(checkpoint_path_manual)
 
             checkpoint_file_name = "checkpoint_0.pth.tar"
-            model_path_manual = os.path.join(
-                checkpoint_path_manual, checkpoint_file_name
-            )
+            model_path_manual = os.path.join(checkpoint_path_manual, checkpoint_file_name)
             checkpoint_file_name_cpkt = "checkpoint_0_ptl-ckpt.pth.tar"
-            model_path_manual_ckpt = os.path.join(
-                checkpoint_path_manual, checkpoint_file_name_cpkt
-            )
+            model_path_manual_ckpt = os.path.join(checkpoint_path_manual, checkpoint_file_name_cpkt)
 
             # save manually saved model
             model_manual_save.save_model(model_path_manual)
@@ -141,9 +131,7 @@ if TORCH_AVAILABLE:
 
             # load manual save model and compare with automatic model results
             model_manual_save = RNNModel.load_model(model_path_manual)
-            self.assertEqual(
-                model_manual_save.predict(n=4), model_auto_save.predict(n=4)
-            )
+            self.assertEqual(model_manual_save.predict(n=4), model_auto_save.predict(n=4))
 
             # load automatically saved model with manual load_model() and load_from_checkpoint()
             model_auto_save1 = RNNModel.load_from_checkpoint(
@@ -151,9 +139,7 @@ if TORCH_AVAILABLE:
             )
 
             # compare loaded checkpoint with manual save
-            self.assertEqual(
-                model_manual_save.predict(n=4), model_auto_save1.predict(n=4)
-            )
+            self.assertEqual(model_manual_save.predict(n=4), model_auto_save1.predict(n=4))
 
         def test_create_instance_new_model_no_name_set(self):
             RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir)
@@ -163,26 +149,16 @@ if TORCH_AVAILABLE:
 
         def test_create_instance_existing_model_with_name_no_fit(self):
             model_name = "test_model"
-            RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
-            )
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
 
-            RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
-            )
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
 
-        @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
-        )
-        def test_create_instance_existing_model_with_name_force(
-            self, patch_reset_model
-        ):
+        @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model")
+        def test_create_instance_existing_model_with_name_force(self, patch_reset_model):
             model_name = "test_model"
-            RNNModel(
-                12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name
-            )
+            RNNModel(12, "RNN", 10, 10, work_dir=self.temp_work_dir, model_name=model_name)
             # no exception is raised
             # since no fit, there is no data stored for the model, hence `force_reset` does noting
 
@@ -197,12 +173,8 @@ if TORCH_AVAILABLE:
             )
             patch_reset_model.assert_not_called()
 
-        @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model"
-        )
-        def test_create_instance_existing_model_with_name_force_fit_with_reset(
-            self, patch_reset_model
-        ):
+        @patch("darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.reset_model")
+        def test_create_instance_existing_model_with_name_force_fit_with_reset(self, patch_reset_model):
             model_name = "test_model"
             model1 = RNNModel(
                 12,
@@ -238,9 +210,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs=20, fit|epochs=None, epochs_trained=0 - train for 20 epochs
         def test_train_from_0_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
-            )
+            model1 = RNNModel(12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
@@ -251,9 +221,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=20 - train for another 20 epochs
         def test_train_from_20_n_epochs_40_no_fit_epochs(self):
-            model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
-            )
+            model1 = RNNModel(12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
@@ -266,9 +234,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=10 - train for another 20 epochs
         def test_train_from_10_n_epochs_20_no_fit_epochs(self):
-            model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
-            )
+            model1 = RNNModel(12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
@@ -282,9 +248,7 @@ if TORCH_AVAILABLE:
 
         # n_epochs = 20, fit|epochs=15, epochs_trained=10 - train for 15 epochs
         def test_train_from_10_n_epochs_20_fit_15_epochs(self):
-            model1 = RNNModel(
-                12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
-            )
+            model1 = RNNModel(12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir)
 
             times = pd.date_range("20130101", "20130410")
             pd_series = pd.Series(range(100), index=times)
@@ -359,9 +323,7 @@ if TORCH_AVAILABLE:
 
                 self.assertEqual(model.trainer_params["accelerator"], accelerator)
                 self.assertEqual(model.trainer_params["gpus"], gpus)
-                self.assertEqual(
-                    model.trainer_params["auto_select_gpus"], auto_select_gpus
-                )
+                self.assertEqual(model.trainer_params["auto_select_gpus"], auto_select_gpus)
 
         def test_wrong_model_creation_params(self):
             valid_kwarg = {"pl_trainer_kwargs": {}}

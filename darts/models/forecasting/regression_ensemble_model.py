@@ -47,16 +47,12 @@ class RegressionEnsembleModel(EnsembleModel):
         """
         super().__init__(forecasting_models)
         if regression_model is None:
-            regression_model = LinearRegressionModel(
-                lags=None, lags_future_covariates=[0], fit_intercept=False
-            )
+            regression_model = LinearRegressionModel(lags=None, lags_future_covariates=[0], fit_intercept=False)
         elif isinstance(regression_model, RegressionModel):
             regression_model = regression_model
         else:
             # scikit-learn like model
-            regression_model = RegressionModel(
-                lags_future_covariates=[0], model=regression_model
-            )
+            regression_model = RegressionModel(lags_future_covariates=[0], model=regression_model)
 
         # check lags of the regression model
         raise_if_not(
@@ -83,17 +79,13 @@ class RegressionEnsembleModel(EnsembleModel):
         future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
     ):
 
-        super().fit(
-            series, past_covariates=past_covariates, future_covariates=future_covariates
-        )
+        super().fit(series, past_covariates=past_covariates, future_covariates=future_covariates)
 
         # spare train_n_points points to serve as regression target
         if self.is_single_series:
             train_n_points_too_big = len(self.training_series) <= self.train_n_points
         else:
-            train_n_points_too_big = any(
-                [len(s) <= self.train_n_points for s in series]
-            )
+            train_n_points_too_big = any([len(s) <= self.train_n_points for s in series])
 
         raise_if(
             train_n_points_too_big,
@@ -106,9 +98,7 @@ class RegressionEnsembleModel(EnsembleModel):
             forecast_training = self.training_series[: -self.train_n_points]
             regression_target = self.training_series[-self.train_n_points :]
         else:
-            forecast_training, regression_target = self._split_multi_ts_sequence(
-                self.train_n_points, series
-            )
+            forecast_training, regression_target = self._split_multi_ts_sequence(self.train_n_points, series)
 
         for model in self.models:
             model._fit_wrapper(
@@ -126,9 +116,7 @@ class RegressionEnsembleModel(EnsembleModel):
         )
 
         # train the regression model on the individual models' predictions
-        self.regression_model.fit(
-            series=regression_target, future_covariates=predictions
-        )
+        self.regression_model.fit(series=regression_target, future_covariates=predictions)
 
         # prepare the forecasting models for further predicting by fitting them with the entire data
 
@@ -159,9 +147,7 @@ class RegressionEnsembleModel(EnsembleModel):
             series = [series]
 
         ensembled = [
-            self.regression_model.predict(
-                n=len(prediction), series=serie, future_covariates=prediction
-            )
+            self.regression_model.predict(n=len(prediction), series=serie, future_covariates=prediction)
             for serie, prediction in zip(series, predictions)
         ]
 

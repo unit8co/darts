@@ -37,18 +37,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             check_seasonality(series.stack(series))
 
     def test_granger_causality(self):
-        series_cause_1 = constant_timeseries(start=0, end=9999).stack(
-            constant_timeseries(start=0, end=9999)
-        )
+        series_cause_1 = constant_timeseries(start=0, end=9999).stack(constant_timeseries(start=0, end=9999))
         series_cause_2 = gaussian_timeseries(start=0, end=9999)
         series_effect_1 = constant_timeseries(start=0, end=999)
         series_effect_2 = TimeSeries.from_values(np.random.uniform(0, 1, 10000))
-        series_effect_3 = TimeSeries.from_values(
-            np.random.uniform(0, 1, (1000, 2, 1000))
-        )
-        series_effect_4 = constant_timeseries(
-            start=pd.Timestamp("2000-01-01"), length=10000
-        )
+        series_effect_3 = TimeSeries.from_values(np.random.uniform(0, 1, (1000, 2, 1000)))
+        series_effect_4 = constant_timeseries(start=pd.Timestamp("2000-01-01"), length=10000)
 
         # Test univariate
         with self.assertRaises(AssertionError):
@@ -67,19 +61,13 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             granger_causality_tests(series_cause_2, series_effect_4, 10, verbose=False)
 
         # Test granger basics
-        tests = granger_causality_tests(
-            series_effect_2, series_effect_2, 10, verbose=False
-        )
+        tests = granger_causality_tests(series_effect_2, series_effect_2, 10, verbose=False)
         self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.99)
-        tests = granger_causality_tests(
-            series_cause_2, series_effect_2, 10, verbose=False
-        )
+        tests = granger_causality_tests(series_cause_2, series_effect_2, 10, verbose=False)
         self.assertTrue(tests[1][0]["ssr_ftest"][1] > 0.01)
 
     def test_stationarity_tests(self):
-        series_1 = constant_timeseries(start=0, end=9999).stack(
-            constant_timeseries(start=0, end=9999)
-        )
+        series_1 = constant_timeseries(start=0, end=9999).stack(constant_timeseries(start=0, end=9999))
 
         series_2 = TimeSeries.from_values(np.random.uniform(0, 1, (1000, 2, 1000)))
         series_3 = gaussian_timeseries(start=0, end=9999)
@@ -110,9 +98,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
     pd_series = pd.Series(range(50), index=pd.date_range("20130101", "20130219"))
     pd_series = pd_series.map(lambda x: np.sin(x * np.pi / 3 + np.pi / 2))
     season = TimeSeries.from_series(pd_series)
-    trend = linear_timeseries(
-        start_value=1, end_value=10, start=season.start_time(), end=season.end_time()
-    )
+    trend = linear_timeseries(start_value=1, end_value=10, start=season.start_time(), end=season.end_time())
     ts = trend + season
 
     def test_extract(self):
@@ -122,24 +108,18 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # test default (naive) method additive
-        calc_trend, _ = extract_trend_and_seasonality(
-            self.ts, freq=6, model=ModelMode.ADDITIVE
-        )
+        calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6, model=ModelMode.ADDITIVE)
         diff = self.trend - calc_trend
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # test STL method
-        calc_trend, _ = extract_trend_and_seasonality(
-            self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE
-        )
+        calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6, method="STL", model=ModelMode.ADDITIVE)
         diff = self.trend - calc_trend
         self.assertTrue(np.isclose(np.mean(diff.values() ** 2), 0.0))
 
         # check if error is raised
         with self.assertRaises(ValueError):
-            calc_trend, _ = extract_trend_and_seasonality(
-                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
-            )
+            calc_trend, _ = extract_trend_and_seasonality(self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE)
 
     def test_remove_seasonality(self):
         # test default (naive) method
@@ -165,9 +145,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
 
         # check if error is raised
         with self.assertRaises(ValueError):
-            calc_trend = remove_seasonality(
-                self.ts, freq=6, method="STL", model=SeasonalityMode.MULTIPLICATIVE
-            )
+            calc_trend = remove_seasonality(self.ts, freq=6, method="STL", model=SeasonalityMode.MULTIPLICATIVE)
 
     def test_remove_trend(self):
         # test naive method
@@ -193,9 +171,7 @@ class SeasonalDecomposeTestCase(DartsBaseTestClass):
 
         # check if error is raised
         with self.assertRaises(ValueError):
-            calc_season = remove_trend(
-                self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE
-            )
+            calc_season = remove_trend(self.ts, freq=6, method="STL", model=ModelMode.MULTIPLICATIVE)
 
 
 class PlotTestCase(DartsBaseTestClass):

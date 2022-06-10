@@ -84,9 +84,7 @@ class Pipeline:
         else:
             self._transformers = transformers
 
-        self._invertible = all(
-            isinstance(t, InvertibleDataTransformer) for t in self._transformers
-        )
+        self._invertible = all(isinstance(t, InvertibleDataTransformer) for t in self._transformers)
 
         if verbose is not None:
             for transformer in self._transformers:
@@ -114,17 +112,13 @@ class Pipeline:
                 last_fittable_idx = idx
 
         for idx, transformer in enumerate(self._transformers):
-            if idx <= last_fittable_idx and isinstance(
-                transformer, FittableDataTransformer
-            ):
+            if idx <= last_fittable_idx and isinstance(transformer, FittableDataTransformer):
                 transformer.fit(data)
 
             if idx < last_fittable_idx:
                 data = transformer.transform(data)
 
-    def fit_transform(
-        self, data: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def fit_transform(self, data: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in the pipeline, first fit the data if transformer is fittable then transform data
         using fitted transformer. The transformed data is then passed to next transformer.
@@ -146,9 +140,7 @@ class Pipeline:
             data = transformer.transform(data)
         return data
 
-    def transform(
-        self, data: Union[TimeSeries, Sequence[TimeSeries]]
-    ) -> Union[TimeSeries, Sequence[TimeSeries]]:
+    def transform(self, data: Union[TimeSeries, Sequence[TimeSeries]]) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """
         For each data transformer in pipeline transform data. Then transformed data is passed to next transformer.
 

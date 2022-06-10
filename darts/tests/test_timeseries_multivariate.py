@@ -10,9 +10,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
 
     times1 = pd.date_range("20130101", "20130110")
     times2 = pd.date_range("20130206", "20130215")
-    dataframe1 = pd.DataFrame(
-        {"0": range(10), "1": range(5, 15), "2": range(10, 20)}, index=times1
-    )
+    dataframe1 = pd.DataFrame({"0": range(10), "1": range(5, 15), "2": range(10, 20)}, index=times1)
     dataframe2 = pd.DataFrame(
         {"0": np.arange(1, 11), "1": np.arange(1, 11) * 3, "2": np.arange(1, 11) * 5},
         index=times1,
@@ -30,9 +28,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
 
     def test_creation(self):
         series_test = TimeSeries.from_dataframe(self.dataframe1)
-        self.assertTrue(
-            np.all(series_test.pd_dataframe().values == (self.dataframe1.values))
-        )
+        self.assertTrue(np.all(series_test.pd_dataframe().values == (self.dataframe1.values)))
 
         # Series cannot be lower than three without passing frequency as argument to constructor
         with self.assertRaises(ValueError):
@@ -140,26 +136,14 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         with self.assertRaises(IndexError):
             self.series1.univariate_component(3)
         seriesA = self.series1.univariate_component(1)
-        self.assertTrue(
-            seriesA
-            == TimeSeries.from_times_and_values(
-                self.times1, range(5, 15), columns=["1"]
-            )
-        )
-        seriesB = (
-            self.series1.univariate_component(0)
-            .stack(seriesA)
-            .stack(self.series1.univariate_component(2))
-        )
+        self.assertTrue(seriesA == TimeSeries.from_times_and_values(self.times1, range(5, 15), columns=["1"]))
+        seriesB = self.series1.univariate_component(0).stack(seriesA).stack(self.series1.univariate_component(2))
         self.assertTrue(self.series1 == seriesB)
 
     def test_add_datetime_attribute(self):
         seriesA = self.series1.add_datetime_attribute("day")
         self.assertEqual(seriesA.width, self.series1.width + 1)
-        self.assertTrue(
-            set(seriesA.pd_dataframe().iloc[:, seriesA.width - 1].values.flatten())
-            == set(range(1, 11))
-        )
+        self.assertTrue(set(seriesA.pd_dataframe().iloc[:, seriesA.width - 1].values.flatten()) == set(range(1, 11)))
         seriesB = self.series3.add_datetime_attribute("day", True)
         self.assertEqual(seriesB.width, self.series3.width + 31)
         self.assertEqual(
@@ -168,9 +152,7 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         )
         seriesC = self.series1.add_datetime_attribute("month", True)
         self.assertEqual(seriesC.width, self.series1.width + 12)
-        seriesD = TimeSeries.from_times_and_values(
-            pd.date_range("20130206", "20130430"), range(84)
-        )
+        seriesD = TimeSeries.from_times_and_values(pd.date_range("20130206", "20130430"), range(84))
         seriesD = seriesD.add_datetime_attribute("month", True)
         self.assertEqual(seriesD.width, 13)
         self.assertEqual(sum(seriesD.values().flatten()), sum(range(84)) + 84)
@@ -182,21 +164,14 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         start = times_month[0]
         end = times_month[-1]
 
-        seriesE = TimeSeries.from_times_and_values(
-            times_month, np.repeat(0.1, len(times_month))
-        )
+        seriesE = TimeSeries.from_times_and_values(times_month, np.repeat(0.1, len(times_month)))
         seriesF = seriesE.add_datetime_attribute("day", cyclic=True)
 
         values_sin = seriesF.values()[:, 1]
         values_cos = seriesF.values()[:, 2]
 
-        self.assertTrue(
-            np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1)
-        )
-        start_of_month = [
-            pd.Timestamp(year=start.year, month=m, day=1) - start
-            for m in range(start.month, end.month)
-        ]
+        self.assertTrue(np.allclose(np.add(np.square(values_sin), np.square(values_cos)), 1))
+        start_of_month = [pd.Timestamp(year=start.year, month=m, day=1) - start for m in range(start.month, end.month)]
         start_of_month_idx = [stamp.days for stamp in start_of_month]
 
         self.assertTrue(np.allclose(values_sin[start_of_month_idx], 0))
@@ -237,9 +212,5 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
     def test_first_last_values(self):
         self.assertEqual(self.series1.first_values().tolist(), [0, 5, 10])
         self.assertEqual(self.series3.last_values().tolist(), [10, 20])
-        self.assertEqual(
-            self.series1.univariate_component(1).first_values().tolist(), [5]
-        )
-        self.assertEqual(
-            self.series3.univariate_component(1).last_values().tolist(), [20]
-        )
+        self.assertEqual(self.series1.univariate_component(1).first_values().tolist(), [5])
+        self.assertEqual(self.series3.univariate_component(1).last_values().tolist(), [20])

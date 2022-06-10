@@ -14,9 +14,7 @@ from darts.timeseries import TimeSeries
 
 
 class Croston(ForecastingModel):
-    def __init__(
-        self, version: str = "classic", alpha_d: float = None, alpha_p: float = None
-    ):
+    def __init__(self, version: str = "classic", alpha_d: float = None, alpha_p: float = None):
         """An implementation of the `Croston method
         <https://otexts.com/fpp3/counts.html>`_ for intermittent
         count series.
@@ -90,9 +88,7 @@ class Croston(ForecastingModel):
             )
         elif self.version == "sba":
             try:
-                self.forecast_val = self.method(
-                    series.values(copy=False), h=1, future_xreg=None
-                )
+                self.forecast_val = self.method(series.values(copy=False), h=1, future_xreg=None)
             except errors.TypingError:
                 raise_if(
                     True,
@@ -100,9 +96,7 @@ class Croston(ForecastingModel):
                 )
 
         else:
-            self.forecast_val = self.method(
-                series.values(copy=False), h=1, future_xreg=None
-            )
+            self.forecast_val = self.method(series.values(copy=False), h=1, future_xreg=None)
         return self
 
     def predict(

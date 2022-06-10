@@ -12,9 +12,7 @@ from .timeseries import TimeSeries, concatenate
 
 __version__ = "0.19.0"
 
-colors = cycler(
-    color=["black", "003DFD", "b512b8", "11a9ba", "0d780f", "f77f07", "ba0f0f"]
-)
+colors = cycler(color=["black", "003DFD", "b512b8", "11a9ba", "0d780f", "f77f07", "ba0f0f"])
 
 u8plots_mplstyle = {
     "font.family": "sans serif",

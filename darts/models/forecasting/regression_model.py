@@ -89,19 +89,13 @@ class RegressionModel(GlobalForecastingModel):
             self.model = LinearRegression(n_jobs=-1)
 
         if not callable(getattr(self.model, "fit", None)):
-            raise_log(
-                Exception("Provided model object must have a fit() method", logger)
-            )
+            raise_log(Exception("Provided model object must have a fit() method", logger))
         if not callable(getattr(self.model, "predict", None)):
-            raise_log(
-                Exception("Provided model object must have a predict() method", logger)
-            )
+            raise_log(Exception("Provided model object must have a predict() method", logger))
 
         # check lags
         raise_if(
-            (lags is None)
-            and (lags_future_covariates is None)
-            and (lags_past_covariates is None),
+            (lags is None) and (lags_future_covariates is None) and (lags_past_covariates is None),
             "At least one of `lags`, `lags_future_covariates` or `lags_past_covariates` must be not None.",
         )
 
@@ -121,8 +115,7 @@ class RegressionModel(GlobalForecastingModel):
             )
 
         raise_if_not(
-            isinstance(lags_future_covariates, (tuple, list))
-            or lags_future_covariates is None,
+            isinstance(lags_future_covariates, (tuple, list)) or lags_future_covariates is None,
             f"`lags_future_covariates` must be of type tuple or list. Given: {type(lags_future_covariates)}.",
         )
 
@@ -134,8 +127,7 @@ class RegressionModel(GlobalForecastingModel):
                 "`lags_future_covariates` tuple must be of length 2, and must contain two integers",
             )
             raise_if(
-                isinstance(lags_future_covariates[0], bool)
-                or isinstance(lags_future_covariates[1], bool),
+                isinstance(lags_future_covariates[0], bool) or isinstance(lags_future_covariates[1], bool),
                 "`lags_future_covariates` tuple must contain intergers, not bool",
             )
 
@@ -173,16 +165,9 @@ class RegressionModel(GlobalForecastingModel):
                 lags_future_covariates[0] >= 0 and lags_future_covariates[1] >= 0,
                 f"`lags_future_covariates` tuple must contain integers >= 0. Given: {lags_future_covariates}.",
             )
-            if (
-                lags_future_covariates[0] is not None
-                and lags_future_covariates[1] is not None
-            ):
-                if not (
-                    lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0
-                ):
-                    self.lags["future"] = list(
-                        range(-lags_future_covariates[0], lags_future_covariates[1])
-                    )
+            if lags_future_covariates[0] is not None and lags_future_covariates[1] is not None:
+                if not (lags_future_covariates[0] == 0 and lags_future_covariates[1] == 0):
+                    self.lags["future"] = list(range(-lags_future_covariates[0], lags_future_covariates[1]))
         elif isinstance(lags_future_covariates, list):
             for lag in lags_future_covariates:
                 raise_if(
@@ -203,9 +188,7 @@ class RegressionModel(GlobalForecastingModel):
     def min_train_series_length(self) -> int:
         return max(
             3,
-            -self.lags["target"][0] + self.output_chunk_length
-            if "target" in self.lags
-            else self.output_chunk_length,
+            -self.lags["target"][0] + self.output_chunk_length if "target" in self.lags else self.output_chunk_length,
         )
 
     def _get_last_prediction_time(self, series, forecast_horizon, overlap_end):
@@ -219,9 +202,7 @@ class RegressionModel(GlobalForecastingModel):
 
         return last_valid_pred_time
 
-    def _create_lagged_data(
-        self, target_series, past_covariates, future_covariates, max_samples_per_ts
-    ):
+    def _create_lagged_data(self, target_series, past_covariates, future_covariates, max_samples_per_ts):
         """
         Helper function that creates training/validation matrices (X and y as required in sklearn), given series and
         max_samples_per_ts.
@@ -247,15 +228,11 @@ class RegressionModel(GlobalForecastingModel):
         for idx, target_ts in enumerate(target_series):
             covariates = [
                 (
-                    past_covariates[idx].pd_dataframe(copy=False)
-                    if past_covariates
-                    else None,
+                    past_covariates[idx].pd_dataframe(copy=False) if past_covariates else None,
                     self.lags.get("past"),
                 ),
                 (
-                    future_covariates[idx].pd_dataframe(copy=False)
-                    if future_covariates
-                    else None,
+                    future_covariates[idx].pd_dataframe(copy=False) if future_covariates else None,
                     self.lags.get("future"),
                 ),
             ]
@@ -414,19 +391,12 @@ class RegressionModel(GlobalForecastingModel):
                     and self.model._get_tags().get("multioutput")
                 ):
                     # if not, wrap model with MultiOutputRegressor
-                    self.model = MultiOutputRegressor(
-                        self.model, n_jobs=n_jobs_multioutput_wrapper
-                    )
+                    self.model = MultiOutputRegressor(self.model, n_jobs=n_jobs_multioutput_wrapper)
         # warn if n_jobs_multioutput_wrapper was provided but not used
-        if (
-            not isinstance(self.model, MultiOutputRegressor)
-            and n_jobs_multioutput_wrapper is not None
-        ):
+        if not isinstance(self.model, MultiOutputRegressor) and n_jobs_multioutput_wrapper is not None:
             logger.warning("Provided `n_jobs_multioutput_wrapper` wasn't used.")
 
-        self._fit_model(
-            series, past_covariates, future_covariates, max_samples_per_ts, **kwargs
-        )
+        self._fit_model(series, past_covariates, future_covariates, max_samples_per_ts, **kwargs)
 
         return self
 
@@ -488,9 +458,7 @@ class RegressionModel(GlobalForecastingModel):
             called_with_single_series = True
             series = [series]
             past_covariates = [past_covariates] if past_covariates is not None else None
-            future_covariates = (
-                [future_covariates] if future_covariates is not None else None
-            )
+            future_covariates = [future_covariates] if future_covariates is not None else None
 
         # check that the input sizes of the target series and covariates match
         pred_input_dim = {
@@ -527,18 +495,14 @@ class RegressionModel(GlobalForecastingModel):
                 for idx, (ts, cov) in enumerate(zip(series, covs)):
                     # calculating first and last prediction time steps
                     first_pred_ts = ts.end_time() + 1 * ts.freq
-                    last_pred_ts = (
-                        first_pred_ts
-                        + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
-                    )
+                    last_pred_ts = first_pred_ts + ((n_pred_steps - 1) * self.output_chunk_length) * ts.freq
                     # calculating first and last required time steps
                     first_req_ts = first_pred_ts + lags[0] * ts.freq
                     last_req_ts = last_pred_ts + lags[-1] * ts.freq
 
                     # check for sufficient covariate data
                     raise_if_not(
-                        cov.start_time() <= first_req_ts
-                        and cov.end_time() >= last_req_ts,
+                        cov.start_time() <= first_req_ts and cov.end_time() >= last_req_ts,
                         f"The corresponding {cov_type}_covariate of the series at index {idx} isn't sufficiently long. "
                         f"Given horizon `n={n}`, `min(lags_{cov_type}_covariates)={lags[0]}`, "
                         f"`max(lags_{cov_type}_covariates)={lags[-1]}` and "
@@ -548,22 +512,16 @@ class RegressionModel(GlobalForecastingModel):
                     )
 
                     if cov.has_datetime_index:
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts:last_req_ts].values()
-                        )
+                        covariate_matrices[cov_type].append(cov[first_req_ts:last_req_ts].values())
                     else:
                         # include last_req_ts when slicing series with integer indices
-                        covariate_matrices[cov_type].append(
-                            cov[first_req_ts : last_req_ts + 1].values()
-                        )
+                        covariate_matrices[cov_type].append(cov[first_req_ts : last_req_ts + 1].values())
 
                 covariate_matrices[cov_type] = np.stack(covariate_matrices[cov_type])
 
         series_matrix = None
         if "target" in self.lags:
-            series_matrix = np.stack(
-                [ts[self.lags["target"][0] :].values() for ts in series]
-            )
+            series_matrix = np.stack([ts[self.lags["target"][0] :].values() for ts in series])
 
         # repeat series_matrix to shape (num_samples * num_series, n_lags, n_components)
         # [series 0 sample 0, series 0 sample 1, ..., series n sample k]
@@ -580,23 +538,15 @@ class RegressionModel(GlobalForecastingModel):
             # retrieve target lags
             if "target" in self.lags:
 
-                target_matrix = (
-                    np.concatenate([series_matrix, *predictions], axis=1)
-                    if predictions
-                    else series_matrix
-                )
-                np_X.append(
-                    target_matrix[:, self.lags["target"]].reshape(
-                        len(series) * num_samples, -1
-                    )
-                )
+                target_matrix = np.concatenate([series_matrix, *predictions], axis=1) if predictions else series_matrix
+                np_X.append(target_matrix[:, self.lags["target"]].reshape(len(series) * num_samples, -1))
             # retrieve covariate lags, enforce order (dict only preserves insertion order for python 3.6+)
             for cov_type in ["past", "future"]:
                 if cov_type in covariate_matrices:
                     np_X.append(
-                        covariate_matrices[cov_type][
-                            :, relative_cov_lags[cov_type] + t_pred
-                        ].reshape(len(series) * num_samples, -1)
+                        covariate_matrices[cov_type][:, relative_cov_lags[cov_type] + t_pred].reshape(
+                            len(series) * num_samples, -1
+                        )
                     )
 
             # concatenate retrieved lags
@@ -611,20 +561,13 @@ class RegressionModel(GlobalForecastingModel):
         predictions = np.concatenate(predictions, axis=1)[:, :n]
 
         # bring into correct shape: (n_series, output_chunk_length, n_components, n_samples)
-        predictions = np.moveaxis(
-            predictions.reshape(len(series), num_samples, n, -1), 1, -1
-        )
+        predictions = np.moveaxis(predictions.reshape(len(series), num_samples, n, -1), 1, -1)
         # build time series from the predicted values starting after end of series
-        predictions = [
-            self._build_forecast_series(row, input_tgt)
-            for row, input_tgt in zip(predictions, series)
-        ]
+        predictions = [self._build_forecast_series(row, input_tgt) for row, input_tgt in zip(predictions, series)]
 
         return predictions[0] if called_with_single_series else predictions
 
-    def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
-    ) -> np.ndarray:
+    def _predict_and_sample(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         prediction = self.model.predict(x, **kwargs)
         k = x.shape[0]
         return prediction.reshape(k, self.output_chunk_length, -1)
@@ -671,9 +614,7 @@ class _LikelihoodMixin:
 
         return quantiles, median_idx
 
-    def _predict_quantiles(
-        self, x: np.ndarray, num_samples: int, **kwargs
-    ) -> np.ndarray:
+    def _predict_quantiles(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         """
         X is of shape (n_series * n_samples, n_regression_features)
         """
@@ -687,9 +628,7 @@ class _LikelihoodMixin:
         for quantile, fitted in self._model_container.items():
             self.model = fitted
             # model output has shape (n_series * n_samples, output_chunk_length, n_components)
-            model_output = fitted.predict(x, **kwargs).reshape(
-                k, self.output_chunk_length, -1
-            )
+            model_output = fitted.predict(x, **kwargs).reshape(k, self.output_chunk_length, -1)
             model_outputs.append(model_output)
         model_outputs = np.stack(model_outputs, axis=-1)
         # model_outputs has shape (n_series * n_samples, output_chunk_length, n_components, n_quantiles)
@@ -706,9 +645,7 @@ class _LikelihoodMixin:
         """
         k = x.shape[0]
 
-        model_output = self.model.predict(x, **kwargs).reshape(
-            k, self.output_chunk_length, -1
-        )
+        model_output = self.model.predict(x, **kwargs).reshape(k, self.output_chunk_length, -1)
         if num_samples == 1:
             return model_output
 

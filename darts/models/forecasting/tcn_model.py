@@ -92,9 +92,7 @@ class _ResidualBlock(nn.Module):
             dilation=(dilation_base**nr_blocks_below),
         )
         if weight_norm:
-            self.conv1, self.conv2 = nn.utils.weight_norm(
-                self.conv1
-            ), nn.utils.weight_norm(self.conv2)
+            self.conv1, self.conv2 = nn.utils.weight_norm(self.conv1), nn.utils.weight_norm(self.conv2)
 
         if input_dim != output_dim:
             self.conv3 = nn.Conv1d(input_dim, output_dim, 1)
@@ -103,9 +101,7 @@ class _ResidualBlock(nn.Module):
         residual = x
 
         # first step
-        left_padding = (self.dilation_base**self.nr_blocks_below) * (
-            self.kernel_size - 1
-        )
+        left_padding = (self.dilation_base**self.nr_blocks_below) * (self.kernel_size - 1)
         x = F.pad(x, (left_padding, 0))
         x = self.dropout_fn(F.relu(self.conv1(x)))
 
@@ -197,19 +193,13 @@ class _TCNModule(PLPastCovariatesModule):
         if num_layers is None and dilation_base > 1:
             num_layers = math.ceil(
                 math.log(
-                    (self.input_chunk_length - 1)
-                    * (dilation_base - 1)
-                    / (kernel_size - 1)
-                    / 2
-                    + 1,
+                    (self.input_chunk_length - 1) * (dilation_base - 1) / (kernel_size - 1) / 2 + 1,
                     dilation_base,
                 )
             )
             logger.info("Number of layers chosen: " + str(num_layers))
         elif num_layers is None:
-            num_layers = math.ceil(
-                (self.input_chunk_length - 1) / (kernel_size - 1) / 2
-            )
+            num_layers = math.ceil((self.input_chunk_length - 1) / (kernel_size - 1) / 2)
             logger.info("Number of layers chosen: " + str(num_layers))
         self.num_layers = num_layers
 
@@ -240,9 +230,7 @@ class _TCNModule(PLPastCovariatesModule):
             x = res_block(x)
 
         x = x.transpose(1, 2)
-        x = x.view(
-            batch_size, self.input_chunk_length, self.target_size, self.nr_params
-        )
+        x = x.view(batch_size, self.input_chunk_length, self.target_size, self.nr_params)
 
         return x
 
@@ -449,9 +437,7 @@ class TCNModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

@@ -54,9 +54,7 @@ class _PositionalEncoding(nn.Module):
 
         pe = torch.zeros(max_len, d_model)
         position = torch.arange(0, max_len, dtype=torch.float).unsqueeze(1)
-        div_term = torch.exp(
-            torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model)
-        )
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-math.log(10000.0) / d_model))
         pe[:, 0::2] = torch.sin(position * div_term)
         pe[:, 1::2] = torch.cos(position * div_term)
         pe = pe.unsqueeze(0).transpose(0, 1)
@@ -136,16 +134,12 @@ class _TransformerModule(PLPastCovariatesModule):
         self.target_length = self.output_chunk_length
 
         self.encoder = nn.Linear(input_size, d_model)
-        self.positional_encoding = _PositionalEncoding(
-            d_model, dropout, self.input_chunk_length
-        )
+        self.positional_encoding = _PositionalEncoding(d_model, dropout, self.input_chunk_length)
 
         raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
         if activation in GLU_FFN:
             # use glu variant feedforward layers
-            self.activation = getattr(glu_variants, activation)(
-                d_model=d_model, d_ff=dim_feedforward, dropout=dropout
-            )
+            self.activation = getattr(glu_variants, activation)(d_model=d_model, d_ff=dim_feedforward, dropout=dropout)
         else:
             # use nn.Transformer built in feedforward layers
             self.activation = activation
@@ -163,9 +157,7 @@ class _TransformerModule(PLPastCovariatesModule):
             custom_decoder=custom_decoder,
         )
 
-        self.decoder = nn.Linear(
-            d_model, self.output_chunk_length * self.target_size * self.nr_params
-        )
+        self.decoder = nn.Linear(d_model, self.output_chunk_length * self.target_size * self.nr_params)
 
     def _create_transformer_inputs(self, data):
         # '_TimeSeriesSequentialDataset' stores time series in the
@@ -198,9 +190,7 @@ class _TransformerModule(PLPastCovariatesModule):
         # from (1, batch_size, output_chunk_length * output_size)
         # to (batch_size, output_chunk_length, output_size, nr_params)
         predictions = out[0, :, :]
-        predictions = predictions.view(
-            -1, self.target_length, self.target_size, self.nr_params
-        )
+        predictions = predictions.view(-1, self.target_length, self.target_size, self.nr_params)
 
         return predictions
 
@@ -430,9 +420,7 @@ class TransformerModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 

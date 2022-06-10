@@ -78,7 +78,4 @@ class RandomForest(RegressionModel):
         )
 
     def __str__(self):
-        return (
-            f"RandomForest(lags={self.lags}, "
-            f"n_estimators={self.n_estimators}, max_depth={self.max_depth})"
-        )
+        return f"RandomForest(lags={self.lags}, " f"n_estimators={self.n_estimators}, max_depth={self.max_depth})"

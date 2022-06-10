@@ -59,9 +59,7 @@ class VARIMA(DualCovariatesForecastingModel):
 
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         # for VARIMA we need to process target `series` before calling DualForecastingModels' fit() method
-        self._last_values = (
-            series.last_values()
-        )  # needed for back-transformation when d=1
+        self._last_values = series.last_values()  # needed for back-transformation when d=1
         for _ in range(self.d):
             series = TimeSeries.from_dataframe(
                 df=series.pd_dataframe(copy=False).diff().dropna(),
@@ -72,9 +70,7 @@ class VARIMA(DualCovariatesForecastingModel):
 
         return self
 
-    def _fit(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ) -> None:
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None) -> None:
         super()._fit(series, future_covariates)
         series = self.training_series
         future_covariates = future_covariates.values() if future_covariates else None
@@ -96,9 +92,7 @@ class VARIMA(DualCovariatesForecastingModel):
     ) -> TimeSeries:
 
         super()._predict(n, future_covariates, num_samples)
-        forecast = self.model.forecast(
-            steps=n, exog=future_covariates.values() if future_covariates else None
-        )
+        forecast = self.model.forecast(steps=n, exog=future_covariates.values() if future_covariates else None)
         forecast = self._invert_transformation(forecast)
         return self._build_forecast_series(np.array(forecast))
 

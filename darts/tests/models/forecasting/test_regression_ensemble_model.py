@@ -38,9 +38,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     RANDOM_SEED = 111
 
-    sine_series = tg.sine_timeseries(
-        value_frequency=(1 / 5), value_y_offset=10, length=50
-    )
+    sine_series = tg.sine_timeseries(value_frequency=(1 / 5), value_y_offset=10, length=50)
     lin_series = tg.linear_timeseries(length=50)
 
     combined = sine_series + lin_series
@@ -138,12 +136,8 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_torch_models_retrain(self):
-        model1 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
-        )
-        model2 = BlockRNNModel(
-            input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2
-        )
+        model1 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
+        model2 = BlockRNNModel(input_chunk_length=12, output_chunk_length=1, random_state=0, n_epochs=2)
 
         ensemble = RegressionEnsembleModel([model1], 5)
         ensemble.fit(self.combined)
@@ -154,9 +148,7 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         model2.fit(self.combined)
         forecast2 = model2.predict(10)
 
-        self.assertAlmostEqual(
-            sum(forecast1.values() - forecast2.values())[0], 0.0, places=2
-        )
+        self.assertAlmostEqual(sum(forecast1.values() - forecast2.values())[0], 0.0, places=2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
     def test_train_predict_global_models_univar(self):
@@ -183,14 +175,10 @@ class RegressionEnsembleModelsTestCase(DartsBaseTestClass):
         ensemble.predict(10, self.seq2, self.cov2)
 
     @unittest.skipUnless(TORCH_AVAILABLE, "requires torch")
-    def helper_test_models_accuracy(
-        self, model_instance, n, series, past_covariates, min_rmse
-    ):
+    def helper_test_models_accuracy(self, model_instance, n, series, past_covariates, min_rmse):
         # for every model, test whether it predicts the target with a minimum r2 score of `min_rmse`
         train_series, test_series = train_test_split(series, pd.Timestamp("20010101"))
-        train_past_covariates, _ = train_test_split(
-            past_covariates, pd.Timestamp("20010101")
-        )
+        train_past_covariates, _ = train_test_split(past_covariates, pd.Timestamp("20010101"))
 
         model_instance.fit(series=train_series, past_covariates=train_past_covariates)
         prediction = model_instance.predict(n=n, past_covariates=past_covariates)

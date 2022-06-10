@@ -96,9 +96,7 @@ class ARIMA(DualCovariatesForecastingModel):
         super()._predict(n, future_covariates, num_samples)
 
         if num_samples == 1:
-            forecast = self.model.forecast(
-                steps=n, exog=future_covariates.values() if future_covariates else None
-            )
+            forecast = self.model.forecast(steps=n, exog=future_covariates.values() if future_covariates else None)
         else:
             forecast = self.model.simulate(
                 nsimulations=n,

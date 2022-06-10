@@ -88,17 +88,13 @@ class _BlockRNNModule(PLPastCovariatesModule):
         self.name = name
 
         # Defining the RNN module
-        self.rnn = getattr(nn, name)(
-            input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout
-        )
+        self.rnn = getattr(nn, name)(input_size, hidden_dim, num_layers, batch_first=True, dropout=dropout)
 
         # The RNN module is followed by a fully connected layer, which maps the last hidden layer
         # to the output of desired length
         last = hidden_dim
         feats = []
-        for feature in num_layers_out_fc + [
-            self.output_chunk_length * target_size * nr_params
-        ]:
+        for feature in num_layers_out_fc + [self.output_chunk_length * target_size * nr_params]:
             feats.append(nn.Linear(last, feature))
             last = feature
         self.fc = nn.Sequential(*feats)
@@ -116,9 +112,7 @@ class _BlockRNNModule(PLPastCovariatesModule):
             hidden = hidden[0]
         predictions = hidden[-1, :, :]
         predictions = self.fc(predictions)
-        predictions = predictions.view(
-            batch_size, self.out_len, self.target_size, self.nr_params
-        )
+        predictions = predictions.view(batch_size, self.out_len, self.target_size, self.nr_params)
 
         # predictions is of size (batch_size, output_chunk_length, 1)
         return predictions
@@ -310,9 +304,7 @@ class BlockRNNModel(PastCovariatesTorchModel):
             raise_if_not(
                 isinstance(model, nn.Module),
                 '{} is not a valid RNN model.\n Please specify "RNN", "LSTM", '
-                '"GRU", or give your own PyTorch nn.Module'.format(
-                    model.__class__.__name__
-                ),
+                '"GRU", or give your own PyTorch nn.Module'.format(model.__class__.__name__),
                 logger,
             )
 
@@ -324,16 +316,12 @@ class BlockRNNModel(PastCovariatesTorchModel):
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
-        input_dim = train_sample[0].shape[1] + (
-            train_sample[1].shape[1] if train_sample[1] is not None else 0
-        )
+        input_dim = train_sample[0].shape[1] + (train_sample[1].shape[1] if train_sample[1] is not None else 0)
         output_dim = train_sample[-1].shape[1]
         nr_params = 1 if self.likelihood is None else self.likelihood.num_parameters
 
         if self.rnn_type_or_module in ["RNN", "LSTM", "GRU"]:
-            hidden_fc_sizes = (
-                [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
-            )
+            hidden_fc_sizes = [] if self.hidden_fc_sizes is None else self.hidden_fc_sizes
             model = _BlockRNNModule(
                 name=self.rnn_type_or_module,
                 input_size=input_dim,

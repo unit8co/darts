@@ -49,9 +49,7 @@ class AutoARIMA(DualCovariatesForecastingModel):
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         super()._fit(series, future_covariates)
         series = self.training_series
-        self.model.fit(
-            series.values(), X=future_covariates.values() if future_covariates else None
-        )
+        self.model.fit(series.values(), X=future_covariates.values() if future_covariates else None)
         return self
 
     def _predict(
@@ -61,9 +59,7 @@ class AutoARIMA(DualCovariatesForecastingModel):
         num_samples: int = 1,
     ):
         super()._predict(n, future_covariates, num_samples)
-        forecast = self.model.predict(
-            n_periods=n, X=future_covariates.values() if future_covariates else None
-        )
+        forecast = self.model.predict(n_periods=n, X=future_covariates.values() if future_covariates else None)
         return self._build_forecast_series(forecast)
 
     @property

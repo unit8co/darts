@@ -12,13 +12,9 @@ class MetricsTestCase(DartsBaseTestClass):
         np.sin(np.pi * np.arange(31) / 4) + 1,
         index=pd.date_range("20121201", "20121231"),
     )
-    pd_train_not_periodic = pd.Series(
-        range(31), index=pd.date_range("20121201", "20121231")
-    )
+    pd_train_not_periodic = pd.Series(range(31), index=pd.date_range("20121201", "20121231"))
     pd_series1 = pd.Series(range(10), index=pd.date_range("20130101", "20130110"))
-    pd_series2 = pd.Series(
-        np.random.rand(10) * 10 + 1, index=pd.date_range("20130101", "20130110")
-    )
+    pd_series2 = pd.Series(np.random.rand(10) * 10 + 1, index=pd.date_range("20130101", "20130110"))
     pd_series3 = pd.Series(
         np.sin(np.pi * np.arange(20) / 4) + 1,
         index=pd.date_range("20130101", "20130120"),
@@ -32,12 +28,8 @@ class MetricsTestCase(DartsBaseTestClass):
     series3: TimeSeries = TimeSeries.from_series(pd_series3)
     series12: TimeSeries = series1.stack(series2)
     series21: TimeSeries = series2.stack(series1)
-    series1b = TimeSeries.from_times_and_values(
-        pd.date_range("20130111", "20130120"), series1.values()
-    )
-    series2b = TimeSeries.from_times_and_values(
-        pd.date_range("20130111", "20130120"), series2.values()
-    )
+    series1b = TimeSeries.from_times_and_values(pd.date_range("20130111", "20130120"), series1.values())
+    series2b = TimeSeries.from_times_and_values(pd.date_range("20130111", "20130120"), series2.values())
     series12_mean = (series1 + series2) / 2
     series11_stochastic = TimeSeries.from_times_and_values(
         series1.time_index, np.stack([series1.values(), series1.values()], axis=2)
@@ -74,22 +66,16 @@ class MetricsTestCase(DartsBaseTestClass):
     def test_same(self):
         self.assertEqual(metrics.mape(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.smape(self.series1 + 1, self.series1 + 1), 0)
-        self.assertEqual(
-            metrics.mase(self.series1 + 1, self.series1 + 1, self.series_train, 1), 0
-        )
+        self.assertEqual(metrics.mase(self.series1 + 1, self.series1 + 1, self.series_train, 1), 0)
         self.assertEqual(metrics.marre(self.series1 + 1, self.series1 + 1), 0)
         self.assertEqual(metrics.r2_score(self.series1 + 1, self.series1 + 1), 1)
         self.assertEqual(metrics.ope(self.series1 + 1, self.series1 + 1), 0)
-        self.assertEqual(
-            metrics.rho_risk(self.series1 + 1, self.series11_stochastic + 1), 0
-        )
+        self.assertEqual(metrics.rho_risk(self.series1 + 1, self.series11_stochastic + 1), 0)
 
     def helper_test_shape_equality(self, metric):
         self.assertAlmostEqual(
             metric(self.series12, self.series21),
-            metric(
-                self.series1.append(self.series2b), self.series2.append(self.series1b)
-            ),
+            metric(self.series1.append(self.series2b), self.series2.append(self.series1b)),
         )
 
     def get_test_cases(self, **kwargs):
@@ -201,12 +187,8 @@ class MetricsTestCase(DartsBaseTestClass):
         self.helper_test_multiple_ts_duplication_equality(metrics.rmse)
 
         self.assertAlmostEqual(
-            metrics.rmse(
-                self.series1.append(self.series2b), self.series2.append(self.series1b)
-            ),
-            metrics.mse(
-                self.series12, self.series21, reduction=(lambda x: np.sqrt(np.mean(x)))
-            ),
+            metrics.rmse(self.series1.append(self.series2b), self.series2.append(self.series1b)),
+            metrics.mse(self.series12, self.series21, reduction=(lambda x: np.sqrt(np.mean(x)))),
         )
         self.helper_test_nan(metrics.rmse)
 
@@ -216,12 +198,8 @@ class MetricsTestCase(DartsBaseTestClass):
         self.helper_test_nan(metrics.rmsle)
 
     def test_coefficient_of_variation(self):
-        self.helper_test_multivariate_duplication_equality(
-            metrics.coefficient_of_variation
-        )
-        self.helper_test_multiple_ts_duplication_equality(
-            metrics.coefficient_of_variation
-        )
+        self.helper_test_multivariate_duplication_equality(metrics.coefficient_of_variation)
+        self.helper_test_multiple_ts_duplication_equality(metrics.coefficient_of_variation)
         self.helper_test_nan(metrics.coefficient_of_variation)
 
     def test_mape(self):
@@ -282,9 +260,7 @@ class MetricsTestCase(DartsBaseTestClass):
             )
         # checking with m=None
         self.assertAlmostEqual(
-            metrics.mase(
-                self.series2, self.series2, self.series_train_not_periodic, m=None
-            ),
+            metrics.mase(self.series2, self.series2, self.series_train_not_periodic, m=None),
             metrics.mase(
                 [self.series2] * 2,
                 [self.series2] * 2,
@@ -321,58 +297,38 @@ class MetricsTestCase(DartsBaseTestClass):
             metrics.rho_risk(self.series1, self.series1)
 
         # general univariate, multivariate and multi-ts tests
-        self.helper_test_multivariate_duplication_equality(
-            metrics.rho_risk, is_stochastic=True
-        )
-        self.helper_test_multiple_ts_duplication_equality(
-            metrics.rho_risk, is_stochastic=True
-        )
+        self.helper_test_multivariate_duplication_equality(metrics.rho_risk, is_stochastic=True)
+        self.helper_test_multiple_ts_duplication_equality(metrics.rho_risk, is_stochastic=True)
         self.helper_test_nan(metrics.rho_risk, is_stochastic=True)
 
         # test perfect predictions -> risk = 0
         for rho in [0.25, 0.5]:
-            self.assertAlmostEqual(
-                metrics.rho_risk(self.series1, self.series11_stochastic, rho=rho), 0.0
-            )
-        self.assertAlmostEqual(
-            metrics.rho_risk(self.series12_mean, self.series12_stochastic, rho=0.5), 0.0
-        )
+            self.assertAlmostEqual(metrics.rho_risk(self.series1, self.series11_stochastic, rho=rho), 0.0)
+        self.assertAlmostEqual(metrics.rho_risk(self.series12_mean, self.series12_stochastic, rho=0.5), 0.0)
 
         # test whether stochastic sample from two TimeSeries (ts) represents the individual ts at 0. and 1. quantiles
         s1 = self.series1
         s2 = self.series1 * 2
-        s12_stochastic = TimeSeries.from_times_and_values(
-            s1.time_index, np.stack([s1.values(), s2.values()], axis=2)
-        )
+        s12_stochastic = TimeSeries.from_times_and_values(s1.time_index, np.stack([s1.values(), s2.values()], axis=2))
         self.assertAlmostEqual(metrics.rho_risk(s1, s12_stochastic, rho=0.0), 0.0)
         self.assertAlmostEqual(metrics.rho_risk(s2, s12_stochastic, rho=1.0), 0.0)
 
     def test_metrics_arguments(self):
         series00 = self.series0.stack(self.series0)
         series11 = self.series1.stack(self.series1)
-        self.assertEqual(
-            metrics.r2_score(series11, series00, True, reduction=np.mean), 0
-        )
+        self.assertEqual(metrics.r2_score(series11, series00, True, reduction=np.mean), 0)
         self.assertEqual(metrics.r2_score(series11, series00, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series11, pred_series=series00, reduction=np.mean), 0)
+        self.assertEqual(metrics.r2_score(series00, actual_series=series11, reduction=np.mean), 0)
         self.assertEqual(
-            metrics.r2_score(series11, pred_series=series00, reduction=np.mean), 0
-        )
-        self.assertEqual(
-            metrics.r2_score(series00, actual_series=series11, reduction=np.mean), 0
-        )
-        self.assertEqual(
-            metrics.r2_score(
-                True, reduction=np.mean, pred_series=series00, actual_series=series11
-            ),
+            metrics.r2_score(True, reduction=np.mean, pred_series=series00, actual_series=series11),
             0,
         )
         self.assertEqual(
             metrics.r2_score(series00, True, reduction=np.mean, actual_series=series11),
             0,
         )
-        self.assertEqual(
-            metrics.r2_score(series11, True, reduction=np.mean, pred_series=series00), 0
-        )
+        self.assertEqual(metrics.r2_score(series11, True, reduction=np.mean, pred_series=series00), 0)
 
         # should fail if kwargs are passed as args, because of the "*"
         with self.assertRaises(TypeError):
@@ -386,9 +342,7 @@ class MetricsTestCase(DartsBaseTestClass):
         multi_ts_1 = [self.series1 + 1, self.series1 + 1]
         multi_ts_2 = [self.series1 + 2, self.series1 + 1]
         self.assertEqual(
-            metrics.rmse(
-                multi_ts_1, multi_ts_2, reduction=np.mean, inter_reduction=np.mean
-            ),
+            metrics.rmse(multi_ts_1, multi_ts_2, reduction=np.mean, inter_reduction=np.mean),
             0.5,
         )
 
@@ -412,9 +366,7 @@ class MetricsTestCase(DartsBaseTestClass):
         ]
 
         for metric in test_metric:
-            self.assertEqual(
-                metric(self.series1 + 1, self.series2), metric(series11, series22)
-            )
+            self.assertEqual(metric(self.series1 + 1, self.series2), metric(series11, series22))
             self.assertEqual([metric(series11, series22)] * 2, metric(multi_1, multi_2))
 
         # trying different functions

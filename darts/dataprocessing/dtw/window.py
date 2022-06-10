@@ -314,9 +314,7 @@ class Itakura(CRWindow):
 
         ranges = np.zeros((self.n, 2), dtype=float)
 
-        shallow_bottom = int(
-            np.round((m - n * max_slope) / (min_slope - max_slope)) + 1
-        )
+        shallow_bottom = int(np.round((m - n * max_slope) / (min_slope - max_slope)) + 1)
         ranges[:shallow_bottom, 0] = np.arange(shallow_bottom)
         ranges[shallow_bottom:, 0] = np.arange(n - shallow_bottom) + 1
 

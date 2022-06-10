@@ -23,9 +23,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
 
         def test_routine(start, end=None, length=None):
             # testing for constant value
-            constant_ts = constant_timeseries(
-                start=start, end=end, value=value, length=length
-            )
+            constant_ts = constant_timeseries(start=start, end=end, value=value, length=length)
             value_set = set(constant_ts.values().flatten())
             self.assertTrue(len(value_set) == 1)
             self.assertEqual(len(constant_ts), length_assert)
@@ -34,9 +32,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = _generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_linear_timeseries(self):
@@ -66,9 +62,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = _generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_sine_timeseries(self):
@@ -94,9 +88,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = _generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_gaussian_timeseries(self):
@@ -110,9 +102,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = _generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_random_walk_timeseries(self):
@@ -126,21 +116,13 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             test_routine(start=0, length=length_assert)
             test_routine(start=0, end=length_assert - 1)
             test_routine(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = _generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_routine(start=pd.Timestamp("2000-01-01"), end=end_date)
 
     def test_holidays_timeseries(self):
-        time_index_1 = pd.date_range(
-            periods=365 * 3, freq="D", start=pd.Timestamp("2012-01-01")
-        )
-        time_index_2 = pd.date_range(
-            periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24")
-        )
-        time_index_3 = pd.date_range(
-            periods=10, freq="Y", start=pd.Timestamp("1950-01-01")
-        ) + pd.Timedelta(days=1)
+        time_index_1 = pd.date_range(periods=365 * 3, freq="D", start=pd.Timestamp("2012-01-01"))
+        time_index_2 = pd.date_range(periods=365 * 3, freq="D", start=pd.Timestamp("2014-12-24"))
+        time_index_3 = pd.date_range(periods=10, freq="Y", start=pd.Timestamp("1950-01-01")) + pd.Timedelta(days=1)
 
         # testing we have at least one holiday flag in each year
         def test_routine(
@@ -149,12 +131,8 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
             until: Union[int, pd.Timestamp, str] = 0,
             add_length=0,
         ):
-            ts = holidays_timeseries(
-                time_index, country_code, until=until, add_length=add_length
-            )
-            self.assertTrue(
-                all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values)
-            )
+            ts = holidays_timeseries(time_index, country_code, until=until, add_length=add_length)
+            self.assertTrue(all(ts.pd_dataframe().groupby(pd.Grouper(freq="y")).sum().values))
 
         for time_index in [time_index_1, time_index_2, time_index_3]:
             for country_code in ["US", "CH", "AR"]:
@@ -195,9 +173,7 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
                 test_routine(start=start_assert, length=length_assert, freq="D")
                 test_routine(start=start_assert, end=end_assert)
                 test_routine(start=start_assert, end=end_assert, freq="D")
-                test_routine(
-                    start=None, end=end_assert, length=length_assert, freq="BH"
-                )
+                test_routine(start=None, end=end_assert, length=length_assert, freq="BH")
                 # pandas.DatetimeIndex
                 start_date = pd.DatetimeIndex(["2000-01-01"], freq="D")
                 start_date += start_date.freq * start_pos
@@ -232,31 +208,20 @@ class TimeSeriesGenerationTestCase(DartsBaseTestClass):
     def test_autoregressive_timeseries(self):
         # testing for correct length
         def test_length(start, end=None, length=None):
-            autoregressive_ts = autoregressive_timeseries(
-                coef=[-1, 1.618], start=start, end=end, length=length
-            )
+            autoregressive_ts = autoregressive_timeseries(coef=[-1, 1.618], start=start, end=end, length=length)
             self.assertEqual(len(autoregressive_ts), length_assert)
 
         # testing for correct calculation
         def test_calculation(coef):
-            autoregressive_values = autoregressive_timeseries(
-                coef=coef, length=100
-            ).values()
+            autoregressive_values = autoregressive_timeseries(coef=coef, length=100).values()
             for idx, val in enumerate(autoregressive_values[len(coef) :]):
-                self.assertTrue(
-                    val
-                    == np.dot(
-                        coef, autoregressive_values[idx : idx + len(coef)].ravel()
-                    )
-                )
+                self.assertTrue(val == np.dot(coef, autoregressive_values[idx : idx + len(coef)].ravel()))
 
         for length_assert in [1, 2, 5, 10, 100]:
             test_length(start=0, length=length_assert)
             test_length(start=0, end=length_assert - 1)
             test_length(start=pd.Timestamp("2000-01-01"), length=length_assert)
-            end_date = _generate_index(
-                start=pd.Timestamp("2000-01-01"), length=length_assert
-            )[-1]
+            end_date = _generate_index(start=pd.Timestamp("2000-01-01"), length=length_assert)[-1]
             test_length(start=pd.Timestamp("2000-01-01"), end=end_date)
 
         for coef_assert in [[-1], [-1, 1.618], [1, 2, 3], list(range(10))]:

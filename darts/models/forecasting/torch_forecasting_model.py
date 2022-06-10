@@ -101,9 +101,7 @@ def _get_checkpoint_fname(work_dir, model_name, best=False):
     if len(checklist) == 0:
         raise_log(
             FileNotFoundError(
-                "There is no file matching prefix {} in {}".format(
-                    "best-*" if best else "last-*", checkpoint_dir
-                )
+                "There is no file matching prefix {} in {}".format("best-*" if best else "last-*", checkpoint_dir)
             ),
             logger,
         )
@@ -279,10 +277,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.save_checkpoints = save_checkpoints
         checkpoints_folder = _get_checkpoint_folder(self.work_dir, self.model_name)
         log_folder = _get_logs_folder(self.work_dir, self.model_name)
-        checkpoint_exists = (
-            os.path.exists(checkpoints_folder)
-            and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
-        )
+        checkpoint_exists = os.path.exists(checkpoints_folder) and len(glob(os.path.join(checkpoints_folder, "*"))) > 0
 
         # setup model save dirs
         if checkpoint_exists and save_checkpoints:
@@ -300,9 +295,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             pass
 
         # TODO: remove below in the next version ======>
-        accelerator, gpus, auto_select_gpus = self._extract_torch_devices(
-            torch_device_str
-        )
+        accelerator, gpus, auto_select_gpus = self._extract_torch_devices(torch_device_str)
         # TODO: until here <======
 
         # save best epoch on val_loss and last epoch under 'darts_logs/model_name/checkpoints/'
@@ -319,9 +312,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # save tensorboard under 'darts_logs/model_name/logs/'
         model_logger = (
-            pl_loggers.TensorBoardLogger(save_dir=log_folder, name="", version="logs")
-            if log_tensorboard
-            else False
+            pl_loggers.TensorBoardLogger(save_dir=log_folder, name="", version="logs") if log_tensorboard else False
         )
 
         # setup trainer parameters from model creation parameters
@@ -338,13 +329,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # update trainer parameters with user defined `pl_trainer_kwargs`
         if pl_trainer_kwargs is not None:
-            pl_trainer_kwargs_copy = {
-                key: val for key, val in pl_trainer_kwargs.items()
-            }
+            pl_trainer_kwargs_copy = {key: val for key, val in pl_trainer_kwargs.items()}
             self.n_epochs = pl_trainer_kwargs_copy.get("max_epochs", self.n_epochs)
-            self.trainer_params["callbacks"] += pl_trainer_kwargs_copy.pop(
-                "callbacks", []
-            )
+            self.trainer_params["callbacks"] += pl_trainer_kwargs_copy.pop("callbacks", [])
             self.trainer_params = dict(self.trainer_params, **pl_trainer_kwargs_copy)
 
         # pytorch lightning trainer will be created at training time
@@ -379,12 +366,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         raise_deprecation_warning(device_warning, logger)
         # check torch device
         raise_if_not(
-            any(
-                [
-                    device_str in torch_device_str
-                    for device_str in ["cuda", "cpu", "auto"]
-                ]
-            ),
+            any([device_str in torch_device_str for device_str in ["cuda", "cpu", "auto"]]),
             f"unknown torch_device_str `{torch_device_str}`. String must contain one of `('cuda', 'cpu', 'auto') "
             + device_warning,
             logger,
@@ -433,18 +415,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     def _extract_torch_model_params(cls, **kwargs):
         """extract params from model creation to set up TorchForecastingModels"""
         cls._validate_model_params(**kwargs)
-        get_params = list(
-            inspect.signature(TorchForecastingModel.__init__).parameters.keys()
-        )
+        get_params = list(inspect.signature(TorchForecastingModel.__init__).parameters.keys())
         get_params.remove("self")
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
     @staticmethod
     def _extract_pl_module_params(**kwargs):
         """Extract params from model creation to set up PLForecastingModule (the actual torch.nn.Module)"""
-        get_params = list(
-            inspect.signature(PLForecastingModule.__init__).parameters.keys()
-        )
+        get_params = list(inspect.signature(PLForecastingModule.__init__).parameters.keys())
         get_params.remove("self")
         return {kwarg: kwargs.get(kwarg) for kwarg in get_params if kwarg in kwargs}
 
@@ -456,9 +434,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             os.mkdir(_get_runs_folder(self.work_dir, self.model_name))
 
     def _remove_save_dirs(self):
-        shutil.rmtree(
-            _get_runs_folder(self.work_dir, self.model_name), ignore_errors=True
-        )
+        shutil.rmtree(_get_runs_folder(self.work_dir, self.model_name), ignore_errors=True)
 
     def reset_model(self):
         """Resets the model object and removes all stored data - model, checkpoints, loggers and training history."""
@@ -490,11 +466,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger.info("Time series values are 64-bits; casting model to float64.")
             precision = 64
 
-        precision_user = (
-            self.trainer_params.get("precision", None)
-            if trainer is None
-            else trainer.precision
-        )
+        precision_user = self.trainer_params.get("precision", None) if trainer is None else trainer.precision
         raise_if(
             precision_user is not None and precision_user != precision,
             f"User-defined trainer_kwarg `precision={precision_user}`-bit does not match dtype: `{dtype}` of the "
@@ -507,32 +479,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
         if self.save_checkpoints:
-            self.save_model(
-                os.path.join(
-                    _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
-                )
-            )
+            self.save_model(os.path.join(_get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME))
 
-    def _setup_trainer(
-        self, trainer: Optional[pl.Trainer], verbose: bool, epochs: int = 0
-    ) -> None:
+    def _setup_trainer(self, trainer: Optional[pl.Trainer], verbose: bool, epochs: int = 0) -> None:
         """Sets up the PyTorch-Lightning trainer for training or prediction."""
 
-        self.trainer_params["enable_model_summary"] = (
-            verbose if self.model.epochs_trained == 0 else False
-        )
+        self.trainer_params["enable_model_summary"] = verbose if self.model.epochs_trained == 0 else False
         self.trainer_params["enable_progress_bar"] = verbose
 
         self.trainer = (
-            self._init_trainer(trainer_params=self.trainer_params, max_epochs=epochs)
-            if trainer is None
-            else trainer
+            self._init_trainer(trainer_params=self.trainer_params, max_epochs=epochs) if trainer is None else trainer
         )
 
     @staticmethod
-    def _init_trainer(
-        trainer_params: Dict, max_epochs: Optional[int] = None
-    ) -> pl.Trainer:
+    def _init_trainer(trainer_params: Dict, max_epochs: Optional[int] = None) -> pl.Trainer:
         """Initializes the PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
         trainer_params_copy = {param: val for param, val in trainer_params.items()}
         if max_epochs is not None:
@@ -694,13 +654,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # TODO: also check the validation covariates
-        self._verify_past_future_covariates(
-            past_covariates=past_covariates, future_covariates=future_covariates
-        )
+        self._verify_past_future_covariates(past_covariates=past_covariates, future_covariates=future_covariates)
 
-        def wrap_fn(
-            ts: Union[TimeSeries, Sequence[TimeSeries]]
-        ) -> Sequence[TimeSeries]:
+        def wrap_fn(ts: Union[TimeSeries, Sequence[TimeSeries]]) -> Sequence[TimeSeries]:
             return [ts] if isinstance(ts, TimeSeries) else ts
 
         series = wrap_fn(series)
@@ -715,26 +671,13 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             match = (
                 series[0].width == val_series[0].width
                 and (past_covariates[0].width if past_covariates is not None else None)
-                == (
-                    val_past_covariates[0].width
-                    if val_past_covariates is not None
-                    else None
-                )
-                and (
-                    future_covariates[0].width
-                    if future_covariates is not None
-                    else None
-                )
-                == (
-                    val_future_covariates[0].width
-                    if val_future_covariates is not None
-                    else None
-                )
+                == (val_past_covariates[0].width if val_past_covariates is not None else None)
+                and (future_covariates[0].width if future_covariates is not None else None)
+                == (val_future_covariates[0].width if val_future_covariates is not None else None)
             )
             raise_if_not(
                 match,
-                "The dimensions of the series in the training set "
-                "and the validation set do not match.",
+                "The dimensions of the series in the training set " "and the validation set do not match.",
             )
 
         self.encoders = self.initialize_encoders()
@@ -771,9 +714,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
-        return self.fit_from_dataset(
-            train_dataset, val_dataset, trainer, verbose, epochs, num_loader_workers
-        )
+        return self.fit_from_dataset(train_dataset, val_dataset, trainer, verbose, epochs, num_loader_workers)
 
     @random_method
     def fit_from_dataset(
@@ -860,17 +801,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                     len(self.train_sample), len(train_sample)
                 ),
             )
-            same_dims = tuple(
-                s.shape[1] if s is not None else None for s in train_sample
-            ) == tuple(s.shape[1] if s is not None else None for s in self.train_sample)
+            same_dims = tuple(s.shape[1] if s is not None else None for s in train_sample) == tuple(
+                s.shape[1] if s is not None else None for s in self.train_sample
+            )
             raise_if_not(
                 same_dims,
                 "The dimensionality of the series in the training set do not match the dimensionality"
                 " of the series the model has previously been trained on. "
                 "Model input/output dimensions = {}, provided input/ouptput dimensions = {}".format(
-                    tuple(
-                        s.shape[1] if s is not None else None for s in self.train_sample
-                    ),
+                    tuple(s.shape[1] if s is not None else None for s in self.train_sample),
                     tuple(s.shape[1] if s is not None else None for s in train_sample),
                 ),
             )
@@ -933,9 +872,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._train(train_loader, val_loader)
         return self
 
-    def _train(
-        self, train_loader: DataLoader, val_loader: Optional[DataLoader]
-    ) -> None:
+    def _train(self, train_loader: DataLoader, val_loader: Optional[DataLoader]) -> None:
         """
         Performs the actual training
 
@@ -1068,16 +1005,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             called_with_single_series = True
             series = [series]
 
-        past_covariates = (
-            [past_covariates]
-            if isinstance(past_covariates, TimeSeries)
-            else past_covariates
-        )
-        future_covariates = (
-            [future_covariates]
-            if isinstance(future_covariates, TimeSeries)
-            else future_covariates
-        )
+        past_covariates = [past_covariates] if isinstance(past_covariates, TimeSeries) else past_covariates
+        future_covariates = [future_covariates] if isinstance(future_covariates, TimeSeries) else future_covariates
 
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         if self.encoders is not None and self.encoders.encoding_available:
@@ -1289,9 +1218,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         for i in range(len(first_sample)):
             elem = first_sample[i]
             if isinstance(elem, np.ndarray):
-                aggregated.append(
-                    torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0))
-                )
+                aggregated.append(torch.from_numpy(np.stack([sample[i] for sample in batch], axis=0)))
             elif elem is None:
                 aggregated.append(None)
             elif isinstance(elem, TimeSeries):
@@ -1446,34 +1373,18 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @property
     def likelihood(self) -> Likelihood:
-        return (
-            self.model.likelihood
-            if self.model_created
-            else self.pl_module_params.get("likelihood", None)
-        )
+        return self.model.likelihood if self.model_created else self.pl_module_params.get("likelihood", None)
 
     @property
     def input_chunk_length(self) -> int:
-        return (
-            self.model.input_chunk_length
-            if self.model_created
-            else self.pl_module_params["input_chunk_length"]
-        )
+        return self.model.input_chunk_length if self.model_created else self.pl_module_params["input_chunk_length"]
 
     @property
     def output_chunk_length(self) -> int:
-        return (
-            self.model.output_chunk_length
-            if self.model_created
-            else self.pl_module_params["output_chunk_length"]
-        )
+        return self.model.output_chunk_length if self.model_created else self.pl_module_params["output_chunk_length"]
 
     def _is_probabilistic(self) -> bool:
-        return (
-            self.model._is_probabilistic()
-            if self.model_created
-            else self.likelihood is not None
-        )
+        return self.model._is_probabilistic() if self.model_created else self.likelihood is not None
 
 
 def _raise_if_wrong_type(obj, exp_type, msg="expected type {}, got: {}"):
@@ -1550,9 +1461,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     ]
 
     train_has_ds = [ds is not None for ds in train_sample[:-1]]
-    predict_has_ds = [
-        ds is not None for ds in predict_sample[:4] + (predict_sample[5],)
-    ]
+    predict_has_ds = [ds is not None for ds in predict_sample[:4] + (predict_sample[5],)]
 
     train_datasets = train_sample[:-1]
     predict_datasets = predict_sample[:4] + (predict_sample[5],)
@@ -1564,9 +1473,7 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
         "of the target this model has been trained on.",
     )
 
-    for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(
-        zip(train_has_ds, predict_has_ds, ds_names)
-    ):
+    for idx, (ds_in_train, ds_in_predict, ds_name) in enumerate(zip(train_has_ds, predict_has_ds, ds_names)):
         raise_if(
             ds_in_train and not ds_in_predict,
             f"This model has been trained with `{ds_name}`; some `{ds_name}` of matching dimensionality are needed "

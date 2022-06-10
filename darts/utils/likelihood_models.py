@@ -101,25 +101,19 @@ class Likelihood(ABC):
         loss = self._nllloss(params_out, target)
 
         prior_params = self._prior_params
-        use_prior = prior_params is not None and any(
-            p is not None for p in prior_params
-        )
+        use_prior = prior_params is not None and any(p is not None for p in prior_params)
         if use_prior:
             out_distr = self._distr_from_params(params_out)
             device = params_out[0].device
             prior_params = tuple(
                 # use model output as "prior" for parameters not specified as prior
-                torch.tensor(prior_params[i]).to(device)
-                if prior_params[i] is not None
-                else params_out[i]
+                torch.tensor(prior_params[i]).to(device) if prior_params[i] is not None else params_out[i]
                 for i in range(len(prior_params))
             )
             prior_distr = self._distr_from_params(prior_params)
 
             # Loss regularization using the prior distribution
-            loss += self.prior_strength * torch.mean(
-                kl_divergence(prior_distr, out_distr)
-            )
+            loss += self.prior_strength * torch.mean(kl_divergence(prior_distr, out_distr))
 
         return loss
 
@@ -203,9 +197,7 @@ class GaussianLikelihood(Likelihood):
 
     def _nllloss(self, params_out, target):
         means_out, sigmas_out = params_out
-        return self.nllloss(
-            means_out.contiguous(), target.contiguous(), sigmas_out.contiguous()
-        )
+        return self.nllloss(means_out.contiguous(), target.contiguous(), sigmas_out.contiguous())
 
     @property
     def _prior_params(self):
@@ -573,9 +565,7 @@ class DirichletLikelihood(Likelihood):
         return 1  # 1 parameter per component
 
     def _params_from_output(self, model_output):
-        alphas = self.softmax(
-            model_output.squeeze(dim=-1)
-        )  # take softmax over components
+        alphas = self.softmax(model_output.squeeze(dim=-1))  # take softmax over components
         return alphas
 
 
@@ -1081,9 +1071,7 @@ class QuantileRegression(Likelihood):
         # test if torch model forward produces correct output and store quantiles tensor
         if self.first:
             raise_if_not(
-                len(model_output.shape) == 4
-                and len(target.shape) == 3
-                and model_output.shape[:2] == target.shape[:2],
+                len(model_output.shape) == 4 and len(target.shape) == 3 and model_output.shape[:2] == target.shape[:2],
                 "mismatch between predicted and target shape",
             )
             raise_if_not(
@@ -1094,9 +1082,7 @@ class QuantileRegression(Likelihood):
             self.first = False
 
         errors = target.unsqueeze(-1) - model_output
-        losses = torch.max(
-            (self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors
-        )
+        losses = torch.max((self.quantiles_tensor - 1) * errors, self.quantiles_tensor * errors)
 
         return losses.sum(dim=dim_q).mean()
 

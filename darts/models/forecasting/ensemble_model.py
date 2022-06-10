@@ -28,9 +28,7 @@ class EnsembleModel(GlobalForecastingModel):
         List of forecasting models whose predictions to ensemble
     """
 
-    def __init__(
-        self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]
-    ):
+    def __init__(self, models: Union[List[ForecastingModel], List[GlobalForecastingModel]]):
         raise_if_not(
             isinstance(models, list) and models,
             "Cannot instantiate EnsembleModel with an empty list of models",
@@ -38,13 +36,9 @@ class EnsembleModel(GlobalForecastingModel):
         )
 
         is_local_ensemble = all(
-            isinstance(model, ForecastingModel)
-            and not isinstance(model, GlobalForecastingModel)
-            for model in models
+            isinstance(model, ForecastingModel) and not isinstance(model, GlobalForecastingModel) for model in models
         )
-        self.is_global_ensemble = all(
-            isinstance(model, GlobalForecastingModel) for model in models
-        )
+        self.is_global_ensemble = all(isinstance(model, GlobalForecastingModel) for model in models)
 
         raise_if_not(
             is_local_ensemble or self.is_global_ensemble,

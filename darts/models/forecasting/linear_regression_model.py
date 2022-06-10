@@ -146,9 +146,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
             try:
                 linprog(c=c, method=self.kwargs["solver"])
             except ValueError as ve:
-                logger.warning(
-                    f"{ve}. Upgrading scipy enables significantly faster solvers"
-                )
+                logger.warning(f"{ve}. Upgrading scipy enables significantly faster solvers")
                 # set solver to slow legacy
                 self.kwargs["solver"] = "interior-point"
 
@@ -181,9 +179,7 @@ class LinearRegressionModel(RegressionModel, _LikelihoodMixin):
 
             return self
 
-    def _predict_and_sample(
-        self, x: np.ndarray, num_samples: int, **kwargs
-    ) -> np.ndarray:
+    def _predict_and_sample(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         if self.likelihood == "quantile":
             return self._predict_quantiles(x, num_samples, **kwargs)
         elif self.likelihood == "poisson":

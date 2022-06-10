@@ -29,9 +29,7 @@ class SplitTimeSeriesSequence(Sequence):
     ):
 
         if type not in ["train", "test"]:
-            raise AttributeError(
-                "Value for type parameter should be either `train` or `test`"
-            )
+            raise AttributeError("Value for type parameter should be either `train` or `test`")
 
         if not data:
             raise AttributeError("The `data` parameter cannot be empty.")
@@ -40,18 +38,10 @@ class SplitTimeSeriesSequence(Sequence):
             raise AttributeError("The `axis` parameter should be either 0 or 1.")
 
         if vertical_split_type not in [SIMPLE, MODEL_AWARE]:
-            raise AttributeError(
-                "`vertical_split_type` can be eiter `simple` or `model-aware`."
-            )
+            raise AttributeError("`vertical_split_type` can be eiter `simple` or `model-aware`.")
 
-        if (
-            axis == 1
-            and vertical_split_type == MODEL_AWARE
-            and (horizon == 0 or input_size == 0)
-        ):
-            raise AttributeError(
-                "You need to provide non-zero `horizon` and `input_size` parameters when axis=1"
-            )
+        if axis == 1 and vertical_split_type == MODEL_AWARE and (horizon == 0 or input_size == 0):
+            raise AttributeError("You need to provide non-zero `horizon` and `input_size` parameters when axis=1")
 
         self.type = type
         self.data = data
@@ -65,9 +55,7 @@ class SplitTimeSeriesSequence(Sequence):
     def _get_horizontal_split_index(self):
         if not self._horizontal_split_index:
             if 0 < self.test_size < 1:
-                self._horizontal_split_index = int(
-                    len(self.data) * (1 - self.test_size)
-                )
+                self._horizontal_split_index = int(len(self.data) * (1 - self.test_size))
             else:
                 self._horizontal_split_index = len(self.data) - self.test_size
 
@@ -112,9 +100,7 @@ class SplitTimeSeriesSequence(Sequence):
                 test_size = self.test_size
 
             train_end_index = ts_length - self.horizon - test_size + 1
-            test_start_index = (
-                ts_length - self.horizon - self.input_size - test_size + 1
-            )
+            test_start_index = ts_length - self.horizon - self.input_size - test_size + 1
 
             if train_end_index < 0:
                 train_end_index = 0
@@ -138,9 +124,7 @@ class SplitTimeSeriesSequence(Sequence):
                     raise IndexError("Exceeded the size of the test sequence.")
                 return self.data[split_index + i]
         else:  # axis == 1
-            train_end_index, test_start_index = self._get_vertical_split_indices(
-                len(self.data[i])
-            )
+            train_end_index, test_start_index = self._get_vertical_split_indices(len(self.data[i]))
             if self.type == "train":
                 return self.data[i][:train_end_index]
             else:
@@ -166,9 +150,7 @@ class SplitTimeSeriesSequence(Sequence):
         horizon: Optional[int] = 0,
         vertical_split_type: Optional[str] = SIMPLE,
         lazy: bool = False,
-    ) -> Union[
-        Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
-    ]:
+    ) -> Union[Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]]:
 
         if not isinstance(data, Sequence):
             axis = 1
@@ -214,9 +196,7 @@ def train_test_split(
     horizon: Optional[int] = 0,
     vertical_split_type: Optional[str] = SIMPLE,
     lazy: bool = False,
-) -> Union[
-    Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]
-]:
+) -> Union[Tuple[TimeSeries, TimeSeries], Tuple[Sequence[TimeSeries], Sequence[TimeSeries]]]:
     """
     Splits the provided series into training and test series.
 
@@ -271,6 +251,4 @@ def train_test_split(
         Training and test datasets tuple.
     """
 
-    return SplitTimeSeriesSequence.make_splitter(
-        data, test_size, axis, input_size, horizon, vertical_split_type, lazy
-    )
+    return SplitTimeSeriesSequence.make_splitter(data, test_size, axis, input_size, horizon, vertical_split_type, lazy)

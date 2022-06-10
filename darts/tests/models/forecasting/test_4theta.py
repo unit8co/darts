@@ -29,17 +29,12 @@ class FourThetaTestCase(DartsBaseTestClass):
             normalization=False,
         )
         model.fit(sine_series)
-        self.assertTrue(
-            model.model_mode is ModelMode.ADDITIVE
-            and model.trend_mode is TrendMode.LINEAR
-        )
+        self.assertTrue(model.model_mode is ModelMode.ADDITIVE and model.trend_mode is TrendMode.LINEAR)
 
     def test_zero_mean(self):
         sine_series = st(length=50)
         with self.assertRaises(ValueError):
-            model = FourTheta(
-                model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL
-            )
+            model = FourTheta(model_mode=ModelMode.MULTIPLICATIVE, trend_mode=TrendMode.EXPONENTIAL)
             model.fit(sine_series)
 
     def test_theta(self):
@@ -73,6 +68,4 @@ class FourThetaTestCase(DartsBaseTestClass):
         best_model.fit(train_series)
         forecast_random = model.predict(10)
         forecast_best = best_model.predict(10)
-        self.assertTrue(
-            mape(val_series, forecast_best) <= mape(val_series, forecast_random)
-        )
+        self.assertTrue(mape(val_series, forecast_best) <= mape(val_series, forecast_random))

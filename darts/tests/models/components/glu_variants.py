@@ -19,9 +19,7 @@ if TORCH_AVAILABLE:
     class FFNTestCase(DartsBaseTestClass):
         def test_ffn(self):
             for FeedForward_network in GLU_FFN:
-                self.feed_forward_block = getattr(glu_variants, FeedForward_network)(
-                    d_model=4, d_ff=16, dropout=0.1
-                )
+                self.feed_forward_block = getattr(glu_variants, FeedForward_network)(d_model=4, d_ff=16, dropout=0.1)
 
                 inputs = torch.zeros(1, 4, 4)
                 self.feed_forward_block(x=inputs)

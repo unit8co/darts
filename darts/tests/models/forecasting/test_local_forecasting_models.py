@@ -28,9 +28,7 @@ try:
 
     TORCH_AVAILABLE = True
 except ImportError:
-    logger.warning(
-        "Torch not installed - some local forecasting models tests will be skipped"
-    )
+    logger.warning("Torch not installed - some local forecasting models tests will be skipped")
     TORCH_AVAILABLE = False
 
 # (forecasting models, maximum error) tuples
@@ -125,9 +123,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
-            self.assertTrue(
-                model._model_params == model.untrained_model()._model_params
-            )
+            self.assertTrue(model._model_params == model.untrained_model()._model_params)
 
     def test_models_runnability(self):
         for model, _ in models:
@@ -184,9 +180,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             values=self.ts_gaussian_long.all_values(copy=False),
         )
 
-        for target, future_covariates in zip(
-            [target_dt_idx, target_num_idx], [fc_dt_idx, fc_num_idx]
-        ):
+        for target, future_covariates in zip([target_dt_idx, target_num_idx], [fc_dt_idx, fc_num_idx]):
             for model in dual_models:
                 # skip models which do not support RangeIndex
                 if isinstance(target.time_index, pd.RangeIndex):
@@ -198,9 +192,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
                 # Test models runnability - proper future covariates slicing
                 model.fit(target, future_covariates=future_covariates)
-                prediction = model.predict(
-                    self.forecasting_horizon, future_covariates=future_covariates
-                )
+                prediction = model.predict(self.forecasting_horizon, future_covariates=future_covariates)
 
                 self.assertTrue(len(prediction) == self.forecasting_horizon)
 

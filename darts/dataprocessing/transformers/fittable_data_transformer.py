@@ -84,9 +84,7 @@ class FittableDataTransformer(BaseDataTransformer):
         """
         pass
 
-    def _fit_iterator(
-        self, series: Sequence[TimeSeries]
-    ) -> Iterator[Tuple[TimeSeries]]:
+    def _fit_iterator(self, series: Sequence[TimeSeries]) -> Iterator[Tuple[TimeSeries]]:
         """
         Return an ``Iterator`` object with tuples of inputs for each single call to :func:`ts_fit()`.
         Additional `args` and `kwargs` from :func:`fit()` (that don't change across the calls to :func:`ts_fit()`)
@@ -132,9 +130,7 @@ class FittableDataTransformer(BaseDataTransformer):
         """
         return zip(series)
 
-    def fit(
-        self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
-    ) -> "FittableDataTransformer":
+    def fit(self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs) -> "FittableDataTransformer":
         """Fit the transformer to the provided series or sequence of series.
 
         Fit the data and store the fitting parameters into ``self._fitted_params``. If a sequence is passed as input
@@ -172,9 +168,7 @@ class FittableDataTransformer(BaseDataTransformer):
             self._fit_iterator(data), verbose=self._verbose, desc=desc, total=len(data)
         )
 
-        self._fitted_params = _parallel_apply(
-            input_iterator, self.__class__.ts_fit, self._n_jobs, args, kwargs
-        )
+        self._fitted_params = _parallel_apply(input_iterator, self.__class__.ts_fit, self._n_jobs, args, kwargs)
 
         return self
 
@@ -202,6 +196,4 @@ class FittableDataTransformer(BaseDataTransformer):
             Transformed data.
         """
         component_mask = kwargs.get("component_mask", None)
-        return self.fit(series, component_mask=component_mask).transform(
-            series, *args, **kwargs
-        )
+        return self.fit(series, component_mask=component_mask).transform(series, *args, **kwargs)

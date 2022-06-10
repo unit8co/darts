@@ -186,9 +186,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
                     self.constant_noisy_multivar_ts,
                 )
 
-    def helper_test_probabilistic_forecast_accuracy(
-        self, model_cls, model_kwargs, err, ts, noisy_ts
-    ):
+    def helper_test_probabilistic_forecast_accuracy(self, model_cls, model_kwargs, err, ts, noisy_ts):
         model = model_cls(**model_kwargs)
         model.fit(noisy_ts[:100])
         pred = model.predict(n=100, num_samples=100)
@@ -223,12 +221,8 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
         vals = real_series.all_values()
 
         real_pos_series = TimeSeries.from_values(np.where(vals > 0, vals, -vals))
-        discrete_pos_series = TimeSeries.from_values(
-            np.random.randint(low=0, high=11, size=(100, 2))
-        )
-        binary_series = TimeSeries.from_values(
-            np.random.randint(low=0, high=2, size=(100, 2))
-        )
+        discrete_pos_series = TimeSeries.from_values(np.random.randint(low=0, high=11, size=(100, 2)))
+        binary_series = TimeSeries.from_values(np.random.randint(low=0, high=2, size=(100, 2)))
         bounded_series = TimeSeries.from_values(np.random.beta(2, 5, size=(100, 2)))
         simplex_series = bounded_series["0"].stack(1.0 - bounded_series["0"])
 
@@ -254,9 +248,7 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
         def test_likelihoods_and_resulting_mean_forecasts(self):
             def _get_avgs(series):
-                return np.mean(series.all_values()[:, 0, :]), np.mean(
-                    series.all_values()[:, 1, :]
-                )
+                return np.mean(series.all_values()[:, 0, :]), np.mean(series.all_values()[:, 1, :])
 
             for lkl, series, diff1, diff2 in self.lkl_series:
                 model = RNNModel(input_chunk_length=5, likelihood=lkl)
@@ -283,13 +275,9 @@ class ProbabilisticTorchModelsTestCase(DartsBaseTestClass):
 
             # build a stochastic series
             target_vals = self.constant_ts.values()
-            stochastic_vals = np.random.normal(
-                loc=target_vals, scale=1.0, size=(len(self.constant_ts), 100)
-            )
+            stochastic_vals = np.random.normal(loc=target_vals, scale=1.0, size=(len(self.constant_ts), 100))
             stochastic_vals = np.expand_dims(stochastic_vals, axis=1)
-            stochastic_series = TimeSeries.from_times_and_values(
-                self.constant_ts.time_index, stochastic_vals
-            )
+            stochastic_series = TimeSeries.from_times_and_values(self.constant_ts.time_index, stochastic_vals)
 
             # A deterministic model forecasting a stochastic series
             # should return stochastic samples

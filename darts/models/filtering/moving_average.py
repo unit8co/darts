@@ -45,10 +45,6 @@ class MovingAverage(FilteringModel):
             A time series containing the average values
         """
         filtered_df = (
-            series.pd_dataframe(copy=False)
-            .rolling(window=self.window, min_periods=1, center=self.centered)
-            .mean()
+            series.pd_dataframe(copy=False).rolling(window=self.window, min_periods=1, center=self.centered).mean()
         )
-        return TimeSeries.from_dataframe(
-            filtered_df, static_covariates=series.static_covariates
-        )
+        return TimeSeries.from_dataframe(filtered_df, static_covariates=series.static_covariates)

@@ -24,9 +24,7 @@ def get_logger(name):
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
     stderr_handler = logging.StreamHandler()
-    formatter = logging.Formatter(
-        "[%(asctime)s] %(levelname)s | %(name)s | %(message)s"
-    )
+    formatter = logging.Formatter("[%(asctime)s] %(levelname)s | %(name)s | %(message)s")
     stderr_handler.setFormatter(formatter)
     logger.addHandler(stderr_handler)
     return logger
@@ -217,13 +215,9 @@ def execute_and_suppress_output(function, logger, suppression_threshold_level, *
 
 
 def suppress_lightning_warnings(suppress_all: bool = False):
-    warnings.filterwarnings(
-        "ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*"
-    )
+    warnings.filterwarnings("ignore", ".*You defined a `validation_step` but have no `val_dataloader`.*")
     if suppress_all:
-        warnings.filterwarnings(
-            "ignore", ".*does not have many workers which may be a bottleneck.*"
-        )
+        warnings.filterwarnings("ignore", ".*does not have many workers which may be a bottleneck.*")
         warnings.filterwarnings(
             "ignore",
             ".*Trying to infer the `batch_size` from an ambiguous collection.*",

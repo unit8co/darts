@@ -22,9 +22,7 @@ from .utils import ModelMode, SeasonalityMode
 logger = get_logger(__name__)
 
 
-def check_seasonality(
-    ts: TimeSeries, m: Optional[int] = None, max_lag: int = 24, alpha: float = 0.05
-):
+def check_seasonality(ts: TimeSeries, m: Optional[int] = None, max_lag: int = 24, alpha: float = 0.05):
     """
     Checks whether the TimeSeries `ts` is seasonal with period `m` or not.
 
@@ -62,9 +60,7 @@ def check_seasonality(
     if n_unique == 1:  # Check for non-constant TimeSeries
         return False, 0
 
-    r = acf(
-        ts.values(), nlags=max_lag, fft=False
-    )  # In case user wants to check for seasonality higher than 24 steps.
+    r = acf(ts.values(), nlags=max_lag, fft=False)  # In case user wants to check for seasonality higher than 24 steps.
 
     # Finds local maxima of Auto-Correlation Function
     candidates = argrelmax(r)[0]
@@ -172,9 +168,7 @@ def extract_trend_and_seasonality(
 
     if method == "naive":
 
-        decomp = seasonal_decompose(
-            ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq"
-        )
+        decomp = seasonal_decompose(ts.pd_series(), period=freq, model=model.value, extrapolate_trend="freq")
 
     elif method == "STL":
         raise_if_not(
@@ -192,19 +186,13 @@ def extract_trend_and_seasonality(
     else:
         raise_log(ValueError(f"Unknown value for method: {method}"), logger)
 
-    season = TimeSeries.from_times_and_values(
-        ts.time_index, decomp.seasonal, static_covariates=ts.static_covariates
-    )
-    trend = TimeSeries.from_times_and_values(
-        ts.time_index, decomp.trend, static_covariates=ts.static_covariates
-    )
+    season = TimeSeries.from_times_and_values(ts.time_index, decomp.seasonal, static_covariates=ts.static_covariates)
+    trend = TimeSeries.from_times_and_values(ts.time_index, decomp.trend, static_covariates=ts.static_covariates)
 
     return trend, season
 
 
-def remove_from_series(
-    ts: TimeSeries, other: TimeSeries, model: Union[SeasonalityMode, ModelMode]
-) -> TimeSeries:
+def remove_from_series(ts: TimeSeries, other: TimeSeries, model: Union[SeasonalityMode, ModelMode]) -> TimeSeries:
     """
     Removes the TimeSeries `other` from the TimeSeries `ts` as specified by `model`.
     Use e.g. to remove an additive or multiplicative trend from a series.
@@ -237,13 +225,7 @@ def remove_from_series(
     elif model.value == "additive":
         new_ts = ts - other
     else:
-        raise_log(
-            ValueError(
-                "Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {}".format(
-                    model
-                )
-            )
-        )
+        raise_log(ValueError(f"Invalid parameter; must be either ADDITIVE or MULTIPLICATIVE. Was: {model}"))
     return new_ts
 
 
@@ -378,14 +360,10 @@ def stationarity_tests(
     adf_res = stationarity_test_adf(ts)
     kpss_res = stationarity_test_kpss(ts)
 
-    return (adf_res[1] < p_value_threshold_adfuller) and (
-        kpss_res[1] > p_value_threshold_kpss
-    )
+    return (adf_res[1] < p_value_threshold_adfuller) and (kpss_res[1] > p_value_threshold_kpss)
 
 
-def stationarity_test_kpss(
-    ts: TimeSeries, regression: str = "c", nlags: Union[str, int] = "auto"
-) -> set:
+def stationarity_test_kpss(ts: TimeSeries, regression: str = "c", nlags: Union[str, int] = "auto") -> set:
     """
     Provides Kwiatkowski-Phillips-Schmidt-Shin test for stationarity for a time series,
     using :func:`statsmodels.tsa.stattools.kpss`. See [1]_.
@@ -549,9 +527,7 @@ def granger_causality_tests(
         )
 
     return grangercausalitytests(
-        np.concatenate(
-            (ts_effect.values(copy=False), ts_cause.values(copy=False)), axis=1
-        ),
+        np.concatenate((ts_effect.values(copy=False), ts_cause.values(copy=False)), axis=1),
         maxlag,
         addconst,
         verbose,
@@ -769,18 +745,14 @@ def plot_hist(
 
     if isinstance(data, TimeSeries):
         if len(data.components) > n_plots_max:
-            logger.warning(
-                "TimeSeries contains more than 4 components. Only the first 4 components will be displayed."
-            )
+            logger.warning("TimeSeries contains more than 4 components. Only the first 4 components will be displayed.")
 
         components = list(data.components[:n_plots_max])
         values = data[components].all_values(copy=False).flatten(order="F")
     else:
         values = data if isinstance(data, np.ndarray) else np.array(data)
         if len(values.shape) > 1:
-            logger.warning(
-                "Input array-like data with `dim>1d` will be flattened and displayed in one histogram."
-            )
+            logger.warning("Input array-like data with `dim>1d` will be flattened and displayed in one histogram.")
 
         components = ["Data"]
         values = values.flatten(order="F")
@@ -798,9 +770,7 @@ def plot_hist(
         ax_all = [fig.add_subplot(gs[i]) for i in range(n_components)]
     else:
         if n_components > 1:
-            logger.warning(
-                "Only the first component is plotted when calling plot_hist() with a given `ax`"
-            )
+            logger.warning("Only the first component is plotted when calling plot_hist() with a given `ax`")
         ax.set_title(title)
         ax_all = [ax]
 
@@ -817,9 +787,7 @@ def plot_hist(
         ax_i.legend()
 
 
-def plot_residuals_analysis(
-    residuals: TimeSeries, num_bins: int = 20, fill_nan: bool = True
-) -> None:
+def plot_residuals_analysis(residuals: TimeSeries, num_bins: int = 20, fill_nan: bool = True) -> None:
     """Plots data relevant to residuals.
 
     This function takes a univariate TimeSeries instance of residuals and plots their values,
@@ -853,21 +821,14 @@ def plot_residuals_analysis(
     ax1.set_title("Residual values")
 
     # plot histogram and distribution
-    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(
-        residuals.univariate_values()
-    )
-    res_min, res_max = min(residuals.univariate_values()), max(
-        residuals.univariate_values()
-    )
+    res_mean, res_std = np.mean(residuals.univariate_values()), np.std(residuals.univariate_values())
+    res_min, res_max = min(residuals.univariate_values()), max(residuals.univariate_values())
     x = np.linspace(res_min, res_max, 100)
     ax2 = fig.add_subplot(gs[1:, 1:])
     plot_hist(residuals, bins=num_bins, ax=ax2)
     ax2.plot(
         x,
-        norm(res_mean, res_std).pdf(x)
-        * len(residuals)
-        * (res_max - res_min)
-        / num_bins,
+        norm(res_mean, res_std).pdf(x) * len(residuals) * (res_max - res_min) / num_bins,
     )
     ax2.yaxis.set_major_locator(plt.MaxNLocator(integer=True))
     ax2.set_title("Distribution")
