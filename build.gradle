@@ -99,7 +99,7 @@ task pipInstall() {
 
 task lint_black(type: Exec) {
     dependsOn pip_dev
-    commandLine "black", "--check", "."
+    commandLine "black", "--check", ".", "--line-length", "120"
 }
 
 task lint_flake8(type: Exec) {
