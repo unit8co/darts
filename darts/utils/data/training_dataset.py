@@ -137,11 +137,7 @@ class TrainingDataset(ABC, Dataset):
 
             if covariate_type is not CovariateType.NONE:
                 # not CovariateType.Future -> both CovariateType.PAST and CovariateType.HISTORIC_FUTURE
-                start = (
-                    future_start
-                    if covariate_type is CovariateType.FUTURE
-                    else past_start
-                )
+                start = future_start if covariate_type is CovariateType.FUTURE else past_start
                 end = future_end if covariate_type is CovariateType.FUTURE else past_end
 
                 # we need to be careful with getting ranges and indexes:
@@ -152,8 +148,7 @@ class TrainingDataset(ABC, Dataset):
                 end_time = target_series.time_index[end - 1]
 
                 raise_if_not(
-                    start_time in covariate_series.time_index
-                    and end_time in covariate_series.time_index,
+                    start_time in covariate_series.time_index and end_time in covariate_series.time_index,
                     f"Missing covariates; could not find {covariate_type.value} covariates in index value range: "
                     f"{start_time} - {end_time}.",
                 )
@@ -182,12 +177,8 @@ class TrainingDataset(ABC, Dataset):
             past_end += idx_shift
             future_start += idx_shift
             future_end += idx_shift
-            covariate_start = (
-                covariate_start + idx_shift if covariate_start is not None else None
-            )
-            covariate_end = (
-                covariate_end + idx_shift if covariate_end is not None else None
-            )
+            covariate_start = covariate_start + idx_shift if covariate_start is not None else None
+            covariate_end = covariate_end + idx_shift if covariate_end is not None else None
 
         return (
             past_start,
@@ -209,9 +200,7 @@ class PastCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         pass
 
 
@@ -225,9 +214,7 @@ class FutureCovariatesTrainingDataset(TrainingDataset, ABC):
         super().__init__()
 
     @abstractmethod
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         pass
 
 
@@ -243,13 +230,7 @@ class DualCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         pass
 
 
@@ -289,11 +270,5 @@ class SplitCovariatesTrainingDataset(TrainingDataset, ABC):
     @abstractmethod
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         pass

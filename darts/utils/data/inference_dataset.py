@@ -48,11 +48,7 @@ class InferenceDataset(ABC, Dataset):
     ):
         """returns tuple of (past_start, past_end, future_start, future_end)"""
         # get the main covariate type: CovariateType.PAST or CovariateType.FUTURE
-        main_covariate_type = (
-            CovariateType.PAST
-            if covariate_type is CovariateType.PAST
-            else CovariateType.FUTURE
-        )
+        main_covariate_type = CovariateType.PAST if covariate_type is CovariateType.PAST else CovariateType.FUTURE
 
         raise_if_not(
             main_covariate_type in [CovariateType.PAST, CovariateType.FUTURE],
@@ -67,17 +63,13 @@ class InferenceDataset(ABC, Dataset):
         else:  # CovariateType.FUTURE
             future_end = past_end + max(n, output_chunk_length) * target_series.freq
 
-        future_start = (
-            past_end + target_series.freq if future_end != past_end else future_end
-        )
+        future_start = past_end + target_series.freq if future_end != past_end else future_end
 
         if input_chunk_length == 0:  # for regression ensemble models
             past_start, past_end = future_start, future_start
 
         # check if case specific indexes are available
-        case_start = (
-            future_start if covariate_type is CovariateType.FUTURE else past_start
-        )
+        case_start = future_start if covariate_type is CovariateType.FUTURE else past_start
         raise_if_not(
             covariate_series.start_time() <= case_start,
             f"For the given forecasting case, the provided {main_covariate_type.value} covariates at dataset index "
@@ -136,12 +128,8 @@ class GenericInferenceDataset(InferenceDataset):
         """
         super().__init__()
 
-        self.target_series = (
-            [target_series] if isinstance(target_series, TimeSeries) else target_series
-        )
-        self.covariates = (
-            [covariates] if isinstance(covariates, TimeSeries) else covariates
-        )
+        self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
+        self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
 
         self.covariate_type = covariate_type
 
@@ -159,13 +147,7 @@ class GenericInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        TimeSeries,
-    ]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         target_series = self.target_series[idx]
         raise_if_not(
             len(target_series) >= self.input_chunk_length,
@@ -173,9 +155,7 @@ class GenericInferenceDataset(InferenceDataset):
         )
 
         # extract past target values
-        past_target = target_series.random_component_values(copy=False)[
-            -self.input_chunk_length :
-        ]
+        past_target = target_series.random_component_values(copy=False)[-self.input_chunk_length :]
 
         # optionally, extract covariates
         past_covariate, future_covariate = None, None
@@ -193,9 +173,7 @@ class GenericInferenceDataset(InferenceDataset):
             )
 
             # extract covariate values and split into a past (historic) and future part
-            covariate = covariate_series.random_component_values(copy=False)[
-                covariate_start:covariate_end
-            ]
+            covariate = covariate_series.random_component_values(copy=False)[covariate_start:covariate_end]
             if self.input_chunk_length != 0:  # regular models
                 past_covariate, future_covariate = (
                     covariate[: self.input_chunk_length],
@@ -205,16 +183,8 @@ class GenericInferenceDataset(InferenceDataset):
                 past_covariate, future_covariate = covariate, covariate
 
             # set to None if empty array
-            past_covariate = (
-                past_covariate
-                if past_covariate is not None and len(past_covariate) > 0
-                else None
-            )
-            future_covariate = (
-                future_covariate
-                if future_covariate is not None and len(future_covariate) > 0
-                else None
-            )
+            past_covariate = past_covariate if past_covariate is not None and len(past_covariate) > 0 else None
+            future_covariate = future_covariate if future_covariate is not None and len(future_covariate) > 0 else None
 
         static_covariate = target_series.static_covariates_values(copy=False)
         return (
@@ -275,13 +245,7 @@ class PastCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        TimeSeries,
-    ]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         return self.ds[idx]
 
 
@@ -323,9 +287,7 @@ class FutureCovariatesInferenceDataset(InferenceDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         past_target, _, future_covariate, static_covariate, target_series = self.ds[idx]
         return past_target, future_covariate, static_covariate, target_series
 
@@ -382,13 +344,7 @@ class DualCovariatesInferenceDataset(InferenceDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        TimeSeries,
-    ]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], TimeSeries]:
         (
             past_target,
             historic_future_covariate,

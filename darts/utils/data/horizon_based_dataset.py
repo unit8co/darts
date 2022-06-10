@@ -71,12 +71,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         super().__init__()
 
-        self.target_series = (
-            [target_series] if isinstance(target_series, TimeSeries) else target_series
-        )
-        self.covariates = (
-            [covariates] if isinstance(covariates, TimeSeries) else covariates
-        )
+        self.target_series = [target_series] if isinstance(target_series, TimeSeries) else target_series
+        self.covariates = [covariates] if isinstance(covariates, TimeSeries) else covariates
         self.covariate_type = CovariateType.PAST
 
         self.output_chunk_length = output_chunk_length
@@ -86,8 +82,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         # Checks
         raise_if_not(
             self.max_lh >= self.min_lh >= 1,
-            "The lh parameter should be an int tuple (min_lh, max_lh), "
-            "with 1 <= min_lh <= max_lh",
+            "The lh parameter should be an int tuple (min_lh, max_lh), " "with 1 <= min_lh <= max_lh",
         )
         raise_if_not(
             covariates is None or len(self.target_series) == len(self.covariates),
@@ -104,17 +99,14 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         """
         return self.total_nr_samples
 
-    def __getitem__(
-        self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx: int) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         # determine the index of the time series.
         target_idx = idx // self.nr_samples_per_ts
         target_series = self.target_series[target_idx]
         target_vals = target_series.random_component_values(copy=False)
 
         raise_if_not(
-            len(target_vals)
-            >= (self.lookback + self.max_lh) * self.output_chunk_length,
+            len(target_vals) >= (self.lookback + self.max_lh) * self.output_chunk_length,
             "The dataset contains some input/target series that are shorter than "
             "`(lookback + max_lh) * H` ({}-th series)".format(target_idx),
         )
@@ -124,30 +116,17 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         lh_idx = idx - (target_idx * self.nr_samples_per_ts)
 
         # determine the index at the end of the output chunk
-        end_of_output_idx = len(target_series) - (
-            (self.min_lh - 1) * self.output_chunk_length + lh_idx
-        )
+        end_of_output_idx = len(target_series) - ((self.min_lh - 1) * self.output_chunk_length + lh_idx)
 
         # optionally, load covariates
-        covariate_series = (
-            self.covariates[target_idx] if self.covariates is not None else None
-        )
-        main_covariate_type = (
-            CovariateType.NONE if self.covariates is None else CovariateType.PAST
-        )
+        covariate_series = self.covariates[target_idx] if self.covariates is not None else None
+        main_covariate_type = CovariateType.NONE if self.covariates is None else CovariateType.PAST
 
         shift = self.lookback * self.output_chunk_length
         input_chunk_length = shift
 
         # get all indices for the current sample
-        (
-            past_start,
-            past_end,
-            future_start,
-            future_end,
-            cov_start,
-            cov_end,
-        ) = self._memory_indexer(
+        (past_start, past_end, future_start, future_end, cov_start, cov_end,) = self._memory_indexer(
             target_idx=target_idx,
             target_series=target_series,
             shift=shift,
@@ -171,9 +150,7 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                 f"({idx}-th sample)",
             )
 
-            covariate = covariate_series.random_component_values(copy=False)[
-                cov_start:cov_end
-            ]
+            covariate = covariate_series.random_component_values(copy=False)[cov_start:cov_end]
 
             raise_if_not(
                 len(covariate) == len(past_target),

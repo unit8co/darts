@@ -83,9 +83,7 @@ class PastCovariatesSequentialDataset(PastCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -152,9 +150,7 @@ class FutureCovariatesSequentialDataset(FutureCovariatesTrainingDataset):
     def __len__(self):
         return len(self.ds)
 
-    def __getitem__(
-        self, idx
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
+    def __getitem__(self, idx) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         return self.ds[idx]
 
 
@@ -237,13 +233,7 @@ class DualCovariatesSequentialDataset(DualCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
         _, future_covariate, _, _ = self.ds_future[idx]
         return (
@@ -435,13 +425,7 @@ class SplitCovariatesSequentialDataset(SplitCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx
-    ) -> Tuple[
-        np.ndarray,
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        Optional[np.ndarray],
-        np.ndarray,
-    ]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         past_target, past_covariate, static_covariate, future_target = self.ds_past[idx]
         _, future_covariate, _, _ = self.ds_future[idx]
         return (
