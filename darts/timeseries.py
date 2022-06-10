@@ -4256,19 +4256,11 @@ def concatenate(
         concat_vals = np.concatenate([da.values for da in da_sequence], axis=axis)
 
         if axis == 1:
-            # when concatenating along component dimension, we have to re-create a component index
-            component_coords = []
-            existing_components = set()
-            for i, ts in enumerate(series):
-                for comp in ts.components:
-                    if comp not in existing_components:
-                        component_coords.append(comp)
-                        existing_components.add(comp)
-                    else:
-                        new_comp_name = f"{i}_{comp}"
-                        component_coords.append(new_comp_name)
-                        existing_components.add(new_comp_name)
-            component_index = pd.Index(component_coords)
+            # When concatenating along component dimension, we have to re-create a component index
+            # we rely on the factory metho of TimeSeries to disambiguate names later on if needed.
+            component_index = pd.Index(
+                [c for cl in [ts.components for ts in series] for c in cl]
+            )
             static_covariates = (
                 _concat_static_covs(series)
                 if not ignore_static_covariates
@@ -4285,4 +4277,4 @@ def concatenate(
             attrs={STATIC_COV_TAG: static_covariates},
         )
 
-    return TimeSeries(da_concat)
+    return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)

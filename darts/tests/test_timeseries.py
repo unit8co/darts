@@ -1029,7 +1029,7 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         )
 
         series1 = series1.with_columns_renamed(
-            ["linear", "1_linear"], ["linear1", "linear2"]
+            ["linear", "linear_1"], ["linear1", "linear2"]
         )
         self.assertEqual(["linear1", "linear2"], series1.columns.to_list())
 
