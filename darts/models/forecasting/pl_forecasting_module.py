@@ -108,18 +108,22 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
 
-        try:
-            if isinstance(torch_metrics, torchmetrics.Metric):
-                torch_metrics = torchmetrics.MetricCollection([torch_metrics])
-            self.train_metrics = torch_metrics.clone(prefix="train_")
-            self.val_metrics = torch_metrics.clone(prefix="val_")
-        except AttributeError:
-            raise_log(
-                AttributeError(
-                    "torch_metrics only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
-                ),
-                logger,
-            )
+        if torch_metrics:
+            try:
+                if isinstance(torch_metrics, torchmetrics.Metric):
+                    torch_metrics = torchmetrics.MetricCollection([torch_metrics])
+                self.train_metrics = torch_metrics.clone(prefix="train_")
+                self.val_metrics = torch_metrics.clone(prefix="val_")
+            except AttributeError:
+                raise_log(
+                    AttributeError(
+                        "torch_metrics only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
+                    ),
+                    logger,
+                )
+        else:
+            self.train_metrics = torchmetrics.MetricCollection([])
+            self.val_metrics = torchmetrics.MetricCollection([])
 
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
@@ -147,7 +151,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
         self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True)
-        _ = self.calculate_metrics(output, target, tag="train")
+        self.calculate_metrics(output, target, self.train_metrics)
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
@@ -156,7 +160,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
         self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True)
-        _ = self.calculate_metrics(output, target, tag="valid")
+        self.calculate_metrics(output, target, self.val_metrics)
         return loss
 
     def predict_step(
@@ -253,8 +257,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
             # last dimension of model output, for properly computing the loss.
             return self.criterion(output.squeeze(dim=-1), target)
 
-    def calculate_metrics(self, y, y_hat, tag):
-        metrics = self.train_metrics if tag == "train" else self.val_metrics
+    def calculate_metrics(self, y, y_hat, metrics):
         if self.likelihood:
             _metric = metrics(y_hat, self.likelihood.sample(y))
         else:
