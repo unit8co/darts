@@ -364,7 +364,7 @@ Early stopping can be easily implemented on all Darts neural networks based mode
 ### Hyperparameter Tuning with Ray Tune
 Hyperparameter tuning is a great way to find the best parameters for your model. [Ray Tune](https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html) provides a convenient way to speed this process up with automatic pruning.
 
-Here is an example of how to use Ray Tune to with the `NBEATSModel` model. 
+Here is an example of how to use Ray Tune to with the `NBEATSModel` model using the [Asynchronous Hyperband scheduler](https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/). 
 
 ```python
 from darts.models import NBEATSModel
