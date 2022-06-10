@@ -521,8 +521,8 @@ class ElectricityDataset(DatasetLoaderCSV):
 
 class UberTLCDataset(DatasetLoaderCSV):
     """
-    14.3 million Uber pickups from January to June 2015. The data is resampled to hourly or daily using the
-    locationID as the target.
+    14.3 million Uber pickups from January to June 2015. The data is resampled to hourly or daily based sample_freq
+    on using the locationID as the target.
     Source: [1]_
 
     Loading this dataset will provide a multivariate timeseries with 262 columns for each locationID.
