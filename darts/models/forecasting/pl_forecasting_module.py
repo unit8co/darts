@@ -257,13 +257,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
             # last dimension of model output, for properly computing the loss.
             return self.criterion(output.squeeze(dim=-1), target)
 
-    def _calculate_metrics(self, y, y_hat, metrics):
+    def _calculate_metrics(self, output, target, metrics):
         if self.likelihood:
-            _metric = metrics(y_hat, self.likelihood.sample(y))
+            _metric = metrics(target, self.likelihood.sample(output))
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the metric.
-            _metric = metrics(y_hat, y.squeeze(dim=-1))
+            _metric = metrics(target, output.squeeze(dim=-1))
 
         self.log_dict(
             _metric,

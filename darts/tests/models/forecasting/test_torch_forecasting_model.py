@@ -37,6 +37,9 @@ if TORCH_AVAILABLE:
             pd_series = pd.Series(range(100), index=times)
             self.series = TimeSeries.from_series(pd_series)
 
+            df = pd.DataFrame({"var1": range(100), "var2": range(100)}, index=times)
+            self.multivariate_series = TimeSeries.from_dataframe(df)
+
         def tearDown(self):
             shutil.rmtree(self.temp_work_dir)
 
@@ -361,13 +364,19 @@ if TORCH_AVAILABLE:
                 [MeanAbsolutePercentageError(), MeanAbsoluteError()]
             )
 
+            # test single metric
             model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric)
             model.fit(self.series)
 
+            # test metric collection
             model = RNNModel(
                 12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric_collection
             )
             model.fit(self.series)
+
+            # test multivariate series
+            model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric)
+            model.fit(self.multivariate_series)
 
         def test_metrics_w_likelihood(self):
             metric = MeanAbsolutePercentageError()
@@ -375,6 +384,7 @@ if TORCH_AVAILABLE:
                 [MeanAbsolutePercentageError(), MeanAbsoluteError()]
             )
 
+            # test single metric
             model = RNNModel(
                 12,
                 "RNN",
@@ -386,6 +396,7 @@ if TORCH_AVAILABLE:
             )
             model.fit(self.series)
 
+            # test metric collection
             model = RNNModel(
                 12,
                 "RNN",
@@ -396,6 +407,18 @@ if TORCH_AVAILABLE:
                 torch_metrics=metric_collection,
             )
             model.fit(self.series)
+
+            # test multivariate series
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                likelihood=GaussianLikelihood(),
+                torch_metrics=metric_collection,
+            )
+            model.fit(self.multivariate_series)
 
         def test_invalid_metrics(self):
             torch_metrics = ["invalid"]
