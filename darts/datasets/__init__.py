@@ -5,9 +5,11 @@ Datasets
 A few popular time series datasets
 """
 from pathlib import Path
+from typing import List
 
 import pandas as pd
 
+from darts import TimeSeries
 from darts.logging import get_logger, raise_if_not
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
@@ -529,33 +531,6 @@ class UberTLCDataset(DatasetLoaderCSV):
     The following code can be used to convert the dataset to a list of univariate timeseries,
     one for each locationID.
 
-    .. highlight:: python
-    .. code-block:: python
-
-        import pandas as pd
-        from darts import TimeSeries
-        from darts.datasets import UberTLCDataset
-
-        dataset_hourly = UberTLCDataset("hourly").load().pd_dataframe()
-
-        ts_list = []  # list of timeseries
-        for label in dataset_hourly:
-            srs = dataset_hourly[label]
-
-            # filter column down to the period of recording
-            start_date = min(srs.fillna(method="ffill").dropna().index)
-            end_date = max(srs.fillna(method="bfill").dropna().index)
-            active_range = (srs.index >= start_date) & (srs.index <= end_date)
-            srs = srs[active_range]
-
-            # convert to timeseries
-            tmp = pd.DataFrame({"locationID": srs})
-            tmp["date"] = tmp.index
-            ts = TimeSeries.from_dataframe(tmp, "date", ["locationID"])
-            ts_list.append(ts)
-
-    ..
-
 
     References
     ----------
@@ -563,7 +538,15 @@ class UberTLCDataset(DatasetLoaderCSV):
 
     """
 
-    def __init__(self, sample_freq="hourly"):
+    def __init__(self, sample_freq: str = "hourly", multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        sample_freq: str
+            The sampling frequency of the data. Can be "hourly" or "daily". Default is "hourly".
+        multivariate: bool
+            Whether to return a multivariate timeseries or a list of univariate timeseries. Default is True.
+        """
         valid_sample_freq = ["daily", "hourly"]
         raise_if_not(
             sample_freq in valid_sample_freq,
@@ -604,5 +587,28 @@ class UberTLCDataset(DatasetLoaderCSV):
                 header_time="Pickup_date",
                 format_time="%Y-%m-%d %H:%M",
                 pre_process_zipped_csv_fn=pre_proces_fn,
+                multivariate=multivariate,
             )
         )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        load the Uber TLC dataset as a list of univariate timeseries, one for each locationID.
+        """
+
+        ts_list = []  # list of timeseries
+        for label in series:
+            srs = series[label]
+
+            # filter column down to the period of recording
+            start_date = min(srs.fillna(method="ffill").dropna().index)
+            end_date = max(srs.fillna(method="bfill").dropna().index)
+            active_range = (srs.index >= start_date) & (srs.index <= end_date)
+            srs = srs[active_range]
+
+            # convert to timeseries
+            tmp = pd.DataFrame({"locationID": srs})
+            tmp["date"] = tmp.index
+            ts = TimeSeries.from_dataframe(tmp, "date", ["locationID"])
+            ts_list.append(ts)
+        return ts_list
