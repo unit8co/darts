@@ -43,7 +43,7 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
     from darts.models.forecasting.nbeats import NBEATSModel
-    from darts.models.forecasting.nhits import NHiTS
+    from darts.models.forecasting.nhits import NHiTSModel
     from darts.models.forecasting.rnn_model import RNNModel
     from darts.models.forecasting.tcn_model import TCNModel
     from darts.models.forecasting.tft_model import TFTModel
