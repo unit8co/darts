@@ -249,9 +249,4 @@ class KalmanFilter(FilteringModel, ABC):
                     mean_vec, cov_matrix, size=num_samples
                 ).T
 
-        return TimeSeries.from_times_and_values(
-            series.time_index,
-            sampled_outputs,
-            columns=series.columns,
-            static_covariates=series.static_covariates,
-        )
+        return series.with_values(sampled_outputs)

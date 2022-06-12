@@ -1,5 +1,6 @@
 """
-Posthoc
+Hierarchical Reconciliation
+---------------------------
 """
 
 # from abc import ABC, abstractmethod
@@ -14,7 +15,7 @@ from darts.timeseries import TimeSeries
 from darts.utils.utils import raise_if_not
 
 
-def get_summation_matrix(series: TimeSeries):
+def _get_summation_matrix(series: TimeSeries):
     """
     Returns the matrix S for a series, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
 
@@ -64,68 +65,6 @@ def get_summation_matrix(series: TimeSeries):
     return S.astype(series.dtype)
 
 
-# class Reconciliation(ABC):
-#     """
-#     Super class for all forecast reconciliators.
-#     """
-
-#     @abstractmethod
-#     def __init__(self):
-#         pass
-
-#     @abstractmethod
-#     def reconcile(
-#         self,
-#         series: TimeSeries,
-#         # forecast_errors: Optional[
-#         #     np.array
-#         # ],  # Forecast errors for each of the components
-#     ) -> TimeSeries:
-#         pass
-
-#     # TODO:
-#     # def get_forecast_errors(forecasts: Union[TimeSeries, Sequence[TimeSeries]],)
-
-
-# class LinearReconciliator(FittableDataTransformer, ABC):
-#     """
-#     Super class for all linear forecast reconciliators (bottom-up, top-down, GLS, MinT, ...)
-#     """
-
-#     def __init__(self):
-#         pass
-
-#     @abstractmethod
-#     @staticmethod
-#     def _get_projection_matrix(series: TimeSeries, S: np.ndarray):
-#         """
-#         Defines the kind of reconciliation being applied
-#         """
-#         pass
-
-#     @staticmethod
-#     def ts_fit(series: TimeSeries) -> None:
-#         pass
-
-#     @staticmethod
-#     def ts_transform(series: TimeSeries) -> TimeSeries:
-#         S = get_summation_matrix(series)
-
-#         # dynamically access the projection matrix of the child class
-#         G = __class__._get_projection_matrix(series, S)
-
-#         return LinearReconciliator.reconcile_from_S_and_G(series, S, G)
-
-#     @staticmethod
-#     def reconcile_from_S_and_G(
-#         series: TimeSeries, S: np.ndarray, G: np.ndarray
-#     ) -> TimeSeries:
-
-#         y_hat = series.all_values(copy=False).transpose((1, 0, 2))  # (n, time, samples)
-#         reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (n, time, samples)
-#         return series.with_values(reconciled_values)
-
-
 def _reconcile_from_S_and_G(
     series: TimeSeries, S: np.ndarray, G: np.ndarray
 ) -> TimeSeries:
@@ -133,7 +72,7 @@ def _reconcile_from_S_and_G(
     Returns the TimeSeries linearly reconciled from the projection matrix G and the summation matrix S.
     """
     y_hat = series.all_values(copy=False)
-    reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (n, time, samples)
+    reconciled_values = S @ G @ y_hat  # (n, m) * (m, n) * (time, n, samples)
     return series.with_values(reconciled_values)
 
 
@@ -149,7 +88,7 @@ class BottomUpReconciliatior(BaseDataTransformer):
 
     @staticmethod
     def ts_transform(series: TimeSeries) -> TimeSeries:
-        S = get_summation_matrix(series)
+        S = _get_summation_matrix(series)
         G = BottomUpReconciliatior.get_projection_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
 
@@ -170,7 +109,7 @@ class TopDownReconciliatior(FittableDataTransformer):
 
     @staticmethod
     def ts_transform(series: TimeSeries, G: np.ndarray) -> TimeSeries:
-        S = get_summation_matrix(series)
+        S = _get_summation_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
 
     @staticmethod

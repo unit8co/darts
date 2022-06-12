@@ -159,13 +159,15 @@ class NaiveEnsembleModel(EnsembleModel):
         if isinstance(predictions, Sequence):
             return [
                 TimeSeries.from_series(
-                    p.pd_dataframe().sum(axis=1) / len(self.models),
+                    p.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
                     static_covariates=p.static_covariates,
+                    hierarchy=p.hierarchy,
                 )
                 for p in predictions
             ]
         else:
             return TimeSeries.from_series(
-                predictions.pd_dataframe().sum(axis=1) / len(self.models),
+                predictions.pd_dataframe(copy=False).sum(axis=1) / len(self.models),
                 static_covariates=predictions.static_covariates,
+                hierarchy=predictions.hierarchy,
             )
