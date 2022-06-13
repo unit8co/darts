@@ -108,22 +108,21 @@ class PLForecastingModule(pl.LightningModule, ABC):
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
 
-        if torch_metrics:
-            try:
-                if isinstance(torch_metrics, torchmetrics.Metric):
-                    torch_metrics = torchmetrics.MetricCollection([torch_metrics])
-                self.train_metrics = torch_metrics.clone(prefix="train_")
-                self.val_metrics = torch_metrics.clone(prefix="val_")
-            except AttributeError:
-                raise_log(
-                    AttributeError(
-                        "torch_metrics only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
-                    ),
-                    logger,
-                )
+        if torch_metrics is None:
+            torch_metrics = torchmetrics.MetricCollection([])
+        elif isinstance(torch_metrics, torchmetrics.Metric):
+            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
+        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
+            pass
         else:
-            self.train_metrics = torchmetrics.MetricCollection([])
-            self.val_metrics = torchmetrics.MetricCollection([])
+            raise_log(
+                AttributeError(
+                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
+                ),
+                logger,
+            )
+        self.train_metrics = torch_metrics.clone(prefix="train_")
+        self.val_metrics = torch_metrics.clone(prefix="val_")
 
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
