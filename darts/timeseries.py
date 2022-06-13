@@ -2487,13 +2487,13 @@ class TimeSeries:
 
     def with_values(self, values: np.ndarray) -> "TimeSeries":
         """
-        Return a new ``TimeSeries`` with new specified values.
+        Return a new ``TimeSeries`` similar to this one but with new specified values.
 
         Parameters
         ----------
         values
-            A Numpy array with new values. It must have the same shape as the present
-            series (time, components, samples)
+            A Numpy array with new values. It must have the dimensions for time
+            and componentns, but may contain a different number of samples.
 
         Return
         ------
@@ -2501,13 +2501,18 @@ class TimeSeries:
             A new TimeSeries with the new values and same index, static covariates and hierarchy
         """
         raise_if_not(
-            values.shape == self._xa.values.shape,
-            "The new values must have the same shape (time, components, samples) as the present series. "
-            "Received: {}, expected: {}".format(values.shape, self._xa.values.shape),
+            values.shape[:2] == self._xa.values.shape[:2],
+            "The new values must have the same shape (time, components) as the present series. "
+            "Received: {}, expected: {}".format(
+                values.shape[:2], self._xa.values.shape[:2]
+            ),
         )
 
         new_xa = xr.DataArray(
-            values, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+            values,
+            dims=self._xa.dims,
+            coords=self._xa.coords,
+            attrs=self._xa.attrs,
         )
 
         return self.__class__(new_xa)

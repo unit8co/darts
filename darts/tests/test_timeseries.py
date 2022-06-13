@@ -429,9 +429,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         np.testing.assert_allclose(series3.all_values(), series.all_values())
         np.testing.assert_allclose(series2.all_values(), vals + 1)
 
-        # should fail if shape is not the same:
+        # should fail if nr components is not the same:
         with self.assertRaises(ValueError):
-            series.with_values(np.random.rand(5, 10, 2))
+            series.with_values(np.random.rand(5, 11, 3))
+
+        # should not fail if nr samples is not the same:
+        series.with_values(np.random.rand(5, 10, 2))
 
     def test_diff(self):
         diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())
