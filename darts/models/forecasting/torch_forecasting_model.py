@@ -514,17 +514,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
     def _setup_trainer(
-        self, trainer: Optional[pl.Trainer], verbose: bool, epochs: int = 0
+        self,
+        trainer: Optional[pl.Trainer],
+        verbose: Optional[bool] = None,
+        epochs: int = 0,
     ) -> None:
         """Sets up the PyTorch-Lightning trainer for training or prediction."""
-
-        self.trainer_params["enable_model_summary"] = (
-            verbose if self.model.epochs_trained == 0 else False
-        )
-        self.trainer_params["enable_progress_bar"] = verbose
+        trainer_params = {key: val for key, val in self.trainer_params.items()}
+        if verbose is not None:
+            trainer_params["enable_model_summary"] = (
+                verbose if self.model.epochs_trained == 0 else False
+            )
+            trainer_params["enable_progress_bar"] = verbose
 
         self.trainer = (
-            self._init_trainer(trainer_params=self.trainer_params, max_epochs=epochs)
+            self._init_trainer(trainer_params=trainer_params, max_epochs=epochs)
             if trainer is None
             else trainer
         )
@@ -660,13 +664,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             override Darts' default trainer.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -812,13 +809,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             override Darts' default trainer.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -904,16 +894,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
-
-        if verbose is not None:
-            raise_deprecation_warning(
-                "kwarg `verbose` is deprecated and will be removed in a future Darts version. "
-                "Instead, control verbosity with PyTorch Lightning Trainer parameters `enable_progress_bar`, "
-                "`progress_bar_refresh_rate` and `enable_model_summary` in the `pl_trainer_kwargs` dict "
-                "at model creation.",
-                logger,
-            )
-        verbose = True if verbose is None else verbose
 
         # setup trainer
         self._setup_trainer(trainer, verbose, train_num_epochs)
@@ -1020,13 +1000,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Size of batches during prediction. Defaults to the models' training ``batch_size`` value.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size
@@ -1148,13 +1121,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Size of batches during prediction. Defaults to the models ``batch_size`` value.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size
@@ -1217,16 +1183,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             drop_last=False,
             collate_fn=self._batch_collate_fn,
         )
-
-        if verbose is not None:
-            raise_deprecation_warning(
-                "kwarg `verbose` is deprecated and will be removed in a future Darts version. "
-                "Instead, control verbosity with PyTorch Lightning Trainer parameters `enable_progress_bar`, "
-                "`progress_bar_refresh_rate` and `enable_model_summary` in the `pl_trainer_kwargs` dict "
-                "at model creation.",
-                logger,
-            )
-        verbose = True if verbose is None else verbose
 
         # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
         trainer = trainer if trainer is not None else self.trainer
