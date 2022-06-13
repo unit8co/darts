@@ -257,7 +257,11 @@ class PLForecastingModule(pl.LightningModule, ABC):
             return self.criterion(output.squeeze(dim=-1), target)
 
     def _calculate_metrics(self, output, target, metrics):
+        if not len(metrics):
+            return
+        
         if self.likelihood:
+            ...
             _metric = metrics(target, self.likelihood.sample(output))
         else:
             # If there's no likelihood, nr_params=1, and we need to squeeze out the
