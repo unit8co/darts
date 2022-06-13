@@ -5,6 +5,8 @@ Hierarchical Reconciliation
 
 # from abc import ABC, abstractmethod
 
+from typing import Any, Iterator, Sequence, Tuple
+
 import numpy as np
 
 from darts.dataprocessing.transformers import (
@@ -30,15 +32,9 @@ def _get_summation_matrix(series: TimeSeries):
 
     raise_if_not(
         series.has_hierarchy,
-        "The provided series must have a grouping defined for reconciliation to be performed.",
+        "The provided series must have a hierarchy defined for reconciliation to be performed.",
     )
     hierarchy = series.hierarchy
-    # components = set(series.components)
-    # ancestors = set().union(
-    #     *hierarchy.values()
-    # )  # all components appearing as an ancestor in the tree (i.e., non-leaves)
-    # leaves = components - ancestors
-
     components_seq = list(series.components)
     leaves_seq = series.bottom_level_components
     m = len(leaves_seq)
@@ -115,43 +111,28 @@ class TopDownReconciliatior(FittableDataTransformer):
     @staticmethod
     def get_projection_matrix(series):
         n, m = series.n_components, len(series.bottom_level_components)
-        hierarchy = series.hierarchy
-
-        # identify total component
-        components = set(series.components)
-        children_components = set().union(
-            *hierarchy.keys()
-        )  # TODO: move this to TimeSeries
-        total_component = components - children_components
-
-        # TODO: Move this test to TimeSeries
-        raise_if_not(
-            len(total_component) == 0,
-            "There must be only one component not appearing as a key in the grouping",
-        )
-
-        total_component = total_component.pop()
 
         # compute sum of total component
-        sum_total = series[total_component].all_values(copy=False).flatten().sum()
-
-        # identify base components
-        ancestor_components = set().union(*hierarchy.values())
-        leaves_components = components - ancestor_components
-
-        base_forecasts = series[
-            [c for c in series.components if c in leaves_components]
-        ]
-
-        # compute sum of base components
-        sum_base_components = (
-            base_forecasts.all_values(copy=False).sum(axis=2).sum(axis=0)
+        sum_total = (
+            series[series.top_level_component].all_values(copy=False).flatten().sum()
         )
 
+        base_forecasts = series.bottom_level_series
+
+        # compute sum of base components
+        sum_base = base_forecasts.all_values(copy=False).sum(axis=2).sum(axis=0)
+
         # compute proportions for each base component
-        proportions = sum_base_components / sum_total
+        proportions = sum_base / sum_total
 
         G = np.zeros((m, n))
         G[:, 0] = proportions
 
         return G
+
+    def _transform_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries, Any]]:
+        # since '_ts_fit()' returns the G matrices, the 'fit()' call will save matrix instance into
+        # self._fitted_params
+        return zip(series, self._fitted_params)

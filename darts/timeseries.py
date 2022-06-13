@@ -1152,12 +1152,16 @@ class TimeSeries:
     @property
     def bottom_level_series(self) -> Optional[List["TimeSeries"]]:
         """
-        The series containing the bottom-level components of this series,
-        or None if the series has no hierarchy.
+        The series containing the bottom-level components of this series in the same
+        order as they appear in the series, or None if the series has no hierarchy.
 
-        The returned series will be multivariate if there are multiple bottom components.
+        The returned series is multivariate if there are multiple bottom components.
         """
-        return self[self.bottom_level_components] if self.has_hierarchy else None
+        return (
+            self[[c for c in self.components if c in self.bottom_level_components]]
+            if self.has_hierarchy
+            else None
+        )
 
     @property
     def n_samples(self):
@@ -3961,11 +3965,14 @@ class TimeSeries:
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 xa_ = self._xa.sel({DIMS[1]: key})
-                if adapt_covs_on_component:
-                    # selecting components discards the hierarchy, if any
-                    xa_ = _xarray_with_attrs(
-                        xa_, xa_.attrs[STATIC_COV_TAG][key.start : key.stop], None
-                    )
+                # selecting components discards the hierarchy, if any
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG],
+                    None,
+                )
                 return self.__class__(xa_)
             elif isinstance(key.start, (int, np.int64)) or isinstance(
                 key.stop, (int, np.int64)
@@ -3989,11 +3996,14 @@ class TimeSeries:
         elif isinstance(key, str):
             # have to put key in a list not to drop the dimension
             xa_ = self._xa.sel({DIMS[1]: [key]})
-            if adapt_covs_on_component:
-                # selecting components discards the hierarchy, if any
-                xa_ = _xarray_with_attrs(
-                    xa_, xa_.attrs[STATIC_COV_TAG].loc[[key]], None
-                )
+            # selecting components discards the hierarchy, if any
+            xa_ = _xarray_with_attrs(
+                xa_,
+                xa_.attrs[STATIC_COV_TAG].loc[[key]]
+                if adapt_covs_on_component
+                else xa_.attrs[STATIC_COV_TAG],
+                None,
+            )
             return self.__class__(xa_)
         elif isinstance(key, (int, np.int64)):
             xa_ = self._xa.isel({self._time_dim: [key]})
@@ -4022,14 +4032,13 @@ class TimeSeries:
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
                 xa_ = self._xa.sel({DIMS[1]: key})
-                if adapt_covs_on_component:
-                    xa_ = _xarray_with_attrs(
-                        xa_, xa_.attrs[STATIC_COV_TAG].loc[key], None
-                    )
-
-                # selecting components discards the hierarchy, if any
-                xa_.attrs = {k: v for k, v in xa_.attrs.items() if k != HIERARCHY_TAG}
-
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    xa_.attrs[STATIC_COV_TAG].loc[key]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG],
+                    None,
+                )
                 return self.__class__(xa_)
             elif all(isinstance(i, (int, np.int64)) for i in key):
                 xa_ = self._xa.isel({self._time_dim: key})
