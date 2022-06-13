@@ -545,7 +545,7 @@ class UberTLCDataset(DatasetLoaderCSV):
         sample_freq: str
             The sampling frequency of the data. Can be "hourly" or "daily". Default is "hourly".
         multivariate: bool
-            Whether to return a multivariate timeseries or a list of univariate timeseries. Default is True.
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
         """
         valid_sample_freq = ["daily", "hourly"]
         raise_if_not(
