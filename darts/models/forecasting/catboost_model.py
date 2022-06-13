@@ -25,10 +25,12 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        likelihood: str = None,
+        quantiles: List = None,
         random_state: Optional[int] = None,
         **kwargs,
     ):
-        """Light Gradient Boosted Model
+        """CatBoost Model
 
         Parameters
         ----------
@@ -57,14 +59,34 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             Control the randomness in the fitting procedure and for sampling.
             Default: ``None``.
         **kwargs
-            Additional keyword arguments passed to `lightgbm.LGBRegressor`.
+            Additional keyword arguments passed to `catboost.CatBoostRegressor`.
         """
         kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
         self._median_idx = None
         self._model_container = None
         self._rng = None
-        self.likelihood = None
+        self.likelihood = likelihood
+        self.quantiles = None
+
+        # to be extended to RMSEWithUncertainty
+        likelihood_map = {
+            "quantile": None,
+            "poisson": "Poisson",
+        }
+        
+        available_likelihoods = list(likelihood_map.keys())
+
+        if likelihood is not None:
+            self._check_likelihood(likelihood, available_likelihoods)
+            self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
+
+            if likelihood == "quantile":
+                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
+                self._model_container = self._get_model_container()
+
+            else:
+                self.kwargs['loss_function'] = likelihood_map[likelihood]
 
         super().__init__(
             lags=lags,
@@ -86,6 +108,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         val_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         val_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
         max_samples_per_ts: Optional[int] = None,
+        verbose: Optional[Union[int, bool]] = 0,
         **kwargs,
     ):
         """
@@ -112,6 +135,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             creation) to know their sizes, which might be expensive on big datasets.
             If some series turn out to have a length that would allow more than `max_samples_per_ts`, only the
             most recent `max_samples_per_ts` samples will be considered.
+        verbose
+            An integer or a boolean that can be set to 1 to display catboost's default verbose output.
         """
 
         if val_series is not None:
@@ -122,11 +147,34 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                 max_samples_per_ts=max_samples_per_ts,
             )
 
+        if self.likelihood == "quantile":
+            # empty model container in case of multiple calls to fit, e.g. when backtesting
+            self._model_container.clear()
+            for quantile in self.quantiles:
+                this_quantile = str(quantile)
+                # translating to catboost argument
+                self.kwargs["loss_function"] = f"Quantile:alpha={this_quantile}"
+                self.model = CatBoostRegressor(**self.kwargs)
+
+                super().fit(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                    verbose=verbose,
+                    **kwargs,
+                )
+
+                self._model_container[quantile] = self.model
+
+            return self
+        
         super().fit(
             series=series,
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             max_samples_per_ts=max_samples_per_ts,
+            verbose=verbose,
             **kwargs,
         )
 
