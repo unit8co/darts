@@ -2,18 +2,17 @@
 CatBoost model
 --------------
 
-This is a wrapper that enables using the CatBoost regressor as model
+This is a wrapper that enables using the CatBoost regressor as model.
 """
 
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+from catboost import CatBoostRegressor
 
 from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
-
-from catboost import CatBoostRegressor
 
 logger = get_logger(__name__)
 
@@ -74,7 +73,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             "quantile": None,
             "poisson": "Poisson",
         }
-        
+
         available_likelihoods = list(likelihood_map.keys())
 
         if likelihood is not None:
@@ -86,7 +85,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                 self._model_container = self._get_model_container()
 
             else:
-                self.kwargs['loss_function'] = likelihood_map[likelihood]
+                self.kwargs["loss_function"] = likelihood_map[likelihood]
 
         super().__init__(
             lags=lags,
@@ -168,7 +167,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
                 self._model_container[quantile] = self.model
 
             return self
-        
+
         super().fit(
             series=series,
             past_covariates=past_covariates,
@@ -193,5 +192,6 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
 
-if __name__ == '__main__':
-    print('tichc')
+
+if __name__ == "__main__":
+    print("tichc")
