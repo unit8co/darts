@@ -7,6 +7,7 @@ A few popular time series datasets
 from pathlib import Path
 from typing import List
 
+import numpy as np
 import pandas as pd
 
 from darts import TimeSeries
@@ -465,36 +466,6 @@ class ElectricityDataset(DatasetLoaderCSV):
     The following code can be used to convert the dataset to a list of univariate timeseries,
     one for each household.
 
-    .. highlight:: python
-    .. code-block:: python
-
-        import numpy as np
-        import pandas as pd
-        from darts import TimeSeries
-        from darts.datasets import ElectricityDataset
-
-        df = ElectricityDataset().load().pd_dataframe()
-
-        ts_list = [] # list of timeseries
-        for label in df:
-            srs = df[label]
-
-            # filter column down to the period of recording
-            srs = srs.replace(0.0, np.nan)
-            start_date = min(srs.fillna(method="ffill").dropna().index)
-            end_date = max(srs.fillna(method="bfill").dropna().index)
-            active_range = (srs.index >= start_date) & (srs.index <= end_date)
-            srs = srs[active_range].fillna(0.0)
-
-            # convert to timeseries
-            tmp = pd.DataFrame({"power_usage": srs})
-            tmp["date"] = tmp.index
-            date = tmp.index
-            ts = TimeSeries.from_dataframe(tmp, "date", ["power_usage"])
-            ts_list.append(ts)
-
-    ..
-
 
     References
     ----------
@@ -502,7 +473,14 @@ class ElectricityDataset(DatasetLoaderCSV):
 
     """
 
-    def __init__(self):
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
+
         def pre_proces_fn(extracted_dir, dataset_path):
             with open(Path(extracted_dir, "LD2011_2014.txt")) as fin:
                 with open(dataset_path, "wt", newline="\n") as fout:
@@ -517,8 +495,32 @@ class ElectricityDataset(DatasetLoaderCSV):
                 header_time="Unnamed: 0",
                 format_time="%Y-%m-%d %H:%M:%S",
                 pre_process_zipped_csv_fn=pre_proces_fn,
+                multivariate=multivariate,
             )
         )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the electricity dataset as a list of univariate series, one for each household.
+        """
+
+        ts_list = []  # list of timeseries
+        for label in series:
+            srs = series[label]
+
+            # filter column down to the period of recording
+            srs = srs.replace(0.0, np.nan)
+            start_date = min(srs.fillna(method="ffill").dropna().index)
+            end_date = max(srs.fillna(method="bfill").dropna().index)
+            active_range = (srs.index >= start_date) & (srs.index <= end_date)
+            srs = srs[active_range].fillna(0.0)
+
+            # convert to timeseries
+            tmp = pd.DataFrame({"power_usage": srs})
+            tmp["date"] = tmp.index
+            ts = TimeSeries.from_dataframe(tmp, "date", ["power_usage"])
+            ts_list.append(ts)
+        return ts_list
 
 
 class UberTLCDataset(DatasetLoaderCSV):
