@@ -259,7 +259,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
     def _calculate_metrics(self, output, target, metrics):
         if not len(metrics):
             return
-        
+
         if self.likelihood:
             _metric = metrics(target, self.likelihood.sample(output))
         else:
