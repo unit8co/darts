@@ -141,7 +141,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `RNNModel` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version | ✅ | ✅ | ✅ | ✅ | | ✅ | [DeepAR paper](https://arxiv.org/abs/1704.04110)
 `BlockRNNModel` (incl. LSTM and GRU) | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `NBEATSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [N-BEATS paper](https://arxiv.org/abs/1905.10437)
-`NHiTS` | ✅ | ✅ | ✅ | ✅ | ✅ | | [N-HiTS paper](https://arxiv.org/abs/2201.12886)
+`NHiTSModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [N-HiTS paper](https://arxiv.org/abs/2201.12886)
 `TCNModel` | ✅ | ✅ | ✅ | ✅ | ✅ | | [TCN paper](https://arxiv.org/abs/1803.01271), [DeepTCN paper](https://arxiv.org/abs/1906.04397), [blog post](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 `TransformerModel` | ✅ | ✅ | ✅ | ✅ | ✅ | |
 `TFTModel` (Temporal Fusion Transformer) | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | [TFT paper](https://arxiv.org/pdf/1912.09363.pdf), [PyTorch Forecasting](https://pytorch-forecasting.readthedocs.io/en/latest/models.html)
@@ -168,18 +168,20 @@ Before working on a contribution (a new feature or a fix),
 [check our contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md).
 
 ## Citation
-If you are using Darts in your scientific work, we would appreciate citations to the following paper.
+If you are using Darts in your scientific work, we would appreciate citations to the following JMLR paper.
 
-[Darts: User-Friendly Modern Machine Learning for Time Series](https://arxiv.org/abs/2110.03224)
+[Darts: User-Friendly Modern Machine Learning for Time Series](https://www.jmlr.org/papers/v23/21-1177.html)
 
 Bibtex entry:
 ```
-@misc{herzen2021darts,
-      title={Darts: User-Friendly Modern Machine Learning for Time Series},
-      author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
-      year={2021},
-      eprint={2110.03224},
-      archivePrefix={arXiv},
-      primaryClass={cs.LG}
+@article{JMLR:v23:21-1177,
+  author  = {Julien Herzen and Francesco LÃ¤ssig and Samuele Giuliano Piazzetta and Thomas Neuer and LÃ©o Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan KoÅ›cisz and Dennis Bader and FrÃ©dÃ©rick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and GaÃ«l Grosch},
+  title   = {Darts: User-Friendly Modern Machine Learning for Time Series},
+  journal = {Journal of Machine Learning Research},
+  year    = {2022},
+  volume  = {23},
+  number  = {124},
+  pages   = {1-6},
+  url     = {http://jmlr.org/papers/v23/21-1177.html}
 }
 ```

@@ -191,8 +191,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if not self._fit_called:
             raise_log(
                 ValueError(
-                    "The model must be fit before calling `predict()`."
-                    "For global models, if `predict()` is called without specifying a series,"
+                    "The model must be fit before calling predict(). "
+                    "For global models, if predict() is called without specifying a series, "
                     "the model must have been fit on a single training series."
                 ),
                 logger,
@@ -435,7 +435,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
-            if retrain:
+            if retrain or not self._fit_called:
                 self._fit_wrapper(
                     series=train,
                     past_covariates=past_covariates,
@@ -461,6 +461,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 return TimeSeries.from_times_and_values(
                     pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
                     np.array(last_points_values),
+                    static_covariates=series.static_covariates,
                 )
             else:
                 return TimeSeries.from_times_and_values(
@@ -470,6 +471,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         step=1,
                     ),
                     np.array(last_points_values),
+                    static_covariates=series.static_covariates,
                 )
 
         return forecasts
@@ -1014,8 +1016,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        if series is None and past_covariates is None and future_covariates is None:
-            super().predict(n, num_samples)
+        super().predict(n, num_samples)
         if self._expect_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(

@@ -71,4 +71,9 @@ class GaussianProcessFilter(FilteringModel):
         else:
             filtered_values = self.model.sample_y(times, n_samples=num_samples)
 
-        return TimeSeries.from_times_and_values(series.time_index, filtered_values)
+        filtered_values = filtered_values.reshape(len(times), -1, num_samples)
+        return TimeSeries.from_times_and_values(
+            series.time_index,
+            filtered_values,
+            static_covariates=series.static_covariates,
+        )

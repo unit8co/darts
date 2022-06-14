@@ -16,6 +16,19 @@ from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorch
 
 logger = get_logger(__name__)
 
+ACTIVATIONS = [
+    "ReLU",
+    "RReLU",
+    "PReLU",
+    "ELU",
+    "Softplus",
+    "Tanh",
+    "SELU",
+    "LeakyReLU",
+    "Sigmoid",
+    "GELU",
+]
+
 
 class _Block(nn.Module):
     def __init__(
@@ -29,6 +42,8 @@ class _Block(nn.Module):
         n_freq_downsample: int,
         batch_norm: bool,
         dropout: float,
+        activation: str,
+        MaxPool1d: bool,
     ):
         """PyTorch module implementing the basic building block of the N-HiTS architecture.
 
@@ -56,7 +71,10 @@ class _Block(nn.Module):
             Whether to use batch norm
         dropout
             Dropout probability
-
+        activation
+            The activation function of encoder/decoder intermediate layer.
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
         Inputs
         ------
         x of shape `(batch_size, input_chunk_length)`
@@ -82,8 +100,12 @@ class _Block(nn.Module):
         self.n_freq_downsample = n_freq_downsample
         self.batch_norm = batch_norm
         self.dropout = dropout
+        self.MaxPool1d = MaxPool1d
 
-        self.activation = nn.ReLU()  # TODO: make configurable?
+        raise_if_not(
+            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
+        )
+        self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
         """
@@ -105,8 +127,8 @@ class _Block(nn.Module):
         n_theta_forecast = max(output_chunk_length // n_freq_downsample, 1)
 
         # entry pooling layer
-        # TODO: we could leave an option to do e.g. avg pooling
-        self.pooling_layer = nn.MaxPool1d(
+        pool1d = nn.MaxPool1d if self.MaxPool1d else nn.AvgPool1d
+        self.pooling_layer = pool1d(
             kernel_size=self.pooling_kernel_size,
             stride=self.pooling_kernel_size,
             ceil_mode=True,
@@ -127,7 +149,6 @@ class _Block(nn.Module):
             )
             layers.append(self.activation)
 
-            # TODO: also add these two for NBEATS?
             if self.batch_norm:
                 layers.append(nn.BatchNorm1d(num_features=self.layer_widths[i + 1]))
 
@@ -195,6 +216,8 @@ class _Stack(nn.Module):
         n_freq_downsample: Tuple[int],
         batch_norm: bool,
         dropout: float,
+        activation: str,
+        MaxPool1d: bool,
     ):
         """PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.
 
@@ -220,6 +243,10 @@ class _Stack(nn.Module):
             whether to apply batch norm on first block of this stack
         dropout
             Dropout probability
+        activation
+            The activation function of encoder/decoder intermediate layer.
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
 
         Inputs
         ------
@@ -255,6 +282,8 @@ class _Stack(nn.Module):
                     batch_norm and i == 0
                 ),  # batch norm only on first block of first stack
                 dropout=dropout,
+                activation=activation,
+                MaxPool1d=MaxPool1d,
             )
             for i in range(num_blocks)
         ]
@@ -299,6 +328,8 @@ class _NHiTSModule(PLPastCovariatesModule):
         n_freq_downsample: Tuple[Tuple[int]],
         batch_norm: bool,
         dropout: float,
+        activation: str,
+        MaxPool1d: bool,
         **kwargs,
     ):
         """PyTorch module implementing the N-HiTS architecture.
@@ -331,6 +362,10 @@ class _NHiTSModule(PLPastCovariatesModule):
             Whether to apply batch norm on first block of the first stack
         dropout
             Dropout probability
+        activation
+            The activation function of encoder/decoder intermediate layer.
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
@@ -369,6 +404,8 @@ class _NHiTSModule(PLPastCovariatesModule):
                     batch_norm and i == 0
                 ),  # batch norm only on first block of first stack
                 dropout=dropout,
+                activation=activation,
+                MaxPool1d=MaxPool1d,
             )
             for i in range(num_stacks)
         ]
@@ -380,7 +417,8 @@ class _NHiTSModule(PLPastCovariatesModule):
         # on this params (the last block backcast is not part of the final output of the net).
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
-    def forward(self, x):
+    def forward(self, x_in: Tuple):
+        x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc
@@ -418,7 +456,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         return y
 
 
-class NHiTS(PastCovariatesTorchModel):
+class NHiTSModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -429,7 +467,9 @@ class NHiTS(PastCovariatesTorchModel):
         layer_widths: Union[int, List[int]] = 512,
         pooling_kernel_sizes: Optional[Tuple[Tuple[int]]] = None,
         n_freq_downsample: Optional[Tuple[Tuple[int]]] = None,
-        dropout: float = 0.0,
+        dropout: float = 0.1,
+        activation: str = "ReLU",
+        MaxPool1d: bool = True,
         **kwargs,
     ):
         """An implementation of the N-HiTS model, as presented in [1]_.
@@ -480,7 +520,12 @@ class NHiTS(PastCovariatesTorchModel):
             downsampling factors before interpolation, for each block in each stack.
             If left to ``None``, some default values will be used based on ``output_chunk_length``.
         dropout
-            The dropout probability to be used in the fully connected layers.
+            Fraction of neurons affected by Dropout (default=0.1).
+        activation
+            The activation function of encoder/decoder intermediate layer (default='ReLU').
+            Supported activations: ['ReLU','RReLU', 'PReLU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU',  'Sigmoid']
+        MaxPool1d
+            Use MaxPool1d pooling. False uses AvgPool1d
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -632,6 +677,8 @@ class NHiTS(PastCovariatesTorchModel):
         self.num_blocks = num_blocks
         self.num_layers = num_layers
         self.layer_widths = layer_widths
+        self.activation = activation
+        self.MaxPool1d = MaxPool1d
 
         # Currently batch norm is not an option as it seems to perform badly
         self.batch_norm = False
@@ -663,9 +710,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
             raise_if_not(
                 all([len(i) == num_blocks for i in tup]),
-                "the length of each tuple in {} must be `num_blocks={}`".format(
-                    name, num_blocks
-                ),
+                f"the length of each tuple in {name} must be `num_blocks={num_blocks}`",
             )
 
         if pooling_kernel_sizes is None:
@@ -677,9 +722,7 @@ class NHiTS(PastCovariatesTorchModel):
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
-                "(N-HiTS): Using automatic kernel pooling size: {}.".format(
-                    pooling_kernel_sizes
-                )
+                f"(N-HiTS): Using automatic kernel pooling size: {pooling_kernel_sizes}."
             )
         else:
             # check provided pooling format
@@ -693,9 +736,7 @@ class NHiTS(PastCovariatesTorchModel):
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
-                "(N-HiTS):  Using automatic downsampling coefficients: {}.".format(
-                    n_freq_downsample
-                )
+                f"(N-HiTS):  Using automatic downsampling coefficients: {n_freq_downsample}."
             )
         else:
             # check provided downsample format
@@ -730,5 +771,7 @@ class NHiTS(PastCovariatesTorchModel):
             n_freq_downsample=self.n_freq_downsample,
             batch_norm=self.batch_norm,
             dropout=self.dropout,
+            activation=self.activation,
+            MaxPool1d=self.MaxPool1d,
             **self.pl_module_params,
         )
