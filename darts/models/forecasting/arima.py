@@ -39,15 +39,15 @@ class ARIMA(DualCovariatesForecastingModel):
         Parameters
         ----------
         p : int
-            Order (number of time lags) of the autoregressive model (AR)
+            Order (number of time lags) of the autoregressive model (AR).
         d : int
             The order of differentiation; i.e., the number of times the data
-            have had past values subtracted. (I)
+            have had past values subtracted (I).
         q : int
             The size of the moving average window (MA).
         seasonal_order: Tuple[int, int, int, int]
             The (P,D,Q,s) order of the seasonal component for the AR parameters,
-            differences, MA parameters and periodicity
+            differences, MA parameters and periodicity.
         trend: str
             Parameter controlling the deterministic trend. 'n' indicates no trend,
             'c' a constant term, 't' linear trend in time, and 'ct' includes both.
