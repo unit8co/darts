@@ -139,8 +139,38 @@ class TopDownReconciliatior(FittableDataTransformer):
 
 class MinTReconciliator(FittableDataTransformer):
     def __init__(self, method="ols"):
+        """
+        MinT Reconcilator.
+
+        This implements the MinT reconcilation approach presented in [1]_ and
+        summarised in [2]_.
+
+        Parameters
+        ----------
+        method
+            This parameter can take four different values, determining how the covariance
+            matrix ``W`` of the forecast errors is estimated (see [2]_):
+            * ``ols`` uses ``W = I``. This option looks only at the hierarchy but ignores the
+              values of the series provided to ``fit()``.
+            * ``wls_struct`` uses ``W = diag(S1)``, where ``S1`` is a vector of size `n` with values
+              between 0 and `m`, representing the number of base components composing each
+              of the `n` components. This options looks only at the hierarchy but ignores
+              the values of the series provided to ``fit()``.
+            * ``wls_var`` uses ``W = diag(W1)``, where ``W1`` is the temporal average of the
+              variance of the forecasting residuals. This method assumes that the series
+              provided to ``fit()`` contain the forecast residuals (deterministic series).
+            * ``wls_val`` uses ``W = diag(V1)``, where ``V1`` is the temporal average of the
+              component values. This method assumes that the series
+              provided to ``fit()`` contains either the training data, or the forecasts.
+
+        References
+        ----------
+        .. [1] `Optimal forecast reconciliation for hierarchical and grouped time series through
+                trace minimization <https://robjhyndman.com/papers/MinT.pdf>`_
+        .. [2] https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach
+        """
         super().__init__()
-        known_methods = ["ols", "wls", "wls_struct", "wls_quant"]
+        known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val"]
         raise_if_not(
             method in known_methods,
             f"The method must be one of {known_methods}",
@@ -158,29 +188,42 @@ class MinTReconciliator(FittableDataTransformer):
         return _reconcile_from_S_and_G(series, S, G)
 
     @staticmethod
+    def _assert_deterministic(series: TimeSeries):
+        raise_if_not(
+            series.is_deterministic,
+            "When used with method wls_var or mint_cov, the MinT reconciliator "
+            + "has to be fit on a deterministic series "
+            + "containing residuals. This series is stochastic.",
+        )
+
+    @staticmethod
     def get_matrices(series: Optional[TimeSeries], method: str):
         """Returns the G matrix given a specified reconciliation method."""
         S = _get_summation_matrix(series)
         if method == "ols":
-            # G = inv(S'*S)*S' - no W_h because it is just the identity matrix
+            # G = inv(S'*S)*S'
             G = np.linalg.inv(S.T @ S) @ S.T
             return S, G
-        elif method == "wls" or method == "wls_struct":
+        elif method == "wls_struct":
             # W_h_mat is a diagonal matrix with entry i,i being the sum of row i of S_mat
-            W_h_mat = np.diag(np.sum(S, axis=1))
-        elif method == "wls_quant":
+            Wh = np.diag(np.sum(S, axis=1))
+        elif method == "wls_var":
+            # In this case we assume that series contains the residuals of some forecasts
+            MinTReconciliator._assert_deterministic(series)
+            et2 = series.all_values(copy=False).squeeze(-1) ** 2  # squared residuals
+            # Wh diagonal is mean squared residual over time:
+            Wh = np.diag(et2.mean(axis=0))
+            print(Wh)
+        elif method == "wls_val":
             # W_h_mat is a diagonal matrix with entry i,i being the volume of the corresponding time series
             quantities = series.all_values(copy=False).mean(axis=2).mean(axis=0)
-            W_h_mat = np.diag(np.array(quantities))
-        else:
-            raise ValueError(
-                f"there is no reconciliation method with the name '{method}'"
-                f"\nchoose one of the following: ols, wls_struct, wls_quant."
-            )
+            Wh = np.diag(np.array(quantities))
+        else:  # "mint_cov"
+            raise_if_not(False, "Unknown method.")
 
         # G = inv(S'*inv(W_h)*S)*S'*inv(W_h)
-        W_h_mat_inv = np.linalg.inv(W_h_mat)
-        G = np.linalg.inv(S.T @ W_h_mat_inv @ S) @ S.T @ W_h_mat_inv
+        Wh_inv = np.linalg.inv(Wh)
+        G = np.linalg.inv(S.T @ Wh_inv @ S) @ S.T @ Wh_inv
         return S, G
 
     def _fit_iterator(
