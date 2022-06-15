@@ -314,16 +314,90 @@ Early stopping can be an efficient way to cut down on the training time.  Using 
 
 Early stopping can be easily implemented on all Darts neural networks based models, by leveraging PyTorch Lightning's `EarlyStopping` callback, as shown in the example code below.
 ```python
+    from darts.models import NBEATSModel
+    from darts.datasets import AirPassengersDataset
+    from pytorch_lightning.callbacks import EarlyStopping
+    from torchmetrics import MeanAbsolutePercentageError
+    import pandas as pd
+    from darts.dataprocessing.transformers import Scaler
+
+    # Read data:
+    series = AirPassengersDataset().load()
+
+    # Create training and validation sets:
+    train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
+
+    # Normalize the time series (note: we avoid fitting the transformer on the validation set)
+    transformer = Scaler()
+    transformer.fit(train)
+    train = transformer.transform(train)
+    val = transformer.transform(val)
+
+    # A TorchMetric or val_loss can be used as the monitor
+    torch_metrics = MeanAbsolutePercentageError()
+
+    # Early stop callback
+    my_stopper = EarlyStopping(
+        monitor="val_MeanAbsolutePercentageError",  # "val_loss",
+        patience=5,
+        min_delta=0.05,
+        mode='min',
+    )
+    pl_trainer_kwargs = {"callbacks": [my_stopper]}
+
+    # Create the model
+    model = NBEATSModel(
+        input_chunk_length=24,
+        output_chunk_length=12,
+        n_epochs=500,
+        torch_metrics=torch_metrics,
+        pl_trainer_kwargs=pl_trainer_kwargs)
+
+    model.fit(
+        series=train,
+        val_series=val,
+    )
+```
+
+-------------
+
+### Hyperparameter Tuning with Ray Tune
+Hyperparameter tuning is a great way to find the best parameters for your model. [Ray Tune](https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html) provides a convenient way to speed this process up with automatic pruning.
+
+Here is an example of how to use Ray Tune to with the `NBEATSModel` model using the [Asynchronous Hyperband scheduler](https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/). 
+
+```python
 from darts.models import NBEATSModel
 from darts.datasets import AirPassengersDataset
 from pytorch_lightning.callbacks import EarlyStopping
 import pandas as pd
 from darts.dataprocessing.transformers import Scaler
+from torchmetrics import MetricCollection, MeanAbsolutePercentageError, MeanAbsoluteError
+from ray import tune
+from ray.tune import CLIReporter
+from ray.tune.integration.pytorch_lightning import TuneReportCallback
+from ray.tune.schedulers import ASHAScheduler
+
+def train_model(model_args, callbacks, train, val):
+    torch_metrics = MetricCollection([MeanAbsolutePercentageError(), MeanAbsoluteError()])
+    # Create the model using model_args from Ray Tune
+    model = NBEATSModel(
+        input_chunk_length=24,
+        output_chunk_length=12,
+        n_epochs=500,
+        torch_metrics=torch_metrics,
+        pl_trainer_kwargs={"callbacks": callbacks, "enable_progress_bar": False},
+        **model_args)
+
+    model.fit(
+        series=train,
+        val_series=val,
+    )
 
 # Read data:
 series = AirPassengersDataset().load()
 
-# To use the early stop on the validation loss, create training and validation sets:
+# Create training and validation sets:
 train, val = series.split_after(pd.Timestamp(year=1957, month=12, day=1))
 
 # Normalize the time series (note: we avoid fitting the transformer on the validation set)
@@ -332,30 +406,63 @@ transformer.fit(train)
 train = transformer.transform(train)
 val = transformer.transform(val)
 
-# Early stopping callback
+# Early stop callback
 my_stopper = EarlyStopping(
-    monitor="val_loss",  # The metric to monitor
-    patience=5,          # Number of nr_epochs_val_period to wait
-    min_delta=0.05,      # Minimum change in the monitored metric
-    mode='min',          # Whether to monitor for the minimum or maximum value
+    monitor="val_MeanAbsolutePercentageError",
+    patience=5,
+    min_delta=0.05,
+    mode='min',
 )
-pl_trainer_kwargs = {"callbacks": [my_stopper]}
 
-# Create the model
-model = NBEATSModel(
-    input_chunk_length=24,
-    output_chunk_length=12,
-    n_epochs=500,
-    nr_epochs_val_period=2,
-    pl_trainer_kwargs=pl_trainer_kwargs)
+# set up ray tune callback
+tune_callback = TuneReportCallback(
+    {
+        "loss": "val_Loss",
+        "MAPE": "val_MeanAbsolutePercentageError",
+    },
+    on="validation_end",
+)
 
-# fit using a val_series
-model.fit(
-    series=train,
-    val_series=val,
-    )
+# define the hyperparameter space
+config = {
+    "batch_size": tune.choice([16, 32, 64, 128]),
+    "num_blocks": tune.choice([1, 2, 3, 4, 5]),
+    "num_stacks": tune.choice([32, 64, 128]),
+    "dropout": tune.uniform(0, 0.2),
+}
+
+reporter = CLIReporter(
+    parameter_columns=list(config.keys()),
+    metric_columns=["loss", "MAPE", "training_iteration"],
+)
+
+resources_per_trial = {"cpu": 8, "gpu": 1}
+
+# the number of combinations to try
+num_samples = 10
+
+scheduler = ASHAScheduler(max_t=1000, grace_period=3, reduction_factor=2)
+
+train_fn_with_parameters = tune.with_parameters(
+    train_model, callbacks=[my_stopper, tune_callback], train=train, val=val,
+)
+
+analysis = tune.run(
+    train_fn_with_parameters,
+    resources_per_trial=resources_per_trial,
+    # Using a metric instead of loss allows for 
+    # comparison between different likelihood or loss functions.
+    metric="MAPE",  # any value in TuneReportCallback. 
+    mode="min",
+    config=config,
+    num_samples=num_samples,
+    scheduler=scheduler,
+    progress_reporter=reporter,
+    name="tune_darts",
+)
+
+print("Best hyperparameters found were: ", analysis.best_config)
 ```
-
 
 -------------
 
