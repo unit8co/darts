@@ -2,7 +2,7 @@
 CatBoost model
 --------------
 
-This is a wrapper that enables using the CatBoost regressor as model.
+This is a wrapper that enables using the CatBoost regressor as model
 """
 
 from typing import List, Optional, Sequence, Tuple, Union
