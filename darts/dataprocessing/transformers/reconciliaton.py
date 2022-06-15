@@ -5,7 +5,7 @@ Hierarchical Reconciliation
 
 # from abc import ABC, abstractmethod
 
-from typing import Any, Iterator, Sequence, Tuple
+from typing import Any, Iterator, Optional, Sequence, Tuple
 
 import numpy as np
 
@@ -41,7 +41,6 @@ def _get_summation_matrix(series: TimeSeries):
     n = len(components_seq)
     S = np.zeros((n, m))
 
-    # leaves_seq = [c for c in components_seq if c in leaves]
     components_indexes = {c: i for i, c in enumerate(components_seq)}
     leaves_indexes = {l: i for i, l in enumerate(leaves_seq)}
 
@@ -129,6 +128,66 @@ class TopDownReconciliatior(FittableDataTransformer):
         G[:, 0] = proportions
 
         return G
+
+    def _transform_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries, Any]]:
+        # since '_ts_fit()' returns the G matrices, the 'fit()' call will save matrix instance into
+        # self._fitted_params
+        return zip(series, self._fitted_params)
+
+
+class MinTReconciliator(FittableDataTransformer):
+    def __init__(self, method="ols"):
+        super().__init__()
+        known_methods = ["ols", "wls", "wls_struct", "wls_quant"]
+        raise_if_not(
+            method in known_methods,
+            f"The method must be one of {known_methods}",
+        )
+        self.method = method
+
+    @staticmethod
+    def ts_fit(series: TimeSeries, method: str) -> np.ndarray:
+        S, G = MinTReconciliator.get_matrices(series, method)
+        return S, G
+
+    @staticmethod
+    def ts_transform(series: TimeSeries, S_and_G) -> TimeSeries:
+        S, G = S_and_G
+        return _reconcile_from_S_and_G(series, S, G)
+
+    @staticmethod
+    def get_matrices(series: Optional[TimeSeries], method: str):
+        """Returns the G matrix given a specified reconciliation method."""
+        S = _get_summation_matrix(series)
+        if method == "ols":
+            # G = inv(S'*S)*S' - no W_h because it is just the identity matrix
+            G = np.linalg.inv(S.T @ S) @ S.T
+            return S, G
+        elif method == "wls" or method == "wls_struct":
+            # W_h_mat is a diagonal matrix with entry i,i being the sum of row i of S_mat
+            W_h_mat = np.diag(np.sum(S, axis=1))
+        elif method == "wls_quant":
+            # W_h_mat is a diagonal matrix with entry i,i being the volume of the corresponding time series
+            quantities = series.all_values(copy=False).mean(axis=2).mean(axis=0)
+            W_h_mat = np.diag(np.array(quantities))
+        else:
+            raise ValueError(
+                f"there is no reconciliation method with the name '{method}'"
+                f"\nchoose one of the following: ols, wls_struct, wls_quant."
+            )
+
+        # G = inv(S'*inv(W_h)*S)*S'*inv(W_h)
+        W_h_mat_inv = np.linalg.inv(W_h_mat)
+        G = np.linalg.inv(S.T @ W_h_mat_inv @ S) @ S.T @ W_h_mat_inv
+        return S, G
+
+    def _fit_iterator(
+        self, series: Sequence[TimeSeries]
+    ) -> Iterator[Tuple[TimeSeries, Any]]:
+        # generator which also contains the method to use
+        return zip(series, (self.method for _ in range(len(series))))
 
     def _transform_iterator(
         self, series: Sequence[TimeSeries]
