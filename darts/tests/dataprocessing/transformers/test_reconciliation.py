@@ -151,6 +151,9 @@ class ReconciliationTestCase(unittest.TestCase):
             ),
         )
 
+    def test_hierarchy_preserved_after_predict(self):
+        self.assertEqual(self.pred.hierarchy, self.series.hierarchy)
+
     def test_more_intricate_hierarchy(self):
         recon = BottomUpReconciliatior()
         self._assert_reconciliation_complex(recon)
