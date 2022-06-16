@@ -2609,19 +2609,19 @@ class TimeSeries:
             For example, assume the series contains the components
             ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
             the following dictionary would encode the groupings shown on
-            ` Figure 11.6 here <https://otexts.com/fpp3/hts.html#grouped-time-series>`_:
+            `this figure <https://otexts.com/fpp3/hts.html#fig:GroupTree>`_:
 
             .. highlight:: python
             .. code-block:: python
 
-                {'ax': ['a', 'x'],
-                 'ay': ['a', 'y'],
-                 'bx': ['b', 'x'],
-                 'by': ['b', 'y'],
-                 'a': ['total'],
-                 'b': ['total'],
-                 'x': ['total'],
-                 'y': ['total']}
+                hierarchy = {'ax': ['a', 'x'],
+                             'ay': ['a', 'y'],
+                             'bx': ['b', 'x'],
+                             'by': ['b', 'y'],
+                             'a': ['total'],
+                             'b': ['total'],
+                             'x': ['total'],
+                             'y': ['total']}
             ..
 
         """

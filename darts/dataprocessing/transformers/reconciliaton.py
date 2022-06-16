@@ -1,9 +1,14 @@
 """
 Hierarchical Reconciliation
 ---------------------------
+
+A set of posthoc hierarchical reconciliation transformers. These transformers
+work on any ``TimeSeries`` (e.g., a forecast) that contain a ``hierarchy``.
+
+A ``hierarchy`` is a dict that maps each component to their parent(s) in the hierarchy.
+It can be added to a ``TimeSeries`` using e.g., the :meth:`TimeSeries.with_hierarchy` method.
 """
 
-# from abc import ABC, abstractmethod
 
 from typing import Any, Iterator, Optional, Sequence, Tuple
 
@@ -150,6 +155,7 @@ class MinTReconciliator(FittableDataTransformer):
         method
             This parameter can take four different values, determining how the covariance
             matrix ``W`` of the forecast errors is estimated (corresponding to ``Wh`` in [2]_):
+
             * ``ols`` uses ``W = I``. This option looks only at the hierarchy but ignores the
               values of the series provided to ``fit()``.
             * ``wls_struct`` uses ``W = diag(S1)``, where ``S1`` is a vector of size `n` with values
