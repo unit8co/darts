@@ -251,6 +251,10 @@ class TimeSeries:
         self._top_level_component = None
         self._bottom_level_components = None
         if hierarchy is not None:
+            raise_if_not(
+                isinstance(hierarchy, dict),
+                "The hierarchy must be a dict mapping (non-top) component names to their parent(s) in the hierarchy.",
+            )
             # pre-compute grouping informations
             components_set = set(self.components)
             children = set().union(hierarchy.keys())
@@ -261,7 +265,7 @@ class TimeSeries:
             ancestors = set().union(*hierarchy.values())
             raise_if_not(
                 all(a in components_set for a in ancestors),
-                "The values of the hierarchy must only contain component names matchine those of the series.",
+                "The values of the hierarchy must only contain component names matching those of the series.",
             )
             hierarchy_top = components_set - children
             raise_if_not(
@@ -1789,6 +1793,8 @@ class TimeSeries:
         other: "TimeSeries",
         axis: Optional[Union[str, int]] = 0,
         ignore_time_axes: Optional[bool] = False,
+        ignore_static_covariates: bool = False,
+        drop_hierarchy: bool = True,
     ) -> "TimeSeries":
         """
         Concatenate another timeseries to the current one along given axis.
@@ -1801,6 +1807,17 @@ class TimeSeries:
             axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 0 (time)]
         ignore_time_axes : bool, default False
             Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
+        ignore_static_covariates : bool
+            whether to ignore all requirements for static covariate concatenation and only transfer the
+            static covariates of the first TimeSeries element in `series` to the concatenated TimeSeries.
+            Only effective when `axis=1`.
+        drop_hierarchy : bool
+            When `axis=1`, whether to drop hierarchy information. True by default.
+            When False, the hierarchies will be "concatenated" as well
+            (by merging the hierarchy dictionaries), which may cause issues if the component
+            names of the resulting series and that of the merged hierarchy do not match.
+            When `axis=0` or `axis=2`, the hierarchy of the first series is always kept.
+
 
         Returns
         -------
@@ -1817,7 +1834,11 @@ class TimeSeries:
         the resulting series, and the other series will have its time index ignored.
         """
         return concatenate(
-            series=[self, other], axis=axis, ignore_time_axis=ignore_time_axes
+            series=[self, other],
+            axis=axis,
+            ignore_time_axis=ignore_time_axes,
+            ignore_static_covariates=ignore_static_covariates,
+            drop_hierarchy=drop_hierarchy,
         )
 
     """
@@ -4160,7 +4181,7 @@ def concatenate(
     axis: Union[str, int] = 0,
     ignore_time_axis: bool = False,
     ignore_static_covariates: bool = False,
-    drop_hierarchy: bool = False,
+    drop_hierarchy: bool = True,
 ):
     """Concatenates multiple ``TimeSeries`` along a given axis.
 
@@ -4184,10 +4205,10 @@ def concatenate(
         whether to ignore all requirements for static covariate concatenation and only transfer the static covariates
         of the first TimeSeries element in `series` to the concatenated TimeSeries. Only effective when `axis=1`.
     drop_hierarchy : bool
-        When `axis=1`, whether to drop hierarchy information. When False (default), the hierarchies will be
+        When `axis=1`, whether to drop hierarchy information. True by default. When False, the hierarchies will be
         "concatenated" as well (by merging the hierarchy dictionaries), which may cause issues if the component
         names of the resulting series and that of the merged hierarchy do not match.
-        When `axis=0` or `axis=2`, the hierarchy of the first series is kept.
+        When `axis=0` or `axis=2`, the hierarchy of the first series is always kept.
 
     Return
     -------
