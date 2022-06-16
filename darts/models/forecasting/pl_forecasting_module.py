@@ -3,11 +3,12 @@ This file contains abstract classes for deterministic and probabilistic PyTorch 
 """
 
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Optional, Sequence, Tuple
+from typing import Any, Dict, Optional, Sequence, Tuple, Union
 
 import pytorch_lightning as pl
 import torch
 import torch.nn as nn
+import torchmetrics
 from joblib import Parallel, delayed
 
 from darts.logging import get_logger, raise_if, raise_log
@@ -29,10 +30,13 @@ class PLForecastingModule(pl.LightningModule, ABC):
         input_chunk_length: int,
         output_chunk_length: int,
         loss_fn: nn.modules.loss._Loss = nn.MSELoss(),
+        torch_metrics: Optional[
+            Union[torchmetrics.Metric, torchmetrics.MetricCollection]
+        ] = None,
         likelihood: Optional[Likelihood] = None,
         optimizer_cls: torch.optim.Optimizer = torch.optim.Adam,
         optimizer_kwargs: Optional[Dict] = None,
-        lr_scheduler_cls: torch.optim.lr_scheduler._LRScheduler = None,
+        lr_scheduler_cls: Optional[torch.optim.lr_scheduler._LRScheduler] = None,
         lr_scheduler_kwargs: Optional[Dict] = None,
     ) -> None:
         """
@@ -58,6 +62,9 @@ class PLForecastingModule(pl.LightningModule, ABC):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
@@ -76,7 +83,8 @@ class PLForecastingModule(pl.LightningModule, ABC):
         super().__init__()
 
         # save hyper parameters for saving/loading
-        self.save_hyperparameters()
+        # do not save type nn.Module params
+        self.save_hyperparameters(ignore=["loss_fn", "torch_metrics"])
 
         raise_if(
             input_chunk_length is None or output_chunk_length is None,
@@ -99,6 +107,22 @@ class PLForecastingModule(pl.LightningModule, ABC):
         self.lr_scheduler_kwargs = (
             dict() if lr_scheduler_kwargs is None else lr_scheduler_kwargs
         )
+
+        if torch_metrics is None:
+            torch_metrics = torchmetrics.MetricCollection([])
+        elif isinstance(torch_metrics, torchmetrics.Metric):
+            torch_metrics = torchmetrics.MetricCollection([torch_metrics])
+        elif isinstance(torch_metrics, torchmetrics.MetricCollection):
+            pass
+        else:
+            raise_log(
+                AttributeError(
+                    "`torch_metrics` only accepts type torchmetrics.Metric or torchmetrics.MetricCollection"
+                ),
+                logger,
+            )
+        self.train_metrics = torch_metrics.clone(prefix="train_")
+        self.val_metrics = torch_metrics.clone(prefix="val_")
 
         # initialize prediction parameters
         self.pred_n: Optional[int] = None
@@ -126,6 +150,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         ]  # By convention target is always the last element returned by datasets
         loss = self._compute_loss(output, target)
         self.log("train_loss", loss, batch_size=train_batch[0].shape[0], prog_bar=True)
+        self._calculate_metrics(output, target, self.train_metrics)
         return loss
 
     def validation_step(self, val_batch, batch_idx) -> torch.Tensor:
@@ -134,6 +159,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         target = val_batch[-1]
         loss = self._compute_loss(output, target)
         self.log("val_loss", loss, batch_size=val_batch[0].shape[0], prog_bar=True)
+        self._calculate_metrics(output, target, self.val_metrics)
         return loss
 
     def predict_step(
@@ -154,7 +180,7 @@ class PLForecastingModule(pl.LightningModule, ABC):
         # number of individual series to be predicted in current batch
         num_series = input_data_tuple[0].shape[0]
 
-        # number of of times the input tensor should be tiled to produce predictions for multiple samples
+        # number of times the input tensor should be tiled to produce predictions for multiple samples
         # this variable is larger than 1 only if the batch_size is at least twice as large as the number
         # of individual time series being predicted in current batch (`num_series`)
         batch_sample_size = min(
@@ -226,12 +252,31 @@ class PLForecastingModule(pl.LightningModule, ABC):
         if self.likelihood:
             return self.likelihood.compute_loss(output, target)
         else:
-            # If there's no likelihood, nr_params=1 and we need to squeeze out the
+            # If there's no likelihood, nr_params=1, and we need to squeeze out the
             # last dimension of model output, for properly computing the loss.
             return self.criterion(output.squeeze(dim=-1), target)
 
+    def _calculate_metrics(self, output, target, metrics):
+        if not len(metrics):
+            return
+
+        if self.likelihood:
+            _metric = metrics(target, self.likelihood.sample(output))
+        else:
+            # If there's no likelihood, nr_params=1, and we need to squeeze out the
+            # last dimension of model output, for properly computing the metric.
+            _metric = metrics(target, output.squeeze(dim=-1))
+
+        self.log_dict(
+            _metric,
+            on_epoch=True,
+            on_step=False,
+            logger=True,
+            prog_bar=True,
+        )
+
     def configure_optimizers(self):
-        """configures optimizers and learning rate schedulers for for model optimization."""
+        """configures optimizers and learning rate schedulers for model optimization."""
 
         # A utility function to create optimizer and lr scheduler from desired classes
         def _create_from_cls_and_kwargs(cls, kws):
@@ -365,7 +410,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> torch.Tensor:
         """
-        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset to farecast
+        Feeds PastCovariatesTorchModel with input and output chunks of a PastCovariatesSequentialDataset to forecast
         the next ``n`` target values per target variable.
 
         Parameters:
@@ -416,7 +461,7 @@ class PLPastCovariatesModule(PLForecastingModule, ABC):
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
             # ==========> PAST INPUT <==========
-            # roll over input series to contain latest target and covariate
+            # roll over input series to contain the latest target and covariate
             input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions
@@ -532,7 +577,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
         self, n: int, input_batch: Tuple, roll_size: int
     ) -> torch.Tensor:
         """
-        Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to farecast
+        Feeds MixedCovariatesModel with input and output chunks of a MixedCovariatesSequentialDataset to forecast
         the next ``n`` target values per target variable.
 
         Parameters
@@ -598,7 +643,7 @@ class PLMixedCovariatesModule(PLForecastingModule, ABC):
                 batch_prediction[-1] = batch_prediction[-1][:, :roll_size, :]
 
             # ==========> PAST INPUT <==========
-            # roll over input series to contain latest target and covariate
+            # roll over input series to contain the latest target and covariate
             input_past = torch.roll(input_past, -roll_size, 1)
 
             # update target input to include next `roll_size` predictions
