@@ -1402,21 +1402,17 @@ class TimeSeriesHierarchyTestCase(DartsBaseTestClass):
             self.base_series.all_values(copy=False)[:, top_level_idx, :],
         )
 
-        for s, comp in zip(
-            hierarchical_series.bottom_level_series(), ["ax", "ay", "bx", "by"]
-        ):
-            comp_idx = self.components.index(comp)
-            np.testing.assert_equal(
-                s.all_values(copy=False)[:, 0, :],
-                self.base_series.all_values(copy=False)[:, comp_idx, :],
-            )
+        np.testing.assert_equal(
+            hierarchical_series.bottom_level_series.all_values(copy=False),
+            hierarchical_series[["ax", "ay", "bx", "by"]].all_values(copy=False),
+        )
 
     def test_concat(self):
         series1 = self.base_series.with_hierarchy(self.hierarchy)
         series2 = self.base_series.with_hierarchy(self.hierarchy)
 
         # concat on time or samples should preserve hierarchy:
-        concat_s = concatenate([series1, series2], axis=0)
+        concat_s = concatenate([series1, series2], axis=0, ignore_time_axis=True)
         self.assertEqual(concat_s.hierarchy, self.hierarchy)
 
         concat_s = concatenate([series1, series2], axis=2)

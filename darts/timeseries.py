@@ -274,6 +274,11 @@ class TimeSeries:
                 + "not appear as a key (the top level component).",
             )
             self._top_level_component = hierarchy_top.pop()
+            raise_if_not(
+                self._top_level_component in ancestors,
+                "Invalid hierarchy. Component {} appears as it should be top-level, but "
+                + "does not appear as an ancestor in the hierarchy dict.",
+            )
             bottom_level = components_set - ancestors
 
             # maintain the same order as the original components
