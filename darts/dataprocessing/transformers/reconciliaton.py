@@ -149,7 +149,7 @@ class MinTReconciliator(FittableDataTransformer):
         ----------
         method
             This parameter can take four different values, determining how the covariance
-            matrix ``W`` of the forecast errors is estimated (see [2]_):
+            matrix ``W`` of the forecast errors is estimated (corresponding to ``Wh`` in [2]_):
             * ``ols`` uses ``W = I``. This option looks only at the hierarchy but ignores the
               values of the series provided to ``fit()``.
             * ``wls_struct`` uses ``W = diag(S1)``, where ``S1`` is a vector of size `n` with values
@@ -159,9 +159,14 @@ class MinTReconciliator(FittableDataTransformer):
             * ``wls_var`` uses ``W = diag(W1)``, where ``W1`` is the temporal average of the
               variance of the forecasting residuals. This method assumes that the series
               provided to ``fit()`` contain the forecast residuals (deterministic series).
+            * ``mint_cov`` computes ``W`` as the empirical covariance matrix of the residuals
+              for each component, with residuals samples taken over time. This method assumes
+              that the series provided to ``fit()`` contain the forecast residuals
+              (deterministic series), and it requires the residuals to be linearly independent.
             * ``wls_val`` uses ``W = diag(V1)``, where ``V1`` is the temporal average of the
-              component values. This method assumes that the series
-              provided to ``fit()`` contains either the training data, or the forecasts.
+              component values. This method assumes that the series provided to ``fit()`` contains
+              an example of the actual values (e.g., either the training series or the forecasts).
+              This method is not presented in [2]_.
 
         References
         ----------
@@ -170,7 +175,7 @@ class MinTReconciliator(FittableDataTransformer):
         .. [2] https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach
         """
         super().__init__()
-        known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val"]
+        known_methods = ["ols", "wls", "wls_var", "wls_struct", "wls_val", "mint_cov"]
         raise_if_not(
             method in known_methods,
             f"The method must be one of {known_methods}",
@@ -210,16 +215,20 @@ class MinTReconciliator(FittableDataTransformer):
         elif method == "wls_var":
             # In this case we assume that series contains the residuals of some forecasts
             MinTReconciliator._assert_deterministic(series)
-            et2 = series.all_values(copy=False).squeeze(-1) ** 2  # squared residuals
+            et2 = series.values(copy=False) ** 2  # squared residuals
             # Wh diagonal is mean squared residual over time:
             Wh = np.diag(et2.mean(axis=0))
-            print(Wh)
         elif method == "wls_val":
             # W_h_mat is a diagonal matrix with entry i,i being the volume of the corresponding time series
             quantities = series.all_values(copy=False).mean(axis=2).mean(axis=0)
             Wh = np.diag(np.array(quantities))
-        else:  # "mint_cov"
-            raise_if_not(False, "Unknown method.")
+        elif method == "mint_cov":
+            MinTReconciliator._assert_deterministic(series)
+            Wh = np.cov(
+                series.values(copy=False).T
+            )  # + 1e-3 * np.eye(len(series.components))
+        else:
+            raise_if_not(False, f"Unknown method: {method}")
 
         # G = inv(S'*inv(W_h)*S)*S'*inv(W_h)
         Wh_inv = np.linalg.inv(Wh)
