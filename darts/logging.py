@@ -23,12 +23,16 @@ def get_logger(name):
 
     logger = logging.getLogger(name)
     logger.setLevel(logging.INFO)
-    stderr_handler = logging.StreamHandler()
+    handler = (
+        logging.StreamHandler()
+        if os.environ.get("DISABLE_DARTS_LOGGING") != "1"
+        else logging.NullHandler()
+    )
     formatter = logging.Formatter(
         "[%(asctime)s] %(levelname)s | %(name)s | %(message)s"
     )
-    stderr_handler.setFormatter(formatter)
-    logger.addHandler(stderr_handler)
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
     return logger
 
 
