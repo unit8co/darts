@@ -191,7 +191,3 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None
-
-
-if __name__ == "__main__":
-    print("tichc")
