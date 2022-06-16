@@ -1031,7 +1031,7 @@ if TORCH_AVAILABLE:
             (
                 CatBoostModel,
                 {"lags": 2, "likelihood": "poisson", "random_state": 42},
-                0.5,
+                0.6,
             ),
             (
                 LinearRegressionModel,
