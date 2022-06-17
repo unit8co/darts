@@ -456,7 +456,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         return y
 
 
-class NHiTS(PastCovariatesTorchModel):
+class NHiTSModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -534,6 +534,9 @@ class NHiTS(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.

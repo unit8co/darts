@@ -15,6 +15,7 @@ Darts is still in an early development phase and we cannot always guarantee back
   by [Greg DeVos](https://github.com/gdevos010)
 - Implemented ["GLU Variants Improve Transformer"](https://arxiv.org/abs/2002.05202) for transformer based models (transformer and TFT). [#959](https://github.com/unit8co/darts/issues/959)
   by [Greg DeVos](https://github.com/gdevos010) 
+- Added support for torch metrics during training and validation. [#996](https://github.com/unit8co/darts/pull/996) by [Greg DeVos](https://github.com/gdevos010)
 
 ## [0.19.0](https://github.com/unit8co/darts/tree/0.19.0) (2022-04-13)
 ### For users of the library:
