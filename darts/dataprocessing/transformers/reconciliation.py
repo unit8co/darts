@@ -216,7 +216,7 @@ class MinTReconciliator(FittableDataTransformer):
             G = np.linalg.inv(S.T @ S) @ S.T
             return S, G
         elif method == "wls_struct":
-            # W_h_mat is a diagonal matrix with entry i,i being the sum of row i of S_mat
+            # Wh is a diagonal matrix with entry i,i being the sum of row i of S_mat
             Wh = np.diag(np.sum(S, axis=1))
         elif method == "wls_var":
             # In this case we assume that series contains the residuals of some forecasts
@@ -225,7 +225,7 @@ class MinTReconciliator(FittableDataTransformer):
             # Wh diagonal is mean squared residual over time:
             Wh = np.diag(et2.mean(axis=0))
         elif method == "wls_val":
-            # W_h_mat is a diagonal matrix with entry i,i being the volume of the corresponding time series
+            # Wh is a diagonal matrix with entry i,i being the average value of the corresponding time series
             quantities = series.all_values(copy=False).mean(axis=2).mean(axis=0)
             Wh = np.diag(np.array(quantities))
         elif method == "mint_cov":
@@ -236,7 +236,6 @@ class MinTReconciliator(FittableDataTransformer):
         else:
             raise_if_not(False, f"Unknown method: {method}")
 
-        # G = inv(S'*inv(W_h)*S)*S'*inv(W_h)
         Wh_inv = np.linalg.inv(Wh)
         G = np.linalg.inv(S.T @ Wh_inv @ S) @ S.T @ Wh_inv
         return S, G

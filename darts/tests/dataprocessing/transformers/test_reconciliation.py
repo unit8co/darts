@@ -5,7 +5,7 @@ import numpy as np
 import torch
 
 from darts import TimeSeries, concatenate
-from darts.dataprocessing.transformers.reconciliaton import (
+from darts.dataprocessing.transformers.reconciliation import (
     BottomUpReconciliator,
     MinTReconciliator,
     TopDownReconciliator,

@@ -257,7 +257,7 @@ class TimeSeries:
             )
             # pre-compute grouping informations
             components_set = set(self.components)
-            children = set().union(hierarchy.keys())
+            children = set(hierarchy.keys())
             raise_if_not(
                 all(c in components_set for c in children),
                 "The keys of the hierarchy must be time series components",
