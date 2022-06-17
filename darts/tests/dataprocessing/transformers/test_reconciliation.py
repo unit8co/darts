@@ -6,9 +6,9 @@ import torch
 
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers.reconciliaton import (
-    BottomUpReconciliatior,
+    BottomUpReconciliator,
     MinTReconciliator,
-    TopDownReconciliatior,
+    TopDownReconciliator,
     _get_summation_matrix,
 )
 from darts.models import LinearRegressionModel
@@ -93,17 +93,17 @@ class ReconciliationTestCase(unittest.TestCase):
         _assert_comps("total", ["x", "y"])
 
     def test_bottom_up(self):
-        recon = BottomUpReconciliatior()
+        recon = BottomUpReconciliator()
         self._assert_reconciliation(recon)
 
     def test_top_down(self):
         # should work when fitting on training series
-        recon = TopDownReconciliatior()
+        recon = TopDownReconciliator()
         recon.fit(self.series)
         self._assert_reconciliation(recon)
 
         # or when fitting on forecasts
-        recon = TopDownReconciliatior()
+        recon = TopDownReconciliator()
         recon.fit(self.pred)
         self._assert_reconciliation(recon)
 
@@ -155,10 +155,10 @@ class ReconciliationTestCase(unittest.TestCase):
         self.assertEqual(self.pred.hierarchy, self.series.hierarchy)
 
     def test_more_intricate_hierarchy(self):
-        recon = BottomUpReconciliatior()
+        recon = BottomUpReconciliator()
         self._assert_reconciliation_complex(recon)
 
-        recon = TopDownReconciliatior()
+        recon = TopDownReconciliator()
         recon.fit(self.series_complex)
         self._assert_reconciliation_complex(recon)
 

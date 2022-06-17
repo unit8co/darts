@@ -76,7 +76,7 @@ def _reconcile_from_S_and_G(
     return series.with_values(reconciled_values)
 
 
-class BottomUpReconciliatior(BaseDataTransformer):
+class BottomUpReconciliator(BaseDataTransformer):
     """
     Performs bottom up reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
     """
@@ -89,11 +89,11 @@ class BottomUpReconciliatior(BaseDataTransformer):
     @staticmethod
     def ts_transform(series: TimeSeries) -> TimeSeries:
         S = _get_summation_matrix(series)
-        G = BottomUpReconciliatior.get_projection_matrix(series)
+        G = BottomUpReconciliator.get_projection_matrix(series)
         return _reconcile_from_S_and_G(series, S, G)
 
 
-class TopDownReconciliatior(FittableDataTransformer):
+class TopDownReconciliator(FittableDataTransformer):
     """
     Performs top down reconciliation, as defined `here <https://otexts.com/fpp3/reconciliation.html>`_.
 
@@ -104,7 +104,7 @@ class TopDownReconciliatior(FittableDataTransformer):
 
     @staticmethod
     def ts_fit(series: TimeSeries) -> np.ndarray:
-        G = TopDownReconciliatior.get_projection_matrix(series)
+        G = TopDownReconciliator.get_projection_matrix(series)
         return G
 
     @staticmethod

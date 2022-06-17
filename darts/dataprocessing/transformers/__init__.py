@@ -10,8 +10,8 @@ from .invertible_data_transformer import InvertibleDataTransformer
 from .mappers import InvertibleMapper, Mapper
 from .missing_values_filler import MissingValuesFiller
 from .reconciliaton import (
-    BottomUpReconciliatior,
+    BottomUpReconciliator,
     MinTReconciliator,
-    TopDownReconciliatior,
+    TopDownReconciliator,
 )
 from .scaler import Scaler
