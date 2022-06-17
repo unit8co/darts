@@ -629,6 +629,9 @@ class TFTModel(MixedCovariatesTorchModel):
             PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a
             ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `
             `likelihood`` to None and give a ``loss_fn`` argument.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
