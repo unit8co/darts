@@ -4,6 +4,7 @@ Datasets
 
 A few popular time series datasets
 """
+from pathlib import Path
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
@@ -306,5 +307,207 @@ class WoolyDataset(DatasetLoaderCSV):
                 hash="4be8b12314db94c8fd76f5c674454bf0",
                 header_time="date",
                 format_time="%Y-%m-%d",
+            )
+        )
+
+
+class ETTh1Dataset(DatasetLoaderCSV):
+    """
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 taken hourly.
+    Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTh1.csv",
+                uri=_DEFAULT_PATH + "/ETTh1.csv",
+                hash="8381763947c85f4be6ac456c508460d6",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ETTh2Dataset(DatasetLoaderCSV):
+    """
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 taken hourly.
+    Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTh2.csv",
+                uri=_DEFAULT_PATH + "/ETTh2.csv",
+                hash="51a229a3fc13579dd939364fefe9c7ab",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ETTm1Dataset(DatasetLoaderCSV):
+    """
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
+    Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTm1.csv",
+                uri=_DEFAULT_PATH + "/ETTm1.csv",
+                hash="82d6bd89109c63d075d99c1077b33f38",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ETTm2Dataset(DatasetLoaderCSV):
+    """
+    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+    The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
+    Source: [1][2]_
+
+    Field Descriptions:
+    date: The recorded date
+    HUFL: High UseFul Load
+    HULL: High UseLess Load
+    MUFL: Medium UseFul Load
+    MULL: Medium UseLess Load
+    LUFL: Low UseFul Load
+    LULL: Low UseLess Load
+    OT: Oil Temperature (Target)
+
+    References
+    ----------
+    .. [1] https://github.com/zhouhaoyi/ETDataset
+    .. [2] https://arxiv.org/abs/2012.07436
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "ETTm2.csv",
+                uri=_DEFAULT_PATH + "/ETTm2.csv",
+                hash="7687e47825335860bf58bccb31be0c56",
+                header_time="date",
+                format_time="%Y-%m-%d %H:%M:%S",
+            )
+        )
+
+
+class ElectricityDataset(DatasetLoaderCSV):
+    """
+    Measurements of electric power consumption in one household with 15 minute sampling rate.
+    370 client's consumption are recorded in kW.
+    Source: [1]_
+
+    Loading this dataset will provide a multivariate timeseries with 370 columns for each household.
+    The following code can be used to convert the dataset to a list of univariate timeseries,
+    one for each household.
+
+    .. highlight:: python
+    .. code-block:: python
+
+        import numpy as np
+        import pandas as pd
+        from darts import TimeSeries
+        from darts.datasets import ElectricityDataset
+
+        df = ElectricityDataset().load().pd_dataframe()
+
+        ts_list = [] # list of timeseries
+        for label in df:
+            srs = df[label]
+
+            # filter column down to the period of recording
+            srs = srs.replace(0.0, np.nan)
+            start_date = min(srs.fillna(method="ffill").dropna().index)
+            end_date = max(srs.fillna(method="bfill").dropna().index)
+            active_range = (srs.index >= start_date) & (srs.index <= end_date)
+            srs = srs[active_range].fillna(0.0)
+
+            # convert to timeseries
+            tmp = pd.DataFrame({"power_usage": srs})
+            tmp["date"] = tmp.index
+            date = tmp.index
+            ts = TimeSeries.from_dataframe(tmp, "date", ["power_usage"])
+            ts_list.append(ts)
+
+    ..
+
+
+    References
+    ----------
+    .. [1] https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014
+
+    """
+
+    def __init__(self):
+        def pre_proces_fn(extracted_dir, dataset_path):
+            with open(Path(extracted_dir, "LD2011_2014.txt")) as fin:
+                with open(dataset_path, "wt", newline="\n") as fout:
+                    for line in fin:
+                        fout.write(line.replace(",", ".").replace(";", ","))
+
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "Electricity.csv",
+                uri="https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip",
+                hash="acfe6783eea43905e510f537add940fd",
+                header_time="Unnamed: 0",
+                format_time="%Y-%m-%d %H:%M:%S",
+                pre_process_zipped_csv_fn=pre_proces_fn,
             )
         )

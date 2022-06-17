@@ -2,6 +2,7 @@ from copy import deepcopy
 from unittest.mock import ANY, patch
 
 import numpy as np
+import pandas as pd
 
 from darts.dataprocessing.transformers import Scaler
 from darts.datasets import AirPassengersDataset
@@ -107,8 +108,13 @@ if TORCH_AVAILABLE:
         np.random.seed(42)
         torch.manual_seed(42)
 
+        # some arbitrary static covariates
+        static_covariates = pd.DataFrame([[0.0, 1.0]], columns=["st1", "st2"])
+
         # real timeseries for functionality tests
-        ts_passengers = AirPassengersDataset().load()
+        ts_passengers = (
+            AirPassengersDataset().load().with_static_covariates(static_covariates)
+        )
         scaler = Scaler()
         ts_passengers = scaler.fit_transform(ts_passengers)
         ts_pass_train, ts_pass_val = ts_passengers[:-36], ts_passengers[-36:]
@@ -173,6 +179,9 @@ if TORCH_AVAILABLE:
                     mape_err < err,
                     "Model {} produces errors too high (one time "
                     "series). Error = {}".format(model_cls, mape_err),
+                )
+                self.assertTrue(
+                    pred.static_covariates.equals(self.ts_passengers.static_covariates)
                 )
 
         def test_multi_ts(self):

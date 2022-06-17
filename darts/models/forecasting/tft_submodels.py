@@ -20,7 +20,7 @@ all copies or substantial portions of the Software.
 '
 """
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
@@ -378,16 +378,24 @@ class _VariableSelectionNetwork(nn.Module):
         self,
         input_sizes: Dict[str, int],
         hidden_size: int,
-        input_embedding_flags: Dict[str, bool] = {},
+        input_embedding_flags: Optional[Dict[str, bool]] = None,
         dropout: float = 0.1,
         context_size: int = None,
-        single_variable_grns: Dict[str, _GatedResidualNetwork] = {},
-        prescalers: Dict[str, nn.Linear] = {},
+        single_variable_grns: Optional[Dict[str, _GatedResidualNetwork]] = None,
+        prescalers: Optional[Dict[str, nn.Linear]] = None,
     ):
         """
         Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
         """
         super().__init__()
+
+        input_embedding_flags = (
+            input_embedding_flags if input_embedding_flags is not None else {}
+        )
+        single_variable_grns = (
+            single_variable_grns if single_variable_grns is not None else {}
+        )
+        prescalers = prescalers if prescalers is not None else {}
 
         self.hidden_size = hidden_size
         self.input_sizes = input_sizes

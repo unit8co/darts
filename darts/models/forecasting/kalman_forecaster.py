@@ -76,7 +76,11 @@ class KalmanForecaster(DualCovariatesForecastingModel):
 
         time_index = self._generate_new_dates(n)
         placeholder_vals = np.zeros((n, self.training_series.width)) * np.nan
-        series_future = TimeSeries.from_times_and_values(time_index, placeholder_vals)
+        series_future = TimeSeries.from_times_and_values(
+            time_index,
+            placeholder_vals,
+            static_covariates=self.training_series.static_covariates,
+        )
         whole_series = self.training_series.append(series_future)
         filtered_series = self.darts_kf.filter(
             whole_series, covariates=future_covariates, num_samples=num_samples

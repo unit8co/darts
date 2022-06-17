@@ -152,7 +152,9 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.batch_norm = batch_norm
 
-        raise_if_not(activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}")
+        raise_if_not(
+            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
+        )
         self.activation = getattr(nn, activation)()
 
         # fully connected stack before fork
@@ -488,7 +490,8 @@ class _NBEATSModule(PLPastCovariatesModule):
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
         self.stacks_list[-1].blocks[-1].backcast_g.requires_grad_(False)
 
-    def forward(self, x):
+    def forward(self, x_in: Tuple):
+        x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc
@@ -595,6 +598,9 @@ class NBEATSModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.

@@ -26,7 +26,8 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         lookback: int = 3,
     ) -> None:
         """
-        A time series dataset containing tuples of (past_target, past_covariates, future_target) arrays,
+        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)
+        arrays,
         in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.
 
         The "past" series have length `lookback * output_chunk_length`, and the "future" series has length
@@ -105,31 +106,33 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
 
     def __getitem__(
         self, idx: int
-    ) -> Tuple[np.ndarray, Optional[np.ndarray], np.ndarray]:
+    ) -> Tuple[np.ndarray, Optional[np.ndarray], Optional[np.ndarray], np.ndarray]:
         # determine the index of the time series.
-        ts_idx = idx // self.nr_samples_per_ts
-        ts_target = self.target_series[ts_idx]
-        target_vals = ts_target.random_component_values(copy=False)
+        target_idx = idx // self.nr_samples_per_ts
+        target_series = self.target_series[target_idx]
+        target_vals = target_series.random_component_values(copy=False)
 
         raise_if_not(
             len(target_vals)
             >= (self.lookback + self.max_lh) * self.output_chunk_length,
             "The dataset contains some input/target series that are shorter than "
-            "`(lookback + max_lh) * H` ({}-th series)".format(ts_idx),
+            "`(lookback + max_lh) * H` ({}-th series)".format(target_idx),
         )
 
         # determine the index lh_idx of the forecasting point (the last point of the input series, before the target)
         # lh_idx should be in [0, self.nr_samples_per_ts)
-        lh_idx = idx - (ts_idx * self.nr_samples_per_ts)
+        lh_idx = idx - (target_idx * self.nr_samples_per_ts)
 
         # determine the index at the end of the output chunk
-        end_of_output_idx = len(ts_target) - (
+        end_of_output_idx = len(target_series) - (
             (self.min_lh - 1) * self.output_chunk_length + lh_idx
         )
 
         # optionally, load covariates
-        ts_covariate = self.covariates[ts_idx] if self.covariates is not None else None
-        main_cov_type = (
+        covariate_series = (
+            self.covariates[target_idx] if self.covariates is not None else None
+        )
+        main_covariate_type = (
             CovariateType.NONE if self.covariates is None else CovariateType.PAST
         )
 
@@ -145,14 +148,14 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
             cov_start,
             cov_end,
         ) = self._memory_indexer(
-            ts_idx=ts_idx,
-            ts_target=ts_target,
+            target_idx=target_idx,
+            target_series=target_series,
             shift=shift,
             input_chunk_length=input_chunk_length,
             output_chunk_length=self.output_chunk_length,
             end_of_output_idx=end_of_output_idx,
-            ts_covariate=ts_covariate,
-            cov_type=main_cov_type,
+            covariate_series=covariate_series,
+            covariate_type=main_covariate_type,
         )
 
         # extract sample target
@@ -163,12 +166,12 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
         covariate = None
         if self.covariates is not None:
             raise_if_not(
-                cov_end <= len(ts_covariate),
+                cov_end <= len(covariate_series),
                 f"The dataset contains 'past' covariates that don't extend far enough into the future. "
                 f"({idx}-th sample)",
             )
 
-            covariate = ts_covariate.random_component_values(copy=False)[
+            covariate = covariate_series.random_component_values(copy=False)[
                 cov_start:cov_end
             ]
 
@@ -178,4 +181,5 @@ class HorizonBasedDataset(PastCovariatesTrainingDataset):
                 "input (or output) chunk relative to the target series.",
             )
 
-        return past_target, covariate, future_target
+        static_covariate = target_series.static_covariates_values(copy=False)
+        return past_target, covariate, static_covariate, future_target

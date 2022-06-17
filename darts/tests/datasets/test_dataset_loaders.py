@@ -2,9 +2,15 @@ import os
 
 from darts import TimeSeries
 from darts.datasets import (
+    _DEFAULT_PATH,
     AirPassengersDataset,
     AusBeerDataset,
+    ElectricityDataset,
     EnergyDataset,
+    ETTh1Dataset,
+    ETTh2Dataset,
+    ETTm1Dataset,
+    ETTm2Dataset,
     GasRateCO2Dataset,
     HeartRateDataset,
     IceCreamHeaterDataset,
@@ -40,9 +46,14 @@ datasets = [
     WoolyDataset,
     GasRateCO2Dataset,
     MonthlyMilkIncompleteDataset,
+    ETTh1Dataset,
+    ETTh2Dataset,
+    ETTm1Dataset,
+    ETTm2Dataset,
+    ElectricityDataset,
 ]
 
-width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1]
+width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
@@ -61,6 +72,27 @@ wrong_url_dataset = DatasetLoaderCSV(
         hash="167ffa96204a2b47339c21eea25baf32",
         header_time="Month",
         format_time="%Y-%m",
+    )
+)
+
+wrong_zip_url_dataset = DatasetLoaderCSV(
+    metadata=DatasetLoaderMetadata(
+        "wrong_zip_url",
+        uri="https://Electricity.zip",
+        hash="d17748042ea98fc9c5fb4db0946d5fa4",
+        header_time="Unnamed: 0",
+        format_time="%Y-%m-%d %H:%M:%S",
+        pre_process_zipped_csv_fn=lambda x: x,
+    )
+)
+
+no_pre_process_fn_dataset = DatasetLoaderCSV(
+    metadata=DatasetLoaderMetadata(
+        "no_pre_process_fn",
+        uri=_DEFAULT_PATH + "/test.zip",
+        hash="167ffa96204a2b47339c21eea25baf32",
+        header_time="Month",
+        pre_process_zipped_csv_fn=None,
     )
 )
 
@@ -86,3 +118,11 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
     def test_uri(self):
         with self.assertRaises(DatasetLoadingException):
             wrong_url_dataset.load()
+
+    def test_zip_uri(self):
+        with self.assertRaises(DatasetLoadingException):
+            wrong_zip_url_dataset.load()
+
+    def test_pre_process_fn(self):
+        with self.assertRaises(DatasetLoadingException):
+            no_pre_process_fn_dataset.load()

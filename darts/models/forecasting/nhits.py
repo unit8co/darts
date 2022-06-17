@@ -102,7 +102,9 @@ class _Block(nn.Module):
         self.dropout = dropout
         self.MaxPool1d = MaxPool1d
 
-        raise_if_not(activation in ACTIVATIONS, f"{activation} is not in {ACTIVATIONS}")
+        raise_if_not(
+            activation in ACTIVATIONS, f"'{activation}' is not in {ACTIVATIONS}"
+        )
         self.activation = getattr(nn, activation)()
 
         # number of parameters theta for backcast and forecast
@@ -415,7 +417,8 @@ class _NHiTSModule(PLPastCovariatesModule):
         # on this params (the last block backcast is not part of the final output of the net).
         self.stacks_list[-1].blocks[-1].backcast_linear_layer.requires_grad_(False)
 
-    def forward(self, x):
+    def forward(self, x_in: Tuple):
+        x, _ = x_in
 
         # if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts
         # we reshape into x1, y1, a1, x2, y2, a2... etc
@@ -453,7 +456,7 @@ class _NHiTSModule(PLPastCovariatesModule):
         return y
 
 
-class NHiTS(PastCovariatesTorchModel):
+class NHiTSModel(PastCovariatesTorchModel):
     def __init__(
         self,
         input_chunk_length: int,
@@ -531,6 +534,9 @@ class NHiTS(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
@@ -707,9 +713,7 @@ class NHiTS(PastCovariatesTorchModel):
             )
             raise_if_not(
                 all([len(i) == num_blocks for i in tup]),
-                "the length of each tuple in {} must be `num_blocks={}`".format(
-                    name, num_blocks
-                ),
+                f"the length of each tuple in {name} must be `num_blocks={num_blocks}`",
             )
 
         if pooling_kernel_sizes is None:
@@ -721,9 +725,7 @@ class NHiTS(PastCovariatesTorchModel):
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
-                "(N-HiTS): Using automatic kernel pooling size: {}.".format(
-                    pooling_kernel_sizes
-                )
+                f"(N-HiTS): Using automatic kernel pooling size: {pooling_kernel_sizes}."
             )
         else:
             # check provided pooling format
@@ -737,9 +739,7 @@ class NHiTS(PastCovariatesTorchModel):
                 for v in max_v // np.geomspace(1, max_v, num_stacks)
             )
             logger.info(
-                "(N-HiTS):  Using automatic downsampling coefficients: {}.".format(
-                    n_freq_downsample
-                )
+                f"(N-HiTS):  Using automatic downsampling coefficients: {n_freq_downsample}."
             )
         else:
             # check provided downsample format
