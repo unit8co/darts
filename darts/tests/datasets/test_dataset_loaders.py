@@ -97,6 +97,15 @@ no_pre_process_fn_dataset = DatasetLoaderCSV(
         pre_process_zipped_csv_fn=None,
     )
 )
+ele_multi_series_dataset = DatasetLoaderCSV(
+    metadata=DatasetLoaderMetadata(
+        "Electricity_test.csv",
+        uri=_DEFAULT_PATH + "/Electricity_test.csv",
+        hash="894cd9456c7e893503701b33b96d3361",
+        header_time="Time",
+        pre_process_zipped_csv_fn=None,
+    )
+)
 
 
 class DatasetLoaderTestCase(DartsBaseTestClass):
@@ -128,3 +137,14 @@ class DatasetLoaderTestCase(DartsBaseTestClass):
     def test_pre_process_fn(self):
         with self.assertRaises(DatasetLoadingException):
             no_pre_process_fn_dataset.load()
+
+    def test_multi_series_dataset(self):
+        # processing _to_multi_series takes a long time. Test function with 5 cols.
+        ts = ele_multi_series_dataset.load().pd_dataframe()
+        ms = UberTLCDataset()._to_multi_series(ts)
+        self.assertEqual(len(ms), 5)
+        self.assertEqual(len(ms[0]), 140256)
+
+        ms = ElectricityDataset()._to_multi_series(ts)
+        self.assertEqual(len(ms), 5)
+        self.assertEqual(len(ms[0]), 105216)
