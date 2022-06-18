@@ -8,7 +8,6 @@ import pandas as pd
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.likelihood_models import GaussianLikelihood
 
 logger = get_logger(__name__)
 
@@ -21,6 +20,7 @@ try:
     )
 
     from darts.models.forecasting.rnn_model import RNNModel
+    from darts.utils.likelihood_models import GaussianLikelihood
 
     TORCH_AVAILABLE = True
 except ImportError:
