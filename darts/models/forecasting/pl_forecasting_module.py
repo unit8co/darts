@@ -353,6 +353,10 @@ class PLForecastingModule(pl.LightningModule, ABC):
 
         return recurse_children(self.children(), set())
 
+    def set_mc_dropout(self, active: bool):
+        for module in self._get_mc_dropout_modules():
+            module.mc_dropout_enabled = active
+
     def _is_probabilistic(self) -> bool:
         return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 

@@ -52,6 +52,7 @@ class MonteCarloDropout(nn.Dropout):
         if mode:  # in train mode, keep dropout as is
             self.mc_dropout_enabled = True
         # in eval mode, bank on the mc_dropout_enabled flag
+        # mc_dropout_enabled is set equal to "mc_dropout" param given to predict()
 
     def forward(self, input: Tensor) -> Tensor:
         # NOTE: we could use the following line in case a different rate

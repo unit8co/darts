@@ -1195,8 +1195,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         )
 
         # Set mc_dropout rate
-        for module in self.model._get_mc_dropout_modules():
-            module.mc_dropout_enabled = mc_dropout
+        self.model.set_mc_dropout(mc_dropout)
 
         # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
         trainer = trainer if trainer is not None else self.trainer
