@@ -37,7 +37,9 @@ class MonteCarloDropout(nn.Dropout):
     often improves its performance.
     """
 
-    mc_dropout_enabled: bool = None
+    # We need to init it to False as some models may start by
+    # a validation round, in which case MC dropout is disabled.
+    mc_dropout_enabled: bool = False
 
     def train(self, mode: bool = True):
         # NOTE: we could use the line below if self.mc_dropout_rate represented
@@ -54,7 +56,6 @@ class MonteCarloDropout(nn.Dropout):
     def forward(self, input: Tensor) -> Tensor:
         # NOTE: we could use the following line in case a different rate
         # is used for inference:
-
         # return F.dropout(input, self.applied_rate, True, self.inplace)
 
         return F.dropout(input, self.p, self.mc_dropout_enabled, self.inplace)
