@@ -4,11 +4,6 @@ import tempfile
 from unittest.mock import patch
 
 import pandas as pd
-from torchmetrics import (
-    MeanAbsoluteError,
-    MeanAbsolutePercentageError,
-    MetricCollection,
-)
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -19,6 +14,11 @@ logger = get_logger(__name__)
 
 try:
     import torch
+    from torchmetrics import (
+        MeanAbsoluteError,
+        MeanAbsolutePercentageError,
+        MetricCollection,
+    )
 
     from darts.models.forecasting.rnn_model import RNNModel
 
