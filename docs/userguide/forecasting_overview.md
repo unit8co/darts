@@ -198,7 +198,7 @@ pred.plot(label='forecast')
 ![TCN quantile regression](./images/probabilistic/example_tcn_quantile.png)
 
 ### Capturing model uncertainty using Monte Carlo Dropout
-In Darts, dropout can also be used an additional way to capture model uncertainty, following the approach described in [this paper](https://arxiv.org/abs/1506.02142). This is sometimes referred to as *epistemic uncertainty*, and can be seen as a way to marginalize over a family of models represented by all the different dropout activation functions.
+In Darts, dropout can also be used an additional way to capture model uncertainty, following the approach described in [1]. This is sometimes referred to as *epistemic uncertainty*, and can be seen as a way to marginalize over a family of models represented by all the different dropout activation functions.
 
 This feature is readily available for all deep learning models integrating some dropout (except RNN models - we refer to the dropout API reference documentations for a mention of models supporting this). It only requires to specify `mc_dropout=True` at prediction time. For example, the code below trains a TCN model (using the default MSE loss) with a dropout rate of 10%, and then produces a probabilistic forecasts using Monte Carlo Dropout:
 
@@ -255,3 +255,6 @@ pred.plot(label='forecast')
 ```
 
 ![quantile linear regression](./images/probabilistic/example_linreg_quantile.png)
+
+
+[1] [Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning](https://arxiv.org/abs/1506.02142)
