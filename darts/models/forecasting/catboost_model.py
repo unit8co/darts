@@ -68,10 +68,15 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self.likelihood = likelihood
         self.quantiles = None
 
+        # forcing output_chunk_length to 1 for now
+        output_chunk_length = 1
+
         # to be extended to RMSEWithUncertainty
         likelihood_map = {
             "quantile": None,
             "poisson": "Poisson",
+            "rmse_with_uncertainty": "RMSEWithUncertainty",
+            "RMSEWithUncertainty": "RMSEWithUncertainty",
         }
 
         available_likelihoods = list(likelihood_map.keys())
@@ -186,6 +191,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             return self._predict_quantiles(x, num_samples, **kwargs)
         elif self.likelihood == "poisson":
             return self._predict_poisson(x, num_samples, **kwargs)
+        elif self.likelihood in ["RMSEWithUncertainty", "rmse_with_uncertainty"]:
+            return self._predict_normal(x, num_samples, **kwargs)
         else:
             return super()._predict_and_sample(x, num_samples, **kwargs)
 

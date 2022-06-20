@@ -180,6 +180,11 @@ if TORCH_AVAILABLE:
             likelihood="poisson",
             random_state=42,
         )
+        NormalCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="rmse_with_uncertainty",
+            random_state=42,
+        )
         QuantileLightGBMModel = partialclass(
             LightGBMModel,
             likelihood="quantile",
@@ -207,6 +212,7 @@ if TORCH_AVAILABLE:
                 PoissonLightGBMModel,
                 PoissonLinearRegressionModel,
                 PoissonCatBoostModel,
+                NormalCatBoostModel,
             ]
         )
 
@@ -222,6 +228,7 @@ if TORCH_AVAILABLE:
             0.4,  # PoissonLightGBMModel
             0.4,  # PoissonLinearRegressionModel
             1e-01,  # PoissonCatBoostModel
+            1e-05,  # NormalCatBoostModel
         ]
         multivariate_accuracies = [
             0.3,
@@ -235,6 +242,7 @@ if TORCH_AVAILABLE:
             0.4,
             0.4,
             0.15,
+            1e-05,
         ]
         multivariate_multiseries_accuracies = [
             0.05,
@@ -248,6 +256,7 @@ if TORCH_AVAILABLE:
             0.4,
             0.4,
             1e-01,
+            1e-03,
         ]
 
         # dummy feature and target TimeSeries instances
@@ -1032,6 +1041,11 @@ if TORCH_AVAILABLE:
                 CatBoostModel,
                 {"lags": 2, "likelihood": "poisson", "random_state": 42},
                 0.6,
+            ),
+            (
+                CatBoostModel,
+                {"lags": 2, "likelihood": "rmse_with_uncertainty", "random_state": 42},
+                1e-05,
             ),
             (
                 LinearRegressionModel,

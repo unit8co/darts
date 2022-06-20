@@ -29,6 +29,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from catboost import CatBoostRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputRegressor
 
@@ -417,6 +418,15 @@ class RegressionModel(GlobalForecastingModel):
                     self.model = MultiOutputRegressor(
                         self.model, n_jobs=n_jobs_multioutput_wrapper
                     )
+                elif isinstance(self.model, CatBoostRegressor):
+                    if (
+                        self.model.get_params()["loss_function"]
+                        == "RMSEWithUncertainty"
+                    ):
+                        self.model = MultiOutputRegressor(
+                            self.model, n_jobs=n_jobs_multioutput_wrapper
+                        )
+
         # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
             not isinstance(self.model, MultiOutputRegressor)
@@ -699,6 +709,33 @@ class _LikelihoodMixin:
         # sampled has shape (n_series * n_samples, output_chunk_length, n_components)
 
         return sampled
+
+    def _predict_normal(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
+        """
+        X is of shape (n_series * n_samples, n_regression_features)
+        """
+        k = x.shape[0]
+
+        model_output = self.model.predict(x, **kwargs).reshape(
+            k, self.output_chunk_length, -1
+        )
+
+        # choosing to return the mean if one sample
+        if num_samples == 1:
+            return model_output[:, :, 0].reshape(k, self.output_chunk_length, -1)
+
+        return self._normal_sampling(model_output)
+
+    def _normal_sampling(self, model_output: np.ndarray) -> np.ndarray:
+        """
+        Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
+        """
+        shape = model_output.shape
+        mu_sigma = model_output[:, 0, :]
+        list_of_samples = [
+            np.random.normal(params[0], params[1]) for params in mu_sigma
+        ]
+        return np.array(list_of_samples).reshape(shape[0], shape[1], 1)
 
     def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         """
