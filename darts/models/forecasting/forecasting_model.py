@@ -451,7 +451,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             if last_points_only:
-                last_points_values.append(forecast.all_values()[-1])
+                last_points_values.append(forecast.all_values(copy=False)[-1])
                 last_points_times.append(forecast.end_time())
             else:
                 forecasts.append(forecast)
@@ -461,7 +461,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 return TimeSeries.from_times_and_values(
                     pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
                     np.array(last_points_values),
+                    columns=series.columns,
                     static_covariates=series.static_covariates,
+                    hierarchy=series.hierarchy,
                 )
             else:
                 return TimeSeries.from_times_and_values(
@@ -471,7 +473,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         step=1,
                     ),
                     np.array(last_points_values),
+                    columns=series.columns,
                     static_covariates=series.static_covariates,
+                    hierarchy=series.hierarchy,
                 )
 
         return forecasts
