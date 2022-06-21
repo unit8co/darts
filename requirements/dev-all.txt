@@ -1,6 +1,5 @@
 -r core.txt
 -r dev.txt
--r prophet.txt
 -r pmdarima.txt
 -r release.txt
 -r torch.txt
