@@ -10,7 +10,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 import numpy as np
 from catboost import CatBoostRegressor
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
@@ -67,6 +67,17 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self._rng = None
         self.likelihood = likelihood
         self.quantiles = None
+
+        if "loss_function" in kwargs.keys():
+            raise_if(
+                kwargs["loss_function"] == "RMSEWithUncertainty",
+                "The loss function RMSEWithUncertainty is not supported by darts.",
+            )
+        elif "objective" in kwargs.keys():
+            raise_if(
+                kwargs["objective"] == "RMSEWithUncertainty",
+                "The objective RMSEWithUncertainty is not supported by darts.",
+            )
 
         # to be extended to RMSEWithUncertainty
         likelihood_map = {
