@@ -121,6 +121,8 @@ plt.legend()
 * **Filtering Models:** Darts offers three filtering models: `KalmanFilter`, `GaussianProcessFilter`,
   and `MovingAverage`, which allow to filter time series, and in some cases obtain probabilistic
   inferences of the underlying states/values.
+* **Datasets** The `darts.datasets` submodule contains some popular time series datasets for rapid
+  and convenient experimentation.
 
 ## Forecasting Models
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
