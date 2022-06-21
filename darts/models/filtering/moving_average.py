@@ -49,6 +49,9 @@ class MovingAverage(FilteringModel):
             .rolling(window=self.window, min_periods=1, center=self.centered)
             .mean()
         )
+
         return TimeSeries.from_dataframe(
-            filtered_df, static_covariates=series.static_covariates
+            filtered_df,
+            static_covariates=series.static_covariates,
+            hierarchy=series.hierarchy,
         )
