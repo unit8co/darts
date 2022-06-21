@@ -5,6 +5,13 @@ Datasets
 A few popular time series datasets
 """
 from pathlib import Path
+from typing import List
+
+import numpy as np
+import pandas as pd
+
+from darts import TimeSeries
+from darts.logging import get_logger, raise_if_not
 
 from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
 
@@ -13,6 +20,8 @@ from .dataset_loaders import DatasetLoaderCSV, DatasetLoaderMetadata
     from darts.datasets import AirPassengersDataset
     ts: TimeSeries = AirPassengersDataset.load()
 """
+
+logger = get_logger(__name__)
 
 _DEFAULT_PATH = "https://raw.githubusercontent.com/unit8co/darts/master/datasets"
 
@@ -457,36 +466,6 @@ class ElectricityDataset(DatasetLoaderCSV):
     The following code can be used to convert the dataset to a list of univariate timeseries,
     one for each household.
 
-    .. highlight:: python
-    .. code-block:: python
-
-        import numpy as np
-        import pandas as pd
-        from darts import TimeSeries
-        from darts.datasets import ElectricityDataset
-
-        df = ElectricityDataset().load().pd_dataframe()
-
-        ts_list = [] # list of timeseries
-        for label in df:
-            srs = df[label]
-
-            # filter column down to the period of recording
-            srs = srs.replace(0.0, np.nan)
-            start_date = min(srs.fillna(method="ffill").dropna().index)
-            end_date = max(srs.fillna(method="bfill").dropna().index)
-            active_range = (srs.index >= start_date) & (srs.index <= end_date)
-            srs = srs[active_range].fillna(0.0)
-
-            # convert to timeseries
-            tmp = pd.DataFrame({"power_usage": srs})
-            tmp["date"] = tmp.index
-            date = tmp.index
-            ts = TimeSeries.from_dataframe(tmp, "date", ["power_usage"])
-            ts_list.append(ts)
-
-    ..
-
 
     References
     ----------
@@ -494,7 +473,14 @@ class ElectricityDataset(DatasetLoaderCSV):
 
     """
 
-    def __init__(self):
+    def __init__(self, multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
+
         def pre_proces_fn(extracted_dir, dataset_path):
             with open(Path(extracted_dir, "LD2011_2014.txt")) as fin:
                 with open(dataset_path, "wt", newline="\n") as fout:
@@ -509,5 +495,122 @@ class ElectricityDataset(DatasetLoaderCSV):
                 header_time="Unnamed: 0",
                 format_time="%Y-%m-%d %H:%M:%S",
                 pre_process_zipped_csv_fn=pre_proces_fn,
+                multivariate=multivariate,
             )
         )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        Load the electricity dataset as a list of univariate series, one for each household.
+        """
+
+        ts_list = []  # list of timeseries
+        for label in series:
+            srs = series[label]
+
+            # filter column down to the period of recording
+            srs = srs.replace(0.0, np.nan)
+            start_date = min(srs.fillna(method="ffill").dropna().index)
+            end_date = max(srs.fillna(method="bfill").dropna().index)
+            active_range = (srs.index >= start_date) & (srs.index <= end_date)
+            srs = srs[active_range].fillna(0.0)
+
+            # convert to timeseries
+            tmp = pd.DataFrame({"power_usage": srs})
+            tmp["date"] = tmp.index
+            ts = TimeSeries.from_dataframe(tmp, "date", ["power_usage"])
+            ts_list.append(ts)
+        return ts_list
+
+
+class UberTLCDataset(DatasetLoaderCSV):
+    """
+    14.3 million Uber pickups from January to June 2015. The data is resampled to hourly or daily based sample_freq
+    on using the locationID as the target.
+    Source: [1]_
+
+    Loading this dataset will provide a multivariate timeseries with 262 columns for each locationID.
+    The following code can be used to convert the dataset to a list of univariate timeseries,
+    one for each locationID.
+
+
+    References
+    ----------
+    .. [1] https://github.com/fivethirtyeight/uber-tlc-foil-response
+
+    """
+
+    def __init__(self, sample_freq: str = "hourly", multivariate: bool = True):
+        """
+        Parameters
+        ----------
+        sample_freq: str
+            The sampling frequency of the data. Can be "hourly" or "daily". Default is "hourly".
+        multivariate: bool
+            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.
+        """
+        valid_sample_freq = ["daily", "hourly"]
+        raise_if_not(
+            sample_freq in valid_sample_freq,
+            f"sample_freq must be one of {valid_sample_freq}",
+            logger,
+        )
+
+        def pre_proces_fn(extracted_dir, dataset_path):
+            df = pd.read_csv(
+                Path(extracted_dir, "uber-raw-data-janjune-15.csv"),
+                header=0,
+                usecols=["Pickup_date", "locationID"],
+                index_col=0,
+            )
+
+            output_dict = {}
+            freq_setting = "1H" if "hourly" in str(dataset_path) else "1D"
+            time_series_of_locations = list(df.groupby(by="locationID"))
+            for locationID, df in time_series_of_locations:
+                df.sort_index()
+                df.index = pd.to_datetime(df.index)
+
+                count_series = df.resample(rule=freq_setting).size()
+
+                output_dict[locationID] = count_series
+            output_df = pd.DataFrame(output_dict)
+            output_df.to_csv(dataset_path, line_terminator="\n")
+
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                f"uber_tlc_{sample_freq}.csv",
+                uri="https://github.com/fivethirtyeight/uber-tlc-foil-response/raw/"
+                "63bb878b76f47f69b4527d50af57aac26dead983/"
+                "uber-trip-data/uber-raw-data-janjune-15.csv.zip",
+                hash="9ed84ebe0df4bc664748724b633b3fe6"
+                if sample_freq == "hourly"
+                else "24f9fd67e4b9e53f0214a90268cd9bee",
+                header_time="Pickup_date",
+                format_time="%Y-%m-%d %H:%M",
+                pre_process_zipped_csv_fn=pre_proces_fn,
+                multivariate=multivariate,
+            )
+        )
+
+    def _to_multi_series(self, series: pd.DataFrame) -> List[TimeSeries]:
+        """
+        load the Uber TLC dataset as a list of univariate timeseries, one for each locationID.
+        """
+
+        ts_list = []  # list of timeseries
+        for label in series:
+            srs = series[label]
+
+            # filter column down to the period of recording
+            start_date = min(srs.fillna(method="ffill").dropna().index)
+            end_date = max(srs.fillna(method="bfill").dropna().index)
+            active_range = (srs.index >= start_date) & (srs.index <= end_date)
+            srs = srs[active_range]
+
+            # convert to timeseries
+            tmp = pd.DataFrame({"locationID": srs})
+            tmp["date"] = tmp.index
+            ts = TimeSeries.from_dataframe(tmp, "date", ["locationID"])
+            ts_list.append(ts)
+        return ts_list

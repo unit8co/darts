@@ -193,10 +193,16 @@ def extract_trend_and_seasonality(
         raise_log(ValueError(f"Unknown value for method: {method}"), logger)
 
     season = TimeSeries.from_times_and_values(
-        ts.time_index, decomp.seasonal, static_covariates=ts.static_covariates
+        ts.time_index,
+        decomp.seasonal,
+        static_covariates=ts.static_covariates,
+        hierarchy=ts.hierarchy,
     )
     trend = TimeSeries.from_times_and_values(
-        ts.time_index, decomp.trend, static_covariates=ts.static_covariates
+        ts.time_index,
+        decomp.trend,
+        static_covariates=ts.static_covariates,
+        hierarchy=ts.hierarchy,
     )
 
     return trend, season
