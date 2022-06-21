@@ -46,6 +46,7 @@ In Darts, probabilistic forecasts are represented by drawing Monte Carlo samples
 * A **Probabilistic** (or **stochastic**) series contains multiple samples.
 * A **deterministic** series contains only one sample.
 
+
 ## Creating `TimeSeries`
 `TimeSeries` objects can be created using factory methods, for example:
 
@@ -78,6 +79,29 @@ Behind the scenes, `TimeSeries` is wrapping around a 3-dimensional `xarray.DataA
 * [TimeSeries.values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.values) to export a NumPy array contaning the values of one sample from the series.
 
 * [TimeSeries.all_values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.all_values) to export a NumPy array contaning the values of all samples of a stochastic series.
+
+
+## Static Covariates
+Optionally, `TimeSeries` objects can contain static data (referred to as *static covariates*), which can be exploited by some models. Example of static covariates can be:
+
+* Store location - for instance for each store (component) in a multivariate series
+* Product ID
+* Sensor type
+* ...
+
+The static covariates have to be specified by a pandas DataFrame whose rows match the `TimeSeries`'s components, and whose columns represent the dimensions of the static covariates. They can be added to a `TimeSeries` when using most factory methods, using the `static_covariates` parameter. They can also be added to an existing `TimeSeries` using the `with_static_covariates()` method.
+
+
+## Hierarchical Time Series
+Optionally, `TimeSeries` objects can contain a hierarchy, which specifies how its different components are grouped together. The hierarchy itself is specified as a Python dictionary, mapping the components' names to a list of names of their parent(s) in the hierarchy.
+
+For instance, the following hierarchy means that the two components `"a"` and `"b"` add up to `"total"`:
+```python
+hierarchy = {"a": ["total"], "b", ["total"]}
+```
+
+Hierarchies can be used for posthoc forecast reconciliation. Darts offers several reconciliation transformers (usable with `fit()`/`transform()`) - see the [corresponding API documentation](https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html).
+
 
 ## More information and documentation
 The full list of attributes and methods of the `TimeSeries` class is listed in the [API Documentation](https://unit8co.github.io/darts/generated_api/darts.timeseries.html). In addition, the [Quickstart](https://unit8co.github.io/darts/quickstart/00-quickstart.html#Building-and-manipulating-TimeSeries) contains some examples of `TimeSeries` manipulation.

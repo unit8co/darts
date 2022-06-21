@@ -108,13 +108,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             series, tr_out, component_mask=component_mask
         )
 
-        return TimeSeries.from_times_and_values(
-            times=series.time_index,
-            values=transformed_vals,
-            fill_missing_dates=False,
-            columns=series.columns,
-            static_covariates=series.static_covariates,
-        )
+        return series.with_values(transformed_vals)
 
     @staticmethod
     def ts_inverse_transform(
@@ -129,13 +123,7 @@ class Scaler(InvertibleDataTransformer, FittableDataTransformer):
             series, tr_out, component_mask=component_mask
         )
 
-        return TimeSeries.from_times_and_values(
-            times=series.time_index,
-            values=inv_transformed_vals,
-            fill_missing_dates=False,
-            columns=series.columns,
-            static_covariates=series.static_covariates,
-        )
+        return series.with_values(inv_transformed_vals)
 
     @staticmethod
     def ts_fit(series: TimeSeries, transformer, *args, **kwargs) -> Any:

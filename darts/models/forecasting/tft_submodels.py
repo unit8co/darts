@@ -27,6 +27,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from darts.logging import get_logger
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -188,7 +189,7 @@ class _GatedLinearUnit(nn.Module):
         super().__init__()
 
         if dropout is not None:
-            self.dropout = nn.Dropout(dropout)
+            self.dropout = MonteCarloDropout(dropout)
         else:
             self.dropout = dropout
         self.hidden_size = hidden_size or input_size
@@ -500,7 +501,7 @@ class _ScaledDotProductAttention(nn.Module):
     def __init__(self, dropout: float = None, scale: bool = True):
         super().__init__()
         if dropout is not None:
-            self.dropout = nn.Dropout(p=dropout)
+            self.dropout = MonteCarloDropout(p=dropout)
         else:
             self.dropout = dropout
         self.softmax = nn.Softmax(dim=2)
@@ -530,7 +531,7 @@ class _InterpretableMultiHeadAttention(nn.Module):
         self.n_head = n_head
         self.d_model = d_model
         self.d_k = self.d_q = self.d_v = d_model // n_head
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
         self.v_layer = nn.Linear(self.d_model, self.d_v)
         self.q_layers = nn.ModuleList(
