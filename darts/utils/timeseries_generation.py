@@ -475,7 +475,7 @@ def _extend_time_index_until(
         else:
             raise_if_not(
                 isinstance(until, int),
-                "Expected integer for TimeSeries, indexed by RangeIndex, ",
+                "Expected integer for TimeSeries, indexed by RangeIndex, "
                 f"for parameter until, got {type(end)}",
                 logger,
             )
@@ -702,19 +702,19 @@ def _build_forecast_series(
         else len(points_preds[0])
     )
     time_index = _generate_new_dates(time_index_length, input_series=input_series)
-    if isinstance(points_preds, np.ndarray):
-        return TimeSeries.from_times_and_values(
-            time_index,
-            points_preds,
-            freq=input_series.freq_str,
-            columns=input_series.columns,
-        )
+    values = (
+        points_preds
+        if isinstance(points_preds, np.ndarray)
+        else np.stack(points_preds, axis=2)
+    )
 
     return TimeSeries.from_times_and_values(
         time_index,
-        np.stack(points_preds, axis=2),
+        values,
         freq=input_series.freq_str,
         columns=input_series.columns,
+        static_covariates=input_series.static_covariates,
+        hierarchy=input_series.hierarchy,
     )
 
 

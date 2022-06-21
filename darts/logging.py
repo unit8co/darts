@@ -22,13 +22,9 @@ def get_logger(name):
     """
 
     logger = logging.getLogger(name)
+    # default logging level is logging.INFO
     logger.setLevel(logging.INFO)
-    stderr_handler = logging.StreamHandler()
-    formatter = logging.Formatter(
-        "[%(asctime)s] %(levelname)s | %(name)s | %(message)s"
-    )
-    stderr_handler.setFormatter(formatter)
-    logger.addHandler(stderr_handler)
+
     return logger
 
 

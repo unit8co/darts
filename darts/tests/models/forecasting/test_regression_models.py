@@ -1,3 +1,4 @@
+import functools
 import math
 from unittest.mock import patch
 
@@ -10,7 +11,8 @@ from sklearn.multioutput import MultiOutputRegressor
 import darts
 from darts import TimeSeries
 from darts.logging import get_logger
-from darts.metrics import rmse
+from darts.metrics import mae, rmse
+from darts.models.forecasting.forecasting_model import GlobalForecastingModel
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
@@ -141,6 +143,14 @@ def dummy_timeseries(
     return targets, pcovs, fcovs
 
 
+# helper function used to register LightGBMModel/LinearRegressionModel with likelihood
+def partialclass(cls, *args, **kwargs):
+    class NewCls(cls):
+        __init__ = functools.partialmethod(cls.__init__, *args, **kwargs)
+
+    return NewCls
+
+
 # Regression models rely on PyTorch for the Datasets
 if TORCH_AVAILABLE:
 
@@ -150,6 +160,35 @@ if TORCH_AVAILABLE:
 
         # default regression models
         models = [RandomForest, LinearRegressionModel, RegressionModel, LightGBMModel]
+
+        # register likelihood regression models
+        QuantileLightGBMModel = partialclass(
+            LightGBMModel,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+            random_state=42,
+        )
+        PoissonLightGBMModel = partialclass(
+            LightGBMModel, likelihood="poisson", random_state=42
+        )
+        QuantileLinearRegressionModel = partialclass(
+            LinearRegressionModel,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+            random_state=42,
+        )
+        PoissonLinearRegressionModel = partialclass(
+            LinearRegressionModel, likelihood="poisson", random_state=42
+        )
+        # targets for poisson regression must be positive, so we exclude them for some tests
+        models.extend(
+            [
+                QuantileLightGBMModel,
+                QuantileLinearRegressionModel,
+                PoissonLightGBMModel,
+                PoissonLinearRegressionModel,
+            ]
+        )
 
         # dummy feature and target TimeSeries instances
         target_series, past_covariates, future_covariates = dummy_timeseries(
@@ -162,13 +201,13 @@ if TORCH_AVAILABLE:
             pcov_offset=0,
             fcov_offset=0,
         )
-
-        sine_univariate1 = tg.sine_timeseries(length=100)
-        sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705)
-        sine_univariate3 = tg.sine_timeseries(length=100, value_phase=0.78525)
-        sine_univariate4 = tg.sine_timeseries(length=100, value_phase=0.392625)
-        sine_univariate5 = tg.sine_timeseries(length=100, value_phase=0.1963125)
-        sine_univariate6 = tg.sine_timeseries(length=100, value_phase=0.09815625)
+        # shift sines to positive values for poisson regressors
+        sine_univariate1 = tg.sine_timeseries(length=100) + 1.5
+        sine_univariate2 = tg.sine_timeseries(length=100, value_phase=1.5705) + 1.5
+        sine_univariate3 = tg.sine_timeseries(length=100, value_phase=0.78525) + 1.5
+        sine_univariate4 = tg.sine_timeseries(length=100, value_phase=0.392625) + 1.5
+        sine_univariate5 = tg.sine_timeseries(length=100, value_phase=0.1963125) + 1.5
+        sine_univariate6 = tg.sine_timeseries(length=100, value_phase=0.09815625) + 1.5
         sine_multivariate1 = sine_univariate1.stack(sine_univariate2)
         sine_multivariate2 = sine_univariate2.stack(sine_univariate3)
         sine_multiseries1 = [sine_univariate1, sine_univariate2, sine_univariate3]
@@ -177,7 +216,6 @@ if TORCH_AVAILABLE:
         lags_1 = {"target": [-3, -2, -1], "past": [-4, -2], "future": [-5, 2]}
 
         def test_model_construction(self):
-
             for model in self.models:
                 # TESTING SINGLE INT
                 # testing lags
@@ -469,6 +507,7 @@ if TORCH_AVAILABLE:
 
         def test_fit(self):
             for model in self.models:
+
                 # test fitting both on univariate and multivariate timeseries
                 for series in [self.sine_univariate1, self.sine_multivariate2]:
                     with self.assertRaises(ValueError):
@@ -545,7 +584,9 @@ if TORCH_AVAILABLE:
             # for every model, and different output_chunk_lengths test whether it predicts the univariate time series
             # as well as expected
             self.helper_test_models_accuracy(
-                self.sine_univariate1, self.sine_univariate2, [0.03, 1e-13, 1e-13, 0.3]
+                self.sine_univariate1,
+                self.sine_univariate2,
+                [0.03, 1e-13, 1e-13, 0.3, 0.5, 0.8, 0.4, 0.4],
             )
 
         def test_models_accuracy_multivariate(self):
@@ -554,7 +595,7 @@ if TORCH_AVAILABLE:
             self.helper_test_models_accuracy(
                 self.sine_multivariate1,
                 self.sine_multivariate2,
-                [0.3, 1e-13, 1e-13, 0.4],
+                [0.3, 1e-13, 1e-13, 0.4, 0.4, 0.8, 0.4, 0.4],
             )
 
         def test_models_accuracy_multiseries_multivariate(self):
@@ -563,7 +604,7 @@ if TORCH_AVAILABLE:
             self.helper_test_models_accuracy(
                 self.sine_multiseries1,
                 self.sine_multiseries2,
-                [0.05, 1e-13, 1e-13, 0.05],
+                [0.05, 1e-13, 1e-13, 0.05, 0.4, 0.8, 0.4, 0.4],
             )
 
         def test_historical_forecast(self):
@@ -889,3 +930,106 @@ if TORCH_AVAILABLE:
 
             assert lgb_fit_patch.call_args[1]["eval_set"] is not None
             assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+
+    class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
+        models_cls_kwargs_errs = [
+            (
+                LightGBMModel,
+                {"lags": 2, "likelihood": "quantile", "random_state": 42},
+                0.4,
+            ),
+            (
+                LightGBMModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "random_state": 42,
+                },
+                0.4,
+            ),
+            (
+                LightGBMModel,
+                {"lags": 2, "likelihood": "poisson", "random_state": 42},
+                0.6,
+            ),
+            (
+                LinearRegressionModel,
+                {"lags": 2, "likelihood": "quantile", "random_state": 42},
+                0.6,
+            ),
+            (
+                LinearRegressionModel,
+                {"lags": 2, "likelihood": "poisson", "random_state": 42},
+                0.6,
+            ),
+        ]
+
+        constant_ts = tg.constant_timeseries(length=200, value=0.5)
+        constant_noisy_ts = constant_ts + tg.gaussian_timeseries(length=200, std=0.1)
+        constant_multivar_ts = constant_ts.stack(constant_ts)
+        constant_noisy_multivar_ts = constant_noisy_ts.stack(constant_noisy_ts)
+        num_samples = 5
+
+        def test_fit_predict_determinism(self):
+
+            for model_cls, model_kwargs, _ in self.models_cls_kwargs_errs:
+                # whether the first predictions of two models initiated with the same random state are the same
+                model = model_cls(**model_kwargs)
+                model.fit(self.constant_noisy_multivar_ts)
+                pred1 = model.predict(n=10, num_samples=2).values()
+
+                model = model_cls(**model_kwargs)
+                model.fit(self.constant_noisy_multivar_ts)
+                pred2 = model.predict(n=10, num_samples=2).values()
+
+                self.assertTrue((pred1 == pred2).all())
+
+                # test whether the next prediction of the same model is different
+                pred3 = model.predict(n=10, num_samples=2).values()
+                self.assertTrue((pred2 != pred3).any())
+
+        def test_probabilistic_forecast_accuracy(self):
+            for model_cls, model_kwargs, err in self.models_cls_kwargs_errs:
+                self.helper_test_probabilistic_forecast_accuracy(
+                    model_cls,
+                    model_kwargs,
+                    err,
+                    self.constant_ts,
+                    self.constant_noisy_ts,
+                )
+                if issubclass(model_cls, GlobalForecastingModel):
+                    self.helper_test_probabilistic_forecast_accuracy(
+                        model_cls,
+                        model_kwargs,
+                        err,
+                        self.constant_multivar_ts,
+                        self.constant_noisy_multivar_ts,
+                    )
+
+        def helper_test_probabilistic_forecast_accuracy(
+            self, model_cls, model_kwargs, err, ts, noisy_ts
+        ):
+            model = model_cls(**model_kwargs)
+            model.fit(noisy_ts[:100])
+            pred = model.predict(n=100, num_samples=100)
+
+            # test accuracy of the median prediction compared to the noiseless ts
+            mae_err_median = mae(ts[100:], pred)
+            self.assertLess(mae_err_median, err)
+
+            # test accuracy for increasing quantiles between 0.7 and 1 (it should ~decrease, mae should ~increase)
+            tested_quantiles = [0.7, 0.8, 0.9, 0.99]
+            mae_err = mae_err_median
+            for quantile in tested_quantiles:
+                new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+                self.assertLess(mae_err, new_mae + 0.1)
+                mae_err = new_mae
+
+            # test accuracy for decreasing quantiles between 0.3 and 0 (it should ~decrease, mae should ~increase)
+            tested_quantiles = [0.3, 0.2, 0.1, 0.01]
+            mae_err = mae_err_median
+            for quantile in tested_quantiles:
+                new_mae = mae(ts[100:], pred.quantile_timeseries(quantile=quantile))
+                self.assertLess(mae_err, new_mae + 0.1)
+                mae_err = new_mae

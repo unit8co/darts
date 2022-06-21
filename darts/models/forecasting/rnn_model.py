@@ -73,9 +73,6 @@ class _RNNModule(PLDualCovariatesModule):
         # RNNModule doesn't really need input and output_chunk_length for PLModule
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         # Defining parameters
         self.target_size = target_size
         self.nr_params = nr_params
@@ -89,7 +86,8 @@ class _RNNModule(PLDualCovariatesModule):
         # The RNN module needs a linear layer V that transforms hidden states into outputs, individually
         self.V = nn.Linear(hidden_dim, target_size * nr_params)
 
-    def forward(self, x, h=None):
+    def forward(self, x_in: Tuple, h=None):
+        x, _ = x_in
         # data is of size (batch_size, input_length, input_size)
         batch_size = x.shape[0]
 
@@ -106,17 +104,23 @@ class _RNNModule(PLDualCovariatesModule):
         return predictions, last_hidden_state
 
     def _produce_train_output(self, input_batch: Tuple):
-        past_target, historic_future_covariates, future_covariates = input_batch
+        (
+            past_target,
+            historic_future_covariates,
+            future_covariates,
+            static_covariates,
+        ) = input_batch
         # For the RNN we concatenate the past_target with the future_covariates
         # (they have the same length because we enforce a Shift dataset for RNNs)
         model_input = (
             torch.cat([past_target, future_covariates], dim=2)
             if future_covariates is not None
-            else past_target
+            else past_target,
+            static_covariates,
         )
         return self(model_input)[0]
 
-    def _produce_predict_output(self, x, last_hidden_state=None):
+    def _produce_predict_output(self, x: Tuple, last_hidden_state=None):
         """overwrite parent classes `_produce_predict_output` method"""
         output, hidden = self(x, last_hidden_state)
         if self.likelihood:
@@ -130,7 +134,12 @@ class _RNNModule(PLDualCovariatesModule):
         """
         This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.
         """
-        past_target, historic_future_covariates, future_covariates = input_batch
+        (
+            past_target,
+            historic_future_covariates,
+            future_covariates,
+            static_covariates,
+        ) = input_batch
 
         if historic_future_covariates is not None:
             # RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates
@@ -147,7 +156,9 @@ class _RNNModule(PLDualCovariatesModule):
             cov_future = None
 
         batch_prediction = []
-        out, last_hidden_state = self._produce_predict_output(input_series)
+        out, last_hidden_state = self._produce_predict_output(
+            (input_series, static_covariates)
+        )
         batch_prediction.append(out[:, -1:, :])
         prediction_length = 1
 
@@ -168,7 +179,7 @@ class _RNNModule(PLDualCovariatesModule):
 
             # feed new input to model, including the last hidden state from the previous iteration
             out, last_hidden_state = self._produce_predict_output(
-                new_input, last_hidden_state
+                (new_input, static_covariates), last_hidden_state
             )
 
             # append prediction to batch prediction array, increase counter
@@ -246,6 +257,9 @@ class RNNModel(DualCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.

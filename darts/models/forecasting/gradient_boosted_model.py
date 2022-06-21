@@ -11,21 +11,25 @@ https://github.com/unit8co/darts/blob/master/README.md
 from typing import List, Optional, Sequence, Tuple, Union
 
 import lightgbm as lgb
+import numpy as np
 
 from darts.logging import get_logger
-from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class LightGBMModel(RegressionModel):
+class LightGBMModel(RegressionModel, _LikelihoodMixin):
     def __init__(
         self,
         lags: Union[int, list] = None,
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        likelihood: str = None,
+        quantiles: List[float] = None,
+        random_state: Optional[int] = None,
         **kwargs,
     ):
         """Light Gradient Boosted Model
@@ -48,10 +52,35 @@ class LightGBMModel(RegressionModel):
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
+        likelihood
+            Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at
+            prediction time.
+        quantiles
+            Fit the model to these quantiles if the `likelihood` is set to `quantile`.
+        random_state
+            Control the randomness in the fitting procedure and for sampling.
+            Default: ``None``.
         **kwargs
             Additional keyword arguments passed to `lightgbm.LGBRegressor`.
         """
+        kwargs["random_state"] = random_state  # seed for tree learner
         self.kwargs = kwargs
+        self._median_idx = None
+        self._model_container = None
+        self.quantiles = None
+        self.likelihood = likelihood
+        self._rng = None
+
+        # parse likelihood
+        available_likelihoods = ["quantile", "poisson"]  # to be extended
+        if likelihood is not None:
+            self._check_likelihood(likelihood, available_likelihoods)
+            self.kwargs["objective"] = likelihood
+            self._rng = np.random.default_rng(seed=random_state)  # seed for sampling
+
+            if likelihood == "quantile":
+                self.quantiles, self._median_idx = self._prepare_quantiles(quantiles)
+                self._model_container = self._get_model_container()
 
         super().__init__(
             lags=lags,
@@ -62,6 +91,8 @@ class LightGBMModel(RegressionModel):
         )
 
     def __str__(self):
+        if self.likelihood:
+            return f"LGBModel(lags={self.lags}, likelihood={self.likelihood})"
         return f"LGBModel(lags={self.lags})"
 
     def fit(
@@ -102,13 +133,31 @@ class LightGBMModel(RegressionModel):
         """
 
         if val_series is not None:
-
             kwargs["eval_set"] = self._create_lagged_data(
                 target_series=val_series,
                 past_covariates=val_past_covariates,
                 future_covariates=val_future_covariates,
                 max_samples_per_ts=max_samples_per_ts,
             )
+
+        if self.likelihood == "quantile":
+            # empty model container in case of multiple calls to fit, e.g. when backtesting
+            self._model_container.clear()
+            for quantile in self.quantiles:
+                self.kwargs["alpha"] = quantile
+                self.model = lgb.LGBMRegressor(**self.kwargs)
+
+                super().fit(
+                    series=series,
+                    past_covariates=past_covariates,
+                    future_covariates=future_covariates,
+                    max_samples_per_ts=max_samples_per_ts,
+                    **kwargs,
+                )
+
+                self._model_container[quantile] = self.model
+
+            return self
 
         super().fit(
             series=series,
@@ -119,3 +168,16 @@ class LightGBMModel(RegressionModel):
         )
 
         return self
+
+    def _predict_and_sample(
+        self, x: np.ndarray, num_samples: int, **kwargs
+    ) -> np.ndarray:
+        if self.likelihood == "quantile":
+            return self._predict_quantiles(x, num_samples, **kwargs)
+        elif self.likelihood == "poisson":
+            return self._predict_poisson(x, num_samples, **kwargs)
+        else:
+            return super()._predict_and_sample(x, num_samples, **kwargs)
+
+    def _is_probabilistic(self) -> bool:
+        return self.likelihood is not None

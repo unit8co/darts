@@ -15,6 +15,7 @@ from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModul
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -183,9 +184,6 @@ class _TCNModule(PLPastCovariatesModule):
 
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         # Defining parameters
         self.input_size = input_size
         self.n_filters = num_filters
@@ -194,7 +192,7 @@ class _TCNModule(PLPastCovariatesModule):
         self.target_size = target_size
         self.nr_params = nr_params
         self.dilation_base = dilation_base
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
@@ -233,7 +231,8 @@ class _TCNModule(PLPastCovariatesModule):
             self.res_blocks_list.append(res_block)
         self.res_blocks = nn.ModuleList(self.res_blocks_list)
 
-    def forward(self, x):
+    def forward(self, x_in: Tuple):
+        x, _ = x_in
         # data is of size (batch_size, input_chunk_length, input_size)
         batch_size = x.size(0)
         x = x.transpose(1, 2)
@@ -290,7 +289,9 @@ class TCNModel(PastCovariatesTorchModel):
         num_layers
             The number of convolutional layers.
         dropout
-            The dropout rate for every convolutional layer.
+            The dropout rate for every convolutional layer. This is compatible with Monte Carlo dropout
+            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
+            prediction time).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -299,6 +300,9 @@ class TCNModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.

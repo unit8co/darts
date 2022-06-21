@@ -1,6 +1,8 @@
 import numpy as np
+import pandas as pd
+import pytest
 
-from darts import TimeSeries
+from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers import Scaler
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
@@ -163,6 +165,41 @@ if TORCH_AVAILABLE:
                 kwargs_tft=kwargs_TFT_full_coverage,
             )
 
+        def test_static_covariates_support(self):
+            target_multi = concatenate(
+                [tg.sine_timeseries(length=10, freq="h")] * 2, axis=1
+            )
+
+            target_multi = target_multi.with_static_covariates(
+                pd.DataFrame([[0.0, 1.0], [2.0, 3.0]], index=["st1", "st2"])
+            )
+
+            # should work with cyclic encoding for time index
+            model = TFTModel(
+                input_chunk_length=3,
+                output_chunk_length=4,
+                add_encoders={"cyclic": {"future": "hour"}},
+                pl_trainer_kwargs={"fast_dev_run": True},
+            )
+            model.fit(target_multi, verbose=False)
+            assert len(model.model.static_variables) == len(
+                target_multi.static_covariates.columns
+            )
+
+            model.predict(n=1, series=target_multi, verbose=False)
+
+            # raise an error when trained with static covariates of wrong dimensionality
+            target_multi = target_multi.with_static_covariates(
+                pd.concat([target_multi.static_covariates] * 2, axis=1)
+            )
+            with pytest.raises(ValueError):
+                model.predict(n=1, series=target_multi, verbose=False)
+
+            # raise an error when trained with static covariates and trying to predict without
+            target_multi = target_multi.with_static_covariates(None)
+            with pytest.raises(ValueError):
+                model.predict(n=1, series=target_multi, verbose=False)
+
         def helper_generate_multivariate_case_data(self, season_length, n_repeat):
             """generates multivariate test case data. Target series is a sine wave stacked with a repeating
             linear curve of equal seasonal length. Covariates are datetime attributes for 'hours'.
@@ -282,10 +319,14 @@ if TORCH_AVAILABLE:
                 series=series,
                 past_covariates=past_covariates,
                 future_covariates=future_covariates,
-                num_samples=100,
+                num_samples=(100 if model._is_probabilistic() else 1),
             )
+
             if isinstance(y_hat, TimeSeries):
-                y_hat = y_hat.quantile_timeseries(0.5)
+                y_hat = y_hat.quantile_timeseries(0.5) if y_hat.n_samples > 1 else y_hat
             else:
-                y_hat = [ts.quantile_timeseries(0.5) for ts in y_hat]
+                y_hat = [
+                    ts.quantile_timeseries(0.5) if ts.n_samples > 1 else ts
+                    for ts in y_hat
+                ]
             return y_hat

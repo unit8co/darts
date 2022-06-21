@@ -94,7 +94,7 @@ task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pip_core, pip_dev, pip_prophet, pip_pmdarima, pip_torch, pip_release
+    dependsOn pip_core, pip_dev, pip_pmdarima, pip_torch, pip_release
 }
 
 task lint_black(type: Exec) {

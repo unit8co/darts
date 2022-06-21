@@ -20,13 +20,14 @@ all copies or substantial portions of the Software.
 '
 """
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
 from darts.logging import get_logger
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -188,7 +189,7 @@ class _GatedLinearUnit(nn.Module):
         super().__init__()
 
         if dropout is not None:
-            self.dropout = nn.Dropout(dropout)
+            self.dropout = MonteCarloDropout(dropout)
         else:
             self.dropout = dropout
         self.hidden_size = hidden_size or input_size
@@ -378,16 +379,24 @@ class _VariableSelectionNetwork(nn.Module):
         self,
         input_sizes: Dict[str, int],
         hidden_size: int,
-        input_embedding_flags: Dict[str, bool] = {},
+        input_embedding_flags: Optional[Dict[str, bool]] = None,
         dropout: float = 0.1,
         context_size: int = None,
-        single_variable_grns: Dict[str, _GatedResidualNetwork] = {},
-        prescalers: Dict[str, nn.Linear] = {},
+        single_variable_grns: Optional[Dict[str, _GatedResidualNetwork]] = None,
+        prescalers: Optional[Dict[str, nn.Linear]] = None,
     ):
         """
         Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
         """
         super().__init__()
+
+        input_embedding_flags = (
+            input_embedding_flags if input_embedding_flags is not None else {}
+        )
+        single_variable_grns = (
+            single_variable_grns if single_variable_grns is not None else {}
+        )
+        prescalers = prescalers if prescalers is not None else {}
 
         self.hidden_size = hidden_size
         self.input_sizes = input_sizes
@@ -492,7 +501,7 @@ class _ScaledDotProductAttention(nn.Module):
     def __init__(self, dropout: float = None, scale: bool = True):
         super().__init__()
         if dropout is not None:
-            self.dropout = nn.Dropout(p=dropout)
+            self.dropout = MonteCarloDropout(p=dropout)
         else:
             self.dropout = dropout
         self.softmax = nn.Softmax(dim=2)
@@ -522,7 +531,7 @@ class _InterpretableMultiHeadAttention(nn.Module):
         self.n_head = n_head
         self.d_model = d_model
         self.d_k = self.d_q = self.d_v = d_model // n_head
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
         self.v_layer = nn.Linear(self.d_model, self.d_v)
         self.q_layers = nn.ModuleList(

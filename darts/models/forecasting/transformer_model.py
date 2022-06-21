@@ -9,11 +9,17 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger
+from darts.logging import get_logger, raise_if_not
+from darts.models.components import glu_variants
+from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
 logger = get_logger(__name__)
+
+
+BUILT_IN = ["relu", "gelu"]
+FFN = GLU_FFN + BUILT_IN
 
 
 # This implementation of positional encoding is taken from the PyTorch documentation:
@@ -25,23 +31,23 @@ class _PositionalEncoding(nn.Module):
         Parameters
         ----------
         d_model
-            the number of expected features in the transformer encoder/decoder inputs.
-            Last dimension of the input
+            The number of expected features in the transformer encoder/decoder inputs.
+            Last dimension of the input.
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         max_len
             The dimensionality of the computed positional encoding array.
-            Only its first "input_size" elements will be considered in the output
+            Only its first "input_size" elements will be considered in the output.
 
         Inputs
         ------
         x of shape `(batch_size, input_size, d_model)`
-            Tensor containing the embedded time series
+            Tensor containing the embedded time series.
 
         Outputs
         -------
         y of shape `(batch_size, input_size, d_model)`
-            Tensor containing the embedded time series enhanced with positional encoding
+            Tensor containing the embedded time series enhanced with positional encoding.
         """
         super().__init__()
         self.dropout = nn.Dropout(p=dropout)
@@ -76,7 +82,7 @@ class _TransformerModule(PLPastCovariatesModule):
         activation: str,
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
         """PyTorch module implementing a Transformer to be used in `TransformerModel`.
 
@@ -91,25 +97,25 @@ class _TransformerModule(PLPastCovariatesModule):
         nr_params
             The number of parameters of the likelihood (or 1 if no likelihood is used).
         d_model
-            the number of expected features in the transformer encoder/decoder inputs.
+            The number of expected features in the transformer encoder/decoder inputs.
         nhead
-            the number of heads in the multiheadattention model.
+            The number of heads in the multiheadattention model.
         num_encoder_layers
-            the number of encoder layers in the encoder.
+            The number of encoder layers in the encoder.
         num_decoder_layers
-            the number of decoder layers in the decoder.
+            The number of decoder layers in the decoder.
         dim_feedforward
-            the dimension of the feedforward network model.
+            The dimension of the feedforward network model.
         dropout
             Fraction of neurons affected by Dropout.
         activation
-            the activation function of encoder/decoder intermediate layer, 'relu' or 'gelu'.
+            The activation function of encoder/decoder intermediate layer.
         custom_encoder
-            a custom transformer encoder provided by the user (default=None)
+            A custom transformer encoder provided by the user (default=None).
         custom_decoder
-            a custom transformer decoder provided by the user (default=None)
+            A custom transformer decoder provided by the user (default=None).
         **kwargs
-            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
+            All parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
 
         Inputs
         ------
@@ -124,9 +130,6 @@ class _TransformerModule(PLPastCovariatesModule):
 
         super().__init__(**kwargs)
 
-        # required for all modules -> saves hparams for checkpoints
-        self.save_hyperparameters()
-
         self.input_size = input_size
         self.target_size = output_size
         self.nr_params = nr_params
@@ -137,6 +140,16 @@ class _TransformerModule(PLPastCovariatesModule):
             d_model, dropout, self.input_chunk_length
         )
 
+        raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
+        if activation in GLU_FFN:
+            # use glu variant feedforward layers
+            self.activation = getattr(glu_variants, activation)(
+                d_model=d_model, d_ff=dim_feedforward, dropout=dropout
+            )
+        else:
+            # use nn.Transformer built in feedforward layers
+            self.activation = activation
+
         # Defining the Transformer module
         self.transformer = nn.Transformer(
             d_model=d_model,
@@ -145,7 +158,7 @@ class _TransformerModule(PLPastCovariatesModule):
             num_decoder_layers=num_decoder_layers,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
-            activation=activation,
+            activation=self.activation,
             custom_encoder=custom_encoder,
             custom_decoder=custom_decoder,
         )
@@ -164,7 +177,8 @@ class _TransformerModule(PLPastCovariatesModule):
 
         return src, tgt
 
-    def forward(self, data):
+    def forward(self, x_in: Tuple):
+        data, _ = x_in
         # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
         # side of the Transformer architecture
         src, tgt = self._create_transformer_inputs(data)
@@ -205,7 +219,7 @@ class TransformerModel(PastCovariatesTorchModel):
         activation: str = "relu",
         custom_encoder: Optional[nn.Module] = None,
         custom_decoder: Optional[nn.Module] = None,
-        **kwargs
+        **kwargs,
     ):
 
         """Transformer model
@@ -223,31 +237,34 @@ class TransformerModel(PastCovariatesTorchModel):
 
         Parameters
         ----------
-        model
-            a custom PyTorch module with the same specifications as
-            `darts.models.transformer_model._TransformerModule` (default=None).
         input_chunk_length
-            Number of time steps to be input to the forecasting module (default=1).
+            Number of time steps to be input to the forecasting module.
         output_chunk_length
-            Number of time steps to be output by the forecasting module (default=1).
+            Number of time steps to be output by the forecasting module.
         d_model
-            the number of expected features in the transformer encoder/decoder inputs (default=512).
+            The number of expected features in the transformer encoder/decoder inputs (default=64).
         nhead
-            the number of heads in the multiheadattention model (default=8).
+            The number of heads in the multi-head attention mechanism (default=4).
         num_encoder_layers
-            the number of encoder layers in the encoder (default=6).
+            The number of encoder layers in the encoder (default=3).
         num_decoder_layers
-            the number of decoder layers in the decoder (default=6).
+            The number of decoder layers in the decoder (default=3).
         dim_feedforward
-            the dimension of the feedforward network model (default=2048).
+            The dimension of the feedforward network model (default=512).
         dropout
             Fraction of neurons affected by Dropout (default=0.1).
         activation
-            the activation function of encoder/decoder intermediate layer, 'relu' or 'gelu' (default='relu').
+            The activation function of encoder/decoder intermediate layer, (default='relu').
+            can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
+            fully-connected layer with an activation. The glu variant's FeedForward Network are a series
+            of FFNs designed to work better with Transformer based models.
+                ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
+            or one the pytorch internal activations
+                ["relu", "gelu"]
         custom_encoder
-            a custom user-provided encoder module for the transformer (default=None)
+            A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
-            a custom user-provided decoder module for the transformer (default=None)
+            A custom user-provided decoder module for the transformer (default=None).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -256,6 +273,9 @@ class TransformerModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
@@ -383,6 +403,7 @@ class TransformerModel(PastCovariatesTorchModel):
         .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,
         and Illia Polosukhin, "Attention Is All You Need", 2017. In Advances in Neural Information Processing Systems,
         pages 6000-6010. https://arxiv.org/abs/1706.03762.
+        ..[2] Shazeer, Noam, "GLU Variants Improve Transformer", 2020. arVix https://arxiv.org/abs/2002.05202.
 
         Notes
         -----

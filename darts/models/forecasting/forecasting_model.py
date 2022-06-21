@@ -191,8 +191,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if not self._fit_called:
             raise_log(
                 ValueError(
-                    "The model must be fit before calling `predict()`."
-                    "For global models, if `predict()` is called without specifying a series,"
+                    "The model must be fit before calling predict(). "
+                    "For global models, if predict() is called without specifying a series, "
                     "the model must have been fit on a single training series."
                 ),
                 logger,
@@ -291,6 +291,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        train_length: Optional[int] = None,
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -329,6 +330,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        train_length
+            Number of time steps in our training set (size of backtesting window to train on).
+            Default is set to train_length=None where it takes all available time steps up until prediction time,
+            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
         start
             The first point of time at which a prediction is computed for a future time.
             This parameter supports 3 different data types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -377,6 +383,24 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             logger,
         )
 
+        if train_length and not isinstance(train_length, int):
+            raise_log(
+                TypeError("If not None, train_length needs to be an integer."),
+                logger,
+            )
+        elif (train_length is not None) and train_length < 1:
+            raise_log(
+                ValueError("If not None, train_length needs to be positive."),
+                logger,
+            )
+        elif (train_length is not None) and train_length < self.min_train_series_length:
+            raise_log(
+                ValueError(
+                    "train_length is too small for the training requirements of this model"
+                ),
+                logger,
+            )
+
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
 
@@ -404,11 +428,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # iterate and forecast
         for pred_time in iterator:
-            train = series.drop_after(pred_time)  # build the training series
+            # build the training series
+            train = series.drop_after(pred_time)
+            if train_length and len(train) > train_length:
+                train = train[-train_length:]
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
-            if retrain:
+            if retrain or not self._fit_called:
                 self._fit_wrapper(
                     series=train,
                     past_covariates=past_covariates,
@@ -424,7 +451,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             if last_points_only:
-                last_points_values.append(forecast.all_values()[-1])
+                last_points_values.append(forecast.all_values(copy=False)[-1])
                 last_points_times.append(forecast.end_time())
             else:
                 forecasts.append(forecast)
@@ -434,6 +461,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 return TimeSeries.from_times_and_values(
                     pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
                     np.array(last_points_values),
+                    columns=series.columns,
+                    static_covariates=series.static_covariates,
+                    hierarchy=series.hierarchy,
                 )
             else:
                 return TimeSeries.from_times_and_values(
@@ -443,6 +473,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         step=1,
                     ),
                     np.array(last_points_values),
+                    columns=series.columns,
+                    static_covariates=series.static_covariates,
+                    hierarchy=series.hierarchy,
                 )
 
         return forecasts
@@ -453,6 +486,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         past_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        train_length: Optional[int] = None,
         start: Union[pd.Timestamp, float, int] = 0.5,
         forecast_horizon: int = 1,
         stride: int = 1,
@@ -495,6 +529,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
+        train_length
+            Number of time steps in our training set (size of backtesting window to train on).
+            Default is set to train_length=None where it takes all available time steps up until prediction time,
+            otherwise the moving window strategy is used. If larger than the number of time steps available, all steps
+            up until prediction time are used, as in default case. Needs to be at least min_train_series_length.
         start
             The first prediction time, at which a prediction is computed for a future time.
             This parameter supports 3 different types: ``float``, ``int`` and ``pandas.Timestamp``.
@@ -533,6 +572,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             past_covariates=past_covariates,
             future_covariates=future_covariates,
             num_samples=num_samples,
+            train_length=train_length,
             start=start,
             forecast_horizon=forecast_horizon,
             stride=stride,
@@ -640,7 +680,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If `True`, uses the comparison with the fitted values.
             Raises an error if ``fitted_values`` is not an attribute of `model_class`.
         metric
-            A function that takes two TimeSeries instances as inputs and returns a float error value.
+            A function that takes two TimeSeries instances as inputs (actual and prediction, in this order),
+            and returns a float error value.
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
             on the different validation series when backtesting. By default it'll compute the mean of errors.
@@ -724,7 +765,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 fitted_values = TimeSeries.from_times_and_values(
                     series.time_index, model.fitted_values
                 )
-                error = metric(fitted_values, series)
+                error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(
                     series=series,
@@ -747,7 +788,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates,
                     num_samples=1,
                 )
-                error = metric(pred, val_series)
+                error = metric(val_series, pred)
 
             return float(error)
 
@@ -980,8 +1021,7 @@ class GlobalForecastingModel(ForecastingModel, ABC):
             If `series` is given and is a sequence of several time series, this function returns
             a sequence where each element contains the corresponding `n` points forecasts.
         """
-        if series is None and past_covariates is None and future_covariates is None:
-            super().predict(n, num_samples)
+        super().predict(n, num_samples)
         if self._expect_past_covariates and past_covariates is None:
             raise_log(
                 ValueError(
@@ -1138,8 +1178,13 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                 future_covariates.end_time() >= start, invalid_time_span_error, logger
             )
 
+            offset = (
+                n - 1
+                if isinstance(future_covariates.time_index, pd.DatetimeIndex)
+                else n
+            )
             future_covariates = future_covariates[
-                start : start + (n - 1) * self.training_series.freq
+                start : start + offset * self.training_series.freq
             ]
 
             raise_if_not(

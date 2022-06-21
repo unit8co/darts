@@ -13,20 +13,32 @@ logger = get_logger(__name__)
 
 try:
     import torch
+    from torchmetrics import (
+        MeanAbsoluteError,
+        MeanAbsolutePercentageError,
+        MetricCollection,
+    )
 
     from darts.models.forecasting.rnn_model import RNNModel
+    from darts.utils.likelihood_models import GaussianLikelihood
 
     TORCH_AVAILABLE = True
 except ImportError:
     logger.warning("Torch not available. RNN tests will be skipped.")
     TORCH_AVAILABLE = False
 
-
 if TORCH_AVAILABLE:
 
     class TestTorchForecastingModel(DartsBaseTestClass):
         def setUp(self):
             self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+            times = pd.date_range("20130101", "20130410")
+            pd_series = pd.Series(range(100), index=times)
+            self.series = TimeSeries.from_series(pd_series)
+
+            df = pd.DataFrame({"var1": range(100), "var2": range(100)}, index=times)
+            self.multivariate_series = TimeSeries.from_dataframe(df)
 
         def tearDown(self):
             shutil.rmtree(self.temp_work_dir)
@@ -61,11 +73,8 @@ if TORCH_AVAILABLE:
                 save_checkpoints=False,
             )
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
-            model1.fit(series, epochs=1)
-            model2.fit(series, epochs=1)
+            model1.fit(self.series, epochs=1)
+            model2.fit(self.series, epochs=1)
 
             model1.predict(n=1)
             model2.predict(n=2)
@@ -101,12 +110,8 @@ if TORCH_AVAILABLE:
                 random_state=42,
             )
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
-
-            model_manual_save.fit(series, epochs=1)
-            model_auto_save.fit(series, epochs=1)
+            model_manual_save.fit(self.series, epochs=1)
+            model_auto_save.fit(self.series, epochs=1)
 
             model_dir = os.path.join(self.temp_work_dir)
 
@@ -123,13 +128,21 @@ if TORCH_AVAILABLE:
             checkpoint_path_manual = os.path.join(model_dir, manual_name)
             os.mkdir(checkpoint_path_manual)
 
-            # save manually saved model
             checkpoint_file_name = "checkpoint_0.pth.tar"
             model_path_manual = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name
             )
+            checkpoint_file_name_cpkt = "checkpoint_0_ptl-ckpt.pth.tar"
+            model_path_manual_ckpt = os.path.join(
+                checkpoint_path_manual, checkpoint_file_name_cpkt
+            )
+
+            # save manually saved model
             model_manual_save.save_model(model_path_manual)
             self.assertTrue(os.path.exists(model_path_manual))
+
+            # check that the PTL checkpoint path is also there
+            self.assertTrue(os.path.exists(model_path_manual_ckpt))
 
             # load manual save model and compare with automatic model results
             model_manual_save = RNNModel.load_model(model_path_manual)
@@ -207,10 +220,7 @@ if TORCH_AVAILABLE:
             )
             # no exception is raised
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
-            model1.fit(series, epochs=1)
+            model1.fit(self.series, epochs=1)
 
             RNNModel(
                 12,
@@ -234,10 +244,7 @@ if TORCH_AVAILABLE:
                 12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
             )
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
-            model1.fit(series)
+            model1.fit(self.series)
 
             self.assertEqual(20, model1.epochs_trained)
 
@@ -247,13 +254,10 @@ if TORCH_AVAILABLE:
                 12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
             )
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
-            model1.fit(series)
+            model1.fit(self.series)
             self.assertEqual(20, model1.epochs_trained)
 
-            model1.fit(series)
+            model1.fit(self.series)
             self.assertEqual(20, model1.epochs_trained)
 
         # n_epochs = 20, fit|epochs=None, epochs_trained=10 - train for another 20 epochs
@@ -262,14 +266,11 @@ if TORCH_AVAILABLE:
                 12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
             )
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
-            model1.fit(series, epochs=10)
+            model1.fit(self.series, epochs=10)
             self.assertEqual(10, model1.epochs_trained)
 
-            model1.fit(series)
+            model1.fit(self.series)
             self.assertEqual(20, model1.epochs_trained)
 
         # n_epochs = 20, fit|epochs=15, epochs_trained=10 - train for 15 epochs
@@ -278,20 +279,14 @@ if TORCH_AVAILABLE:
                 12, "RNN", 10, 10, n_epochs=20, work_dir=self.temp_work_dir
             )
 
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
             # simulate the case that user interrupted training with Ctrl-C after 10 epochs
-            model1.fit(series, epochs=10)
+            model1.fit(self.series, epochs=10)
             self.assertEqual(10, model1.epochs_trained)
 
-            model1.fit(series, epochs=15)
+            model1.fit(self.series, epochs=15)
             self.assertEqual(15, model1.epochs_trained)
 
         def test_optimizers(self):
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
 
             optimizers = [
                 (torch.optim.Adam, {"lr": 0.001}),
@@ -308,15 +303,12 @@ if TORCH_AVAILABLE:
                     optimizer_kwargs=optim_kwargs,
                 )
                 # should not raise an error
-                model.fit(series, epochs=1)
+                model.fit(self.series, epochs=1)
 
         def test_lr_schedulers(self):
-            times = pd.date_range("20130101", "20130410")
-            pd_series = pd.Series(range(100), index=times)
-            series = TimeSeries.from_series(pd_series)
 
             lr_schedulers = [
-                (torch.optim.lr_scheduler.LinearLR, {}),
+                (torch.optim.lr_scheduler.StepLR, {"step_size": 10}),
                 (
                     torch.optim.lr_scheduler.ReduceLROnPlateau,
                     {"threshold": 0.001, "monitor": "train_loss"},
@@ -334,7 +326,7 @@ if TORCH_AVAILABLE:
                     lr_scheduler_kwargs=lr_scheduler_kwargs,
                 )
                 # should not raise an error
-                model.fit(series, epochs=1)
+                model.fit(self.series, epochs=1)
 
         def test_devices(self):
             torch_devices = [
@@ -365,3 +357,73 @@ if TORCH_AVAILABLE:
             # invalid params should raise an error
             with self.assertRaises(ValueError):
                 _ = RNNModel(12, "RNN", 10, 10, **invalid_kwarg)
+
+        def test_metrics(self):
+            metric = MeanAbsolutePercentageError()
+            metric_collection = MetricCollection(
+                [MeanAbsolutePercentageError(), MeanAbsoluteError()]
+            )
+
+            # test single metric
+            model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric)
+            model.fit(self.series)
+
+            # test metric collection
+            model = RNNModel(
+                12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric_collection
+            )
+            model.fit(self.series)
+
+            # test multivariate series
+            model = RNNModel(12, "RNN", 10, 10, n_epochs=1, torch_metrics=metric)
+            model.fit(self.multivariate_series)
+
+        def test_metrics_w_likelihood(self):
+            metric = MeanAbsolutePercentageError()
+            metric_collection = MetricCollection(
+                [MeanAbsolutePercentageError(), MeanAbsoluteError()]
+            )
+
+            # test single metric
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                likelihood=GaussianLikelihood(),
+                torch_metrics=metric,
+            )
+            model.fit(self.series)
+
+            # test metric collection
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                likelihood=GaussianLikelihood(),
+                torch_metrics=metric_collection,
+            )
+            model.fit(self.series)
+
+            # test multivariate series
+            model = RNNModel(
+                12,
+                "RNN",
+                10,
+                10,
+                n_epochs=1,
+                likelihood=GaussianLikelihood(),
+                torch_metrics=metric_collection,
+            )
+            model.fit(self.multivariate_series)
+
+        def test_invalid_metrics(self):
+            torch_metrics = ["invalid"]
+            with self.assertRaises(AttributeError):
+                model = RNNModel(
+                    12, "RNN", 10, 10, n_epochs=1, torch_metrics=torch_metrics
+                )
+                model.fit(self.series)

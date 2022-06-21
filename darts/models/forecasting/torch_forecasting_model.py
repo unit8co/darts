@@ -40,7 +40,10 @@ from darts.logging import (
     raise_log,
     suppress_lightning_warnings,
 )
-from darts.models.forecasting.forecasting_model import GlobalForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    ForecastingModel,
+    GlobalForecastingModel,
+)
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
 from darts.utils.data.encoders import SequentialEncoder
@@ -511,17 +514,21 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             )
 
     def _setup_trainer(
-        self, trainer: Optional[pl.Trainer], verbose: bool, epochs: int = 0
+        self,
+        trainer: Optional[pl.Trainer],
+        verbose: Optional[bool] = None,
+        epochs: int = 0,
     ) -> None:
         """Sets up the PyTorch-Lightning trainer for training or prediction."""
-
-        self.trainer_params["enable_model_summary"] = (
-            verbose if self.model.epochs_trained == 0 else False
-        )
-        self.trainer_params["enable_progress_bar"] = verbose
+        trainer_params = {key: val for key, val in self.trainer_params.items()}
+        if verbose is not None:
+            trainer_params["enable_model_summary"] = (
+                verbose if self.model.epochs_trained == 0 else False
+            )
+            trainer_params["enable_progress_bar"] = verbose
 
         self.trainer = (
-            self._init_trainer(trainer_params=self.trainer_params, max_epochs=epochs)
+            self._init_trainer(trainer_params=trainer_params, max_epochs=epochs)
             if trainer is None
             else trainer
         )
@@ -657,13 +664,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             override Darts' default trainer.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -809,13 +809,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             override Darts' default trainer.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         epochs
             If specified, will train the model for ``epochs`` (additional) epochs, irrespective of what ``n_epochs``
             was provided to the model constructor.
@@ -830,7 +823,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self
             Fitted model.
         """
-
+        self._fit_called = True
         self._verify_train_dataset_type(train_dataset)
         raise_if(
             len(train_dataset) == 0,
@@ -902,16 +895,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         # if user wants to train the model for more epochs, ignore the n_epochs parameter
         train_num_epochs = epochs if epochs > 0 else self.n_epochs
 
-        if verbose is not None:
-            raise_deprecation_warning(
-                "kwarg `verbose` is deprecated and will be removed in a future Darts version. "
-                "Instead, control verbosity with PyTorch Lightning Trainer parameters `enable_progress_bar`, "
-                "`progress_bar_refresh_rate` and `enable_model_summary` in the `pl_trainer_kwargs` dict "
-                "at model creation.",
-                logger,
-            )
-        verbose = True if verbose is None else verbose
-
         # setup trainer
         self._setup_trainer(trainer, verbose, train_num_epochs)
 
@@ -970,6 +953,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         roll_size: Optional[int] = None,
         num_samples: int = 1,
         num_loader_workers: int = 0,
+        mc_dropout: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1017,13 +1001,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Size of batches during prediction. Defaults to the models' training ``batch_size`` value.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size
@@ -1039,6 +1016,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models.
+            This allows bayesian approximation by specifying an implicit prior over learned models.
 
         Returns
         -------
@@ -1101,6 +1081,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n_jobs=n_jobs,
             roll_size=roll_size,
             num_samples=num_samples,
+            num_loader_workers=num_loader_workers,
+            mc_dropout=mc_dropout,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1117,6 +1099,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         roll_size: Optional[int] = None,
         num_samples: int = 1,
         num_loader_workers: int = 0,
+        mc_dropout: bool = False,
     ) -> Sequence[TimeSeries]:
 
         """
@@ -1145,13 +1128,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Size of batches during prediction. Defaults to the models ``batch_size`` value.
         verbose
             Optionally, whether to print progress.
-
-            .. deprecated:: v0.17.0
-                ``verbose`` has been deprecated in v0.17.0 and will be removed in a future version.
-                Instead, control verbosity with PyTorch Lightning Trainer parameters ``enable_progress_bar``,
-                ``progress_bar_refresh_rate`` and ``enable_model_summary`` in the ``pl_trainer_kwargs`` dict
-                at model creation. See for example here:
-                https://pytorch-lightning.readthedocs.io/en/stable/common/trainer.html#enable-progress-bar
         n_jobs
             The number of jobs to run in parallel. ``-1`` means using all processors. Defaults to ``1``.
         roll_size
@@ -1167,12 +1143,19 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models.
+            This allows bayesian approximation by specifying an implicit prior over learned models.
 
         Returns
         -------
         Sequence[TimeSeries]
             Returns one or more forecasts for time series.
         """
+
+        # We need to call super's super's method directly, because GlobalForecastingModel expects series:
+        ForecastingModel.predict(self, n, num_samples)
+
         self._verify_inference_dataset_type(input_series_dataset)
 
         # check that covariates and dimensions are matching what we had during training
@@ -1211,15 +1194,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             collate_fn=self._batch_collate_fn,
         )
 
-        if verbose is not None:
-            raise_deprecation_warning(
-                "kwarg `verbose` is deprecated and will be removed in a future Darts version. "
-                "Instead, control verbosity with PyTorch Lightning Trainer parameters `enable_progress_bar`, "
-                "`progress_bar_refresh_rate` and `enable_model_summary` in the `pl_trainer_kwargs` dict "
-                "at model creation.",
-                logger,
-            )
-        verbose = True if verbose is None else verbose
+        # Set mc_dropout rate
+        self.model.set_mc_dropout(mc_dropout)
 
         # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
         trainer = trainer if trainer is not None else self.trainer
@@ -1299,6 +1275,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path
             Path under which to save the model at its current state.
         """
+        # TODO: the parameters are saved twice currently, once with complete
+        # object, and once with PTL checkpointing.
 
         raise_if_not(
             path.endswith(".pth.tar"),
@@ -1306,8 +1284,15 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger,
         )
 
+        # We save the whole object to keep track of everything
         with open(path, "wb") as f_out:
             torch.save(self, f_out)
+
+        # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
+        if self.trainer is not None:
+            base_path = path[:-8]
+            path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
+            self.trainer.save_checkpoint(path_ptl_ckpt)
 
     @staticmethod
     def load_model(path: str) -> "TorchForecastingModel":
@@ -1337,6 +1322,14 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         with open(path, "rb") as fin:
             model = torch.load(fin)
+
+        # If a PTL checkpoint was saved, we also need to load it:
+        base_path = path[:-8]
+        path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
+        if os.path.exists(path_ptl_ckpt):
+            model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
+            model.trainer = model.model.trainer
+
         return model
 
     @staticmethod
@@ -1448,7 +1441,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return (
             self.model._is_probabilistic()
             if self.model_created
-            else self.likelihood is not None
+            else True  # all torch models can be probabilistic (via Dropout)
         )
 
 
@@ -1472,29 +1465,37 @@ def _basic_compare_sample(train_sample: Tuple, predict_sample: Tuple):
     For all models relying on one type of covariates only (Past, Future, Dual), we can rely on the fact
     that training/inference datasets have target and a covariate in first and second position to do the checks.
     """
-    tgt_train, cov_train = train_sample[:2]
-    tgt_pred, cov_pred = predict_sample[:2]
+    tgt_train, cov_train, static_train = train_sample[:2] + (train_sample[-2],)
+    tgt_pred, cov_pred, static_pred = predict_sample[:2] + (predict_sample[-2],)
     raise_if_not(
         tgt_train.shape[-1] == tgt_pred.shape[-1],
         "The provided target has a dimension (width) that does not match the dimension "
         "of the target this model has been trained on.",
     )
-    raise_if(
-        cov_train is not None and cov_pred is None,
-        "This model has been trained with covariates; some covariates of matching dimensionality are needed "
-        "for prediction.",
-    )
-    raise_if(
-        cov_train is None and cov_pred is not None,
-        "This model has been trained without covariates. No covariates should be provided for prediction.",
-    )
-    raise_if(
-        cov_train is not None
-        and cov_pred is not None
-        and cov_train.shape[-1] != cov_pred.shape[-1],
-        "The provided covariates must have dimensionality matching that of the covariates used for training "
-        "the model.",
-    )
+    for (c_train, c_pred), c_descr in zip(
+        [(cov_train, cov_pred), (static_train, static_pred)],
+        ["past or future covariates", "static covariates"],
+    ):
+        raise_if(
+            c_train is not None and c_pred is None,
+            f"This model has been trained with {c_descr}; covariates of matching dimensionality are required "
+            f"for prediction.",
+        )
+        raise_if(
+            c_train is None and c_pred is not None,
+            f"This model has been trained without {c_descr}. No {c_descr} should be provided for prediction.",
+        )
+        raise_if(
+            c_train is not None
+            and c_pred is not None
+            and (
+                c_train.shape[-1] != c_pred.shape[-1]
+                if c_descr != "static covariates"
+                else c_train.shape != c_pred.shape
+            ),
+            f"The provided {c_descr} must have dimensionality matching that of the covariates used for training "
+            "the model.",
+        )
 
 
 def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
@@ -1514,13 +1515,16 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
         "past_covariates",
         "historic_future_covariates",
         "future_covariates",
+        "static_covariates",
     ]
 
     train_has_ds = [ds is not None for ds in train_sample[:-1]]
-    predict_has_ds = [ds is not None for ds in predict_sample[:4]]
+    predict_has_ds = [
+        ds is not None for ds in predict_sample[:4] + (predict_sample[5],)
+    ]
 
     train_datasets = train_sample[:-1]
-    predict_datasets = predict_sample[:4]
+    predict_datasets = predict_sample[:4] + (predict_sample[5],)
 
     tgt_train, tgt_pred = train_datasets[0], predict_datasets[0]
     raise_if_not(
@@ -1533,19 +1537,23 @@ def _mixed_compare_sample(train_sample: Tuple, predict_sample: Tuple):
         zip(train_has_ds, predict_has_ds, ds_names)
     ):
         raise_if(
-            ds_in_train and not ds_in_predict and ds_in_train,
-            f"This model has been trained with {ds_name}; some {ds_name} of matching dimensionality are needed "
+            ds_in_train and not ds_in_predict,
+            f"This model has been trained with `{ds_name}`; some `{ds_name}` of matching dimensionality are needed "
             f"for prediction.",
         )
         raise_if(
-            ds_in_train and not ds_in_predict and ds_in_predict,
-            f"This model has been trained without {ds_name}; No {ds_name} should be provided for prediction.",
+            not ds_in_train and ds_in_predict,
+            f"This model has been trained without `{ds_name}`; No `{ds_name}` should be provided for prediction.",
         )
         raise_if(
             ds_in_train
             and ds_in_predict
-            and train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1],
-            f"The provided {ds_name} must have dimensionality that of the {ds_name} used for training the model.",
+            and (
+                train_datasets[idx].shape[-1] != predict_datasets[idx].shape[-1]
+                if ds_name != "static_covariates"
+                else train_datasets[idx].shape != predict_datasets[idx].shape
+            ),
+            f"The provided `{ds_name}` must have equal dimensionality as the `{ds_name}` used for training the model.",
         )
 
 

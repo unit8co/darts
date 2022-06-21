@@ -4,7 +4,80 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
-[Full Changelog](https://github.com/unit8co/darts/compare/0.17.1...master)
+[Full Changelog](https://github.com/unit8co/darts/compare/0.19.0...master)
+### For users of the library:
+
+**Improved**
+- Option to avoid global matplotlib configuration changes.
+  [#924](https://github.com/unit8co/darts/pull/924) by [Mike Richman](https://github.com/zgana).
+- Model Improvements: Option for changing activation function for NHiTs and NBEATS. NBEATS support for dropout. NHiTs Support for AvgPooling1d. [#955](https://github.com/unit8co/darts/pull/955) by [Greg DeVos](https://github.com/gdevos010)
+- New datasets: ETT and Electricity. [#617](https://github.com/unit8co/darts/pull/617)
+  by [Greg DeVos](https://github.com/gdevos010)
+- Implemented ["GLU Variants Improve Transformer"](https://arxiv.org/abs/2002.05202) for transformer based models (transformer and TFT). [#959](https://github.com/unit8co/darts/issues/959)
+  by [Greg DeVos](https://github.com/gdevos010) 
+- Added support for torch metrics during training and validation. [#996](https://github.com/unit8co/darts/pull/996) by [Greg DeVos](https://github.com/gdevos010)
+- New dataset: [Uber TLC](https://github.com/fivethirtyeight/uber-tlc-foil-response). [#1003](https://github.com/unit8co/darts/pull/1003) by [Greg DeVos](https://github.com/gdevos010) 
+
+
+## [0.19.0](https://github.com/unit8co/darts/tree/0.19.0) (2022-04-13)
+### For users of the library:
+
+**Improved**
+- New model: `NHiTS` implementing the N-HiTS model.
+  [#898](https://github.com/unit8co/darts/pull/898) by [Julien Herzen](https://github.com/hrzn).
+- New model: `StatsForecastAutoARIMA` implementing the (faster) AutoARIMA version of
+  [statsforecast](https://github.com/Nixtla/statsforecast).
+  [#893](https://github.com/unit8co/darts/pull/893) by [Julien Herzen](https://github.com/hrzn).
+- New model: `Croston` method.
+  [#893](https://github.com/unit8co/darts/pull/893) by [Julien Herzen](https://github.com/hrzn).
+- Better way to represent stochastic `TimeSeries` from distributions specified by quantiles.
+  [#899](https://github.com/unit8co/darts/pull/899) by [Gian Wiher](https://github.com/gnwhr).
+- Better sampling of trajectories for stochastic `RegressionModel`s.
+  [#899](https://github.com/unit8co/darts/pull/899) by [Gian Wiher](https://github.com/gnwhr).
+- Improved user guide with more sections. [#905](https://github.com/unit8co/darts/pull/905)
+  by [Julien Herzen](https://github.com/hrzn).
+- New notebook showcasing transfer learning and training forecasting models on large time
+  series datasets. [#885](https://github.com/unit8co/darts/pull/885) 
+  by [Julien Herzen](https://github.com/hrzn).
+
+
+**Fixed**
+- Some issues with PyTorch Lightning >= 1.6.0 [#888](https://github.com/unit8co/darts/pull/888)
+  by [Julien Herzen](https://github.com/hrzn).
+
+## [0.18.0](https://github.com/unit8co/darts/tree/0.18.0) (2022-03-22)
+### For users of the library:
+
+**Improved**
+- `LinearRegressionModel` and `LightGBMModel` can now be probabilistic, supporting quantile
+  and poisson regression. [#831](https://github.com/unit8co/darts/pull/831), 
+  [#853](https://github.com/unit8co/darts/pull/853) by [Gian Wiher](https://github.com/gnwhr).
+- New models: `BATS` and `TBATS`, based on [tbats](https://github.com/intive-DataScience/tbats).
+  [#816](https://github.com/unit8co/darts/pull/816) by [Julien Herzen](https://github.com/hrzn).
+- Handling of stochastic inputs in PyTorch based models. [#833](https://github.com/unit8co/darts/pull/833)
+  by [Julien Herzen](https://github.com/hrzn).
+- GPU and TPU user guide. [#826](https://github.com/unit8co/darts/pull/826)
+  by [@gsamaras](https://github.com/gsamaras).
+- Added train and validation loss to PyTorch Lightning progress bar.
+  [#825](https://github.com/unit8co/darts/pull/825) by [Dennis Bader](https://github.com/dennisbader).
+- More losses available in `darts.utils.losses` for PyTorch-based models: 
+  `SmapeLoss`, `MapeLoss` and `MAELoss`. [#845](https://github.com/unit8co/darts/pull/845)
+  by [Julien Herzen](https://github.com/hrzn).
+- Improvement to the seasonal decomposition [#862](https://github.com/unit8co/darts/pull/862).
+  by [Gian Wiher](https://github.com/gnwhr).
+- The `gridsearch()` method can now return best metric score.
+  [#822](https://github.com/unit8co/darts/pull/822) by [@nlhkh](https://github.com/nlhkh).
+- Removed needless checkpoint loading when predicting. [#821](https://github.com/unit8co/darts/pull/821)
+  by [Dennis Bader](https://github.com/dennisbader).
+- Changed default number of epochs for validation from 10 to 1.
+  [#825](https://github.com/unit8co/darts/pull/825) by [Dennis Bader](https://github.com/dennisbader).
+
+**Fixed**
+- Fixed some issues with encoders in `fit_from_dataset()`.
+  [#829](https://github.com/unit8co/darts/pull/829) by [Julien Herzen](https://github.com/hrzn).
+- Fixed an issue with covariates slicing for `DualCovariatesForecastingModels`.
+  [#858](https://github.com/unit8co/darts/pull/858) by [Dennis Bader](https://github.com/dennisbader).
+
 
 ## [0.17.1](https://github.com/unit8co/darts/tree/0.17.1) (2022-02-17)
 Patch release
@@ -13,9 +86,13 @@ Patch release
 **Fixed**
 - Fixed issues with (now deprecated) `torch_device_str` parameter, and improved documentation
   related to using devices with PyTorch Lightning. [#806](https://github.com/unit8co/darts/pull/806)
+  by [Dennis Bader](https://github.com/dennisbader).
 - Fixed an issue with `ReduceLROnPlateau`. [#806](https://github.com/unit8co/darts/pull/806)
+  by [Dennis Bader](https://github.com/dennisbader).
 - Fixed an issue with the periodic basis functions of N-BEATS. [#804](https://github.com/unit8co/darts/pull/804)
-- Relaxed requirements for `pandas`; from `pandas>=1.1.0` to `pandas>=1.0.5`. [#800](https://github.com/unit8co/darts/pull/800)
+  by [Vladimir Chernykh](https://github.com/vladimir-chernykh).
+- Relaxed requirements for `pandas`; from `pandas>=1.1.0` to `pandas>=1.0.5`. 
+  [#800](https://github.com/unit8co/darts/pull/800) by [@adelnick](https://github.com/adelnick).
 
 
 ## [0.17.0](https://github.com/unit8co/darts/tree/0.17.0) (2022-02-15)
@@ -25,41 +102,54 @@ Patch release
 - 🚀 Support for [PyTorch Lightning](https://github.com/PyTorchLightning/pytorch-lightning): All deep learning
   models are now implemented using PyTorch Lightning. This means that many more features are now available
   via PyTorch Lightning trainers functionalities; such as tailored callbacks, or multi-GPU training.
-  [#702](https://github.com/unit8co/darts/pull/702)
+  [#702](https://github.com/unit8co/darts/pull/702) by [Dennis Bader](https://github.com/dennisbader).
 - The `RegressionModel`s now accept an `output_chunk_length` parameter; meaning that they can be trained to
   predict more than one time step in advance (and used auto-regressively to predict on longer horizons).
-  [#761](https://github.com/unit8co/darts/pull/761)
+  [#761](https://github.com/unit8co/darts/pull/761) by [Dustin Brunner](https://github.com/brunnedu).
 - &#x1F534; `TimeSeries` "simple statistics" methods (such as `mean()`, `max()`, `min()` etc, ...) have been refactored
   to work natively on stochastic `TimeSeries`, and over configurable axes. [#773](https://github.com/unit8co/darts/pull/773)
+  by [Gian Wiher](https://github.com/gnwhr).
 - &#x1F534; `TimeSeries` now support only pandas `RangeIndex` as an integer index, and does not support `Int64Index` anymore,
   as it became deprecated with pandas 1.4.0. This also now brings the guarantee that `TimeSeries` do not have missing
   "dates" even when indexed with integers. [#777](https://github.com/unit8co/darts/pull/777)
+  by [Julien Herzen](https://github.com/hrzn).
 - New model: `KalmanForecaster` is a new probabilistic model, working on multivariate series, accepting future covariates,
   and which works by running the state-space model of a given Kalman filter into the future. The `fit()` function uses the
   N4SID algorithm for system identification. [#743](https://github.com/unit8co/darts/pull/743)
+  by [Julien Herzen](https://github.com/hrzn).
 - The `KalmanFilter` now also works on `TimeSeries` containing missing values. [#743](https://github.com/unit8co/darts/pull/743)
+  by [Julien Herzen](https://github.com/hrzn).
 - The estimators (forecasting and filtering models) now also return their own instance when calling `fit()`,
   which allows chaining calls. [#741](https://github.com/unit8co/darts/pull/741)
+  by [Julien Herzen](https://github.com/hrzn).
 
 
 **Fixed**
-- Fixed an issue with tensorboard and gridsearch when `model_name` is provided. [#759](https://github.com/unit8co/darts/issues/759)
+- Fixed an issue with tensorboard and gridsearch when `model_name` is provided. 
+  [#759](https://github.com/unit8co/darts/issues/759) by [@gdevos010](https://github.com/gdevos010).
 - Fixed issues with pip-tools. [#762](https://github.com/unit8co/darts/pull/762)
+  by [Tomas Van Pottelbergh](https://github.com/tomasvanpottelbergh).
 
 ### For developers of the library:
 - Some linting checks have been added to the CI pipeline. [#749](https://github.com/unit8co/darts/pull/749)
+  by [Tomas Van Pottelbergh](https://github.com/tomasvanpottelbergh).
 
 ## [0.16.1](https://github.com/unit8co/darts/tree/0.16.1) (2022-01-24)
 Patch release
 
 ### For users of the library:
 - Fixed an incompatibility with latest version of Pandas ([#752](https://github.com/unit8co/darts/pull/752))
-- Fixed non contiguous error when using lstm_layers > 1 on gpu ([#740](https://github.com/unit8co/darts/pull/740))
+  by [Julien Herzen](https://github.com/hrzn).
+- Fixed non contiguous error when using lstm_layers > 1 on GPU. ([#740](https://github.com/unit8co/darts/pull/740))
+  by [Dennis Bader](https://github.com/dennisbader).
 - Small improvement in type annotations in API documentation ([#744](https://github.com/unit8co/darts/pull/744))
+  by [Dustin Brunner](https://github.com/brunnedu).
 
 ### For developers of the library:
 - Added flake8 tests to CI pipelines ([#749](https://github.com/unit8co/darts/pull/749),
   [#748](https://github.com/unit8co/darts/pull/748), [#745](https://github.com/unit8co/darts/pull/745))
+  by [Tomas Van Pottelbergh](https://github.com/tomasvanpottelbergh)
+  and [Dennis Bader](https://github.com/dennisbader).
 
 
 ## [0.16.0](https://github.com/unit8co/darts/tree/0.16.0) (2022-01-13)
