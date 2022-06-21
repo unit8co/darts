@@ -2,7 +2,6 @@ import logging
 import unittest
 
 import numpy as np
-import torch
 
 from darts import TimeSeries, concatenate
 from darts.dataprocessing.transformers.reconciliation import (
@@ -23,7 +22,6 @@ class ReconciliationTestCase(unittest.TestCase):
         logging.disable(logging.CRITICAL)
 
     np.random.seed(42)
-    torch.manual_seed(42)
 
     """ test case with a more intricate hierarchy """
     LENGTH = 200
