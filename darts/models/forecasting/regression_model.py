@@ -716,26 +716,55 @@ class _LikelihoodMixin:
         """
         k = x.shape[0]
 
-        model_output = self.model.predict(x, **kwargs).reshape(
-            k, self.output_chunk_length, -1
-        )
+        model_output = self.model.predict(x, **kwargs)
+
+        output_dim = len(model_output.shape)
 
         # choosing to return the mean if one sample
         if num_samples == 1:
-            return model_output[:, :, 0].reshape(k, self.output_chunk_length, -1)
+            if output_dim > 2:
+                return np.array([model_output[0, :, :]])
+            return model_output[:, 0].reshape(k, self.output_chunk_length, -1)
 
-        return self._normal_sampling(model_output)
+        if output_dim <= 2:
+            model_output = model_output.reshape(
+                1, *model_output.shape
+            )  # .reshape(k, self.output_chunk_length, -1)
+        else:
+            model_output = model_output.transpose()
 
-    def _normal_sampling(self, model_output: np.ndarray) -> np.ndarray:
+        # return self._normal_sampling(model_output.reshape(k, self.output_chunk_length, -1))
+        return self._normal_sampling(model_output, k)
+
+    def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
         """
         Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
         """
         shape = model_output.shape
-        mu_sigma = model_output[:, 0, :]
-        list_of_samples = [
-            np.random.normal(params[0], params[1]) for params in mu_sigma
-        ]
-        return np.array(list_of_samples).reshape(shape[0], shape[1], 1)
+        univar = False
+        if univar:
+            mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
+            list_of_samples = [
+                [self._rng.normal(params[0], params[1]) for params in mu_sigma]
+                for mu_sigma in mu_sigma_list
+            ]
+            # mu_sigma = model_output[:, 0, :]
+            # list_of_samples = [
+            #     self._rng.normal(params[0], params[1]) for params in mu_sigma
+            # ]
+            return np.array(list_of_samples).reshape(
+                n_samples, self.output_chunk_length, -1
+            )
+        else:
+            mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
+            list_of_samples = [
+                [self._rng.normal(params[0], params[1]) for params in mu_sigma]
+                for mu_sigma in mu_sigma_list
+            ]
+
+            return np.array(list_of_samples).reshape(
+                n_samples, self.output_chunk_length, -1
+            )
 
     def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         """

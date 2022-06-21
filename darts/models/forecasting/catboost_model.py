@@ -70,6 +70,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
 
         # forcing output_chunk_length to 1 for now
         output_chunk_length = 1
+        self.output_chunk_length = output_chunk_length
 
         # to be extended to RMSEWithUncertainty
         likelihood_map = {

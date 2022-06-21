@@ -1000,6 +1000,23 @@ if TORCH_AVAILABLE:
             assert lgb_fit_patch.call_args[1]["eval_set"] is not None
             assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
+        @patch.object(darts.models.forecasting.catboost_model.CatBoostRegressor, "fit")
+        def test_catboost_model_with_eval_set(self, lgb_fit_patch):
+            """Test whether these evaluation set parameters are passed to CatBoostRegressor"""
+            model = CatBoostModel(lags=4, lags_past_covariates=2)
+            model.fit(
+                series=self.sine_univariate1,
+                past_covariates=self.sine_multivariate1,
+                val_series=self.sine_univariate1,
+                val_past_covariates=self.sine_multivariate1,
+                early_stopping_rounds=2,
+            )
+
+            lgb_fit_patch.assert_called_once()
+
+            assert lgb_fit_patch.call_args[1]["eval_set"] is not None
+            assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+
     class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
         models_cls_kwargs_errs = [
             (
@@ -1045,7 +1062,7 @@ if TORCH_AVAILABLE:
             (
                 CatBoostModel,
                 {"lags": 2, "likelihood": "rmse_with_uncertainty", "random_state": 42},
-                1e-05,
+                0.05,
             ),
             (
                 LinearRegressionModel,
