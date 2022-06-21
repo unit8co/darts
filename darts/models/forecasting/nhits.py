@@ -13,6 +13,7 @@ import torch.nn.functional as F
 from darts.logging import get_logger, raise_if_not
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -153,7 +154,7 @@ class _Block(nn.Module):
                 layers.append(nn.BatchNorm1d(num_features=self.layer_widths[i + 1]))
 
             if self.dropout > 0:
-                layers.append(nn.Dropout(p=self.dropout))
+                layers.append(MonteCarloDropout(p=self.dropout))
 
         self.layers = nn.Sequential(*layers)
 
@@ -520,7 +521,9 @@ class NHiTSModel(PastCovariatesTorchModel):
             downsampling factors before interpolation, for each block in each stack.
             If left to ``None``, some default values will be used based on ``output_chunk_length``.
         dropout
-            Fraction of neurons affected by Dropout (default=0.1).
+            The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
+            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
+            prediction time).
         activation
             The activation function of encoder/decoder intermediate layer (default='ReLU').
             Supported activations: ['ReLU','RReLU', 'PReLU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU',  'Sigmoid']
