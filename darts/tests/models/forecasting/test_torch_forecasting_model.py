@@ -4,23 +4,23 @@ import tempfile
 from unittest.mock import patch
 
 import pandas as pd
-from torchmetrics import (
-    MeanAbsoluteError,
-    MeanAbsolutePercentageError,
-    MetricCollection,
-)
 
 from darts import TimeSeries
 from darts.logging import get_logger
 from darts.tests.base_test_class import DartsBaseTestClass
-from darts.utils.likelihood_models import GaussianLikelihood
 
 logger = get_logger(__name__)
 
 try:
     import torch
+    from torchmetrics import (
+        MeanAbsoluteError,
+        MeanAbsolutePercentageError,
+        MetricCollection,
+    )
 
     from darts.models.forecasting.rnn_model import RNNModel
+    from darts.utils.likelihood_models import GaussianLikelihood
 
     TORCH_AVAILABLE = True
 except ImportError:

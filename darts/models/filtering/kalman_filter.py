@@ -215,15 +215,7 @@ class KalmanFilter(FilteringModel, ABC):
 
         # For each time step, we'll sample "n_samples" from a multivariate Gaussian
         # whose mean vector and covariance matrix come from the Kalman filter.
-        if num_samples == 1:
-            sampled_outputs = np.zeros(
-                (
-                    len(y_values),
-                    self.dim_y,
-                )
-            )
-        else:
-            sampled_outputs = np.zeros((len(y_values), self.dim_y, num_samples))
+        sampled_outputs = np.zeros((len(y_values), self.dim_y, num_samples))
 
         for i in range(len(y_values)):
             y = y_values[i, :].reshape(-1, 1)
@@ -238,7 +230,7 @@ class KalmanFilter(FilteringModel, ABC):
             )
 
             if num_samples == 1:
-                sampled_outputs[i, :] = mean_vec
+                sampled_outputs[i, :, 0] = mean_vec
             else:
                 # The measurement covariance matrix is given by the sum of the covariance matrix of the
                 # state estimate (transformed by C) and the covariance matrix of the measurement noise.
@@ -249,9 +241,4 @@ class KalmanFilter(FilteringModel, ABC):
                     mean_vec, cov_matrix, size=num_samples
                 ).T
 
-        return TimeSeries.from_times_and_values(
-            series.time_index,
-            sampled_outputs,
-            columns=series.columns,
-            static_covariates=series.static_covariates,
-        )
+        return series.with_values(sampled_outputs)

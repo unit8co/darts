@@ -10,9 +10,8 @@ def read_requirements(path):
 base_reqs = read_requirements("requirements/core.txt")
 pmdarima_reqs = read_requirements("requirements/pmdarima.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
-prophet_reqs = read_requirements("requirements/prophet.txt")
 
-all_reqs = base_reqs + pmdarima_reqs + torch_reqs + prophet_reqs
+all_reqs = base_reqs + pmdarima_reqs + torch_reqs
 
 with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -60,6 +59,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     keywords="time series forecasting",
