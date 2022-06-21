@@ -95,21 +95,18 @@ plt.legend()
 
 ## Features
 * **Forecasting Models:** A large collection of forecasting models; from statistical models (such as
-  ARIMA) to deep learning models (such as N-BEATS). See table of models below.
+  ARIMA) to deep learning models (such as N-BEATS). See [table of models below](#forecasting-models).
 * **Multivariate Support:** `TimeSeries` can be multivariate - i.e., contain multiple time-varying
-  dimensions instead of a single scalar value. Many models can consume and produce multivariate series. 
-  See table of models below.
-* **Multiple series training:** All machine learning based models (incl.\ all neural networks) 
-  support being trained on multiple (potentially multivariate) series. See table of models below.
+  dimensions instead of a single scalar value. Many models can consume and produce multivariate series.
+* **Multiple series training:** All machine learning based models (incl. all neural networks) 
+  support being trained on multiple (potentially multivariate) series.
 * **Probabilistic Support:** `TimeSeries` objects can (optionally) represent stochastic
   time series; this can for instance be used to get confidence intervals, and many models
   support different flavours of probabilistic forecasting (such as estimating parametric distributions 
-  or quantiles). See table of models below.
-* **Past and Future Covariates support:** External data are often important too! 
-  Many models in Darts support past-observed and/or future-known 
-  covariate time series as inputs for producing forecasts. See table of models below.
+  or quantiles).
+* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known covariate (external data) time series as inputs for producing forecasts.
 * **Static Covariates support:** In addition to time-dependent data, `TimeSeries` can also contain
-  static data for each dimension, which can be exploited by some models (see table of models below).
+  static data for each dimension, which can be exploited by some models.
 * **Hierarchical Reconciliation:** Darts offers transformers to perform reconciliation.
   This can make the forecasts add up in a way that respects the underlying hierarchy.
 * **Regression Models:** It is possible to plug-in any scikit-learn compatible model
