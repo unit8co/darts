@@ -26,7 +26,7 @@ try:
     from darts.models.forecasting.auto_arima import AutoARIMA
     from darts.models.forecasting.tbats import BATS, TBATS
 except ModuleNotFoundError:
-    logger.warning(
+    logger.info(
         "Support for AutoARIMA, BATS and TBATS is not available."
         "To enable it, install u8darts[pmdarima] or u8darts[all]."
     )
@@ -34,7 +34,7 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.prophet_model import Prophet
 except ModuleNotFoundError:
-    logger.warning(
+    logger.info(
         "Support for Facebook Prophet is not available. "
         'To enable it, install "darts", "u8darts[prophet]" or "u8darts[all]" (with pip);'
         'or "u8darts-all" (with conda).'
@@ -50,7 +50,7 @@ try:
     from darts.models.forecasting.transformer_model import TransformerModel
 
 except ModuleNotFoundError:
-    logger.warning(
+    logger.info(
         "Support for Torch based models not available. "
         'To enable them, install "darts", "u8darts[torch]" or "u8darts[all]" (with pip); '
         'or "u8darts-torch" or "u8darts-all" (with conda).'
@@ -59,7 +59,7 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.gradient_boosted_model import LightGBMModel
 except ModuleNotFoundError:
-    logger.warning(
+    logger.info(
         "Support for LightGBM not available."
         "To enable LightGBM support in Darts, follow the detailed "
         "install instructions for LightGBM in the README: "
