@@ -715,6 +715,7 @@ def _build_forecast_series(
         np.stack(points_preds, axis=2),
         freq=input_series.freq_str,
         columns=input_series.columns,
+        static_covariates=input_series.static_covariates,
     )
 
 

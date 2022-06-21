@@ -435,7 +435,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
-            if retrain:
+            if retrain or not self._fit_called:
                 self._fit_wrapper(
                     series=train,
                     past_covariates=past_covariates,
@@ -461,6 +461,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 return TimeSeries.from_times_and_values(
                     pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
                     np.array(last_points_values),
+                    static_covariates=series.static_covariates,
                 )
             else:
                 return TimeSeries.from_times_and_values(
@@ -470,6 +471,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         step=1,
                     ),
                     np.array(last_points_values),
+                    static_covariates=series.static_covariates,
                 )
 
         return forecasts

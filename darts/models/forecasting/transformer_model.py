@@ -177,7 +177,8 @@ class _TransformerModule(PLPastCovariatesModule):
 
         return src, tgt
 
-    def forward(self, data):
+    def forward(self, x_in: Tuple):
+        data, _ = x_in
         # Here we create 'src' and 'tgt', the inputs for the encoder and decoder
         # side of the Transformer architecture
         src, tgt = self._create_transformer_inputs(data)
@@ -272,6 +273,9 @@ class TransformerModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
