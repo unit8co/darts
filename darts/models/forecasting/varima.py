@@ -16,13 +16,15 @@ import pandas as pd
 from statsmodels.tsa.api import VARMAX as staVARMA
 
 from darts.logging import get_logger, raise_if
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    ExtendedDualCovariatesForecastingModel,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class VARIMA(DualCovariatesForecastingModel):
+class VARIMA(ExtendedDualCovariatesForecastingModel):
     def __init__(self, p: int = 1, d: int = 0, q: int = 0, trend: Optional[str] = None):
         """VARIMA
 
@@ -58,7 +60,8 @@ class VARIMA(DualCovariatesForecastingModel):
         return f"VARIMA({self.p},{self.d},{self.q})"
 
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        # for VARIMA we need to process target `series` before calling DualForecastingModels' fit() method
+        # for VARIMA we need to process target `series` before calling ExtendedDualCovariatesForecastingModel'
+        # fit() method
         self._last_values = (
             series.last_values()
         )  # needed for back-transformation when d=1
@@ -88,6 +91,35 @@ class VARIMA(DualCovariatesForecastingModel):
         )
 
         self.model = m.fit(disp=0)
+
+    def _handle_new_target(
+        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
+    ):
+        # we must pre process the target series as in the fit method
+
+        # store new _last_values of the new target series
+        self._last_values = (
+            series.last_values()
+        )  # needed for back-transformation when d=1
+        for _ in range(self.d):
+            series = TimeSeries.from_dataframe(
+                df=series.pd_dataframe(copy=False).diff().dropna(),
+                static_covariates=series.static_covariates,
+                hierarchy=series.hierarchy,
+            )
+
+        # if the series is differentiated, the new len will be = len - 1, we have to adjust the future covariates as
+        # well
+        if future_covariates and self.d > 0:
+            future_covariates = future_covariates.slice_intersect(series)
+
+        # this will update the self.training series
+        super()._handle_new_target(series, future_covariates)
+
+        self.model = self.model.apply(
+            series.values(),
+            exog=future_covariates.values() if future_covariates else None,
+        )
 
     def _predict(
         self,

@@ -1286,9 +1286,9 @@ class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC
         if series is not None and future_covariates:
             raise_if_not(
                 future_covariates.start_time() <= series.start_time()
-                and future_covariates.end_time() >= series.end_time(),
-                "The provided `future_covariates` series must contain at least the same time steps/"
-                "indices as the target `series`.",
+                and future_covariates.end_time() >= series.end_time() + n * series.freq,
+                "The provided `future_covariates` related to the new target series must contain at least the same time"
+                "steps/indices as the target `series` + `n`.",
                 logger,
             )
             # splitting the future covariates
