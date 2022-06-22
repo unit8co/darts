@@ -1,0 +1,2 @@
+ignore:
+  - "darts/models/forecasting/prophet_model.py"
