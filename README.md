@@ -31,13 +31,14 @@ series, and some of the models offer a rich support for probabilistic forecastin
 
 ##### High Level Introductions
 * [Introductory Blog Post](https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878)
-* [Introduction video (28 minutes)](https://youtu.be/g6OXDnXEtFA)
+* [Introduction video (25 minutes)](https://youtu.be/g6OXDnXEtFA)
 
 ##### Articles on Selected Topics
 * [Training Models on Multiple Time Series](https://medium.com/unit8-machine-learning-publication/training-forecasting-models-on-multiple-time-series-with-darts-dc4be70b1844)
 * [Using Past and Future Covariates](https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993)
 * [Temporal Convolutional Networks and Forecasting](https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4)
 * [Probabilistic Forecasting](https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e)
+* [Transfer Learning for Time Series Forecasting](https://medium.com/unit8-machine-learning-publication/transfer-learning-for-time-series-forecasting-87f39e375278)
 
 ## Quick Install
 
@@ -99,20 +100,20 @@ plt.legend()
 * **Multivariate Support:** `TimeSeries` can be multivariate - i.e., contain multiple time-varying
   dimensions instead of a single scalar value. Many models can consume and produce multivariate series.
 * **Multiple series training:** All machine learning based models (incl. all neural networks) 
-  support being trained on multiple (potentially multivariate) series.
+  support being trained on multiple (potentially multivariate) series. This can scale to large datasets.
 * **Probabilistic Support:** `TimeSeries` objects can (optionally) represent stochastic
-  time series; this can for instance be used to get confidence intervals, and many models
-  support different flavours of probabilistic forecasting (such as estimating parametric distributions 
+  time series; this can for instance be used to get confidence intervals, and many models support different flavours of probabilistic forecasting (such as estimating parametric distributions 
   or quantiles).
-* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known covariate (external data) time series as inputs for producing forecasts.
+* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known 
+  covariate (external data) time series as inputs for producing forecasts.
 * **Static Covariates support:** In addition to time-dependent data, `TimeSeries` can also contain
   static data for each dimension, which can be exploited by some models.
 * **Hierarchical Reconciliation:** Darts offers transformers to perform reconciliation.
-  This can make the forecasts add up in a way that respects the underlying hierarchy.
+  These can make the forecasts add up in a way that respects the underlying hierarchy.
 * **Regression Models:** It is possible to plug-in any scikit-learn compatible model
-  to obtain forecasts, as functions of lagged values of the target series and covariates.
+  to obtain forecasts as functions of lagged values of the target series and covariates.
 * **Data processing:** Tools to easily apply (and revert) common transformations on
-  time series data (scaling, boxcox, ...)
+  time series data (scaling, filling missing values, boxcox, ...)
 * **Metrics:** A variety of metrics for evaluating time series' goodness of fit;
   from R2-scores to Mean Absolute Scaled Error.
 * **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
@@ -122,7 +123,7 @@ plt.legend()
   and `MovingAverage`, which allow to filter time series, and in some cases obtain probabilistic
   inferences of the underlying states/values.
 * **Datasets** The `darts.datasets` submodule contains some popular time series datasets for rapid
-  and convenient experimentation.
+  experimentation.
 
 ## Forecasting Models
 Here's a breakdown of the forecasting models currently implemented in Darts. We are constantly working
@@ -137,7 +138,7 @@ Model | Univariate | Multivariate | Probabilistic | Multiple-series training | P
 `ExponentialSmoothing` | ✅ | | ✅ | | | | |
 `BATS` and `TBATS` | ✅ | | ✅ | | | | | [TBATS paper](https://robjhyndman.com/papers/ComplexSeasonality.pdf)
 `Theta` and `FourTheta` | ✅ | | | | | | | [Theta](https://robjhyndman.com/papers/Theta.pdf) & [4 Theta](https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R)
-`Prophet` (requires separate install of `prophet` package) | ✅ | | ✅ | | | ✅ | | [Prophet repo](https://github.com/facebook/prophet)
+`Prophet` (see [install notes](https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet)) | ✅ | | ✅ | | | ✅ | | [Prophet repo](https://github.com/facebook/prophet)
 `FFT` (Fast Fourier Transform) | ✅ | | | | | | |
 `KalmanForecaster` using the Kalman filter and N4SID for system identification | ✅ | ✅ | ✅ | | | ✅ | | [N4SID paper](https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf)
 `Croston` method | ✅ | | | | | | |
