@@ -237,13 +237,24 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     def test_extended_dual_models(self):
         target_len = 200
         pred_len = 15
+
         ts1 = tg.random_walk_timeseries(length=target_len)
         exog1 = tg.random_walk_timeseries(length=target_len + pred_len).stack(
             tg.random_walk_timeseries(length=target_len + pred_len)
         )
+        exog1_longer = (
+            tg.random_walk_timeseries(length=target_len + pred_len * 2)
+            .stack(tg.random_walk_timeseries(length=target_len + pred_len * 2))
+            .shift(n=-pred_len)
+        )
         ts2 = tg.random_walk_timeseries(length=target_len)
         exog2 = tg.random_walk_timeseries(length=target_len + pred_len).stack(
             tg.random_walk_timeseries(length=target_len + pred_len)
+        )
+        exog2_longer = (
+            tg.random_walk_timeseries(length=target_len + pred_len * 2)
+            .stack(tg.random_walk_timeseries(length=target_len + pred_len * 2))
+            .shift(n=-pred_len)
         )
 
         for model_cls in extended_dual_models_cls:
@@ -263,6 +274,14 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             pred2 = model.predict(n=pred_len, series=ts2, future_covariates=exog2)
 
             self.assertFalse(np.array_equal(pred1.values(), pred2.values()))
+
+            # check runnability with future covariates with extra time steps in the past compared to the target series
+            model = model_cls()
+            model.fit(ts1, future_covariates=exog1_longer)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1_longer)
+            pred2 = model.predict(
+                n=pred_len, series=ts2, future_covariates=exog2_longer
+            )
 
             # check error is raised if model expects covariates but those are not passed when predicting with new data
             with self.assertRaises(ValueError):

@@ -111,10 +111,10 @@ class ARIMA(ExtendedDualCovariatesForecastingModel):
 
         return self._build_forecast_series(forecast)
 
-    def _process_new_data(
+    def _handle_new_target(
         self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
     ):
-        super()._process_new_data(series, future_covariates)
+        super()._handle_new_target(series, future_covariates)
         self.model = self.model.apply(
             series.values(),
             exog=future_covariates.values() if future_covariates else None,

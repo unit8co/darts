@@ -1230,10 +1230,10 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
 
 class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
-    """The base class for the forecasting models that are not global, but support future covariates, and can be applied
-    to new data unrelated to the original data (used for fitting the model).
+    """The base class for the forecasting models that are not global, but support future covariates, and can
+    additionally be applied to new data unrelated to the original series used for fitting the model.
 
-    All implementations have to implement the `fit()` and `predict()` methods.
+    All implementations have to implement the `_fit()`, `_predict()` and `_handle_new_target()` methods.
     """
 
     def predict(
@@ -1243,18 +1243,27 @@ class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
     ) -> TimeSeries:
-        """Forecasts values for `n` time steps after the end of the training series.
+        """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
+        series. If some future covariates were specified during the training, they must also be specified here.
 
-        If some future covariates were specified during the training, they must also be specified here.
+        If the `series` parameter is set, forecasts values for `n` time steps after the end of the new target
+        series. If some future covariates were specified during the training, they must also be specified here.
+        Updates, the `self.training_series` attribute will be updated accordingly.
 
         Parameters
         ----------
         n
             Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series
+            Optionally, a new target series whose future values will be predicted. Defaults to `None`, meaning that the
+            model will forecast the future value of the training series.
         future_covariates
             The time series of future-known covariates which can be fed as input to the model. It must correspond to
-            the covariate time series that has been used with the :func:`fit()` method for training, and it must
-            contain at least the next `n` time steps/indices after the end of the training target series.
+            the covariate time series that has been used with the :func:`fit()` method for training.
+
+            If `series` is not set, it must contain at least the next `n` time steps/indices after the end of the
+            training target series. If `series` is set, it must contain at least the time steps/indices corresponding
+            to the new target series, plus the next `n` time steps/indices after the end.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
@@ -1274,8 +1283,7 @@ class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC
 
         historic_future_covariates = None
 
-        if series is not None and self._expect_covariate:
-
+        if series is not None and future_covariates:
             raise_if_not(
                 future_covariates.start_time() <= series.start_time()
                 and future_covariates.end_time() >= series.end_time(),
@@ -1289,33 +1297,33 @@ class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC
                 future_covariates,
             ) = future_covariates.split_after(series.end_time())
 
-            # in case future covariate have more value on the left end side that we don't need
+            # in case future covariate have more values on the left end side that we don't need
             if not series.has_same_time_as(historic_future_covariates):
                 historic_future_covariates = historic_future_covariates.slice_intersect(
                     series
                 )
 
         if series is not None:
-            self._process_new_data(series, historic_future_covariates)
+            self._handle_new_target(series, historic_future_covariates)
 
         return super().predict(
             n=n, future_covariates=future_covariates, num_samples=num_samples
         )
 
-    @abstractmethod
-    def _process_new_data(
+    def _handle_new_target(
         self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
     ):
-        """Updates the model's state given the new data. The model's parameter must remain the one trained on the
-            original data, while the references to the data to be forcasted are updated.
+        """Updates the model's state given the new target data (series, and, optionally, future covariates). The
+        model's parameter must remain the one trained on the original data, while the model `training_series`
+        attribute is updated.
 
-            This method expects series and future_covariates being of the same length.
+        This method expects `series` and `future_covariates` being of the same length.
 
         Parameters
         ----------
-        series (TimeSeries)
+        series
             New target series
-        future_covariates (Optional[TimeSeries], optional)
+        future_covariates
             New future covariates data. Defaults to None.
         """
         self.training_series = series
@@ -1328,7 +1336,7 @@ class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC
         num_samples: int = 1,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
-        TODO {Extended}DualCovariatesModels must implement the predict logic in this method.
+        ExtendedDualCovariatesModels must implement the predict logic in this method.
         """
         pass
 
