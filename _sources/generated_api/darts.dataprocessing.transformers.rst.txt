@@ -13,4 +13,5 @@
         darts.dataprocessing.transformers.invertible_data_transformer
         darts.dataprocessing.transformers.mappers
         darts.dataprocessing.transformers.missing_values_filler
+        darts.dataprocessing.transformers.reconciliation
         darts.dataprocessing.transformers.scaler

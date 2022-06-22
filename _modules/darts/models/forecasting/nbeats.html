@@ -180,8 +180,23 @@
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span><span class="p">,</span> <span class="n">raise_log</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLPastCovariatesModule</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
+<span class="kn">from</span> <span class="nn">darts.utils.torch</span> <span class="kn">import</span> <span class="n">MonteCarloDropout</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="n">ACTIVATIONS</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;ReLU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;RReLU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;PReLU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ELU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Softplus&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Tanh&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;SELU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;LeakyReLU&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;Sigmoid&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;GELU&quot;</span><span class="p">,</span>
+<span class="p">]</span>
 
 
 <span class="k">class</span> <span class="nc">_GType</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
@@ -246,6 +261,9 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">g_type</span><span class="p">:</span> <span class="n">GTypes</span><span class="p">,</span>
+        <span class="n">batch_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;PyTorch module implementing the basic building block of the N-BEATS architecture.</span>
 
@@ -271,6 +289,12 @@
 <span class="sd">            The length of the forecast of the model.</span>
 <span class="sd">        g_type</span>
 <span class="sd">            The type of function that is implemented by the waveform generator.</span>
+<span class="sd">        batch_norm</span>
+<span class="sd">            Whether to use batch norm</span>
+<span class="sd">        dropout</span>
+<span class="sd">            Dropout probability</span>
+<span class="sd">        activation</span>
+<span class="sd">            The activation function of encoder/decoder intermediate layer.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -293,13 +317,27 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">target_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">g_type</span> <span class="o">=</span> <span class="n">g_type</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">relu</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ReLU</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="o">=</span> <span class="n">batch_norm</span>
+
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">activation</span> <span class="ow">in</span> <span class="n">ACTIVATIONS</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">activation</span><span class="si">}</span><span class="s2">&#39; is not in </span><span class="si">{</span><span class="n">ACTIVATIONS</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">nn</span><span class="p">,</span> <span class="n">activation</span><span class="p">)()</span>
 
         <span class="c1"># fully connected stack before fork</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">)]</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span> <span class="o">+=</span> <span class="p">[</span>
-            <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">)</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
-        <span class="p">]</span>
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_layers</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">layer_width</span><span class="p">,</span> <span class="n">layer_width</span><span class="p">))</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">nn</span><span class="o">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">num_features</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_width</span><span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">MonteCarloDropout</span><span class="p">(</span><span class="n">p</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">))</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">fc_stack</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">ModuleList</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="p">)</span>
 
         <span class="c1"># Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).</span>
@@ -339,7 +377,7 @@
 
         <span class="c1"># fully connected layer stack</span>
         <span class="k">for</span> <span class="n">layer</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">linear_layer_stack_list</span><span class="p">:</span>
-            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">(</span><span class="n">layer</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
 
         <span class="c1"># forked linear layers producing waveform generator parameters</span>
         <span class="n">theta_backcast</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
@@ -369,6 +407,9 @@
         <span class="n">input_chunk_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">target_length</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">g_type</span><span class="p">:</span> <span class="n">GTypes</span><span class="p">,</span>
+        <span class="n">batch_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;PyTorch module implementing one stack of the N-BEATS architecture that comprises multiple basic blocks.</span>
 
@@ -390,6 +431,12 @@
 <span class="sd">            The length of the forecast of the model.</span>
 <span class="sd">        g_type</span>
 <span class="sd">            The function that is implemented by the waveform generators in each block.</span>
+<span class="sd">        batch_norm</span>
+<span class="sd">            whether to apply batch norm on first block of this stack</span>
+<span class="sd">        dropout</span>
+<span class="sd">            Dropout probability</span>
+<span class="sd">        activation</span>
+<span class="sd">            The activation function of encoder/decoder intermediate layer.</span>
 
 <span class="sd">        Inputs</span>
 <span class="sd">        ------</span>
@@ -410,6 +457,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">=</span> <span class="n">input_chunk_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="n">target_length</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="o">=</span> <span class="n">batch_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
 
         <span class="k">if</span> <span class="n">g_type</span> <span class="o">==</span> <span class="n">_GType</span><span class="o">.</span><span class="n">GENERIC</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span> <span class="o">=</span> <span class="p">[</span>
@@ -421,8 +471,13 @@
                     <span class="n">input_chunk_length</span><span class="p">,</span>
                     <span class="n">target_length</span><span class="p">,</span>
                     <span class="n">g_type</span><span class="p">,</span>
+                    <span class="n">batch_norm</span><span class="o">=</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span>
+                    <span class="p">),</span>  <span class="c1"># batch norm only on first block of first stack</span>
+                    <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+                    <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_blocks</span><span class="p">)</span>
             <span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="c1"># same block instance is used for weight sharing</span>
@@ -434,6 +489,9 @@
                 <span class="n">input_chunk_length</span><span class="p">,</span>
                 <span class="n">target_length</span><span class="p">,</span>
                 <span class="n">g_type</span><span class="p">,</span>
+                <span class="n">batch_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+                <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">blocks_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">interpretable_block</span><span class="p">]</span> <span class="o">*</span> <span class="n">num_blocks</span>
 
@@ -477,7 +535,10 @@
         <span class="n">layer_widths</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
         <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">trend_polynomial_degree</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">batch_norm</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;PyTorch module implementing the N-BEATS architecture.</span>
 
@@ -509,6 +570,12 @@
 <span class="sd">        trend_polynomial_degree</span>
 <span class="sd">            The degree of the polynomial used as waveform generator in trend stacks. Only used if</span>
 <span class="sd">            `generic_architecture` is set to `False`.</span>
+<span class="sd">        batch_norm</span>
+<span class="sd">            Whether to apply batch norm on first block of the first stack</span>
+<span class="sd">        dropout</span>
+<span class="sd">            Dropout probability</span>
+<span class="sd">        activation</span>
+<span class="sd">            The activation function of encoder/decoder intermediate layer.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
 
@@ -530,6 +597,9 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">nr_params</span> <span class="o">=</span> <span class="n">nr_params</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span> <span class="o">*</span> <span class="n">input_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">*</span> <span class="n">input_dim</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="o">=</span> <span class="n">batch_norm</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
 
         <span class="k">if</span> <span class="n">generic_architecture</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span> <span class="o">=</span> <span class="p">[</span>
@@ -542,6 +612,11 @@
                     <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
                     <span class="n">_GType</span><span class="o">.</span><span class="n">GENERIC</span><span class="p">,</span>
+                    <span class="n">batch_norm</span><span class="o">=</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">0</span>
+                    <span class="p">),</span>  <span class="c1"># batch norm only on first block of first stack</span>
+                    <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+                    <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
                 <span class="p">)</span>
                 <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_stacks</span><span class="p">)</span>
             <span class="p">]</span>
@@ -556,6 +631,9 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
                 <span class="n">_GType</span><span class="o">.</span><span class="n">TREND</span><span class="p">,</span>
+                <span class="n">batch_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+                <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="n">seasonality_stack</span> <span class="o">=</span> <span class="n">_Stack</span><span class="p">(</span>
                 <span class="n">num_blocks</span><span class="p">,</span>
@@ -566,6 +644,9 @@
                 <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length_multi</span><span class="p">,</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">target_length</span><span class="p">,</span>
                 <span class="n">_GType</span><span class="o">.</span><span class="n">SEASONALITY</span><span class="p">,</span>
+                <span class="n">batch_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+                <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
             <span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">trend_stack</span><span class="p">,</span> <span class="n">seasonality_stack</span><span class="p">]</span>
 
@@ -577,7 +658,8 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_linear_layer</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">stacks_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">blocks</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">backcast_g</span><span class="o">.</span><span class="n">requires_grad_</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
 
         <span class="c1"># if x1, x2,... y1, y2... is one multivariate ts containing x and y, and a1, a2... one covariate ts</span>
         <span class="c1"># we reshape into x1, y1, a1, x2, y2, a2... etc</span>
@@ -627,7 +709,9 @@
         <span class="n">layer_widths</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">256</span><span class="p">,</span>
         <span class="n">expansion_coefficient_dim</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span><span class="p">,</span>
         <span class="n">trend_polynomial_degree</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;ReLU&quot;</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;Neural Basis Expansion Analysis Time Series Forecasting (N-BEATS).</span>
 
@@ -669,6 +753,13 @@
 <span class="sd">        trend_polynomial_degree</span>
 <span class="sd">            The degree of the polynomial used as waveform generator in trend stacks. Only used if</span>
 <span class="sd">            `generic_architecture` is set to `False`.</span>
+<span class="sd">        dropout</span>
+<span class="sd">            The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout</span>
+<span class="sd">            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at</span>
+<span class="sd">            prediction time).</span>
+<span class="sd">        activation</span>
+<span class="sd">            The activation function of encoder/decoder intermediate layer (default=&#39;ReLU&#39;).</span>
+<span class="sd">            Supported activations: [&#39;ReLU&#39;,&#39;RReLU&#39;, &#39;PReLU&#39;, &#39;Softplus&#39;, &#39;Tanh&#39;, &#39;SELU&#39;, &#39;LeakyReLU&#39;,  &#39;Sigmoid&#39;]</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
 <span class="sd">            Darts&#39; :class:`TorchForecastingModel`.</span>
@@ -677,6 +768,9 @@
 <span class="sd">            PyTorch loss function used for training.</span>
 <span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
 <span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
 <span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
 <span class="sd">            probabilistic forecasts. Default: ``None``.</span>
@@ -823,6 +917,12 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">expansion_coefficient_dim</span> <span class="o">=</span> <span class="n">expansion_coefficient_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">trend_polynomial_degree</span> <span class="o">=</span> <span class="n">trend_polynomial_degree</span>
 
+        <span class="c1"># Currently batch norm is not an option as it seems to perform badly</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
+
         <span class="k">if</span> <span class="ow">not</span> <span class="n">generic_architecture</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">num_stacks</span> <span class="o">=</span> <span class="mi">2</span>
 
@@ -848,6 +948,9 @@
             <span class="n">layer_widths</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">layer_widths</span><span class="p">,</span>
             <span class="n">expansion_coefficient_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">expansion_coefficient_dim</span><span class="p">,</span>
             <span class="n">trend_polynomial_degree</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">trend_polynomial_degree</span><span class="p">,</span>
+            <span class="n">batch_norm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">batch_norm</span><span class="p">,</span>
+            <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>
         <span class="p">)</span></div>
 </pre></div>

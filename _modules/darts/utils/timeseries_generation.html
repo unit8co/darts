@@ -642,7 +642,7 @@
         <span class="k">else</span><span class="p">:</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
                 <span class="nb">isinstance</span><span class="p">(</span><span class="n">until</span><span class="p">,</span> <span class="nb">int</span><span class="p">),</span>
-                <span class="s2">&quot;Expected integer for TimeSeries, indexed by RangeIndex, &quot;</span><span class="p">,</span>
+                <span class="s2">&quot;Expected integer for TimeSeries, indexed by RangeIndex, &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;for parameter until, got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">end</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
                 <span class="n">logger</span><span class="p">,</span>
             <span class="p">)</span>
@@ -869,19 +869,19 @@
         <span class="k">else</span> <span class="nb">len</span><span class="p">(</span><span class="n">points_preds</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
     <span class="p">)</span>
     <span class="n">time_index</span> <span class="o">=</span> <span class="n">_generate_new_dates</span><span class="p">(</span><span class="n">time_index_length</span><span class="p">,</span> <span class="n">input_series</span><span class="o">=</span><span class="n">input_series</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-            <span class="n">time_index</span><span class="p">,</span>
-            <span class="n">points_preds</span><span class="p">,</span>
-            <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
-            <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
-        <span class="p">)</span>
+    <span class="n">values</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">points_preds</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+        <span class="k">else</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+    <span class="p">)</span>
 
     <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
         <span class="n">time_index</span><span class="p">,</span>
-        <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span><span class="n">points_preds</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+        <span class="n">values</span><span class="p">,</span>
         <span class="n">freq</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">freq_str</span><span class="p">,</span>
         <span class="n">columns</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+        <span class="n">static_covariates</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+        <span class="n">hierarchy</span><span class="o">=</span><span class="n">input_series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
     <span class="p">)</span>
 
 

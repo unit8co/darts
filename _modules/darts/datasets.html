@@ -171,6 +171,14 @@
 
 <span class="sd">A few popular time series datasets</span>
 <span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
 
 <span class="kn">from</span> <span class="nn">.dataset_loaders</span> <span class="kn">import</span> <span class="n">DatasetLoaderCSV</span><span class="p">,</span> <span class="n">DatasetLoaderMetadata</span>
 
@@ -179,6 +187,8 @@
 <span class="sd">    from darts.datasets import AirPassengersDataset</span>
 <span class="sd">    ts: TimeSeries = AirPassengersDataset.load()</span>
 <span class="sd">&quot;&quot;&quot;</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">_DEFAULT_PATH</span> <span class="o">=</span> <span class="s2">&quot;https://raw.githubusercontent.com/unit8co/darts/master/datasets&quot;</span>
 
@@ -475,6 +485,302 @@
                 <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2">&quot;</span><span class="p">,</span>
             <span class="p">)</span>
         <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ETTh1Dataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ETTh1Dataset">[docs]</a><span class="k">class</span> <span class="nc">ETTh1Dataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.</span>
+<span class="sd">    The dataset ranges from 2016/07 to 2018/07 taken hourly.</span>
+<span class="sd">    Source: [1][2]_</span>
+
+<span class="sd">    Field Descriptions:</span>
+<span class="sd">    date: The recorded date</span>
+<span class="sd">    HUFL: High UseFul Load</span>
+<span class="sd">    HULL: High UseLess Load</span>
+<span class="sd">    MUFL: Medium UseFul Load</span>
+<span class="sd">    MULL: Medium UseLess Load</span>
+<span class="sd">    LUFL: Low UseFul Load</span>
+<span class="sd">    LULL: Low UseLess Load</span>
+<span class="sd">    OT: Oil Temperature (Target)</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://github.com/zhouhaoyi/ETDataset</span>
+<span class="sd">    .. [2] https://arxiv.org/abs/2012.07436</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;ETTh1.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span> <span class="o">+</span> <span class="s2">&quot;/ETTh1.csv&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;8381763947c85f4be6ac456c508460d6&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ETTh2Dataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ETTh2Dataset">[docs]</a><span class="k">class</span> <span class="nc">ETTh2Dataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.</span>
+<span class="sd">    The dataset ranges from 2016/07 to 2018/07 taken hourly.</span>
+<span class="sd">    Source: [1][2]_</span>
+
+<span class="sd">    Field Descriptions:</span>
+<span class="sd">    date: The recorded date</span>
+<span class="sd">    HUFL: High UseFul Load</span>
+<span class="sd">    HULL: High UseLess Load</span>
+<span class="sd">    MUFL: Medium UseFul Load</span>
+<span class="sd">    MULL: Medium UseLess Load</span>
+<span class="sd">    LUFL: Low UseFul Load</span>
+<span class="sd">    LULL: Low UseLess Load</span>
+<span class="sd">    OT: Oil Temperature (Target)</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://github.com/zhouhaoyi/ETDataset</span>
+<span class="sd">    .. [2] https://arxiv.org/abs/2012.07436</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;ETTh2.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span> <span class="o">+</span> <span class="s2">&quot;/ETTh2.csv&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;51a229a3fc13579dd939364fefe9c7ab&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ETTm1Dataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ETTm1Dataset">[docs]</a><span class="k">class</span> <span class="nc">ETTm1Dataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.</span>
+<span class="sd">    The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.</span>
+<span class="sd">    Source: [1][2]_</span>
+
+<span class="sd">    Field Descriptions:</span>
+<span class="sd">    date: The recorded date</span>
+<span class="sd">    HUFL: High UseFul Load</span>
+<span class="sd">    HULL: High UseLess Load</span>
+<span class="sd">    MUFL: Medium UseFul Load</span>
+<span class="sd">    MULL: Medium UseLess Load</span>
+<span class="sd">    LUFL: Low UseFul Load</span>
+<span class="sd">    LULL: Low UseLess Load</span>
+<span class="sd">    OT: Oil Temperature (Target)</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://github.com/zhouhaoyi/ETDataset</span>
+<span class="sd">    .. [2] https://arxiv.org/abs/2012.07436</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;ETTm1.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span> <span class="o">+</span> <span class="s2">&quot;/ETTm1.csv&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;82d6bd89109c63d075d99c1077b33f38&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ETTm2Dataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ETTm2Dataset">[docs]</a><span class="k">class</span> <span class="nc">ETTm2Dataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.</span>
+<span class="sd">    The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.</span>
+<span class="sd">    Source: [1][2]_</span>
+
+<span class="sd">    Field Descriptions:</span>
+<span class="sd">    date: The recorded date</span>
+<span class="sd">    HUFL: High UseFul Load</span>
+<span class="sd">    HULL: High UseLess Load</span>
+<span class="sd">    MUFL: Medium UseFul Load</span>
+<span class="sd">    MULL: Medium UseLess Load</span>
+<span class="sd">    LUFL: Low UseFul Load</span>
+<span class="sd">    LULL: Low UseLess Load</span>
+<span class="sd">    OT: Oil Temperature (Target)</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://github.com/zhouhaoyi/ETDataset</span>
+<span class="sd">    .. [2] https://arxiv.org/abs/2012.07436</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;ETTm2.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="n">_DEFAULT_PATH</span> <span class="o">+</span> <span class="s2">&quot;/ETTm2.csv&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;7687e47825335860bf58bccb31be0c56&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;date&quot;</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="ElectricityDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.ElectricityDataset">[docs]</a><span class="k">class</span> <span class="nc">ElectricityDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Measurements of electric power consumption in one household with 15 minute sampling rate.</span>
+<span class="sd">    370 client&#39;s consumption are recorded in kW.</span>
+<span class="sd">    Source: [1]_</span>
+
+<span class="sd">    Loading this dataset will provide a multivariate timeseries with 370 columns for each household.</span>
+<span class="sd">    The following code can be used to convert the dataset to a list of univariate timeseries,</span>
+<span class="sd">    one for each household.</span>
+
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">multivariate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        multivariate: bool</span>
+<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">pre_proces_fn</span><span class="p">(</span><span class="n">extracted_dir</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">):</span>
+            <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">Path</span><span class="p">(</span><span class="n">extracted_dir</span><span class="p">,</span> <span class="s2">&quot;LD2011_2014.txt&quot;</span><span class="p">))</span> <span class="k">as</span> <span class="n">fin</span><span class="p">:</span>
+                <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="s2">&quot;wt&quot;</span><span class="p">,</span> <span class="n">newline</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fout</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">fin</span><span class="p">:</span>
+                        <span class="n">fout</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">line</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">,</span> <span class="s2">&quot;.&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;;&quot;</span><span class="p">,</span> <span class="s2">&quot;,&quot;</span><span class="p">))</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="s2">&quot;Electricity.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="s2">&quot;https://archive.ics.uci.edu/ml/machine-learning-databases/00321/LD2011_2014.txt.zip&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;acfe6783eea43905e510f537add940fd&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Unnamed: 0&quot;</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M:%S&quot;</span><span class="p">,</span>
+                <span class="n">pre_process_zipped_csv_fn</span><span class="o">=</span><span class="n">pre_proces_fn</span><span class="p">,</span>
+                <span class="n">multivariate</span><span class="o">=</span><span class="n">multivariate</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_to_multi_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Load the electricity dataset as a list of univariate series, one for each household.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ts_list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of timeseries</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+            <span class="n">srs</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+
+            <span class="c1"># filter column down to the period of recording</span>
+            <span class="n">srs</span> <span class="o">=</span> <span class="n">srs</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">)</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ffill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">end_date</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;bfill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">active_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="n">start_date</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;=</span> <span class="n">end_date</span><span class="p">)</span>
+            <span class="n">srs</span> <span class="o">=</span> <span class="n">srs</span><span class="p">[</span><span class="n">active_range</span><span class="p">]</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="mf">0.0</span><span class="p">)</span>
+
+            <span class="c1"># convert to timeseries</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;power_usage&quot;</span><span class="p">:</span> <span class="n">srs</span><span class="p">})</span>
+            <span class="n">tmp</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">index</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;power_usage&quot;</span><span class="p">])</span>
+            <span class="n">ts_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ts_list</span></div>
+
+
+<div class="viewcode-block" id="UberTLCDataset"><a class="viewcode-back" href="../../generated_api/darts.datasets.html#darts.datasets.UberTLCDataset">[docs]</a><span class="k">class</span> <span class="nc">UberTLCDataset</span><span class="p">(</span><span class="n">DatasetLoaderCSV</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    14.3 million Uber pickups from January to June 2015. The data is resampled to hourly or daily based sample_freq</span>
+<span class="sd">    on using the locationID as the target.</span>
+<span class="sd">    Source: [1]_</span>
+
+<span class="sd">    Loading this dataset will provide a multivariate timeseries with 262 columns for each locationID.</span>
+<span class="sd">    The following code can be used to convert the dataset to a list of univariate timeseries,</span>
+<span class="sd">    one for each locationID.</span>
+
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    .. [1] https://github.com/fivethirtyeight/uber-tlc-foil-response</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sample_freq</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;hourly&quot;</span><span class="p">,</span> <span class="n">multivariate</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        sample_freq: str</span>
+<span class="sd">            The sampling frequency of the data. Can be &quot;hourly&quot; or &quot;daily&quot;. Default is &quot;hourly&quot;.</span>
+<span class="sd">        multivariate: bool</span>
+<span class="sd">            Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">valid_sample_freq</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;daily&quot;</span><span class="p">,</span> <span class="s2">&quot;hourly&quot;</span><span class="p">]</span>
+        <span class="n">raise_if_not</span><span class="p">(</span>
+            <span class="n">sample_freq</span> <span class="ow">in</span> <span class="n">valid_sample_freq</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;sample_freq must be one of </span><span class="si">{</span><span class="n">valid_sample_freq</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="n">logger</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">pre_proces_fn</span><span class="p">(</span><span class="n">extracted_dir</span><span class="p">,</span> <span class="n">dataset_path</span><span class="p">):</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span>
+                <span class="n">Path</span><span class="p">(</span><span class="n">extracted_dir</span><span class="p">,</span> <span class="s2">&quot;uber-raw-data-janjune-15.csv&quot;</span><span class="p">),</span>
+                <span class="n">header</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+                <span class="n">usecols</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;Pickup_date&quot;</span><span class="p">,</span> <span class="s2">&quot;locationID&quot;</span><span class="p">],</span>
+                <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">output_dict</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">freq_setting</span> <span class="o">=</span> <span class="s2">&quot;1H&quot;</span> <span class="k">if</span> <span class="s2">&quot;hourly&quot;</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">)</span> <span class="k">else</span> <span class="s2">&quot;1D&quot;</span>
+            <span class="n">time_series_of_locations</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">groupby</span><span class="p">(</span><span class="n">by</span><span class="o">=</span><span class="s2">&quot;locationID&quot;</span><span class="p">))</span>
+            <span class="k">for</span> <span class="n">locationID</span><span class="p">,</span> <span class="n">df</span> <span class="ow">in</span> <span class="n">time_series_of_locations</span><span class="p">:</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">sort_index</span><span class="p">()</span>
+                <span class="n">df</span><span class="o">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+
+                <span class="n">count_series</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">resample</span><span class="p">(</span><span class="n">rule</span><span class="o">=</span><span class="n">freq_setting</span><span class="p">)</span><span class="o">.</span><span class="n">size</span><span class="p">()</span>
+
+                <span class="n">output_dict</span><span class="p">[</span><span class="n">locationID</span><span class="p">]</span> <span class="o">=</span> <span class="n">count_series</span>
+            <span class="n">output_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">output_dict</span><span class="p">)</span>
+            <span class="n">output_df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">dataset_path</span><span class="p">,</span> <span class="n">line_terminator</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">metadata</span><span class="o">=</span><span class="n">DatasetLoaderMetadata</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;uber_tlc_</span><span class="si">{</span><span class="n">sample_freq</span><span class="si">}</span><span class="s2">.csv&quot;</span><span class="p">,</span>
+                <span class="n">uri</span><span class="o">=</span><span class="s2">&quot;https://github.com/fivethirtyeight/uber-tlc-foil-response/raw/&quot;</span>
+                <span class="s2">&quot;63bb878b76f47f69b4527d50af57aac26dead983/&quot;</span>
+                <span class="s2">&quot;uber-trip-data/uber-raw-data-janjune-15.csv.zip&quot;</span><span class="p">,</span>
+                <span class="nb">hash</span><span class="o">=</span><span class="s2">&quot;9ed84ebe0df4bc664748724b633b3fe6&quot;</span>
+                <span class="k">if</span> <span class="n">sample_freq</span> <span class="o">==</span> <span class="s2">&quot;hourly&quot;</span>
+                <span class="k">else</span> <span class="s2">&quot;24f9fd67e4b9e53f0214a90268cd9bee&quot;</span><span class="p">,</span>
+                <span class="n">header_time</span><span class="o">=</span><span class="s2">&quot;Pickup_date&quot;</span><span class="p">,</span>
+                <span class="n">format_time</span><span class="o">=</span><span class="s2">&quot;%Y-%m-</span><span class="si">%d</span><span class="s2"> %H:%M&quot;</span><span class="p">,</span>
+                <span class="n">pre_process_zipped_csv_fn</span><span class="o">=</span><span class="n">pre_proces_fn</span><span class="p">,</span>
+                <span class="n">multivariate</span><span class="o">=</span><span class="n">multivariate</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_to_multi_series</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">series</span><span class="p">:</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">TimeSeries</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        load the Uber TLC dataset as a list of univariate timeseries, one for each locationID.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ts_list</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># list of timeseries</span>
+        <span class="k">for</span> <span class="n">label</span> <span class="ow">in</span> <span class="n">series</span><span class="p">:</span>
+            <span class="n">srs</span> <span class="o">=</span> <span class="n">series</span><span class="p">[</span><span class="n">label</span><span class="p">]</span>
+
+            <span class="c1"># filter column down to the period of recording</span>
+            <span class="n">start_date</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;ffill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">end_date</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">fillna</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;bfill&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">)</span>
+            <span class="n">active_range</span> <span class="o">=</span> <span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="n">start_date</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">srs</span><span class="o">.</span><span class="n">index</span> <span class="o">&lt;=</span> <span class="n">end_date</span><span class="p">)</span>
+            <span class="n">srs</span> <span class="o">=</span> <span class="n">srs</span><span class="p">[</span><span class="n">active_range</span><span class="p">]</span>
+
+            <span class="c1"># convert to timeseries</span>
+            <span class="n">tmp</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">({</span><span class="s2">&quot;locationID&quot;</span><span class="p">:</span> <span class="n">srs</span><span class="p">})</span>
+            <span class="n">tmp</span><span class="p">[</span><span class="s2">&quot;date&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tmp</span><span class="o">.</span><span class="n">index</span>
+            <span class="n">ts</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">tmp</span><span class="p">,</span> <span class="s2">&quot;date&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;locationID&quot;</span><span class="p">])</span>
+            <span class="n">ts_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ts</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">ts_list</span></div>
 </pre></div>
 
               </div>

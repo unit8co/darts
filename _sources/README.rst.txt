@@ -91,7 +91,7 @@ High Level Introductions
 
 
 * `Introductory Blog Post <https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878>`_
-* `Introduction to Darts at PyData Global 2021 <https://youtu.be/g6OXDnXEtFA>`_
+* `Introduction video (25 minutes) <https://youtu.be/g6OXDnXEtFA>`_
 
 Articles on Selected Topics
 """""""""""""""""""""""""""
@@ -101,6 +101,7 @@ Articles on Selected Topics
 * `Using Past and Future Covariates <https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993>`_
 * `Temporal Convolutional Networks and Forecasting <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
 * `Probabilistic Forecasting <https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e>`_
+* `Transfer Learning for Time Series Forecasting <https://medium.com/unit8-machine-learning-publication/transfer-learning-for-time-series-forecasting-87f39e375278>`_
 
 Quick Install
 -------------
@@ -172,27 +173,34 @@ Features
 
 
 * **Forecasting Models:** A large collection of forecasting models; from statistical models (such as
-  ARIMA) to deep learning models (such as N-BEATS). See table of models below.
+  ARIMA) to deep learning models (such as N-BEATS). See `table of models below <#forecasting-models>`_.
+* **Multivariate Support:** ``TimeSeries`` can be multivariate - i.e., contain multiple time-varying
+  dimensions instead of a single scalar value. Many models can consume and produce multivariate series.
+* **Multiple series training:** All machine learning based models (incl. all neural networks) 
+  support being trained on multiple (potentially multivariate) series. This can scale to large datasets.
+* **Probabilistic Support:** ``TimeSeries`` objects can (optionally) represent stochastic
+  time series; this can for instance be used to get confidence intervals, and many models support different flavours of probabilistic forecasting (such as estimating parametric distributions 
+  or quantiles).
+* **Past and Future Covariates support:** Many models in Darts support past-observed and/or future-known 
+  covariate (external data) time series as inputs for producing forecasts.
+* **Static Covariates support:** In addition to time-dependent data, ``TimeSeries`` can also contain
+  static data for each dimension, which can be exploited by some models.
+* **Hierarchical Reconciliation:** Darts offers transformers to perform reconciliation.
+  These can make the forecasts add up in a way that respects the underlying hierarchy.
+* **Regression Models:** It is possible to plug-in any scikit-learn compatible model
+  to obtain forecasts as functions of lagged values of the target series and covariates.
 * **Data processing:** Tools to easily apply (and revert) common transformations on
-  time series data (scaling, boxcox, ...)
+  time series data (scaling, filling missing values, boxcox, ...)
 * **Metrics:** A variety of metrics for evaluating time series' goodness of fit;
   from R2-scores to Mean Absolute Scaled Error.
 * **Backtesting:** Utilities for simulating historical forecasts, using moving time windows.
-* **Regression Models:** Possibility to predict a time series from lagged versions of itself
-  and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).
-* **Multiple series training:** All machine learning based models (incl.\ all neural networks) 
-  support being trained on multiple series.
-* **Past and Future Covariates support:** Some models support past-observed and/or future-known covariate time series
-  as inputs for producing forecasts.
-* **Multivariate Support:** Tools to create, manipulate and forecast multivariate time series.
-* **Probabilistic Support:** ``TimeSeries`` objects can (optionally) represent stochastic
-  time series; this can for instance be used to get confidence intervals, and several models
-  support different flavours of probabilistic forecasting.
 * **PyTorch Lightning Support:** All deep learning models are implemented using PyTorch Lightning,
   supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.
 * **Filtering Models:** Darts offers three filtering models: ``KalmanFilter``\ , ``GaussianProcessFilter``\ ,
   and ``MovingAverage``\ , which allow to filter time series, and in some cases obtain probabilistic
   inferences of the underlying states/values.
+* **Datasets** The ``darts.datasets`` submodule contains some popular time series datasets for rapid
+  experimentation.
 
 Forecasting Models
 ------------------
@@ -209,7 +217,8 @@ on bringing more models and features.
      - Probabilistic
      - Multiple-series training
      - Past-observed covariates support
-     - Future-known covariates support
+     - Future-known covariates
+     - Static covariates support
      - Reference
    * - ``ARIMA``
      - ✅
@@ -219,6 +228,7 @@ on bringing more models and features.
      - 
      - ✅
      - 
+     - 
    * - ``VARIMA``
      - ✅
      - ✅
@@ -226,6 +236,7 @@ on bringing more models and features.
      - 
      - 
      - ✅
+     - 
      - 
    * - ``AutoARIMA``
      - ✅
@@ -235,6 +246,7 @@ on bringing more models and features.
      - 
      - ✅
      - 
+     - 
    * - ``StatsForecastAutoARIMA`` (faster AutoARIMA)
      - ✅
      - 
@@ -242,11 +254,13 @@ on bringing more models and features.
      - 
      - 
      - ✅
+     - 
      - `statsforecast <https://github.com/Nixtla/statsforecast>`_
    * - ``ExponentialSmoothing``
      - ✅
      - 
      - ✅
+     - 
      - 
      - 
      - 
@@ -258,6 +272,7 @@ on bringing more models and features.
      - 
      - 
      - 
+     - 
      - `TBATS paper <https://robjhyndman.com/papers/ComplexSeasonality.pdf>`_
    * - ``Theta`` and ``FourTheta``
      - ✅
@@ -266,17 +281,20 @@ on bringing more models and features.
      - 
      - 
      - 
+     - 
      - `Theta <https://robjhyndman.com/papers/Theta.pdf>`_ & `4 Theta <https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R>`_
-   * - ``Prophet``
+   * - ``Prophet`` (see `install notes <https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet>`_\ )
      - ✅
      - 
      - ✅
      - 
      - 
      - ✅
+     - 
      - `Prophet repo <https://github.com/facebook/prophet>`_
    * - ``FFT`` (Fast Fourier Transform)
      - ✅
+     - 
      - 
      - 
      - 
@@ -290,9 +308,11 @@ on bringing more models and features.
      - 
      - 
      - ✅
+     - 
      - `N4SID paper <https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf>`_
    * - ``Croston`` method
      - ✅
+     - 
      - 
      - 
      - 
@@ -307,6 +327,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - 
+     - 
    * - ``RandomForest``
      - ✅
      - ✅
@@ -314,6 +335,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - ✅
+     - 
      - 
    * - ``LinearRegressionModel``
      - ✅
@@ -323,6 +345,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - 
+     - 
    * - ``LightGBMModel``
      - ✅
      - ✅
@@ -331,6 +354,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - 
+     - 
    * - ``RNNModel`` (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version
      - ✅
      - ✅
@@ -338,6 +362,7 @@ on bringing more models and features.
      - ✅
      - 
      - ✅
+     - 
      - `DeepAR paper <https://arxiv.org/abs/1704.04110>`_
    * - ``BlockRNNModel`` (incl. LSTM and GRU)
      - ✅
@@ -347,6 +372,7 @@ on bringing more models and features.
      - ✅
      - 
      - 
+     - 
    * - ``NBEATSModel``
      - ✅
      - ✅
@@ -354,13 +380,15 @@ on bringing more models and features.
      - ✅
      - ✅
      - 
+     - 
      - `N-BEATS paper <https://arxiv.org/abs/1905.10437>`_
-   * - ``NHiTS``
+   * - ``NHiTSModel``
      - ✅
      - ✅
      - ✅
      - ✅
      - ✅
+     - 
      - 
      - `N-HiTS paper <https://arxiv.org/abs/2201.12886>`_
    * - ``TCNModel``
@@ -369,6 +397,7 @@ on bringing more models and features.
      - ✅
      - ✅
      - ✅
+     - 
      - 
      - `TCN paper <https://arxiv.org/abs/1803.01271>`_\ , `DeepTCN paper <https://arxiv.org/abs/1906.04397>`_\ , `blog post <https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4>`_
    * - ``TransformerModel``
@@ -379,7 +408,9 @@ on bringing more models and features.
      - ✅
      - 
      - 
+     - 
    * - ``TFTModel`` (Temporal Fusion Transformer)
+     - ✅
      - ✅
      - ✅
      - ✅
@@ -389,6 +420,7 @@ on bringing more models and features.
      - `TFT paper <https://arxiv.org/pdf/1912.09363.pdf>`_\ , `PyTorch Forecasting <https://pytorch-forecasting.readthedocs.io/en/latest/models.html>`_
    * - Naive Baselines
      - ✅
+     - 
      - 
      - 
      - 
@@ -423,19 +455,21 @@ Before working on a contribution (a new feature or a fix),
 Citation
 --------
 
-If you are using Darts in your scientific work, we would appreciate citations to the following paper.
+If you are using Darts in your scientific work, we would appreciate citations to the following JMLR paper.
 
-`Darts: User-Friendly Modern Machine Learning for Time Series <https://arxiv.org/abs/2110.03224>`_
+`Darts: User-Friendly Modern Machine Learning for Time Series <https://www.jmlr.org/papers/v23/21-1177.html>`_
 
 Bibtex entry:
 
 .. code-block::
 
-   @misc{herzen2021darts,
-         title={Darts: User-Friendly Modern Machine Learning for Time Series},
-         author={Julien Herzen and Francesco Lässig and Samuele Giuliano Piazzetta and Thomas Neuer and Léo Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan Kościsz and Dennis Bader and Frédérick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and Gaël Grosch},
-         year={2021},
-         eprint={2110.03224},
-         archivePrefix={arXiv},
-         primaryClass={cs.LG}
+   @article{JMLR:v23:21-1177,
+     author  = {Julien Herzen and Francesco LÃ¤ssig and Samuele Giuliano Piazzetta and Thomas Neuer and LÃ©o Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan KoÅ›cisz and Dennis Bader and FrÃ©dÃ©rick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and GaÃ«l Grosch},
+     title   = {Darts: User-Friendly Modern Machine Learning for Time Series},
+     journal = {Journal of Machine Learning Research},
+     year    = {2022},
+     volume  = {23},
+     number  = {124},
+     pages   = {1-6},
+     url     = {http://jmlr.org/papers/v23/21-1177.html}
    }

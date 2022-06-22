@@ -6,6 +6,7 @@
     .. toctree::
         :maxdepth: 1
         
+        darts.models.components
         darts.models.filtering
         darts.models.forecasting
         

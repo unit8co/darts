@@ -193,7 +193,8 @@
         <span class="n">lookback</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
     <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, future_target) arrays,</span>
+<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)</span>
+<span class="sd">        arrays,</span>
 <span class="sd">        in a way inspired by the N-BEATS way of training on the M4 dataset: https://arxiv.org/abs/1905.10437.</span>
 
 <span class="sd">        The &quot;past&quot; series have length `lookback * output_chunk_length`, and the &quot;future&quot; series has length</span>
@@ -272,31 +273,33 @@
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">:</span> <span class="nb">int</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="c1"># determine the index of the time series.</span>
-        <span class="n">ts_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span>
-        <span class="n">ts_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span>
-        <span class="n">target_vals</span> <span class="o">=</span> <span class="n">ts_target</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">target_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">//</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span>
+        <span class="n">target_series</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">target_series</span><span class="p">[</span><span class="n">target_idx</span><span class="p">]</span>
+        <span class="n">target_vals</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
         <span class="n">raise_if_not</span><span class="p">(</span>
             <span class="nb">len</span><span class="p">(</span><span class="n">target_vals</span><span class="p">)</span>
             <span class="o">&gt;=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lookback</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_lh</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="s2">&quot;The dataset contains some input/target series that are shorter than &quot;</span>
-            <span class="s2">&quot;`(lookback + max_lh) * H` (</span><span class="si">{}</span><span class="s2">-th series)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">ts_idx</span><span class="p">),</span>
+            <span class="s2">&quot;`(lookback + max_lh) * H` (</span><span class="si">{}</span><span class="s2">-th series)&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">target_idx</span><span class="p">),</span>
         <span class="p">)</span>
 
         <span class="c1"># determine the index lh_idx of the forecasting point (the last point of the input series, before the target)</span>
         <span class="c1"># lh_idx should be in [0, self.nr_samples_per_ts)</span>
-        <span class="n">lh_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">-</span> <span class="p">(</span><span class="n">ts_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span><span class="p">)</span>
+        <span class="n">lh_idx</span> <span class="o">=</span> <span class="n">idx</span> <span class="o">-</span> <span class="p">(</span><span class="n">target_idx</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">nr_samples_per_ts</span><span class="p">)</span>
 
         <span class="c1"># determine the index at the end of the output chunk</span>
-        <span class="n">end_of_output_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_target</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span>
+        <span class="n">end_of_output_idx</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">target_series</span><span class="p">)</span> <span class="o">-</span> <span class="p">(</span>
             <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">min_lh</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span> <span class="o">+</span> <span class="n">lh_idx</span>
         <span class="p">)</span>
 
         <span class="c1"># optionally, load covariates</span>
-        <span class="n">ts_covariate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">ts_idx</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
-        <span class="n">main_cov_type</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="n">covariate_series</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span><span class="p">[</span><span class="n">target_idx</span><span class="p">]</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">main_covariate_type</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">CovariateType</span><span class="o">.</span><span class="n">NONE</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="k">else</span> <span class="n">CovariateType</span><span class="o">.</span><span class="n">PAST</span>
         <span class="p">)</span>
 
@@ -312,14 +315,14 @@
             <span class="n">cov_start</span><span class="p">,</span>
             <span class="n">cov_end</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_memory_indexer</span><span class="p">(</span>
-            <span class="n">ts_idx</span><span class="o">=</span><span class="n">ts_idx</span><span class="p">,</span>
-            <span class="n">ts_target</span><span class="o">=</span><span class="n">ts_target</span><span class="p">,</span>
+            <span class="n">target_idx</span><span class="o">=</span><span class="n">target_idx</span><span class="p">,</span>
+            <span class="n">target_series</span><span class="o">=</span><span class="n">target_series</span><span class="p">,</span>
             <span class="n">shift</span><span class="o">=</span><span class="n">shift</span><span class="p">,</span>
             <span class="n">input_chunk_length</span><span class="o">=</span><span class="n">input_chunk_length</span><span class="p">,</span>
             <span class="n">output_chunk_length</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_chunk_length</span><span class="p">,</span>
             <span class="n">end_of_output_idx</span><span class="o">=</span><span class="n">end_of_output_idx</span><span class="p">,</span>
-            <span class="n">ts_covariate</span><span class="o">=</span><span class="n">ts_covariate</span><span class="p">,</span>
-            <span class="n">cov_type</span><span class="o">=</span><span class="n">main_cov_type</span><span class="p">,</span>
+            <span class="n">covariate_series</span><span class="o">=</span><span class="n">covariate_series</span><span class="p">,</span>
+            <span class="n">covariate_type</span><span class="o">=</span><span class="n">main_covariate_type</span><span class="p">,</span>
         <span class="p">)</span>
 
         <span class="c1"># extract sample target</span>
@@ -330,12 +333,12 @@
         <span class="n">covariate</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">raise_if_not</span><span class="p">(</span>
-                <span class="n">cov_end</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">ts_covariate</span><span class="p">),</span>
+                <span class="n">cov_end</span> <span class="o">&lt;=</span> <span class="nb">len</span><span class="p">(</span><span class="n">covariate_series</span><span class="p">),</span>
                 <span class="sa">f</span><span class="s2">&quot;The dataset contains &#39;past&#39; covariates that don&#39;t extend far enough into the future. &quot;</span>
                 <span class="sa">f</span><span class="s2">&quot;(</span><span class="si">{</span><span class="n">idx</span><span class="si">}</span><span class="s2">-th sample)&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-            <span class="n">covariate</span> <span class="o">=</span> <span class="n">ts_covariate</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span>
+            <span class="n">covariate</span> <span class="o">=</span> <span class="n">covariate_series</span><span class="o">.</span><span class="n">random_component_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span>
                 <span class="n">cov_start</span><span class="p">:</span><span class="n">cov_end</span>
             <span class="p">]</span>
 
@@ -345,7 +348,8 @@
                 <span class="s2">&quot;input (or output) chunk relative to the target series.&quot;</span><span class="p">,</span>
             <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
+        <span class="n">static_covariate</span> <span class="o">=</span> <span class="n">target_series</span><span class="o">.</span><span class="n">static_covariates_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
 </pre></div>
 
               </div>

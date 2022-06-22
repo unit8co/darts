@@ -308,6 +308,18 @@
      possible sub-series for training
     </a>
    </li>
+  </ul>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#early-stop">
+   Early Stop
+  </a>
+  <ul class="nav section-nav flex-column">
+   <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#hyperparameter-tuning-with-ray-tune">
+     Hyperparameter Tuning with Ray Tune
+    </a>
+   </li>
    <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#example-benchmark">
      Example Benchmark
@@ -402,120 +414,8 @@ an in-depth guide of how input data is used when training and predicting with TF
 <section id="torch-forecasting-model-covariates-support">
 <h2>Torch Forecasting Model Covariates Support<a class="headerlink" href="#torch-forecasting-model-covariates-support" title="Permalink to this headline">¶</a></h2>
 <p>Under the hood, Darts has 5 types of <code class="docutils literal notranslate"><span class="pre">{X}CovariatesModel</span></code> classes implemented to cover different combinations of the covariate types mentioned before:</p>
-<table class="table">
-<colgroup>
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>Class</p></th>
-<th class="head"><p>past covariates</p></th>
-<th class="head"><p>future past covariates</p></th>
-<th class="head"><p>future covariates</p></th>
-<th class="head"><p>historic future covariates</p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">PastCovariatesModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">FutureCovariatesModel</span></code></p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">DualCovariatesModel</span></code></p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">MixedCovariatesModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">SplitCovariatesModel</span></code></p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-</tbody>
-</table>
 <p><strong>Table 1: Darts’ “{X}CovariatesModels” covariate support</strong></p>
 <p>Each Torch Forecasting Model inherits from one <code class="docutils literal notranslate"><span class="pre">{X}CovariatesModel</span></code> (covariate class names are abbreviated by the <code class="docutils literal notranslate"><span class="pre">X</span></code>-part):</p>
-<table class="table">
-<colgroup>
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-<col style="width: 17%" />
-</colgroup>
-<thead>
-<tr class="row-odd"><th class="head"><p>TFM</p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Past</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Future</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Dual</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Mixed</span></code></p></th>
-<th class="head"><p><code class="docutils literal notranslate"><span class="pre">Split</span></code></p></th>
-</tr>
-</thead>
-<tbody>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code></p></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TCNModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">TransformerModel</span></code></p></td>
-<td><p>✅</p></td>
-<td></td>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code></p></td>
-<td></td>
-<td></td>
-<td></td>
-<td><p>✅</p></td>
-<td></td>
-</tr>
-</tbody>
-</table>
 <p><strong>Table 2: Darts’ Torch Forecasting Model covariate support</strong></p>
 </section>
 <section id="required-target-time-spans-for-training-validation-and-prediction">
@@ -709,6 +609,160 @@ per <code class="docutils literal notranslate"><span class="pre">TimeSeries</spa
 how to slice your <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> for training yourself. We suggest to have a look at <a class="reference external" href="https://github.com/unit8co/darts/tree/master/darts/utils/data">this submodule</a>
 to see examples of how to do it.</p></li>
 </ul>
+</section>
+</section>
+<hr class="docutils" />
+<section id="early-stop">
+<h2>Early Stop<a class="headerlink" href="#early-stop" title="Permalink to this headline">¶</a></h2>
+<p>Early stopping can be an efficient way to cut down on the training time.  Using early stopping trains the model for fewer epochs by stopping the training when the validation loss does not improve for a set number of <code class="docutils literal notranslate"><span class="pre">nr_epochs_val_period</span></code>.</p>
+<p>Early stopping can be easily implemented on all Darts neural networks based models, by leveraging PyTorch Lightning’s <code class="docutils literal notranslate"><span class="pre">EarlyStopping</span></code> callback, as shown in the example code below.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
+<span class="kn">from</span> <span class="nn">torchmetrics</span> <span class="kn">import</span> <span class="n">MeanAbsolutePercentageError</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+
+<span class="c1"># Read data:</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+<span class="c1"># Create training and validation sets:</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">1957</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># Normalize the time series (note: we avoid fitting the transformer on the validation set)</span>
+<span class="n">transformer</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">transformer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+<span class="c1"># A TorchMetric or val_loss can be used as the monitor</span>
+<span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">MeanAbsolutePercentageError</span><span class="p">()</span>
+
+<span class="c1"># Early stop callback</span>
+<span class="n">my_stopper</span> <span class="o">=</span> <span class="n">EarlyStopping</span><span class="p">(</span>
+    <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_MeanAbsolutePercentageError&quot;</span><span class="p">,</span>  <span class="c1"># &quot;val_loss&quot;,</span>
+    <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">min_delta</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="n">pl_trainer_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">my_stopper</span><span class="p">]}</span>
+
+<span class="c1"># Create the model</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+    <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+    <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+    <span class="n">n_epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+    <span class="n">torch_metrics</span><span class="o">=</span><span class="n">torch_metrics</span><span class="p">,</span>
+    <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="n">pl_trainer_kwargs</span><span class="p">)</span>
+
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+    <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+    <span class="n">val_series</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<hr class="docutils" />
+<section id="hyperparameter-tuning-with-ray-tune">
+<h3>Hyperparameter Tuning with Ray Tune<a class="headerlink" href="#hyperparameter-tuning-with-ray-tune" title="Permalink to this headline">¶</a></h3>
+<p>Hyperparameter tuning is a great way to find the best parameters for your model. <a class="reference external" href="https://docs.ray.io/en/latest/tune/examples/tune-pytorch-lightning.html">Ray Tune</a> provides a convenient way to speed this process up with automatic pruning.</p>
+<p>Here is an example of how to use Ray Tune to with the <code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code> model using the <a class="reference external" href="https://blog.ml.cmu.edu/2018/12/12/massively-parallel-hyperparameter-optimization/">Asynchronous Hyperband scheduler</a>.</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">NBEATSModel</span>
+<span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span> <span class="nn">pytorch_lightning.callbacks</span> <span class="kn">import</span> <span class="n">EarlyStopping</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">torchmetrics</span> <span class="kn">import</span> <span class="n">MetricCollection</span><span class="p">,</span> <span class="n">MeanAbsolutePercentageError</span><span class="p">,</span> <span class="n">MeanAbsoluteError</span>
+<span class="kn">from</span> <span class="nn">ray</span> <span class="kn">import</span> <span class="n">tune</span>
+<span class="kn">from</span> <span class="nn">ray.tune</span> <span class="kn">import</span> <span class="n">CLIReporter</span>
+<span class="kn">from</span> <span class="nn">ray.tune.integration.pytorch_lightning</span> <span class="kn">import</span> <span class="n">TuneReportCallback</span>
+<span class="kn">from</span> <span class="nn">ray.tune.schedulers</span> <span class="kn">import</span> <span class="n">ASHAScheduler</span>
+
+<span class="k">def</span> <span class="nf">train_model</span><span class="p">(</span><span class="n">model_args</span><span class="p">,</span> <span class="n">callbacks</span><span class="p">,</span> <span class="n">train</span><span class="p">,</span> <span class="n">val</span><span class="p">):</span>
+    <span class="n">torch_metrics</span> <span class="o">=</span> <span class="n">MetricCollection</span><span class="p">([</span><span class="n">MeanAbsolutePercentageError</span><span class="p">(),</span> <span class="n">MeanAbsoluteError</span><span class="p">()])</span>
+    <span class="c1"># Create the model using model_args from Ray Tune</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span>
+        <span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span>
+        <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+        <span class="n">n_epochs</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+        <span class="n">torch_metrics</span><span class="o">=</span><span class="n">torch_metrics</span><span class="p">,</span>
+        <span class="n">pl_trainer_kwargs</span><span class="o">=</span><span class="p">{</span><span class="s2">&quot;callbacks&quot;</span><span class="p">:</span> <span class="n">callbacks</span><span class="p">,</span> <span class="s2">&quot;enable_progress_bar&quot;</span><span class="p">:</span> <span class="kc">False</span><span class="p">},</span>
+        <span class="o">**</span><span class="n">model_args</span><span class="p">)</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
+        <span class="n">val_series</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+    <span class="p">)</span>
+
+<span class="c1"># Read data:</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+
+<span class="c1"># Create training and validation sets:</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="o">.</span><span class="n">split_after</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">Timestamp</span><span class="p">(</span><span class="n">year</span><span class="o">=</span><span class="mi">1957</span><span class="p">,</span> <span class="n">month</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">day</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+<span class="c1"># Normalize the time series (note: we avoid fitting the transformer on the validation set)</span>
+<span class="n">transformer</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">transformer</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">transformer</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+
+<span class="c1"># Early stop callback</span>
+<span class="n">my_stopper</span> <span class="o">=</span> <span class="n">EarlyStopping</span><span class="p">(</span>
+    <span class="n">monitor</span><span class="o">=</span><span class="s2">&quot;val_MeanAbsolutePercentageError&quot;</span><span class="p">,</span>
+    <span class="n">patience</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">min_delta</span><span class="o">=</span><span class="mf">0.05</span><span class="p">,</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s1">&#39;min&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># set up ray tune callback</span>
+<span class="n">tune_callback</span> <span class="o">=</span> <span class="n">TuneReportCallback</span><span class="p">(</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;loss&quot;</span><span class="p">:</span> <span class="s2">&quot;val_Loss&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;MAPE&quot;</span><span class="p">:</span> <span class="s2">&quot;val_MeanAbsolutePercentageError&quot;</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="n">on</span><span class="o">=</span><span class="s2">&quot;validation_end&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="c1"># define the hyperparameter space</span>
+<span class="n">config</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;batch_size&quot;</span><span class="p">:</span> <span class="n">tune</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="mi">16</span><span class="p">,</span> <span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]),</span>
+    <span class="s2">&quot;num_blocks&quot;</span><span class="p">:</span> <span class="n">tune</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]),</span>
+    <span class="s2">&quot;num_stacks&quot;</span><span class="p">:</span> <span class="n">tune</span><span class="o">.</span><span class="n">choice</span><span class="p">([</span><span class="mi">32</span><span class="p">,</span> <span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">]),</span>
+    <span class="s2">&quot;dropout&quot;</span><span class="p">:</span> <span class="n">tune</span><span class="o">.</span><span class="n">uniform</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">),</span>
+<span class="p">}</span>
+
+<span class="n">reporter</span> <span class="o">=</span> <span class="n">CLIReporter</span><span class="p">(</span>
+    <span class="n">parameter_columns</span><span class="o">=</span><span class="nb">list</span><span class="p">(</span><span class="n">config</span><span class="o">.</span><span class="n">keys</span><span class="p">()),</span>
+    <span class="n">metric_columns</span><span class="o">=</span><span class="p">[</span><span class="s2">&quot;loss&quot;</span><span class="p">,</span> <span class="s2">&quot;MAPE&quot;</span><span class="p">,</span> <span class="s2">&quot;training_iteration&quot;</span><span class="p">],</span>
+<span class="p">)</span>
+
+<span class="n">resources_per_trial</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="mi">8</span><span class="p">,</span> <span class="s2">&quot;gpu&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">}</span>
+
+<span class="c1"># the number of combinations to try</span>
+<span class="n">num_samples</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="n">scheduler</span> <span class="o">=</span> <span class="n">ASHAScheduler</span><span class="p">(</span><span class="n">max_t</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span> <span class="n">grace_period</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span> <span class="n">reduction_factor</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<span class="n">train_fn_with_parameters</span> <span class="o">=</span> <span class="n">tune</span><span class="o">.</span><span class="n">with_parameters</span><span class="p">(</span>
+    <span class="n">train_model</span><span class="p">,</span> <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">my_stopper</span><span class="p">,</span> <span class="n">tune_callback</span><span class="p">],</span> <span class="n">train</span><span class="o">=</span><span class="n">train</span><span class="p">,</span> <span class="n">val</span><span class="o">=</span><span class="n">val</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="n">analysis</span> <span class="o">=</span> <span class="n">tune</span><span class="o">.</span><span class="n">run</span><span class="p">(</span>
+    <span class="n">train_fn_with_parameters</span><span class="p">,</span>
+    <span class="n">resources_per_trial</span><span class="o">=</span><span class="n">resources_per_trial</span><span class="p">,</span>
+    <span class="c1"># Using a metric instead of loss allows for</span>
+    <span class="c1"># comparison between different likelihood or loss functions.</span>
+    <span class="n">metric</span><span class="o">=</span><span class="s2">&quot;MAPE&quot;</span><span class="p">,</span>  <span class="c1"># any value in TuneReportCallback.</span>
+    <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;min&quot;</span><span class="p">,</span>
+    <span class="n">config</span><span class="o">=</span><span class="n">config</span><span class="p">,</span>
+    <span class="n">num_samples</span><span class="o">=</span><span class="n">num_samples</span><span class="p">,</span>
+    <span class="n">scheduler</span><span class="o">=</span><span class="n">scheduler</span><span class="p">,</span>
+    <span class="n">progress_reporter</span><span class="o">=</span><span class="n">reporter</span><span class="p">,</span>
+    <span class="n">name</span><span class="o">=</span><span class="s2">&quot;tune_darts&quot;</span><span class="p">,</span>
+<span class="p">)</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Best hyperparameters found were: &quot;</span><span class="p">,</span> <span class="n">analysis</span><span class="o">.</span><span class="n">best_config</span><span class="p">)</span>
+</pre></div>
+</div>
 </section>
 <hr class="docutils" />
 <section id="example-benchmark">

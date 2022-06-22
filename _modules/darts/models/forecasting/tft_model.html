@@ -179,6 +179,8 @@
 
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
 <span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.models.components</span> <span class="kn">import</span> <span class="n">glu_variants</span>
+<span class="kn">from</span> <span class="nn">darts.models.components.glu_variants</span> <span class="kn">import</span> <span class="n">GLU_FFN</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLMixedCovariatesModule</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.tft_submodels</span> <span class="kn">import</span> <span class="p">(</span>
     <span class="n">_GateAddNorm</span><span class="p">,</span>
@@ -198,7 +200,7 @@
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
 
 <span class="n">MixedCovariatesTrainTensorType</span> <span class="o">=</span> <span class="n">Tuple</span><span class="p">[</span>
-    <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span>
 <span class="p">]</span>
 
 
@@ -207,10 +209,12 @@
         <span class="bp">self</span><span class="p">,</span>
         <span class="n">output_dim</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span>
         <span class="n">variables_meta</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]],</span>
+        <span class="n">num_static_components</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
         <span class="n">hidden_size</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]]</span> <span class="o">=</span> <span class="mi">16</span><span class="p">,</span>
         <span class="n">lstm_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
         <span class="n">full_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">feed_forward</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;GatedResidualNetwork&quot;</span><span class="p">,</span>
         <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
         <span class="n">add_relative_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -226,7 +230,10 @@
 <span class="sd">        output_dim : Tuple[int, int]</span>
 <span class="sd">            shape of output given by (n_targets, loss_size). (loss_size corresponds to nr_params in other models).</span>
 <span class="sd">        variables_meta : Dict[str, Dict[str, List[str]]]</span>
-<span class="sd">            dict containing variable enocder, decoder variable names for mapping tensors in `_TFTModule.forward()`</span>
+<span class="sd">            dict containing variable encoder, decoder variable names for mapping tensors in `_TFTModule.forward()`</span>
+<span class="sd">        num_static_components</span>
+<span class="sd">            the number of static components (not variables) of the input target series. This is either equal to the</span>
+<span class="sd">            number of target components or 1.</span>
 <span class="sd">        hidden_size : int</span>
 <span class="sd">            hidden state size of the TFT. It is the main hyper-parameter and common across the internal TFT</span>
 <span class="sd">            architecture.</span>
@@ -237,17 +244,20 @@
 <span class="sd">        full_attention : bool</span>
 <span class="sd">            If `True`, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,</span>
 <span class="sd">            only queries on future part. Defaults to `False`.</span>
+<span class="sd">        feed_forward</span>
+<span class="sd">            Set the feedforward network block. default `GatedResidualNetwork` or one of the  glu variant.</span>
+<span class="sd">            Defaults to `GatedResidualNetwork`.</span>
 <span class="sd">        hidden_continuous_size : int</span>
-<span class="sd">            default for hidden size for processing continuous variables</span>
+<span class="sd">            default for hidden size for processing continuous variables&#39;</span>
 <span class="sd">        dropout : float</span>
-<span class="sd">            Fraction of neurons afected by Dropout.</span>
+<span class="sd">            Fraction of neurons affected by Dropout.</span>
 <span class="sd">        add_relative_index : bool</span>
 <span class="sd">            Whether to add positional values to future covariates. Defaults to `False`.</span>
 <span class="sd">            This allows to use the TFTModel without having to pass future_covariates to `fit()` and `train()`.</span>
 <span class="sd">            It gives a value to the position of each step from input and output chunk relative to the prediction</span>
 <span class="sd">            point. The values are normalized with `input_chunk_length`.</span>
 <span class="sd">        likelihood</span>
-<span class="sd">            The likelihood model to be used for probabilistic forecasts. By default the TFT uses</span>
+<span class="sd">            The likelihood model to be used for probabilistic forecasts. By default, the TFT uses</span>
 <span class="sd">            a ``QuantileRegression`` likelihood.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.</span>
@@ -257,11 +267,13 @@
 
         <span class="bp">self</span><span class="o">.</span><span class="n">n_targets</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">loss_size</span> <span class="o">=</span> <span class="n">output_dim</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">variables_meta</span> <span class="o">=</span> <span class="n">variables_meta</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">num_static_components</span> <span class="o">=</span> <span class="n">num_static_components</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">=</span> <span class="n">hidden_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="o">=</span> <span class="n">hidden_continuous_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span> <span class="o">=</span> <span class="n">lstm_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">=</span> <span class="n">num_attention_heads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="o">=</span> <span class="n">full_attention</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span> <span class="o">=</span> <span class="n">feed_forward</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span> <span class="o">=</span> <span class="n">add_relative_index</span>
 
@@ -280,7 +292,11 @@
         <span class="c1"># # processing inputs</span>
         <span class="c1"># continuous variable processing</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">prescalers_linear</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="n">name</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reals</span>
+            <span class="n">name</span><span class="p">:</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span>
+                <span class="mi">1</span> <span class="k">if</span> <span class="n">name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span> <span class="k">else</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_static_components</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">reals</span>
         <span class="p">}</span>
 
         <span class="n">static_input_sizes</span> <span class="o">=</span> <span class="p">{</span>
@@ -395,9 +411,24 @@
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">post_attn_gan</span> <span class="o">=</span> <span class="n">_GateAddNorm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">positionwise_feedforward_grn</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span>
-        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span> <span class="o">==</span> <span class="s2">&quot;GatedResidualNetwork&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward_block</span> <span class="o">=</span> <span class="n">_GatedResidualNetwork</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
+                <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">raise_if_not</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span> <span class="ow">in</span> <span class="n">GLU_FFN</span><span class="p">,</span>
+                <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span><span class="si">}</span><span class="s2">&#39; is not in </span><span class="si">{</span><span class="n">GLU_FFN</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;GatedResidualNetwork&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="c1"># use glu variant feedforward layers</span>
+            <span class="c1"># 4 is a commonly used feedforward multiplier</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward_block</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">glu_variants</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span><span class="p">)(</span>
+                <span class="n">d_model</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">d_ff</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span>
+            <span class="p">)</span>
 
         <span class="c1"># output processing -&gt; no dropout at this late stage</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pre_output_gan</span> <span class="o">=</span> <span class="n">_GateAddNorm</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
@@ -498,13 +529,15 @@
         <span class="p">)</span>
         <span class="k">return</span> <span class="n">mask</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;TFT model forward pass.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        x</span>
-<span class="sd">            comes as tuple `(x_past, x_future)` where `x_past` is the input/past chunk and `x_future`</span>
+<span class="sd">        x_in</span>
+<span class="sd">            comes as tuple `(x_past, x_future, x_static)` where `x_past` is the input/past chunk and `x_future`</span>
 <span class="sd">            is the output/future chunk. Input dimensions are `(n_samples, n_time_steps, n_variables)`</span>
 
 <span class="sd">        Returns</span>
@@ -512,11 +545,8 @@
 <span class="sd">        torch.Tensor</span>
 <span class="sd">            the output tensor</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">x_cont_past</span><span class="p">,</span> <span class="n">x_cont_future</span> <span class="o">=</span> <span class="n">x</span>
+        <span class="n">x_cont_past</span><span class="p">,</span> <span class="n">x_cont_future</span><span class="p">,</span> <span class="n">x_static</span> <span class="o">=</span> <span class="n">x_in</span>
         <span class="n">dim_samples</span><span class="p">,</span> <span class="n">dim_time</span><span class="p">,</span> <span class="n">dim_variable</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span>
-
-        <span class="c1"># TODO: impelement static covariates</span>
-        <span class="n">static_covariates</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x_cont_past</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="n">dim_samples</span><span class="p">]</span>
         <span class="n">encoder_length</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
@@ -578,26 +608,19 @@
         <span class="p">}</span>
 
         <span class="c1"># Embedding and variable selection</span>
-        <span class="k">if</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="c1"># TODO: impelement static covariates</span>
-            <span class="c1"># # static embeddings will be constant over entire batch</span>
-            <span class="c1"># static_embedding = {name: input_vectors[name][:, 0] for name in self.static_variables}</span>
-            <span class="c1"># static_embedding, static_covariate_var = self.static_covariates_vsn(static_embedding)</span>
-            <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span><span class="s2">&quot;Static covariates have yet to be defined&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">:</span>
+            <span class="n">static_embedding</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="n">name</span><span class="p">:</span> <span class="n">x_static</span><span class="p">[:,</span> <span class="p">:,</span> <span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">name</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">static_variables</span><span class="p">)</span>
+            <span class="p">}</span>
+            <span class="n">static_embedding</span><span class="p">,</span> <span class="n">static_covariate_var</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">static_covariates_vsn</span><span class="p">(</span>
+                <span class="n">static_embedding</span>
+            <span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">static_embedding</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span>
                 <span class="p">(</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">),</span>
                 <span class="n">dtype</span><span class="o">=</span><span class="n">x_cont_past</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
                 <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
             <span class="p">)</span>
-
-            <span class="c1"># # TODO: implement below when static covariates are supported</span>
-            <span class="c1"># # this is only to interpret the output</span>
-            <span class="c1"># static_covariate_var = torch.zeros(</span>
-            <span class="c1">#     (x_cont_past.shape[0], 0),</span>
-            <span class="c1">#     dtype=x_cont_past.dtype,</span>
-            <span class="c1">#     device=x_cont_past.device,</span>
-            <span class="c1"># )</span>
 
         <span class="n">static_context_expanded</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">expand_static_context</span><span class="p">(</span>
             <span class="n">context</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">static_context_grn</span><span class="p">(</span><span class="n">static_embedding</span><span class="p">),</span> <span class="n">time_steps</span><span class="o">=</span><span class="n">time_steps</span>
@@ -673,8 +696,8 @@
             <span class="n">skip</span><span class="o">=</span><span class="n">attn_input</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="k">else</span> <span class="n">attn_input</span><span class="p">[:,</span> <span class="n">encoder_length</span><span class="p">:],</span>
         <span class="p">)</span>
 
-        <span class="c1"># position-wise feed-forward</span>
-        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">positionwise_feedforward_grn</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">attn_out</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># feed-forward</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward_block</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">attn_out</span><span class="p">)</span>
 
         <span class="c1"># skip connection over temporal fusion decoder from LSTM post _GateAddNorm</span>
         <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pre_output_gan</span><span class="p">(</span>
@@ -711,6 +734,7 @@
         <span class="n">lstm_layers</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
         <span class="n">num_attention_heads</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span><span class="p">,</span>
         <span class="n">full_attention</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">feed_forward</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;GatedResidualNetwork&quot;</span><span class="p">,</span>
         <span class="n">dropout</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
         <span class="n">hidden_continuous_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">8</span><span class="p">,</span>
         <span class="n">add_relative_index</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
@@ -752,8 +776,17 @@
 <span class="sd">        full_attention : bool</span>
 <span class="sd">            If ``True``, applies multi-head attention query on past (encoder) and future (decoder) parts. Otherwise,</span>
 <span class="sd">            only queries on future part. Defaults to ``False``.</span>
+<span class="sd">        feed_forward: str</span>
+<span class="sd">            A feedforward network is a fully-connected layer with an activation. TFT Can be one of the glu variant&#39;s</span>
+<span class="sd">            FeedForward Network (FFN)[2]. The glu variant&#39;s FeedForward Network are a series of FFNs designed to work</span>
+<span class="sd">            better with Transformer based models. Defaults to ``&quot;GatedResidualNetwork&quot;``.</span>
+<span class="sd">                [&quot;GLU&quot;, &quot;Bilinear&quot;, &quot;ReGLU&quot;, &quot;GEGLU&quot;, &quot;SwiGLU&quot;, &quot;ReLU&quot;, &quot;GELU&quot;]</span>
+<span class="sd">            or the TFT original FeedForward Network.</span>
+<span class="sd">                [&quot;GatedResidualNetwork&quot;]</span>
 <span class="sd">        dropout : float</span>
-<span class="sd">            Fraction of neurons afected by Dropout.</span>
+<span class="sd">            Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout</span>
+<span class="sd">            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at</span>
+<span class="sd">            prediction time).</span>
 <span class="sd">        hidden_continuous_size : int</span>
 <span class="sd">            Default for hidden size for processing continuous variables</span>
 <span class="sd">        add_relative_index : bool</span>
@@ -762,11 +795,14 @@
 <span class="sd">            :func:`train()`. It gives a value to the position of each step from input and output chunk relative</span>
 <span class="sd">            to the prediction point. The values are normalized with ``input_chunk_length``.</span>
 <span class="sd">        loss_fn : nn.Module</span>
-<span class="sd">            PyTorch loss function used for training. By default the TFT model is probabilistic and uses a ``likelihood``</span>
-<span class="sd">            instead (``QuantileRegression``). To make the model deterministic, you can set the ``likelihood`` to None</span>
-<span class="sd">            and give a ``loss_fn`` argument.</span>
+<span class="sd">            PyTorch loss function used for training. By default, the TFT model is probabilistic and uses a</span>
+<span class="sd">            ``likelihood`` instead (``QuantileRegression``). To make the model deterministic, you can set the `</span>
+<span class="sd">            `likelihood`` to None and give a ``loss_fn`` argument.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
-<span class="sd">            The likelihood model to be used for probabilistic forecasts. By default the TFT uses</span>
+<span class="sd">            The likelihood model to be used for probabilistic forecasts. By default, the TFT uses</span>
 <span class="sd">            a ``QuantileRegression`` likelihood.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and</span>
@@ -776,7 +812,7 @@
 <span class="sd">            The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.</span>
 <span class="sd">        optimizer_kwargs</span>
 <span class="sd">            Optionally, some keyword arguments for the PyTorch optimizer (e.g., ``{&#39;lr&#39;: 1e-3}``</span>
-<span class="sd">            for specifying a learning rate). Otherwise the default values of the selected ``optimizer_cls``</span>
+<span class="sd">            for specifying a learning rate). Otherwise, the default values of the selected ``optimizer_cls``</span>
 <span class="sd">            will be used. Default: ``None``.</span>
 <span class="sd">        lr_scheduler_cls</span>
 <span class="sd">            Optionally, the PyTorch learning rate scheduler class to be used. Specifying ``None`` corresponds</span>
@@ -850,7 +886,7 @@
 <span class="sd">                }</span>
 <span class="sd">            ..</span>
 <span class="sd">        random_state</span>
-<span class="sd">            Control the randomness of the weights initialization. Check this</span>
+<span class="sd">            Control the randomness of the weight&#39;s initialization. Check this</span>
 <span class="sd">            `link &lt;https://scikit-learn.org/stable/glossary.html#term-random_state&gt;`_ for more details.</span>
 <span class="sd">            Default: ``None``.</span>
 <span class="sd">        pl_trainer_kwargs</span>
@@ -894,6 +930,7 @@
 <span class="sd">        References</span>
 <span class="sd">        ----------</span>
 <span class="sd">        .. [1] https://arxiv.org/pdf/1912.09363.pdf</span>
+<span class="sd">        ..[2] Shazeer, Noam, &quot;GLU Variants Improve Transformer&quot;, 2020. arVix https://arxiv.org/abs/2002.05202.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">model_kwargs</span> <span class="o">=</span> <span class="p">{</span><span class="n">key</span><span class="p">:</span> <span class="n">val</span> <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">val</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">model_params</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
         <span class="k">if</span> <span class="n">likelihood</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">loss_fn</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -910,6 +947,7 @@
         <span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span> <span class="o">=</span> <span class="n">lstm_layers</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span> <span class="o">=</span> <span class="n">num_attention_heads</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span> <span class="o">=</span> <span class="n">full_attention</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span> <span class="o">=</span> <span class="n">feed_forward</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">dropout</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span> <span class="o">=</span> <span class="n">hidden_continuous_size</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span> <span class="o">=</span> <span class="n">add_relative_index</span>
@@ -918,7 +956,8 @@
     <span class="k">def</span> <span class="nf">_create_model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">train_sample</span><span class="p">:</span> <span class="n">MixedCovariatesTrainTensorType</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        `train_sample` contains the following tensors:</span>
-<span class="sd">            (past_target, past_covariates, historic_future_covariates, future_covariates, future_target)</span>
+<span class="sd">            (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,</span>
+<span class="sd">            future_target)</span>
 
 <span class="sd">            each tensor has shape (n_timesteps, n_variables)</span>
 <span class="sd">            - past/historic tensors have shape (input_chunk_length, n_variables)</span>
@@ -938,6 +977,7 @@
             <span class="n">past_covariate</span><span class="p">,</span>
             <span class="n">historic_future_covariate</span><span class="p">,</span>
             <span class="n">future_covariate</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="p">,</span>
             <span class="n">future_target</span><span class="p">,</span>
         <span class="p">)</span> <span class="o">=</span> <span class="n">train_sample</span>
 
@@ -963,8 +1003,6 @@
                 <span class="p">],</span>
                 <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
             <span class="p">)</span>
-
-        <span class="n">static_covariates</span> <span class="o">=</span> <span class="kc">None</span>  <span class="c1"># placeholder for future</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="p">(</span>
             <span class="p">(</span><span class="n">future_target</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
@@ -1038,14 +1076,19 @@
             <span class="nb">dict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">static_input</span><span class="p">)</span>
         <span class="p">)</span>
 
+        <span class="n">n_static_components</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">static_covariates</span><span class="p">)</span> <span class="k">if</span> <span class="n">static_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="k">else</span> <span class="mi">0</span>
+        <span class="p">)</span>
         <span class="k">return</span> <span class="n">_TFTModule</span><span class="p">(</span>
-            <span class="n">variables_meta</span><span class="o">=</span><span class="n">variables_meta</span><span class="p">,</span>
             <span class="n">output_dim</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">output_dim</span><span class="p">,</span>
+            <span class="n">variables_meta</span><span class="o">=</span><span class="n">variables_meta</span><span class="p">,</span>
+            <span class="n">num_static_components</span><span class="o">=</span><span class="n">n_static_components</span><span class="p">,</span>
             <span class="n">hidden_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_size</span><span class="p">,</span>
             <span class="n">lstm_layers</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">lstm_layers</span><span class="p">,</span>
             <span class="n">dropout</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dropout</span><span class="p">,</span>
             <span class="n">num_attention_heads</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">num_attention_heads</span><span class="p">,</span>
             <span class="n">full_attention</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">full_attention</span><span class="p">,</span>
+            <span class="n">feed_forward</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">feed_forward</span><span class="p">,</span>
             <span class="n">hidden_continuous_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">hidden_continuous_size</span><span class="p">,</span>
             <span class="n">add_relative_index</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">add_relative_index</span><span class="p">,</span>
             <span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">pl_module_params</span><span class="p">,</span>

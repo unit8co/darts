@@ -197,7 +197,7 @@
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, future_target).</span>
+<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target).</span>
 <span class="sd">        The &quot;past&quot; series have length `input_chunk_length` and the &quot;future&quot; series have</span>
 <span class="sd">        length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive to the &quot;past&quot; series.</span>
 <span class="sd">        The slicing of past and future covariates matches that of past and future targets, respectively. The slicing</span>
@@ -250,7 +250,9 @@
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
 
 
@@ -264,7 +266,7 @@
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A time series dataset containing tuples of (past_target, future_covariates, future_target).</span>
+<span class="sd">        A time series dataset containing tuples of (past_target, future_covariates, static_covariates, future_target).</span>
 <span class="sd">        The &quot;past&quot; series have length `input_chunk_length` and the &quot;future&quot; series have</span>
 <span class="sd">        length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive to the &quot;past&quot; series.</span>
 <span class="sd">        The slicing of past and future covariates matches that of past and future targets, respectively. The slicing</span>
@@ -317,7 +319,9 @@
     <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">idx</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
 
 
@@ -332,7 +336,7 @@
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of</span>
-<span class="sd">        (past_target, historic_future_covariates, future_covariates, future_target).</span>
+<span class="sd">        (past_target, historic_future_covariates, future_covariates, static_covariates, future_target).</span>
 <span class="sd">        The &quot;past&quot; series (incl `historic_future_covariates`) have length `input_chunk_length`</span>
 <span class="sd">        and the &quot;future&quot; series have length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive</span>
 <span class="sd">        to the &quot;past&quot; series. The slicing of past and future covariates matches that of past and future targets,</span>
@@ -400,10 +404,22 @@
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">past_covariate</span><span class="p">,</span>
+            <span class="n">future_covariate</span><span class="p">,</span>
+            <span class="n">static_covariate</span><span class="p">,</span>
+            <span class="n">future_target</span><span class="p">,</span>
+        <span class="p">)</span></div>
 
 
 <div class="viewcode-block" id="MixedCovariatesSequentialDataset"><a class="viewcode-back" href="../../../../generated_api/darts.utils.data.sequential_dataset.html#darts.utils.data.sequential_dataset.MixedCovariatesSequentialDataset">[docs]</a><span class="k">class</span> <span class="nc">MixedCovariatesSequentialDataset</span><span class="p">(</span><span class="n">MixedCovariatesTrainingDataset</span><span class="p">):</span>
@@ -418,7 +434,7 @@
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        A time series dataset containing tuples of</span>
-<span class="sd">        (past_target, past_covariates, historic_future_covariates, future_covariates, future_target).</span>
+<span class="sd">        (past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates, future_target).</span>
 <span class="sd">        The &quot;past&quot; series (incl `historic_future_covariates`) have length `input_chunk_length`</span>
 <span class="sd">        and the &quot;future&quot; series have length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive</span>
 <span class="sd">        to the &quot;past&quot; series. The slicing of past and future covariates matches that of past and future targets,</span>
@@ -488,16 +504,18 @@
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
         <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
     <span class="p">]:</span>
 
-        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_dual</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">historic_future_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_dual</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
         <span class="k">return</span> <span class="p">(</span>
             <span class="n">past_target</span><span class="p">,</span>
             <span class="n">past_covariate</span><span class="p">,</span>
             <span class="n">historic_future_covariate</span><span class="p">,</span>
             <span class="n">future_covariate</span><span class="p">,</span>
+            <span class="n">static_covariate</span><span class="p">,</span>
             <span class="n">future_target</span><span class="p">,</span>
         <span class="p">)</span></div>
 
@@ -513,7 +531,8 @@
         <span class="n">max_samples_per_ts</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, future_covariates, future_target).</span>
+<span class="sd">        A time series dataset containing tuples of (past_target, past_covariates, future_covariates, static_covariates,</span>
+<span class="sd">        future_target).</span>
 <span class="sd">        The &quot;past&quot; series have length `input_chunk_length` and the &quot;future&quot; series have</span>
 <span class="sd">        length `output_chunk_length`. The &quot;future&quot; series are immediately consecutive to the &quot;past&quot; series.</span>
 <span class="sd">        The slicing of past and future covariates matches that of past and future targets, respectively. The slicing</span>
@@ -583,10 +602,22 @@
 
     <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span> <span class="n">idx</span>
-    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]:</span>
-        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-        <span class="k">return</span> <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">future_target</span></div>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+    <span class="p">]:</span>
+        <span class="n">past_target</span><span class="p">,</span> <span class="n">past_covariate</span><span class="p">,</span> <span class="n">static_covariate</span><span class="p">,</span> <span class="n">future_target</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_past</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">future_covariate</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds_future</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">past_covariate</span><span class="p">,</span>
+            <span class="n">future_covariate</span><span class="p">,</span>
+            <span class="n">static_covariate</span><span class="p">,</span>
+            <span class="n">future_target</span><span class="p">,</span>
+        <span class="p">)</span></div>
 </pre></div>
 
               </div>

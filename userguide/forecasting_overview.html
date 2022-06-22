@@ -232,6 +232,11 @@
     </a>
    </li>
    <li class="toc-h3 nav-item toc-entry">
+    <a class="reference internal nav-link" href="#capturing-model-uncertainty-using-monte-carlo-dropout">
+     Capturing model uncertainty using Monte Carlo Dropout
+    </a>
+   </li>
+   <li class="toc-h3 nav-item toc-entry">
     <a class="reference internal nav-link" href="#probabilistic-regression-models">
      Probabilistic regression models
     </a>
@@ -372,10 +377,11 @@ The actual probabilistic distribution of the forecasts depends on the model.</p>
 <a class="reference external image-reference" href="./images/probabilistic/example_ets.png"><img alt="Exponential Smoothing" src="../_images/example_ets.png" /></a>
 <section id="probabilistic-neural-networks">
 <h3>Probabilistic neural networks<a class="headerlink" href="#probabilistic-neural-networks" title="Permalink to this headline">¶</a></h3>
-<p>All neural networks (torch-based models) in Darts have a rich support to fit different kinds of probability distributions.
-When creating the model, it is possible to provide one of the <em>likelihood models</em> available in <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html">darts.utils.likelihood_models</a>, which determine the distribution that will be fit by the model.
+<p>All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions.
+When creating the model, it is possible to provide one of the <em>likelihood models</em> available in <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html">darts.utils.likelihood_models</a>, which determine the distribution that will be estimated by the model.
 In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples.
-Most of the likelihood models also support prior values for the distribution’s parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.</p>
+Most of the likelihood models also support prior values for the distribution’s parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.
+The strength of this regularization term can also be specified when creating the likelihood model object.</p>
 <p>For example, the code below trains a TCNModel to fit a Laplace distribution. So the neural network outputs 2 parameters (location and scale) of the Laplace distribution. We also specify a prior value of 0.1 on the scale parameter.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -402,7 +408,7 @@ Most of the likelihood models also support prior values for the distribution’s
 </pre></div>
 </div>
 <a class="reference external image-reference" href="./images/probabilistic/example_tcn_laplace.png"><img alt="TCN Laplace regression" src="../_images/example_tcn_laplace.png" /></a>
-<p>It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">darts.utils.likelihood_models.QuantileRegression</a>, in which case the network will be trained with the pinball loss.
+<p>It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression">darts.utils.likelihood_models.QuantileRegression</a>, in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distrution, and it can often be a good option in practice, when one is not sure of the “real” distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a <code class="docutils literal notranslate"><span class="pre">QuantileRegression</span></code> likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
 <span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
@@ -430,6 +436,37 @@ For example, the code snippet below is almost exactly the same as the preceding 
 </div>
 <a class="reference external image-reference" href="./images/probabilistic/example_tcn_quantile.png"><img alt="TCN quantile regression" src="../_images/example_tcn_quantile.png" /></a>
 </section>
+<section id="capturing-model-uncertainty-using-monte-carlo-dropout">
+<h3>Capturing model uncertainty using Monte Carlo Dropout<a class="headerlink" href="#capturing-model-uncertainty-using-monte-carlo-dropout" title="Permalink to this headline">¶</a></h3>
+<p>In Darts, dropout can also be used as an additional way to capture model uncertainty, following the approach described in [1]. This is sometimes referred to as <em>epistemic uncertainty</em>, and can be seen as a way to marginalize over a family of models represented by all the different dropout activation functions.</p>
+<p>This feature is readily available for all deep learning models integrating some dropout (except RNN models - we refer to the dropout API reference documentations for a mention of models supporting this). It only requires to specify <code class="docutils literal notranslate"><span class="pre">mc_dropout=True</span></code> at prediction time. For example, the code below trains a TCN model (using the default MSE loss) with a dropout rate of 10%, and then produces a probabilistic forecasts using Monte Carlo Dropout:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">darts.datasets</span> <span class="kn">import</span> <span class="n">AirPassengersDataset</span>
+<span class="kn">from</span> <span class="nn">darts</span> <span class="kn">import</span> <span class="n">TimeSeries</span>
+<span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">TCNModel</span>
+<span class="kn">from</span> <span class="nn">darts.dataprocessing.transformers</span> <span class="kn">import</span> <span class="n">Scaler</span>
+<span class="kn">from</span> <span class="nn">darts.utils.likelihood_models</span> <span class="kn">import</span> <span class="n">QuantileRegression</span>
+
+<span class="n">series</span> <span class="o">=</span> <span class="n">AirPassengersDataset</span><span class="p">()</span><span class="o">.</span><span class="n">load</span><span class="p">()</span>
+<span class="n">train</span><span class="p">,</span> <span class="n">val</span> <span class="o">=</span> <span class="n">series</span><span class="p">[:</span><span class="o">-</span><span class="mi">36</span><span class="p">],</span> <span class="n">series</span><span class="p">[</span><span class="o">-</span><span class="mi">36</span><span class="p">:]</span>
+
+<span class="n">scaler</span> <span class="o">=</span> <span class="n">Scaler</span><span class="p">()</span>
+<span class="n">train</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">fit_transform</span><span class="p">(</span><span class="n">train</span><span class="p">)</span>
+<span class="n">val</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">val</span><span class="p">)</span>
+<span class="n">series</span> <span class="o">=</span> <span class="n">scaler</span><span class="o">.</span><span class="n">transform</span><span class="p">(</span><span class="n">series</span><span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">TCNModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">30</span><span class="p">,</span>
+                 <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span>
+                 <span class="n">dropout</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">)</span>
+<span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">36</span><span class="p">,</span> <span class="n">mc_dropout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">num_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">)</span>
+
+<span class="n">series</span><span class="o">.</span><span class="n">plot</span><span class="p">()</span>
+<span class="n">pred</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">label</span><span class="o">=</span><span class="s1">&#39;forecast&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<a class="reference external image-reference" href="./images/probabilistic/example_mc_dropout.png"><img alt="TCN quantile regression" src="../_images/example_mc_dropout.png" /></a>
+<p>Monte Carlo Dropout can be combined with other likelihood estimation in Darts, which can be interpreted as a way to capture both epistemic and aleatoric uncertainty.</p>
+</section>
 <section id="probabilistic-regression-models">
 <h3>Probabilistic regression models<a class="headerlink" href="#probabilistic-regression-models" title="Permalink to this headline">¶</a></h3>
 <p>Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html">LinearRegressionModel</a> and <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.models.forecasting.gradient_boosted_model.html">LightGBMModel</a> support a <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> argument. When set to <code class="docutils literal notranslate"><span class="pre">&quot;poisson&quot;</span></code> the model will fit a Poisson distribution, and when set to <code class="docutils literal notranslate"><span class="pre">&quot;quantile&quot;</span></code> the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the <code class="docutils literal notranslate"><span class="pre">quantiles</span></code> argument).</p>
@@ -452,6 +489,7 @@ For example, the code snippet below is almost exactly the same as the preceding 
 </pre></div>
 </div>
 <a class="reference external image-reference" href="./images/probabilistic/example_linreg_quantile.png"><img alt="quantile linear regression" src="../_images/example_linreg_quantile.png" /></a>
+<p>[1] Yarin Gal, Zoubin Ghahramani, <a class="reference external" href="https://arxiv.org/abs/1506.02142">“Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning”</a></p>
 </section>
 </section>
 </section>

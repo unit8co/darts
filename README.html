@@ -273,7 +273,7 @@ series, and some of the models offer a rich support for probabilistic forecastin
 <h3>High Level Introductions<a class="headerlink" href="#high-level-introductions" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/darts-time-series-made-easy-in-python-5ac2947a8878">Introductory Blog Post</a></p></li>
-<li><p><a class="reference external" href="https://youtu.be/g6OXDnXEtFA">Introduction to Darts at PyData Global 2021</a></p></li>
+<li><p><a class="reference external" href="https://youtu.be/g6OXDnXEtFA">Introduction video (25 minutes)</a></p></li>
 </ul>
 </section>
 <section id="articles-on-selected-topics">
@@ -283,6 +283,7 @@ series, and some of the models offer a rich support for probabilistic forecastin
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/time-series-forecasting-using-past-and-future-external-data-with-darts-1f0539585993">Using Past and Future Covariates</a></p></li>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">Temporal Convolutional Networks and Forecasting</a></p></li>
 <li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/probabilistic-forecasting-in-darts-e88fbe83344e">Probabilistic Forecasting</a></p></li>
+<li><p><a class="reference external" href="https://medium.com/unit8-machine-learning-publication/transfer-learning-for-time-series-forecasting-87f39e375278">Transfer Learning for Time Series Forecasting</a></p></li>
 </ul>
 </section>
 </section>
@@ -338,27 +339,34 @@ or without <a class="reference external" href="https://virtualenvwrapper.readthe
 <h2>Features<a class="headerlink" href="#features" title="Permalink to this headline">¶</a></h2>
 <ul class="simple">
 <li><p><strong>Forecasting Models:</strong> A large collection of forecasting models; from statistical models (such as
-ARIMA) to deep learning models (such as N-BEATS). See table of models below.</p></li>
+ARIMA) to deep learning models (such as N-BEATS). See <a class="reference external" href="#forecasting-models">table of models below</a>.</p></li>
+<li><p><strong>Multivariate Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can be multivariate - i.e., contain multiple time-varying
+dimensions instead of a single scalar value. Many models can consume and produce multivariate series.</p></li>
+<li><p><strong>Multiple series training:</strong> All machine learning based models (incl. all neural networks)
+support being trained on multiple (potentially multivariate) series. This can scale to large datasets.</p></li>
+<li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
+time series; this can for instance be used to get confidence intervals, and many models support different flavours of probabilistic forecasting (such as estimating parametric distributions
+or quantiles).</p></li>
+<li><p><strong>Past and Future Covariates support:</strong> Many models in Darts support past-observed and/or future-known
+covariate (external data) time series as inputs for producing forecasts.</p></li>
+<li><p><strong>Static Covariates support:</strong> In addition to time-dependent data, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> can also contain
+static data for each dimension, which can be exploited by some models.</p></li>
+<li><p><strong>Hierarchical Reconciliation:</strong> Darts offers transformers to perform reconciliation.
+These can make the forecasts add up in a way that respects the underlying hierarchy.</p></li>
+<li><p><strong>Regression Models:</strong> It is possible to plug-in any scikit-learn compatible model
+to obtain forecasts as functions of lagged values of the target series and covariates.</p></li>
 <li><p><strong>Data processing:</strong> Tools to easily apply (and revert) common transformations on
-time series data (scaling, boxcox, …)</p></li>
+time series data (scaling, filling missing values, boxcox, …)</p></li>
 <li><p><strong>Metrics:</strong> A variety of metrics for evaluating time series’ goodness of fit;
 from R2-scores to Mean Absolute Scaled Error.</p></li>
 <li><p><strong>Backtesting:</strong> Utilities for simulating historical forecasts, using moving time windows.</p></li>
-<li><p><strong>Regression Models:</strong> Possibility to predict a time series from lagged versions of itself
-and of some external covariate series, using arbitrary regression models (e.g. scikit-learn models).</p></li>
-<li><p><strong>Multiple series training:</strong> All machine learning based models (incl.all neural networks)
-support being trained on multiple series.</p></li>
-<li><p><strong>Past and Future Covariates support:</strong> Some models support past-observed and/or future-known covariate time series
-as inputs for producing forecasts.</p></li>
-<li><p><strong>Multivariate Support:</strong> Tools to create, manipulate and forecast multivariate time series.</p></li>
-<li><p><strong>Probabilistic Support:</strong> <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can (optionally) represent stochastic
-time series; this can for instance be used to get confidence intervals, and several models
-support different flavours of probabilistic forecasting.</p></li>
 <li><p><strong>PyTorch Lightning Support:</strong> All deep learning models are implemented using PyTorch Lightning,
 supporting among other things custom callbacks, GPUs/TPUs training and custom trainers.</p></li>
 <li><p><strong>Filtering Models:</strong> Darts offers three filtering models: <code class="docutils literal notranslate"><span class="pre">KalmanFilter</span></code>, <code class="docutils literal notranslate"><span class="pre">GaussianProcessFilter</span></code>,
 and <code class="docutils literal notranslate"><span class="pre">MovingAverage</span></code>, which allow to filter time series, and in some cases obtain probabilistic
 inferences of the underlying states/values.</p></li>
+<li><p><strong>Datasets</strong> The <code class="docutils literal notranslate"><span class="pre">darts.datasets</span></code> submodule contains some popular time series datasets for rapid
+experimentation.</p></li>
 </ul>
 </section>
 <section id="forecasting-models">
@@ -367,14 +375,15 @@ inferences of the underlying states/values.</p></li>
 on bringing more models and features.</p>
 <table class="table">
 <colgroup>
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
+<col style="width: 11%" />
 </colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Model</p></th>
@@ -383,7 +392,8 @@ on bringing more models and features.</p>
 <th class="head"><p>Probabilistic</p></th>
 <th class="head"><p>Multiple-series training</p></th>
 <th class="head"><p>Past-observed covariates support</p></th>
-<th class="head"><p>Future-known covariates support</p></th>
+<th class="head"><p>Future-known covariates</p></th>
+<th class="head"><p>Static covariates support</p></th>
 <th class="head"><p>Reference</p></th>
 </tr>
 </thead>
@@ -396,6 +406,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">VARIMA</span></code></p></td>
 <td><p>✅</p></td>
@@ -404,6 +415,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">AutoARIMA</span></code></p></td>
@@ -414,6 +426,7 @@ on bringing more models and features.</p>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">StatsForecastAutoARIMA</span></code> (faster AutoARIMA)</p></td>
 <td><p>✅</p></td>
@@ -422,12 +435,14 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td><p>✅</p></td>
+<td></td>
 <td><p><a class="reference external" href="https://github.com/Nixtla/statsforecast">statsforecast</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">ExponentialSmoothing</span></code></p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -440,6 +455,7 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/ComplexSeasonality.pdf">TBATS paper</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Theta</span></code> and <code class="docutils literal notranslate"><span class="pre">FourTheta</span></code></p></td>
@@ -449,19 +465,22 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td></td>
+<td></td>
 <td><p><a class="reference external" href="https://robjhyndman.com/papers/Theta.pdf">Theta</a> &amp; <a class="reference external" href="https://github.com/Mcompetitions/M4-methods/blob/master/4Theta%20method.R">4 Theta</a></p></td>
 </tr>
-<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code></p></td>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Prophet</span></code> (see <a class="reference external" href="https://github.com/unit8co/darts/blob/master/INSTALL.md#enabling-support-for-facebook-prophet">install notes</a>)</p></td>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
 <td><p>✅</p></td>
+<td></td>
 <td><p><a class="reference external" href="https://github.com/facebook/prophet">Prophet repo</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">FFT</span></code> (Fast Fourier Transform)</p></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -476,10 +495,12 @@ on bringing more models and features.</p>
 <td></td>
 <td></td>
 <td><p>✅</p></td>
+<td></td>
 <td><p><a class="reference external" href="https://people.duke.edu/~hpgavin/SystemID/References/VanOverschee-Automatica-1994.pdf">N4SID paper</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Croston</span></code> method</p></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -495,6 +516,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">RandomForest</span></code></p></td>
 <td><p>✅</p></td>
@@ -503,6 +525,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">LinearRegressionModel</span></code></p></td>
@@ -513,6 +536,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">LightGBMModel</span></code></p></td>
 <td><p>✅</p></td>
@@ -522,6 +546,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">RNNModel</span></code> (incl. LSTM and GRU); equivalent to DeepAR in its probabilistic version</p></td>
 <td><p>✅</p></td>
@@ -530,6 +555,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td></td>
 <td><p>✅</p></td>
+<td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1704.04110">DeepAR paper</a></p></td>
 </tr>
 <tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">BlockRNNModel</span></code> (incl. LSTM and GRU)</p></td>
@@ -540,6 +566,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">NBEATSModel</span></code></p></td>
 <td><p>✅</p></td>
@@ -548,14 +575,16 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td></td>
+<td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1905.10437">N-BEATS paper</a></p></td>
 </tr>
-<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTS</span></code></p></td>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">NHiTSModel</span></code></p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/2201.12886">N-HiTS paper</a></p></td>
 </tr>
@@ -565,6 +594,7 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 <td><p><a class="reference external" href="https://arxiv.org/abs/1803.01271">TCN paper</a>, <a class="reference external" href="https://arxiv.org/abs/1906.04397">DeepTCN paper</a>, <a class="reference external" href="https://medium.com/unit8-machine-learning-publication/temporal-convolutional-networks-and-forecasting-5ce1b6e97ce4">blog post</a></p></td>
 </tr>
@@ -576,8 +606,10 @@ on bringing more models and features.</p>
 <td><p>✅</p></td>
 <td></td>
 <td></td>
+<td></td>
 </tr>
 <tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">TFTModel</span></code> (Temporal Fusion Transformer)</p></td>
+<td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
 <td><p>✅</p></td>
@@ -588,6 +620,7 @@ on bringing more models and features.</p>
 </tr>
 <tr class="row-even"><td><p>Naive Baselines</p></td>
 <td><p>✅</p></td>
+<td></td>
 <td></td>
 <td></td>
 <td></td>
@@ -619,17 +652,19 @@ All contributors will be acknowledged on the
 </section>
 <section id="citation">
 <h2>Citation<a class="headerlink" href="#citation" title="Permalink to this headline">¶</a></h2>
-<p>If you are using Darts in your scientific work, we would appreciate citations to the following paper.</p>
-<p><a class="reference external" href="https://arxiv.org/abs/2110.03224">Darts: User-Friendly Modern Machine Learning for Time Series</a></p>
+<p>If you are using Darts in your scientific work, we would appreciate citations to the following JMLR paper.</p>
+<p><a class="reference external" href="https://www.jmlr.org/papers/v23/21-1177.html">Darts: User-Friendly Modern Machine Learning for Time Series</a></p>
 <p>Bibtex entry:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="nd">@misc</span><span class="p">{</span><span class="n">herzen2021darts</span><span class="p">,</span>
-      <span class="n">title</span><span class="o">=</span><span class="p">{</span><span class="n">Darts</span><span class="p">:</span> <span class="n">User</span><span class="o">-</span><span class="n">Friendly</span> <span class="n">Modern</span> <span class="n">Machine</span> <span class="n">Learning</span> <span class="k">for</span> <span class="n">Time</span> <span class="n">Series</span><span class="p">},</span>
-      <span class="n">author</span><span class="o">=</span><span class="p">{</span><span class="n">Julien</span> <span class="n">Herzen</span> <span class="ow">and</span> <span class="n">Francesco</span> <span class="n">Lässig</span> <span class="ow">and</span> <span class="n">Samuele</span> <span class="n">Giuliano</span> <span class="n">Piazzetta</span> <span class="ow">and</span> <span class="n">Thomas</span> <span class="n">Neuer</span> <span class="ow">and</span> <span class="n">Léo</span> <span class="n">Tafti</span> <span class="ow">and</span> <span class="n">Guillaume</span> <span class="n">Raille</span> <span class="ow">and</span> <span class="n">Tomas</span> <span class="n">Van</span> <span class="n">Pottelbergh</span> <span class="ow">and</span> <span class="n">Marek</span> <span class="n">Pasieka</span> <span class="ow">and</span> <span class="n">Andrzej</span> <span class="n">Skrodzki</span> <span class="ow">and</span> <span class="n">Nicolas</span> <span class="n">Huguenin</span> <span class="ow">and</span> <span class="n">Maxime</span> <span class="n">Dumonal</span> <span class="ow">and</span> <span class="n">Jan</span> <span class="n">Kościsz</span> <span class="ow">and</span> <span class="n">Dennis</span> <span class="n">Bader</span> <span class="ow">and</span> <span class="n">Frédérick</span> <span class="n">Gusset</span> <span class="ow">and</span> <span class="n">Mounir</span> <span class="n">Benheddi</span> <span class="ow">and</span> <span class="n">Camila</span> <span class="n">Williamson</span> <span class="ow">and</span> <span class="n">Michal</span> <span class="n">Kosinski</span> <span class="ow">and</span> <span class="n">Matej</span> <span class="n">Petrik</span> <span class="ow">and</span> <span class="n">Gaël</span> <span class="n">Grosch</span><span class="p">},</span>
-      <span class="n">year</span><span class="o">=</span><span class="p">{</span><span class="mi">2021</span><span class="p">},</span>
-      <span class="n">eprint</span><span class="o">=</span><span class="p">{</span><span class="mf">2110.03224</span><span class="p">},</span>
-      <span class="n">archivePrefix</span><span class="o">=</span><span class="p">{</span><span class="n">arXiv</span><span class="p">},</span>
-      <span class="n">primaryClass</span><span class="o">=</span><span class="p">{</span><span class="n">cs</span><span class="o">.</span><span class="n">LG</span><span class="p">}</span>
-<span class="p">}</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span>@article{JMLR:v23:21-1177,
+  author  = {Julien Herzen and Francesco LÃ¤ssig and Samuele Giuliano Piazzetta and Thomas Neuer and LÃ©o Tafti and Guillaume Raille and Tomas Van Pottelbergh and Marek Pasieka and Andrzej Skrodzki and Nicolas Huguenin and Maxime Dumonal and Jan KoÅ›cisz and Dennis Bader and FrÃ©dÃ©rick Gusset and Mounir Benheddi and Camila Williamson and Michal Kosinski and Matej Petrik and GaÃ«l Grosch},
+  title   = {Darts: User-Friendly Modern Machine Learning for Time Series},
+  journal = {Journal of Machine Learning Research},
+  year    = {2022},
+  volume  = {23},
+  number  = {124},
+  pages   = {1-6},
+  url     = {http://jmlr.org/papers/v23/21-1177.html}
+}
 </pre></div>
 </div>
 </section>

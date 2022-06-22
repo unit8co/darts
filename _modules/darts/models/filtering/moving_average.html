@@ -216,7 +216,12 @@
             <span class="o">.</span><span class="n">rolling</span><span class="p">(</span><span class="n">window</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">window</span><span class="p">,</span> <span class="n">min_periods</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">center</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">centered</span><span class="p">)</span>
             <span class="o">.</span><span class="n">mean</span><span class="p">()</span>
         <span class="p">)</span>
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span><span class="n">filtered_df</span><span class="p">)</span></div></div>
+
+        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_dataframe</span><span class="p">(</span>
+            <span class="n">filtered_df</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+            <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
+        <span class="p">)</span></div></div>
 </pre></div>
 
               </div>

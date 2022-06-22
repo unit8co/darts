@@ -43,7 +43,7 @@
     "\n",
     "\n",
     "from darts import TimeSeries\n",
-    "from darts.models import FFT, AutoARIMA, ExponentialSmoothing, Prophet, Theta\n",
+    "from darts.models import FFT, AutoARIMA, ExponentialSmoothing, Theta\n",
     "from darts.metrics import mae\n",
     "from darts.utils.missing_values import fill_missing_values\n",
     "from darts.datasets import TemperatureDataset, AirPassengersDataset, EnergyDataset\n",
@@ -471,7 +471,7 @@
     }
    ],
    "source": [
-    "models = [AutoARIMA(), Prophet(), ExponentialSmoothing(), Theta(), FFT()]\n",
+    "models = [AutoARIMA(), ExponentialSmoothing(), Theta(), FFT()]\n",
     "\n",
     "for model in models:\n",
     "    model.fit(train)\n",
@@ -496,7 +496,7 @@
    "name": "python",
    "nbconvert_exporter": "python",
    "pygments_lexer": "ipython3",
-   "version": "3.8.10"
+   "version": "3.8.5"
   }
  },
  "nbformat": 4,

@@ -244,6 +244,16 @@
   </a>
  </li>
  <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#static-covariates">
+   Static Covariates
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
+  <a class="reference internal nav-link" href="#hierarchical-time-series">
+   Hierarchical Time Series
+  </a>
+ </li>
+ <li class="toc-h2 nav-item toc-entry">
   <a class="reference internal nav-link" href="#more-information-and-documentation">
    More information and documentation
   </a>
@@ -341,6 +351,26 @@
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.values">TimeSeries.values()</a> to export a NumPy array contaning the values of one sample from the series.</p></li>
 <li><p><a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.all_values">TimeSeries.all_values()</a> to export a NumPy array contaning the values of all samples of a stochastic series.</p></li>
 </ul>
+</section>
+<section id="static-covariates">
+<h2>Static Covariates<a class="headerlink" href="#static-covariates" title="Permalink to this headline">¶</a></h2>
+<p>Optionally, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can contain static data (referred to as <em>static covariates</em>), which can be exploited by some models. Example of static covariates can be:</p>
+<ul class="simple">
+<li><p>Store location - for instance for each store (component) in a multivariate series</p></li>
+<li><p>Product ID</p></li>
+<li><p>Sensor type</p></li>
+<li><p>…</p></li>
+</ul>
+<p>The static covariates have to be specified by a pandas DataFrame whose rows match the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>‘s components, and whose columns represent the dimensions of the static covariates. They can be added to a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> when using most factory methods, using the <code class="docutils literal notranslate"><span class="pre">static_covariates</span></code> parameter. They can also be added to an existing <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using the <code class="docutils literal notranslate"><span class="pre">with_static_covariates()</span></code> method.</p>
+</section>
+<section id="hierarchical-time-series">
+<h2>Hierarchical Time Series<a class="headerlink" href="#hierarchical-time-series" title="Permalink to this headline">¶</a></h2>
+<p>Optionally, <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> objects can contain a hierarchy, which specifies how its different components are grouped together. The hierarchy itself is specified as a Python dictionary, mapping the components’ names to a list of names of their parent(s) in the hierarchy.</p>
+<p>For instance, the following hierarchy means that the two components <code class="docutils literal notranslate"><span class="pre">&quot;a&quot;</span></code> and <code class="docutils literal notranslate"><span class="pre">&quot;b&quot;</span></code> add up to <code class="docutils literal notranslate"><span class="pre">&quot;total&quot;</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">hierarchy</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;a&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">],</span> <span class="s2">&quot;b&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;total&quot;</span><span class="p">]}</span>
+</pre></div>
+</div>
+<p>Hierarchies can be used for posthoc forecast reconciliation. Darts offers several reconciliation transformers (usable with <code class="docutils literal notranslate"><span class="pre">fit()</span></code>/<code class="docutils literal notranslate"><span class="pre">transform()</span></code>) - see the <a class="reference external" href="https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html">corresponding API documentation</a>.</p>
 </section>
 <section id="more-information-and-documentation">
 <h2>More information and documentation<a class="headerlink" href="#more-information-and-documentation" title="Permalink to this headline">¶</a></h2>

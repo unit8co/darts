@@ -253,7 +253,8 @@
         <span class="c1"># The RNN module needs a linear layer V that transforms hidden states into outputs, individually</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">V</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">target_size</span> <span class="o">*</span> <span class="n">nr_params</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">h</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="n">x</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
         <span class="c1"># data is of size (batch_size, input_length, input_size)</span>
         <span class="n">batch_size</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
 
@@ -270,17 +271,23 @@
         <span class="k">return</span> <span class="n">predictions</span><span class="p">,</span> <span class="n">last_hidden_state</span>
 
     <span class="k">def</span> <span class="nf">_produce_train_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_batch</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
-        <span class="n">past_target</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">input_batch</span>
+        <span class="p">(</span>
+            <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">historic_future_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">input_batch</span>
         <span class="c1"># For the RNN we concatenate the past_target with the future_covariates</span>
         <span class="c1"># (they have the same length because we enforce a Shift dataset for RNNs)</span>
         <span class="n">model_input</span> <span class="o">=</span> <span class="p">(</span>
             <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">([</span><span class="n">past_target</span><span class="p">,</span> <span class="n">future_covariates</span><span class="p">],</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
-            <span class="k">else</span> <span class="n">past_target</span>
+            <span class="k">else</span> <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="p">,</span>
         <span class="p">)</span>
         <span class="k">return</span> <span class="bp">self</span><span class="p">(</span><span class="n">model_input</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">_produce_predict_output</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;overwrite parent classes `_produce_predict_output` method&quot;&quot;&quot;</span>
         <span class="n">output</span><span class="p">,</span> <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">last_hidden_state</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">likelihood</span><span class="p">:</span>
@@ -294,7 +301,12 @@
         <span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        This model is recurrent, so we have to write a specific way to obtain the time series forecasts of length n.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="n">past_target</span><span class="p">,</span> <span class="n">historic_future_covariates</span><span class="p">,</span> <span class="n">future_covariates</span> <span class="o">=</span> <span class="n">input_batch</span>
+        <span class="p">(</span>
+            <span class="n">past_target</span><span class="p">,</span>
+            <span class="n">historic_future_covariates</span><span class="p">,</span>
+            <span class="n">future_covariates</span><span class="p">,</span>
+            <span class="n">static_covariates</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="n">input_batch</span>
 
         <span class="k">if</span> <span class="n">historic_future_covariates</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="c1"># RNNs need as inputs (target[t] and covariates[t+1]) so here we shift the covariates</span>
@@ -311,7 +323,9 @@
             <span class="n">cov_future</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="n">batch_prediction</span> <span class="o">=</span> <span class="p">[]</span>
-        <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span><span class="n">input_series</span><span class="p">)</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">input_series</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">)</span>
+        <span class="p">)</span>
         <span class="n">batch_prediction</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">out</span><span class="p">[:,</span> <span class="o">-</span><span class="mi">1</span><span class="p">:,</span> <span class="p">:])</span>
         <span class="n">prediction_length</span> <span class="o">=</span> <span class="mi">1</span>
 
@@ -332,7 +346,7 @@
 
             <span class="c1"># feed new input to model, including the last hidden state from the previous iteration</span>
             <span class="n">out</span><span class="p">,</span> <span class="n">last_hidden_state</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_produce_predict_output</span><span class="p">(</span>
-                <span class="n">new_input</span><span class="p">,</span> <span class="n">last_hidden_state</span>
+                <span class="p">(</span><span class="n">new_input</span><span class="p">,</span> <span class="n">static_covariates</span><span class="p">),</span> <span class="n">last_hidden_state</span>
             <span class="p">)</span>
 
             <span class="c1"># append prediction to batch prediction array, increase counter</span>
@@ -410,6 +424,9 @@
 <span class="sd">            PyTorch loss function used for training.</span>
 <span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
 <span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
 <span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
 <span class="sd">            probabilistic forecasts. Default: ``None``.</span>

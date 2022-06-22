@@ -38,7 +38,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Pipeline" href="darts.dataprocessing.pipeline.html" />
-    <link rel="prev" title="Missing Values Filler" href="darts.dataprocessing.transformers.missing_values_filler.html" />
+    <link rel="prev" title="Hierarchical Reconciliation" href="darts.dataprocessing.transformers.reconciliation.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
     
@@ -197,6 +197,11 @@
        Missing Values Filler
       </a>
      </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
      <li class="toctree-l3 current active">
       <a class="current reference internal" href="#">
        Scaler
@@ -345,11 +350,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -564,6 +564,11 @@
 When the series are stochastic, the scaling is done across all samples (for each given component).
 The transformation is applied independently for each dimension (component) of the time series,
 effectively merging all samples of a component in order to compute the transform.</p>
+<p class="rubric">Notes</p>
+<p>The scaler will not scale the series’ static covariates. This has to be done either before constructing the
+series, or later on by extracting the covariates, transforming the values and then reapplying them to the
+series. For this, see TimeSeries properties <cite>TimeSeries.static_covariates</cite> and method
+<cite>TimeSeries.with_static_covariates()</cite></p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -875,11 +880,11 @@ bottleneck and nullify parallelisation benefits.</p>
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="darts.dataprocessing.transformers.missing_values_filler.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="darts.dataprocessing.transformers.reconciliation.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Missing Values Filler</p>
+            <p class="prev-next-title">Hierarchical Reconciliation</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="darts.dataprocessing.pipeline.html" title="next page">

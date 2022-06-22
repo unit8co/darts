@@ -37,7 +37,7 @@
     <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Facebook Prophet" href="darts.models.forecasting.prophet_model.html" />
+    <link rel="next" title="&lt;no title&gt;" href="darts.models.forecasting.prophet_model.html" />
     <link rel="prev" title="N-HiTS" href="darts.models.forecasting.nhits.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="en">
@@ -198,6 +198,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
        Scaler
       </a>
@@ -345,11 +350,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -559,7 +559,7 @@
   <span class="target" id="module-darts.models.forecasting.pl_forecasting_module"></span><p>This file contains abstract classes for deterministic and probabilistic PyTorch Lightning Modules</p>
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLDualCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLDualCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLDualCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLDualCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -582,6 +582,8 @@ When subclassing this class, please make sure to add the following methods with 
 <li><p><strong>loss_fn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_Loss</span></code>) – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
+<li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
+at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
@@ -706,7 +708,7 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 <td><p>Perform gradient clipping for the optimizer parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_optimizers" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_optimizers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_optimizers</span></code></a>()</p></td>
-<td><p>configures optimizers and learning rate schedulers for for model optimization.</p></td>
+<td><p>configures optimizers and learning rate schedulers for model optimization.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_sharded_model" title="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_sharded_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_sharded_model</span></code></a>()</p></td>
 <td><p>Hook to create modules in a distributed aware context.</p></td>
@@ -1099,11 +1101,14 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 55%" />
-<col style="width: 45%" />
+<col style="width: 64%" />
+<col style="width: 36%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>__call__</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>set_mc_dropout</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -1420,7 +1425,7 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_optimizers">
 <span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.configure_optimizers" title="Permalink to this definition">¶</a></dt>
-<dd><p>configures optimizers and learning rate schedulers for for model optimization.</p>
+<dd><p>configures optimizers and learning rate schedulers for model optimization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1460,7 +1465,7 @@ different objects. So it should be called before constructing optimizer if the m
 while being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
+<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
 copied to that device</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -3817,6 +3822,11 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.set_mc_dropout">
+<span class="sig-name descname"><span class="pre">set_mc_dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.set_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.set_predict_parameters">
 <span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLDualCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
@@ -5032,7 +5042,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLForecastingModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLForecastingModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">pytorch_lightning.core.lightning.LightningModule</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -5055,6 +5065,8 @@ When subclassing this class, please make sure to add the following methods with 
 <li><p><strong>loss_fn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_Loss</span></code>) – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
+<li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
+at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
@@ -5179,7 +5191,7 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 <td><p>Perform gradient clipping for the optimizer parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_optimizers" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_optimizers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_optimizers</span></code></a>()</p></td>
-<td><p>configures optimizers and learning rate schedulers for for model optimization.</p></td>
+<td><p>configures optimizers and learning rate schedulers for model optimization.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_sharded_model" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_sharded_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_sharded_model</span></code></a>()</p></td>
 <td><p>Hook to create modules in a distributed aware context.</p></td>
@@ -5572,11 +5584,14 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 55%" />
-<col style="width: 45%" />
+<col style="width: 64%" />
+<col style="width: 36%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>__call__</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>set_mc_dropout</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -5893,7 +5908,7 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_optimizers">
 <span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.configure_optimizers"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.configure_optimizers" title="Permalink to this definition">¶</a></dt>
-<dd><p>configures optimizers and learning rate schedulers for for model optimization.</p>
+<dd><p>configures optimizers and learning rate schedulers for model optimization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -5933,7 +5948,7 @@ different objects. So it should be called before constructing optimizer if the m
 while being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
+<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
 copied to that device</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -8290,6 +8305,11 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_mc_dropout">
+<span class="sig-name descname"><span class="pre">set_mc_dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.set_mc_dropout"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_predict_parameters">
 <span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLForecastingModule.set_predict_parameters"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
@@ -9505,7 +9525,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLFutureCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLFutureCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLFutureCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLFutureCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -9528,6 +9548,8 @@ When subclassing this class, please make sure to add the following methods with 
 <li><p><strong>loss_fn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_Loss</span></code>) – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
+<li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
+at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
@@ -9652,7 +9674,7 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 <td><p>Perform gradient clipping for the optimizer parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_optimizers" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_optimizers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_optimizers</span></code></a>()</p></td>
-<td><p>configures optimizers and learning rate schedulers for for model optimization.</p></td>
+<td><p>configures optimizers and learning rate schedulers for model optimization.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_sharded_model" title="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_sharded_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_sharded_model</span></code></a>()</p></td>
 <td><p>Hook to create modules in a distributed aware context.</p></td>
@@ -10045,11 +10067,14 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 55%" />
-<col style="width: 45%" />
+<col style="width: 64%" />
+<col style="width: 36%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>__call__</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>set_mc_dropout</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -10371,7 +10396,7 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_optimizers">
 <span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.configure_optimizers" title="Permalink to this definition">¶</a></dt>
-<dd><p>configures optimizers and learning rate schedulers for for model optimization.</p>
+<dd><p>configures optimizers and learning rate schedulers for model optimization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -10411,7 +10436,7 @@ different objects. So it should be called before constructing optimizer if the m
 while being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
+<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
 copied to that device</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -12803,6 +12828,11 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.set_mc_dropout">
+<span class="sig-name descname"><span class="pre">set_mc_dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.set_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.set_predict_parameters">
 <span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLFutureCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
@@ -14023,7 +14053,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLMixedCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLMixedCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLMixedCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLMixedCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -14046,6 +14076,8 @@ When subclassing this class, please make sure to add the following methods with 
 <li><p><strong>loss_fn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_Loss</span></code>) – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
+<li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
+at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
@@ -14170,7 +14202,7 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 <td><p>Perform gradient clipping for the optimizer parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_optimizers" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_optimizers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_optimizers</span></code></a>()</p></td>
-<td><p>configures optimizers and learning rate schedulers for for model optimization.</p></td>
+<td><p>configures optimizers and learning rate schedulers for model optimization.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_sharded_model" title="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_sharded_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_sharded_model</span></code></a>()</p></td>
 <td><p>Hook to create modules in a distributed aware context.</p></td>
@@ -14563,11 +14595,14 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 55%" />
-<col style="width: 45%" />
+<col style="width: 64%" />
+<col style="width: 36%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>__call__</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>set_mc_dropout</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -14889,7 +14924,7 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_optimizers">
 <span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.configure_optimizers" title="Permalink to this definition">¶</a></dt>
-<dd><p>configures optimizers and learning rate schedulers for for model optimization.</p>
+<dd><p>configures optimizers and learning rate schedulers for model optimization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -14929,7 +14964,7 @@ different objects. So it should be called before constructing optimizer if the m
 while being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
+<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
 copied to that device</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -17321,6 +17356,11 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.set_mc_dropout">
+<span class="sig-name descname"><span class="pre">set_mc_dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.set_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.set_predict_parameters">
 <span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLMixedCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
@@ -18541,7 +18581,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLPastCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLPastCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLPastCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLPastCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -18564,6 +18604,8 @@ When subclassing this class, please make sure to add the following methods with 
 <li><p><strong>loss_fn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_Loss</span></code>) – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
+<li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
+at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
@@ -18688,7 +18730,7 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 <td><p>Perform gradient clipping for the optimizer parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_optimizers" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_optimizers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_optimizers</span></code></a>()</p></td>
-<td><p>configures optimizers and learning rate schedulers for for model optimization.</p></td>
+<td><p>configures optimizers and learning rate schedulers for model optimization.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_sharded_model" title="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_sharded_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_sharded_model</span></code></a>()</p></td>
 <td><p>Hook to create modules in a distributed aware context.</p></td>
@@ -19081,11 +19123,14 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 55%" />
-<col style="width: 45%" />
+<col style="width: 64%" />
+<col style="width: 36%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>__call__</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>set_mc_dropout</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -19407,7 +19452,7 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_optimizers">
 <span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.configure_optimizers" title="Permalink to this definition">¶</a></dt>
-<dd><p>configures optimizers and learning rate schedulers for for model optimization.</p>
+<dd><p>configures optimizers and learning rate schedulers for model optimization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -19447,7 +19492,7 @@ different objects. So it should be called before constructing optimizer if the m
 while being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
+<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
 copied to that device</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -21839,6 +21884,11 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.set_mc_dropout">
+<span class="sig-name descname"><span class="pre">set_mc_dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.set_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.set_predict_parameters">
 <span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLPastCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
@@ -23059,7 +23109,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLSplitCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLSplitCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.models.forecasting.pl_forecasting_module.</span></span><span class="sig-name descname"><span class="pre">PLSplitCovariatesModule</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">input_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn=MSELoss()</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">torch_metrics=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">likelihood=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_cls=&lt;class</span> <span class="pre">'torch.optim.adam.Adam'&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer_kwargs=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_cls=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lr_scheduler_kwargs=None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/models/forecasting/pl_forecasting_module.html#PLSplitCovariatesModule"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLForecastingModule" title="darts.models.forecasting.pl_forecasting_module.PLForecastingModule"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.models.forecasting.pl_forecasting_module.PLForecastingModule</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>PyTorch Lightning-based Forecasting Module.</p>
 <p>This class is meant to be inherited to create a new PyTorch Lightning-based forecasting module.
@@ -23082,6 +23132,8 @@ When subclassing this class, please make sure to add the following methods with 
 <li><p><strong>loss_fn</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">_Loss</span></code>) – PyTorch loss function used for training.
 This parameter will be ignored for probabilistic models if the <code class="docutils literal notranslate"><span class="pre">likelihood</span></code> parameter is specified.
 Default: <code class="docutils literal notranslate"><span class="pre">torch.nn.MSELoss()</span></code>.</p></li>
+<li><p><strong>torch_metrics</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">Metric</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">MetricCollection</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – A torch metric or a <code class="docutils literal notranslate"><span class="pre">MetricCollection</span></code> used for evaluation. A full list of available metrics can be found
+at <a class="reference external" href="https://torchmetrics.readthedocs.io/en/latest/">https://torchmetrics.readthedocs.io/en/latest/</a>. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>likelihood</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Optional</span></code>[<a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-class docutils literal notranslate"><span class="pre">Likelihood</span></code></a>]) – One of Darts’ <a class="reference internal" href="darts.utils.likelihood_models.html#darts.utils.likelihood_models.Likelihood" title="darts.utils.likelihood_models.Likelihood"><code class="xref py py-meth docutils literal notranslate"><span class="pre">Likelihood</span></code></a> models to be used for
 probabilistic forecasts. Default: <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
 <li><p><strong>optimizer_cls</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">Optimizer</span></code>) – The PyTorch optimizer class to be used. Default: <code class="docutils literal notranslate"><span class="pre">torch.optim.Adam</span></code>.</p></li>
@@ -23206,7 +23258,7 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 <td><p>Perform gradient clipping for the optimizer parameters.</p></td>
 </tr>
 <tr class="row-even"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_optimizers" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_optimizers"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_optimizers</span></code></a>()</p></td>
-<td><p>configures optimizers and learning rate schedulers for for model optimization.</p></td>
+<td><p>configures optimizers and learning rate schedulers for model optimization.</p></td>
 </tr>
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_sharded_model" title="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_sharded_model"><code class="xref py py-obj docutils literal notranslate"><span class="pre">configure_sharded_model</span></code></a>()</p></td>
 <td><p>Hook to create modules in a distributed aware context.</p></td>
@@ -23599,11 +23651,14 @@ to using a constant learning rate. Default: <code class="docutils literal notran
 </table>
 <table class="table">
 <colgroup>
-<col style="width: 55%" />
-<col style="width: 45%" />
+<col style="width: 64%" />
+<col style="width: 36%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>__call__</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>set_mc_dropout</strong></p></td>
 <td></td>
 </tr>
 </tbody>
@@ -23925,7 +23980,7 @@ passed in Trainer will be available here.</p></li>
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_optimizers">
 <span class="sig-name descname"><span class="pre">configure_optimizers</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.configure_optimizers" title="Permalink to this definition">¶</a></dt>
-<dd><p>configures optimizers and learning rate schedulers for for model optimization.</p>
+<dd><p>configures optimizers and learning rate schedulers for model optimization.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -23965,7 +24020,7 @@ different objects. So it should be called before constructing optimizer if the m
 while being optimized.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
+<dd class="field-odd"><p><strong>device</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>, <code class="xref py py-class docutils literal notranslate"><span class="pre">device</span></code>, <code class="xref py py-obj docutils literal notranslate"><span class="pre">None</span></code>]) – if specified, all parameters will be
 copied to that device</p>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -26357,6 +26412,11 @@ found within the <cite>state_dict</cite>. Implement this function and a correspo
 </dd></dl>
 
 <dl class="py method">
+<dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.set_mc_dropout">
+<span class="sig-name descname"><span class="pre">set_mc_dropout</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">active</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.set_mc_dropout" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py method">
 <dt class="sig sig-object py" id="darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.set_predict_parameters">
 <span class="sig-name descname"><span class="pre">set_predict_parameters</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_samples</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">roll_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.models.forecasting.pl_forecasting_module.PLSplitCovariatesModule.set_predict_parameters" title="Permalink to this definition">¶</a></dt>
 <dd><p>to be set from TorchForecastingModel before calling trainer.predict() and reset at self.on_predict_end()</p>
@@ -27592,7 +27652,7 @@ See <code class="xref py py-meth docutils literal notranslate"><span class="pre"
     <a class='right-next' id="next-link" href="darts.models.forecasting.prophet_model.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Facebook Prophet</p>
+        <p class="prev-next-title">&lt;no title&gt;</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>

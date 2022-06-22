@@ -198,6 +198,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
        Scaler
       </a>
@@ -345,11 +350,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -558,7 +558,7 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">DualCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#DualCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.DualCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a DualCovariatesTorchModel training dataset. It contains 4-tuples of
-<cite>(past_target, historic_future_covariates, future_covariates, future_target)</cite> <cite>np.ndarray</cite>.
+<cite>(past_target, historic_future_covariates, future_covariates, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
 </dd></dl>
 
@@ -567,7 +567,7 @@ The covariates are optional and can be <cite>None</cite>.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">FutureCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#FutureCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.FutureCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a FutureCovariatesTorchModel training dataset. It contains 3-tuples of
-<cite>(past_target, future_covariate, future_target)</cite> <cite>np.ndarray</cite>.
+<cite>(past_target, future_covariate, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
 </dd></dl>
 
@@ -576,7 +576,8 @@ The covariates are optional and can be <cite>None</cite>.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">MixedCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#MixedCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.MixedCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a MixedCovariatesTorchModel training dataset. It contains 5-tuples of
-<cite>(past_target, past_covariates, historic_future_covariates, future_covariates, future_target)</cite> <cite>np.ndarray</cite>.
+<cite>(past_target, past_covariates, historic_future_covariates, future_covariates, static_covariates,
+future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
 </dd></dl>
 
@@ -585,7 +586,7 @@ The covariates are optional and can be <cite>None</cite>.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">PastCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#PastCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a PastCovariatesTorchModel training dataset. It contains 3-tuples of
-<cite>(past_target, past_covariate, future_target)</cite> <cite>np.ndarray</cite>.
+<cite>(past_target, past_covariate, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
 </dd></dl>
 
@@ -594,7 +595,7 @@ The covariates are optional and can be <cite>None</cite>.</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.training_dataset.</span></span><span class="sig-name descname"><span class="pre">SplitCovariatesTrainingDataset</span></span><a class="reference internal" href="../_modules/darts/utils/data/training_dataset.html#SplitCovariatesTrainingDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.training_dataset.SplitCovariatesTrainingDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="#darts.utils.data.training_dataset.TrainingDataset" title="darts.utils.data.training_dataset.TrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.TrainingDataset</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Abstract class for a SplitCovariatesTorchModel training dataset. It contains 4-tuples of
-<cite>(past_target, past_covariates, future_covariates, future_target)</cite> <cite>np.ndarray</cite>.
+<cite>(past_target, past_covariates, future_covariates, static_covariates, future_target)</cite> <cite>np.ndarray</cite>.
 The covariates are optional and can be <cite>None</cite>.</p>
 </dd></dl>
 
@@ -606,12 +607,14 @@ The covariates are optional and can be <cite>None</cite>.</p>
 <ul class="simple">
 <li><dl class="simple">
 <dt>“PastCovariates” datasets (for PastCovariatesTorchModel): containing (past_target,</dt><dd><p>past_covariates,
+static_covariates,
 future_target)</p>
 </dd>
 </dl>
 </li>
 <li><dl class="simple">
 <dt>“FutureCovariates” datasets (for FutureCovariatesTorchModel): containing (past_target,</dt><dd><p>future_covariates,
+static_covariates,
 future_target)</p>
 </dd>
 </dl>
@@ -619,6 +622,7 @@ future_target)</p>
 <li><dl class="simple">
 <dt>“DualCovariates” datasets (for DualCovariatesTorchModel): containing (past_target,</dt><dd><p>historic_future_covariates,
 future_covariates,
+static_covariates,
 future_target)</p>
 </dd>
 </dl>
@@ -627,6 +631,7 @@ future_target)</p>
 <dt>“MixedCovariates” datasets (for MixedCovariatesTorchModel): containing (past_target,</dt><dd><p>past_covariates,
 historic_future_covariates,
 future_covariates,
+static_covariates,
 future_target)</p>
 </dd>
 </dl>
@@ -634,6 +639,7 @@ future_target)</p>
 <li><dl class="simple">
 <dt>“SplitCovariates” datasets (for SplitCovariatesTorchModel): containing (past_target,</dt><dd><p>past_covariates,
 future_covariates,
+static_covariates,
 future_target)</p>
 </dd>
 </dl>

@@ -1,0 +1,1381 @@
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Hierarchical Reconciliation &#8212; darts  documentation</title>
+    
+  <link href="../_static/css/theme.css" rel="stylesheet">
+  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/graphviz.css" />
+    
+  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="shortcut icon" href="../_static/docs-favicon.ico"/>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Scaler" href="darts.dataprocessing.transformers.scaler.html" />
+    <link rel="prev" title="Missing Values Filler" href="darts.dataprocessing.transformers.missing_values_filler.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="en">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../index.html">
+  <img src="../_static/darts-logo-trim.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../README.html">
+  Home
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../quickstart/00-quickstart.html">
+  Quickstart
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../userguide.html">
+  User Guide
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="darts.html">
+  API Reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../examples.html">
+  Examples
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/unit8co/darts" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/unit8co" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active has-children">
+  <a class="reference internal" href="darts.dataprocessing.html">
+   Data Processing
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="current">
+   <li class="toctree-l2 current active has-children">
+    <a class="reference internal" href="darts.dataprocessing.transformers.html">
+     Data Transformers
+    </a>
+    <input checked="" class="toctree-checkbox" id="toctree-checkbox-2" name="toctree-checkbox-2" type="checkbox"/>
+    <label for="toctree-checkbox-2">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul class="current">
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html">
+       Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.boxcox.html">
+       Box-Cox Transformer
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html">
+       Fittable Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html">
+       Invertible Data Transformer Base Class
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.mappers.html">
+       Mapper and InvertibleMapper
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.missing_values_filler.html">
+       Missing Values Filler
+      </a>
+     </li>
+     <li class="toctree-l3 current active">
+      <a class="current reference internal" href="#">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
+       Scaler
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.dataprocessing.pipeline.html">
+     Pipeline
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.datasets.html">
+   Datasets
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-3" name="toctree-checkbox-3" type="checkbox"/>
+  <label for="toctree-checkbox-3">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.metrics.html">
+   Metrics
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-4" name="toctree-checkbox-4" type="checkbox"/>
+  <label for="toctree-checkbox-4">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.metrics.metrics.html">
+     Metrics
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.models.html">
+   Models
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-5" name="toctree-checkbox-5" type="checkbox"/>
+  <label for="toctree-checkbox-5">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.filtering.html">
+     Filtering Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-6" name="toctree-checkbox-6" type="checkbox"/>
+    <label for="toctree-checkbox-6">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.gaussian_process_filter.html">
+       Gaussian Processes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.kalman_filter.html">
+       Kalman Filter
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.filtering.moving_average.html">
+       Moving Average
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.models.forecasting.html">
+     Forecasting Models
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-7" name="toctree-checkbox-7" type="checkbox"/>
+    <label for="toctree-checkbox-7">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.arima.html">
+       ARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.auto_arima.html">
+       AutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.baselines.html">
+       Baseline Models
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.block_rnn_model.html">
+       Block Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.croston.html">
+       Croston method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.exponential_smoothing.html">
+       Exponential Smoothing
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.fft.html">
+       Fast Fourier Transform
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.gradient_boosted_model.html">
+       LightGBM Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.kalman_forecaster.html">
+       Kalman Filter Forecaster
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.linear_regression_model.html">
+       Linear Regression model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nbeats.html">
+       N-BEATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.nhits.html">
+       N-HiTS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.random_forest.html">
+       Random Forest
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_ensemble_model.html">
+       Regression ensemble model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.regression_model.html">
+       Regression Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.rnn_model.html">
+       Recurrent Neural Networks
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.sf_auto_arima.html">
+       StatsForecastAutoARIMA
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tbats.html">
+       BATS and TBATS
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tcn_model.html">
+       Temporal Convolutional Network
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.tft_model.html">
+       Temporal Fusion Transformer (TFT)
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.theta.html">
+       Theta Method
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.transformer_model.html">
+       Transformer Model
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.models.forecasting.varima.html">
+       VARIMA
+      </a>
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1 has-children">
+  <a class="reference internal" href="darts.utils.html">
+   Utils
+  </a>
+  <input class="toctree-checkbox" id="toctree-checkbox-8" name="toctree-checkbox-8" type="checkbox"/>
+  <label for="toctree-checkbox-8">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul>
+   <li class="toctree-l2 has-children">
+    <a class="reference internal" href="darts.utils.data.html">
+     TimeSeries Datasets
+    </a>
+    <input class="toctree-checkbox" id="toctree-checkbox-9" name="toctree-checkbox-9" type="checkbox"/>
+    <label for="toctree-checkbox-9">
+     <i class="fas fa-chevron-down">
+     </i>
+    </label>
+    <ul>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoder_base.html">
+       Encoder Base Classes
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.encoders.html">
+       Time Axes Encoders
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.horizon_based_dataset.html">
+       Horizon-Based Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.inference_dataset.html">
+       Inference Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.sequential_dataset.html">
+       Sequential Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.shifted_dataset.html">
+       Shifted Training Dataset
+      </a>
+     </li>
+     <li class="toctree-l3">
+      <a class="reference internal" href="darts.utils.data.training_dataset.html">
+       Training Datasets Base Classes
+      </a>
+     </li>
+    </ul>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.likelihood_models.html">
+     Likelihood Models
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.losses.html">
+     PyTorch Loss Functions
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.missing_values.html">
+     Utils for filling missing values
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.model_selection.html">
+     Model selection utilities
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.statistics.html">
+     Time Series Statistics
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.timeseries_generation.html">
+     Utils for time series generation
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.torch.html">
+     Utils for Pytorch and its usage
+    </a>
+   </li>
+   <li class="toctree-l2">
+    <a class="reference internal" href="darts.utils.utils.html">
+     Additional util functions
+    </a>
+   </li>
+  </ul>
+ </li>
+ <li class="toctree-l1">
+  <a class="reference internal" href="darts.timeseries.html">
+   Timeseries
+  </a>
+ </li>
+</ul>
+
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+              
+              <div class="toc-item">
+                
+
+<nav id="bd-toc-nav">
+    
+</nav>
+              </div>
+              
+              <div class="toc-item">
+                
+              </div>
+              
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <span class="target" id="module-darts.dataprocessing.transformers.reconciliation"></span><section id="hierarchical-reconciliation">
+<h1>Hierarchical Reconciliation<a class="headerlink" href="#hierarchical-reconciliation" title="Permalink to this headline">¶</a></h1>
+<p>A set of posthoc hierarchical reconciliation transformers. These transformers
+work on any <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> (e.g., a forecast) that contain a <code class="docutils literal notranslate"><span class="pre">hierarchy</span></code>.</p>
+<p>A <code class="docutils literal notranslate"><span class="pre">hierarchy</span></code> is a dict that maps each component to their parent(s) in the hierarchy.
+It can be added to a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> using e.g., the <code class="xref py py-meth docutils literal notranslate"><span class="pre">TimeSeries.with_hierarchy()</span></code> method.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">BottomUpReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'BaseDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#BottomUpReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.base_data_transformer.html#darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer" title="darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.base_data_transformer.BaseDataTransformer</span></code></a></p>
+<p>Performs bottom up reconciliation, as defined <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html">here</a>.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.name" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_n_jobs" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_verbose" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 71%" />
+<col style="width: 29%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_projection_matrix</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Abstract class for data transformers.</p>
+<p>All the deriving classes have to implement the static method <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a>.
+The class offers the method <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a>, for applying a transformation to a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> or
+<code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code>. This class takes care of parallelizing the transformation of multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+when possible.</p>
+<p>Data transformers requiring to be fit first before calling <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> should derive
+from <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">FittableDataTransformer</span></code></a> instead.
+Data transformers that are invertible should derive from <a class="reference internal" href="darts.dataprocessing.transformers.invertible_data_transformer.html#darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer" title="darts.dataprocessing.transformers.invertible_data_transformer.InvertibleDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">InvertibleDataTransformer</span></code></a> instead.</p>
+<p>Note: the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method is designed to be a static method instead of a instance method to allow an
+efficient parallelisation also when the scaler instance is storing a non-negligible amount of data. Using
+an instance method would imply copying the instance’s data through multiple processes, which can easily
+introduce a bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The data transformer’s name</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <code class="docutils literal notranslate"><span class="pre">Sequence[TimeSeries]</span></code>
+is passed as input to a method, parallelising operations regarding different TimeSeries.
+Defaults to <cite>1</cite> (sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
+Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+required amount of time.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.name" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_n_jobs" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_verbose" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 71%" />
+<col style="width: 29%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_projection_matrix</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.get_projection_matrix">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_projection_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#BottomUpReconciliator.get_projection_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.get_projection_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the data transformer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_n_jobs">
+<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – New n_jobs value.  Set to <cite>-1</cite> for using all the available cores.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_verbose">
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity status.</p>
+<p><cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – New verbosity status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform a (sequence of) of series.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#BottomUpReconciliator.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.BottomUpReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+object. If more parameters are added as input in the derived classes, the <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> should be
+redefined accordingly, to yield the necessary arguments to this function (See <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> for
+further details).</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance method to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">MinTReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'ols'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#MinTReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a></p>
+<p>MinT Reconcilator.</p>
+<p>This implements the MinT reconcilation approach presented in <a class="reference internal" href="#rdd2082bb2d42-1" id="id1">[1]</a> and
+summarised in <a class="reference internal" href="#rdd2082bb2d42-2" id="id2">[2]</a>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>method</strong> – <p>This parameter can take four different values, determining how the covariance
+matrix <code class="docutils literal notranslate"><span class="pre">W</span></code> of the forecast errors is estimated (corresponding to <code class="docutils literal notranslate"><span class="pre">Wh</span></code> in <a class="reference internal" href="#rdd2082bb2d42-2" id="id3">[2]</a>):</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ols</span></code> uses <code class="docutils literal notranslate"><span class="pre">W</span> <span class="pre">=</span> <span class="pre">I</span></code>. This option looks only at the hierarchy but ignores the
+values of the series provided to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wls_struct</span></code> uses <code class="docutils literal notranslate"><span class="pre">W</span> <span class="pre">=</span> <span class="pre">diag(S1)</span></code>, where <code class="docutils literal notranslate"><span class="pre">S1</span></code> is a vector of size <cite>n</cite> with values
+between 0 and <cite>m</cite>, representing the number of base components composing each
+of the <cite>n</cite> components. This options looks only at the hierarchy but ignores
+the values of the series provided to <code class="docutils literal notranslate"><span class="pre">fit()</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wls_var</span></code> uses <code class="docutils literal notranslate"><span class="pre">W</span> <span class="pre">=</span> <span class="pre">diag(W1)</span></code>, where <code class="docutils literal notranslate"><span class="pre">W1</span></code> is the temporal average of the
+variance of the forecasting residuals. This method assumes that the series
+provided to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> contain the forecast residuals (deterministic series).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mint_cov</span></code> computes <code class="docutils literal notranslate"><span class="pre">W</span></code> as the empirical covariance matrix of the residuals
+for each component, with residuals samples taken over time. This method assumes
+that the series provided to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> contain the forecast residuals
+(deterministic series), and it requires the residuals to be linearly independent.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wls_val</span></code> uses <code class="docutils literal notranslate"><span class="pre">W</span> <span class="pre">=</span> <span class="pre">diag(V1)</span></code>, where <code class="docutils literal notranslate"><span class="pre">V1</span></code> is the temporal average of the
+component values. This method assumes that the series provided to <code class="docutils literal notranslate"><span class="pre">fit()</span></code> contains
+an example of the actual values (e.g., either the training series or the forecasts).
+This method is not presented in <a class="reference internal" href="#rdd2082bb2d42-2" id="id4">[2]</a>.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rdd2082bb2d42-1"><span class="brackets"><a class="fn-backref" href="#id1">1</a></span></dt>
+<dd><p><a class="reference external" href="https://robjhyndman.com/papers/MinT.pdf">Optimal forecast reconciliation for hierarchical and grouped time series through
+trace minimization</a></p>
+</dd>
+<dt class="label" id="rdd2082bb2d42-2"><span class="brackets">2</span><span class="fn-backref">(<a href="#id2">1</a>,<a href="#id3">2</a>,<a href="#id4">3</a>)</span></dt>
+<dd><p><a class="reference external" href="https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach">https://otexts.com/fpp3/reconciliation.html#the-mint-optimal-reconciliation-approach</a></p>
+</dd>
+</dl>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.name" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the provided series or sequence of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit_transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the (sequence of) series and return the transformed input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.get_matrices" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.get_matrices"><code class="xref py py-obj docutils literal notranslate"><span class="pre">get_matrices</span></code></a>(series, method)</p></td>
+<td><p>Returns the G matrix given a specified reconciliation method.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_n_jobs" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_verbose" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series, method)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, S_and_G)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the provided series or sequence of series.</p>
+<p>Fit the data and store the fitting parameters into <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>. If a sequence is passed as input
+data, this function takes care of parallelising the fitting of multiple series in the sequence at the same time
+(in this case <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code> will contain an array of fitted params, one for each series).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to fit the transformer on.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted transformer.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer">FittableDataTransformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the (sequence of) series and return the transformed input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series to transform.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method:</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.get_matrices">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_matrices</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#MinTReconciliator.get_matrices"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.get_matrices" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the G matrix given a specified reconciliation method.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the data transformer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_n_jobs">
+<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – New n_jobs value.  Set to <cite>-1</cite> for using all the available cores.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_verbose">
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity status.</p>
+<p><cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – New verbosity status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform a (sequence of) of series.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#MinTReconciliator.ts_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return an object containing information
+regarding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will
+be stored in <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>, which can be later used during the transformation step.</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<p>If more parameters are added as input in the derived classes, <code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code>
+should be redefined accordingly, to yield the necessary arguments to this function (See
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code> for further details)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> against which the scaler will be fit.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance methods to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">S_and_G</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#MinTReconciliator.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.MinTReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+object. If more parameters are added as input in the derived classes, the <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> should be
+redefined accordingly, to yield the necessary arguments to this function (See <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> for
+further details).</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance method to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.dataprocessing.transformers.reconciliation.</span></span><span class="sig-name descname"><span class="pre">TopDownReconciliator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'FittableDataTransformer'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_jobs</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#TopDownReconciliator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer</span></code></a></p>
+<p>Performs top down reconciliation, as defined <a class="reference external" href="https://otexts.com/fpp3/reconciliation.html">here</a>.</p>
+<p>This estimator computes the proportions (of the base components w.r.t. the top component)
+based on the TimeSeries provided to the method <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit"><code class="xref py py-meth docutils literal notranslate"><span class="pre">fit()</span></code></a>. If the historical series
+is provided, then the historical proportions will be used.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.name" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the provided series or sequence of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the (sequence of) series and return the transformed input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_n_jobs" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_verbose" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, G)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 71%" />
+<col style="width: 29%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_projection_matrix</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>Base class for fittable transformers.</p>
+<p>All the deriving classes have to implement the static methods
+<a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> and <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a>. The fitting and transformation functions must
+be passed during the transformer’s initialization. This class takes care of parallelizing
+operations involving multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> when possible.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>name</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">str</span></code>) – The data transformer’s name</p></li>
+<li><p><strong>n_jobs</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – The number of jobs to run in parallel. Parallel jobs are created only when a <cite>Sequence[TimeSeries]</cite> is
+passed as input to a method, parallelising operations regarding different <cite>TimeSeries</cite>. Defaults to <cite>1</cite>
+(sequential). Setting the parameter to <cite>-1</cite> means using all the available processors.
+Note: for a small amount of data, the parallelisation overhead could end up increasing the total
+required amount of time.</p></li>
+<li><p><strong>verbose</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – Optionally, whether to print operations progress</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> and <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> methods are designed to be static methods instead of instance
+methods to allow an efficient parallelisation also when the scaler instance is storing a non-negligible
+amount of data. Using instance methods would imply copying the instance’s data through multiple processes, which
+can easily introduce a bottleneck and nullify parallelisation benefits.</p>
+<p class="rubric">Attributes</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.name" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.name"><code class="xref py py-obj docutils literal notranslate"><span class="pre">name</span></code></a></p></td>
+<td><p>Name of the data transformer.</p></td>
+</tr>
+</tbody>
+</table>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the provided series or sequence of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fit_transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Fit the transformer to the (sequence of) series and return the transformed input.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_n_jobs" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_n_jobs"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_n_jobs</span></code></a>(value)</p></td>
+<td><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_verbose" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_verbose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">set_verbose</span></code></a>(value)</p></td>
+<td><p>Set the verbosity status.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transform</span></code></a>(series, *args, **kwargs)</p></td>
+<td><p>Transform a (sequence of) of series.</p></td>
+</tr>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_fit</span></code></a>(series)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p></td>
+</tr>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ts_transform</span></code></a>(series, G)</p></td>
+<td><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 71%" />
+<col style="width: 29%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>get_projection_matrix</strong></p></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the provided series or sequence of series.</p>
+<p>Fit the data and store the fitting parameters into <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>. If a sequence is passed as input
+data, this function takes care of parallelising the fitting of multiple series in the sequence at the same time
+(in this case <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code> will contain an array of fitted params, one for each series).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to fit the transformer on.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_fit()</span></code></a> method</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Fitted transformer.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.dataprocessing.transformers.fittable_data_transformer.html#darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer" title="darts.dataprocessing.transformers.fittable_data_transformer.FittableDataTransformer">FittableDataTransformer</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Fit the transformer to the (sequence of) series and return the transformed input.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – the (sequence of) series to transform.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method</p></li>
+<li><p><strong>kwargs</strong> – <p>Additional keyword arguments for the <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method:</p>
+<dl class="simple">
+<dt>component_mask<span class="classifier">Optional[np.ndarray] = None</span></dt><dd><p>Optionally, a 1-D boolean np.ndarray of length <code class="docutils literal notranslate"><span class="pre">series.n_components</span></code> that specifies which
+components of the underlying <cite>series</cite> the Scaler should consider.</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, Sequence[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.get_projection_matrix">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_projection_matrix</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#TopDownReconciliator.get_projection_matrix"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.get_projection_matrix" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.name">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">name</span></span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.name" title="Permalink to this definition">¶</a></dt>
+<dd><p>Name of the data transformer.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_n_jobs">
+<span class="sig-name descname"><span class="pre">set_n_jobs</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_n_jobs" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the number of processors to be used by the transformer while processing multiple <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">int</span></code>) – New n_jobs value.  Set to <cite>-1</cite> for using all the available cores.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_verbose">
+<span class="sig-name descname"><span class="pre">set_verbose</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.set_verbose" title="Permalink to this definition">¶</a></dt>
+<dd><p>Set the verbosity status.</p>
+<p><cite>True</cite> for enabling the detailed report about scaler’s operation progress,
+<cite>False</cite> for no additional information.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>value</strong> (<code class="xref py py-class docutils literal notranslate"><span class="pre">bool</span></code>) – New verbosity status</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>Transform a (sequence of) of series.</p>
+<p>In case a <code class="docutils literal notranslate"><span class="pre">Sequence</span></code> is passed as input data, this function takes care of
+parallelising the transformation of multiple series in the sequence at the same time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>series</strong> (<code class="xref py py-data docutils literal notranslate"><span class="pre">Union</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>, <code class="xref py py-class docutils literal notranslate"><span class="pre">Sequence</span></code>[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>]]) – (sequence of) series to be transformed.</p></li>
+<li><p><strong>args</strong> – Additional positional arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+<li><p><strong>kwargs</strong> – Additional keyword arguments for each <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">ts_transform()</span></code></a> method call</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Transformed data.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>Union[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>, List[<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a>]]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#TopDownReconciliator.ts_fit"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_fit" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.fit"><code class="xref py py-func docutils literal notranslate"><span class="pre">fit()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return an object containing information
+regarding the fitting phase (e.g., parameters, or external transformers objects). All these parameters will
+be stored in <code class="docutils literal notranslate"><span class="pre">self._fitted_params</span></code>, which can be later used during the transformation step.</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<p>If more parameters are added as input in the derived classes, <code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code>
+should be redefined accordingly, to yield the necessary arguments to this function (See
+<code class="xref py py-func docutils literal notranslate"><span class="pre">_fit_iterator()</span></code> for further details)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>(</strong><strong>TimeSeries</strong><strong>)</strong> (<em>series</em>) – <cite>TimeSeries</cite> against which the scaler will be fit.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance methods to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><code class="xref py py-class docutils literal notranslate"><span class="pre">ndarray</span></code></p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ts_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/dataprocessing/transformers/reconciliation.html#TopDownReconciliator.ts_transform"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.ts_transform" title="Permalink to this definition">¶</a></dt>
+<dd><p>The function that will be applied to each series when <a class="reference internal" href="#darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform" title="darts.dataprocessing.transformers.reconciliation.TopDownReconciliator.transform"><code class="xref py py-func docutils literal notranslate"><span class="pre">transform()</span></code></a> is called.</p>
+<p>The function must take as first argument a <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> object, and return the transformed <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code>
+object. If more parameters are added as input in the derived classes, the <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> should be
+redefined accordingly, to yield the necessary arguments to this function (See <code class="docutils literal notranslate"><span class="pre">_transform_iterator()</span></code> for
+further details).</p>
+<p>This method is not implemented in the base class and must be implemented in the deriving classes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>series</strong> (<a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a>) – series to be transformed.</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>This method is designed to be a static method instead of instance method to allow an efficient
+parallelisation also when the scaler instance is storing a non-negligible amount of data. Using instance
+methods would imply copying the instance’s data through multiple processes, which can easily introduce a
+bottleneck and nullify parallelisation benefits.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries"><code class="xref py py-class docutils literal notranslate"><span class="pre">TimeSeries</span></code></a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'> 
+    <a class='left-prev' id="prev-link" href="darts.dataprocessing.transformers.missing_values_filler.html" title="previous page">
+        <i class="fas fa-angle-left"></i>
+        <div class="prev-next-info">
+            <p class="prev-next-subtitle">previous</p>
+            <p class="prev-next-title">Missing Values Filler</p>
+        </div>
+    </a>
+    <a class='right-next' id="next-link" href="darts.dataprocessing.transformers.scaler.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Scaler</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
+    </a>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2020 - 2022, Unit8 SA (Apache 2.0 License).<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.2.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

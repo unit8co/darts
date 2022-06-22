@@ -198,6 +198,13 @@
 <span class="sd">        The transformation is applied independently for each dimension (component) of the time series,</span>
 <span class="sd">        effectively merging all samples of a component in order to compute the transform.</span>
 
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The scaler will not scale the series&#39; static covariates. This has to be done either before constructing the</span>
+<span class="sd">        series, or later on by extracting the covariates, transforming the values and then reapplying them to the</span>
+<span class="sd">        series. For this, see TimeSeries properties `TimeSeries.static_covariates` and method</span>
+<span class="sd">        `TimeSeries.with_static_covariates()`</span>
+
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        scaler</span>
@@ -268,12 +275,7 @@
             <span class="n">series</span><span class="p">,</span> <span class="n">tr_out</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-            <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-            <span class="n">values</span><span class="o">=</span><span class="n">transformed_vals</span><span class="p">,</span>
-            <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">transformed_vals</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Scaler.ts_inverse_transform"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.ts_inverse_transform">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_inverse_transform</span><span class="p">(</span>
@@ -288,12 +290,7 @@
             <span class="n">series</span><span class="p">,</span> <span class="n">tr_out</span><span class="p">,</span> <span class="n">component_mask</span><span class="o">=</span><span class="n">component_mask</span>
         <span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
-            <span class="n">times</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span>
-            <span class="n">values</span><span class="o">=</span><span class="n">inv_transformed_vals</span><span class="p">,</span>
-            <span class="n">fill_missing_dates</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-            <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
-        <span class="p">)</span></div>
+        <span class="k">return</span> <span class="n">series</span><span class="o">.</span><span class="n">with_values</span><span class="p">(</span><span class="n">inv_transformed_vals</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="Scaler.ts_fit"><a class="viewcode-back" href="../../../../generated_api/darts.dataprocessing.transformers.scaler.html#darts.dataprocessing.transformers.scaler.Scaler.ts_fit">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">ts_fit</span><span class="p">(</span><span class="n">series</span><span class="p">:</span> <span class="n">TimeSeries</span><span class="p">,</span> <span class="n">transformer</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>

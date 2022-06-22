@@ -198,6 +198,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
        Scaler
       </a>
@@ -345,11 +350,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -561,7 +561,7 @@
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.dataset_loaders.</span></span><span class="sig-name descname"><span class="pre">DatasetLoader</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metadata</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">root_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets/dataset_loaders.html#DatasetLoader"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoader" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">abc.ABC</span></code></p>
 <p>Class that downloads a dataset and caches it locally.
-Assumes that the file can be downloaded (i.e. publicly available via an URI)</p>
+Assumes that the file can be downloaded (i.e. publicly available via a URI)</p>
 <p class="rubric">Methods</p>
 <table class="longtable table autosummary">
 <colgroup>
@@ -632,13 +632,13 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.dataset_loaders.DatasetLoaderMetadata">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.dataset_loaders.</span></span><span class="sig-name descname"><span class="pre">DatasetLoaderMetadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uri</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hash</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets/dataset_loaders.html#DatasetLoaderMetadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata" title="Permalink to this definition">¶</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.dataset_loaders.</span></span><span class="sig-name descname"><span class="pre">DatasetLoaderMetadata</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">uri</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hash</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">header_time</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">format_time</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">pre_process_zipped_csv_fn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets/dataset_loaders.html#DatasetLoaderMetadata"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
 <p class="rubric">Attributes</p>
 <table class="table">
 <colgroup>
-<col style="width: 60%" />
-<col style="width: 40%" />
+<col style="width: 74%" />
+<col style="width: 26%" />
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p><strong>format_time</strong></p></td>
@@ -647,16 +647,22 @@ Downloads the dataset if it is not present already</p>
 <tr class="row-even"><td><p><strong>freq</strong></p></td>
 <td></td>
 </tr>
+<tr class="row-odd"><td><p><strong>multivariate</strong></p></td>
+<td></td>
+</tr>
+<tr class="row-even"><td><p><strong>pre_process_zipped_csv_fn</strong></p></td>
+<td></td>
+</tr>
 </tbody>
 </table>
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.datasets.dataset_loaders.DatasetLoaderMetadata.format_time">
-<span class="sig-name descname"><span class="pre">format_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.format_time" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">format_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.format_time" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.datasets.dataset_loaders.DatasetLoaderMetadata.freq">
-<span class="sig-name descname"><span class="pre">freq</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.freq" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">freq</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.freq" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
@@ -666,12 +672,22 @@ Downloads the dataset if it is not present already</p>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.datasets.dataset_loaders.DatasetLoaderMetadata.header_time">
-<span class="sig-name descname"><span class="pre">header_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.header_time" title="Permalink to this definition">¶</a></dt>
+<span class="sig-name descname"><span class="pre">header_time</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.header_time" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.datasets.dataset_loaders.DatasetLoaderMetadata.multivariate">
+<span class="sig-name descname"><span class="pre">multivariate</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.multivariate" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.datasets.dataset_loaders.DatasetLoaderMetadata.name">
 <span class="sig-name descname"><span class="pre">name</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">str</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.name" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="darts.datasets.dataset_loaders.DatasetLoaderMetadata.pre_process_zipped_csv_fn">
+<span class="sig-name descname"><span class="pre">pre_process_zipped_csv_fn</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Callable</span><span class="p"><span class="pre">]</span></span></em><em class="property"><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="pre">None</span></em><a class="headerlink" href="#darts.datasets.dataset_loaders.DatasetLoaderMetadata.pre_process_zipped_csv_fn" title="Permalink to this definition">¶</a></dt>
 <dd></dd></dl>
 
 <dl class="py attribute">

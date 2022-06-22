@@ -1095,7 +1095,7 @@ Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 </pre></div>
 </div>
 <div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
-<span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">Prophet</span><span class="p">,</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">Theta</span>
+<span></span><span class="kn">from</span> <span class="nn">darts.models</span> <span class="kn">import</span> <span class="n">ExponentialSmoothing</span><span class="p">,</span> <span class="n">TBATS</span><span class="p">,</span> <span class="n">AutoARIMA</span><span class="p">,</span> <span class="n">Theta</span>
 
 
 <span class="k">def</span> <span class="nf">eval_model</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
@@ -1105,35 +1105,19 @@ Mean absolute percentage error for the combined naive drift + seasonal: 5.66%.
 
 
 <span class="n">eval_model</span><span class="p">(</span><span class="n">ExponentialSmoothing</span><span class="p">())</span>
-<span class="n">eval_model</span><span class="p">(</span><span class="n">Prophet</span><span class="p">())</span>
+<span class="n">eval_model</span><span class="p">(</span><span class="n">TBATS</span><span class="p">())</span>
 <span class="n">eval_model</span><span class="p">(</span><span class="n">AutoARIMA</span><span class="p">())</span>
 <span class="n">eval_model</span><span class="p">(</span><span class="n">Theta</span><span class="p">())</span>
 </pre></div>
 </div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<div class="highlight"><pre>
-model ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=ModelMode.ADDITIVE, seasonal_periods=12 obtains MAPE: 5.11%
-</pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area stderr docutils container">
-<div class="highlight"><pre>
-INFO:prophet:Disabling weekly seasonality. Run prophet with weekly_seasonality=True to override this.
-INFO:prophet:Disabling daily seasonality. Run prophet with daily_seasonality=True to override this.
-</pre></div></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-model Prophet obtains MAPE: 9.80%
+model ExponentialSmoothing(trend=ModelMode.ADDITIVE, damped=False, seasonal=SeasonalityMode.ADDITIVE, seasonal_periods=12 obtains MAPE: 5.11%
+model (T)BATS obtains MAPE: 5.87%
 model Auto-ARIMA obtains MAPE: 11.65%
 model Theta(2) obtains MAPE: 8.15%
 </pre></div></div>
@@ -1237,7 +1221,7 @@ The MAPE is: 4.40, with theta = -3.5102040816326543.
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "877b4493016440ccba83eb8f46591e17", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "373a5a56875d4beca98a60582825c0ff", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1281,7 +1265,7 @@ MAPE = 7.70%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "35ce6a6455774f47a8f54920ead9501c", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "47c1e78d22d24bbba1f81bfe897e983b", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1313,7 +1297,7 @@ MAPE = 7.70%
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ed012ad4679a4a57a82db57d8d148180", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "447b5b4e71bc4405b8efc05000534c41", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
@@ -1365,7 +1349,7 @@ Average error (MAPE) over all historical forecasts: 6.36
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "a37189ea5bd3477499d11765e69b65d2", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6e8218af55a14f80915b11c795ec9fc0", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1489,7 +1473,7 @@ MAPE = 4.45%
 
 <span class="n">model</span> <span class="o">=</span> <span class="n">NBEATSModel</span><span class="p">(</span><span class="n">input_chunk_length</span><span class="o">=</span><span class="mi">24</span><span class="p">,</span> <span class="n">output_chunk_length</span><span class="o">=</span><span class="mi">12</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">)</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1498,27 +1482,35 @@ MAPE = 4.45%
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2022-01-12 21:18:07,156] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
-[2022-01-12 21:18:07,156] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
-INFO:darts.models.forecasting.torch_forecasting_model:Train dataset contains 194 samples.
-[2022-01-12 21:18:07,210] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-[2022-01-12 21:18:07,210] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-INFO:darts.models.forecasting.torch_forecasting_model:Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:04:42,259] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
+[2022-06-21 16:04:42,259] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
+2022-06-21 16:04:42 darts.models.forecasting.torch_forecasting_model INFO: Train dataset contains 194 samples.
+[2022-06-21 16:04:42,341] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:04:42,341] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+2022-06-21 16:04:42 darts.models.forecasting.torch_forecasting_model INFO: Time series values are 32-bits; casting model to float32.
+2022-06-21 16:04:42 pytorch_lightning.utilities.rank_zero INFO: GPU available: False, used: False
+2022-06-21 16:04:42 pytorch_lightning.utilities.rank_zero INFO: TPU available: False, using: 0 TPU cores
+2022-06-21 16:04:42 pytorch_lightning.utilities.rank_zero INFO: IPU available: False, using: 0 IPUs
+2022-06-21 16:04:42 pytorch_lightning.utilities.rank_zero INFO: HPU available: False, using: 0 HPUs
+2022-06-21 16:04:42 pytorch_lightning.callbacks.model_summary INFO:
+  | Name          | Type             | Params
+---------------------------------------------------
+0 | criterion     | MSELoss          | 0
+1 | train_metrics | MetricCollection | 0
+2 | val_metrics   | MetricCollection | 0
+3 | stacks        | ModuleList       | 6.2 M
+---------------------------------------------------
+6.2 M     Trainable params
+1.4 K     Non-trainable params
+6.2 M     Total params
+24.787    Total estimated model params size (MB)
 </pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "663a7064ef5f49e49aa6a27aa2845ea8", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-Training loss: 0.0023
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "701f84580e3045169caf35261e610ec2", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Let’s now get some forecasts 36 months ahead, for our two series. We can just use the <code class="docutils literal notranslate"><span class="pre">series</span></code> argument of the <code class="docutils literal notranslate"><span class="pre">fit()</span></code> function to tell the model which series to forecast. Importantly, the <code class="docutils literal notranslate"><span class="pre">output_chunk_length</span></code> does not directly constrain the forecast horizon <code class="docutils literal notranslate"><span class="pre">n</span></code> that can be used with <code class="docutils literal notranslate"><span class="pre">predict()</span></code>. Here, we trained the model with <code class="docutils literal notranslate"><span class="pre">output_chunk_length=12</span></code> and produce forecasts for <code class="docutils literal notranslate"><span class="pre">n=36</span></code> months ahead; this is simply done in an auto-regressive way behind the scenes (where the network
 recursively consumes its previous outputs).</p>
@@ -1541,11 +1533,23 @@ recursively consumes its previous outputs).</p>
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "867980c932b1410a999d3a2b95326845", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "337907adf0314cce91d5bc123d2bcc65", "version_major": 2, "version_minor": 0}</script></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_72_0.png" src="../_images/quickstart_00-quickstart_72_0.png" />
+<img alt="../_images/quickstart_00-quickstart_72_2.png" src="../_images/quickstart_00-quickstart_72_2.png" />
 </div>
 </div>
 <p>Our forecasts are actually not so terrible, considering that we use <strong>one model</strong> with default hyper-parameters to capture both air passengers and milk production!</p>
@@ -1616,7 +1620,7 @@ values to have them between (roughly) 0 and 1:</p>
     <span class="n">past_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covs</span><span class="p">,</span> <span class="n">milk_covs</span><span class="p">],</span>
     <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span>
     <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
-<span class="p">)</span>
+<span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1625,27 +1629,35 @@ values to have them between (roughly) 0 and 1:</p>
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2022-01-12 21:18:31,543] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
-[2022-01-12 21:18:31,543] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
-INFO:darts.models.forecasting.torch_forecasting_model:Train dataset contains 194 samples.
-[2022-01-12 21:18:31,595] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-[2022-01-12 21:18:31,595] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-INFO:darts.models.forecasting.torch_forecasting_model:Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:05:10,026] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
+[2022-06-21 16:05:10,026] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
+2022-06-21 16:05:10 darts.models.forecasting.torch_forecasting_model INFO: Train dataset contains 194 samples.
+[2022-06-21 16:05:10,085] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:05:10,085] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+2022-06-21 16:05:10 darts.models.forecasting.torch_forecasting_model INFO: Time series values are 32-bits; casting model to float32.
+2022-06-21 16:05:10 pytorch_lightning.utilities.rank_zero INFO: GPU available: False, used: False
+2022-06-21 16:05:10 pytorch_lightning.utilities.rank_zero INFO: TPU available: False, using: 0 TPU cores
+2022-06-21 16:05:10 pytorch_lightning.utilities.rank_zero INFO: IPU available: False, using: 0 IPUs
+2022-06-21 16:05:10 pytorch_lightning.utilities.rank_zero INFO: HPU available: False, using: 0 HPUs
+2022-06-21 16:05:10 pytorch_lightning.callbacks.model_summary INFO:
+  | Name          | Type             | Params
+---------------------------------------------------
+0 | criterion     | MSELoss          | 0
+1 | train_metrics | MetricCollection | 0
+2 | val_metrics   | MetricCollection | 0
+3 | stacks        | ModuleList       | 6.6 M
+---------------------------------------------------
+6.6 M     Trainable params
+1.7 K     Non-trainable params
+6.6 M     Total params
+26.314    Total estimated model params size (MB)
 </pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bcadde1ee4624d149ec837ef8d925c4f", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-Training loss: 0.0020
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "356758c6ee7b40a682d0523641343534", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Then to produce forecasts, we again have to provide our covariates as <code class="docutils literal notranslate"><span class="pre">past_covariates</span></code> to the <code class="docutils literal notranslate"><span class="pre">predict()</span></code> function. Even though the covariates time series also contains “future” values of the covariates up to the forecast horizon, the model will <em>not</em> consume those future values, because it uses them as past covariates (and not future covariates).</p>
 <div class="nbinput docutils container">
@@ -1667,11 +1679,23 @@ Training loss: 0.0020
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "d10d6c72389243779fb5dcf1f209f8e2", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "96c02d1c614d4006ac81b26bf4442c16", "version_major": 2, "version_minor": 0}</script></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_79_0.png" src="../_images/quickstart_00-quickstart_79_0.png" />
+<img alt="../_images/quickstart_00-quickstart_79_2.png" src="../_images/quickstart_00-quickstart_79_2.png" />
 </div>
 </div>
 <p>It seems that now the model captures better the trend of the air series (which also perturbs a bit the forecasts of the milk series).</p>
@@ -1727,7 +1751,7 @@ Training loss: 0.0020
     <span class="n">random_state</span><span class="o">=</span><span class="mi">42</span><span class="p">,</span>
 <span class="p">)</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">([</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">50</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1736,27 +1760,35 @@ Training loss: 0.0020
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2022-01-12 21:18:57,962] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
-[2022-01-12 21:18:57,962] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
-INFO:darts.models.forecasting.torch_forecasting_model:Train dataset contains 194 samples.
-[2022-01-12 21:18:58,015] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-[2022-01-12 21:18:58,015] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-INFO:darts.models.forecasting.torch_forecasting_model:Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:05:39,967] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
+[2022-06-21 16:05:39,967] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 194 samples.
+2022-06-21 16:05:39 darts.models.forecasting.torch_forecasting_model INFO: Train dataset contains 194 samples.
+[2022-06-21 16:05:40,031] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:05:40,031] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+2022-06-21 16:05:40 darts.models.forecasting.torch_forecasting_model INFO: Time series values are 32-bits; casting model to float32.
+2022-06-21 16:05:40 pytorch_lightning.utilities.rank_zero INFO: GPU available: False, used: False
+2022-06-21 16:05:40 pytorch_lightning.utilities.rank_zero INFO: TPU available: False, using: 0 TPU cores
+2022-06-21 16:05:40 pytorch_lightning.utilities.rank_zero INFO: IPU available: False, using: 0 IPUs
+2022-06-21 16:05:40 pytorch_lightning.utilities.rank_zero INFO: HPU available: False, using: 0 HPUs
+2022-06-21 16:05:40 pytorch_lightning.callbacks.model_summary INFO:
+  | Name          | Type             | Params
+---------------------------------------------------
+0 | criterion     | MSELoss          | 0
+1 | train_metrics | MetricCollection | 0
+2 | val_metrics   | MetricCollection | 0
+3 | stacks        | ModuleList       | 6.6 M
+---------------------------------------------------
+6.6 M     Trainable params
+1.7 K     Non-trainable params
+6.6 M     Total params
+26.314    Total estimated model params size (MB)
 </pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "bbec2ee8cd104240a1474c089a8bc7fa", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-Training loss: 0.0016
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "534c0f3622aa453cb7ec7f9a93136c8b", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>And get some forecasts for the air passengers series:</p>
 <div class="nbinput docutils container">
@@ -1775,11 +1807,17 @@ Training loss: 0.0016
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "acdc107a507f410f9c3e839295347bc4", "version_major": 2, "version_minor": 0}</script></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_88_0.png" src="../_images/quickstart_00-quickstart_88_0.png" />
+<img alt="../_images/quickstart_00-quickstart_88_1.png" src="../_images/quickstart_00-quickstart_88_1.png" />
 </div>
 </div>
 </section>
@@ -1806,7 +1844,7 @@ Training loss: 0.0016
 
 <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
     <span class="p">[</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">train_milk_scaled</span><span class="p">],</span> <span class="n">future_covariates</span><span class="o">=</span><span class="p">[</span><span class="n">air_covs</span><span class="p">,</span> <span class="n">milk_covs</span><span class="p">]</span>
-<span class="p">)</span>
+<span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1863,7 +1901,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-[3.5495088171990554, 5.353836489428387]
+[3.41736301779747, 5.282935127615929]
 </pre></div></div>
 </div>
 <p>or the average metric over “all” series:</p>
@@ -1882,7 +1920,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-4.451672653313722
+4.350149072706699
 </pre></div></div>
 </div>
 <p>By the way: similarly to transformers such as <code class="docutils literal notranslate"><span class="pre">Scaler</span></code>, computing metrics can be parallelized over <code class="docutils literal notranslate"><span class="pre">N</span></code> processors when executed over many series pairs by specifying <code class="docutils literal notranslate"><span class="pre">n_jobs=N</span></code>.</p>
@@ -1910,7 +1948,7 @@ covariates 6 months before the forecasted time step (which also requires to know
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0464d297e98f43bba8f7f2e29f8a7659", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "6210f66ce0ea4e20a3b575b5e61e6b86", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -1976,7 +2014,7 @@ quantiles.</p>
     <span class="n">likelihood</span><span class="o">=</span><span class="n">LaplaceLikelihood</span><span class="p">(),</span>
 <span class="p">)</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -1985,30 +2023,39 @@ quantiles.</p>
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2022-01-12 21:47:56,543] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
-[2022-01-12 21:47:56,543] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
-INFO:darts.models.forecasting.torch_forecasting_model:Train dataset contains 73 samples.
-[2022-01-12 21:47:56,547] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
-[2022-01-12 21:47:56,547] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
-INFO:darts.models.forecasting.tcn_model:Number of layers chosen: 3
-[2022-01-12 21:47:56,550] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-[2022-01-12 21:47:56,550] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-INFO:darts.models.forecasting.torch_forecasting_model:Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:06:11,849] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
+[2022-06-21 16:06:11,849] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
+2022-06-21 16:06:11 darts.models.forecasting.torch_forecasting_model INFO: Train dataset contains 73 samples.
+[2022-06-21 16:06:11,853] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
+[2022-06-21 16:06:11,853] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
+2022-06-21 16:06:11 darts.models.forecasting.tcn_model INFO: Number of layers chosen: 3
+[2022-06-21 16:06:11,856] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:06:11,856] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+2022-06-21 16:06:11 darts.models.forecasting.torch_forecasting_model INFO: Time series values are 32-bits; casting model to float32.
+2022-06-21 16:06:11 pytorch_lightning.utilities.rank_zero INFO: GPU available: False, used: False
+2022-06-21 16:06:11 pytorch_lightning.utilities.rank_zero INFO: TPU available: False, using: 0 TPU cores
+2022-06-21 16:06:11 pytorch_lightning.utilities.rank_zero INFO: IPU available: False, using: 0 IPUs
+2022-06-21 16:06:11 pytorch_lightning.utilities.rank_zero INFO: HPU available: False, using: 0 HPUs
+2022-06-21 16:06:11 pytorch_lightning.callbacks.model_summary INFO:
+  | Name          | Type              | Params
+----------------------------------------------------
+0 | criterion     | MSELoss           | 0
+1 | train_metrics | MetricCollection  | 0
+2 | val_metrics   | MetricCollection  | 0
+3 | dropout       | MonteCarloDropout | 0
+4 | res_blocks    | ModuleList        | 166
+----------------------------------------------------
+166       Trainable params
+0         Non-trainable params
+166       Total params
+0.001     Total estimated model params size (MB)
 </pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0e53b519de8f44cd8bfc69f079a6770a", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-Training loss: -1.8491
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "38f70f7a23ef4872b76e14c283ca9cda", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <p>Then to get probabilistic forecasts, we again only need to specify some <code class="docutils literal notranslate"><span class="pre">num_samples</span> <span class="pre">&gt;&gt;</span> <span class="pre">1</span></code>:</p>
 <div class="nbinput docutils container">
@@ -2026,11 +2073,17 @@ Training loss: -1.8491
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "920c8afa8bac4a3bb1abf23f7baefafe", "version_major": 2, "version_minor": 0}</script></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_105_0.png" src="../_images/quickstart_00-quickstart_105_0.png" />
+<img alt="../_images/quickstart_00-quickstart_105_1.png" src="../_images/quickstart_00-quickstart_105_1.png" />
 </div>
 </div>
 <p>Furthermore, we could also for instance specify that we have some prior belief that the scale of the distribution is about <span class="math notranslate nohighlight">\(0.1\)</span> (in the transformed domain), while still capturing some time dependency of the distribution, by specifying <code class="docutils literal notranslate"><span class="pre">prior_b=.1</span></code>.</p>
@@ -2047,7 +2100,7 @@ Training loss: -1.8491
     <span class="n">likelihood</span><span class="o">=</span><span class="n">LaplaceLikelihood</span><span class="p">(</span><span class="n">prior_b</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
 <span class="p">)</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -2056,30 +2109,39 @@ Training loss: -1.8491
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2022-01-12 22:04:46,419] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
-[2022-01-12 22:04:46,419] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
-INFO:darts.models.forecasting.torch_forecasting_model:Train dataset contains 73 samples.
-[2022-01-12 22:04:46,423] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
-[2022-01-12 22:04:46,423] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
-INFO:darts.models.forecasting.tcn_model:Number of layers chosen: 3
-[2022-01-12 22:04:46,429] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-[2022-01-12 22:04:46,429] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-INFO:darts.models.forecasting.torch_forecasting_model:Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:06:26,627] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
+[2022-06-21 16:06:26,627] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
+2022-06-21 16:06:26 darts.models.forecasting.torch_forecasting_model INFO: Train dataset contains 73 samples.
+[2022-06-21 16:06:26,632] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
+[2022-06-21 16:06:26,632] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
+2022-06-21 16:06:26 darts.models.forecasting.tcn_model INFO: Number of layers chosen: 3
+[2022-06-21 16:06:26,636] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:06:26,636] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+2022-06-21 16:06:26 darts.models.forecasting.torch_forecasting_model INFO: Time series values are 32-bits; casting model to float32.
+2022-06-21 16:06:26 pytorch_lightning.utilities.rank_zero INFO: GPU available: False, used: False
+2022-06-21 16:06:26 pytorch_lightning.utilities.rank_zero INFO: TPU available: False, using: 0 TPU cores
+2022-06-21 16:06:26 pytorch_lightning.utilities.rank_zero INFO: IPU available: False, using: 0 IPUs
+2022-06-21 16:06:26 pytorch_lightning.utilities.rank_zero INFO: HPU available: False, using: 0 HPUs
+2022-06-21 16:06:26 pytorch_lightning.callbacks.model_summary INFO:
+  | Name          | Type              | Params
+----------------------------------------------------
+0 | criterion     | MSELoss           | 0
+1 | train_metrics | MetricCollection  | 0
+2 | val_metrics   | MetricCollection  | 0
+3 | dropout       | MonteCarloDropout | 0
+4 | res_blocks    | ModuleList        | 166
+----------------------------------------------------
+166       Trainable params
+0         Non-trainable params
+166       Total params
+0.001     Total estimated model params size (MB)
 </pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "92570332a7e649e1a06c3f670bce6140", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-Training loss: -1.4456
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "128642e1c1824a7cac62382ce62269d9", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[50]:
@@ -2096,11 +2158,17 @@ Training loss: -1.4456
 </pre></div>
 </div>
 </div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "f31ccd2f37524cba9e990f337652ad05", "version_major": 2, "version_minor": 0}</script></div>
+</div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_108_0.png" src="../_images/quickstart_00-quickstart_108_0.png" />
+<img alt="../_images/quickstart_00-quickstart_108_1.png" src="../_images/quickstart_00-quickstart_108_1.png" />
 </div>
 </div>
 <p>By default <code class="docutils literal notranslate"><span class="pre">TimeSeries.plot()</span></code> shows the median as well as the 5th and 95th percentiles (of the marginal distributions, if the <code class="docutils literal notranslate"><span class="pre">TimeSeries</span></code> is multivariate). It is possible to control this:</p>
@@ -2149,10 +2217,10 @@ Training loss: -1.4456
 </div>
 <div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE of median forecast: 11.79
-rho-risk at quantile 0.05: 0.13
-rho-risk at quantile 0.10: 0.14
-rho-risk at quantile 0.50: 0.12
+MAPE of median forecast: 11.75
+rho-risk at quantile 0.05: 0.14
+rho-risk at quantile 0.10: 0.15
+rho-risk at quantile 0.50: 0.11
 rho-risk at quantile 0.90: 0.03
 rho-risk at quantile 0.95: 0.02
 </pre></div></div>
@@ -2175,7 +2243,7 @@ rho-risk at quantile 0.95: 0.02
     <span class="n">likelihood</span><span class="o">=</span><span class="n">QuantileRegression</span><span class="p">([</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.9</span><span class="p">,</span> <span class="mf">0.95</span><span class="p">]),</span>
 <span class="p">)</span>
 
-<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_air_scaled</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">400</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">);</span>
 </pre></div>
 </div>
 </div>
@@ -2184,30 +2252,39 @@ rho-risk at quantile 0.95: 0.02
 </div>
 <div class="output_area stderr docutils container">
 <div class="highlight"><pre>
-[2022-01-12 22:05:58,862] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
-[2022-01-12 22:05:58,862] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
-INFO:darts.models.forecasting.torch_forecasting_model:Train dataset contains 73 samples.
-[2022-01-12 22:05:58,871] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
-[2022-01-12 22:05:58,871] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
-INFO:darts.models.forecasting.tcn_model:Number of layers chosen: 3
-[2022-01-12 22:05:58,881] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-[2022-01-12 22:05:58,881] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
-INFO:darts.models.forecasting.torch_forecasting_model:Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:06:42,853] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
+[2022-06-21 16:06:42,853] INFO | darts.models.forecasting.torch_forecasting_model | Train dataset contains 73 samples.
+2022-06-21 16:06:42 darts.models.forecasting.torch_forecasting_model INFO: Train dataset contains 73 samples.
+[2022-06-21 16:06:42,858] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
+[2022-06-21 16:06:42,858] INFO | darts.models.forecasting.tcn_model | Number of layers chosen: 3
+2022-06-21 16:06:42 darts.models.forecasting.tcn_model INFO: Number of layers chosen: 3
+[2022-06-21 16:06:42,862] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+[2022-06-21 16:06:42,862] INFO | darts.models.forecasting.torch_forecasting_model | Time series values are 32-bits; casting model to float32.
+2022-06-21 16:06:42 darts.models.forecasting.torch_forecasting_model INFO: Time series values are 32-bits; casting model to float32.
+2022-06-21 16:06:42 pytorch_lightning.utilities.rank_zero INFO: GPU available: False, used: False
+2022-06-21 16:06:42 pytorch_lightning.utilities.rank_zero INFO: TPU available: False, using: 0 TPU cores
+2022-06-21 16:06:42 pytorch_lightning.utilities.rank_zero INFO: IPU available: False, using: 0 IPUs
+2022-06-21 16:06:42 pytorch_lightning.utilities.rank_zero INFO: HPU available: False, using: 0 HPUs
+2022-06-21 16:06:42 pytorch_lightning.callbacks.model_summary INFO:
+  | Name          | Type              | Params
+----------------------------------------------------
+0 | criterion     | MSELoss           | 0
+1 | train_metrics | MetricCollection  | 0
+2 | val_metrics   | MetricCollection  | 0
+3 | dropout       | MonteCarloDropout | 0
+4 | res_blocks    | ModuleList        | 208
+----------------------------------------------------
+208       Trainable params
+0         Non-trainable params
+208       Total params
+0.001     Total estimated model params size (MB)
 </pre></div></div>
-</div>
-<div class="nboutput docutils container">
-<div class="prompt empty docutils container">
-</div>
-<div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "66984bd698084ad5a9cb34ade6dd6b8f", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput nblast docutils container">
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<div class="highlight"><pre>
-Training loss: 0.0524
-</pre></div></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5e6ac1728e4b4ae988aa68983814fc07", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nbinput docutils container">
 <div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[54]:
@@ -2233,12 +2310,18 @@ Training loss: 0.0524
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "324dcde904dc43af8afaf0f6bb28b782", "version_major": 2, "version_minor": 0}</script></div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
 <div class="highlight"><pre>
-MAPE of median forecast: 5.93
-rho-risk at quantile 0.05: 0.01
-rho-risk at quantile 0.10: 0.02
-rho-risk at quantile 0.50: 0.06
-rho-risk at quantile 0.90: 0.02
+MAPE of median forecast: 4.97
+rho-risk at quantile 0.05: 0.00
+rho-risk at quantile 0.10: 0.00
+rho-risk at quantile 0.50: 0.03
+rho-risk at quantile 0.90: 0.01
 rho-risk at quantile 0.95: 0.01
 </pre></div></div>
 </div>
@@ -2246,7 +2329,7 @@ rho-risk at quantile 0.95: 0.01
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<img alt="../_images/quickstart_00-quickstart_115_1.png" src="../_images/quickstart_00-quickstart_115_1.png" />
+<img alt="../_images/quickstart_00-quickstart_115_2.png" src="../_images/quickstart_00-quickstart_115_2.png" />
 </div>
 </div>
 </section>
@@ -2284,7 +2367,7 @@ rho-risk at quantile 0.95: 0.01
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "5b882de267634ad09536924618d33ea5", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "ffb8f14ad399451b8b5879a31c6f23c8", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">
@@ -2339,7 +2422,7 @@ MAPE = 11.88
 <div class="prompt empty docutils container">
 </div>
 <div class="output_area docutils container">
-<script type="application/vnd.jupyter.widget-view+json">{"model_id": "0f790b58242848c3bf164d9b5f7f6671", "version_major": 2, "version_minor": 0}</script></div>
+<script type="application/vnd.jupyter.widget-view+json">{"model_id": "715c9955d54e4cbaafd5872cb8d9fb21", "version_major": 2, "version_minor": 0}</script></div>
 </div>
 <div class="nboutput docutils container">
 <div class="prompt empty docutils container">

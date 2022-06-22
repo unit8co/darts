@@ -358,8 +358,8 @@
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>
-                    <span class="s2">&quot;The model must be fit before calling `predict()`.&quot;</span>
-                    <span class="s2">&quot;For global models, if `predict()` is called without specifying a series,&quot;</span>
+                    <span class="s2">&quot;The model must be fit before calling predict(). &quot;</span>
+                    <span class="s2">&quot;For global models, if predict() is called without specifying a series, &quot;</span>
                     <span class="s2">&quot;the model must have been fit on a single training series.&quot;</span>
                 <span class="p">),</span>
                 <span class="n">logger</span><span class="p">,</span>
@@ -602,7 +602,7 @@
 
             <span class="c1"># train_cov = covariates.drop_after(pred_time) if covariates else None</span>
 
-            <span class="k">if</span> <span class="n">retrain</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">retrain</span> <span class="ow">or</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_fit_called</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">_fit_wrapper</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">train</span><span class="p">,</span>
                     <span class="n">past_covariates</span><span class="o">=</span><span class="n">past_covariates</span><span class="p">,</span>
@@ -618,7 +618,7 @@
             <span class="p">)</span>
 
             <span class="k">if</span> <span class="n">last_points_only</span><span class="p">:</span>
-                <span class="n">last_points_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="o">.</span><span class="n">all_values</span><span class="p">()[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">last_points_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="o">.</span><span class="n">all_values</span><span class="p">(</span><span class="n">copy</span><span class="o">=</span><span class="kc">False</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
                 <span class="n">last_points_times</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="o">.</span><span class="n">end_time</span><span class="p">())</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="n">forecasts</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">forecast</span><span class="p">)</span>
@@ -628,6 +628,9 @@
                 <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                     <span class="n">pd</span><span class="o">.</span><span class="n">DatetimeIndex</span><span class="p">(</span><span class="n">last_points_times</span><span class="p">,</span> <span class="n">freq</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">freq</span> <span class="o">*</span> <span class="n">stride</span><span class="p">),</span>
                     <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">),</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+                    <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+                    <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
                 <span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
@@ -637,6 +640,9 @@
                         <span class="n">step</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                     <span class="p">),</span>
                     <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">last_points_values</span><span class="p">),</span>
+                    <span class="n">columns</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">columns</span><span class="p">,</span>
+                    <span class="n">static_covariates</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">static_covariates</span><span class="p">,</span>
+                    <span class="n">hierarchy</span><span class="o">=</span><span class="n">series</span><span class="o">.</span><span class="n">hierarchy</span><span class="p">,</span>
                 <span class="p">)</span>
 
         <span class="k">return</span> <span class="n">forecasts</span>
@@ -841,7 +847,8 @@
 <span class="sd">            If `True`, uses the comparison with the fitted values.</span>
 <span class="sd">            Raises an error if ``fitted_values`` is not an attribute of `model_class`.</span>
 <span class="sd">        metric</span>
-<span class="sd">            A function that takes two TimeSeries instances as inputs and returns a float error value.</span>
+<span class="sd">            A function that takes two TimeSeries instances as inputs (actual and prediction, in this order),</span>
+<span class="sd">            and returns a float error value.</span>
 <span class="sd">        reduction</span>
 <span class="sd">            A reduction function (mapping array to float) describing how to aggregate the errors obtained</span>
 <span class="sd">            on the different validation series when backtesting. By default it&#39;ll compute the mean of errors.</span>
@@ -925,7 +932,7 @@
                 <span class="n">fitted_values</span> <span class="o">=</span> <span class="n">TimeSeries</span><span class="o">.</span><span class="n">from_times_and_values</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">.</span><span class="n">time_index</span><span class="p">,</span> <span class="n">model</span><span class="o">.</span><span class="n">fitted_values</span>
                 <span class="p">)</span>
-                <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">fitted_values</span><span class="p">,</span> <span class="n">series</span><span class="p">)</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">series</span><span class="p">,</span> <span class="n">fitted_values</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">val_series</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>  <span class="c1"># expanding window mode</span>
                 <span class="n">error</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">backtest</span><span class="p">(</span>
                     <span class="n">series</span><span class="o">=</span><span class="n">series</span><span class="p">,</span>
@@ -948,7 +955,7 @@
                     <span class="n">future_covariates</span><span class="p">,</span>
                     <span class="n">num_samples</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
                 <span class="p">)</span>
-                <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">pred</span><span class="p">,</span> <span class="n">val_series</span><span class="p">)</span>
+                <span class="n">error</span> <span class="o">=</span> <span class="n">metric</span><span class="p">(</span><span class="n">val_series</span><span class="p">,</span> <span class="n">pred</span><span class="p">)</span>
 
             <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
 
@@ -1181,8 +1188,7 @@
 <span class="sd">            If `series` is given and is a sequence of several time series, this function returns</span>
 <span class="sd">            a sequence where each element contains the corresponding `n` points forecasts.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">series</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">future_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="n">num_samples</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_expect_past_covariates</span> <span class="ow">and</span> <span class="n">past_covariates</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">raise_log</span><span class="p">(</span>
                 <span class="ne">ValueError</span><span class="p">(</span>

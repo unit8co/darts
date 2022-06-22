@@ -198,6 +198,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
        Scaler
       </a>
@@ -345,11 +350,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -557,7 +557,8 @@
 <dt class="sig sig-object py" id="darts.utils.data.horizon_based_dataset.HorizonBasedDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.utils.data.horizon_based_dataset.</span></span><span class="sig-name descname"><span class="pre">HorizonBasedDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">target_series</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">covariates</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_chunk_length</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">12</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lh</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">(1,</span> <span class="pre">3)</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lookback</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/utils/data/horizon_based_dataset.html#HorizonBasedDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.utils.data.horizon_based_dataset.HorizonBasedDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.utils.data.training_dataset.html#darts.utils.data.training_dataset.PastCovariatesTrainingDataset" title="darts.utils.data.training_dataset.PastCovariatesTrainingDataset"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.utils.data.training_dataset.PastCovariatesTrainingDataset</span></code></a></p>
-<p>A time series dataset containing tuples of (past_target, past_covariates, future_target) arrays,
+<p>A time series dataset containing tuples of (past_target, past_covariates, static_covariates, future_target)
+arrays,
 in a way inspired by the N-BEATS way of training on the M4 dataset: <a class="reference external" href="https://arxiv.org/abs/1905.10437">https://arxiv.org/abs/1905.10437</a>.</p>
 <p>The “past” series have length <cite>lookback * output_chunk_length</cite>, and the “future” series has length
 <cite>output_chunk_length</cite>.</p>

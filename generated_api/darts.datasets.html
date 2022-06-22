@@ -198,6 +198,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
        Scaler
       </a>
@@ -345,11 +350,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -637,14 +637,307 @@ Downloads the dataset if it is not present already</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="darts.datasets.ETTh1Dataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTh1Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTh1Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTh1Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+The dataset ranges from 2016/07 to 2018/07 taken hourly.
+Source: [1][R3006dd7a64b3-2]_</p>
+<p>Field Descriptions:
+date: The recorded date
+HUFL: High UseFul Load
+HULL: High UseLess Load
+MUFL: Medium UseFul Load
+MULL: Medium UseLess Load
+LUFL: Low UseFul Load
+LULL: Low UseLess Load
+OT: Oil Temperature (Target)</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r3006dd7a64b3-1"><span class="brackets">1</span></dt>
+<dd><p><a class="reference external" href="https://github.com/zhouhaoyi/ETDataset">https://github.com/zhouhaoyi/ETDataset</a></p>
+</dd>
+<dt class="label" id="r3006dd7a64b3-2"><span class="brackets">2</span></dt>
+<dd><p><a class="reference external" href="https://arxiv.org/abs/2012.07436">https://arxiv.org/abs/2012.07436</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.ETTh1Dataset.load" title="darts.datasets.ETTh1Dataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.datasets.ETTh1Dataset.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.ETTh1Dataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.datasets.ETTh2Dataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTh2Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTh2Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTh2Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+The dataset ranges from 2016/07 to 2018/07 taken hourly.
+Source: [1][R1f0974863715-2]_</p>
+<p>Field Descriptions:
+date: The recorded date
+HUFL: High UseFul Load
+HULL: High UseLess Load
+MUFL: Medium UseFul Load
+MULL: Medium UseLess Load
+LUFL: Low UseFul Load
+LULL: Low UseLess Load
+OT: Oil Temperature (Target)</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r1f0974863715-1"><span class="brackets">1</span></dt>
+<dd><p><a class="reference external" href="https://github.com/zhouhaoyi/ETDataset">https://github.com/zhouhaoyi/ETDataset</a></p>
+</dd>
+<dt class="label" id="r1f0974863715-2"><span class="brackets">2</span></dt>
+<dd><p><a class="reference external" href="https://arxiv.org/abs/2012.07436">https://arxiv.org/abs/2012.07436</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.ETTh2Dataset.load" title="darts.datasets.ETTh2Dataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.datasets.ETTh2Dataset.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.ETTh2Dataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.datasets.ETTm1Dataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTm1Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTm1Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTm1Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
+Source: [1][Rc373e99cf30b-2]_</p>
+<p>Field Descriptions:
+date: The recorded date
+HUFL: High UseFul Load
+HULL: High UseLess Load
+MUFL: Medium UseFul Load
+MULL: Medium UseLess Load
+LUFL: Low UseFul Load
+LULL: Low UseLess Load
+OT: Oil Temperature (Target)</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rc373e99cf30b-1"><span class="brackets">1</span></dt>
+<dd><p><a class="reference external" href="https://github.com/zhouhaoyi/ETDataset">https://github.com/zhouhaoyi/ETDataset</a></p>
+</dd>
+<dt class="label" id="rc373e99cf30b-2"><span class="brackets">2</span></dt>
+<dd><p><a class="reference external" href="https://arxiv.org/abs/2012.07436">https://arxiv.org/abs/2012.07436</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.ETTm1Dataset.load" title="darts.datasets.ETTm1Dataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.datasets.ETTm1Dataset.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.ETTm1Dataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.datasets.ETTm2Dataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ETTm2Dataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#ETTm2Dataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ETTm2Dataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>The data of 1 Electricity Transformers at 1 stations, including load, oil temperature.
+The dataset ranges from 2016/07 to 2018/07 recorded every 15 minutes.
+Source: [1][Rb66d6fdaeb78-2]_</p>
+<p>Field Descriptions:
+date: The recorded date
+HUFL: High UseFul Load
+HULL: High UseLess Load
+MUFL: Medium UseFul Load
+MULL: Medium UseLess Load
+LUFL: Low UseFul Load
+LULL: Low UseLess Load
+OT: Oil Temperature (Target)</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="rb66d6fdaeb78-1"><span class="brackets">1</span></dt>
+<dd><p><a class="reference external" href="https://github.com/zhouhaoyi/ETDataset">https://github.com/zhouhaoyi/ETDataset</a></p>
+</dd>
+<dt class="label" id="rb66d6fdaeb78-2"><span class="brackets">2</span></dt>
+<dd><p><a class="reference external" href="https://arxiv.org/abs/2012.07436">https://arxiv.org/abs/2012.07436</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.ETTm2Dataset.load" title="darts.datasets.ETTm2Dataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.datasets.ETTm2Dataset.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.ETTm2Dataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="darts.datasets.ElectricityDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">ElectricityDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#ElectricityDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.ElectricityDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>Measurements of electric power consumption in one household with 15 minute sampling rate.
+370 client’s consumption are recorded in kW.
+Source: <a class="reference internal" href="#r42a9c7d6d279-1" id="id2">[1]</a></p>
+<p>Loading this dataset will provide a multivariate timeseries with 370 columns for each household.
+The following code can be used to convert the dataset to a list of univariate timeseries,
+one for each household.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r42a9c7d6d279-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dd><p><a class="reference external" href="https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014">https://archive.ics.uci.edu/ml/datasets/ElectricityLoadDiagrams20112014</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.ElectricityDataset.load" title="darts.datasets.ElectricityDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.ElectricityDataset.load" title="darts.datasets.ElectricityDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.datasets.ElectricityDataset.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.ElectricityDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.EnergyDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">EnergyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#EnergyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.EnergyDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
-<p>Hourly energy dataset coming from <a class="reference internal" href="#rf60cd4cd05a4-1" id="id2">[1]</a>.</p>
+<p>Hourly energy dataset coming from <a class="reference internal" href="#rf60cd4cd05a4-1" id="id3">[1]</a>.</p>
 <p>Contains a time series with 28 hourly components between 2014-12-31 23:00:00 and 2018-12-31 22:00:00</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="rf60cd4cd05a4-1"><span class="brackets"><a class="fn-backref" href="#id2">1</a></span></dt>
+<dt class="label" id="rf60cd4cd05a4-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather">https://www.kaggle.com/nicholasjhana/energy-consumption-generation-prices-and-weather</a></p>
 </dd>
 </dl>
@@ -725,11 +1018,11 @@ Downloads the dataset if it is not present already</p>
 <p>The series contains 1800 evenly-spaced measurements of instantaneous heart rate from a single subject.
 The measurements (in units of beats per minute) occur at 0.5 second intervals, so that the length of
 each series is exactly 15 minutes.</p>
-<p>This is the series1 in <a class="reference internal" href="#r82ce515681e6-1" id="id3">[1]</a>.
+<p>This is the series1 in <a class="reference internal" href="#r82ce515681e6-1" id="id4">[1]</a>.
 It uses an integer time index.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r82ce515681e6-1"><span class="brackets"><a class="fn-backref" href="#id3">1</a></span></dt>
+<dt class="label" id="r82ce515681e6-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
 <dd><p><a class="reference external" href="http://ecg.mit.edu/time-series/">http://ecg.mit.edu/time-series/</a></p>
 </dd>
 </dl>
@@ -884,10 +1177,10 @@ Downloads the dataset if it is not present already</p>
 <p>Monthly Sunspot Numbers, 1749 - 1983</p>
 <p>Monthly mean relative sunspot numbers from 1749 to 1983.
 Collected at Swiss Federal Observatory, Zurich until 1960, then Tokyo Astronomical Observatory.</p>
-<p>Source: <a class="reference internal" href="#r499f295e2372-1" id="id4">[1]</a></p>
+<p>Source: <a class="reference internal" href="#r499f295e2372-1" id="id5">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r499f295e2372-1"><span class="brackets"><a class="fn-backref" href="#id4">1</a></span></dt>
+<dt class="label" id="r499f295e2372-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots">https://www.rdocumentation.org/packages/datasets/versions/3.6.1/topics/sunspots</a></p>
 </dd>
 </dl>
@@ -928,15 +1221,15 @@ Downloads the dataset if it is not present already</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">TaylorDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#TaylorDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.TaylorDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Half-hourly electricity demand in England and Wales from Monday 5 June 2000 to Sunday 27 August 2000.
-Discussed in Taylor (2003) <a class="reference internal" href="#r0041d9a8a6dc-1" id="id5">[1]</a>, and kindly provided by James W Taylor <a class="reference internal" href="#r0041d9a8a6dc-2" id="id6">[2]</a>. Units: Megawatts
+Discussed in Taylor (2003) <a class="reference internal" href="#r0041d9a8a6dc-1" id="id6">[1]</a>, and kindly provided by James W Taylor <a class="reference internal" href="#r0041d9a8a6dc-2" id="id7">[2]</a>. Units: Megawatts
 (Uses an integer time index).</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r0041d9a8a6dc-1"><span class="brackets"><a class="fn-backref" href="#id5">1</a></span></dt>
+<dt class="label" id="r0041d9a8a6dc-1"><span class="brackets"><a class="fn-backref" href="#id6">1</a></span></dt>
 <dd><p>Taylor, J.W. (2003) Short-term electricity demand forecasting using double seasonal exponential smoothing.
 Journal of the Operational Research Society, 54, 799-805.</p>
 </dd>
-<dt class="label" id="r0041d9a8a6dc-2"><span class="brackets"><a class="fn-backref" href="#id6">2</a></span></dt>
+<dt class="label" id="r0041d9a8a6dc-2"><span class="brackets"><a class="fn-backref" href="#id7">2</a></span></dt>
 <dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor">https://www.rdocumentation.org/packages/forecast/versions/8.13/topics/taylor</a></p>
 </dd>
 </dl>
@@ -1014,10 +1307,10 @@ Downloads the dataset if it is not present already</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">USGasolineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#USGasolineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.USGasolineDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Weekly U.S. Product Supplied of Finished Motor Gasoline between 1991-02-08 and 2021-04-30</p>
-<p>Obtained from <a class="reference internal" href="#r82273ef589c5-1" id="id7">[1]</a>.</p>
+<p>Obtained from <a class="reference internal" href="#r82273ef589c5-1" id="id8">[1]</a>.</p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r82273ef589c5-1"><span class="brackets"><a class="fn-backref" href="#id7">1</a></span></dt>
+<dt class="label" id="r82273ef589c5-1"><span class="brackets"><a class="fn-backref" href="#id8">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W">https://www.eia.gov/dnav/pet/hist/LeafHandler.ashx?n=PET&amp;s=wgfupus2&amp;f=W</a></p>
 </dd>
 </dl>
@@ -1054,14 +1347,82 @@ Downloads the dataset if it is not present already</p>
 </dd></dl>
 
 <dl class="py class">
+<dt class="sig sig-object py" id="darts.datasets.UberTLCDataset">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">UberTLCDataset</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">sample_freq</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'hourly'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">multivariate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/darts/datasets.html#UberTLCDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.UberTLCDataset" title="Permalink to this definition">¶</a></dt>
+<dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
+<p>14.3 million Uber pickups from January to June 2015. The data is resampled to hourly or daily based sample_freq
+on using the locationID as the target.
+Source: <a class="reference internal" href="#r426d30237afa-1" id="id9">[1]</a></p>
+<p>Loading this dataset will provide a multivariate timeseries with 262 columns for each locationID.
+The following code can be used to convert the dataset to a list of univariate timeseries,
+one for each locationID.</p>
+<p class="rubric">References</p>
+<dl class="citation">
+<dt class="label" id="r426d30237afa-1"><span class="brackets"><a class="fn-backref" href="#id9">1</a></span></dt>
+<dd><p><a class="reference external" href="https://github.com/fivethirtyeight/uber-tlc-foil-response">https://github.com/fivethirtyeight/uber-tlc-foil-response</a></p>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.UberTLCDataset.load" title="darts.datasets.UberTLCDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>sample_freq</strong> (<em>str</em>) – The sampling frequency of the data. Can be “hourly” or “daily”. Default is “hourly”.</p></li>
+<li><p><strong>multivariate</strong> (<em>bool</em>) – Whether to return a single multivariate timeseries - if False returns a list of univariate TimeSeries. Default is True.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Methods</p>
+<table class="longtable table autosummary">
+<colgroup>
+<col style="width: 10%" />
+<col style="width: 90%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.datasets.UberTLCDataset.load" title="darts.datasets.UberTLCDataset.load"><code class="xref py py-obj docutils literal notranslate"><span class="pre">load</span></code></a>()</p></td>
+<td><p>Load the dataset in memory, as a TimeSeries.</p></td>
+</tr>
+</tbody>
+</table>
+<dl class="py method">
+<dt class="sig sig-object py" id="darts.datasets.UberTLCDataset.load">
+<span class="sig-name descname"><span class="pre">load</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.datasets.UberTLCDataset.load" title="Permalink to this definition">¶</a></dt>
+<dd><p>Load the dataset in memory, as a TimeSeries.
+Downloads the dataset if it is not present already</p>
+<dl class="field-list simple">
+<dt class="field-odd">Raises</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoadingException" title="darts.datasets.dataset_loaders.DatasetLoadingException"><strong>DatasetLoadingException</strong></a> – If loading fails (MD5 Checksum is invalid, Download failed, Reading from disk failed)</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>time_series</strong> – A TimeSeries object that contains the dataset</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="darts.timeseries.html#darts.timeseries.TimeSeries" title="darts.timeseries.TimeSeries">TimeSeries</a></p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
 <dt class="sig sig-object py" id="darts.datasets.WineDataset">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WineDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WineDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WineDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Australian total wine sales by wine makers in bottles &lt;= 1 litre. Monthly between Jan 1980 and Aug 1994.
-Source: <a class="reference internal" href="#r186e955f2024-1" id="id8">[1]</a></p>
+Source: <a class="reference internal" href="#r186e955f2024-1" id="id10">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r186e955f2024-1"><span class="brackets"><a class="fn-backref" href="#id8">1</a></span></dt>
+<dt class="label" id="r186e955f2024-1"><span class="brackets"><a class="fn-backref" href="#id10">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/wineind</a></p>
 </dd>
 </dl>
@@ -1102,10 +1463,10 @@ Downloads the dataset if it is not present already</p>
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">darts.datasets.</span></span><span class="sig-name descname"><span class="pre">WoolyDataset</span></span><a class="reference internal" href="../_modules/darts/datasets.html#WoolyDataset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#darts.datasets.WoolyDataset" title="Permalink to this definition">¶</a></dt>
 <dd><p>Bases: <a class="reference internal" href="darts.datasets.dataset_loaders.html#darts.datasets.dataset_loaders.DatasetLoaderCSV" title="darts.datasets.dataset_loaders.DatasetLoaderCSV"><code class="xref py py-class docutils literal notranslate"><span class="pre">darts.datasets.dataset_loaders.DatasetLoaderCSV</span></code></a></p>
 <p>Quarterly production of woollen yarn in Australia: tonnes. Mar 1965 – Sep 1994.
-Source: <a class="reference internal" href="#r3f37309b76f8-1" id="id9">[1]</a></p>
+Source: <a class="reference internal" href="#r3f37309b76f8-1" id="id11">[1]</a></p>
 <p class="rubric">References</p>
 <dl class="citation">
-<dt class="label" id="r3f37309b76f8-1"><span class="brackets"><a class="fn-backref" href="#id9">1</a></span></dt>
+<dt class="label" id="r3f37309b76f8-1"><span class="brackets"><a class="fn-backref" href="#id11">1</a></span></dt>
 <dd><p><a class="reference external" href="https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq">https://www.rdocumentation.org/packages/forecast/versions/8.1/topics/woolyrnq</a></p>
 </dd>
 </dl>

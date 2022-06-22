@@ -218,20 +218,21 @@
 <span class="sd">            horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may</span>
 <span class="sd">            be useful if the covariates don&#39;t extend far enough into the future.</span>
 <span class="sd">        likelihood</span>
-<span class="sd">            Can be set to `quantile` or &#39;poisson&#39;. If set, the model will be probabilistic, allowing sampling at</span>
+<span class="sd">            Can be set to `quantile` or `poisson`. If set, the model will be probabilistic, allowing sampling at</span>
 <span class="sd">            prediction time. If set to `quantile`, the `sklearn.linear_model.QuantileRegressor` is used. Similarly, if</span>
 <span class="sd">            set to `poisson`, the `sklearn.linear_model.PoissonRegressor` is used.</span>
 <span class="sd">        quantiles</span>
 <span class="sd">            Fit the model to these quantiles if the `likelihood` is set to `quantile`.</span>
 <span class="sd">        random_state</span>
 <span class="sd">            Control the randomness of the sampling. Used as seed for</span>
-<span class="sd">            `link &lt;https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator&gt;`_ . Ignored when</span>
-<span class="sd">             no`likelihood` is set.</span>
+<span class="sd">            `numpy.random.Generator</span>
+<span class="sd">            &lt;https://numpy.org/doc/stable/reference/random/generator.html#numpy.random.Generator&gt;`_. Ignored when</span>
+<span class="sd">            no `likelihood` is set.</span>
 <span class="sd">            Default: ``None``.</span>
 <span class="sd">        **kwargs</span>
 <span class="sd">            Additional keyword arguments passed to `sklearn.linear_model.LinearRegression` (by default), to</span>
 <span class="sd">            `sklearn.linear_model.PoissonRegressor` (if `likelihood=&quot;poisson&quot;`), or to</span>
-<span class="sd">             `sklearn.linear_model.QuantileRegressor` (if `likelihood=&quot;quantile&quot;`).</span>
+<span class="sd">            `sklearn.linear_model.QuantileRegressor` (if `likelihood=&quot;quantile&quot;`).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span> <span class="o">=</span> <span class="n">kwargs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_median_idx</span> <span class="o">=</span> <span class="kc">None</span>

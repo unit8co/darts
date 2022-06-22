@@ -198,6 +198,11 @@
       </a>
      </li>
      <li class="toctree-l3">
+      <a class="reference internal" href="darts.dataprocessing.transformers.reconciliation.html">
+       Hierarchical Reconciliation
+      </a>
+     </li>
+     <li class="toctree-l3">
       <a class="reference internal" href="darts.dataprocessing.transformers.scaler.html">
        Scaler
       </a>
@@ -345,11 +350,6 @@
      <li class="toctree-l3">
       <a class="reference internal" href="darts.models.forecasting.nhits.html">
        N-HiTS
-      </a>
-     </li>
-     <li class="toctree-l3">
-      <a class="reference internal" href="darts.models.forecasting.prophet_model.html">
-       Facebook Prophet
       </a>
      </li>
      <li class="toctree-l3">
@@ -736,129 +736,137 @@ Cell (i,j) corresponds to minimum total cost/distance of matching elements (i-1,
 <tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.diagonal"><code class="xref py py-obj docutils literal notranslate"><span class="pre">diagonal</span></code></a>([offset, axis1, axis2])</p></td>
 <td><p>Return specified diagonals.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dot</span></code></a>(b[, out])</p></td>
-<td><p>Dot product of two arrays.</p></td>
-</tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dump</span></code></a>(file)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dump"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dump</span></code></a>(file)</p></td>
 <td><p>Dump a pickle of the array to the specified file.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dumps</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps"><code class="xref py py-obj docutils literal notranslate"><span class="pre">dumps</span></code></a>()</p></td>
 <td><p>Returns the pickle of the array as a string.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill</span></code></a>(value)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.fill"><code class="xref py py-obj docutils literal notranslate"><span class="pre">fill</span></code></a>(value)</p></td>
 <td><p>Fill the array with a scalar value.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flatten</span></code></a>([order])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.flatten"><code class="xref py py-obj docutils literal notranslate"><span class="pre">flatten</span></code></a>([order])</p></td>
 <td><p>Return a copy of the array collapsed into one dimension.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getfield</span></code></a>(dtype[, offset])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.getfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">getfield</span></code></a>(dtype[, offset])</p></td>
 <td><p>Returns a field of the given array as a certain type.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item"><code class="xref py py-obj docutils literal notranslate"><span class="pre">item</span></code></a>(*args)</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.item"><code class="xref py py-obj docutils literal notranslate"><span class="pre">item</span></code></a>(*args)</p></td>
 <td><p>Copy an element of an array to a standard Python scalar and return it.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">itemset</span></code></a>(*args)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.itemset"><code class="xref py py-obj docutils literal notranslate"><span class="pre">itemset</span></code></a>(*args)</p></td>
 <td><p>Insert scalar into an array (scalar is cast to array's dtype, if possible)</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></a>([axis, out, keepdims, initial, where])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.max"><code class="xref py py-obj docutils literal notranslate"><span class="pre">max</span></code></a>([axis, out, keepdims, initial, where])</p></td>
 <td><p>Return the maximum along a given axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code></a>([axis, dtype, out, keepdims, where])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.mean"><code class="xref py py-obj docutils literal notranslate"><span class="pre">mean</span></code></a>([axis, dtype, out, keepdims, where])</p></td>
 <td><p>Returns the average of the array elements along given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min</span></code></a>([axis, out, keepdims, initial, where])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.min"><code class="xref py py-obj docutils literal notranslate"><span class="pre">min</span></code></a>([axis, out, keepdims, initial, where])</p></td>
 <td><p>Return the minimum along a given axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">newbyteorder</span></code></a>([new_order])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.newbyteorder"><code class="xref py py-obj docutils literal notranslate"><span class="pre">newbyteorder</span></code></a>([new_order])</p></td>
 <td><p>Return the array with the same data viewed with a different byte order.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nonzero</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.nonzero"><code class="xref py py-obj docutils literal notranslate"><span class="pre">nonzero</span></code></a>()</p></td>
 <td><p>Return the indices of the elements that are non-zero.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition</span></code></a>(kth[, axis, kind, order])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.partition"><code class="xref py py-obj docutils literal notranslate"><span class="pre">partition</span></code></a>(kth[, axis, kind, order])</p></td>
 <td><p>Rearranges the elements in the array in such a way that the value of the element in kth position is in the position it would be in a sorted array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prod</span></code></a>([axis, dtype, out, keepdims, initial, ...])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.prod"><code class="xref py py-obj docutils literal notranslate"><span class="pre">prod</span></code></a>([axis, dtype, out, keepdims, initial, ...])</p></td>
 <td><p>Return the product of the array elements over the given axis</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptp</span></code></a>([axis, out, keepdims])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ptp"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ptp</span></code></a>([axis, out, keepdims])</p></td>
 <td><p>Peak to peak (maximum - minimum) value along a given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put"><code class="xref py py-obj docutils literal notranslate"><span class="pre">put</span></code></a>(indices, values[, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.put"><code class="xref py py-obj docutils literal notranslate"><span class="pre">put</span></code></a>(indices, values[, mode])</p></td>
 <td><p>Set <code class="docutils literal notranslate"><span class="pre">a.flat[n]</span> <span class="pre">=</span> <span class="pre">values[n]</span></code> for all <cite>n</cite> in indices.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ravel</span></code></a>([order])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.ravel"><code class="xref py py-obj docutils literal notranslate"><span class="pre">ravel</span></code></a>([order])</p></td>
 <td><p>Return a flattened array.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeat</span></code></a>(repeats[, axis])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.repeat"><code class="xref py py-obj docutils literal notranslate"><span class="pre">repeat</span></code></a>(repeats[, axis])</p></td>
 <td><p>Repeat elements of an array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape</span></code></a>(shape[, order])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.reshape"><code class="xref py py-obj docutils literal notranslate"><span class="pre">reshape</span></code></a>(shape[, order])</p></td>
 <td><p>Returns an array containing the same data with a new shape.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resize</span></code></a>(new_shape[, refcheck])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.resize"><code class="xref py py-obj docutils literal notranslate"><span class="pre">resize</span></code></a>(new_shape[, refcheck])</p></td>
 <td><p>Change shape and size of array in-place.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round"><code class="xref py py-obj docutils literal notranslate"><span class="pre">round</span></code></a>([decimals, out])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.round"><code class="xref py py-obj docutils literal notranslate"><span class="pre">round</span></code></a>([decimals, out])</p></td>
 <td><p>Return <cite>a</cite> with each element rounded to the given number of decimals.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">searchsorted</span></code></a>(v[, side, sorter])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.searchsorted"><code class="xref py py-obj docutils literal notranslate"><span class="pre">searchsorted</span></code></a>(v[, side, sorter])</p></td>
 <td><p>Find indices where elements of v should be inserted in a to maintain order.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setfield</span></code></a>(val, dtype[, offset])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setfield"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setfield</span></code></a>(val, dtype[, offset])</p></td>
 <td><p>Put a value into a specified place in a field defined by a data-type.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setflags</span></code></a>([write, align, uic])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.setflags"><code class="xref py py-obj docutils literal notranslate"><span class="pre">setflags</span></code></a>([write, align, uic])</p></td>
 <td><p>Set array flags WRITEABLE, ALIGNED, (WRITEBACKIFCOPY and UPDATEIFCOPY), respectively.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code></a>([axis, kind, order])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sort"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sort</span></code></a>([axis, kind, order])</p></td>
 <td><p>Sort an array in-place.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze"><code class="xref py py-obj docutils literal notranslate"><span class="pre">squeeze</span></code></a>([axis])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.squeeze"><code class="xref py py-obj docutils literal notranslate"><span class="pre">squeeze</span></code></a>([axis])</p></td>
 <td><p>Remove axes of length one from <cite>a</cite>.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std"><code class="xref py py-obj docutils literal notranslate"><span class="pre">std</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.std"><code class="xref py py-obj docutils literal notranslate"><span class="pre">std</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
 <td><p>Returns the standard deviation of the array elements along given axis.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>([axis, dtype, out, keepdims, initial, where])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.sum"><code class="xref py py-obj docutils literal notranslate"><span class="pre">sum</span></code></a>([axis, dtype, out, keepdims, initial, where])</p></td>
 <td><p>Return the sum of the array elements over the given axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">swapaxes</span></code></a>(axis1, axis2)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.swapaxes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">swapaxes</span></code></a>(axis1, axis2)</p></td>
 <td><p>Return a view of the array with <cite>axis1</cite> and <cite>axis2</cite> interchanged.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take"><code class="xref py py-obj docutils literal notranslate"><span class="pre">take</span></code></a>(indices[, axis, out, mode])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.take"><code class="xref py py-obj docutils literal notranslate"><span class="pre">take</span></code></a>(indices[, axis, out, mode])</p></td>
 <td><p>Return an array formed from the elements of <cite>a</cite> at the given indices.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dense</span></code></a>()</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.to_dense"><code class="xref py py-obj docutils literal notranslate"><span class="pre">to_dense</span></code></a>()</p></td>
 <td><p><dl class="field-list simple">
 <dt class="field-odd">returns</dt>
 <dd class="field-odd"><p></p></dd>
 </dl>
 </p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tobytes</span></code></a>([order])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tobytes"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tobytes</span></code></a>([order])</p></td>
 <td><p>Construct Python bytes containing the raw data bytes in the array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tofile</span></code></a>(fid[, sep, format])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tofile"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tofile</span></code></a>(fid[, sep, format])</p></td>
 <td><p>Write array to a file as text or binary (default).</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tolist</span></code></a>()</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tolist"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tolist</span></code></a>()</p></td>
 <td><p>Return the array as an <code class="docutils literal notranslate"><span class="pre">a.ndim</span></code>-levels deep nested list of Python scalars.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tostring</span></code></a>([order])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.tostring"><code class="xref py py-obj docutils literal notranslate"><span class="pre">tostring</span></code></a>([order])</p></td>
 <td><p>A compatibility alias for <cite>tobytes</cite>, with exactly the same behavior.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trace</span></code></a>([offset, axis1, axis2, dtype, out])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.trace"><code class="xref py py-obj docutils literal notranslate"><span class="pre">trace</span></code></a>([offset, axis1, axis2, dtype, out])</p></td>
 <td><p>Return the sum along diagonals of the array.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a>(*axes)</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.transpose"><code class="xref py py-obj docutils literal notranslate"><span class="pre">transpose</span></code></a>(*axes)</p></td>
 <td><p>Returns a view of the array with axes transposed.</p></td>
 </tr>
-<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">var</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
+<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.var"><code class="xref py py-obj docutils literal notranslate"><span class="pre">var</span></code></a>([axis, dtype, out, ddof, keepdims, where])</p></td>
 <td><p>Returns the variance of the array elements, along given axis.</p></td>
 </tr>
-<tr class="row-odd"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>([dtype][, type])</p></td>
+<tr class="row-even"><td><p><a class="reference internal" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view" title="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.view"><code class="xref py py-obj docutils literal notranslate"><span class="pre">view</span></code></a>([dtype][, type])</p></td>
 <td><p>New view of array with the same data.</p></td>
+</tr>
+</tbody>
+</table>
+<table class="table">
+<colgroup>
+<col style="width: 41%" />
+<col style="width: 59%" />
+</colgroup>
+<tbody>
+<tr class="row-odd"><td><p><strong>dot</strong></p></td>
+<td></td>
 </tr>
 </tbody>
 </table>
@@ -1294,10 +1302,10 @@ pointer to a deallocated array, and should be spelt
 <span class="sig-prename descclassname"><span class="pre">_ctypes.</span></span><span class="sig-name descname"><span class="pre">shape</span></span></dt>
 <dd><p>A ctypes array of length self.ndim where
 the basetype is the C-integer corresponding to <code class="docutils literal notranslate"><span class="pre">dtype('p')</span></code> on this
-platform. This base-type could be <cite>ctypes.c_int</cite>, <cite>ctypes.c_long</cite>, or
-<cite>ctypes.c_longlong</cite> depending on the platform.
-The c_intp type is defined accordingly in <cite>numpy.ctypeslib</cite>.
-The ctypes array contains the shape of the underlying array.</p>
+platform (see <cite>~numpy.ctypeslib.c_intp</cite>). This base-type could be
+<cite>ctypes.c_int</cite>, <cite>ctypes.c_long</cite>, or <cite>ctypes.c_longlong</cite> depending on
+the platform. The ctypes array contains the shape of
+the underlying array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>(c_intp*self.ndim)</p>
@@ -1424,31 +1432,8 @@ a future version the read-only restriction will be removed.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot">
-<span class="sig-name descname"><span class="pre">dot</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">b</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">out</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot" title="Permalink to this definition">¶</a></dt>
-<dd><p>Dot product of two arrays.</p>
-<p>Refer to <cite>numpy.dot</cite> for full documentation.</p>
-<div class="admonition seealso">
-<p class="admonition-title">See also</p>
-<dl class="simple">
-<dt><code class="xref py py-obj docutils literal notranslate"><span class="pre">numpy.dot</span></code></dt><dd><p>equivalent function</p>
-</dd>
-</dl>
-</div>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">eye</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">b</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span> <span class="o">*</span> <span class="mi">2</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-<span class="go">array([[2.,  2.],</span>
-<span class="go">       [2.,  2.]])</span>
-</pre></div>
-</div>
-<p>This array method can be conveniently chained:</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">a</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">b</span><span class="p">)</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">b</span><span class="p">)</span>
-<span class="go">array([[8.,  8.],</span>
-<span class="go">       [8.,  8.]])</span>
-</pre></div>
-</div>
-</dd></dl>
+<span class="sig-name descname"><span class="pre">dot</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dot" title="Permalink to this definition">¶</a></dt>
+<dd></dd></dl>
 
 <dl class="py attribute">
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dtype">
@@ -1501,7 +1486,7 @@ The array can be read back with pickle.load or numpy.load.</p>
 <dt class="sig sig-object py" id="darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps">
 <span class="sig-name descname"><span class="pre">dumps</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#darts.dataprocessing.dtw.cost_matrix.DenseCostMatrix.dumps" title="Permalink to this definition">¶</a></dt>
 <dd><p>Returns the pickle of the array as a string.
-pickle.loads or numpy.loads will convert the string back to an array.</p>
+pickle.loads will convert the string back to an array.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>None</strong> – </p>
@@ -1995,7 +1980,7 @@ below. <cite>new_order</cite> codes can be any of:</p>
 <li><p>’S’ - swap dtype from current to opposite endian</p></li>
 <li><p>{‘&lt;’, ‘little’} - little endian</p></li>
 <li><p>{‘&gt;’, ‘big’} - big endian</p></li>
-<li><p>’=’ - native order, equivalent to <cite>sys.byteorder</cite></p></li>
+<li><p>{‘=’, ‘native’} - native order, equivalent to <cite>sys.byteorder</cite></p></li>
 <li><p>{‘|’, ‘I’} - ignore (no change to byte order)</p></li>
 </ul>
 <p>The default value (‘S’) results in swapping the current
@@ -2040,12 +2025,16 @@ the two partitions is undefined.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>kth</strong> (<em>int</em><em> or </em><em>sequence of ints</em>) – Element index to partition by. The kth element value will be in its
+<li><p><strong>kth</strong> (<em>int</em><em> or </em><em>sequence of ints</em>) – <p>Element index to partition by. The kth element value will be in its
 final sorted position and all smaller elements will be moved before it
 and all equal or greater elements behind it.
 The order of all elements in the partitions is undefined.
 If provided with a sequence of kth it will partition all elements
-indexed by kth of them into their sorted position at once.</p></li>
+indexed by kth of them into their sorted position at once.</p>
+<div class="deprecated">
+<p><span class="versionmodified deprecated">Deprecated since version 1.22.0: </span>Passing booleans as index is deprecated.</p>
+</div>
+</p></li>
 <li><p><strong>axis</strong> (<em>int</em><em>, </em><em>optional</em>) – Axis along which to sort. Default is -1, which means sort along the
 last axis.</p></li>
 <li><p><strong>kind</strong> (<em>{'introselect'}</em><em>, </em><em>optional</em>) – Selection algorithm. Default is ‘introselect’.</p></li>

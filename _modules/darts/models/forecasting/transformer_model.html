@@ -176,11 +176,17 @@
 <span class="kn">import</span> <span class="nn">torch</span>
 <span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="nn">nn</span>
 
-<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span>
+<span class="kn">from</span> <span class="nn">darts.logging</span> <span class="kn">import</span> <span class="n">get_logger</span><span class="p">,</span> <span class="n">raise_if_not</span>
+<span class="kn">from</span> <span class="nn">darts.models.components</span> <span class="kn">import</span> <span class="n">glu_variants</span>
+<span class="kn">from</span> <span class="nn">darts.models.components.glu_variants</span> <span class="kn">import</span> <span class="n">GLU_FFN</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.pl_forecasting_module</span> <span class="kn">import</span> <span class="n">PLPastCovariatesModule</span>
 <span class="kn">from</span> <span class="nn">darts.models.forecasting.torch_forecasting_model</span> <span class="kn">import</span> <span class="n">PastCovariatesTorchModel</span>
 
 <span class="n">logger</span> <span class="o">=</span> <span class="n">get_logger</span><span class="p">(</span><span class="vm">__name__</span><span class="p">)</span>
+
+
+<span class="n">BUILT_IN</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;relu&quot;</span><span class="p">,</span> <span class="s2">&quot;gelu&quot;</span><span class="p">]</span>
+<span class="n">FFN</span> <span class="o">=</span> <span class="n">GLU_FFN</span> <span class="o">+</span> <span class="n">BUILT_IN</span>
 
 
 <span class="c1"># This implementation of positional encoding is taken from the PyTorch documentation:</span>
@@ -243,7 +249,7 @@
         <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
         <span class="n">custom_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
         <span class="sd">&quot;&quot;&quot;PyTorch module implementing a Transformer to be used in `TransformerModel`.</span>
 
@@ -270,7 +276,7 @@
 <span class="sd">        dropout</span>
 <span class="sd">            Fraction of neurons affected by Dropout.</span>
 <span class="sd">        activation</span>
-<span class="sd">            The activation function of encoder/decoder intermediate layer, &#39;relu&#39; or &#39;gelu&#39;.</span>
+<span class="sd">            The activation function of encoder/decoder intermediate layer.</span>
 <span class="sd">        custom_encoder</span>
 <span class="sd">            A custom transformer encoder provided by the user (default=None).</span>
 <span class="sd">        custom_decoder</span>
@@ -301,6 +307,16 @@
             <span class="n">d_model</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">input_chunk_length</span>
         <span class="p">)</span>
 
+        <span class="n">raise_if_not</span><span class="p">(</span><span class="n">activation</span> <span class="ow">in</span> <span class="n">FFN</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;&#39;</span><span class="si">{</span><span class="n">activation</span><span class="si">}</span><span class="s2">&#39; is not in </span><span class="si">{</span><span class="n">FFN</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">activation</span> <span class="ow">in</span> <span class="n">GLU_FFN</span><span class="p">:</span>
+            <span class="c1"># use glu variant feedforward layers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">glu_variants</span><span class="p">,</span> <span class="n">activation</span><span class="p">)(</span>
+                <span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span> <span class="n">d_ff</span><span class="o">=</span><span class="n">dim_feedforward</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># use nn.Transformer built in feedforward layers</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">activation</span> <span class="o">=</span> <span class="n">activation</span>
+
         <span class="c1"># Defining the Transformer module</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">transformer</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Transformer</span><span class="p">(</span>
             <span class="n">d_model</span><span class="o">=</span><span class="n">d_model</span><span class="p">,</span>
@@ -309,7 +325,7 @@
             <span class="n">num_decoder_layers</span><span class="o">=</span><span class="n">num_decoder_layers</span><span class="p">,</span>
             <span class="n">dim_feedforward</span><span class="o">=</span><span class="n">dim_feedforward</span><span class="p">,</span>
             <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">,</span>
-            <span class="n">activation</span><span class="o">=</span><span class="n">activation</span><span class="p">,</span>
+            <span class="n">activation</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">activation</span><span class="p">,</span>
             <span class="n">custom_encoder</span><span class="o">=</span><span class="n">custom_encoder</span><span class="p">,</span>
             <span class="n">custom_decoder</span><span class="o">=</span><span class="n">custom_decoder</span><span class="p">,</span>
         <span class="p">)</span>
@@ -328,7 +344,8 @@
 
         <span class="k">return</span> <span class="n">src</span><span class="p">,</span> <span class="n">tgt</span>
 
-    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x_in</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">):</span>
+        <span class="n">data</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">x_in</span>
         <span class="c1"># Here we create &#39;src&#39; and &#39;tgt&#39;, the inputs for the encoder and decoder</span>
         <span class="c1"># side of the Transformer architecture</span>
         <span class="n">src</span><span class="p">,</span> <span class="n">tgt</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_create_transformer_inputs</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
@@ -369,7 +386,7 @@
         <span class="n">activation</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;relu&quot;</span><span class="p">,</span>
         <span class="n">custom_encoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
         <span class="n">custom_decoder</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
-        <span class="o">**</span><span class="n">kwargs</span>
+        <span class="o">**</span><span class="n">kwargs</span><span class="p">,</span>
     <span class="p">):</span>
 
         <span class="sd">&quot;&quot;&quot;Transformer model</span>
@@ -404,7 +421,13 @@
 <span class="sd">        dropout</span>
 <span class="sd">            Fraction of neurons affected by Dropout (default=0.1).</span>
 <span class="sd">        activation</span>
-<span class="sd">            The activation function of encoder/decoder intermediate layer, &#39;relu&#39; or &#39;gelu&#39; (default=&#39;relu&#39;).</span>
+<span class="sd">            The activation function of encoder/decoder intermediate layer, (default=&#39;relu&#39;).</span>
+<span class="sd">            can be one of the glu variant&#39;s FeedForward Network (FFN)[2]. A feedforward network is a</span>
+<span class="sd">            fully-connected layer with an activation. The glu variant&#39;s FeedForward Network are a series</span>
+<span class="sd">            of FFNs designed to work better with Transformer based models.</span>
+<span class="sd">                [&quot;GLU&quot;, &quot;Bilinear&quot;, &quot;ReGLU&quot;, &quot;GEGLU&quot;, &quot;SwiGLU&quot;, &quot;ReLU&quot;, &quot;GELU&quot;]</span>
+<span class="sd">            or one the pytorch internal activations</span>
+<span class="sd">                [&quot;relu&quot;, &quot;gelu&quot;]</span>
 <span class="sd">        custom_encoder</span>
 <span class="sd">            A custom user-provided encoder module for the transformer (default=None).</span>
 <span class="sd">        custom_decoder</span>
@@ -417,6 +440,9 @@
 <span class="sd">            PyTorch loss function used for training.</span>
 <span class="sd">            This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.</span>
 <span class="sd">            Default: ``torch.nn.MSELoss()``.</span>
+<span class="sd">        torch_metrics</span>
+<span class="sd">            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found</span>
+<span class="sd">            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.</span>
 <span class="sd">        likelihood</span>
 <span class="sd">            One of Darts&#39; :meth:`Likelihood &lt;darts.utils.likelihood_models.Likelihood&gt;` models to be used for</span>
 <span class="sd">            probabilistic forecasts. Default: ``None``.</span>
@@ -544,6 +570,7 @@
 <span class="sd">        .. [1] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz Kaiser,</span>
 <span class="sd">        and Illia Polosukhin, &quot;Attention Is All You Need&quot;, 2017. In Advances in Neural Information Processing Systems,</span>
 <span class="sd">        pages 6000-6010. https://arxiv.org/abs/1706.03762.</span>
+<span class="sd">        ..[2] Shazeer, Noam, &quot;GLU Variants Improve Transformer&quot;, 2020. arVix https://arxiv.org/abs/2002.05202.</span>
 
 <span class="sd">        Notes</span>
 <span class="sd">        -----</span>
