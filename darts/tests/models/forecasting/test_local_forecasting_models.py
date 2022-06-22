@@ -69,6 +69,7 @@ multivariate_models = [
 
 dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
 
+extended_dual_models_cls = [ARIMA]
 
 try:
     from darts.models import Prophet
@@ -232,3 +233,53 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             autoarima = AutoARIMA(trend="t")
             with self.assertRaises(ValueError):
                 autoarima.fit(series=ts)
+
+    def test_extended_dual_models(self):
+        target_len = 200
+        pred_len = 15
+        ts1 = tg.random_walk_timeseries(length=target_len)
+        exog1 = tg.random_walk_timeseries(length=target_len + pred_len).stack(
+            tg.random_walk_timeseries(length=target_len + pred_len)
+        )
+        ts2 = tg.random_walk_timeseries(length=target_len)
+        exog2 = tg.random_walk_timeseries(length=target_len + pred_len).stack(
+            tg.random_walk_timeseries(length=target_len + pred_len)
+        )
+
+        for model_cls in extended_dual_models_cls:
+            # check runnability with different time series
+            model = model_cls()
+            model.fit(ts1)
+            pred1 = model.predict(n=pred_len)
+            pred2 = model.predict(n=pred_len, series=ts2)
+
+            # check that the results with a second custom ts are different from the results given with the training ts
+            self.assertFalse(np.array_equal(pred1.values, pred2.values()))
+
+            # check runnability with exogeneous variables
+            model = model_cls()
+            model.fit(ts1, future_covariates=exog1)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1)
+            pred2 = model.predict(n=pred_len, series=ts2, future_covariates=exog2)
+
+            self.assertFalse(np.array_equal(pred1.values(), pred2.values()))
+
+            # check error is raised if model expects covariates but those are not passed when predicting with new data
+            with self.assertRaises(ValueError):
+                model = model_cls()
+                model.fit(ts1, future_covariates=exog1)
+                model.predict(n=pred_len, series=ts2)
+
+            # check error is raised if new future covariates are not wide enough for prediction (on the original series)
+            with self.assertRaises(ValueError):
+                model = model_cls()
+                model.fit(ts1, future_covariates=exog1)
+                model.predict(n=pred_len, future_covariates=exog1[:-pred_len])
+
+            # check error is raised if new future covariates are not wide enough for prediction (on a new series)
+            with self.assertRaises(ValueError):
+                model = model_cls()
+                model.fit(ts1, future_covariates=exog1)
+                model.predict(
+                    n=pred_len, series=ts2, future_covariates=exog2[:-pred_len]
+                )

@@ -16,13 +16,15 @@ import numpy as np
 from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
 from darts.logging import get_logger
-from darts.models.forecasting.forecasting_model import DualCovariatesForecastingModel
+from darts.models.forecasting.forecasting_model import (
+    ExtendedDualCovariatesForecastingModel,
+)
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class ARIMA(DualCovariatesForecastingModel):
+class ARIMA(ExtendedDualCovariatesForecastingModel):
     def __init__(
         self,
         p: int = 12,
@@ -108,6 +110,15 @@ class ARIMA(DualCovariatesForecastingModel):
             )
 
         return self._build_forecast_series(forecast)
+
+    def _process_new_data(
+        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
+    ):
+        super()._process_new_data(series, future_covariates)
+        self.model = self.model.apply(
+            series.values(),
+            exog=future_covariates.values() if future_covariates else None,
+        )
 
     def _is_probabilistic(self) -> bool:
         return True

@@ -1227,3 +1227,122 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         return self.predict(
             n, future_covariates=future_covariates, num_samples=num_samples
         )
+
+
+class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
+    """The base class for the forecasting models that are not global, but support future covariates, and can be applied
+    to new data unrelated to the original data (used for fitting the model).
+
+    All implementations have to implement the `fit()` and `predict()` methods.
+    """
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+    ) -> TimeSeries:
+        """Forecasts values for `n` time steps after the end of the training series.
+
+        If some future covariates were specified during the training, they must also be specified here.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        future_covariates
+            The time series of future-known covariates which can be fed as input to the model. It must correspond to
+            the covariate time series that has been used with the :func:`fit()` method for training, and it must
+            contain at least the next `n` time steps/indices after the end of the training target series.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
+
+        Returns
+        -------
+        TimeSeries, a single time series containing the `n` next points after then end of the training series.
+        """
+
+        if self._expect_covariate and future_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model has been trained with `future_covariates` variable. Some matching "
+                    "`future_covariates` variables have to be provided to `predict()`."
+                )
+            )
+
+        historic_future_covariates = None
+
+        if series is not None and self._expect_covariate:
+
+            raise_if_not(
+                future_covariates.start_time() <= series.start_time()
+                and future_covariates.end_time() >= series.end_time(),
+                "The provided `future_covariates` series must contain at least the same time steps/"
+                "indices as the target `series`.",
+                logger,
+            )
+            # splitting the future covariates
+            (
+                historic_future_covariates,
+                future_covariates,
+            ) = future_covariates.split_after(series.end_time())
+
+            # in case future covariate have more value on the left end side that we don't need
+            if not series.has_same_time_as(historic_future_covariates):
+                historic_future_covariates = historic_future_covariates.slice_intersect(
+                    series
+                )
+
+        if series is not None:
+            self._process_new_data(series, historic_future_covariates)
+
+        return super().predict(
+            n=n, future_covariates=future_covariates, num_samples=num_samples
+        )
+
+    @abstractmethod
+    def _process_new_data(
+        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
+    ):
+        """Updates the model's state given the new data. The model's parameter must remain the one trained on the
+            original data, while the references to the data to be forcasted are updated.
+
+            This method expects series and future_covariates being of the same length.
+
+        Parameters
+        ----------
+        series (TimeSeries)
+            New target series
+        future_covariates (Optional[TimeSeries], optional)
+            New future covariates data. Defaults to None.
+        """
+        self.training_series = series
+
+    @abstractmethod
+    def _predict(
+        self,
+        n: int,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+    ) -> TimeSeries:
+        """Forecasts values for a certain number of time steps after the end of the series.
+        TODO {Extended}DualCovariatesModels must implement the predict logic in this method.
+        """
+        pass
+
+    def _predict_wrapper(
+        self,
+        n: int,
+        series: TimeSeries,
+        past_covariates: Optional[TimeSeries],
+        future_covariates: Optional[TimeSeries],
+        num_samples: int,
+    ) -> TimeSeries:
+        return self.predict(
+            n=n,
+            series=series,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+        )
