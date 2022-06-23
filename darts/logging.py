@@ -22,8 +22,6 @@ def get_logger(name):
     """
 
     logger = logging.getLogger(name)
-    # default logging level is logging.INFO
-    logger.setLevel(logging.INFO)
 
     return logger
 
