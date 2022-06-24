@@ -1076,7 +1076,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
     Among other things, it lets Darts forecasting models wrap around statsmodels models
     having a `future_covariates` parameter, which corresponds to future-known covariates.
 
-    All implementations have to implement the `fit()` and `predict()` methods defined below.
+    All implementations have to implement the `_fit()` and `_predict()` methods defined below.
     """
 
     _expect_covariate = False
@@ -1240,9 +1240,10 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
 class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
     """The base class for the forecasting models that are not global, but support future covariates, and can
-    additionally be applied to new data unrelated to the original series used for fitting the model.
+    additionally be applied to new data unrelated to the original series used for fitting the model. Currently,
+    all the derives classes wrap statsmodels models.
 
-    All implementations have to implement the `_fit()`, `_predict()` and `_handle_new_target()` methods.
+    All implementations have to implement the `_fit()`, `_predict()` methods.
     """
 
     def predict(
@@ -1258,7 +1259,6 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
 
         If the `series` parameter is set, forecasts values for `n` time steps after the end of the new target
         series. If some future covariates were specified during the training, they must also be specified here.
-        Updates, the `self.training_series` attribute will be updated accordingly.
 
         Parameters
         ----------
@@ -1273,7 +1273,7 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
 
             If `series` is not set, it must contain at least the next `n` time steps/indices after the end of the
             training target series. If `series` is set, it must contain at least the time steps/indices corresponding
-            to the new target series, plus the next `n` time steps/indices after the end.
+            to the new target series (historic future covariates), plus the next `n` time steps/indices after the end.
         num_samples
             Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
             for deterministic models.
