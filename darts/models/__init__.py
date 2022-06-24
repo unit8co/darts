@@ -34,11 +34,14 @@ except ModuleNotFoundError:
 try:
     from darts.models.forecasting.prophet_model import Prophet
 except ModuleNotFoundError:
+    pass
+    """
     logger.warning(
         "Support for Facebook Prophet is not available. "
-        'To enable it, install "darts", "u8darts[prophet]" or "u8darts[all]" (with pip);'
-        'or "u8darts-all" (with conda).'
+        "To enable it, install the prophet package in your environment; see "
+        "https://facebook.github.io/prophet/docs/installation.html"
     )
+    """
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel

@@ -15,6 +15,7 @@ from darts.logging import get_logger, raise_if, raise_log
 from darts.timeseries import TimeSeries
 from darts.utils.likelihood_models import Likelihood
 from darts.utils.timeseries_generation import _build_forecast_series
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -342,8 +343,22 @@ class PLForecastingModule(pl.LightningModule, ABC):
                 tiled_input_data.append(None)
         return tuple(tiled_input_data)
 
+    def _get_mc_dropout_modules(self) -> set:
+        def recurse_children(children, acc):
+            for module in children:
+                if isinstance(module, MonteCarloDropout):
+                    acc.add(module)
+                acc = recurse_children(module.children(), acc)
+            return acc
+
+        return recurse_children(self.children(), set())
+
+    def set_mc_dropout(self, active: bool):
+        for module in self._get_mc_dropout_modules():
+            module.mc_dropout_enabled = active
+
     def _is_probabilistic(self) -> bool:
-        return self.likelihood is not None
+        return self.likelihood is not None or len(self._get_mc_dropout_modules()) > 0
 
     def _produce_predict_output(self, x: Tuple):
         if self.likelihood:
