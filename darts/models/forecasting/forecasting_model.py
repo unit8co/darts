@@ -1276,6 +1276,14 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
 
+        if self._expect_covariate and future_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model has been trained with `future_covariates` variable. Some matching "
+                    "`future_covariates` variables have to be provided to `predict()`."
+                )
+            )
+
         historic_future_covariates = None
 
         if series is not None and future_covariates:
