@@ -1081,7 +1081,11 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
     _expect_covariate = False
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+    ):
         """Fit/train the model on the (single) provided series.
 
         Optionally, a future covariates series can be provided as well.
@@ -1119,7 +1123,11 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         return self._fit(series, future_covariates=future_covariates)
 
     @abstractmethod
-    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+    def _fit(
+        self,
+        series: TimeSeries,
+        future_covariates: Optional[TimeSeries] = None,
+    ):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
@@ -1130,6 +1138,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
@@ -1193,7 +1202,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             )
 
         return self._predict(
-            n, future_covariates=future_covariates, num_samples=num_samples
+            n, future_covariates=future_covariates, num_samples=num_samples, **kwargs
         )
 
     @abstractmethod
@@ -1229,7 +1238,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         )
 
 
-class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
+class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
     """The base class for the forecasting models that are not global, but support future covariates, and can
     additionally be applied to new data unrelated to the original series used for fitting the model.
 
@@ -1242,6 +1251,7 @@ class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC
         series: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        **kwargs,
     ) -> TimeSeries:
         """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
         series. If some future covariates were specified during the training, they must also be specified here.
@@ -1303,35 +1313,21 @@ class ExtendedDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC
                     series
                 )
 
-        if series is not None:
-            self._handle_new_target(series, historic_future_covariates)
-
         return super().predict(
-            n=n, future_covariates=future_covariates, num_samples=num_samples
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            **kwargs,
         )
-
-    def _handle_new_target(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ):
-        """Updates the model's state given the new target data (series, and, optionally, future covariates). The
-        model's parameter must remain the one trained on the original data, while the model `training_series`
-        attribute is updated.
-
-        This method expects `series` and `future_covariates` being of the same length.
-
-        Parameters
-        ----------
-        series
-            New target series
-        future_covariates
-            New future covariates data. Defaults to None.
-        """
-        self.training_series = series
 
     @abstractmethod
     def _predict(
         self,
         n: int,
+        series: Optional[TimeSeries] = None,
+        historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
     ) -> TimeSeries:

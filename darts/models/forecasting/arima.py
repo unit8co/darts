@@ -17,14 +17,14 @@ from statsmodels.tsa.arima.model import ARIMA as staARIMA
 
 from darts.logging import get_logger
 from darts.models.forecasting.forecasting_model import (
-    ExtendedDualCovariatesForecastingModel,
+    StatsmodelsDualCovariatesForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class ARIMA(ExtendedDualCovariatesForecastingModel):
+class ARIMA(StatsmodelsDualCovariatesForecastingModel):
     def __init__(
         self,
         p: int = 12,
@@ -68,8 +68,11 @@ class ARIMA(ExtendedDualCovariatesForecastingModel):
         return f"SARIMA{self.order}x{self.seasonal_order}"
 
     def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-
         super()._fit(series, future_covariates)
+
+        # storing to restore the statsmodels model results object
+        self.training_historic_future_covariates = future_covariates
+
         m = staARIMA(
             self.training_series.values(),
             exog=future_covariates.values() if future_covariates else None,
@@ -84,6 +87,8 @@ class ARIMA(ExtendedDualCovariatesForecastingModel):
     def _predict(
         self,
         n: int,
+        series: Optional[TimeSeries] = None,
+        historic_future_covariates: Optional[TimeSeries] = None,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
     ) -> TimeSeries:
@@ -97,6 +102,15 @@ class ARIMA(ExtendedDualCovariatesForecastingModel):
 
         super()._predict(n, future_covariates, num_samples)
 
+        # updating statsmodels results object state
+        if series is not None:
+            self.model = self.model.apply(
+                series.values(),
+                exog=historic_future_covariates.values()
+                if historic_future_covariates
+                else None,
+            )
+
         if num_samples == 1:
             forecast = self.model.forecast(
                 steps=n, exog=future_covariates.values() if future_covariates else None
@@ -109,16 +123,16 @@ class ARIMA(ExtendedDualCovariatesForecastingModel):
                 exog=future_covariates.values() if future_covariates else None,
             )
 
-        return self._build_forecast_series(forecast)
+        # restoring statsmodels results object state
+        if series is not None:
+            self.model = self.model.apply(
+                self.training_series.values(),
+                exog=self.training_historic_future_covariates.values()
+                if self.training_historic_future_covariates
+                else None,
+            )
 
-    def _handle_new_target(
-        self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None
-    ):
-        super()._handle_new_target(series, future_covariates)
-        self.model = self.model.apply(
-            series.values(),
-            exog=future_covariates.values() if future_covariates else None,
-        )
+        return self._build_forecast_series(forecast)
 
     def _is_probabilistic(self) -> bool:
         return True

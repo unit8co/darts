@@ -320,3 +320,12 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 model.predict(
                     n=pred_len, series=series2, future_covariates=exog2[:-pred_len]
                 )
+
+            # verify that we can still forecast the original training series after predicting a new target series
+            model = model_cls(**kwargs)
+            model.fit(series1, future_covariates=exog1)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1)
+            model.predict(n=pred_len, series=series2, future_covariates=exog2)
+            pred3 = model.predict(n=pred_len, future_covariates=exog1)
+
+            self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
