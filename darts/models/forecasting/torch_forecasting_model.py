@@ -953,6 +953,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         roll_size: Optional[int] = None,
         num_samples: int = 1,
         num_loader_workers: int = 0,
+        mc_dropout: bool = False,
     ) -> Union[TimeSeries, Sequence[TimeSeries]]:
         """Predict the ``n`` time step following the end of the training series, or of the specified ``series``.
 
@@ -1015,6 +1016,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models.
+            This allows bayesian approximation by specifying an implicit prior over learned models.
 
         Returns
         -------
@@ -1077,6 +1081,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             n_jobs=n_jobs,
             roll_size=roll_size,
             num_samples=num_samples,
+            num_loader_workers=num_loader_workers,
+            mc_dropout=mc_dropout,
         )
 
         return predictions[0] if called_with_single_series else predictions
@@ -1093,6 +1099,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         roll_size: Optional[int] = None,
         num_samples: int = 1,
         num_loader_workers: int = 0,
+        mc_dropout: bool = False,
     ) -> Sequence[TimeSeries]:
 
         """
@@ -1136,6 +1143,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             for the inference/prediction dataset loaders (if any).
             A larger number of workers can sometimes increase performance, but can also incur extra overheads
             and increase memory usage, as more batches are loaded in parallel.
+        mc_dropout
+            Optionally, enable monte carlo dropout for predictions using neural network based models.
+            This allows bayesian approximation by specifying an implicit prior over learned models.
 
         Returns
         -------
@@ -1183,6 +1193,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             drop_last=False,
             collate_fn=self._batch_collate_fn,
         )
+
+        # Set mc_dropout rate
+        self.model.set_mc_dropout(mc_dropout)
 
         # setup trainer. will only be re-instantiated if both `trainer` and `self.trainer` are `None`
         trainer = trainer if trainer is not None else self.trainer
@@ -1428,7 +1441,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         return (
             self.model._is_probabilistic()
             if self.model_created
-            else self.likelihood is not None
+            else True  # all torch models can be probabilistic (via Dropout)
         )
 
 
