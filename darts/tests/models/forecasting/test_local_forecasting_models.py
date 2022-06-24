@@ -69,7 +69,7 @@ multivariate_models = [
 
 dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
 
-extended_dual_models_cls = [ARIMA, VARIMA]
+statsmodels_dual_models_cls = [ARIMA, VARIMA]
 
 try:
     from darts.models import Prophet
@@ -234,7 +234,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             with self.assertRaises(ValueError):
                 autoarima.fit(series=ts)
 
-    def test_extended_dual_models(self):
+    def test_statsmodels_dual_models(self):
         target_len = 200
         pred_len = 15
 
@@ -319,6 +319,13 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 model.fit(series1, future_covariates=exog1)
                 model.predict(
                     n=pred_len, series=series2, future_covariates=exog2[:-pred_len]
+                )
+            # and checking the case with unsufficient historic future covariates
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(
+                    n=pred_len, series=series2, future_covariates=exog2[pred_len:]
                 )
 
             # verify that we can still forecast the original training series after predicting a new target series

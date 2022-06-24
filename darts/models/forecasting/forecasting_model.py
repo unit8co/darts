@@ -1082,11 +1082,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 
     _expect_covariate = False
 
-    def fit(
-        self,
-        series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-    ):
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         """Fit/train the model on the (single) provided series.
 
         Optionally, a future covariates series can be provided as well.
@@ -1124,11 +1120,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         return self._fit(series, future_covariates=future_covariates)
 
     @abstractmethod
-    def _fit(
-        self,
-        series: TimeSeries,
-        future_covariates: Optional[TimeSeries] = None,
-    ):
+    def _fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
         """Fits/trains the model on the provided series.
         DualCovariatesModels must implement the fit logic in this method.
         """
@@ -1283,14 +1275,6 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
         -------
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
-
-        if self._expect_covariate and future_covariates is None:
-            raise_log(
-                ValueError(
-                    "The model has been trained with `future_covariates` variable. Some matching "
-                    "`future_covariates` variables have to be provided to `predict()`."
-                )
-            )
 
         historic_future_covariates = None
 
