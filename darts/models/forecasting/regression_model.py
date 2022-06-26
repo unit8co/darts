@@ -730,32 +730,35 @@ class _LikelihoodMixin:
 
             return output_slice.reshape(k, chunk_len, -1)
 
-        # case univariate chunk 1
+        # univariate & single-chunk output
         if output_dim <= 2:
             # embedding well shaped output in one more dimension
             model_output = np.array([model_output])
         else:
             model_output = model_output.transpose()
 
-        # return self._normal_sampling(model_output.reshape(k, self.output_chunk_length, -1))
         return self._normal_sampling(model_output, k)
 
     def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
         """
-        Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
+        Model_output is of shape (n_components * output_chunk_length, n_samples, 2: [mu, sigma])
         """
         shape = model_output.shape
+        chunk_len = self.output_chunk_length
 
+        # treating each component separately
         mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
+
         list_of_samples = [
-            np.random.multivariate_normal(mu_sigma[:, 0], np.diag(mu_sigma[:, 1]))
+            self._rng.multivariate_normal(
+                mu_sigma[:, 0],  # mean vector
+                np.diag(mu_sigma[:, 1]),  # diagonal covariance matrix
+            )
             for mu_sigma in mu_sigma_list
         ]
 
         samples_transposed = np.array(list_of_samples).transpose()
-        samples_reshaped = samples_transposed.reshape(
-            n_samples, self.output_chunk_length, -1
-        )
+        samples_reshaped = samples_transposed.reshape(n_samples, chunk_len, -1)
 
         return samples_reshaped
 
