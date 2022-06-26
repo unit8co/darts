@@ -717,35 +717,23 @@ class _LikelihoodMixin:
         k = x.shape[0]
 
         model_output = self.model.predict(x, **kwargs)
-
         output_dim = len(model_output.shape)
+        chunk_len = self.output_chunk_length
 
-        # choosing to return the mean if one sample
-        # if num_samples == -2:
-        #     # multivariate or output_chunk_length > 1
-        #     if output_dim > 2:
-        #         return np.array([model_output[0, :, :]])
-        #     return model_output[:, 0].reshape(k, self.output_chunk_length, -1)
-
-        # deterministic case
+        # deterministic case: we return the mean only
         if num_samples == 1:
-            # if univariate series
-            if self.input_dim["target"] == 1:
-                if self.output_chunk_length == 1:
-                    return model_output[:, 0].reshape(k, self.output_chunk_length, -1)
-                else:
-                    model_output[0, :, :].reshape(k, self.output_chunk_length, -1)
+            # univariate & single-chunk output
+            if output_dim <= 2:
+                output_slice = model_output[:, 0]
             else:
-                if self.output_chunk_length == 1:
-                    return np.array([model_output[0, :, :]])
-                else:
-                    model_output[0, :, :].reshape(k, self.output_chunk_length, -1)
+                output_slice = model_output[0, :, :]
+
+            return output_slice.reshape(k, chunk_len, -1)
 
         # case univariate chunk 1
         if output_dim <= 2:
-            model_output = model_output.reshape(
-                1, *model_output.shape
-            )  # .reshape(k, self.output_chunk_length, -1)
+            # embedding well shaped output in one more dimension
+            model_output = np.array([model_output])
         else:
             model_output = model_output.transpose()
 
@@ -757,33 +745,19 @@ class _LikelihoodMixin:
         Model_output is of shape (n_series * n_samples, output_chunk_length, n_components)
         """
         shape = model_output.shape
-        univar = False
-        if univar:
-            mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
-            list_of_samples = [
-                [self._rng.normal(params[0], params[1]) for params in mu_sigma]
-                for mu_sigma in mu_sigma_list
-            ]
-            # mu_sigma = model_output[:, 0, :]
-            # list_of_samples = [
-            #     self._rng.normal(params[0], params[1]) for params in mu_sigma
-            # ]
-            return np.array(list_of_samples).reshape(
-                n_samples, self.output_chunk_length, -1
-            )
-        else:
-            mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
-            list_of_samples = [
-                [self._rng.normal(params[0], params[1]) for params in mu_sigma]
-                for mu_sigma in mu_sigma_list
-            ]
 
-            samples_transposed = np.array(list_of_samples).transpose()
-            samples_reshaped = samples_transposed.reshape(
-                n_samples, self.output_chunk_length, -1
-            )
+        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
+        list_of_samples = [
+            np.random.multivariate_normal(mu_sigma[:, 0], np.diag(mu_sigma[:, 1]))
+            for mu_sigma in mu_sigma_list
+        ]
 
-            return samples_reshaped
+        samples_transposed = np.array(list_of_samples).transpose()
+        samples_reshaped = samples_transposed.reshape(
+            n_samples, self.output_chunk_length, -1
+        )
+
+        return samples_reshaped
 
     def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         """
