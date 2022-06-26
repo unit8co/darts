@@ -765,7 +765,9 @@ class TimeSeries:
             # store static covariate Series and group DataFrame (without static cov columns)
             splits.append(
                 (
-                    pd.DataFrame([static_cov_vals], columns=static_cov_cols),
+                    pd.DataFrame([static_cov_vals], columns=static_cov_cols).astype(
+                        {col: df[col].dtype for col in static_cov_cols}
+                    ),
                     group.drop(columns=static_cov_cols),
                 )
             )

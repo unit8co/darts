@@ -963,7 +963,7 @@ class TFTModel(MixedCovariatesTorchModel):
                     time_varying_decoder_input += vars_meta
                     reals_input += vars_meta
                 elif input_var in ["static_covariate"]:
-                    static_covs = self.training_series.static_covariates
+                    static_covs = self.static_covariates
                     static_covs_is_real = static_covs.columns.isin(
                         static_covs.select_dtypes(include=np.number)
                     )
