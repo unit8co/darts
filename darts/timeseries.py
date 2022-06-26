@@ -2660,7 +2660,7 @@ class TimeSeries:
         """
         return concatenate([self, other], axis=1)
 
-     def drop_columns(self, col_names: Union[List[str], str]) -> "TimeSeries":
+    def drop_columns(self, col_names: Union[List[str], str]) -> "TimeSeries":
         """
         Return a new ``TimeSeries`` instance with dropped columns/components.
 
