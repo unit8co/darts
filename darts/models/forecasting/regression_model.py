@@ -721,11 +721,27 @@ class _LikelihoodMixin:
         output_dim = len(model_output.shape)
 
         # choosing to return the mean if one sample
-        if num_samples == 1:
-            if output_dim > 2:
-                return np.array([model_output[0, :, :]])
-            return model_output[:, 0].reshape(k, self.output_chunk_length, -1)
+        # if num_samples == -2:
+        #     # multivariate or output_chunk_length > 1
+        #     if output_dim > 2:
+        #         return np.array([model_output[0, :, :]])
+        #     return model_output[:, 0].reshape(k, self.output_chunk_length, -1)
 
+        # deterministic case
+        if num_samples == 1:
+            # if univariate series
+            if self.input_dim["target"] == 1:
+                if self.output_chunk_length == 1:
+                    return model_output[:, 0].reshape(k, self.output_chunk_length, -1)
+                else:
+                    model_output[0, :, :].reshape(k, self.output_chunk_length, -1)
+            else:
+                if self.output_chunk_length == 1:
+                    return np.array([model_output[0, :, :]])
+                else:
+                    model_output[0, :, :].reshape(k, self.output_chunk_length, -1)
+
+        # case univariate chunk 1
         if output_dim <= 2:
             model_output = model_output.reshape(
                 1, *model_output.shape
@@ -762,9 +778,12 @@ class _LikelihoodMixin:
                 for mu_sigma in mu_sigma_list
             ]
 
-            return np.array(list_of_samples).reshape(
+            samples_transposed = np.array(list_of_samples).transpose()
+            samples_reshaped = samples_transposed.reshape(
                 n_samples, self.output_chunk_length, -1
             )
+
+            return samples_reshaped
 
     def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         """
