@@ -10,9 +10,8 @@ def read_requirements(path):
 base_reqs = read_requirements("requirements/core.txt")
 pmdarima_reqs = read_requirements("requirements/pmdarima.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
-prophet_reqs = read_requirements("requirements/prophet.txt")
 
-all_reqs = base_reqs + pmdarima_reqs + torch_reqs + prophet_reqs
+all_reqs = base_reqs + pmdarima_reqs + torch_reqs
 
 with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -30,7 +29,7 @@ PROJECT_URLS = {
 
 setup(
     name="u8darts",
-    version="0.19.0",
+    version="0.20.0",
     description="A python library for easy manipulation and forecasting of time series.",
     long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
@@ -41,12 +40,7 @@ setup(
     license="Apache License 2.0",
     packages=find_packages(),
     install_requires=base_reqs,
-    extras_require={
-        "all": all_reqs,
-        "pmdarima": pmdarima_reqs,
-        "torch": torch_reqs,
-        "prophet": prophet_reqs,
-    },
+    extras_require={"all": all_reqs, "pmdarima": pmdarima_reqs, "torch": torch_reqs},
     package_data={
         "darts": ["py.typed"],
     },
@@ -66,6 +60,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
         "Programming Language :: Python :: Implementation :: PyPy",
     ],
     keywords="time series forecasting",

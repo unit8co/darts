@@ -22,7 +22,9 @@ or integer indices (:class:`pandas.RangeIndex`).
     - Contain numeric types only
     - Have distinct components/columns names
     - Have a well defined frequency (for ``DateTimeIndex``)
-    - Be non-empty.
+    - Be non-empty
+    - Have static covariates consistent with their components, or no static covariates
+    - Have a hierarchy consistent with their components, or no hierarchy
 
 ``TimeSeries`` can contain global or component-specific static covariate data. Static covariates in `darts` refers
 to external time-invariant data that can be used by some models to help improve predictions.
@@ -33,7 +35,7 @@ Read our `user guide on covariates <https://unit8co.github.io/darts/userguide/co
 import pickle
 from collections import defaultdict
 from inspect import signature
-from typing import Any, Callable, List, Optional, Sequence, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -53,6 +55,7 @@ DIMS = ("time", "component", "sample")
 VALID_INDEX_TYPES = (pd.DatetimeIndex, pd.RangeIndex)
 STATIC_COV_TAG = "static_covariates"
 DEFAULT_GLOBAL_STATIC_COV_NAME = "global_components"
+HIERARCHY_TAG = "hierarchy"
 
 
 class TimeSeries:
@@ -229,9 +232,8 @@ class TimeSeries:
         else:  # None
             pass
 
-        if static_covariates is None:
-            self._xa = _xarray_with_static_covariates(self._xa, None)
-        else:
+        # prepare static covariates:
+        if static_covariates is not None:
             static_covariates.index = (
                 self.components
                 if len(static_covariates) == self.n_components
@@ -240,10 +242,52 @@ class TimeSeries:
             static_covariates.columns.name = STATIC_COV_TAG
             # convert numerical columns to same dtype as series
             numeric_cols = static_covariates.select_dtypes(include=np.number).columns
-            self._xa = _xarray_with_static_covariates(
-                self._xa,
-                static_covariates.astype({col: self.dtype for col in numeric_cols}),
+            static_covariates = static_covariates.astype(
+                {col: self.dtype for col in numeric_cols}
             )
+
+        # handle hierarchy
+        hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
+        self._top_level_component = None
+        self._bottom_level_components = None
+        if hierarchy is not None:
+            raise_if_not(
+                isinstance(hierarchy, dict),
+                "The hierarchy must be a dict mapping (non-top) component names to their parent(s) in the hierarchy.",
+            )
+            # pre-compute grouping informations
+            components_set = set(self.components)
+            children = set(hierarchy.keys())
+            raise_if_not(
+                all(c in components_set for c in children),
+                "The keys of the hierarchy must be time series components",
+            )
+            ancestors = set().union(*hierarchy.values())
+            raise_if_not(
+                all(a in components_set for a in ancestors),
+                "The values of the hierarchy must only contain component names matching those of the series.",
+            )
+            hierarchy_top = components_set - children
+            raise_if_not(
+                len(hierarchy_top) == 1,
+                "The hierarchy must be such that only one component does "
+                + "not appear as a key (the top level component).",
+            )
+            self._top_level_component = hierarchy_top.pop()
+            raise_if_not(
+                self._top_level_component in ancestors,
+                "Invalid hierarchy. Component {} appears as it should be top-level, but "
+                + "does not appear as an ancestor in the hierarchy dict.",
+            )
+            bottom_level = components_set - ancestors
+
+            # maintain the same order as the original components
+            self._bottom_level_components = [
+                c for c in self.components if c in bottom_level
+            ]
+
+        # Store static covariates and hierarchy in attributes (potentially storing None)
+        self._xa = _xarray_with_attrs(self._xa, static_covariates, hierarchy)
 
     """
     Factory Methods
@@ -271,6 +315,7 @@ class TimeSeries:
 
         If two components have the same name or are not strings, this method will disambiguate the components
         names by appending a suffix of the form "<name>_N" to the N-th column with name "name".
+        The component names in the static covariates and hierarchy (if any) are *not* disambiguated.
 
         Parameters
         ----------
@@ -341,6 +386,11 @@ class TimeSeries:
             time_index_name = xa_.dims[0]
             columns_list = _clean_component_list(components)
 
+            # Note: an option here could be to also rename the component names in the static covariates
+            # and/or hierarchy, if any. However, we decide not to do so as those are directly dependent on the
+            # component names to work properly, so in case there's any name conflict it's better solved
+            # by the user than handled by silent renaming, which can change the way things work.
+
             # TODO: is there a way to just update the component index without re-creating a new DataArray?
             xa_ = xr.DataArray(
                 xa_.values,
@@ -370,6 +420,7 @@ class TimeSeries:
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
         **kwargs,
     ) -> "TimeSeries":
         """
@@ -404,6 +455,31 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in the CSV
             file). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
+
         **kwargs
             Optional arguments to be passed to `pandas.read_csv` function
 
@@ -422,6 +498,7 @@ class TimeSeries:
             freq=freq,
             fillna_value=fillna_value,
             static_covariates=static_covariates,
+            hierarchy=hierarchy,
         )
 
     @classmethod
@@ -434,6 +511,7 @@ class TimeSeries:
         freq: Optional[str] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build a deterministic TimeSeries instance built from a selection of columns of a DataFrame.
@@ -470,6 +548,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``value_cols``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -555,7 +657,7 @@ class TimeSeries:
             series_df.values[:, :, np.newaxis],
             dims=(time_index.name,) + DIMS[-2:],
             coords={time_index.name: time_index, DIMS[1]: series_df.columns},
-            attrs={STATIC_COV_TAG: static_covariates},
+            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
         return cls.from_xarray(
@@ -744,6 +846,7 @@ class TimeSeries:
         columns: Optional[pd._typing.Axes] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build a series from a time index and value array.
@@ -778,6 +881,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``values``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -808,7 +935,7 @@ class TimeSeries:
             values,
             dims=(times_name,) + DIMS[-2:],
             coords=coords,
-            attrs={STATIC_COV_TAG: static_covariates},
+            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
         return cls.from_xarray(
@@ -825,6 +952,7 @@ class TimeSeries:
         columns: Optional[pd._typing.Axes] = None,
         fillna_value: Optional[float] = None,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build an integer-indexed series from an array of values.
@@ -848,6 +976,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``values``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -867,6 +1019,7 @@ class TimeSeries:
             columns=columns,
             fillna_value=fillna_value,
             static_covariates=static_covariates,
+            hierarchy=hierarchy,
         )
 
     @classmethod
@@ -874,6 +1027,7 @@ class TimeSeries:
         cls,
         json_str: str,
         static_covariates: Optional[Union[pd.Series, pd.DataFrame]] = None,
+        hierarchy: Optional[Dict] = None,
     ) -> "TimeSeries":
         """
         Build a series from the JSON String representation of a ``TimeSeries``
@@ -893,6 +1047,30 @@ class TimeSeries:
             are globally 'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of
             rows must match the number of components of the TimeSeries (in this case, the number of columns in
             ``value_cols``). This adds control for component-specific static covariates.
+        hierarchy
+            Optionally, a dictionary describing the grouping(s) of the time series. The keys are component names, and
+            for a given component name `c`, the value is a list of component names that `c` "belongs" to. For instance,
+            if there is a `total` component, split both in two divisions `d1` and `d2` and in two regions `r1` and `r2`,
+            and four products `d1r1` (in division `d1` and region `r1`), `d2r1`, `d1r2` and `d2r2`, the hierarchy would
+            be encoded as follows.
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy={
+                    "d1r1": ["d1", "r1"],
+                    "d1r2": ["d1", "r2"],
+                    "d2r1": ["d2", "r1"],
+                    "d2r2": ["d2", "r2"],
+                    "d1": ["total"],
+                    "d2": ["total"],
+                    "r1": ["total"],
+                    "r2": ["total"]
+                }
+            ..
+            The hierarchy can be used to reconcile forecasts (so that the sums of the forecasts at
+            different levels are consistent), see `hierarchical reconciliation
+            <https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliaton.html>`_.
 
         Returns
         -------
@@ -900,7 +1078,9 @@ class TimeSeries:
             The time series object converted from the JSON String
         """
         df = pd.read_json(json_str, orient="split")
-        return cls.from_dataframe(df, static_covariates=static_covariates)
+        return cls.from_dataframe(
+            df, static_covariates=static_covariates, hierarchy=hierarchy
+        )
 
     @classmethod
     def from_pickle(cls, path: str) -> "TimeSeries":
@@ -941,6 +1121,56 @@ class TimeSeries:
         series.
         """
         return self._xa.attrs.get(STATIC_COV_TAG, None)
+
+    @property
+    def hierarchy(self) -> Optional[Dict]:
+        """
+        The hierarchy of this TimeSeries, if any.
+        If set, the hierarchy is encoded as a dictionary, whose keys are individual components
+        and values are the set of parent(s) of these components in the hierarchy.
+        """
+        return self._xa.attrs.get(HIERARCHY_TAG, None)
+
+    @property
+    def has_hierarchy(self) -> bool:
+        """Whether this series is hierarchical or not."""
+        return self.hierarchy is not None
+
+    @property
+    def top_level_component(self) -> Optional[str]:
+        """
+        The top level component name of this series, or None if the series has no hierarchy.
+        """
+        return self._top_level_component
+
+    @property
+    def bottom_level_components(self) -> Optional[List[str]]:
+        """
+        The bottom level component names of this series, or None if the series has no hierarchy.
+        """
+        return self._bottom_level_components
+
+    @property
+    def top_level_series(self) -> Optional["TimeSeries"]:
+        """
+        The univariate series containing the single top-level component of this series,
+        or None if the series has no hierarchy.
+        """
+        return self[self.top_level_component] if self.has_hierarchy else None
+
+    @property
+    def bottom_level_series(self) -> Optional[List["TimeSeries"]]:
+        """
+        The series containing the bottom-level components of this series in the same
+        order as they appear in the series, or None if the series has no hierarchy.
+
+        The returned series is multivariate if there are multiple bottom components.
+        """
+        return (
+            self[[c for c in self.components if c in self.bottom_level_components]]
+            if self.has_hierarchy
+            else None
+        )
 
     @property
     def n_samples(self):
@@ -1568,6 +1798,8 @@ class TimeSeries:
         other: "TimeSeries",
         axis: Optional[Union[str, int]] = 0,
         ignore_time_axes: Optional[bool] = False,
+        ignore_static_covariates: bool = False,
+        drop_hierarchy: bool = True,
     ) -> "TimeSeries":
         """
         Concatenate another timeseries to the current one along given axis.
@@ -1580,6 +1812,17 @@ class TimeSeries:
             axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 0 (time)]
         ignore_time_axes : bool, default False
             Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
+        ignore_static_covariates : bool
+            whether to ignore all requirements for static covariate concatenation and only transfer the
+            static covariates of the first TimeSeries element in `series` to the concatenated TimeSeries.
+            Only effective when `axis=1`.
+        drop_hierarchy : bool
+            When `axis=1`, whether to drop hierarchy information. True by default.
+            When False, the hierarchies will be "concatenated" as well
+            (by merging the hierarchy dictionaries), which may cause issues if the component
+            names of the resulting series and that of the merged hierarchy do not match.
+            When `axis=0` or `axis=2`, the hierarchy of the first series is always kept.
+
 
         Returns
         -------
@@ -1596,7 +1839,11 @@ class TimeSeries:
         the resulting series, and the other series will have its time index ignored.
         """
         return concatenate(
-            series=[self, other], axis=axis, ignore_time_axis=ignore_time_axes
+            series=[self, other],
+            axis=axis,
+            ignore_time_axis=ignore_time_axes,
+            ignore_static_covariates=ignore_static_covariates,
+            drop_hierarchy=drop_hierarchy,
         )
 
     """
@@ -2270,27 +2517,32 @@ class TimeSeries:
 
     def with_values(self, values: np.ndarray) -> "TimeSeries":
         """
-        Return a new ``TimeSeries`` with new specified values.
+        Return a new ``TimeSeries`` similar to this one but with new specified values.
 
         Parameters
         ----------
         values
-            A Numpy array with new values. It must have the same shape as the present
-            series (time, components, samples)
+            A Numpy array with new values. It must have the dimensions for time
+            and componentns, but may contain a different number of samples.
 
         Return
         ------
         TimeSeries
-            A new TimeSeries with the new values and same index
+            A new TimeSeries with the new values and same index, static covariates and hierarchy
         """
         raise_if_not(
-            values.shape == self._xa.values.shape,
-            "The new values must have the same shape (time, components, samples) as the present series. "
-            "Received: {}, expected: {}".format(values.shape, self._xa.values.shape),
+            values.shape[:2] == self._xa.values.shape[:2],
+            "The new values must have the same shape (time, components) as the present series. "
+            "Received: {}, expected: {}".format(
+                values.shape[:2], self._xa.values.shape[:2]
+            ),
         )
 
         new_xa = xr.DataArray(
-            values, dims=self._xa.dims, coords=self._xa.coords, attrs=self._xa.attrs
+            values,
+            dims=self._xa.dims,
+            coords=self._xa.coords,
+            attrs=self._xa.attrs,
         )
 
         return self.__class__(new_xa)
@@ -2336,12 +2588,53 @@ class TimeSeries:
         linear              0.0           1.0
         linear_1            2.0           3.0
         """
+
         return self.__class__(
             xr.DataArray(
                 self._xa.values,
                 dims=self._xa.dims,
                 coords=self._xa.coords,
-                attrs={STATIC_COV_TAG: covariates},
+                attrs={STATIC_COV_TAG: covariates, HIERARCHY_TAG: self.hierarchy},
+            )
+        )
+
+    def with_hierarchy(self, hierarchy: Dict):
+        """
+        Adds a hierarchy to the TimeSeries.
+
+        Parameters
+        ----------
+        hierarchy
+            A dictionary mapping components to a list of their parent(s) in the hierarchy.
+            For example, assume the series contains the components
+            ``["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]``,
+            the following dictionary would encode the groupings shown on
+            `this figure <https://otexts.com/fpp3/hts.html#fig:GroupTree>`_:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                hierarchy = {'ax': ['a', 'x'],
+                             'ay': ['a', 'y'],
+                             'bx': ['b', 'x'],
+                             'by': ['b', 'y'],
+                             'a': ['total'],
+                             'b': ['total'],
+                             'x': ['total'],
+                             'y': ['total']}
+            ..
+
+        """
+
+        return self.__class__(
+            xr.DataArray(
+                self._xa.values,
+                dims=self._xa.dims,
+                coords=self._xa.coords,
+                attrs={
+                    STATIC_COV_TAG: self.static_covariates,
+                    HIERARCHY_TAG: hierarchy,
+                },
             )
         )
 
@@ -2365,34 +2658,33 @@ class TimeSeries:
         TimeSeries
             A new multivariate TimeSeries instance.
         """
+        return concatenate([self, other], axis=1)
+
+    def drop_columns(self, col_names: Union[List[str], str]) -> "TimeSeries":
+        """
+        Return a new ``TimeSeries`` instance with dropped columns/components.
+
+        Parameters
+        -------
+        col_names
+            String or list of strings corresponding the the columns to be dropped.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance with specified columns dropped.
+        """
+        if isinstance(col_names, str):
+            col_names = [col_names]
+
         raise_if_not(
-            self.has_same_time_as(other),
-            "The indices of the two TimeSeries instances must be equal",
-            logger,
-        )
-        raise_if_not(
-            self.n_samples == other.n_samples,
-            "Two series can be stacked only if they "
-            "have the same number of samples.",
+            all([(x in self.columns.to_list()) for x in col_names]),
+            "Some column names in col_names don't exist in the time series.",
             logger,
         )
 
-        other_xa = other.data_array(copy=False)
-        if other_xa.dims[0] != self._time_dim:
-            new_other_xa = xr.DataArray(
-                other_xa.values,
-                dims=self._xa.dims,
-                coords={self._time_dim: self._time_index, DIMS[1]: other.components},
-            )
-        else:
-            new_other_xa = other_xa
-
-        new_xa = xr.concat((self._xa, new_other_xa), dim=DIMS[1])
-        new_xa = _xarray_with_static_covariates(
-            new_xa, _concat_static_covs([self, other])
-        )
-        # we call the factory method here to disambiguate column names if needed.
-        return self.__class__.from_xarray(new_xa, fill_missing_dates=False)
+        new_xa = self._xa.drop_sel({"component": col_names})
+        return self.__class__(new_xa)
 
     def univariate_component(self, index: Union[str, int]) -> "TimeSeries":
         """
@@ -2818,7 +3110,8 @@ class TimeSeries:
         self, col_names: Union[List[str], str], col_names_new: Union[List[str], str]
     ) -> "TimeSeries":
         """
-        Return a new ``TimeSeries`` instance with new columns/components names.
+        Return a new ``TimeSeries`` instance with new columns/components names. It also
+        adapts the names in the hierarchy, if any.
 
         Parameters
         -------
@@ -2851,16 +3144,30 @@ class TimeSeries:
             logger,
         )
 
-        cols = self.components
+        old2new = {old: new for (old, new) in zip(col_names, col_names_new)}
 
-        for (o, n) in zip(col_names, col_names_new):
-            cols = [n if (c == o) else c for c in cols]
+        # update component names
+        cols = [old2new[old] if old in old2new else old for old in self.components]
+
+        # update hierarchy names
+        if self.hierarchy is not None:
+            hierarchy = {
+                (old2new[key] if key in old2new else key): [
+                    old2new[old] if old in old2new else old
+                    for old in self.hierarchy[key]
+                ]
+                for key in self.hierarchy
+            }
+        else:
+            hierarchy = None
+        new_attrs = self._xa.attrs
+        new_attrs[HIERARCHY_TAG] = hierarchy
 
         new_xa = xr.DataArray(
             self._xa.values,
             dims=self._xa.dims,
             coords={self._xa.dims[0]: self.time_index, DIMS[1]: pd.Index(cols)},
-            attrs=self._xa.attrs,
+            attrs=new_attrs,
         )
 
         return self.__class__(new_xa)
@@ -2888,6 +3195,8 @@ class TimeSeries:
         resulting single component will be renamed to "components_mean".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
 
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
+
         Parameters
         ----------
         axis
@@ -2903,7 +3212,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_mean", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -2915,6 +3227,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_median".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -2932,7 +3246,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_median", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -2944,6 +3261,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_sum".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -2960,7 +3279,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_sum", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -2972,6 +3294,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_min".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -2988,7 +3312,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_min", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -3000,6 +3327,8 @@ class TimeSeries:
         entry of the original ``time_index``. If we perform the calculation over the components (``axis=1``), the
         resulting single component will be renamed to "components_max".  When applied to the samples (``axis=2``),
         a deterministic ``TimeSeries`` is returned.
+
+        If ``axis=1``, the static covariates and the hierarchy are discarded from the series.
 
         Parameters
         ----------
@@ -3015,7 +3344,10 @@ class TimeSeries:
         new_coords = self._get_agg_coords("components_max", axis)
 
         new_xa = xr.DataArray(
-            new_data, dims=self._xa.dims, coords=new_coords, attrs=self._xa.attrs
+            new_data,
+            dims=self._xa.dims,
+            coords=new_coords,
+            attrs=(self._xa.attrs if axis != 1 else dict()),
         )
         return self.__class__(new_xa)
 
@@ -3380,8 +3712,8 @@ class TimeSeries:
 
     def __add__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_static_covariates(
-                self._xa + other, self.static_covariates
+            xa_ = _xarray_with_attrs(
+                self._xa + other, self.static_covariates, self.hierarchy
             )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
@@ -3401,8 +3733,8 @@ class TimeSeries:
 
     def __sub__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_static_covariates(
-                self._xa - other, self.static_covariates
+            xa_ = _xarray_with_attrs(
+                self._xa - other, self.static_covariates, self.hierarchy
             )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
@@ -3422,8 +3754,8 @@ class TimeSeries:
 
     def __mul__(self, other):
         if isinstance(other, (int, float, np.integer)):
-            xa_ = _xarray_with_static_covariates(
-                self._xa * other, self.static_covariates
+            xa_ = _xarray_with_attrs(
+                self._xa * other, self.static_covariates, self.hierarchy
             )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
@@ -3444,8 +3776,8 @@ class TimeSeries:
     def __pow__(self, n):
         if isinstance(n, (int, float, np.integer)):
             raise_if(n < 0, "Attempted to raise a series to a negative power.", logger)
-            xa_ = _xarray_with_static_covariates(
-                self._xa ** float(n), self.static_covariates
+            xa_ = _xarray_with_attrs(
+                self._xa ** float(n), self.static_covariates, self.hierarchy
             )
             return self.__class__(xa_)
         if isinstance(n, (TimeSeries, xr.DataArray, np.ndarray)):
@@ -3464,8 +3796,8 @@ class TimeSeries:
         if isinstance(other, (int, float, np.integer)):
             if other == 0:
                 raise_log(ZeroDivisionError("Cannot divide by 0."), logger)
-            xa_ = _xarray_with_static_covariates(
-                self._xa / other, self.static_covariates
+            xa_ = _xarray_with_attrs(
+                self._xa / other, self.static_covariates, self.hierarchy
             )
             return self.__class__(xa_)
         elif isinstance(other, (TimeSeries, xr.DataArray, np.ndarray)):
@@ -3502,12 +3834,14 @@ class TimeSeries:
 
     def __lt__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_static_covariates(
-                self._xa < other, self.static_covariates
+            return _xarray_with_attrs(
+                self._xa < other, self.static_covariates, self.hierarchy
             )
         elif isinstance(other, TimeSeries):
-            return _xarray_with_static_covariates(
-                self._xa < other.data_array(copy=False), self.static_covariates
+            return _xarray_with_attrs(
+                self._xa < other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
             )
         else:
             raise_log(
@@ -3522,12 +3856,14 @@ class TimeSeries:
     def __gt__(self, other) -> xr.DataArray:
 
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_static_covariates(
-                self._xa > other, self.static_covariates
+            return _xarray_with_attrs(
+                self._xa > other, self.static_covariates, self.hierarchy
             )
         elif isinstance(other, TimeSeries):
-            return _xarray_with_static_covariates(
-                self._xa > other.data_array(copy=False), self.static_covariates
+            return _xarray_with_attrs(
+                self._xa > other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
             )
         else:
             raise_log(
@@ -3541,12 +3877,14 @@ class TimeSeries:
 
     def __le__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_static_covariates(
-                self._xa <= other, self.static_covariates
+            return _xarray_with_attrs(
+                self._xa <= other, self.static_covariates, self.hierarchy
             )
         elif isinstance(other, TimeSeries):
-            return _xarray_with_static_covariates(
-                self._xa <= other.data_array(copy=False), self.static_covariates
+            return _xarray_with_attrs(
+                self._xa <= other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
             )
         else:
             raise_log(
@@ -3560,12 +3898,14 @@ class TimeSeries:
 
     def __ge__(self, other) -> xr.DataArray:
         if isinstance(other, (int, float, np.integer, np.ndarray, xr.DataArray)):
-            return _xarray_with_static_covariates(
-                self._xa >= other, self.static_covariates
+            return _xarray_with_attrs(
+                self._xa >= other, self.static_covariates, self.hierarchy
             )
         elif isinstance(other, TimeSeries):
-            return _xarray_with_static_covariates(
-                self._xa >= other.data_array(copy=False), self.static_covariates
+            return _xarray_with_attrs(
+                self._xa >= other.data_array(copy=False),
+                self.static_covariates,
+                self.hierarchy,
             )
         else:
             raise_log(
@@ -3677,10 +4017,14 @@ class TimeSeries:
         elif isinstance(key, slice):
             if isinstance(key.start, str) or isinstance(key.stop, str):
                 xa_ = self._xa.sel({DIMS[1]: key})
-                if adapt_covs_on_component:
-                    xa_ = _xarray_with_static_covariates(
-                        xa_, xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
-                    )
+                # selecting components discards the hierarchy, if any
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    xa_.attrs[STATIC_COV_TAG][key.start : key.stop]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG],
+                    None,
+                )
                 return self.__class__(xa_)
             elif isinstance(key.start, (int, np.int64)) or isinstance(
                 key.stop, (int, np.int64)
@@ -3704,10 +4048,14 @@ class TimeSeries:
         elif isinstance(key, str):
             # have to put key in a list not to drop the dimension
             xa_ = self._xa.sel({DIMS[1]: [key]})
-            if adapt_covs_on_component:
-                xa_ = _xarray_with_static_covariates(
-                    xa_, xa_.attrs[STATIC_COV_TAG].loc[[key]]
-                )
+            # selecting components discards the hierarchy, if any
+            xa_ = _xarray_with_attrs(
+                xa_,
+                xa_.attrs[STATIC_COV_TAG].loc[[key]]
+                if adapt_covs_on_component
+                else xa_.attrs[STATIC_COV_TAG],
+                None,
+            )
             return self.__class__(xa_)
         elif isinstance(key, (int, np.int64)):
             xa_ = self._xa.isel({self._time_dim: [key]})
@@ -3736,10 +4084,13 @@ class TimeSeries:
             if all(isinstance(s, str) for s in key):
                 # when string(s) are provided, we consider it as (a list of) component(s)
                 xa_ = self._xa.sel({DIMS[1]: key})
-                if adapt_covs_on_component:
-                    xa_ = _xarray_with_static_covariates(
-                        xa_, xa_.attrs[STATIC_COV_TAG].loc[key]
-                    )
+                xa_ = _xarray_with_attrs(
+                    xa_,
+                    xa_.attrs[STATIC_COV_TAG].loc[key]
+                    if adapt_covs_on_component
+                    else xa_.attrs[STATIC_COV_TAG],
+                    None,
+                )
                 return self.__class__(xa_)
             elif all(isinstance(i, (int, np.int64)) for i in key):
                 xa_ = self._xa.isel({self._time_dim: key})
@@ -3757,7 +4108,7 @@ class TimeSeries:
                         and key[-1] == max_idx
                         and max_idx + 1 - min_idx == len(key),
                         "Indexing a TimeSeries with a list requires the list to contain monotically "
-                        + "increasing integers without holes.",
+                        + "increasing integers with no gap.",
                     )
                     new_idx = orig_idx[min_idx : max_idx + 1]
                     xa_ = xa_.assign_coords({self._time_dim: new_idx})
@@ -3775,12 +4126,13 @@ class TimeSeries:
         raise_log(IndexError("The type of your index was not matched."), logger)
 
 
-def _xarray_with_static_covariates(xa_, static_covariates):
-    """Return an DataArray instance with static covariates stored in the array's attributes.
+def _xarray_with_attrs(xa_, static_covariates, hierarchy):
+    """Return an DataArray instance with static covariates and hierarchy stored in the array's attributes.
     Warning: This is an inplace operation (mutable) and should only be called from within TimeSeries construction
-    or to restore static covariates after operations in which static covariates did not get transferred.
+    or to restore static covariates and hierarchy after operations in which they did not get transferred.
     """
     xa_.attrs[STATIC_COV_TAG] = static_covariates
+    xa_.attrs[HIERARCHY_TAG] = hierarchy
     return xa_
 
 
@@ -3843,11 +4195,24 @@ def _concat_static_covs(series: Sequence["TimeSeries"]) -> Optional[pd.DataFrame
     )
 
 
+def _concat_hierarchy(series: Sequence["TimeSeries"]):
+    """
+    Used to concatenate the hierarchies of multiple TimeSeries, when concatenating series
+    along axis 1 (components). This simply merges the hierarchy dictionaries.
+    """
+    concat_hierarchy = dict()
+    for s in series:
+        if s.has_hierarchy:
+            concat_hierarchy.update(s.hierarchy)
+    return None if len(concat_hierarchy) == 0 else concat_hierarchy
+
+
 def concatenate(
     series: Sequence["TimeSeries"],
     axis: Union[str, int] = 0,
     ignore_time_axis: bool = False,
     ignore_static_covariates: bool = False,
+    drop_hierarchy: bool = True,
 ):
     """Concatenates multiple ``TimeSeries`` along a given axis.
 
@@ -3870,6 +4235,11 @@ def concatenate(
     ignore_static_covariates : bool
         whether to ignore all requirements for static covariate concatenation and only transfer the static covariates
         of the first TimeSeries element in `series` to the concatenated TimeSeries. Only effective when `axis=1`.
+    drop_hierarchy : bool
+        When `axis=1`, whether to drop hierarchy information. True by default. When False, the hierarchies will be
+        "concatenated" as well (by merging the hierarchy dictionaries), which may cause issues if the component
+        names of the resulting series and that of the merged hierarchy do not match.
+        When `axis=0` or `axis=2`, the hierarchy of the first series is always kept.
 
     Return
     -------
@@ -3891,9 +4261,9 @@ def concatenate(
                 "`axis=0` to concatenate along time dimension).",
             )
             axis = 0
-    time_dim_name = time_dims[
-        0
-    ]  # At this point all series are supposed to have same time dim name
+
+    # At this point all series are supposed to have same time dim name
+    time_dim_name = time_dims[0]
 
     da_sequence = [ts.data_array(copy=False) for ts in series]
 
@@ -3935,8 +4305,8 @@ def concatenate(
             )
 
             da_concat = da_concat.assign_coords({time_dim_name: tindex})
-            da_concat = _xarray_with_static_covariates(
-                da_concat, series[0].static_covariates
+            da_concat = _xarray_with_attrs(
+                da_concat, series[0].static_covariates, series[0].hierarchy
             )
 
     else:
@@ -3972,33 +4342,27 @@ def concatenate(
         concat_vals = np.concatenate([da.values for da in da_sequence], axis=axis)
 
         if axis == 1:
-            # when concatenating along component dimension, we have to re-create a component index
-            component_coords = []
-            existing_components = set()
-            for i, ts in enumerate(series):
-                for comp in ts.components:
-                    if comp not in existing_components:
-                        component_coords.append(comp)
-                        existing_components.add(comp)
-                    else:
-                        new_comp_name = f"{i}_{comp}"
-                        component_coords.append(new_comp_name)
-                        existing_components.add(new_comp_name)
-            component_index = pd.Index(component_coords)
+            # When concatenating along component dimension, we have to re-create a component index
+            # we rely on the factory method of TimeSeries to disambiguate names later on if needed.
+            component_index = pd.Index(
+                [c for cl in [ts.components for ts in series] for c in cl]
+            )
             static_covariates = (
                 _concat_static_covs(series)
                 if not ignore_static_covariates
                 else series[0].static_covariates
             )
+            hierarchy = None if drop_hierarchy else _concat_hierarchy(series)
         else:
             component_index = da_sequence[0].get_index(DIMS[1])
             static_covariates = series[0].static_covariates
+            hierarchy = series[0].hierarchy
 
         da_concat = xr.DataArray(
             concat_vals,
             dims=(time_dim_name,) + DIMS[-2:],
             coords={time_dim_name: series[0].time_index, DIMS[1]: component_index},
-            attrs={STATIC_COV_TAG: static_covariates},
+            attrs={STATIC_COV_TAG: static_covariates, HIERARCHY_TAG: hierarchy},
         )
 
-    return TimeSeries(da_concat)
+    return TimeSeries.from_xarray(da_concat, fill_missing_dates=False)

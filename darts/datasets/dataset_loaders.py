@@ -5,7 +5,7 @@ import zipfile
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, List, Optional, Union
 
 import pandas as pd
 import requests
@@ -33,6 +33,8 @@ class DatasetLoaderMetadata:
     freq: Optional[str] = None
     # a custom function to handling non-csv based datasets
     pre_process_zipped_csv_fn: Optional[Callable] = None
+    # multivariate
+    multivariate: Optional[bool] = None
 
 
 class DatasetLoadingException(BaseException):
@@ -75,6 +77,7 @@ class DatasetLoader(ABC):
             else:
                 self._download_dataset()
         self._check_dataset_integrity_or_raise()
+
         return self._load_from_disk(self._get_path_dataset(), self._metadata)
 
     def _check_dataset_integrity_or_raise(self):
@@ -188,16 +191,27 @@ class DatasetLoaderCSV(DatasetLoader):
 
     def _load_from_disk(
         self, path_to_file: Path, metadata: DatasetLoaderMetadata
-    ) -> TimeSeries:
+    ) -> Union[TimeSeries, List[TimeSeries]]:
 
         df = pd.read_csv(path_to_file)
 
         if metadata.header_time is not None:
             df = self._format_time_column(df)
-            return TimeSeries.from_dataframe(
+            series = TimeSeries.from_dataframe(
                 df=df, time_col=metadata.header_time, freq=metadata.freq
             )
+            if (
+                self._metadata.multivariate is not None
+                and self._metadata.multivariate is False
+            ):
+                try:
+                    series = self._to_multi_series(series.pd_dataframe())
+                except Exception as e:
+                    raise DatasetLoadingException(
+                        "Could not convert to multi-series. Reason:" + e.__repr__()
+                    ) from None
+        else:
+            df.sort_index(inplace=True)
 
-        df.sort_index(inplace=True)
-
-        return TimeSeries.from_dataframe(df)
+            series = TimeSeries.from_dataframe(df)
+        return series

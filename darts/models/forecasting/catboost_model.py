@@ -11,6 +11,7 @@ import numpy as np
 from catboost import CatBoostRegressor
 
 from darts.logging import get_logger
+
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
@@ -52,6 +53,7 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         likelihood
             Can be set to 'quantile', 'poisson' or 'RMSEWithUncertainty'. If set, the model will be probabilistic,
             allowing sampling at prediction time.
+
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
