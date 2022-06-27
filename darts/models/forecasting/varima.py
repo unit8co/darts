@@ -102,7 +102,9 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
         num_samples: int = 1,
     ) -> TimeSeries:
 
-        super()._predict(n, future_covariates, num_samples)
+        super()._predict(
+            n, series, historic_future_covariates, future_covariates, num_samples
+        )
 
         if series is not None:
             self._training_last_values = self._last_values
@@ -142,7 +144,7 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
         # restoring statsmodels results object state and last values
         if series is not None:
             self.model = self.model.apply(
-                self.training_series.values(),
+                self._orig_training_series.values(),
                 exog=self.training_historic_future_covariates.values()
                 if self.training_historic_future_covariates
                 else None,

@@ -1154,8 +1154,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
 
-        if future_covariates is None:
-            super().predict(n, num_samples)
+        super().predict(n, num_samples)
 
         if self._expect_covariate and future_covariates is None:
             raise_log(
@@ -1306,7 +1305,13 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
                     series
                 )
 
-        return super().predict(
+        # DualCovariatesForecastingModel performs some checks on self.training_series. We temporary replace that with
+        # the new ts
+        if series is not None:
+            self._orig_training_series = self.training_series
+            self.training_series = series
+
+        result = super().predict(
             n=n,
             series=series,
             historic_future_covariates=historic_future_covariates,
@@ -1314,6 +1319,12 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
             num_samples=num_samples,
             **kwargs,
         )
+
+        # restoring the original training ts
+        if series is not None:
+            self.training_series = self._orig_training_series
+
+        return result
 
     @abstractmethod
     def _predict(

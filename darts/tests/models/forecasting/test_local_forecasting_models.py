@@ -235,27 +235,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
                 autoarima.fit(series=ts)
 
     def test_statsmodels_dual_models(self):
-        target_len = 200
-        pred_len = 15
-
-        ts1 = tg.random_walk_timeseries(length=target_len)
-        exog1 = tg.random_walk_timeseries(length=target_len + pred_len).stack(
-            tg.random_walk_timeseries(length=target_len + pred_len)
-        )
-        exog1_longer = (
-            tg.random_walk_timeseries(length=target_len + pred_len * 2)
-            .stack(tg.random_walk_timeseries(length=target_len + pred_len * 2))
-            .shift(n=-pred_len)
-        )
-        ts2 = tg.random_walk_timeseries(length=target_len)
-        exog2 = tg.random_walk_timeseries(length=target_len + pred_len).stack(
-            tg.random_walk_timeseries(length=target_len + pred_len)
-        )
-        exog2_longer = (
-            tg.random_walk_timeseries(length=target_len + pred_len * 2)
-            .stack(tg.random_walk_timeseries(length=target_len + pred_len * 2))
-            .shift(n=-pred_len)
-        )
 
         # same tests, but VARIMA requires to work on a multivariate target series
         UNIVARIATE = "univariate"
@@ -269,12 +248,31 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
         for model_cls, kwargs, model_type in params:
 
-            series1 = ts1.copy()
-            series2 = ts2.copy()
-
+            pred_len = 3
             if model_type == MULTIVARIATE:
-                series1 = series1.stack(tg.random_walk_timeseries(length=len(series1)))
-                series2 = series2.stack(tg.random_walk_timeseries(length=len(series2)))
+                series1 = self.ts_ice_heater_train
+                series2 = self.ts_ice_heater_val
+            else:
+                series1 = self.ts_pass_train
+                series2 = self.ts_pass_val
+
+            # creating covariates from series + noise
+            noise1 = tg.gaussian_timeseries(length=len(series1))
+            noise2 = tg.gaussian_timeseries(length=len(series2))
+
+            for _ in range(1, series1.n_components):
+                noise1 = noise1.stack(tg.gaussian_timeseries(length=len(series1)))
+                noise2 = noise2.stack(tg.gaussian_timeseries(length=len(series2)))
+
+            exog1 = series1 + noise1
+            exog2 = series2 + noise2
+
+            exog1_longer = exog1.concatenate(exog1, ignore_time_axes=True)
+            exog2_longer = exog2.concatenate(exog2, ignore_time_axes=True)
+
+            # shortening of pred_len so that exog are enough for the training series prediction
+            series1 = series1[:-pred_len]
+            series2 = series2[:-pred_len]
 
             # check runnability with different time series
             model = model_cls(**kwargs)

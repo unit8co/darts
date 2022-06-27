@@ -100,9 +100,11 @@ class ARIMA(StatsmodelsDualCovariatesForecastingModel):
                 "your model."
             )
 
-        super()._predict(n, future_covariates, num_samples)
+        super()._predict(
+            n, series, historic_future_covariates, future_covariates, num_samples
+        )
 
-        # updating statsmodels results object state
+        # updating statsmodels results object state with the new ts and covariates
         if series is not None:
             self.model = self.model.apply(
                 series.values(),
@@ -126,7 +128,7 @@ class ARIMA(StatsmodelsDualCovariatesForecastingModel):
         # restoring statsmodels results object state
         if series is not None:
             self.model = self.model.apply(
-                self.training_series.values(),
+                self._orig_training_series.values(),
                 exog=self.training_historic_future_covariates.values()
                 if self.training_historic_future_covariates
                 else None,
