@@ -10,6 +10,7 @@ logger = get_logger(__name__)
 # Forecasting
 from darts.models.forecasting.arima import ARIMA
 from darts.models.forecasting.baselines import NaiveDrift, NaiveMean, NaiveSeasonal
+from darts.models.forecasting.catboost_model import CatBoostModel
 from darts.models.forecasting.croston import Croston
 from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
