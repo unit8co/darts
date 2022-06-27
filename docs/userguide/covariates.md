@@ -184,7 +184,7 @@ all_past_covariates = [past_covariates1, past_covariates2, ...]
 model = NBEATSModel(input_chunk_length=1, output_chunk_length=1)
 
 model.fit(all_targets,
-          past_covariates=all_past_covarites)
+          past_covariates=all_past_covariates)
 
 pred = model.predict(n=1,
                      series=all_targets[0],

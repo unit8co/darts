@@ -7,7 +7,7 @@ Below, we give an overview of what these features mean.
 
 ## Generalities
 
-All forecasting models work in the same way: first they are built (taking some hyper-paramers in argument), then they are fit on one or several series
+All forecasting models work in the same way: first they are built (taking some hyper-parameters in argument), then they are fit on one or several series
 by calling the `fit()` function, and finally they are used to obtain one or several forecasts by calling the `predict()` function.
 
 **Example:**
@@ -35,7 +35,7 @@ model.fit([series1, series2])                              # fit on two series
 forecast = model.predict(series=[series3, series4], n=36)  # predict potentially different series
 ```
 
-Furthermore, we define the following types of time series consummed by the models:
+Furthermore, we define the following types of time series consumed by the models:
 
 * **Target series:** the series that we are interested in forecasting.
 * **Covariate series:** some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.
@@ -74,7 +74,7 @@ These models are shown with a "✅" under the `Multivariate` column on the [mode
 
 Some models support being fit on multiple time series. To do this, it is enough to simply provide a Python `Sequence` of `TimeSeries` (for instance a list of `TimeSeries`) to `fit()`. When a model is fit this way, the `predict()` function will expect the argument `series` to be set, containing
 one or several `TimeSeries` (i.e., a single or a `Sequence` of `TimeSeries`) that need to be forecasted. 
-The advantage of training on multiple series is that a single model can be exposed to more patterns occuring across all series in the training dataset. That can often be beneficial, especially for more expre based models.
+The advantage of training on multiple series is that a single model can be exposed to more patterns occurring across all series in the training dataset. That can often be beneficial, especially for more expre based models.
 
 In turn, the advantage of having `predict()` providing forecasts for potentially several series at once is that the computation can often be batched and vectorized across the multiple series, which is computationally faster than calling `predict()` multiple times on isolated series.
 
@@ -167,7 +167,7 @@ pred.plot(label='forecast')
 ![TCN Laplace regression](./images/probabilistic/example_tcn_laplace.png)
 
 
-It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression), in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distrution, and it can often be a good option in practice, when one is not sure of the "real" distribution, or when fitting parametric likelihoods give poor results.
+It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression), in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the "real" distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a `QuantileRegression` likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.
 
 ```python
