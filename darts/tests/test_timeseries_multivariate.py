@@ -243,3 +243,15 @@ class TimeSeriesMultivariateTestCase(DartsBaseTestClass):
         self.assertEqual(
             self.series3.univariate_component(1).last_values().tolist(), [20]
         )
+
+    def test_drop_column(self):
+        # testing dropping a single column
+        seriesA = self.series1.drop_columns("0")
+        self.assertNotIn("0", seriesA.columns.values)
+        self.assertEqual(seriesA.columns.tolist(), ["1", "2"])
+        self.assertEqual(len(seriesA.columns), 2)
+
+        # testing dropping multiple columns
+        seriesB = self.series1.drop_columns(["0", "1"])
+        self.assertIn("2", seriesB.columns.values)
+        self.assertEqual(len(seriesB.columns), 1)
