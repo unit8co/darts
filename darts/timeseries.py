@@ -2660,6 +2660,32 @@ class TimeSeries:
         """
         return concatenate([self, other], axis=1)
 
+    def drop_columns(self, col_names: Union[List[str], str]) -> "TimeSeries":
+        """
+        Return a new ``TimeSeries`` instance with dropped columns/components.
+
+        Parameters
+        -------
+        col_names
+            String or list of strings corresponding the the columns to be dropped.
+
+        Returns
+        -------
+        TimeSeries
+            A new TimeSeries instance with specified columns dropped.
+        """
+        if isinstance(col_names, str):
+            col_names = [col_names]
+
+        raise_if_not(
+            all([(x in self.columns.to_list()) for x in col_names]),
+            "Some column names in col_names don't exist in the time series.",
+            logger,
+        )
+
+        new_xa = self._xa.drop_sel({"component": col_names})
+        return self.__class__(new_xa)
+
     def univariate_component(self, index: Union[str, int]) -> "TimeSeries":
         """
         Retrieve one of the components of the series
