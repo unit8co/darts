@@ -12,7 +12,7 @@
 Using a dedicated type to represent time series (instead of say, Pandas DataFrame, NumPy array, ...) removes the need to rely on conventions about the formats expected by the different models and functions.
 
 ## Multivariate time series -vs- multiple time series
-We distinguish unvariate from multivariate series:
+We distinguish univariate from multivariate series:
 
 * A **Multivariate** series contain multiple dimensions (i.e. multiple values per time step).
 * A **univariate** series contains only one dimension (i.e., single scalar value for each time step).
@@ -76,9 +76,9 @@ Behind the scenes, `TimeSeries` is wrapping around a 3-dimensional `xarray.DataA
 
 * [TimeSeries.data_array()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.data_array) to export the `xarray` `DataArray` holding this series' data (and indexes).
 
-* [TimeSeries.values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.values) to export a NumPy array contaning the values of one sample from the series.
+* [TimeSeries.values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.values) to export a NumPy array containing the values of one sample from the series.
 
-* [TimeSeries.all_values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.all_values) to export a NumPy array contaning the values of all samples of a stochastic series.
+* [TimeSeries.all_values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.all_values) to export a NumPy array containing the values of all samples of a stochastic series.
 
 
 ## Static Covariates
