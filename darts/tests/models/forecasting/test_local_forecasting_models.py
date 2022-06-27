@@ -69,8 +69,6 @@ multivariate_models = [
 
 dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
 
-statsmodels_dual_models_cls = [ARIMA, VARIMA]
-
 try:
     from darts.models import Prophet
 

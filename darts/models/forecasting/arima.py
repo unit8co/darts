@@ -74,7 +74,7 @@ class ARIMA(StatsmodelsDualCovariatesForecastingModel):
         self.training_historic_future_covariates = future_covariates
 
         m = staARIMA(
-            self.training_series.values(),
+            series.values(),
             exog=future_covariates.values() if future_covariates else None,
             order=self.order,
             seasonal_order=self.seasonal_order,

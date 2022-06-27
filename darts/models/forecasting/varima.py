@@ -59,18 +59,24 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
             return f"VARMA({self.p},{self.q})"
         return f"VARIMA({self.p},{self.d},{self.q})"
 
-    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        # for VARIMA we need to process target `series` before calling ExtendedDualCovariatesForecastingModel'
-        # fit() method
-        self._last_values = (
-            series.last_values()
-        )  # needed for back-transformation when d=1
+    def _differentiate_series(self, series: TimeSeries) -> TimeSeries:
+        """Differentiate the series self.d times"""
         for _ in range(self.d):
             series = TimeSeries.from_dataframe(
                 df=series.pd_dataframe(copy=False).diff().dropna(),
                 static_covariates=series.static_covariates,
                 hierarchy=series.hierarchy,
             )
+        return series
+
+    def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
+        # for VARIMA we need to process target `series` before calling StatsmodelsDualCovariatesForecastingModel'
+        # fit() method
+        self._last_values = (
+            series.last_values()
+        )  # needed for back-transformation when d=1
+
+        series = self._differentiate_series(series)
 
         super().fit(series, future_covariates)
 
@@ -85,7 +91,7 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
         self.training_historic_future_covariates = future_covariates
 
         m = staVARMA(
-            endog=self.training_series.pd_dataframe(copy=False),
+            endog=series.pd_dataframe(copy=False),
             exog=future_covariates.values() if future_covariates else None,
             order=(self.p, self.q),
             trend=self.trend,
@@ -113,12 +119,7 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
                 series.last_values()
             )  # needed for back-transformation when d=1
 
-            for _ in range(self.d):
-                series = TimeSeries.from_dataframe(
-                    df=series.pd_dataframe(copy=False).diff().dropna(),
-                    static_covariates=series.static_covariates,
-                    hierarchy=series.hierarchy,
-                )
+            series = self._differentiate_series(series)
 
             # if the series is differentiated, the new len will be = len - 1, we have to adjust the future covariates
             if historic_future_covariates and self.d > 0:
