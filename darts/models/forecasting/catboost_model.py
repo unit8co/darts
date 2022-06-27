@@ -50,8 +50,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         likelihood
-            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at
-             prediction time.
+            Can be set to 'quantile', 'poisson' or 'RMSEWithUncertainty'. If set, the model will be probabilistic,
+            allowing sampling at prediction time.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
@@ -68,11 +68,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self.likelihood = likelihood
         self.quantiles = None
 
-        # forcing output_chunk_length to 1 for now
-        # output_chunk_length = 1
         self.output_chunk_length = output_chunk_length
 
-        # to be extended to RMSEWithUncertainty
         likelihood_map = {
             "quantile": None,
             "poisson": "Poisson",
@@ -188,6 +185,9 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def _predict_and_sample(
         self, x: np.ndarray, num_samples: int, **kwargs
     ) -> np.ndarray:
+        """Override of RegressionModel's predict method,
+        to allow for the probabilistic case
+        """
         if self.likelihood == "quantile":
             return self._predict_quantiles(x, num_samples, **kwargs)
         elif self.likelihood == "poisson":

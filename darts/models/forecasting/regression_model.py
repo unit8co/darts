@@ -645,7 +645,7 @@ class RegressionModel(GlobalForecastingModel):
 
 class _LikelihoodMixin:
     """
-    A class containing functions supporting quantile and poisson regression, to be used as a mixin for some
+    A class containing functions supporting quantile, poisson and gaussian regression, to be used as a mixin for some
     `RegressionModel` subclasses.
     """
 
@@ -711,7 +711,8 @@ class _LikelihoodMixin:
         return sampled
 
     def _predict_normal(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
-        """
+        """Method intended for CatBoost's RMSEWithUncertainty loss. Returns samples
+        computed from double-valued inputs [mean, variance].
         X is of shape (n_series * n_samples, n_regression_features)
         """
         k = x.shape[0]
@@ -732,7 +733,7 @@ class _LikelihoodMixin:
 
         # univariate & single-chunk output
         if output_dim <= 2:
-            # embedding well shaped output in one more dimension
+            # embedding well shaped 2D output into 3D
             model_output = np.array([model_output])
         else:
             model_output = model_output.transpose()
@@ -740,13 +741,14 @@ class _LikelihoodMixin:
         return self._normal_sampling(model_output, k)
 
     def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
-        """
+        """Sampling method for CatBoost's [mean, variance] output.
         Model_output is of shape (n_components * output_chunk_length, n_samples, 2: [mu, sigma])
         """
         shape = model_output.shape
         chunk_len = self.output_chunk_length
 
         # treating each component separately
+        # optimization: everything into one large block-diagonal cov matrix?
         mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
 
         list_of_samples = [
