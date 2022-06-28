@@ -12,7 +12,9 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
+import datetime
 import inspect
+import os
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
@@ -20,6 +22,7 @@ from itertools import product
 from random import sample
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
+import joblib
 import numpy as np
 import pandas as pd
 
@@ -895,6 +898,54 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return (
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
+
+    def save_model(self, path: Optional[str] = None, **joblib_kwargs) -> None:
+        """Saves the model under a given path.
+
+        Parameters
+        ----------
+        path
+            Path under which to save the model at its current state.
+        joblib_kwargs
+            Keyword arguments passed to `joblib.dump()`
+        """
+
+        # TODO: add default path construction "model_name + time"
+        if path is None:
+            path = f"{type(self)}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+
+        # TODO: add option to create directories if path doesn't exist
+        raise_if_not(
+            os.path.exists(path),
+            f"The path {path} doesn't exist",
+            logger,
+        )
+
+        # We save the whole object using joblib
+        with open(path, "wb") as handle:
+            joblib.dump(value=self, filename=handle, **joblib_kwargs)
+
+    @staticmethod
+    def load_model(path: str) -> "ForecastingModel":
+        """Loads the model from a given path.
+
+        Parameters
+        ----------
+        path
+            Path from which to load the model.
+        """
+
+        raise_if_not(
+            os.path.exists(path),
+            f"The path {path} doesn't exist",
+            logger,
+        )
+
+        # We save the whole object using joblib
+        with open(path, "rb") as handle:
+            model = joblib.load(filename=handle)
+
+        return model
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
