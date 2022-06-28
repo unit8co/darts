@@ -1336,7 +1336,7 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
         num_samples: int = 1,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
-        ExtendedDualCovariatesModels must implement the predict logic in this method.
+        StatsmodelsDualCovariatesForecastingModels must implement the predict logic in this method.
         """
         pass
 
