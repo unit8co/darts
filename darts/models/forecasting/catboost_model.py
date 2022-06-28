@@ -4,14 +4,12 @@ CatBoost model
 
 This is a wrapper that enables using the CatBoost regressor as model
 """
-
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from catboost import CatBoostRegressor
 
 from darts.logging import get_logger
-
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
