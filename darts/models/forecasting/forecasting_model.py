@@ -1233,7 +1233,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
 class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
     """The base class for the forecasting models that are not global, but support future covariates, and can
     additionally be applied to new data unrelated to the original series used for fitting the model. Currently,
-    all the derives classes wrap statsmodels models.
+    all the derived classes wrap statsmodels models.
 
     All implementations have to implement the `_fit()`, `_predict()` methods.
     """
