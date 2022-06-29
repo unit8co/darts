@@ -912,12 +912,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
         # TODO: add default path construction "model_name + time"
         if path is None:
-            path = f"{type(self)}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+            path = (
+                f"{type(self).__name__}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+            )
 
         # TODO: add option to create directories if path doesn't exist
         raise_if_not(
-            os.path.exists(path),
-            f"The path {path} doesn't exist",
+            os.path.isdir(os.path.dirname(path)),
+            f"The dictionary {os.path.dirname(path)} doesn't exist",
             logger,
         )
 
