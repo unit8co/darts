@@ -31,6 +31,7 @@ to see what is the support. Similarly, the prior parameters also have to lie in 
 """
 
 import collections.abc
+import math
 from abc import ABC, abstractmethod
 from typing import List, Optional, Tuple
 
@@ -83,6 +84,10 @@ def _check_strict_positive(param, param_name=""):
 
 def _check_in_open_0_1_intvl(param, param_name=""):
     _check(param, lambda p: 0 < p < 1, param_name, "in the open interval (0, 1)")
+
+
+def _check_in_closed_0_1_intvl(param, param_name=""):
+    _check(param, lambda p: 0 <= p <= 1, param_name, "in the closed interval [0, 1]")
 
 
 class Likelihood(ABC):
@@ -172,8 +177,138 @@ class Likelihood(ABC):
         pass
 
 
+def beta_gaussian_nll_loss(
+    input: torch.Tensor,
+    target: torch.Tensor,
+    var: torch.Tensor,
+    full: bool = False,
+    eps: float = 1e-6,
+    reduction: str = "mean",
+    beta: float = None,
+) -> torch.Tensor:
+    """Beta Gaussian negative log likelihood loss. Implementation of the paper 'On the Pitfalls of
+    Heteroscedastic Uncertainty Estimation With Probabilistic Neural Networks', see
+    https://arxiv.org/pdf/2203.09168.pdf for more details. We adapted the `gaussian_nll_loss` from torch.nn.functional.
+
+
+    Parameters
+    ----------
+        input
+            Expectation of the Gaussian distribution.
+        target
+            Sample from the Gaussian distribution.
+        var
+            Tensor of positive variance(s), one for each of the expectations
+            in the input (heteroscedastic), or a single one (homoscedastic).
+        full
+            Include the constant term in the loss calculation. Default: ``False``.
+        eps
+            Value added to var, for stability. Default: 1e-6.
+        reduction
+            Specifies the reduction to apply to the output:
+            ``'none'`` | ``'mean'`` | ``'sum'``. ``'none'``: no reduction will be applied,
+            ``'mean'``: the output is the average of all batch member losses,
+            ``'sum'``: the output is the sum of all batch member losses.
+            Default: ``'mean'``.
+        beta
+            Parameter from range [0, 1] controlling relative weighting between data points, where `0` corresponds to
+            high weight on low error points and `1` to an equal weighting.
+
+    """
+
+    # Check var size
+    # If var.size == input.size, the case is heteroscedastic and no further checks are needed.
+    # Otherwise:
+    if var.size() != input.size():
+
+        # If var is one dimension short of input, but the sizes match otherwise, then this is a homoscedastic case.
+        # e.g. input.size = (10, 2, 3), var.size = (10, 2)
+        # -> unsqueeze var so that var.shape = (10, 2, 1)
+        # this is done so that broadcasting can happen in the loss calculation
+        if input.size()[:-1] == var.size():
+            var = torch.unsqueeze(var, -1)
+
+        # This checks if the sizes match up to the final dimension, and the final dimension of var is of size 1.
+        # This is also a homoscedastic case.
+        # e.g. input.size = (10, 2, 3), var.size = (10, 2, 1)
+        elif (
+            input.size()[:-1] == var.size()[:-1] and var.size(-1) == 1
+        ):  # Heteroscedastic case
+            pass
+
+        # If none of the above pass, then the size of var is incorrect.
+        else:
+            raise ValueError("var is of incorrect size")
+
+    # Check validity of reduction mode
+    if reduction != "none" and reduction != "mean" and reduction != "sum":
+        raise ValueError(reduction + " is not valid")
+
+    # Entries of var must be non-negative
+    if torch.any(var < 0):
+        raise ValueError("var has negative entry/entries")
+
+    # Beta must lie within the interval [0,1]
+    _check_in_closed_0_1_intvl(beta, "beta")
+
+    # Clamp for stability
+    var = var.clone()
+    with torch.no_grad():
+        var.clamp_(min=eps)
+
+    # Calculate the loss
+    loss = 0.5 * (torch.log(var) + (input - target) ** 2 / var)
+    if full:
+        loss += 0.5 * math.log(2 * math.pi)
+    if beta:
+        loss = loss * var.detach() ** beta
+
+    if reduction == "mean":
+        return loss.mean()
+    elif reduction == "sum":
+        return loss.sum()
+    else:
+        return loss
+
+
+class BetaGaussianNLLLoss(nn.GaussianNLLLoss):
+    def __init__(
+        self,
+        *,
+        full: bool = False,
+        eps: float = 0.000001,
+        reduction: str = "mean",
+        beta: float = None,
+    ) -> None:
+        """Extension of torch.nn.GaussianNLLLoss with additional support for a beta weighting parameter (see the paper)
+
+        Args:
+            full (bool, optional): _description_. Defaults to False.
+            eps (float, optional): _description_. Defaults to 0.000001.
+            reduction (str, optional): _description_. Defaults to "mean".
+            beta (float, optional): _description_. Defaults to None.
+        """
+        super().__init__(full=full, eps=eps, reduction=reduction)
+        self.beta = beta
+
+    def forward(
+        self, input: torch.Tensor, target: torch.Tensor, var: torch.Tensor
+    ) -> torch.Tensor:
+        return beta_gaussian_nll_loss(
+            input,
+            target,
+            var,
+            full=self.full,
+            eps=self.eps,
+            reduction=self.reduction,
+            beta=self.beta,
+        )
+
+
 class GaussianLikelihood(Likelihood):
-    def __init__(self, prior_mu=None, prior_sigma=None, prior_strength=1.0):
+    def __init__(
+        self, prior_mu=None, prior_sigma=None, prior_strength=1.0, beta: float = 0
+    ):
         """
         Univariate Gaussian distribution.
 
@@ -191,12 +326,17 @@ class GaussianLikelihood(Likelihood):
             standard deviation (or scale) of the prior Gaussian distribution (default: None)
         prior_strength
             strength of the loss regularisation induced by the prior
+        beta
+            Parameter from range [0, 1] controlling relative weighting between data points, where `0` corresponds to
+            high weight on low error points and `1` to an equal weighting.
         """
         self.prior_mu = prior_mu
         self.prior_sigma = prior_sigma
+
+        _check_in_closed_0_1_intvl(beta, "beta")
         _check_strict_positive(self.prior_sigma, "sigma")
 
-        self.nllloss = nn.GaussianNLLLoss(reduction="mean", full=True)
+        self.nllloss = BetaGaussianNLLLoss(reduction="mean", full=True, beta=beta)
         self.softplus = nn.Softplus()
 
         super().__init__(prior_strength)
