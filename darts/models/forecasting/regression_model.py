@@ -752,9 +752,9 @@ class _LikelihoodMixin:
         mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
 
         list_of_samples = [
-            self._rng.multivariate_normal(
+            self._rng.normal(
                 mu_sigma[:, 0],  # mean vector
-                np.diag(mu_sigma[:, 1]),  # diagonal covariance matrix
+                mu_sigma[:, 1],  # diagonal covariance matrix
             )
             for mu_sigma in mu_sigma_list
         ]
