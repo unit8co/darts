@@ -5,7 +5,7 @@ Explainability Base Class
 TODO
 """
 from abc import ABC, abstractmethod
-from typing import Optional, Sequence, Union
+from typing import Dict, Optional, Sequence, Union
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_log
@@ -123,8 +123,10 @@ class ForecastingModelExplainer(ABC):
             self.background_future_covariates = background_past_covariates
 
         self.target_names = self.background_series.columns
-        self.past_covariates_names = self.background_past_covariates.columns
-        self.future_covariates_names = self.background_future_covariates.columns
+        if self.background_past_covariates is not None:
+            self.past_covariates_names = self.background_past_covariates.columns
+        if self.background_future_covariates is not None:
+            self.future_covariates_names = self.background_future_covariates.columns
 
         raise_if(
             self.model._expect_past_covariates
@@ -138,8 +140,6 @@ class ForecastingModelExplainer(ABC):
             "A background future covariates is not provided, but the model needs future covariates.",
         )
 
-        self.model = model
-
         # For now we won't consider further time step that output_chunk_length, even though we could in
         # theory explain anything in the future by auto regressive process.
         if hasattr(self.model, "output_chunk_length"):
@@ -150,6 +150,7 @@ class ForecastingModelExplainer(ABC):
         if hasattr(self.model, "input_chunk_length"):
             self.past_steps_explained = self.model.input_chunk_length
         else:
+            # TODO: take this as a parameter
             self.past_steps_explained = 1
 
         if not self.test_stationarity():
@@ -165,7 +166,7 @@ class ForecastingModelExplainer(ABC):
         foreground_future_covariates: Optional[TimeSeries] = None,
         horizons: Optional[Sequence[int]] = None,
         target_names: Optional[Sequence[str]] = None,
-    ) -> Sequence[Sequence[TimeSeries]]:
+    ) -> Dict[Sequence[TimeSeries]]:
         """
         Return explanations values for each target and covariates lag, in a multivariate TimeSeries format.
         Each timestamp of the foreground TimeSeries is explained in the output TimeSeries, with the following
@@ -185,6 +186,8 @@ class ForecastingModelExplainer(ABC):
             - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
             - 0_past_cov_lag-2
             - 0_fut_cov_lag_0 (could be also lag_1 if output[1])
+
+        # TODO: improve description of returned structure
 
 
         Parameters
