@@ -738,7 +738,7 @@ class _LikelihoodMixin:
         else:
             model_output = model_output.transpose()
 
-        return self._normal_sampling(model_output, k)
+        return self._normal_sampling(model_output, num_samples)
 
     def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
         """Sampling method for CatBoost's [mean, variance] output.
