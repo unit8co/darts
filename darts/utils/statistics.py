@@ -643,6 +643,7 @@ def plot_acf(
     # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
     
+    # Setting color t0 None overrides custom settings
     extra_arguments = {}
     if default_colors:
         extra_arguments["color"] = "#003DFD"
