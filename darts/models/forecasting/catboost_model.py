@@ -4,13 +4,12 @@ CatBoost model
 
 This is a wrapper that enables using the CatBoost regressor as model
 """
-
 from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 from catboost import CatBoostRegressor
 
-from darts.logging import get_logger, raise_if
+from darts.logging import get_logger
 from darts.models.forecasting.regression_model import RegressionModel, _LikelihoodMixin
 from darts.timeseries import TimeSeries
 
@@ -50,8 +49,10 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
         likelihood
-            Can be set to `quantile` or 'poisson'. If set, the model will be probabilistic, allowing sampling at
-             prediction time.
+            Can be set to 'quantile', 'poisson' or 'gaussian'. If set, the model will be probabilistic,
+            allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
+            'RMSEWithUncertainty' loss function. When using this loss function, CatBoost returns a mean
+            and variance couple, which capture data (aleatoric) uncertainty.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
@@ -68,21 +69,13 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         self.likelihood = likelihood
         self.quantiles = None
 
-        if "loss_function" in kwargs.keys():
-            raise_if(
-                kwargs["loss_function"] == "RMSEWithUncertainty",
-                "The loss function RMSEWithUncertainty is not supported by darts.",
-            )
-        elif "objective" in kwargs.keys():
-            raise_if(
-                kwargs["objective"] == "RMSEWithUncertainty",
-                "The objective RMSEWithUncertainty is not supported by darts.",
-            )
+        self.output_chunk_length = output_chunk_length
 
-        # to be extended to RMSEWithUncertainty
         likelihood_map = {
             "quantile": None,
             "poisson": "Poisson",
+            "gaussian": "RMSEWithUncertainty",
+            "RMSEWithUncertainty": "RMSEWithUncertainty",
         }
 
         available_likelihoods = list(likelihood_map.keys())
@@ -193,10 +186,15 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
     def _predict_and_sample(
         self, x: np.ndarray, num_samples: int, **kwargs
     ) -> np.ndarray:
+        """Override of RegressionModel's predict method,
+        to allow for the probabilistic case
+        """
         if self.likelihood == "quantile":
             return self._predict_quantiles(x, num_samples, **kwargs)
         elif self.likelihood == "poisson":
             return self._predict_poisson(x, num_samples, **kwargs)
+        elif self.likelihood in ["gaussian", "RMSEWithUncertainty"]:
+            return self._predict_normal(x, num_samples, **kwargs)
         else:
             return super()._predict_and_sample(x, num_samples, **kwargs)
 
