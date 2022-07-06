@@ -718,10 +718,11 @@ class _LikelihoodMixin:
         k = x.shape[0]
 
         # model_output shape:
-        # if univariate, output_chunk_length = 1, num_samples = 1: shape is (1, 2)
+        # if univariate & output_chunk_length = 1: (num_samples, 2)
+        # else: (2, num_samples, n_components * output_chunk_length)
+        # where the axis with 2 dims is mu, sigma
         model_output = self.model.predict(x, **kwargs)
         output_dim = len(model_output.shape)
-        chunk_len = self.output_chunk_length
 
         # deterministic case: we return the mean only
         if num_samples == 1:
@@ -731,14 +732,17 @@ class _LikelihoodMixin:
             else:
                 output_slice = model_output[0, :, :]
 
-            return output_slice.reshape(k, chunk_len, -1)
+            return output_slice.reshape(k, self.output_chunk_length, -1)
 
+        # probabilistic case
         # univariate & single-chunk output
         if output_dim <= 2:
             # embedding well shaped 2D output into 3D
             model_output = np.expand_dims(model_output, axis=0)
 
         else:
+            # we transpose to get mu, sigma couples on last axis
+            # shape becomes: (n_components * output_chunk_length, num_samples, 2)
             model_output = model_output.transpose()
 
         return self._normal_sampling(model_output, num_samples)
@@ -752,7 +756,6 @@ class _LikelihoodMixin:
         chunk_len = self.output_chunk_length
 
         # treating each component separately
-        # optimization: everything into one large block-diagonal cov matrix?
         mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
 
         list_of_samples = [

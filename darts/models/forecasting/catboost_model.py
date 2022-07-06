@@ -51,7 +51,8 @@ class CatBoostModel(RegressionModel, _LikelihoodMixin):
         likelihood
             Can be set to 'quantile', 'poisson' or 'gaussian'. If set, the model will be probabilistic,
             allowing sampling at prediction time. When set to 'gaussian', the model will use CatBoost's
-            'RMSEWithUncertainty' loss function.
+            'RMSEWithUncertainty' loss function. When using this loss function, CatBoost returns a mean
+            and variance couple, which capture data (aleatoric) uncertainty.
         quantiles
             Fit the model to these quantiles if the `likelihood` is set to `quantile`.
         random_state
