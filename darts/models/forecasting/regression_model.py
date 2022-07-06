@@ -717,6 +717,8 @@ class _LikelihoodMixin:
         """
         k = x.shape[0]
 
+        # model_output shape:
+        # if univariate, output_chunk_length = 1, num_samples = 1: shape is (1, 2)
         model_output = self.model.predict(x, **kwargs)
         output_dim = len(model_output.shape)
         chunk_len = self.output_chunk_length
@@ -734,7 +736,8 @@ class _LikelihoodMixin:
         # univariate & single-chunk output
         if output_dim <= 2:
             # embedding well shaped 2D output into 3D
-            model_output = np.array([model_output])
+            model_output = np.expand_dims(model_output, axis=0)
+
         else:
             model_output = model_output.transpose()
 
@@ -742,7 +745,8 @@ class _LikelihoodMixin:
 
     def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
         """Sampling method for CatBoost's [mean, variance] output.
-        Model_output is of shape (n_components * output_chunk_length, n_samples, 2: [mu, sigma])
+        model_output is of shape (n_components * output_chunk_length, n_samples, 2),
+        where the last 2 dimensions are mu and sigma.
         """
         shape = model_output.shape
         chunk_len = self.output_chunk_length

@@ -182,7 +182,7 @@ if TORCH_AVAILABLE:
         )
         NormalCatBoostModel = partialclass(
             CatBoostModel,
-            likelihood="rmse_with_uncertainty",
+            likelihood="gaussian",
             random_state=42,
         )
         QuantileLightGBMModel = partialclass(
@@ -1061,7 +1061,7 @@ if TORCH_AVAILABLE:
             ),
             (
                 CatBoostModel,
-                {"lags": 2, "likelihood": "rmse_with_uncertainty", "random_state": 42},
+                {"lags": 2, "likelihood": "gaussian", "random_state": 42},
                 0.05,
             ),
             (
