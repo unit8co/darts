@@ -1,6 +1,6 @@
 catboost>=1.0.6
 holidays>=0.11.1
-ipython>=7.0.0
+ipython>=5.0.0
 joblib>=0.16.0
 lightgbm>=2.2.3
 matplotlib>=3.3.0

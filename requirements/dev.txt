@@ -4,4 +4,4 @@ isort==5.10.1
 pre-commit
 pytest-cov
 pyupgrade==2.31.0
-testfixtures==6.17.1
+testfixtures
