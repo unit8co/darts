@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import pytest
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
 
 from darts import TimeSeries
 from darts.dataprocessing.transformers import StaticCovariatesTransformer
@@ -7,7 +9,7 @@ from darts.tests.base_test_class import DartsBaseTestClass
 from darts.utils import timeseries_generation as tg
 
 
-class DataTransformerTestCase(DartsBaseTestClass):
+class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
     series = tg.linear_timeseries(length=10)
     static_covs1 = pd.DataFrame(
         data={
@@ -43,25 +45,62 @@ class DataTransformerTestCase(DartsBaseTestClass):
 
     def test_scaling_single_series(self):
         # 3 categories for each categorical static covariate column (column idx 1 and 3)
+        test_values = np.array(
+            [[0.0, 0.0, 0.0, 0.0], [0.5, 1.0, 0.5, 1.0], [1.0, 2.0, 1.0, 2.0]]
+        )
         for series in [self.series1, self.series2]:
             scaler = StaticCovariatesTransformer()
-            series_tr = scaler.fit_transform(series)
+            self.helper_test_scaling(series, scaler, test_values)
 
-            np.testing.assert_almost_equal(
-                series_tr.static_covariates_values(),
-                np.array(
-                    [[0.0, 0.0, 0.0, 0.0], [0.5, 1.0, 0.5, 1.0], [1.0, 2.0, 1.0, 2.0]]
-                ),
+        test_values = np.array(
+            [[-1.0, 0.0, -1.0, 0.0], [0.0, 1.0, 0.0, 1.0], [1.0, 2.0, 1.0, 2.0]]
+        )
+        for series in [self.series1, self.series2]:
+            scaler = StaticCovariatesTransformer(
+                scaler_numerical=MinMaxScaler(feature_range=(-1, 1))
             )
-            series_recovered = scaler.inverse_transform(series_tr)
-            self.assertTrue(
-                series.static_covariates.equals(series_recovered.static_covariates)
-            )
+            self.helper_test_scaling(series, scaler, test_values)
+
+        test_values = np.array(
+            [
+                [0.0, 1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0],
+                [0.5, 0.0, 1.0, 0.0, 0.5, 0.0, 1.0, 0.0],
+                [1.0, 0.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0],
+            ]
+        )
+        for series in [self.series1, self.series2]:
+            scaler = StaticCovariatesTransformer(scaler_categorical=OneHotEncoder())
+            self.helper_test_scaling(series, scaler, test_values)
+
+    def test_custom_scaler(self):
+        # invalid scaler with missing inverse_transform
+        class InvalidScaler:
+            def fit(self):
+                pass
+
+            def transform(self):
+                pass
+
+        with pytest.raises(ValueError):
+            _ = StaticCovariatesTransformer(scaler_numerical=InvalidScaler())
+
+        with pytest.raises(ValueError):
+            _ = StaticCovariatesTransformer(scaler_categorical=InvalidScaler())
+
+        class ValidScaler(InvalidScaler):
+            def inverse_transform(self):
+                pass
+
+        _ = StaticCovariatesTransformer(scaler_numerical=ValidScaler())
+        _ = StaticCovariatesTransformer(scaler_categorical=ValidScaler())
+        _ = StaticCovariatesTransformer(
+            scaler_numerical=ValidScaler(), scaler_categorical=ValidScaler()
+        )
 
     def test_scaling_multi_series(self):
         # 5 categories in total for each categorical static covariate from multiple time series
-        scaler2 = StaticCovariatesTransformer()
-        series_tr2 = scaler2.fit_transform([self.series1, self.series2])
+        scaler = StaticCovariatesTransformer()
+        series_tr2 = scaler.fit_transform([self.series1, self.series2])
 
         np.testing.assert_almost_equal(
             series_tr2[0].static_covariates_values(),
@@ -69,7 +108,7 @@ class DataTransformerTestCase(DartsBaseTestClass):
                 [[0.0, 0.0, 0.0, 0.0], [0.25, 1.0, 0.25, 1.0], [0.5, 2.0, 0.5, 2.0]]
             ),
         )
-        series_recovered2 = scaler2.inverse_transform(series_tr2[0])
+        series_recovered2 = scaler.inverse_transform(series_tr2[0])
         self.assertTrue(
             self.series1.static_covariates.equals(series_recovered2.static_covariates)
         )
@@ -80,12 +119,12 @@ class DataTransformerTestCase(DartsBaseTestClass):
                 [[0.5, 2.0, 0.5, 2.0], [0.75, 3.0, 0.75, 3.0], [1.0, 4.0, 1.0, 4.0]]
             ),
         )
-        series_recovered3 = scaler2.inverse_transform(series_tr2[1])
+        series_recovered3 = scaler.inverse_transform(series_tr2[1])
         self.assertTrue(
             self.series2.static_covariates.equals(series_recovered3.static_covariates)
         )
 
-        series_recovered_multi = scaler2.inverse_transform(series_tr2)
+        series_recovered_multi = scaler.inverse_transform(series_tr2)
         self.assertTrue(
             self.series1.static_covariates.equals(
                 series_recovered_multi[0].static_covariates
@@ -95,4 +134,14 @@ class DataTransformerTestCase(DartsBaseTestClass):
             self.series2.static_covariates.equals(
                 series_recovered_multi[1].static_covariates
             )
+        )
+
+    def helper_test_scaling(self, series, scaler, test_values):
+        series_tr = scaler.fit_transform(series)
+        np.testing.assert_almost_equal(
+            series_tr.static_covariates_values(), test_values
+        )
+        series_recovered = scaler.inverse_transform(series_tr)
+        self.assertTrue(
+            series.static_covariates.equals(series_recovered.static_covariates)
         )
