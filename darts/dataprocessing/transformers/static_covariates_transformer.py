@@ -147,14 +147,19 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
     def inverse_transform(
         self, series: Union[TimeSeries, Sequence[TimeSeries]], *args, **kwargs
     ) -> Union[TimeSeries, List[TimeSeries]]:
+
         kwargs = {key: val for key, val in kwargs.items()}
 
-        component_mask = []
         cat_features = [len(vals) for vals in self._cat_feature_map.values()]
+        static_covs = (
+            series.static_covariates
+            if isinstance(series, TimeSeries)
+            else series[0].static_covariates
+        )
+
+        component_mask = []
         cat_idx = 0
-        for col, is_numeric in zip(
-            series.static_covariates.columns, self._numeric_col_mask
-        ):
+        for col, is_numeric in zip(static_covs.columns, self._numeric_col_mask):
             if is_numeric:
                 component_mask.append(True)
             else:
@@ -285,7 +290,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
                 static_cov_columns.append(col)
                 idx_cont += 1
             else:
-                # coverts one to one feature map (ordinal/label encoding) and one to multi feature (one hot encoding)
+                # covers one to one feature map (ordinal/label encoding) and one to multi feature (one hot encoding)
                 for col_name in cat_feature_map[col]:
                     if col_name not in static_cov_columns:
                         data[col_name] = vals_cat[:, idx_cat]
