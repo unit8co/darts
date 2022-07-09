@@ -572,7 +572,7 @@ def plot_acf(
     bartlett_confint: bool = True,
     fig_size: Tuple[int, int] = (10, 5),
     axis: Optional[plt.axis] = None,
-    default_colors: bool = True,
+    default_formatting: bool = True,
 ) -> None:
     """
     Plots the ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
@@ -598,7 +598,7 @@ def plot_acf(
         The size of the figure to be displayed.
     axis
         Optionally, an axis object to plot the ACF on.
-    default_colors
+    default_formatting
         Whether or not to use the darts default scheme.
 
     References
@@ -636,26 +636,28 @@ def plot_acf(
         axis.plot(
             (i, i),
             (0, r[i]),
-            color=("#b512b8" if m is not None and i == m else "black") if default_colors else None,
+            color=("#b512b8" if m is not None and i == m else "black")
+            if default_formatting
+            else None,
             lw=(1 if m is not None and i == m else 0.5),
         )
 
     # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
-    
+
     # Setting color t0 None overrides custom settings
     extra_arguments = {}
-    if default_colors:
+    if default_formatting:
         extra_arguments["color"] = "#003DFD"
 
     axis.fill_between(
         np.arange(1, max_lag + 1),
         upp_band,
         [-x for x in upp_band],
-        alpha=0.25 if default_colors else None,
-        **extra_arguments
+        alpha=0.25 if default_formatting else None,
+        **extra_arguments,
     )
-    axis.plot((0, max_lag + 1), (0, 0), color="black" if default_colors else None)
+    axis.plot((0, max_lag + 1), (0, 0), color="black" if default_formatting else None)
 
 
 def plot_pacf(
@@ -666,6 +668,7 @@ def plot_pacf(
     alpha: float = 0.05,
     fig_size: Tuple[int, int] = (10, 5),
     axis: Optional[plt.axis] = None,
+    default_formatting: bool = True,
 ) -> None:
     """
     Plots the Partial ACF of `ts`, highlighting it at lag `m`, with corresponding significance interval.
@@ -699,6 +702,8 @@ def plot_pacf(
         The size of the figure to be displayed.
     axis
         Optionally, an axis object to plot the ACF on.
+    default_formatting
+        Whether or not to use the darts default scheme.
 
     References
     ----------
@@ -729,21 +734,31 @@ def plot_pacf(
         axis.plot(
             (i, i),
             (0, r[i]),
-            color=("#b512b8" if m is not None and i == m else "black"),
+            color=(
+                "#b512b8"
+                if m is not None and i == m
+                else "black"
+                if default_formatting
+                else None
+            ),
             lw=(1 if m is not None and i == m else 0.5),
         )
 
     # Adjusts the upper band of the confidence interval to center it on the x axis.
     upp_band = [confint[lag][1] - r[lag] for lag in range(1, max_lag + 1)]
 
+    extra_arguments = {}
+    if default_formatting:
+        extra_arguments["color"] = "#003DFD"
+
     axis.fill_between(
         np.arange(1, max_lag + 1),
         upp_band,
         [-x for x in upp_band],
-        color="#003DFD",
-        alpha=0.25,
+        alpha=0.25 if default_formatting else None,
+        **extra_arguments,
     )
-    axis.plot((0, max_lag + 1), (0, 0), color="black")
+    axis.plot((0, max_lag + 1), (0, 0), color="black" if default_formatting else None)
 
 
 def plot_hist(

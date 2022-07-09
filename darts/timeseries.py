@@ -2989,6 +2989,7 @@ class TimeSeries:
         central_quantile: Union[float, str] = 0.5,
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
+        default_formatting: bool = True,
         *args,
         **kwargs,
     ):
@@ -3013,6 +3014,8 @@ class TimeSeries:
             The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
             interval is shown if `high_quantile` is None (default 0.95).
+        default_formatting
+            Whether or not to use the darts default scheme.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3080,7 +3083,7 @@ class TimeSeries:
             kwargs["label"] = label_to_use
 
             p = central_series.plot(*args, **kwargs)
-            color_used = p[0].get_color()
+            color_used = p[0].get_color() if default_formatting else None
             kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
