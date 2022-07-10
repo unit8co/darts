@@ -490,3 +490,7 @@ class TCNModel(PastCovariatesTorchModel):
             shift=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
         )
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False

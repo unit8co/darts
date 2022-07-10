@@ -762,6 +762,10 @@ class NBEATSModel(PastCovariatesTorchModel):
         if isinstance(layer_widths, int):
             self.layer_widths = [layer_widths] * num_stacks
 
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False
+
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
         input_dim = train_sample[0].shape[1] + (

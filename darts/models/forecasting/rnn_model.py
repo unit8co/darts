@@ -466,3 +466,7 @@ class RNNModel(DualCovariatesTorchModel):
             train_dataset.ds_past.shift == 1,
             "RNNModel requires a shifted training dataset with shift=1.",
         )
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False

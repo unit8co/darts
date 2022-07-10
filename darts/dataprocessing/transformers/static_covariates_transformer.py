@@ -120,20 +120,21 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         cat_cols = data.columns[~self._numeric_col_mask]
 
         data = data.to_numpy(copy=False)
-        self.scaler_numerical.fit(data[:, self._numeric_col_mask])
-        self.scaler_categorical.fit(data[:, ~self._numeric_col_mask])
-
-        if isinstance(self.scaler_categorical, OneHotEncoder):
-            self._cat_feature_map = OrderedDict(
-                {
-                    col: [f"{col}_{cat}" for cat in categories]
-                    for col, categories in zip(
-                        cat_cols, self.scaler_categorical.categories_
-                    )
-                }
-            )
-        else:
-            self._cat_feature_map = OrderedDict({col: [col] for col in cat_cols})
+        if sum(self._numeric_col_mask):
+            self.scaler_numerical.fit(data[:, self._numeric_col_mask])
+        if sum(~self._numeric_col_mask):
+            self.scaler_categorical.fit(data[:, ~self._numeric_col_mask])
+            if isinstance(self.scaler_categorical, OneHotEncoder):
+                self._cat_feature_map = OrderedDict(
+                    {
+                        col: [f"{col}_{cat}" for cat in categories]
+                        for col, categories in zip(
+                            cat_cols, self.scaler_categorical.categories_
+                        )
+                    }
+                )
+            else:
+                self._cat_feature_map = OrderedDict({col: [col] for col in cat_cols})
         return self
 
     def transform(
@@ -167,11 +168,13 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
                 cat_idx += 1
 
         kwargs["component_mask"] = np.array(component_mask)
-        kwargs["cat_feature_map"] = {
-            name: [col]
-            for col, names in self._cat_feature_map.items()
-            for name in names
-        }
+        kwargs["cat_feature_map"] = OrderedDict(
+            {
+                name: [col]
+                for col, names in self._cat_feature_map.items()
+                for name in names
+            }
+        )
         return super().inverse_transform(series, *args, **kwargs)
 
     @staticmethod
@@ -190,12 +193,16 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         vals_cont, vals_cat = StaticCovariatesTransformer._reshape_in(
             series, component_mask=component_mask
         )
-        tr_out_cont = transformer_cont.transform(vals_cont)
-        tr_out_cat = transformer_cat.transform(vals_cat)
 
-        # sparse one hot encoding to dense array
-        if isinstance(tr_out_cat, csr_matrix):
-            tr_out_cat = tr_out_cat.toarray()
+        tr_out_cont, tr_out_cat = None, None
+        if sum(component_mask):
+            tr_out_cont = transformer_cont.transform(vals_cont)
+        if sum(~component_mask):
+            tr_out_cat = transformer_cat.transform(vals_cat)
+
+            # sparse one hot encoding to dense array
+            if isinstance(tr_out_cat, csr_matrix):
+                tr_out_cat = tr_out_cat.toarray()
 
         transformed_df = StaticCovariatesTransformer._reshape_out(
             series,
@@ -216,8 +223,11 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         vals_cont, vals_cat = StaticCovariatesTransformer._reshape_in(
             series, component_mask=component_mask
         )
-        tr_out_cont = transformer_cont.inverse_transform(vals_cont)
-        tr_out_cat = transformer_cat.inverse_transform(vals_cat)
+        tr_out_cont, tr_out_cat = None, None
+        if sum(component_mask):
+            tr_out_cont = transformer_cont.inverse_transform(vals_cont)
+        if sum(~component_mask):
+            tr_out_cat = transformer_cat.inverse_transform(vals_cat)
 
         transformed_df = StaticCovariatesTransformer._reshape_out(
             series,

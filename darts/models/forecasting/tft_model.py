@@ -6,6 +6,7 @@ Temporal Fusion Transformer (TFT)
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import torch
 from torch import nn
 from torch.nn import LSTM as _LSTM
@@ -84,9 +85,12 @@ class _TFTModule(PLMixedCovariatesModule):
             Defaults to `GatedResidualNetwork`.
         hidden_continuous_size : int
             default for hidden size for processing continuous variables.
-        categorical_embedding_sizes : int
-            Embedding size for categorical static covariates. Only effective if the target series contains
-            categorical (non-numeric) static covariates.
+        categorical_embedding_sizes : dict
+            A dictionary containing embedding sizes for categorical static covariates. The keys are the column names
+            of the categorical static covariates. The values are tuples of integers with
+            `(number of unique categories, embedding size)`. For example `{"some_column": (64, 8)}`.
+            Note that `TorchForecastingModels` can only handle numeric data. Consider transforming/encoding your data
+            with `darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.
         dropout : float
             Fraction of neurons affected by Dropout.
         add_relative_index : bool
@@ -480,16 +484,19 @@ class _TFTModule(PLMixedCovariatesModule):
         # Embedding and variable selection
         if self.static_variables:
             # categorical static covariate embeddings
-            static_embedding = self.input_embeddings(
-                torch.cat(
-                    [
-                        x_static[:, :, idx]
-                        for idx, name in enumerate(self.static_variables)
-                        if name in self.categorical_static_variables
-                    ],
-                    dim=1,
-                ).int()
-            )
+            if self.categorical_static_variables:
+                static_embedding = self.input_embeddings(
+                    torch.cat(
+                        [
+                            x_static[:, :, idx]
+                            for idx, name in enumerate(self.static_variables)
+                            if name in self.categorical_static_variables
+                        ],
+                        dim=1,
+                    ).int()
+                )
+            else:
+                static_embedding = {}
             # add numerical static covariates
             static_embedding.update(
                 {
@@ -963,26 +970,20 @@ class TFTModel(MixedCovariatesTorchModel):
                     time_varying_decoder_input += vars_meta
                     reals_input += vars_meta
                 elif input_var in ["static_covariate"]:
-                    static_covs = self.static_covariates
-                    static_covs_is_real = static_covs.columns.isin(
-                        static_covs.select_dtypes(include=np.number)
-                    )
-                    cat_cols = static_covs.columns[~static_covs_is_real]
-                    missing_embeddings = [
-                        col
-                        for col in cat_cols
-                        if col not in self.categorical_embedding_sizes
-                    ]
-                    raise_if(
-                        len(missing_embeddings) > 0,
-                        f"Missing embedding sizes for categorical static covarites: {missing_embeddings}",
-                        logger,
-                    )
-                    for idx, (static_var, col_name, is_real) in enumerate(
-                        zip(vars_meta, static_covs.columns, static_covs_is_real)
+                    if (
+                        self.static_covariates is None
+                    ):  # when training with fit_from_dataset
+                        static_cols = pd.Index(
+                            [i for i in range(static_covariates.shape[1])]
+                        )
+                    else:
+                        static_cols = self.static_covariates.columns
+                    numeric_mask = ~static_cols.isin(self.categorical_embedding_sizes)
+                    for idx, (static_var, col_name, is_numeric) in enumerate(
+                        zip(vars_meta, static_cols, numeric_mask)
                     ):
                         static_input.append(static_var)
-                        if is_real:
+                        if is_numeric:
                             static_input_numeric.append(static_var)
                             reals_input.append(static_var)
                         else:
@@ -1082,6 +1083,10 @@ class TFTModel(MixedCovariatesTorchModel):
             input_chunk_length=self.input_chunk_length,
             output_chunk_length=self.output_chunk_length,
         )
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return True
 
     def predict(self, n, *args, **kwargs):
         # since we have future covariates, the inference dataset for future input must be at least of length
