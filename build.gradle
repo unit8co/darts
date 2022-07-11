@@ -80,7 +80,7 @@ void createPipInstallTask(String flavour) {
    }
 }
 
-String[] flavours = ["core", "prophet", "pmdarima", "dev", "torch", "release"];
+String[] flavours = ["core", "dev", "torch", "release"];
 
 for(String flavour : flavours) {
     createPipInstallTask(flavour);
