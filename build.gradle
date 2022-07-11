@@ -94,7 +94,7 @@ task pipInstall() {
     doFirst {
         setupPip
     }
-    dependsOn pip_core, pip_dev, pip_pmdarima, pip_torch, pip_release
+    dependsOn pip_core, pip_dev, pip_torch, pip_release
 }
 
 task lint_black(type: Exec) {
@@ -134,7 +134,7 @@ void createPipRelatedTask(String flavour) {
    }
 }
 
-flavours = ["core", "prophet", "pmdarima", "torch"];
+flavours = ["core", "torch"];
 
 for(String flavour : flavours) {
     createPipRelatedTask(flavour);
