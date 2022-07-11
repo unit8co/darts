@@ -18,8 +18,7 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
             "cont2": [0.1, 0.2, 0.3],
             "cat2": ["a", "b", "c"],
         }
-    )
-    static_covs1["cat1"] = static_covs1["cat1"].astype("O")
+    ).astype(dtype={"cat1": "O", "cat2": "O"})
     series1 = TimeSeries.from_times_and_values(
         times=series.time_index,
         values=np.concatenate([series.values()] * 3, axis=1),
@@ -57,7 +56,7 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
         )
         for series in [self.series1, self.series2]:
             scaler = StaticCovariatesTransformer(
-                scaler_numerical=MinMaxScaler(feature_range=(-1, 1))
+                scaler_num=MinMaxScaler(feature_range=(-1, 1))
             )
             self.helper_test_scaling(series, scaler, test_values)
 
@@ -69,8 +68,54 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
             ]
         )
         for series in [self.series1, self.series2]:
-            scaler = StaticCovariatesTransformer(scaler_categorical=OneHotEncoder())
+            scaler = StaticCovariatesTransformer(scaler_cat=OneHotEncoder())
             self.helper_test_scaling(series, scaler, test_values)
+
+    def test_single_type_scaler(self):
+        scaler_cont = StaticCovariatesTransformer()
+        series_cont = self.series1.with_static_covariates(
+            self.series1.static_covariates[["cont1", "cont2"]]
+        )
+        test_cont = np.array([[0.0, 0.0], [0.5, 0.5], [1.0, 1.0]])
+        self.helper_test_scaling(series_cont, scaler_cont, test_cont)
+
+        scaler_cat = StaticCovariatesTransformer()
+        series_cat = self.series1.with_static_covariates(
+            self.series1.static_covariates[["cat1", "cat2"]]
+        )
+        test_cat = np.array([[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]])
+        self.helper_test_scaling(series_cat, scaler_cat, test_cat)
+
+    def test_selected_columns(self):
+        test_cont = (
+            pd.DataFrame(
+                [[0.0, 1, 0.0, "a"], [0.5, 2, 0.5, "b"], [1.0, 3, 1.0, "c"]],
+            )
+            .astype(dtype={1: "O", 3: "O"})
+            .values
+        )
+        scaler_cont2 = StaticCovariatesTransformer(
+            cols_num=["cont1", "cont2"], cols_cat=[]
+        )
+        self.helper_test_scaling(self.series1, scaler_cont2, test_cont)
+
+        test_contcat = (
+            pd.DataFrame(
+                [[0.0, 1, 0.0, 0.0], [1.0, 2, 0.5, 1.0], [2.0, 3, 1.0, 2.0]],
+            )
+            .astype(dtype={1: "O"})
+            .values
+        )
+        scaler_contcat = StaticCovariatesTransformer(
+            cols_num=["cont2"], cols_cat=["cat2"]
+        )
+        self.helper_test_scaling(self.series1, scaler_contcat, test_contcat)
+
+        test_cat = pd.DataFrame(
+            [[0.0, 0.0, 0.1, 0.0], [1.0, 1.0, 0.2, 1], [2.0, 2.0, 0.3, 2.0]],
+        ).values
+        scaler_cat = StaticCovariatesTransformer(cols_num=[], cols_cat=["cat1", "cat2"])
+        self.helper_test_scaling(self.series1, scaler_cat, test_cat)
 
     def test_custom_scaler(self):
         # invalid scaler with missing inverse_transform
@@ -82,19 +127,19 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
                 pass
 
         with pytest.raises(ValueError):
-            _ = StaticCovariatesTransformer(scaler_numerical=InvalidScaler())
+            _ = StaticCovariatesTransformer(scaler_num=InvalidScaler())
 
         with pytest.raises(ValueError):
-            _ = StaticCovariatesTransformer(scaler_categorical=InvalidScaler())
+            _ = StaticCovariatesTransformer(scaler_cat=InvalidScaler())
 
         class ValidScaler(InvalidScaler):
             def inverse_transform(self):
                 pass
 
-        _ = StaticCovariatesTransformer(scaler_numerical=ValidScaler())
-        _ = StaticCovariatesTransformer(scaler_categorical=ValidScaler())
+        _ = StaticCovariatesTransformer(scaler_num=ValidScaler())
+        _ = StaticCovariatesTransformer(scaler_cat=ValidScaler())
         _ = StaticCovariatesTransformer(
-            scaler_numerical=ValidScaler(), scaler_categorical=ValidScaler()
+            scaler_num=ValidScaler(), scaler_cat=ValidScaler()
         )
 
     def test_scaling_multi_series(self):
@@ -138,9 +183,16 @@ class StaticCovariatesTransformerTestCase(DartsBaseTestClass):
 
     def helper_test_scaling(self, series, scaler, test_values):
         series_tr = scaler.fit_transform(series)
-        np.testing.assert_almost_equal(
-            series_tr.static_covariates_values(), test_values
+        assert all(
+            [
+                a == b
+                for a, b in zip(
+                    series_tr.static_covariates_values().flatten(),
+                    test_values.flatten(),
+                )
+            ]
         )
+
         series_recovered = scaler.inverse_transform(series_tr)
         self.assertTrue(
             series.static_covariates.equals(series_recovered.static_covariates)
