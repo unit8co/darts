@@ -130,7 +130,7 @@ We also noticed that our ice-cream sales depend on the day of the week so we wan
 - past covariates: measured average daily temperatures in the past `temperature`
 - future covariates: day of the week for past and future `weekday`
 
-Checking Table 1, a model that would accomodate this kind of covariates would be a
+Checking Table 1, a model that would accommodate this kind of covariates would be a
 `SplitCovariatesModel` (if we don't use historic values of future covariates), or
 `MixedCovariatesModel` (if we do). We choose a `MixedCovariatesModel` - the `TFTModel`.
 
@@ -233,7 +233,7 @@ want to predict - the forecast horizon `n` - we distinguish between two cases:
 - If `n > output_chunk_length`: we must predict `n` by calling the internal model multiple times. Each call outputs `output_chunk_length` prediction points. We go through as many calls as needed until we get to the final `n` prediction points, in an auto-regressive fashion.
     - in our example: predict ice-cream sales for the next 3 days at once (`n = 3`)
 
-  To do this we have to supply additional `past_covariates` for the next `n - output_chunk_length = 2` time steps (days) after the end of our 365 days training data. Unfortunately, we do not have measured `temperture` for the future. But let's assume we have access to temperature forecasts for the next 2 days. We can just append them to `temperature` and the prediction will work!
+  To do this we have to supply additional `past_covariates` for the next `n - output_chunk_length = 2` time steps (days) after the end of our 365 days training data. Unfortunately, we do not have measured `temperature` for the future. But let's assume we have access to temperature forecasts for the next 2 days. We can just append them to `temperature` and the prediction will work!
 
   ```python
   temperature = temperature.concatenate(temperature_forecast, axis=0)
@@ -271,7 +271,7 @@ In many cases using a GPU will provide a drastic speedup compared to CPU.
 It can also incur some overheads (for transferring data to/from the GPU),
 so some testing and tuning is often necessary.
 We refer to our [GPU/TPU guide](https://unit8co.github.io/darts/userguide/gpu_and_tpu_usage.html)
-for more informations on how to setup a GPU (or a TPU) via PyTorch Lightning.
+for more information on how to setup a GPU (or a TPU) via PyTorch Lightning.
 
 ### Tune the batch size
 A larger batch size tends to speed up the training because it reduces the number

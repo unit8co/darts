@@ -103,6 +103,10 @@ if TORCH_AVAILABLE:
                             )
 
                         model.model.eval()
+
+                        # also disable MC Dropout:
+                        model.model.set_mc_dropout(False)
+
                         input_tensor = torch.zeros(
                             [1, input_chunk_length, 1], dtype=torch.float64
                         )
@@ -146,6 +150,10 @@ if TORCH_AVAILABLE:
                             )
 
                         model_2.model.eval()
+
+                        # also disable MC Dropout:
+                        model_2.model.set_mc_dropout(False)
+
                         input_tensor = torch.zeros(
                             [1, input_chunk_length, 1], dtype=torch.float64
                         )

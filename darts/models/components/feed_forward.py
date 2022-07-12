@@ -55,6 +55,8 @@ This is a generic implementation that supports different variants including
 import torch
 from torch import nn as nn
 
+from darts.utils.torch import MonteCarloDropout
+
 
 class FeedForward(nn.Module):
     """
@@ -78,7 +80,8 @@ class FeedForward(nn.Module):
         """
         * `d_model` is the number of features in a token embedding
         * `d_ff` is the number of features in the hidden layer of the FFN
-        * `dropout` is dropout probability for the hidden layer
+        * `dropout` is dropout probability for the hidden layer,
+           compatible with Monte Carlo dropout at inference time
         * `is_gated` specifies whether the hidden layer is gated
         * `bias1` specified whether the first fully connected layer should have a learnable bias
         * `bias2` specified whether the second fully connected layer should have a learnable bias
@@ -90,7 +93,7 @@ class FeedForward(nn.Module):
         # Layer one parameterized by weight $W_1$ and bias $b_1$
         self.layer2 = nn.Linear(d_ff, d_model, bias=bias2)
         # Hidden layer dropout
-        self.dropout = nn.Dropout(dropout)
+        self.dropout = MonteCarloDropout(dropout)
         # Activation function $f$
         self.activation = activation
         # Whether there is a gate

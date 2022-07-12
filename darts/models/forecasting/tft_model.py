@@ -617,7 +617,9 @@ class TFTModel(MixedCovariatesTorchModel):
             or the TFT original FeedForward Network.
                 ["GatedResidualNetwork"]
         dropout : float
-            Fraction of neurons affected by Dropout.
+            Fraction of neurons affected by dropout. This is compatible with Monte Carlo dropout
+            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
+            prediction time).
         hidden_continuous_size : int
             Default for hidden size for processing continuous variables
         add_relative_index : bool

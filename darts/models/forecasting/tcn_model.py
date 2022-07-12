@@ -15,6 +15,7 @@ from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModul
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 from darts.timeseries import TimeSeries
 from darts.utils.data import PastCovariatesShiftedDataset
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -191,7 +192,7 @@ class _TCNModule(PLPastCovariatesModule):
         self.target_size = target_size
         self.nr_params = nr_params
         self.dilation_base = dilation_base
-        self.dropout = nn.Dropout(p=dropout)
+        self.dropout = MonteCarloDropout(p=dropout)
 
         # If num_layers is not passed, compute number of layers needed for full history coverage
         if num_layers is None and dilation_base > 1:
@@ -288,7 +289,9 @@ class TCNModel(PastCovariatesTorchModel):
         num_layers
             The number of convolutional layers.
         dropout
-            The dropout rate for every convolutional layer.
+            The dropout rate for every convolutional layer. This is compatible with Monte Carlo dropout
+            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
+            prediction time).
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.

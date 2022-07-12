@@ -20,6 +20,7 @@ logger = get_logger(__name__)
 
 try:
     from darts.models import (
+        CatBoostModel,
         LightGBMModel,
         LinearRegressionModel,
         RandomForest,
@@ -159,9 +160,31 @@ if TORCH_AVAILABLE:
         np.random.seed(42)
 
         # default regression models
-        models = [RandomForest, LinearRegressionModel, RegressionModel, LightGBMModel]
+        models = [
+            RandomForest,
+            LinearRegressionModel,
+            RegressionModel,
+            LightGBMModel,
+            CatBoostModel,
+        ]
 
         # register likelihood regression models
+        QuantileCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="quantile",
+            quantiles=[0.05, 0.5, 0.95],
+            random_state=42,
+        )
+        PoissonCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="poisson",
+            random_state=42,
+        )
+        NormalCatBoostModel = partialclass(
+            CatBoostModel,
+            likelihood="gaussian",
+            random_state=42,
+        )
         QuantileLightGBMModel = partialclass(
             LightGBMModel,
             likelihood="quantile",
@@ -185,10 +208,56 @@ if TORCH_AVAILABLE:
             [
                 QuantileLightGBMModel,
                 QuantileLinearRegressionModel,
+                QuantileCatBoostModel,
                 PoissonLightGBMModel,
                 PoissonLinearRegressionModel,
+                PoissonCatBoostModel,
+                NormalCatBoostModel,
             ]
         )
+
+        univariate_accuracies = [
+            0.03,  # RandomForest
+            1e-13,  # LinearRegressionModel
+            1e-13,  # RegressionModel
+            0.3,  # LightGBMModel
+            0.75,  # CatBoostModel
+            0.5,  # QuantileLightGBMModel
+            0.8,  # QuantileLinearRegressionModel
+            1e-03,  # QuantileCatBoostModel
+            0.4,  # PoissonLightGBMModel
+            0.4,  # PoissonLinearRegressionModel
+            1e-01,  # PoissonCatBoostModel
+            1e-05,  # NormalCatBoostModel
+        ]
+        multivariate_accuracies = [
+            0.3,
+            1e-13,
+            1e-13,
+            0.4,
+            0.75,  # CatBoostModel
+            0.4,
+            0.8,
+            1e-03,
+            0.4,
+            0.4,
+            0.15,
+            1e-05,
+        ]
+        multivariate_multiseries_accuracies = [
+            0.05,
+            1e-13,
+            1e-13,
+            0.05,
+            0.75,  # CatBoostModel
+            0.4,
+            0.8,
+            1e-03,
+            0.4,
+            0.4,
+            1e-01,
+            1e-03,
+        ]
 
         # dummy feature and target TimeSeries instances
         target_series, past_covariates, future_covariates = dummy_timeseries(
@@ -582,29 +651,29 @@ if TORCH_AVAILABLE:
 
         def test_models_accuracy_univariate(self):
             # for every model, and different output_chunk_lengths test whether it predicts the univariate time series
-            # as well as expected
+            # as well as expected, accuracies are defined at the top of the class
             self.helper_test_models_accuracy(
                 self.sine_univariate1,
                 self.sine_univariate2,
-                [0.03, 1e-13, 1e-13, 0.3, 0.5, 0.8, 0.4, 0.4],
+                self.univariate_accuracies,
             )
 
         def test_models_accuracy_multivariate(self):
             # for every model, and different output_chunk_lengths test whether it predicts the multivariate time series
-            # as well as expected
+            # as well as expected, accuracies are defined at the top of the class
             self.helper_test_models_accuracy(
                 self.sine_multivariate1,
                 self.sine_multivariate2,
-                [0.3, 1e-13, 1e-13, 0.4, 0.4, 0.8, 0.4, 0.4],
+                self.multivariate_accuracies,
             )
 
         def test_models_accuracy_multiseries_multivariate(self):
             # for every model, and different output_chunk_lengths test whether it predicts the multiseries, multivariate
-            # time series as well as expected
+            # time series as well as expected, accuracies are defined at the top of the class
             self.helper_test_models_accuracy(
                 self.sine_multiseries1,
                 self.sine_multiseries2,
-                [0.05, 1e-13, 1e-13, 0.05, 0.4, 0.8, 0.4, 0.4],
+                self.multivariate_multiseries_accuracies,
             )
 
         def test_historical_forecast(self):
@@ -931,6 +1000,23 @@ if TORCH_AVAILABLE:
             assert lgb_fit_patch.call_args[1]["eval_set"] is not None
             assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
 
+        @patch.object(darts.models.forecasting.catboost_model.CatBoostRegressor, "fit")
+        def test_catboost_model_with_eval_set(self, lgb_fit_patch):
+            """Test whether these evaluation set parameters are passed to CatBoostRegressor"""
+            model = CatBoostModel(lags=4, lags_past_covariates=2)
+            model.fit(
+                series=self.sine_univariate1,
+                past_covariates=self.sine_multivariate1,
+                val_series=self.sine_univariate1,
+                val_past_covariates=self.sine_multivariate1,
+                early_stopping_rounds=2,
+            )
+
+            lgb_fit_patch.assert_called_once()
+
+            assert lgb_fit_patch.call_args[1]["eval_set"] is not None
+            assert lgb_fit_patch.call_args[1]["early_stopping_rounds"] == 2
+
     class ProbabilisticRegressionModelsTestCase(DartsBaseTestClass):
         models_cls_kwargs_errs = [
             (
@@ -952,6 +1038,31 @@ if TORCH_AVAILABLE:
                 LightGBMModel,
                 {"lags": 2, "likelihood": "poisson", "random_state": 42},
                 0.6,
+            ),
+            (
+                CatBoostModel,
+                {"lags": 2, "likelihood": "quantile", "random_state": 42},
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {
+                    "lags": 2,
+                    "likelihood": "quantile",
+                    "quantiles": [0.1, 0.3, 0.5, 0.7, 0.9],
+                    "random_state": 42,
+                },
+                0.05,
+            ),
+            (
+                CatBoostModel,
+                {"lags": 2, "likelihood": "poisson", "random_state": 42},
+                0.6,
+            ),
+            (
+                CatBoostModel,
+                {"lags": 2, "likelihood": "gaussian", "random_state": 42},
+                0.05,
             ),
             (
                 LinearRegressionModel,

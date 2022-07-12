@@ -13,6 +13,7 @@ import torch.nn as nn
 from darts.logging import get_logger, raise_if_not, raise_log
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
+from darts.utils.torch import MonteCarloDropout
 
 logger = get_logger(__name__)
 
@@ -168,7 +169,7 @@ class _Block(nn.Module):
                 )
 
             if self.dropout > 0:
-                self.linear_layer_stack_list.append(nn.Dropout(p=self.dropout))
+                self.linear_layer_stack_list.append(MonteCarloDropout(p=self.dropout))
 
         self.fc_stack = nn.ModuleList(self.linear_layer_stack_list)
 
@@ -586,7 +587,9 @@ class NBEATSModel(PastCovariatesTorchModel):
             The degree of the polynomial used as waveform generator in trend stacks. Only used if
             `generic_architecture` is set to `False`.
         dropout
-            The dropout probability to be used in the fully connected layers (default=0.0).
+            The dropout probability to be used in fully connected layers. This is compatible with Monte Carlo dropout
+            at inference time for model uncertainty estimation (enabled with ``mc_dropout=True`` at
+            prediction time).
         activation
             The activation function of encoder/decoder intermediate layer (default='ReLU').
             Supported activations: ['ReLU','RReLU', 'PReLU', 'Softplus', 'Tanh', 'SELU', 'LeakyReLU',  'Sigmoid']

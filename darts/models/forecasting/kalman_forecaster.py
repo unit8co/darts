@@ -79,7 +79,9 @@ class KalmanForecaster(DualCovariatesForecastingModel):
         series_future = TimeSeries.from_times_and_values(
             time_index,
             placeholder_vals,
+            columns=self.training_series.columns,
             static_covariates=self.training_series.static_covariates,
+            hierarchy=self.training_series.hierarchy,
         )
         whole_series = self.training_series.append(series_future)
         filtered_series = self.darts_kf.filter(

@@ -7,7 +7,7 @@ Below, we give an overview of what these features mean.
 
 ## Generalities
 
-All forecasting models work in the same way: first they are built (taking some hyper-paramers in argument), then they are fit on one or several series
+All forecasting models work in the same way: first they are built (taking some hyper-parameters in argument), then they are fit on one or several series
 by calling the `fit()` function, and finally they are used to obtain one or several forecasts by calling the `predict()` function.
 
 **Example:**
@@ -35,7 +35,7 @@ model.fit([series1, series2])                              # fit on two series
 forecast = model.predict(series=[series3, series4], n=36)  # predict potentially different series
 ```
 
-Furthermore, we define the following types of time series consummed by the models:
+Furthermore, we define the following types of time series consumed by the models:
 
 * **Target series:** the series that we are interested in forecasting.
 * **Covariate series:** some other series that we are not interested in forecasting, but that can provide valuable inputs to the forecasting model.
@@ -74,7 +74,7 @@ These models are shown with a "✅" under the `Multivariate` column on the [mode
 
 Some models support being fit on multiple time series. To do this, it is enough to simply provide a Python `Sequence` of `TimeSeries` (for instance a list of `TimeSeries`) to `fit()`. When a model is fit this way, the `predict()` function will expect the argument `series` to be set, containing
 one or several `TimeSeries` (i.e., a single or a `Sequence` of `TimeSeries`) that need to be forecasted. 
-The advantage of training on multiple series is that a single model can be exposed to more patterns occuring across all series in the training dataset. That can often be beneficial, especially for more expre based models.
+The advantage of training on multiple series is that a single model can be exposed to more patterns occurring across all series in the training dataset. That can often be beneficial, especially for larger models with more capacity.
 
 In turn, the advantage of having `predict()` providing forecasts for potentially several series at once is that the computation can often be batched and vectorized across the multiple series, which is computationally faster than calling `predict()` multiple times on isolated series.
 
@@ -131,10 +131,11 @@ pred.plot(label='forecast')
 ![Exponential Smoothing](./images/probabilistic/example_ets.png)
 
 ### Probabilistic neural networks
-All neural networks (torch-based models) in Darts have a rich support to fit different kinds of probability distributions. 
-When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html), which determine the distribution that will be fit by the model. 
+All neural networks (torch-based models) in Darts have a rich support to estimate different kinds of probability distributions. 
+When creating the model, it is possible to provide one of the *likelihood models* available in [darts.utils.likelihood_models](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html), which determine the distribution that will be estimated by the model. 
 In such cases, the model will output the parameters of the distribution, and it will be trained by minimising the negative log-likelihood of the training samples. 
 Most of the likelihood models also support prior values for the distribution's parameters, in which case the training loss is regularized by a Kullback-Leibler divergence term pushing the resulting distribution in the direction of the distribution specified by the prior parameters.
+The strength of this regularization term can also be specified when creating the likelihood model object.
 
 For example, the code below trains a TCNModel to fit a Laplace distribution. So the neural network outputs 2 parameters (location and scale) of the Laplace distribution. We also specify a prior value of 0.1 on the scale parameter.
 
@@ -166,7 +167,7 @@ pred.plot(label='forecast')
 ![TCN Laplace regression](./images/probabilistic/example_tcn_laplace.png)
 
 
-It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression), in which case the network will be trained with the pinball loss. 
+It is also possible to perform quantile regression (using arbitrary quantiles) with neural networks, by using [darts.utils.likelihood_models.QuantileRegression](https://unit8co.github.io/darts/generated_api/darts.utils.likelihood_models.html#darts.utils.likelihood_models.QuantileRegression), in which case the network will be trained with the pinball loss. This produces an empirical non-parametric distribution, and it can often be a good option in practice, when one is not sure of the "real" distribution, or when fitting parametric likelihoods give poor results.
 For example, the code snippet below is almost exactly the same as the preceding snippet; the only difference is that it now uses a `QuantileRegression` likelihood, which means that the neural network will be trained with a pinball loss, and its number of outputs will be dynamically configured to match the number of quantiles.
 
 ```python
@@ -196,6 +197,40 @@ pred.plot(label='forecast')
 
 ![TCN quantile regression](./images/probabilistic/example_tcn_quantile.png)
 
+### Capturing model uncertainty using Monte Carlo Dropout
+In Darts, dropout can also be used as an additional way to capture model uncertainty, following the approach described in [1]. This is sometimes referred to as *epistemic uncertainty*, and can be seen as a way to marginalize over a family of models represented by all the different dropout activation functions.
+
+This feature is readily available for all deep learning models integrating some dropout (except RNN models - we refer to the dropout API reference documentations for a mention of models supporting this). It only requires to specify `mc_dropout=True` at prediction time. For example, the code below trains a TCN model (using the default MSE loss) with a dropout rate of 10%, and then produces a probabilistic forecasts using Monte Carlo Dropout:
+
+```python
+from darts.datasets import AirPassengersDataset
+from darts import TimeSeries
+from darts.models import TCNModel
+from darts.dataprocessing.transformers import Scaler
+from darts.utils.likelihood_models import QuantileRegression
+
+series = AirPassengersDataset().load()
+train, val = series[:-36], series[-36:]
+
+scaler = Scaler()
+train = scaler.fit_transform(train)
+val = scaler.transform(val)
+series = scaler.transform(series)
+
+model = TCNModel(input_chunk_length=30,
+                 output_chunk_length=12,
+                 dropout=0.1)
+model.fit(train, epochs=400)
+pred = model.predict(n=36, mc_dropout=True, num_samples=500)
+
+series.plot()
+pred.plot(label='forecast')
+```
+
+![TCN quantile regression](./images/probabilistic/example_mc_dropout.png)
+
+Monte Carlo Dropout can be combined with other likelihood estimation in Darts, which can be interpreted as a way to capture both epistemic and aleatoric uncertainty.
+
 
 ### Probabilistic regression models
 Some regression models can also be configured to produce probabilistic forecasts too. At the time of writing, [LinearRegressionModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.linear_regression_model.html) and [LightGBMModel](https://unit8co.github.io/darts/generated_api/darts.models.forecasting.gradient_boosted_model.html) support a `likelihood` argument. When set to `"poisson"` the model will fit a Poisson distribution, and when set to `"quantile"` the model will use the pinball loss to perform quantile regression (the quantiles themselves can be specified using the `quantiles` argument).
@@ -220,3 +255,6 @@ pred.plot(label='forecast')
 ```
 
 ![quantile linear regression](./images/probabilistic/example_linreg_quantile.png)
+
+
+[1] Yarin Gal, Zoubin Ghahramani, ["Dropout as a Bayesian Approximation: Representing Model Uncertainty in Deep Learning"](https://arxiv.org/abs/1506.02142)

@@ -66,6 +66,7 @@ class VARIMA(DualCovariatesForecastingModel):
             series = TimeSeries.from_dataframe(
                 df=series.pd_dataframe(copy=False).diff().dropna(),
                 static_covariates=series.static_covariates,
+                hierarchy=series.hierarchy,
             )
 
         super().fit(series, future_covariates)

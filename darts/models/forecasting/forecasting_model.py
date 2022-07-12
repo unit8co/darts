@@ -451,7 +451,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
             if last_points_only:
-                last_points_values.append(forecast.all_values()[-1])
+                last_points_values.append(forecast.all_values(copy=False)[-1])
                 last_points_times.append(forecast.end_time())
             else:
                 forecasts.append(forecast)
@@ -461,7 +461,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 return TimeSeries.from_times_and_values(
                     pd.DatetimeIndex(last_points_times, freq=series.freq * stride),
                     np.array(last_points_values),
+                    columns=series.columns,
                     static_covariates=series.static_covariates,
+                    hierarchy=series.hierarchy,
                 )
             else:
                 return TimeSeries.from_times_and_values(
@@ -471,7 +473,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                         step=1,
                     ),
                     np.array(last_points_values),
+                    columns=series.columns,
                     static_covariates=series.static_covariates,
+                    hierarchy=series.hierarchy,
                 )
 
         return forecasts
@@ -676,7 +680,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             If `True`, uses the comparison with the fitted values.
             Raises an error if ``fitted_values`` is not an attribute of `model_class`.
         metric
-            A function that takes two TimeSeries instances as inputs and returns a float error value.
+            A function that takes two TimeSeries instances as inputs (actual and prediction, in this order),
+            and returns a float error value.
         reduction
             A reduction function (mapping array to float) describing how to aggregate the errors obtained
             on the different validation series when backtesting. By default it'll compute the mean of errors.
@@ -760,7 +765,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 fitted_values = TimeSeries.from_times_and_values(
                     series.time_index, model.fitted_values
                 )
-                error = metric(fitted_values, series)
+                error = metric(series, fitted_values)
             elif val_series is None:  # expanding window mode
                 error = model.backtest(
                     series=series,
@@ -783,7 +788,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                     future_covariates,
                     num_samples=1,
                 )
-                error = metric(pred, val_series)
+                error = metric(val_series, pred)
 
             return float(error)
 

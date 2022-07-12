@@ -429,9 +429,12 @@ class TimeSeriesTestCase(DartsBaseTestClass):
         np.testing.assert_allclose(series3.all_values(), series.all_values())
         np.testing.assert_allclose(series2.all_values(), vals + 1)
 
-        # should fail if shape is not the same:
+        # should fail if nr components is not the same:
         with self.assertRaises(ValueError):
-            series.with_values(np.random.rand(5, 10, 2))
+            series.with_values(np.random.rand(5, 11, 3))
+
+        # should not fail if nr samples is not the same:
+        series.with_values(np.random.rand(5, 10, 2))
 
     def test_diff(self):
         diff1 = TimeSeries.from_dataframe(self.series1.pd_dataframe().diff())
@@ -1297,6 +1300,163 @@ class TimeSeriesConcatenateTestCase(DartsBaseTestClass):
         self.assertEqual(pd.Timestamp("2000-01-01"), result_ts.start_time())
         self.assertEqual(pd.Timestamp("2000-01-20"), result_ts.end_time())
         self.assertEqual("D", result_ts.freq)
+
+
+class TimeSeriesHierarchyTestCase(DartsBaseTestClass):
+
+    components = ["total", "a", "b", "x", "y", "ax", "ay", "bx", "by"]
+
+    hierarchy = {
+        "ax": ["a", "x"],
+        "ay": ["a", "y"],
+        "bx": ["b", "x"],
+        "by": ["b", "y"],
+        "a": ["total"],
+        "b": ["total"],
+        "x": ["total"],
+        "y": ["total"],
+    }
+
+    base_series = TimeSeries.from_values(
+        values=np.random.rand(50, len(components), 5), columns=components
+    )
+
+    def test_creation_with_hierarchy_sunny_day(self):
+        hierarchical_series = TimeSeries.from_values(
+            values=np.random.rand(50, len(self.components), 5),
+            columns=self.components,
+            hierarchy=self.hierarchy,
+        )
+        self.assertEqual(hierarchical_series.hierarchy, self.hierarchy)
+
+    def test_with_hierarchy_sunny_day(self):
+        hierarchical_series = self.base_series.with_hierarchy(self.hierarchy)
+        self.assertEqual(hierarchical_series.hierarchy, self.hierarchy)
+
+    def test_with_hierarchy_rainy_day(self):
+        # wrong type
+        with self.assertRaises(ValueError):
+            self.base_series.with_hierarchy(set())
+
+        # wrong keys
+        with self.assertRaises(ValueError):
+            hierarchy = {"ax": ["a", "x"]}
+            self.base_series.with_hierarchy(hierarchy)
+
+        with self.assertRaises(ValueError):
+            hierarchy = {"unknown": ["a", "x"]}
+            self.base_series.with_hierarchy(hierarchy)
+
+        with self.assertRaises(ValueError):
+            hierarchy = {
+                "unknown": ["a", "x"],
+                "ay": ["a", "y"],
+                "bx": ["b", "x"],
+                "by": ["b", "y"],
+                "a": ["total"],
+                "b": ["total"],
+                "x": ["total"],
+                "y": ["total"],
+            }
+            self.base_series.with_hierarchy(hierarchy)
+
+        with self.assertRaises(ValueError):
+            hierarchy = {
+                "total": ["a", "x"],
+                "ay": ["a", "y"],
+                "bx": ["b", "x"],
+                "by": ["b", "y"],
+                "a": ["total"],
+                "b": ["total"],
+                "x": ["total"],
+                "y": ["total"],
+            }
+            self.base_series.with_hierarchy(hierarchy)
+
+        # wrong values
+        with self.assertRaises(ValueError):
+            hierarchy = {
+                "ax": ["unknown", "x"],
+                "ay": ["a", "y"],
+                "bx": ["b", "x"],
+                "by": ["b", "y"],
+                "a": ["total"],
+                "b": ["total"],
+                "x": ["total"],
+                "y": ["total"],
+            }
+            self.base_series.with_hierarchy(hierarchy)
+
+    def test_hierarchy_processing(self):
+        hierarchical_series = self.base_series.with_hierarchy(self.hierarchy)
+        self.assertTrue(hierarchical_series.has_hierarchy)
+        self.assertFalse(self.base_series.has_hierarchy)
+        self.assertEqual(
+            hierarchical_series.bottom_level_components, ["ax", "ay", "bx", "by"]
+        )
+        self.assertEqual(hierarchical_series.top_level_component, "total")
+
+        top_level_idx = self.components.index("total")
+        np.testing.assert_equal(
+            hierarchical_series.top_level_series.all_values(copy=False)[:, 0, :],
+            self.base_series.all_values(copy=False)[:, top_level_idx, :],
+        )
+
+        np.testing.assert_equal(
+            hierarchical_series.bottom_level_series.all_values(copy=False),
+            hierarchical_series[["ax", "ay", "bx", "by"]].all_values(copy=False),
+        )
+
+    def test_concat(self):
+        series1 = self.base_series.with_hierarchy(self.hierarchy)
+        series2 = self.base_series.with_hierarchy(self.hierarchy)
+
+        # concat on time or samples should preserve hierarchy:
+        concat_s = concatenate([series1, series2], axis=0, ignore_time_axis=True)
+        self.assertEqual(concat_s.hierarchy, self.hierarchy)
+
+        concat_s = concatenate([series1, series2], axis=2)
+        self.assertEqual(concat_s.hierarchy, self.hierarchy)
+
+        # concat on components should fail when not ignoring hierarchy
+        with self.assertRaises(ValueError):
+            concat_s = concatenate([series1, series2], axis=1, drop_hierarchy=False)
+
+        # concat on components should work when dropping hierarchy
+        concat_s = concatenate([series1, series2], axis=1, drop_hierarchy=True)
+        self.assertFalse(concat_s.has_hierarchy)
+
+        # hierarchy should be dropped when selecting components:
+        subs1 = series1[["ax", "ay", "bx", "by"]]
+        self.assertFalse(subs1.has_hierarchy)
+        subs2 = series1["total"]
+        self.assertFalse(subs2.has_hierarchy)
+
+    def test_ops(self):
+        # another hierarchy different than the original
+        hierarchy2 = {
+            "ax": ["b", "y"],
+            "ay": ["b", "x"],
+            "bx": ["a", "y"],
+            "by": ["a", "x"],
+            "a": ["total"],
+            "b": ["total"],
+            "x": ["total"],
+            "y": ["total"],
+        }
+
+        # Ops not touching components should preserve hierarchy
+        series1 = self.base_series.with_hierarchy(self.hierarchy)
+        series2 = self.base_series.with_hierarchy(hierarchy2)
+
+        self.assertEqual(series1[:10].hierarchy, self.hierarchy)
+        self.assertEqual((series1 + 10).hierarchy, self.hierarchy)
+
+        # combining series should keep hierarchy of first series
+        self.assertEqual((series1 / series2).hierarchy, self.hierarchy)
+        self.assertEqual(
+            (series1.slice_intersect(series2[10:20])).hierarchy, self.hierarchy
+        )
 
 
 class TimeSeriesHeadTailTestCase(DartsBaseTestClass):

@@ -1,16 +1,15 @@
 # Installation Guide
 
-Some of the models depend on `prophet` and `torch`, which have non-Python dependencies.
-A Conda environment is thus recommended because it will handle all of those in one go.
+Below, we detail how to install Darts using either `conda` or `pip`.
 
 ## From conda-forge
-Currently only the x86_64 architecture with Python 3.7-3.9
+Currently only the x86_64 architecture with Python 3.7-3.10
 is fully supported with conda; consider using PyPI if you are running into troubles.
 
-To create a conda environment for Python 3.7
+To create a conda environment for Python 3.9
 (after installing [conda](https://docs.conda.io/en/latest/miniconda.html)):
 
-    conda create --name <env-name> python=3.7
+    conda create --name <env-name> python=3.9
 
 Don't forget to activate your virtual environment
 
@@ -20,7 +19,7 @@ As some models have relatively heavy dependencies, we provide two conda-forge pa
 
 * Install darts with all available models (recommended): `conda install -c conda-forge -c pytorch u8darts-all`.
 * Install core + neural networks (PyTorch): `conda install -c conda-forge -c pytorch u8darts-torch`
-* Install core only (without neural networks, Prophet or AutoARIMA): `conda install -c conda-forge u8darts`
+* Install core only (without neural networks or AutoARIMA): `conda install -c conda-forge u8darts`
 
 For GPU support, please follow the instructions to install CUDA in the [PyTorch installation guide](https://pytorch.org/get-started/locally/).
 
@@ -28,16 +27,14 @@ For GPU support, please follow the instructions to install CUDA in the [PyTorch 
 ## From PyPI
 Install darts with all available models: `pip install darts`.
 
-If this fails on your platform, please follow the official installation guides for
-[prophet](https://facebook.github.io/prophet/docs/installation.html#python)
-and [torch](https://pytorch.org/get-started/locally/), then try installing Darts again.
+If this fails on your platform, please follow the official installation 
+guide for [PyTorch](https://pytorch.org/get-started/locally/), then try installing Darts again.
 
-As some models have relatively heavy (or non-Python) dependencies,
+As some dependencies are relatively big or involve non-Python dependencies,
 we also maintain the `u8darts` package, which provides the following alternate lighter install options:
 
 * Install core only (without neural networks, Prophet or AutoARIMA): `pip install u8darts`
 * Install core + neural networks (PyTorch): `pip install "u8darts[torch]"`
-* Install core + Facebook Prophet: `pip install "u8darts[prophet]"`
 * Install core + AutoARIMA: `pip install "u8darts[pmdarima]"`
 
 ### Enabling Support for LightGBM
@@ -59,6 +56,13 @@ brew unlink libomp
 brew install libomp.rb
 ```
 
+## Enabling support for Facebook Prophet
+We removed Facebook Prophet as a dependency of Darts (at least for the time being), due to its dependency
+on PyStan and the complex installation this entails. In order to use the `Prophet` model in Darts, we
+recommend you follow the [Prophet installation instructions](https://facebook.github.io/prophet/docs/installation.html)
+and install the prophet package in your environment (the command
+`from darts.models import Prophet` will work once the package is installed).
+At the time of writing, this has been tested with `prophet 1.0.1`.
 
 ## Running the examples only, without installing:
 

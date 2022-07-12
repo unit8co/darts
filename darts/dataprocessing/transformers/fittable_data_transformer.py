@@ -57,7 +57,7 @@ class FittableDataTransformer(BaseDataTransformer):
 
     @staticmethod
     @abstractmethod
-    def ts_fit(series: TimeSeries) -> TimeSeries:
+    def ts_fit(series: TimeSeries):
         """The function that will be applied to each series when :func:`fit` is called.
 
         The function must take as first argument a ``TimeSeries`` object, and return an object containing information
