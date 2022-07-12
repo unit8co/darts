@@ -248,7 +248,7 @@ class RNNModel(DualCovariatesTorchModel):
             The length of both input (target and covariates) and output (target) time series used during
             training. Generally speaking, `training_length` should have a higher value than `input_chunk_length`
             because otherwise during training the RNN is never run for as many iterations as it will during
-            training. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
+            inference. For more information on this parameter, please see `darts.utils.data.ShiftedDataset`
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -466,3 +466,7 @@ class RNNModel(DualCovariatesTorchModel):
             train_dataset.ds_past.shift == 1,
             "RNNModel requires a shifted training dataset with shift=1.",
         )
+
+    @property
+    def min_train_series_length(self) -> int:
+        return self.training_length
