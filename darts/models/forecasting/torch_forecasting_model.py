@@ -766,6 +766,20 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         else:
             val_dataset = None
 
+        # Pro-actively catch length exceptions to display nicer messages
+        length_ok = True
+        try:
+            len(train_dataset)
+        except ValueError:
+            length_ok = False
+        raise_if(
+            not length_ok or len(train_dataset) == 0,  # mind the order
+            "The train dataset does not contain even one training sample. "
+            + "This is likely due to the provided training series being too short. "
+            + "This model expect series of length at least {}.".format(
+                self.min_train_series_length
+            ),
+        )
         logger.info(f"Train dataset contains {len(train_dataset)} samples.")
 
         return self.fit_from_dataset(
@@ -825,13 +839,26 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         self._fit_called = True
         self._verify_train_dataset_type(train_dataset)
+
+        # Pro-actively catch length exceptions to display nicer messages
+        train_length_ok, val_length_ok = True, True
+        try:
+            len(train_dataset)
+        except ValueError:
+            train_length_ok = False
+        if val_dataset is not None:
+            try:
+                len(val_dataset)
+            except ValueError:
+                val_length_ok = False
+
         raise_if(
-            len(train_dataset) == 0,
+            not train_length_ok or len(train_dataset) == 0,  # mind the order
             "The provided training time series dataset is too short for obtaining even one training point.",
             logger,
         )
         raise_if(
-            val_dataset is not None and len(val_dataset) == 0,
+            val_dataset is not None and (not val_length_ok or len(val_dataset) == 0),
             "The provided validation time series dataset is too short for obtaining even one training point.",
             logger,
         )
