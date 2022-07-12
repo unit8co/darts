@@ -9,6 +9,7 @@ logger = get_logger(__name__)
 
 # Forecasting
 from darts.models.forecasting.arima import ARIMA
+from darts.models.forecasting.auto_arima import AutoARIMA
 from darts.models.forecasting.baselines import NaiveDrift, NaiveMean, NaiveSeasonal
 from darts.models.forecasting.catboost_model import CatBoostModel
 from darts.models.forecasting.croston import Croston
@@ -16,33 +17,14 @@ from darts.models.forecasting.exponential_smoothing import ExponentialSmoothing
 from darts.models.forecasting.fft import FFT
 from darts.models.forecasting.kalman_forecaster import KalmanForecaster
 from darts.models.forecasting.linear_regression_model import LinearRegressionModel
+from darts.models.forecasting.prophet_model import Prophet
 from darts.models.forecasting.random_forest import RandomForest
 from darts.models.forecasting.regression_ensemble_model import RegressionEnsembleModel
 from darts.models.forecasting.regression_model import RegressionModel
 from darts.models.forecasting.sf_auto_arima import StatsForecastAutoARIMA
+from darts.models.forecasting.tbats import BATS, TBATS
 from darts.models.forecasting.theta import FourTheta, Theta
 from darts.models.forecasting.varima import VARIMA
-
-try:
-    from darts.models.forecasting.auto_arima import AutoARIMA
-    from darts.models.forecasting.tbats import BATS, TBATS
-except ModuleNotFoundError:
-    logger.warning(
-        "Support for AutoARIMA, BATS and TBATS is not available."
-        "To enable it, install u8darts[pmdarima] or u8darts[all]."
-    )
-
-try:
-    from darts.models.forecasting.prophet_model import Prophet
-except ModuleNotFoundError:
-    pass
-    """
-    logger.warning(
-        "Support for Facebook Prophet is not available. "
-        "To enable it, install the prophet package in your environment; see "
-        "https://facebook.github.io/prophet/docs/installation.html"
-    )
-    """
 
 try:
     from darts.models.forecasting.block_rnn_model import BlockRNNModel
