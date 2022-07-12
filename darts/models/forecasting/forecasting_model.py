@@ -807,7 +807,11 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return model_class(**best_param_combination), best_param_combination, min_error
 
     def residuals(
-        self, series: TimeSeries, forecast_horizon: int = 1, verbose: bool = False
+        self,
+        series: TimeSeries,
+        forecast_horizon: int = 1,
+        retrain: bool = True,
+        verbose: bool = False,
     ) -> TimeSeries:
         """Compute the residuals produced by this model on a univariate time series.
 
@@ -830,6 +834,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             The univariate TimeSeries instance which the residuals will be computed for.
         forecast_horizon
             The forecasting horizon used to predict each fitted value.
+        retrain
+            Whether to train the model at each iteration, for models that support it.
+            If False, the model is not trained at all. Default: True
         verbose
             Whether to print progress.
         Returns
@@ -848,7 +855,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             start=first_index,
             forecast_horizon=forecast_horizon,
             stride=1,
-            retrain=True,
+            retrain=retrain,
             last_points_only=True,
             verbose=verbose,
         )
