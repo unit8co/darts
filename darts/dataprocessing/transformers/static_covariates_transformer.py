@@ -32,11 +32,15 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
     ):
         """Generic wrapper class for scalers/encoders/transformers of static covariates.
 
-        The underlying `scaler_num` and `scaler_cat` have to implement the ``fit()``, ``transform()``
+        The underlying ``scaler_num`` and ``scaler_cat`` have to implement the ``fit()``, ``transform()``
         and ``inverse_transform()`` methods (typically from scikit-learn).
 
-        `scaler_num` addresses numerical static covariate data of the underlying series.
-        `scaler_cat` addresses categorical static covariate data.
+        By default, numerical and categorical columns/features are inferred and allocated to ``scaler_num`` and
+        ``scaler_cat``, respectively. Alternatively, specify which columns to scale/transform with ``cols_num`` and
+        ``cols_cat``.
+
+        Both ``scaler_num`` and ``scaler_cat`` are fit globally on static covariate data from all series passed
+        to ``StaticCovariatesTransformer.fit()``
 
         Parameters
         ----------
@@ -48,7 +52,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         scaler_cat
             The scaler to transform categorical static covariate data with. It must provide ``fit()``,
             ``transform()`` and ``inverse_transform()`` methods.
-            Default: :class:`sklearn.preprocessing.OrdinalEncoder(feature_range=(0, 1))`; this will convert categories
+            Default: :class:`sklearn.preprocessing.OrdinalEncoder()`; this will convert categories
             into integer valued arrays where each integer stands for a specific category.
         cols_num
             Optionally, a list of column names which for which to apply the numeric transformer `scaler_num`.
@@ -71,10 +75,11 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
 
         Examples
         --------
-        >>> from darts.datasets import AirPassengersDataset
-        >>> from sklearn.preprocessing import MinMaxScaler, OrdicalEncoder
+        >>> import numpy as np
+        >>> import pandas as pd
+        >>> from darts import TimeSeries
         >>> from darts.dataprocessing.transformers import StaticCovariatesTransformer
-        >>> static_covs = pd.DataFrame(data={"cont": [0, 1, 2], "cat": ["a", "b", "c"]})
+        >>> static_covs = pd.DataFrame(data={"cont": [0, 2, 1], "cat": ["a", "c", "b"]})
         >>> series = TimeSeries.from_values(
         >>>     values=np.random.random((10, 3)),
         >>>     columns=["comp1", "comp2", "comp3"],
@@ -83,9 +88,17 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         >>> transformer = StaticCovariatesTransformer()
         >>> series_transformed = transformer.fit_transform(series)
         >>> print(series.static_covariates)
-        [-1.]
+        static_covariates  cont cat
+        component
+        comp1               0.0   a
+        comp2               2.0   c
+        comp3               1.0   b
         >>> print(series_transformed.static_covariates)
-        [2.]
+        static_covariates  cont  cat
+        component
+        comp1               0.0  0.0
+        comp2               1.0  2.0
+        comp3               0.5  1.0
         """
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
         self.scaler_num = MinMaxScaler() if scaler_num is None else scaler_num
