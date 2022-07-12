@@ -245,8 +245,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         ]
 
         for model_cls, kwargs, model_type in params:
-
-            pred_len = 3
+            pred_len = 5
             if model_type == MULTIVARIATE:
                 series1 = self.ts_ice_heater_train
                 series2 = self.ts_ice_heater_val
@@ -277,6 +276,11 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             model.fit(series1)
             pred1 = model.predict(n=pred_len)
             pred2 = model.predict(n=pred_len, series=series2)
+
+            # check probabilistic forecast
+            n_samples = 3
+            pred1 = model.predict(n=pred_len, num_samples=n_samples)
+            pred2 = model.predict(n=pred_len, series=series2, num_samples=n_samples)
 
             # check that the results with a second custom ts are different from the results given with the training ts
             self.assertFalse(np.array_equal(pred1.values, pred2.values()))

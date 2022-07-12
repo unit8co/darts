@@ -17,14 +17,14 @@ from statsmodels.tsa.api import VARMAX as staVARMA
 
 from darts.logging import get_logger, raise_if
 from darts.models.forecasting.forecasting_model import (
-    StatsmodelsDualCovariatesForecastingModel,
+    TransferableDualCovariatesForecastingModel,
 )
 from darts.timeseries import TimeSeries
 
 logger = get_logger(__name__)
 
 
-class VARIMA(StatsmodelsDualCovariatesForecastingModel):
+class VARIMA(TransferableDualCovariatesForecastingModel):
     def __init__(self, p: int = 1, d: int = 0, q: int = 0, trend: Optional[str] = None):
         """VARIMA
 
@@ -70,7 +70,7 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
         return series
 
     def fit(self, series: TimeSeries, future_covariates: Optional[TimeSeries] = None):
-        # for VARIMA we need to process target `series` before calling StatsmodelsDualCovariatesForecastingModel'
+        # for VARIMA we need to process target `series` before calling TransferableDualCovariatesForecastingModel'
         # fit() method
         self._last_values = (
             series.last_values()
@@ -108,6 +108,15 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
         num_samples: int = 1,
     ) -> TimeSeries:
 
+        if num_samples > 1 and self.trend:
+            logger.warn(
+                "Trends are not well supported yet for getting probabilistic forecasts with ARIMA."
+                "If you run into issues, try calling fit() with num_samples=1 or removing the trend from"
+                "your model."
+            )
+
+        self._last_num_samples = num_samples
+
         super()._predict(
             n, series, historic_future_covariates, future_covariates, num_samples
         )
@@ -136,9 +145,17 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
             )
 
         # forecast before restoring the training state
-        forecast = self.model.forecast(
-            steps=n, exog=future_covariates.values() if future_covariates else None
-        )
+        if num_samples == 1:
+            forecast = self.model.forecast(
+                steps=n, exog=future_covariates.values() if future_covariates else None
+            )
+        else:
+            forecast = self.model.simulate(
+                nsimulations=n,
+                repetitions=num_samples,
+                initial_state=self.model.states.predicted[-1, :],
+                exog=future_covariates.values() if future_covariates else None,
+            )
 
         forecast = self._invert_transformation(forecast)
 
@@ -158,12 +175,21 @@ class VARIMA(StatsmodelsDualCovariatesForecastingModel):
     def _invert_transformation(self, series_df: pd.DataFrame):
         if self.d == 0:
             return series_df
-        series_df = self._last_values + series_df.cumsum(axis=0)
+        print(series_df.shape)
+        if self._last_num_samples > 1:
+            series_df = np.tile(
+                self._last_values, (self._last_num_samples, 1)
+            ).T + series_df.cumsum(axis=0)
+        else:
+            series_df = self._last_values + series_df.cumsum(axis=0)
         return series_df
 
     @property
     def min_train_series_length(self) -> int:
         return 30
+
+    def _is_probabilistic(self) -> bool:
+        return True
 
     def _supports_range_index(self) -> bool:
         raise_if(

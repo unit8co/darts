@@ -1230,7 +1230,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         )
 
 
-class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
+class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
     """The base class for the forecasting models that are not global, but support future covariates, and can
     additionally be applied to new data unrelated to the original series used for fitting the model. Currently,
     all the derived classes wrap statsmodels models.
@@ -1336,7 +1336,7 @@ class StatsmodelsDualCovariatesForecastingModel(DualCovariatesForecastingModel, 
         num_samples: int = 1,
     ) -> TimeSeries:
         """Forecasts values for a certain number of time steps after the end of the series.
-        StatsmodelsDualCovariatesForecastingModels must implement the predict logic in this method.
+        TransferableDualCovariatesForecastingModel must implement the predict logic in this method.
         """
         pass
 
