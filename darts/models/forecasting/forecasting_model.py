@@ -20,7 +20,7 @@ from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
 from itertools import product
 from random import sample
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import joblib
 import numpy as np
@@ -899,8 +899,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
 
-    def save_model(self, path: Optional[str] = None, **joblib_kwargs) -> None:
-        """Saves the model under a given path.
+    def save_model(
+        self, path: Optional[Union[str, BinaryIO]] = None, **joblib_kwargs
+    ) -> None:
+        """Saves the model under a given path or file handle.
 
         Parameters
         ----------
@@ -910,26 +912,27 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Keyword arguments passed to `joblib.dump()`
         """
 
-        # TODO: add default path construction "model_name + time"
         if path is None:
-            path = (
-                f"{type(self).__name__}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+            # default path
+            path = f"{type(self).__name__}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pkl"
+
+        if isinstance(path, str):
+            raise_if_not(
+                os.path.isdir(os.path.dirname(path)),
+                f"The dictionary {os.path.dirname(path)} doesn't exist",
+                logger,
             )
 
-        # TODO: add option to create directories if path doesn't exist
-        raise_if_not(
-            os.path.isdir(os.path.dirname(path)),
-            f"The dictionary {os.path.dirname(path)} doesn't exist",
-            logger,
-        )
-
-        # We save the whole object using joblib
-        with open(path, "wb") as handle:
-            joblib.dump(value=self, filename=handle, **joblib_kwargs)
+            # save the whole object using joblib
+            with open(path, "wb") as handle:
+                joblib.dump(value=self, filename=handle, **joblib_kwargs)
+        else:
+            # save the whole object using joblib
+            joblib.dump(value=self, filename=path, **joblib_kwargs)
 
     @staticmethod
-    def load_model(path: str) -> "ForecastingModel":
-        """Loads the model from a given path.
+    def load_model(path: Union[str, BinaryIO]) -> "ForecastingModel":
+        """Loads the model from a given path or file handle.
 
         Parameters
         ----------
@@ -937,15 +940,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             Path from which to load the model.
         """
 
-        raise_if_not(
-            os.path.exists(path),
-            f"The path {path} doesn't exist",
-            logger,
-        )
+        if isinstance(path, str):
+            raise_if_not(
+                os.path.exists(path),
+                f"The path {path} doesn't exist",
+                logger,
+            )
 
-        # We save the whole object using joblib
-        with open(path, "rb") as handle:
-            model = joblib.load(filename=handle)
+            # Load the object using joblib
+            with open(path, "rb") as handle:
+                model = joblib.load(filename=handle)
+        else:
+
+            model = joblib.load(filename=path)
 
         return model
 
