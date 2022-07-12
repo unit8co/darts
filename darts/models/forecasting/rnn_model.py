@@ -469,4 +469,4 @@ class RNNModel(DualCovariatesTorchModel):
 
     @property
     def min_train_series_length(self) -> int:
-        return self.training_length
+        return self.training_length + 1
