@@ -10,7 +10,7 @@ from darts.timeseries import TimeSeries
 class MissingValuesFillerTestCase(unittest.TestCase):
 
     time = pd.date_range("20130101", "20130130")
-    static_covariate = pd.DataFrame({"0": 1})
+    static_covariate = pd.DataFrame({"0": [1]})
 
     const_series = TimeSeries.from_times_and_values(
         time, np.array([2.0] * len(time)), static_covariates=static_covariate
@@ -46,5 +46,6 @@ class MissingValuesFillerTestCase(unittest.TestCase):
         const_transformer = MissingValuesFiller(fill=2.0)
         transformed = const_transformer.transform(self.const_series_with_holes)
         self.assertEqual(
-            self.const_series.static_covariates, transformed.static_covariates
+            self.const_series.static_covariates.values,
+            transformed.static_covariates.values,
         )
