@@ -29,6 +29,17 @@ Data processing example notebook:
    examples/02-data-processing.ipynb
 
 
+Static Covariates
+=================
+
+Static covariates example notebook:
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/15-static-covariates.ipynb
+
+
 Transfer Learning Tutorial
 ==========================
 
