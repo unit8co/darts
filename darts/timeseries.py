@@ -1799,7 +1799,7 @@ class TimeSeries:
         self,
         other: "TimeSeries",
         axis: Optional[Union[str, int]] = 0,
-        ignore_time_axes: Optional[bool] = False,
+        ignore_time_axis: Optional[bool] = False,
         ignore_static_covariates: bool = False,
         drop_hierarchy: bool = True,
     ) -> "TimeSeries":
@@ -1812,7 +1812,7 @@ class TimeSeries:
             another timeseries to concatenate to this one
         axis : str or int
             axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 0 (time)]
-        ignore_time_axes : bool, default False
+        ignore_time_axis : bool, default False
             Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
         ignore_static_covariates : bool
             whether to ignore all requirements for static covariate concatenation and only transfer the
@@ -1843,7 +1843,7 @@ class TimeSeries:
         return concatenate(
             series=[self, other],
             axis=axis,
-            ignore_time_axis=ignore_time_axes,
+            ignore_time_axis=ignore_time_axis,
             ignore_static_covariates=ignore_static_covariates,
             drop_hierarchy=drop_hierarchy,
         )
