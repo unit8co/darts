@@ -40,30 +40,30 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         ``cols_cat``.
 
         Both ``scaler_num`` and ``scaler_cat`` are fit globally on static covariate data from all series passed
-        to ``StaticCovariatesTransformer.fit()``
+        to :class:`StaticCovariatesTransformer.fit()`
 
         Parameters
         ----------
         scaler_num
-            The scaler to transform numeric static covariate data with. It must provide ``fit()``,
+            The scaler to transform numeric static covariate columns with. It must provide ``fit()``,
             ``transform()`` and ``inverse_transform()`` methods.
             Default: :class:`sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this will scale all
-            the values of a time series between 0 and 1.
+            values between 0 and 1.
         scaler_cat
-            The scaler to transform categorical static covariate data with. It must provide ``fit()``,
+            The encoder to transform categorical static covariate columns with. It must provide ``fit()``,
             ``transform()`` and ``inverse_transform()`` methods.
             Default: :class:`sklearn.preprocessing.OrdinalEncoder()`; this will convert categories
             into integer valued arrays where each integer stands for a specific category.
         cols_num
-            Optionally, a list of column names which for which to apply the numeric transformer `scaler_num`.
+            Optionally, a list of column names for which to apply the numeric transformer ``scaler_num``.
             By default, the transformer will infer all numerical features and scale them with `scaler_num`.
             If an empty list, no column will be scaled.
         cols_cat
-            Optionally, a list of column names which for which to apply the categorical transformer `scaler_cat`.
+            Optionally, a list of column names for which to apply the categorical transformer `scaler_cat`.
             By default, the transformer will infer all categorical features and transform them with `scaler_cat`.
             If an empty list, no column will be transformed.
         name
-            A specific name for the scaler
+            A specific name for the :class:`StaticCovariatesTransformer`.
         n_jobs
             The number of jobs to run in parallel. Parallel jobs are created only when a ``Sequence[TimeSeries]`` is
             passed as input to a method, parallelising operations regarding different ``TimeSeries``. Defaults to `1`
@@ -79,7 +79,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         >>> import pandas as pd
         >>> from darts import TimeSeries
         >>> from darts.dataprocessing.transformers import StaticCovariatesTransformer
-        >>> static_covs = pd.DataFrame(data={"cont": [0, 2, 1], "cat": ["a", "c", "b"]})
+        >>> static_covs = pd.DataFrame(data={"num": [0, 2, 1], "cat": ["a", "c", "b"]})
         >>> series = TimeSeries.from_values(
         >>>     values=np.random.random((10, 3)),
         >>>     columns=["comp1", "comp2", "comp3"],
@@ -88,13 +88,13 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         >>> transformer = StaticCovariatesTransformer()
         >>> series_transformed = transformer.fit_transform(series)
         >>> print(series.static_covariates)
-        static_covariates  cont cat
+        static_covariates  num cat
         component
         comp1               0.0   a
         comp2               2.0   c
         comp3               1.0   b
         >>> print(series_transformed.static_covariates)
-        static_covariates  cont  cat
+        static_covariates  num  cat
         component
         comp1               0.0  0.0
         comp2               1.0  2.0
@@ -123,10 +123,8 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
 
         # numeric/categorical cols will be inferred at fitting time, if user did not set them
         self.cols = None
-        self.cols_num = cols_num
-        self.cols_cat = cols_cat
-        self.mask_num = None
-        self.mask_cat = None
+        self.cols_num, self.cols_cat = cols_num, cols_cat
+        self.mask_num, self.mask_cat = None, None
 
         # categoricals might need a mapping from input features to output (i.e. OneHotEncoding)
         self.col_map_cat = None
@@ -162,6 +160,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         if sum(self.mask_cat):
             self.scaler_cat.fit(data[:, self.mask_cat])
             if isinstance(self.scaler_cat, OneHotEncoder):
+                # OneHotEncoder will generate more features, create a 1-many column map for that
                 self.col_map_cat = OrderedDict(
                     {
                         col: [f"{col}_{cat}" for cat in categories]
@@ -171,6 +170,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
                     }
                 )
             else:
+                # other encoders will have a 1-1 column map
                 self.col_map_cat = OrderedDict({col: [col] for col in self.cols_cat})
         else:
             self.col_map_cat = {}
@@ -190,6 +190,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
 
         kwargs = {key: val for key, val in kwargs.items()}
 
+        # check how many categorical features were generated per categorical column after transforming the data
         cat_features = [len(vals) for vals in self.col_map_cat.values()]
         component_mask_num, component_mask_cat = [], []
         cat_idx = 0
@@ -198,6 +199,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
                 component_mask_num.append(True)
                 component_mask_cat.append(False)
             elif is_cat:
+                # some categorical encoders (OneHotEncoder) generate more features and we need to keep track of that
                 component_mask_num += [False] * cat_features[cat_idx]
                 component_mask_cat += [True] * cat_features[cat_idx]
                 cat_idx += 1
@@ -221,19 +223,18 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         )
 
     @staticmethod
-    def ts_transform(
-        series: TimeSeries, transformer_cont, transformer_cat, **kwargs
-    ) -> TimeSeries:
+    def ts_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
+        transformer_num, transformer_cat = args
         component_mask_num, component_mask_cat = kwargs.get("component_mask")
         col_map_cat = kwargs.get("col_map_cat")
 
-        vals_cont, vals_cat = StaticCovariatesTransformer._reshape_in(
+        vals_num, vals_cat = StaticCovariatesTransformer._reshape_in(
             series, component_mask=(component_mask_num, component_mask_cat)
         )
 
-        tr_out_cont, tr_out_cat = None, None
+        tr_out_num, tr_out_cat = None, None
         if sum(component_mask_num):
-            tr_out_cont = transformer_cont.transform(vals_cont)
+            tr_out_num = transformer_num.transform(vals_num)
         if sum(component_mask_cat):
             tr_out_cat = transformer_cat.transform(vals_cat)
 
@@ -243,7 +244,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
 
         transformed_df = StaticCovariatesTransformer._reshape_out(
             series,
-            (tr_out_cont, tr_out_cat),
+            (tr_out_num, tr_out_cat),
             component_mask=(component_mask_num, component_mask_cat),
             col_map_cat=col_map_cat,
         )
@@ -251,24 +252,23 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         return series.with_static_covariates(transformed_df)
 
     @staticmethod
-    def ts_inverse_transform(
-        series: TimeSeries, transformer_cont, transformer_cat, **kwargs
-    ) -> TimeSeries:
+    def ts_inverse_transform(series: TimeSeries, *args, **kwargs) -> TimeSeries:
+        transformer_num, transformer_cat = args
         component_mask_num, component_mask_cat = kwargs.get("component_mask")
         col_map_cat = kwargs.get("col_map_cat")
 
-        vals_cont, vals_cat = StaticCovariatesTransformer._reshape_in(
+        vals_num, vals_cat = StaticCovariatesTransformer._reshape_in(
             series, component_mask=(component_mask_num, component_mask_cat)
         )
-        tr_out_cont, tr_out_cat = None, None
+        tr_out_num, tr_out_cat = None, None
         if sum(component_mask_num):
-            tr_out_cont = transformer_cont.inverse_transform(vals_cont)
+            tr_out_num = transformer_num.inverse_transform(vals_num)
         if sum(component_mask_cat):
             tr_out_cat = transformer_cat.inverse_transform(vals_cat)
 
         transformed_df = StaticCovariatesTransformer._reshape_out(
             series,
-            (tr_out_cont, tr_out_cat),
+            (tr_out_num, tr_out_cat),
             component_mask=(component_mask_num, component_mask_cat),
             col_map_cat=col_map_cat,
         )
@@ -278,8 +278,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
     def _transform_iterator(
         self, series: Sequence[TimeSeries]
     ) -> Iterator[Tuple[TimeSeries, Any, Any]]:
-        # since '_ts_fit()' returns the scaler objects, the 'fit()' call will save transformers instances into
-        # self.scaler_num and self.scaler_cat
+        # use numerical and categorical transformers for 'ts_transform()'
         return zip(
             series,
             [self.scaler_num] * len(series),
@@ -289,7 +288,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
     def _inverse_transform_iterator(
         self, series: Sequence[TimeSeries]
     ) -> Iterator[Tuple[TimeSeries, Any, Any]]:
-        # the same self.scaler_num and self.scaler_cat will be used also for the 'ts_inverse_transform()'
+        # use numerical and categorical transformers for 'ts_inverse_transform()'
         return zip(
             series,
             [self.scaler_num] * len(series),
@@ -301,13 +300,12 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         series: TimeSeries,
         component_mask: Optional[Tuple[np.ndarray, np.ndarray]] = None,
     ) -> Tuple[np.array, np.array]:
+        # we expect component mask to be (numeric component mask, categorical component mask)
         assert component_mask is not None
         component_mask_num, component_mask_cat = component_mask
 
-        # component mask points at continuous variables
+        # returns tuple of (numeric static covariates, categorical static covariates)
         vals = series.static_covariates_values(copy=False)
-
-        # returns tuple of (continuous static covariates, categorical static covariates)
         return vals[:, component_mask_num], vals[:, component_mask_cat]
 
     @staticmethod
@@ -317,30 +315,36 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         component_mask: Optional[Tuple[np.ndarray, np.ndarray]] = None,
         col_map_cat: Optional[Dict[str, str]] = None,
     ) -> pd.DataFrame:
+        # we expect component mask to be (numeric component mask, categorical component mask)
         assert component_mask is not None
+        component_mask_num, component_mask_cat = component_mask
+
+        # `col_map_cat` contains information to which features the original categorical feature were mapped
+        # (i.e. 1-1 mapping for OrdinalEncoder, or 1-many mapping for OneHotEncoder)
         assert col_map_cat is not None
 
-        component_mask_num, component_mask_cat = component_mask
-        vals_cont, vals_cat = vals
+        vals_num, vals_cat = vals
 
+        # infer the number of categorical output features
         n_cat_cols = len(
             np.unique([name for names in col_map_cat.values() for name in names])
         )
+        # quick check if everything is in order
         if vals_cat is None:
             assert n_cat_cols == 0
         else:
             assert n_cat_cols == vals_cat.shape[1]
 
         data = {}
-        idx_cont, idx_cat = 0, 0
+        idx_num, idx_cat = 0, 0
         static_cov_columns = []
         for col, is_num, is_cat in zip(
             series.static_covariates.columns, component_mask_num, component_mask_cat
         ):
             if is_num:  # numeric scaled column
-                data[col] = vals_cont[:, idx_cont]
+                data[col] = vals_num[:, idx_num]
                 static_cov_columns.append(col)
-                idx_cont += 1
+                idx_num += 1
             elif is_cat:  # categorical transformed column
                 # covers one to one feature map (ordinal/label encoding) and one to multi feature (one hot encoding)
                 for col_name in col_map_cat[col]:
@@ -350,10 +354,11 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
                         idx_cat += 1
                     else:
                         pass
-            else:  # is_num and is_cat are False -> feature not part of transformer, use original values
+            else:  # is_num and is_cat are False -> feature is not part of transformer, use original values
                 data[col] = series.static_covariates[col]
                 static_cov_columns.append(col)
 
+        # returns a pandas DataFrame of static covariates to be added to the series
         return pd.DataFrame(
             data,
             columns=static_cov_columns,
