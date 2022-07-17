@@ -683,9 +683,12 @@ class TFTModel(MixedCovariatesTorchModel):
             prediction time).
         hidden_continuous_size : int
             Default for hidden size for processing continuous variables
-        categorical_embedding_sizes : int
-            Embedding size for categorical static covariates. Only effective if the target series contains
-            categorical (non-numeric) static covariates.
+        categorical_embedding_sizes : dict
+            A dictionary containing embedding sizes for categorical static covariates. The keys are the column names
+            of the categorical static covariates. The values are tuples of integers with
+            `(number of unique categories, embedding size)`. For example `{"some_column": (64, 8)}`.
+            Note that `TorchForecastingModels` can only handle numeric data. Consider transforming/encoding your data
+            with `darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.
         add_relative_index : bool
             Whether to add positional values to future covariates. Defaults to ``False``.
             This allows to use the TFTModel without having to pass future_covariates to :fun:`fit()` and
