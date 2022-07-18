@@ -241,10 +241,15 @@ class TimeSeries:
             )
             static_covariates.columns.name = STATIC_COV_TAG
             # convert numerical columns to same dtype as series
-            numeric_cols = static_covariates.select_dtypes(include=np.number).columns
-            static_covariates = static_covariates.astype(
-                {col: self.dtype for col in numeric_cols}
-            )
+            # we get all numerical columns, except those that have right dtype already
+            cols_to_cast = static_covariates.select_dtypes(
+                include=np.number, exclude=self.dtype
+            ).columns
+
+            changes = {col: self.dtype for col in cols_to_cast}
+            # Calling astype is costly even when there's no change...
+            if len(changes) > 0:
+                static_covariates = static_covariates.astype(changes, copy=False)
 
         # handle hierarchy
         hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
@@ -2565,6 +2570,12 @@ class TimeSeries:
             'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of rows must match the
             number of components of the TimeSeries. This adds component-specific static covariates.
 
+        Notes
+        -----
+        If there are a large number of static covariates variables (i.e., the static covariates have a very large
+        dimension), there might be a noticable performance penalty for creating ``TimeSeries`` objects, unless
+        the covariates already have the same ``dtype`` as the series data.
+
         Examples
         --------
         >>> import pandas as pd
@@ -2989,6 +3000,7 @@ class TimeSeries:
         central_quantile: Union[float, str] = 0.5,
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
+        default_formatting: bool = True,
         *args,
         **kwargs,
     ):
@@ -3013,6 +3025,8 @@ class TimeSeries:
             The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
             interval is shown if `high_quantile` is None (default 0.95).
+        default_formatting
+            Whether or not to use the darts default scheme.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3080,7 +3094,7 @@ class TimeSeries:
             kwargs["label"] = label_to_use
 
             p = central_series.plot(*args, **kwargs)
-            color_used = p[0].get_color()
+            color_used = p[0].get_color() if default_formatting else None
             kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals
