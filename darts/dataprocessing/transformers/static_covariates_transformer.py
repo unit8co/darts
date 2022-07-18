@@ -22,8 +22,8 @@ logger = get_logger(__name__)
 class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransformer):
     def __init__(
         self,
-        scaler_num=None,
-        scaler_cat=None,
+        transformer_num=None,
+        transformer_cat=None,
         cols_num: Optional[List[str]] = None,
         cols_cat: Optional[List[str]] = None,
         name="StaticCovariatesTransformer",
@@ -34,36 +34,36 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         only on static covariates of the series passed to ``fit()``, ``transform()``, ``fit_transform()``, and
         ``inverse_transform()``. It can both scale numerical features, as well as encode categorical features.
 
-        The underlying ``scaler_num`` and ``scaler_cat`` have to implement the ``fit()``, ``transform()``,
+        The underlying ``transformer_num`` and ``transformer_cat`` have to implement the ``fit()``, ``transform()``,
         and ``inverse_transform()`` methods (typically from scikit-learn).
 
-        By default, numerical and categorical columns/features are inferred and allocated to ``scaler_num`` and
-        ``scaler_cat``, respectively. Alternatively, specify which columns to scale/transform with ``cols_num``
+        By default, numerical and categorical columns/features are inferred and allocated to ``transformer_num`` and
+        ``transformer_cat``, respectively. Alternatively, specify which columns to scale/transform with ``cols_num``
         and ``cols_cat``.
 
-        Both ``scaler_num`` and ``scaler_cat`` are fit globally on static covariate data from all series passed
-        to :class:`StaticCovariatesTransformer.fit()`
+        Both ``transformer_num`` and ``transformer_cat`` are fit globally on static covariate data from all series
+        passed to :class:`StaticCovariatesTransformer.fit()`
 
         Parameters
         ----------
-        scaler_num
-            The scaler to transform numeric static covariate columns with. It must provide ``fit()``,
+        transformer_num
+            The transformer to transform numeric static covariate columns with. It must provide ``fit()``,
             ``transform()`` and ``inverse_transform()`` methods.
             Default: :class:`sklearn.preprocessing.MinMaxScaler(feature_range=(0, 1))`; this will scale all
             values between 0 and 1.
-        scaler_cat
+        transformer_cat
             The encoder to transform categorical static covariate columns with. It must provide ``fit()``,
             ``transform()`` and ``inverse_transform()`` methods.
             Default: :class:`sklearn.preprocessing.OrdinalEncoder()`; this will convert categories
             into integer valued arrays where each integer stands for a specific category.
         cols_num
-            Optionally, a list of column names for which to apply the numeric transformer ``scaler_num``.
+            Optionally, a list of column names for which to apply the numeric transformer ``transformer_num``.
             By default, the transformer will infer all numerical features based on types, and scale them with
-            `scaler_num`. If an empty list, no column will be scaled.
+            `transformer_num`. If an empty list, no column will be scaled.
         cols_cat
-            Optionally, a list of column names for which to apply the categorical transformer `scaler_cat`.
+            Optionally, a list of column names for which to apply the categorical transformer `transformer_cat`.
             By default, the transformer will infer all categorical features based on types, and transform them with
-            `scaler_cat`. If an empty list, no column will be transformed.
+            `transformer_cat`. If an empty list, no column will be transformed.
         name
             A specific name for the :class:`StaticCovariatesTransformer`.
         n_jobs
@@ -103,21 +103,25 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         comp3               0.5  1.0
         """
         super().__init__(name=name, n_jobs=n_jobs, verbose=verbose)
-        self.scaler_num = MinMaxScaler() if scaler_num is None else scaler_num
-        self.scaler_cat = OrdinalEncoder() if scaler_cat is None else scaler_cat
+        self.transformer_num = (
+            MinMaxScaler() if transformer_num is None else transformer_num
+        )
+        self.transformer_cat = (
+            OrdinalEncoder() if transformer_cat is None else transformer_cat
+        )
 
-        for scaler, scaler_name in zip(
-            [self.scaler_num, self.scaler_cat],
-            ["scaler_num", "scaler_cat"],
+        for transformer, transformer_name in zip(
+            [self.transformer_num, self.transformer_cat],
+            ["transformer_num", "transformer_cat"],
         ):
             if (
-                not callable(getattr(scaler, "fit", None))
-                or not callable(getattr(scaler, "transform", None))
-                or not callable(getattr(scaler, "inverse_transform", None))
+                not callable(getattr(transformer, "fit", None))
+                or not callable(getattr(transformer, "transform", None))
+                or not callable(getattr(transformer, "inverse_transform", None))
             ):
                 raise_log(
                     ValueError(
-                        f"The provided `{scaler_name}` object must have fit(), transform() and "
+                        f"The provided `{transformer_name}` object must have fit(), transform() and "
                         f"inverse_transform() methods"
                     ),
                     logger,
@@ -156,11 +160,11 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
 
         data = data.to_numpy(copy=False)
         if sum(self.mask_num):
-            self.scaler_num.fit(data[:, self.mask_num])
+            self.transformer_num.fit(data[:, self.mask_num])
         if sum(self.mask_cat):
-            self.scaler_cat.fit(data[:, self.mask_cat])
+            self.transformer_cat.fit(data[:, self.mask_cat])
             # check how many features the transformer generates
-            n_cat_out = self.scaler_cat.transform(
+            n_cat_out = self.transformer_cat.transform(
                 np.expand_dims(data[0, self.mask_cat], 0)
             ).shape[-1]
             if n_cat_out == sum(self.mask_cat):
@@ -172,7 +176,7 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
                     {
                         col: [f"{col}_{cat}" for cat in categories]
                         for col, categories in zip(
-                            self.cols_cat, self.scaler_cat.categories_
+                            self.cols_cat, self.transformer_cat.categories_
                         )
                     }
                 )
@@ -268,8 +272,8 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         # use numerical and categorical transformers for 'ts_transform()'
         return zip(
             series,
-            [self.scaler_num] * len(series),
-            [self.scaler_cat] * len(series),
+            [self.transformer_num] * len(series),
+            [self.transformer_cat] * len(series),
         )
 
     def _inverse_transform_iterator(
@@ -278,8 +282,8 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
         # use numerical and categorical transformers for 'ts_inverse_transform()'
         return zip(
             series,
-            [self.scaler_num] * len(series),
-            [self.scaler_cat] * len(series),
+            [self.transformer_num] * len(series),
+            [self.transformer_cat] * len(series),
         )
 
     @staticmethod

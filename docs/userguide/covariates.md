@@ -125,17 +125,22 @@ Model | Past Covariates | Future Covariates | Static Covariates
 --- | :---: | :---: | :---:
 **Local Forecasting Models (LFMs)** | | |
 `ExponentialSmoothing` |  | |
+`BATS` and `TBATS` |  | |
 `Theta` and `FourTheta` |   | |
 `FFT` |  | |
+`Croston method`|  | |
 `ARIMA` |  | ✅ |
 `VARIMA` |  | ✅ |
 `AutoARIMA` |  | ✅ |
+`StatsForecastAutoARIMA` |  | ✅ |
+`KalmanForecaster` |  | ✅ |
 `Prophet` |  | ✅ |
 **Global Forecasting Models (GFMs)** | | |
 `RegressionModel`* | ✅ | ✅ |
 `RNNModel`** |  | ✅ |
 `BlockRNNModel`*** | ✅ | |
 `NBEATSModel` | ✅ | |
+`NHiTSModel` | ✅ | |
 `TCNModel` | ✅ | |
 `TransformerModel` | ✅ | |
 `TFTModel` | ✅ | ✅ | ✅ 
