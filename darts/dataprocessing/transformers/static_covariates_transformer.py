@@ -56,11 +56,11 @@ class StaticCovariatesTransformer(InvertibleDataTransformer, FittableDataTransfo
             into integer valued arrays where each integer stands for a specific category.
         cols_num
             Optionally, a list of column names for which to apply the numeric transformer ``scaler_num``.
-            By default, the transformer will infer all numerical features and scale them with `scaler_num`.
+            By default, the transformer will infer all numerical features based on types, and scale them with `scaler_num`.
             If an empty list, no column will be scaled.
         cols_cat
             Optionally, a list of column names for which to apply the categorical transformer `scaler_cat`.
-            By default, the transformer will infer all categorical features and transform them with `scaler_cat`.
+            By default, the transformer will infer all categorical features based on types, and transform them with `scaler_cat`.
             If an empty list, no column will be transformed.
         name
             A specific name for the :class:`StaticCovariatesTransformer`.

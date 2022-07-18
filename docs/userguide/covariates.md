@@ -99,7 +99,7 @@ Let's have a look at some examples of past, future, and static covariates:
  
 
 Temporal attributes are powerful because they are known in advance and can help models capture trends and / or seasonal patterns of the `target` series.
-Static attributes are powerful when working with multiple `targets`. The time independent information can help models identify the nature/environment of the underlying series and improve forecasts across different `targets`.
+Static attributes are powerful when working with multiple `targets` (either multiple `TimeSeries`, or multivariate series containing multiple dimensions each). The time independent information can help models identify the nature/environment of the underlying series and improve forecasts across different `targets`.
 
 In this guide we'll focus on past and future covariates. Here's a simple rule-of-thumb to know if your series are **past** or **future covariates**:
 
