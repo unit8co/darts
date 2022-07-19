@@ -257,10 +257,8 @@ class TransformerModel(PastCovariatesTorchModel):
             The activation function of encoder/decoder intermediate layer, (default='relu').
             can be one of the glu variant's FeedForward Network (FFN)[2]. A feedforward network is a
             fully-connected layer with an activation. The glu variant's FeedForward Network are a series
-            of FFNs designed to work better with Transformer based models.
-                ["GLU", "Bilinear", "ReGLU", "GEGLU", "SwiGLU", "ReLU", "GELU"]
-            or one the pytorch internal activations
-                ["relu", "gelu"]
+            of FFNs designed to work better with Transformer based models. ["GLU", "Bilinear", "ReGLU", "GEGLU",
+            "SwiGLU", "ReLU", "GELU"] or one the pytorch internal activations ["relu", "gelu"]
         custom_encoder
             A custom user-provided encoder module for the transformer (default=None).
         custom_decoder
@@ -273,12 +271,12 @@ class TransformerModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
