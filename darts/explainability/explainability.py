@@ -40,11 +40,8 @@ class ForecastingModelExplainer(ABC):
 
         if model._is_probabilistic():
             # TODO: We can probably add explainability to probabilistic models, by taking the mean output.
-            raise_log(
-                ValueError(
-                    "Explainability is only available for non-probabilistic models."
-                ),
-                logger,
+            logger.warning(
+                "The model is probabilistic, but n_sample=1 will be used for explainability."
             )
 
         self.model = model
@@ -71,35 +68,24 @@ class ForecastingModelExplainer(ABC):
 
             # ensure list of TimeSeries format
             if isinstance(background_series, TimeSeries):
-                background_series = [background_series]
-                background_past_covariates = (
+                self.background_series = [background_series]
+                self.background_past_covariates = (
                     [background_past_covariates] if background_past_covariates else None
                 )
-                background_future_covariates = (
+                self.background_future_covariates = (
                     [background_future_covariates]
                     if background_future_covariates
                     else None
                 )
-            for idx in range(len(background_series)):
+
+            for idx in range(len(self.background_series)):
                 if not all(
-                    len(
-                        background_series[idx].time_index.difference(
-                            background_past_covariates[idx].time_index
-                        )
-                    )
-                    == 0,
-                    len(
-                        background_past_covariates[idx].time_index.difference(
-                            background_future_covariates[idx].time_index
-                        )
-                    )
-                    == 0,
-                    len(
-                        background_future_covariates[idx].time_index.difference(
-                            background_series[idx].time_index
-                        )
-                    )
-                    == 0,
+                    self.background_series[idx].has_same_time_as(
+                        self.background_past_covariates[idx]
+                    ),
+                    self.background_series[idx].has_same_time_as(
+                        self.background_future_covariates[idx]
+                    ),
                 ):
                     logger.warning(
                         "Some series and their covariates don't share the same time index. We will take "
@@ -107,20 +93,16 @@ class ForecastingModelExplainer(ABC):
                     )
 
                 (
-                    background_series[idx],
-                    background_past_covariates[idx],
-                    background_future_covariates[idx],
+                    self.background_series[idx],
+                    self.background_past_covariates[idx],
+                    self.background_future_covariates[idx],
                 ) = retain_period_common_to_all(
                     [
-                        background_series[idx],
-                        background_past_covariates[idx],
-                        background_future_covariates[idx],
+                        self.background_series[idx],
+                        self.background_past_covariates[idx],
+                        self.background_future_covariates[idx],
                     ]
                 )
-
-            self.background_series = background_series
-            self.background_past_covariates = background_past_covariates
-            self.background_future_covariates = background_past_covariates
 
         self.target_names = self.background_series.columns
         if self.background_past_covariates is not None:
@@ -166,7 +148,7 @@ class ForecastingModelExplainer(ABC):
         foreground_future_covariates: Optional[TimeSeries] = None,
         horizons: Optional[Sequence[int]] = None,
         target_names: Optional[Sequence[str]] = None,
-    ) -> Dict[Sequence[TimeSeries]]:
+    ) -> Dict[str, Sequence[TimeSeries]]:
         """
         Return explanations values for each target and covariates lag, in a multivariate TimeSeries format.
         Each timestamp of the foreground TimeSeries is explained in the output TimeSeries, with the following
