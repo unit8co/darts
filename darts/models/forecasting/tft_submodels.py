@@ -34,6 +34,21 @@ logger = get_logger(__name__)
 HiddenState = Union[Tuple[torch.Tensor, torch.Tensor], torch.Tensor]
 
 
+def get_embedding_size(n: int, max_size: int = 100) -> int:
+    """
+    Determine empirically good embedding sizes (formula taken from fastai).
+    Args:
+        n (int): number of classes
+        max_size (int, optional): maximum embedding size. Defaults to 100.
+    Returns:
+        int: embedding size
+    """
+    if n > 2:
+        return min(round(1.6 * n**0.56), max_size)
+    else:
+        return 1
+
+
 class _TimeDistributedEmbeddingBag(nn.EmbeddingBag):
     def __init__(self, *args, batch_first: bool = False, **kwargs):
         super().__init__(*args, **kwargs)
@@ -65,78 +80,54 @@ class _MultiEmbedding(nn.Module):
     def __init__(
         self,
         embedding_sizes: Dict[str, Tuple[int, int]],
-        categorical_groups: Dict[str, List[str]],
-        embedding_paddings: List[str],
-        x_categoricals: List[str],
-        max_embedding_size: int = None,
+        variable_names: List[str],
     ):
+        """Embedding layer for categorical variables including groups of categorical variables.
+        Enabled for static and dynamic categories (i.e. 3 dimensions for batch x time x categories).
+
+        Parameters
+        ----------
+        embedding_sizes
+            dictionary of embedding sizes, e.g. ``{'cat1': (10, 3)}``
+            indicates that the first categorical variable has 10 unique values which are mapped to 3 embedding
+            dimensions. Use :py:func:`~pytorch_forecasting.utils.get_embedding_size` to automatically obtain
+            reasonable embedding sizes depending on the number of categories.
+        variable_names
+            list of categorical variable names to ensure ordered iterations.
+        """
         super().__init__()
         self.embedding_sizes = embedding_sizes
-        self.categorical_groups = categorical_groups
-        self.embedding_paddings = embedding_paddings
-        self.max_embedding_size = max_embedding_size
-        self.x_categoricals = x_categoricals
+        self.variable_names = variable_names
 
-        self.init_embeddings()
+        self.embeddings = nn.ModuleDict(
+            {name: nn.Embedding(*embedding_sizes[name]) for name in variable_names}
+        )
 
-    def init_embeddings(self):
-        self.embeddings = nn.ModuleDict()
-        for name in self.embedding_sizes.keys():
-            embedding_size = self.embedding_sizes[name][1]
-            if self.max_embedding_size is not None:
-                embedding_size = min(embedding_size, self.max_embedding_size)
-            # convert to list to become mutable
-            self.embedding_sizes[name] = list(self.embedding_sizes[name])
-            self.embedding_sizes[name][1] = embedding_size
-            if name in self.categorical_groups:  # embedding bag if related embeddings
-                self.embeddings[name] = _TimeDistributedEmbeddingBag(
-                    self.embedding_sizes[name][0],
-                    embedding_size,
-                    mode="sum",
-                    batch_first=True,
-                )
-            else:
-                if name in self.embedding_paddings:
-                    padding_idx = 0
-                else:
-                    padding_idx = None
-                self.embeddings[name] = nn.Embedding(
-                    self.embedding_sizes[name][0],
-                    embedding_size,
-                    padding_idx=padding_idx,
-                )
+    @property
+    def input_size(self) -> int:
+        return len(self.variable_names)
 
-    def names(self):
-        return list(self.keys())
+    @property
+    def output_size(self) -> Union[Dict[str, int], int]:
+        return {name: sizes[1] for name, sizes in self.embedding_sizes.items()}
 
-    def items(self):
-        return self.embeddings.items()
+    def forward(self, x: torch.Tensor) -> Dict[str, torch.Tensor]:
+        """
+        Parameters
+        ----------
+        x
+            input tensor of shape batch x (optional) time x categoricals in the order of ``variable_names``.
 
-    def keys(self):
-        return self.embeddings.keys()
-
-    def values(self):
-        return self.embeddings.values()
-
-    def __getitem__(self, name: str):
-        return self.embeddings[name]
-
-    def forward(self, x):
-        input_vectors = {}
-        for name, emb in self.embeddings.items():
-            if name in self.categorical_groups:
-                input_vectors[name] = emb(
-                    x[
-                        ...,
-                        [
-                            self.x_categoricals.index(cat_name)
-                            for cat_name in self.categorical_groups[name]
-                        ],
-                    ]
-                )
-            else:
-                input_vectors[name] = emb(x[..., self.x_categoricals.index(name)])
-        return input_vectors
+        Returns
+        -------
+        dict
+            dictionary of category names to embeddings of shape batch x (optional) time x embedding_size if
+            ``embedding_size`` is given as dictionary.
+        """
+        return {
+            name: self.embeddings[name](x[..., i])
+            for i, name in enumerate(self.variable_names)
+        }
 
 
 class _TimeDistributedInterpolation(nn.Module):

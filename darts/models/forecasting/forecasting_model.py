@@ -104,6 +104,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # This is only used if the model has been fit on one time series.
         self.training_series: Optional[TimeSeries] = None
 
+        # Static covariates sample from the (first) target series used for training the model through the `fit()`
+        # function.
+        self.static_covariates: Optional[pd.DataFrame] = None
+
         # state; whether the model has been fit (on a single time series)
         self._fit_called = False
 
@@ -959,11 +963,13 @@ class GlobalForecastingModel(ForecastingModel, ABC):
         if isinstance(series, TimeSeries):
             # if only one series is provided, save it for prediction time (including covariates, if available)
             self.training_series = series
+            self.static_covariates = series.static_covariates
             if past_covariates is not None:
                 self.past_covariate_series = past_covariates
             if future_covariates is not None:
                 self.future_covariate_series = future_covariates
         else:
+            self.static_covariates = series[0].static_covariates
             if past_covariates is not None:
                 self._expect_past_covariates = True
             if future_covariates is not None:
