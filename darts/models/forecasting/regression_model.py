@@ -48,6 +48,7 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        add_encoders: Optional[dict] = None,
         model=None,
     ):
         """Regression Model
@@ -71,6 +72,26 @@ class RegressionModel(GlobalForecastingModel):
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         model
             Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
@@ -78,7 +99,7 @@ class RegressionModel(GlobalForecastingModel):
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         """
 
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
 
         self.model = model
         self.lags = {}
@@ -201,6 +222,32 @@ class RegressionModel(GlobalForecastingModel):
         self.output_chunk_length = output_chunk_length
 
     @property
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        lags_covariates = {
+            lag for key in ["past", "future"] for lag in self.lags.get(key, [])
+        }
+        if lags_covariates:
+            # for lags < 0 we need an input chunk for past and/or historic future covariates
+            # for minimum lag = -1 -> input_chunk_length = 1
+            input_chunk_length = abs(min(min(lags_covariates), 0))
+            # from lags >= 0 we need an output chunk for future covariates
+            # for maximum lag = 0 -> output_chunk_length = 1
+            output_chunk_length = max(max(lags_covariates), -1) + 1
+            takes_past_covariates = input_chunk_length > 0
+            takes_future_covariates = output_chunk_length > 0
+        else:
+            input_chunk_length = 0
+            output_chunk_length = 0
+            takes_past_covariates = False
+            takes_future_covariates = False
+        return (
+            input_chunk_length,
+            output_chunk_length,
+            takes_past_covariates,
+            takes_future_covariates,
+        )
+
+    @property
     def min_train_series_length(self) -> int:
         return max(
             3,
@@ -319,6 +366,14 @@ class RegressionModel(GlobalForecastingModel):
         Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
         adding validation data), keeping the sanity checks on series performed by fit().
         """
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_train(
+                target=target_series,
+                past_covariate=past_covariates,
+                future_covariate=future_covariates,
+            )
+
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts
         )
@@ -500,6 +555,14 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates = [past_covariates] if past_covariates is not None else None
             future_covariates = (
                 [future_covariates] if future_covariates is not None else None
+            )
+
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_inference(
+                n=n,
+                target=series,
+                past_covariate=past_covariates,
+                future_covariate=future_covariates,
             )
 
         # check that the input sizes of the target series and covariates match
