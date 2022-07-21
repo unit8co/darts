@@ -92,7 +92,7 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
 
         m = staVARMA(
             endog=series.pd_dataframe(copy=False),
-            exog=future_covariates.values() if future_covariates else None,
+            exog=future_covariates.values(copy=False) if future_covariates else None,
             order=(self.p, self.q),
             trend=self.trend,
         )
@@ -138,8 +138,8 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
 
             # updating statsmodels results object state
             self.model = self.model.apply(
-                series.values(),
-                exog=historic_future_covariates.values()
+                series.values(copy=False),
+                exog=historic_future_covariates.values(copy=False)
                 if historic_future_covariates
                 else None,
             )
@@ -147,14 +147,14 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
         # forecast before restoring the training state
         if num_samples == 1:
             forecast = self.model.forecast(
-                steps=n, exog=future_covariates.values() if future_covariates else None
+                steps=n, exog=future_covariates.values(copy=False) if future_covariates else None
             )
         else:
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                exog=future_covariates.values() if future_covariates else None,
+                exog=future_covariates.values(copy=False) if future_covariates else None,
             )
 
         forecast = self._invert_transformation(forecast)
@@ -162,8 +162,8 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
         # restoring statsmodels results object state and last values
         if series is not None:
             self.model = self.model.apply(
-                self._orig_training_series.values(),
-                exog=self.training_historic_future_covariates.values()
+                self._orig_training_series.values(copy=False),
+                exog=self.training_historic_future_covariates.values(copy=False)
                 if self.training_historic_future_covariates
                 else None,
             )

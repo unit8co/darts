@@ -74,7 +74,7 @@ class ARIMA(TransferableDualCovariatesForecastingModel):
         self.training_historic_future_covariates = future_covariates
 
         m = staARIMA(
-            series.values(),
+            series.values(copy=False),
             exog=future_covariates.values() if future_covariates else None,
             order=self.order,
             seasonal_order=self.seasonal_order,
@@ -107,8 +107,8 @@ class ARIMA(TransferableDualCovariatesForecastingModel):
         # updating statsmodels results object state with the new ts and covariates
         if series is not None:
             self.model = self.model.apply(
-                series.values(),
-                exog=historic_future_covariates.values()
+                series.values(copy=False),
+                exog=historic_future_covariates.values(copy=False)
                 if historic_future_covariates
                 else None,
             )
