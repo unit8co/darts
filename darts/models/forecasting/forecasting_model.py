@@ -1360,3 +1360,6 @@ class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel,
             future_covariates=future_covariates,
             num_samples=num_samples,
         )
+
+    def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        return True

@@ -20,6 +20,9 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
+from darts.models.forecasting.forecasting_model import (
+    TransferableDualCovariatesForecastingModel,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
@@ -329,3 +332,7 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             pred3 = model.predict(n=pred_len, future_covariates=exog1)
 
             self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
+
+            # check backtesting with retrain=False
+            model: TransferableDualCovariatesForecastingModel = model_cls(**kwargs)
+            model.backtest(series1, future_covariates=exog1, retrain=False)
