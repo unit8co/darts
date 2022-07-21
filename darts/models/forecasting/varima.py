@@ -147,14 +147,19 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
         # forecast before restoring the training state
         if num_samples == 1:
             forecast = self.model.forecast(
-                steps=n, exog=future_covariates.values(copy=False) if future_covariates else None
+                steps=n,
+                exog=future_covariates.values(copy=False)
+                if future_covariates
+                else None,
             )
         else:
             forecast = self.model.simulate(
                 nsimulations=n,
                 repetitions=num_samples,
                 initial_state=self.model.states.predicted[-1, :],
-                exog=future_covariates.values(copy=False) if future_covariates else None,
+                exog=future_covariates.values(copy=False)
+                if future_covariates
+                else None,
             )
 
         forecast = self._invert_transformation(forecast)

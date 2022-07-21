@@ -257,8 +257,8 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             exog1 = series1 + noise1
             exog2 = series2 + noise2
 
-            exog1_longer = exog1.concatenate(exog1, ignore_time_axes=True)
-            exog2_longer = exog2.concatenate(exog2, ignore_time_axes=True)
+            exog1_longer = exog1.concatenate(exog1, ignore_time_axis=True)
+            exog2_longer = exog2.concatenate(exog2, ignore_time_axis=True)
 
             # shortening of pred_len so that exog are enough for the training series prediction
             series1 = series1[:-pred_len]
