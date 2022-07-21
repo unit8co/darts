@@ -1170,6 +1170,12 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                 )
             )
 
+        raise_if(
+            not self._expect_covariate and future_covariates is not None,
+            "The model has been trained without `future_covariates` variable, but the "
+            "`future_covariates` parameter provided to `predict()` is not None.",
+        )
+
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
 
@@ -1194,7 +1200,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             ]
 
             raise_if_not(
-                len(future_covariates) == n and self._expect_covariate,
+                len(future_covariates) == n,
                 invalid_time_span_error,
                 logger,
             )

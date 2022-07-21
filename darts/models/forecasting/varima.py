@@ -91,7 +91,7 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
         self.training_historic_future_covariates = future_covariates
 
         m = staVARMA(
-            endog=series.pd_dataframe(copy=False),
+            endog=series.values(copy=False),
             exog=future_covariates.values(copy=False) if future_covariates else None,
             order=(self.p, self.q),
             trend=self.trend,
@@ -137,6 +137,7 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
                 )
 
             # updating statsmodels results object state
+
             self.model = self.model.apply(
                 series.values(copy=False),
                 exog=historic_future_covariates.values(copy=False)
@@ -180,7 +181,6 @@ class VARIMA(TransferableDualCovariatesForecastingModel):
     def _invert_transformation(self, series_df: pd.DataFrame):
         if self.d == 0:
             return series_df
-        print(series_df.shape)
         if self._last_num_samples > 1:
             series_df = np.tile(
                 self._last_values, (self._last_num_samples, 1)
