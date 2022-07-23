@@ -227,25 +227,39 @@ class RegressionModel(GlobalForecastingModel):
             lag for key in ["past", "future"] for lag in self.lags.get(key, [])
         }
         if lags_covariates:
-            # for lags < 0 we need an input chunk for past and/or historic future covariates
-            # for minimum lag = -1 -> input_chunk_length = 1
-            input_chunk_length = abs(min(min(lags_covariates), 0))
-            # from lags >= 0 we need an output chunk for future covariates
+            # for lags < 0 we need to take `n` steps backwards from past and/or historic future covariates
+            # for minimum lag = -1 -> steps_back_inclusive = 1
+            # inclusive means n steps back including the end of the target series
+            n_steps_back_inclusive = abs(min(min(lags_covariates), 0))
+            # for lags >= 0 we need to take `n` steps ahead from future covariates
             # for maximum lag = 0 -> output_chunk_length = 1
-            output_chunk_length = max(max(lags_covariates), -1) + 1
-            takes_past_covariates = input_chunk_length > 0
-            takes_future_covariates = output_chunk_length > 0
+            # exclusive means n steps ahead after the last step of the target series
+            n_steps_ahead_exclusive = max(max(lags_covariates), 0) + 1
+            takes_past_covariates = "past" in self.lags
+            takes_future_covariates = "future" in self.lags
         else:
-            input_chunk_length = 0
-            output_chunk_length = 0
+            n_steps_back_inclusive = 0
+            n_steps_ahead_exclusive = 0
             takes_past_covariates = False
             takes_future_covariates = False
         return (
-            input_chunk_length,
-            output_chunk_length,
+            n_steps_back_inclusive,
+            n_steps_ahead_exclusive,
             takes_past_covariates,
             takes_future_covariates,
         )
+
+    def _get_encoders_n(self, n):
+        """Returns the `n` encoder prediction steps specific to RegressionModels.
+        This will generate slightly more past covariates than the minimum requirement when using past and future
+        covariate lags simultaneously. This is because encoders were written for TorchForecastingModels where we only
+        needed `n` future covariates. For RegressionModel we need `n + max_future_lag`
+        """
+        _, n_steps_ahead, _, takes_future_covariates = self._model_encoder_settings
+        if not takes_future_covariates:
+            return n
+        else:
+            return n + (n_steps_ahead - 1)
 
     @property
     def min_train_series_length(self) -> int:
@@ -366,13 +380,6 @@ class RegressionModel(GlobalForecastingModel):
         Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
         adding validation data), keeping the sanity checks on series performed by fit().
         """
-        self.encoders = self.initialize_encoders()
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_train(
-                target=target_series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
-            )
 
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts
@@ -416,6 +423,15 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
+
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_train(
+                target=series,
+                past_covariate=past_covariates,
+                future_covariate=future_covariates,
+            )
+
         super().fit(
             series=series,
             past_covariates=past_covariates,
@@ -532,6 +548,14 @@ class RegressionModel(GlobalForecastingModel):
             logger,
         )
 
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_inference(
+                n=self._get_encoders_n(n),
+                target=series,
+                past_covariate=past_covariates,
+                future_covariate=future_covariates,
+            )
+
         super().predict(n, series, past_covariates, future_covariates, num_samples)
 
         if series is None:
@@ -555,14 +579,6 @@ class RegressionModel(GlobalForecastingModel):
             past_covariates = [past_covariates] if past_covariates is not None else None
             future_covariates = (
                 [future_covariates] if future_covariates is not None else None
-            )
-
-        if self.encoders.encoding_available:
-            past_covariates, future_covariates = self.encoders.encode_inference(
-                n=n,
-                target=series,
-                past_covariate=past_covariates,
-                future_covariate=future_covariates,
             )
 
         # check that the input sizes of the target series and covariates match
