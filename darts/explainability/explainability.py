@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence, Union
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils import retain_period_common_to_all
 from darts.utils.statistics import stationarity_tests
@@ -39,7 +39,6 @@ class ForecastingModelExplainer(ABC):
             )
 
         if model._is_probabilistic():
-            # TODO: We can probably add explainability to probabilistic models, by taking the mean output.
             logger.warning(
                 "The model is probabilistic, but n_sample=1 will be used for explainability."
             )
@@ -87,6 +86,7 @@ class ForecastingModelExplainer(ABC):
                         self.background_future_covariates[idx]
                     ),
                 ):
+
                     logger.warning(
                         "Some series and their covariates don't share the same time index. We will take "
                         "the time index common to all."
@@ -122,19 +122,6 @@ class ForecastingModelExplainer(ABC):
             "A background future covariates is not provided, but the model needs future covariates.",
         )
 
-        # For now we won't consider further time step that output_chunk_length, even though we could in
-        # theory explain anything in the future by auto regressive process.
-        if hasattr(self.model, "output_chunk_length"):
-            self.n = self.model.output_chunk_length
-        else:
-            self.n = 1
-
-        if hasattr(self.model, "input_chunk_length"):
-            self.past_steps_explained = self.model.input_chunk_length
-        else:
-            # TODO: take this as a parameter
-            self.past_steps_explained = 1
-
         if not self.test_stationarity():
             logger.warning(
                 "One time series component of the background time series is not stationary."
@@ -142,34 +129,52 @@ class ForecastingModelExplainer(ABC):
             )
 
     @abstractmethod
-    def explain_from_input(
+    def explain(
         foreground_series: TimeSeries,
         foreground_past_covariates: Optional[TimeSeries] = None,
         foreground_future_covariates: Optional[TimeSeries] = None,
         horizons: Optional[Sequence[int]] = None,
         target_names: Optional[Sequence[str]] = None,
-    ) -> Dict[str, Sequence[TimeSeries]]:
+    ) -> Dict[str, Dict[str, TimeSeries]]:
         """
-        Return explanations values for each target and covariates lag, in a multivariate TimeSeries format.
-        Each timestamp of the foreground TimeSeries is explained in the output TimeSeries, with the following
-        notation:
-        `name`_`type_of_cov`_lag_`int`
+        Return a dictionary of dictionaries:
+        - the first dimension corresponds to each component of the target time series.
+        - the second dimension corresponds to the i element of the n forecast ahead we want to explain.
+
+        The value of the second dimension dictionary is a (multivariate) TimeSeries object giving the 'explanation'
+        for a given forecast (target, i future forecast) at any timestamp forecastable given the foreground TimeSeries time dimension.
+
+        The name convention for each component of this multivariate TimeSeries is:
+        `name`_`type_of_cov`_lag_`int` where:
+        - `name` is the existing name of the component in the original foreground TimeSeries (target or past or future).
+        - `type_of_cov` is the type of covariates. It can take 3 different values: `target`, `past`, `future`.
+        - `int` is the lag index.
 
         Example:
-        Let's say we have a model with 2 targets (multivariates) names T_1 and T_2, one past covariate and one
-        future covariate. Also, n = 2 and past_step_explained = 2.
+        Let's say we have a model with 2 targets (multivariates) named T_1 and T_2, three past covariates we didn't name and one
+        future covariate we didn't name. Also, n = 2 and past_step_explained = 3.
 
-        Then the function is supposed to return a dictionary time series, with for example
+        We provide a foreground_series, past covariates, future covariates, of length 5.
 
-        output[0]['T_1'] (but also output[1]['T_1'], output[0]['T_2'] and output[1]['T_2']a TimeSeries
-        with the following components:
+        Then the output will be the following:
+
+        output['T_1'][0] a multivariate TimeSeries containing the 'explanations' of the chosen Explainer, with component names:
             - T_1_target_lag-1
             - T_1_target_lag-2
+            - T_1_target_lag-3
             - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
             - 0_past_cov_lag-2
-            - 0_fut_cov_lag_0 (could be also lag_1 if output[1])
+            - 0_past_cov_lag-3
+            - 1_past_cov_lag-1
+            - 1_past_cov_lag-2
+            - 1_past_cov_lag-3
+            - 2_past_cov_lag-1
+            - 2_past_cov_lag-2
+            - 2_past_cov_lag-3
+            - 0_fut_cov_lag_0
 
-        # TODO: improve description of returned structure
+        of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
+
 
 
         Parameters
