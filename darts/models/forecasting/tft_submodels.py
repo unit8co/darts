@@ -205,7 +205,11 @@ class _GatedLinearUnit(nn.Module):
 
 class _ResampleNorm(nn.Module):
     def __init__(
-        self, input_size: int, output_size: int = None, trainable_add: bool = True
+        self,
+        input_size: int,
+        output_size: int = None,
+        trainable_add: bool = True,
+        norm=nn.LayerNorm,
     ):
         super().__init__()
 
@@ -221,7 +225,7 @@ class _ResampleNorm(nn.Module):
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.output_size, dtype=torch.float))
             self.gate = nn.Sigmoid()
-        self.norm = nn.LayerNorm(self.output_size)
+        self.norm = norm(self.output_size)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         if self.input_size != self.output_size:
@@ -236,7 +240,11 @@ class _ResampleNorm(nn.Module):
 
 class _AddNorm(nn.Module):
     def __init__(
-        self, input_size: int, skip_size: int = None, trainable_add: bool = True
+        self,
+        input_size: int,
+        skip_size: int = None,
+        trainable_add: bool = True,
+        norm=nn.LayerNorm,
     ):
         super().__init__()
 
@@ -252,7 +260,7 @@ class _AddNorm(nn.Module):
         if self.trainable_add:
             self.mask = nn.Parameter(torch.zeros(self.input_size, dtype=torch.float))
             self.gate = nn.Sigmoid()
-        self.norm = nn.LayerNorm(self.input_size)
+        self.norm = norm(self.input_size)
 
     def forward(self, x: torch.Tensor, skip: torch.Tensor):
         if self.input_size != self.skip_size:
@@ -273,6 +281,7 @@ class _GateAddNorm(nn.Module):
         skip_size: int = None,
         trainable_add: bool = False,
         dropout: float = None,
+        layerNorm: nn.Module = nn.LayerNorm,
     ):
         super().__init__()
 
@@ -285,7 +294,10 @@ class _GateAddNorm(nn.Module):
             self.input_size, hidden_size=self.hidden_size, dropout=self.dropout
         )
         self.add_norm = _AddNorm(
-            self.hidden_size, skip_size=self.skip_size, trainable_add=trainable_add
+            self.hidden_size,
+            skip_size=self.skip_size,
+            trainable_add=trainable_add,
+            norm=layerNorm,
         )
 
     def forward(self, x, skip):
@@ -303,6 +315,7 @@ class _GatedResidualNetwork(nn.Module):
         dropout: float = 0.1,
         context_size: int = None,
         residual: bool = False,
+        layerNorm: nn.Module = nn.LayerNorm,
     ):
         super().__init__()
         self.input_size = input_size
@@ -318,7 +331,9 @@ class _GatedResidualNetwork(nn.Module):
             residual_size = self.output_size
 
         if self.output_size != residual_size:
-            self.resample_norm = _ResampleNorm(residual_size, self.output_size)
+            self.resample_norm = _ResampleNorm(
+                residual_size, self.output_size, norm=layerNorm
+            )
 
         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
         self.elu = nn.ELU()
@@ -375,6 +390,7 @@ class _VariableSelectionNetwork(nn.Module):
         context_size: int = None,
         single_variable_grns: Optional[Dict[str, _GatedResidualNetwork]] = None,
         prescalers: Optional[Dict[str, nn.Linear]] = None,
+        layerNorm: nn.Module = nn.LayerNorm,
     ):
         """
         Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
@@ -421,7 +437,9 @@ class _VariableSelectionNetwork(nn.Module):
                 self.single_variable_grns[name] = single_variable_grns[name]
             elif self.input_embedding_flags.get(name, False):
                 self.single_variable_grns[name] = _ResampleNorm(
-                    input_size, self.hidden_size
+                    input_size,
+                    self.hidden_size,
+                    norm=layerNorm,
                 )
             else:
                 self.single_variable_grns[name] = _GatedResidualNetwork(

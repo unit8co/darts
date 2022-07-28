@@ -12,8 +12,8 @@ from torch import nn
 from torch.nn import LSTM as _LSTM
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not
-from darts.models.components import glu_variants
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.models.components import LayerNormVariants, glu_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.tft_submodels import (
@@ -55,6 +55,7 @@ class _TFTModule(PLMixedCovariatesModule):
         categorical_embedding_sizes: Dict[str, Tuple[int, int]],
         dropout: float,
         add_relative_index: bool,
+        norm_type: str,
         **kwargs,
     ):
 
@@ -102,6 +103,8 @@ class _TFTModule(PLMixedCovariatesModule):
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
+        norm_type: str
+            The type of LayerNorm vairant to use.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
         """
@@ -120,6 +123,16 @@ class _TFTModule(PLMixedCovariatesModule):
         self.feed_forward = feed_forward
         self.dropout = dropout
         self.add_relative_index = add_relative_index
+
+        if norm_type == "layerNorm":
+            self.layerNorm = nn.LayerNorm
+        else:
+            try:
+                self.layerNorm = getattr(LayerNormVariants, norm_type)
+            except AttributeError:
+                raise_log(
+                    AttributeError("please provide a valid layer norm type"),
+                )
 
         # initialize last batch size to check if new mask needs to be generated
         self.batch_size_last = -1
@@ -173,6 +186,7 @@ class _TFTModule(PLMixedCovariatesModule):
             prescalers=self.prescalers_linear,
             single_variable_grns={},
             context_size=None,  # no context for static variables
+            layerNorm=self.layerNorm,
         )
 
         # variable selection for encoder and decoder
@@ -192,6 +206,7 @@ class _TFTModule(PLMixedCovariatesModule):
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
+            layerNorm=self.layerNorm,
         )
 
         self.decoder_vsn = _VariableSelectionNetwork(
@@ -202,6 +217,7 @@ class _TFTModule(PLMixedCovariatesModule):
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
+            layerNorm=self.layerNorm,
         )
 
         # static encoders
@@ -211,6 +227,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layerNorm=self.layerNorm,
         )
 
         # for hidden state of the lstm
@@ -219,6 +236,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layerNorm=self.layerNorm,
         )
 
         # for cell state of the lstm
@@ -227,6 +245,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layerNorm=self.layerNorm,
         )
 
         # for post lstm static enrichment
@@ -235,6 +254,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
+            layerNorm=self.layerNorm,
         )
 
         # lstm encoder (history) and decoder (future) for local processing
@@ -255,7 +275,9 @@ class _TFTModule(PLMixedCovariatesModule):
         )
 
         # post lstm GateAddNorm
-        self.post_lstm_gan = _GateAddNorm(input_size=self.hidden_size, dropout=dropout)
+        self.post_lstm_gan = _GateAddNorm(
+            input_size=self.hidden_size, dropout=dropout, layerNorm=self.layerNorm
+        )
 
         # static enrichment and processing past LSTM
         self.static_enrichment_grn = _GatedResidualNetwork(
@@ -264,6 +286,7 @@ class _TFTModule(PLMixedCovariatesModule):
             output_size=self.hidden_size,
             dropout=self.dropout,
             context_size=self.hidden_size,
+            layerNorm=self.layerNorm,
         )
 
         # attention for long-range processing
@@ -272,7 +295,9 @@ class _TFTModule(PLMixedCovariatesModule):
             n_head=self.num_attention_heads,
             dropout=self.dropout,
         )
-        self.post_attn_gan = _GateAddNorm(self.hidden_size, dropout=self.dropout)
+        self.post_attn_gan = _GateAddNorm(
+            self.hidden_size, dropout=self.dropout, layerNorm=self.layerNorm
+        )
 
         if self.feed_forward == "GatedResidualNetwork":
             self.feed_forward_block = _GatedResidualNetwork(
@@ -280,6 +305,7 @@ class _TFTModule(PLMixedCovariatesModule):
                 self.hidden_size,
                 self.hidden_size,
                 dropout=self.dropout,
+                layerNorm=self.layerNorm,
             )
         else:
             raise_if_not(
@@ -293,7 +319,9 @@ class _TFTModule(PLMixedCovariatesModule):
             )
 
         # output processing -> no dropout at this late stage
-        self.pre_output_gan = _GateAddNorm(self.hidden_size, dropout=None)
+        self.pre_output_gan = _GateAddNorm(
+            self.hidden_size, dropout=None, layerNorm=self.layerNorm
+        )
 
         self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
 
@@ -637,6 +665,7 @@ class TFTModel(MixedCovariatesTorchModel):
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
+        norm_type: str = "normLayer",
         **kwargs,
     ):
         """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
@@ -706,6 +735,9 @@ class TFTModel(MixedCovariatesTorchModel):
         likelihood
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
+        norm_type: str
+            The type of LayerNorm vairant to use.  Default: ``LayerNorm``. Options available are
+            ["LayerNorm", "ScaleNorm", "RMSNorm"]
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
@@ -862,6 +894,7 @@ class TFTModel(MixedCovariatesTorchModel):
         )
         self.add_relative_index = add_relative_index
         self.output_dim: Optional[Tuple[int, int]] = None
+        self.norm_type = norm_type
 
     def _create_model(self, train_sample: MixedCovariatesTrainTensorType) -> nn.Module:
         """
@@ -1049,6 +1082,7 @@ class TFTModel(MixedCovariatesTorchModel):
             hidden_continuous_size=self.hidden_continuous_size,
             categorical_embedding_sizes=self.categorical_embedding_sizes,
             add_relative_index=self.add_relative_index,
+            norm_type=self.norm_type,
             **self.pl_module_params,
         )
 
