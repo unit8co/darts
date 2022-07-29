@@ -124,7 +124,7 @@ class _TFTModule(PLMixedCovariatesModule):
         self.dropout = dropout
         self.add_relative_index = add_relative_index
 
-        if norm_type == "layerNorm":
+        if norm_type == "LayerNorm":
             self.layerNorm = nn.LayerNorm
         else:
             try:
@@ -665,7 +665,7 @@ class TFTModel(MixedCovariatesTorchModel):
         add_relative_index: bool = False,
         loss_fn: Optional[nn.Module] = None,
         likelihood: Optional[Likelihood] = None,
-        norm_type: str = "normLayer",
+        norm_type: str = "LayerNorm",
         **kwargs,
     ):
         """Temporal Fusion Transformers (TFT) for Interpretable Time Series Forecasting.
