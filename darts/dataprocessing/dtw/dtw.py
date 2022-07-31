@@ -7,7 +7,7 @@ import xarray as xr
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not
-from darts.timeseries import DIMS, HIERARCHY_TAG, STATIC_COV_TAG
+from darts.timeseries import DIMS
 
 from .cost_matrix import CostMatrix
 from .window import CRWindow, NoWindow, Window
@@ -220,10 +220,7 @@ class DTWAlignment:
                 self.series1._time_dim: pd.RangeIndex(values1.shape[0]),
                 DIMS[1]: xa1.coords[DIMS[1]],
             },
-            attrs={
-                STATIC_COV_TAG: xa1.attrs[STATIC_COV_TAG],
-                HIERARCHY_TAG: xa1.attrs[HIERARCHY_TAG],
-            },
+            attrs=xa1.attrs,
         )
 
         warped_series2 = xr.DataArray(
@@ -233,10 +230,7 @@ class DTWAlignment:
                 self.series2._time_dim: pd.RangeIndex(values2.shape[0]),
                 DIMS[1]: xa2.coords[DIMS[1]],
             },
-            attrs={
-                STATIC_COV_TAG: xa2.attrs[STATIC_COV_TAG],
-                HIERARCHY_TAG: xa2.attrs[HIERARCHY_TAG],
-            },
+            attrs=xa2.attrs,
         )
 
         time_dim1, time_dim2 = self.series1._time_dim, self.series2._time_dim
