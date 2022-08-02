@@ -15,6 +15,7 @@ import copy
 import datetime
 import inspect
 import os
+import pickle
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
@@ -22,7 +23,6 @@ from itertools import product
 from random import sample
 from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
-import joblib
 import numpy as np
 import pandas as pd
 
@@ -899,7 +899,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
 
-    def save_model(
+    def save(
         self, path: Optional[Union[str, BinaryIO]] = None, **joblib_kwargs
     ) -> None:
         """Saves the model under a given path or file handle.
@@ -919,19 +919,19 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if isinstance(path, str):
             raise_if_not(
                 os.path.isdir(os.path.dirname(path)),
-                f"The dictionary {os.path.dirname(path)} doesn't exist",
+                f"The directory {os.path.dirname(path)} doesn't exist",
                 logger,
             )
 
             # save the whole object using joblib
             with open(path, "wb") as handle:
-                joblib.dump(value=self, filename=handle, **joblib_kwargs)
+                pickle.dump(value=self, filename=handle, **joblib_kwargs)
         else:
             # save the whole object using joblib
-            joblib.dump(value=self, filename=path, **joblib_kwargs)
+            pickle.dump(value=self, filename=path, **joblib_kwargs)
 
     @staticmethod
-    def load_model(path: Union[str, BinaryIO]) -> "ForecastingModel":
+    def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
         """Loads the model from a given path or file handle.
 
         Parameters
@@ -943,16 +943,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         if isinstance(path, str):
             raise_if_not(
                 os.path.exists(path),
-                f"The path {path} doesn't exist",
+                f"The file {path} doesn't exist",
                 logger,
             )
 
             # Load the object using joblib
             with open(path, "rb") as handle:
-                model = joblib.load(filename=handle)
+                model = pickle.load(filename=handle)
         else:
 
-            model = joblib.load(filename=path)
+            model = pickle.load(filename=path)
 
         return model
 

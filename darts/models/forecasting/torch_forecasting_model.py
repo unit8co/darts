@@ -1267,7 +1267,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
                 aggregated.append([sample[i] for sample in batch])
         return tuple(aggregated)
 
-    def save_model(self, path: Optional[str] = None) -> None:
+    def save(self, path: Optional[str] = None) -> None:
         """Saves the model under a given path.
 
         Parameters
@@ -1288,12 +1288,12 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
         if self.trainer is not None:
-            base_path = path.split(".")[0]
+            base_path = path.rsplit(".", 1)[0]
             path_ptl_ckpt = base_path + ".ckpt"
             self.trainer.save_checkpoint(path_ptl_ckpt)
 
     @staticmethod
-    def load_model(path: str) -> "TorchForecastingModel":
+    def load(path: str) -> "TorchForecastingModel":
         """loads a model from a given file path. The file name should end with '.pth.tar'
 
         Example for loading a :class:`RNNModel`:
@@ -1316,8 +1316,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(fin)
 
         # If a PTL checkpoint was saved, we also need to load it:
-        base_path = path[:-8]
-        path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
+        base_path = path.rsplit(".", 1)[0]
+        path_ptl_ckpt = base_path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
             model.trainer = model.model.trainer
