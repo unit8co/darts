@@ -8,7 +8,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence, Union
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_if_not, raise_log
+from darts.logging import get_logger, raise_if, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
 from darts.utils import retain_period_common_to_all
 from darts.utils.statistics import stationarity_tests
@@ -130,11 +130,9 @@ class ForecastingModelExplainer(ABC):
 
     @abstractmethod
     def explain(
-        foreground_series: TimeSeries,
+        foreground_series: Optional[TimeSeries] = None,
         foreground_past_covariates: Optional[TimeSeries] = None,
         foreground_future_covariates: Optional[TimeSeries] = None,
-        horizons: Optional[Sequence[int]] = None,
-        target_names: Optional[Sequence[str]] = None,
     ) -> Dict[str, Dict[str, TimeSeries]]:
         """
         Return a dictionary of dictionaries:
@@ -176,30 +174,21 @@ class ForecastingModelExplainer(ABC):
         of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
 
 
-
         Parameters
         ----------
         foreground_series
-            TimeSeries target we want to explain. Can be multivariate.
+            Optionally, target timeseries we want to explain. Can be multivariate.
+            If none is provided, explain will automatically provide the whole background TimeSeries explanation.
         foreground_past_covariates
             Optionally, past covariate timeseries if needed by model.
         foreground_future_covariates
             Optionally, future covariate timeseries if needed by model.
-        horizons
-            Optionally, a list of integer values representing which elements in the future
-            we want to explain, starting from the first timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than
-            output_chunk_length.
-            If no input, then all elements of output_chunk_length will be explained.
-        target_names
-            Optionally, a list of strings naming the components of `foreground_series` we want to explain.
-            If no input, then all targets will be explained.
 
         Returns
         -------
-        a TimeSeries or dictionary of Timeseries of explaining values :
-            - each element of the first dictionary is corresponding to an horizon
-            - each element of the second layer dictionary is corresponding to a target
+        a dictionary of dictionary of Timeseries of explaining values :
+            - each element of the first dimension dictionary is corresponding to a target
+            - each element of the second dimension dictionary is corresponding to a forecast horizon
         """
         pass
 
