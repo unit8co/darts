@@ -1,11 +1,15 @@
 """
-Explainability Base Class
+Forecasting Model Explainer Base Class
 ------------------------------
+A forecasting model explainer captures an already fitted forecasting model, and apply an Explainability model
+to this forecasting model. Its purpose is to be able to explain each past input contribution to a given model forecast.
+This 'explanation' depends on the characteristics of the XAI model chosen (shap, lime etc...).
 
-TODO
 """
 from abc import ABC, abstractmethod
 from typing import Dict, Optional, Sequence, Union
+
+from numpy import integer
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_log
@@ -29,7 +33,30 @@ class ForecastingModelExplainer(ABC):
             Union[TimeSeries, Sequence[TimeSeries]]
         ] = None,
     ):
+        """The base class for forecasting model explainers. It defines the *minimal* behavior that all
+        forecasting model explainers support.
 
+        Nomenclature:
+        - A background time series is a time series with which we train the Explainer model.
+        - A foreground time series is the time series we will explain according to the fitted Explainer model.
+
+        Parameters
+        ----------
+        model
+            A ForecastingModel we want to explain. It has to be fitted first.
+        background_series
+            A TimeSeries or a list of time series we want to use to compare with any foreground we want to explain.
+            This is optional, for 2 reasons:
+                - In general we want to keep the training_series of the model and this is the default one,
+                but in case of multiple time series training (global or meta learning) the ForecastingModel doesn't
+                save them. In this case we need to feed a background time series.
+                - We might want to consider a reduced well chosen background in order to reduce computation
+                time.
+        background_past_covariates
+            A past covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+        background_future_covariates
+            A future covariates TimeSeries or list of TimeSeries that the model needs once fitted.
+        """
         if not model._fit_called:
             raise_log(
                 ValueError(
@@ -45,6 +72,8 @@ class ForecastingModelExplainer(ABC):
 
         self.model = model
 
+        # In case we don't want to fit the Explainer with a specific background time series, we use the one
+        # already existing in the fitted model input.
         if background_series is None:
 
             raise_if(
@@ -87,7 +116,7 @@ class ForecastingModelExplainer(ABC):
                     ),
                 ):
 
-                    logger.warning(
+                    logger.warniplainabilityng(
                         "Some series and their covariates don't share the same time index. We will take "
                         "the time index common to all."
                     )
@@ -133,14 +162,15 @@ class ForecastingModelExplainer(ABC):
         foreground_series: Optional[TimeSeries] = None,
         foreground_past_covariates: Optional[TimeSeries] = None,
         foreground_future_covariates: Optional[TimeSeries] = None,
-    ) -> Dict[str, Dict[str, TimeSeries]]:
+    ) -> Dict[str, Dict[integer, TimeSeries]]:
         """
         Return a dictionary of dictionaries:
         - the first dimension corresponds to each component of the target time series.
         - the second dimension corresponds to the i element of the n forecast ahead we want to explain.
 
         The value of the second dimension dictionary is a (multivariate) TimeSeries object giving the 'explanation'
-        for a given forecast (target, i future forecast) at any timestamp forecastable given the foreground TimeSeries time dimension.
+        for a given forecast (target, i future forecast) at any timestamp forecastable given the foreground TimeSeries
+        time dimension.
 
         The name convention for each component of this multivariate TimeSeries is:
         `name`_`type_of_cov`_lag_`int` where:
@@ -149,14 +179,15 @@ class ForecastingModelExplainer(ABC):
         - `int` is the lag index.
 
         Example:
-        Let's say we have a model with 2 targets (multivariates) named T_1 and T_2, three past covariates we didn't name and one
-        future covariate we didn't name. Also, n = 2 and past_step_explained = 3.
+        Let's say we have a model with 2 targets (multivariates) named T_1 and T_2, three past covariates we didn't
+        name and one future covariate we didn't name. Also, n = 2 and past_step_explained = 3.
 
         We provide a foreground_series, past covariates, future covariates, of length 5.
 
         Then the output will be the following:
 
-        output['T_1'][0] a multivariate TimeSeries containing the 'explanations' of the chosen Explainer, with component names:
+        output['T_1'][0] a multivariate TimeSeries containing the 'explanations' of the chosen Explainer, with
+        component names:
             - T_1_target_lag-1
             - T_1_target_lag-2
             - T_1_target_lag-3

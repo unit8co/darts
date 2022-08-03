@@ -17,16 +17,13 @@ TODO
 
 """
 
-from cmath import exp
 from enum import Enum
-from hashlib import new
-from os import sched_get_priority_max
-from typing import Optional, Sequence, Union, Dict, NewType
+from typing import Dict, NewType, Optional, Sequence, Union
 
 import matplotlib.pyplot as plt
-from numpy import integer
 import pandas as pd
 import shap
+from numpy import integer
 from sklearn.multioutput import MultiOutputRegressor
 
 from darts import TimeSeries
@@ -92,7 +89,8 @@ class ShapExplainer(ForecastingModelExplainer):
         model
             A ForecastingModel we want to explain. It has to be fitted first. Only RegressionModel type for now.
         background_series
-            Optionally, a TimeSeries or a list of time series we want to use to compare with any foreground we want to explain.
+            Optionally, a TimeSeries or a list of time series we want to use to compare with any foreground we want
+            to explain.
             This is optional, for 2 reasons:
                 - In general we want to keep the training_series of the model and this is the default one,
                 but in case of multiple time series training (global or meta learning) the ForecastingModel doesn't
@@ -104,7 +102,8 @@ class ShapExplainer(ForecastingModelExplainer):
         background_future_covariates
             Optionally, a future covariates TimeSeries or list of TimeSeries that the model needs once fitted.
         shap_method
-            Optionally, a shap method we want to apply. By default, the method is chosen automatically with an internal mapping.
+            Optionally, a shap method we want to apply. By default, the method is chosen automatically with an
+            internal mapping.
             Supported values : “permutation”, “partition”, “tree”, “kernel”, “sampling”, “linear”, “deep”, “gradient”
         **kwargs
             Optionally, an additional keyword arguments passed to the shap_method chosen, if any.
@@ -134,7 +133,8 @@ class ShapExplainer(ForecastingModelExplainer):
             else:
                 raise_log(
                     ValueError(
-                        "Invalid shap method. Please choose one value among the following: [partition, tree, kernel, sampling, linear, deep, gradient]."
+                        "Invalid shap method. Please choose one value among the following: [partition, tree, "
+                        "kernel, sampling, linear, deep, gradient]."
                     )
                 )
         else:
