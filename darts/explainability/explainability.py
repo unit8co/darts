@@ -159,17 +159,27 @@ class ForecastingModelExplainer(ABC):
 
     @abstractmethod
     def explain(
-        foreground_series: Optional[TimeSeries] = None,
-        foreground_past_covariates: Optional[TimeSeries] = None,
-        foreground_future_covariates: Optional[TimeSeries] = None,
-    ) -> Dict[str, Dict[integer, TimeSeries]]:
+        self,
+        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        foreground_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+    ) -> Union[
+        Dict[integer, Dict[str, TimeSeries]],
+        Sequence[Dict[integer, Dict[str, TimeSeries]]],
+    ]:
         """
-        Return a dictionary of dictionaries:
-        - the first dimension corresponds to each component of the target time series.
-        - the second dimension corresponds to the i element of the n forecast ahead we want to explain.
+        Main method of the ForecastingExplainer object.
+        Return a dictionary of dictionaries (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
+        - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
+        - the second dimension corresponds to each component of the target time series.
+
 
         The value of the second dimension dictionary is a (multivariate) TimeSeries object giving the 'explanation'
-        for a given forecast (target, i future forecast) at any timestamp forecastable given the foreground TimeSeries
+        for a given forecast (horizon, target) at any timestamp forecastable given the foreground TimeSeries
         time dimension.
 
         The name convention for each component of this multivariate TimeSeries is:
@@ -179,28 +189,29 @@ class ForecastingModelExplainer(ABC):
         - `int` is the lag index.
 
         Example:
-        Let's say we have a model with 2 targets (multivariates) named T_1 and T_2, three past covariates we didn't
-        name and one future covariate we didn't name. Also, n = 2 and past_step_explained = 3.
+        Let's say we have a model with 2 targets (multivariates) named "T_1" and "T_2", three past covariates we didn't
+        name and one future covariate we didn't name. Also, n = 2.
+        The model is a regression model, with lags = 3, lags_past_covariates=[-1, -3], lags_future_covariates = [0]
 
-        We provide a foreground_series, past covariates, future covariates, of length 5.
+        We provide a foreground_series (not a list), past covariates, future covariates, of length 5.
 
         Then the output will be the following:
 
-        output['T_1'][0] a multivariate TimeSeries containing the 'explanations' of the chosen Explainer, with
+        output[0]['T_1'] a multivariate TimeSeries containing the 'explanations' of the chosen Explainer, with
         component names:
+            - T_0_target_lag-1
+            - T_0_target_lag-2
+            - T_0_target_lag-3
             - T_1_target_lag-1
             - T_1_target_lag-2
             - T_1_target_lag-3
             - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
-            - 0_past_cov_lag-2
-            - 0_past_cov_lag-3
-            - 1_past_cov_lag-1
-            - 1_past_cov_lag-2
-            - 1_past_cov_lag-3
-            - 2_past_cov_lag-1
-            - 2_past_cov_lag-2
-            - 2_past_cov_lag-3
-            - 0_fut_cov_lag_0
+            - 0_past_cov_lag-3 (we didn't name the past covariate so it took the default name)
+            - 1_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
+            - 1_past_cov_lag-3 (we didn't name the past covariate so it took the default name)
+            - 2_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
+            - 2_past_cov_lag-3 (we didn't name the past covariate so it took the default name)
+            - 0_fut_cov_lag_0  (we didn't name the future covariate so it took the default name)
 
         of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
 
@@ -217,10 +228,11 @@ class ForecastingModelExplainer(ABC):
 
         Returns
         -------
-        a dictionary of dictionary of Timeseries of explaining values :
-            - each element of the first dimension dictionary is corresponding to a target
-            - each element of the second dimension dictionary is corresponding to a forecast horizon
+        a dictionary of dictionary of Timeseries (or a list of such) of explaining values :
+            - each element of the first dimension dictionary is corresponding to a forecast horizon
+            - each element of the second dimension dictionary is corresponding to a target
         """
+
         pass
 
     def test_stationarity(self):

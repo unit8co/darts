@@ -34,7 +34,6 @@ from darts.models.forecasting.forecasting_model import (
     GlobalForecastingModel,
 )
 from darts.models.forecasting.regression_model import RegressionModel
-from darts.utils import retain_period_common_to_all
 
 logger = get_logger(__name__)
 
@@ -61,6 +60,7 @@ default_sklearn_shap_explainers = {
     "LGBMRegressor": _ShapMethod.TREE,
     "RandomForestRegressor": _ShapMethod.TREE,
     "LinearRegression": _ShapMethod.LINEAR,
+    "RidgeCV": _ShapMethod.PERMUTATION,
 }
 
 
@@ -128,8 +128,9 @@ class ShapExplainer(ForecastingModelExplainer):
         self.n = self.model.output_chunk_length
 
         if shap_method is not None:
-            if shap_method.upper() in _ShapMethod.__members__:
-                self.shap_method = _ShapMethod[shap_method.upper()]
+            shap_method = shap_method.upper()
+            if shap_method in _ShapMethod.__members__:
+                self.shap_method = _ShapMethod[shap_method]
             else:
                 raise_log(
                     ValueError(
@@ -143,91 +144,61 @@ class ShapExplainer(ForecastingModelExplainer):
         self.explainers = _RegressionShapExplainers(
             self.model,
             self.background_series,
+            self.n,
             self.background_past_covariates,
             self.background_future_covariates,
-            n=self.n,
             shap_method=self.shap_method,
             **kwargs,
         )
 
     def explain(
         self,
-        foreground_series: Optional[TimeSeries],
-        foreground_past_covariates: Optional[TimeSeries],
-        foreground_future_covariates: Optional[TimeSeries],
-    ) -> Dict[str, Dict[integer, TimeSeries]]:
+        foreground_series: Optional[Union[TimeSeries, Sequence[TimeSeries]]] = None,
+        foreground_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        foreground_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+    ) -> Union[
+        Dict[integer, Dict[str, TimeSeries]],
+        Sequence[Dict[integer, Dict[str, TimeSeries]]],
+    ]:
+        super().explain(
+            foreground_series, foreground_past_covariates, foreground_future_covariates
+        )
 
-        shap_values_dict = self.shap_values(
+        if foreground_series is None:
+            foreground_series = self.background_series
+            foreground_past_covariates = self.background_past_covariates
+            foreground_future_covariates = self.background_future_covariates
+
+        if isinstance(foreground_series, TimeSeries):
+            foreground_series = [foreground_series]
+            foreground_past_covariates = (
+                [foreground_past_covariates] if foreground_past_covariates else None
+            )
+            foreground_future_covariates = (
+                [foreground_future_covariates] if foreground_future_covariates else None
+            )
+
+        shap_ = self.explainers.shap_explanations(
             foreground_series,
             foreground_past_covariates,
             foreground_future_covariates,
-            self.n,
-            self.target_names,
         )
 
-        for t in self.target_names:
-            for h in range(self.n):
-                shap_values_dict[t][h] = TimeSeries.from_times_and_values(
-                    shap_values_dict[t][h].time_index,
-                    shap_values_dict[t][h].values,
-                    columns=shap_values_dict[t][h].feature_names,
-                )
-
-        return shap_values_dict
-
-    def shap_values(
-        self,
-        foreground_series: TimeSeries,
-        foreground_past_covariates: Optional[TimeSeries],
-        foreground_future_covariates: Optional[TimeSeries],
-        horizons: Optional[Sequence[int]] = None,
-        target_names: Optional[Sequence[str]] = None,
-    ) -> Sequence[Sequence[shap._explanation.Explanation]]:
-        """
-        Return shap values Explanation objects for a given foreground TimeSeries.
-
-        Parameters
-        ----------
-        foreground_series
-            TimeSeries target we want to explain. Can be multivariate.
-        foreground_past_covariates
-            Optionally, past covariate timeseries if needed by model.
-        foreground_future_covariates
-            Optionally, future covariate timeseries if needed by model.
-        horizons
-            Optionally, a list of integer values representing which elements in the future
-            we want to explain, starting from the first timestamp prediction at 0.
-            For now we consider only models with output_chunk_length and it can't be bigger than
-            output_chunk_length.
-            If no input, then all elements of output_chunk_length will be explained.
-        target_names
-            Optionally, a list of string values naming the targets we want to explain.
-            If no input, then all targets will be explained.
-
-        Returns
-        -------
-        a shap Explanation dictionary of dictionaries of shap Explanation objects:
-            - each element of the first dictionary is corresponding to a target
-            - each element of the second layer dictionary is corresponding to an horizon
-        """
-
         shap_values_dict = {}
-        if target_names is None:
-            target_names = self.target_names
-        if horizons is None:
-            horizons = range(self.n)
+        for h in range(self.n):
+            tmp = {}
+            for idx, t in enumerate(self.target_names):
 
-            for t in target_names:
-                dict_t = {}
-                for h in horizons:
-                    dict_t[h] = self.explainers.shap_values(
-                        foreground_series,
-                        foreground_past_covariates,
-                        foreground_future_covariates,
-                        h,
-                        t,
-                    )
-            shap_values_dict[t] = dict_t
+                tmp[t] = TimeSeries.from_times_and_values(
+                    shap_[h][idx].time_index,
+                    shap_[h][idx].values,
+                    columns=shap_[h][idx].feature_names,
+                )
+            shap_values_dict[h] = tmp
 
         return shap_values_dict
 
@@ -242,8 +213,7 @@ class ShapExplainer(ForecastingModelExplainer):
         Display a shap plot summary per target and per horizon.
         We here reuse the background data as foreground (potentially sampled) to give a general importance
         plot for each feature.
-        If no target names and/or no horizons are provided, we plot all summary plots in the non specified
-        dimension (target_names or horizons).
+        If no target names and/or no horizons are provided, we plot all summary plots.
 
         Parameters
         ----------
@@ -287,20 +257,23 @@ class ShapExplainer(ForecastingModelExplainer):
         else:
             foreground_X_sampled = self.explainers.background_X
 
-        shap_values = []
+        # shap_values = []
         if target_names is None:
             target_names = self.target_names
         if horizons is None:
             horizons = range(self.model.output_chunk_length)
 
-        for t in target_names:
+        shaps_ = self.explainers.shap_explanations(
+            self.background_series,
+            self.background_past_covariates,
+            self.background_future_covariates,
+            nb_samples,
+        )
+        for idx, t in enumerate(target_names):
             for h in horizons:
-                shap_values.append(
-                    self.explainers.shap_values_from_X(foreground_X_sampled, h, t)
-                )
                 plt.title("Target: `{}` - Horizon: {}".format(t, "t+" + str(h)))
                 shap.summary_plot(
-                    shap_values[-1], foreground_X_sampled, plot_type=plot_type
+                    shaps_[h][idx], foreground_X_sampled, plot_type=plot_type
                 )
 
 
@@ -310,28 +283,34 @@ class _RegressionShapExplainers:
     horizon etc.
     Aim to provide shap values for any type of RegressionModel. Manage the MultioutputRegressor cases.
     For darts RegressionModel only.
-    TODO implement a test to not recompute each time the shap values in case of multioutput flag is True.
     """
 
     def __init__(
         self,
         model: GlobalForecastingModel,
         background_series: Union[TimeSeries, Sequence[TimeSeries]],
-        background_past_covariates: Union[TimeSeries, Sequence[TimeSeries]],
-        background_future_covariates: Union[TimeSeries, Sequence[TimeSeries]],
         n: integer,
+        background_past_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
+        background_future_covariates: Optional[
+            Union[TimeSeries, Sequence[TimeSeries]]
+        ] = None,
         shap_method: Optional[ShapMethod] = None,
         background_nb_samples: Optional[int] = None,
         **kwargs,
     ):
 
         self.model = model
-        # self.multioutput = self.model.model._get_tags()["multioutput"]
         self.is_multiOutputRegressor = isinstance(
             self.model.model, MultiOutputRegressor
         )
         self.target_dim = self.model.input_dim["target"]
-        self.target_dict = {c: i for i, c in enumerate(background_series.columns)}
+        self.n = n
+
+        self.single_output = False
+        if (self.n == 1) and (self.target_dim) == 1:
+            self.single_output = True
 
         self.background_X = self._create_regression_model_shap_X(
             background_series,
@@ -340,148 +319,111 @@ class _RegressionShapExplainers:
             background_nb_samples,
         )
 
+        # print(self.is_multiOutputRegressor)
         if self.is_multiOutputRegressor:
             self.explainers = {}
-            for i in range(n):
+            for i in range(self.n):
                 self.explainers[i] = {}
                 for j in range(self.target_dim):
-                    self.explainers[i][j] = self._get_explainer(
+                    self.explainers[i][j] = self._get_explainer_sklearn(
                         self.model.model.estimators_[i + j],
                         self.background_X,
                         shap_method,
                         **kwargs,
                     )
         else:
-            self.explainers = self._get_explainer(
+            self.explainers = self._get_explainer_sklearn(
                 self.model.model, self.background_X, shap_method, **kwargs
             )
 
-        self.cache_explainers = None
-        self.cache_foreground_series = None
-        self.cache_foreground_past_covariates = None
-        self.cache_foreground_future_covariates = None
-        self.cache_foreground_X = None
-        self.foreground_changed = True
-
-    def shap_values(
+    def shap_explanations(
         self,
-        foreground_series: Union[TimeSeries, Sequence[TimeSeries]],
-        foreground_past_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        foreground_future_covariates: Optional[Union[TimeSeries, Sequence[TimeSeries]]],
-        horizon: Optional[int] = None,
-        target_name: Optional[str] = None,
-    ):
-        "-> shap._explanation.Explanation"
+        foreground_series: TimeSeries,
+        foreground_past_covariates: Optional[TimeSeries] = None,
+        foreground_future_covariates: Optional[TimeSeries] = None,
+        n_samples: Optional[integer] = None,
+    ) -> Dict:
 
-        if not all(
-            foreground_series.time_index
-            == foreground_past_covariates.time_index
-            == foreground_future_covariates.time_index
-        ):
-            logger.warning(
-                "The series and covariates don't share the same time index. We will take the time index common to all."
-            )
-
-        (
+        foreground_X = self._create_regression_model_shap_X(
             foreground_series,
             foreground_past_covariates,
             foreground_future_covariates,
-        ) = retain_period_common_to_all(
-            [
-                foreground_series,
-                foreground_past_covariates,
-                foreground_future_covariates,
-            ]
+            n_samples,
         )
 
-        # We don't recompute if the foreground is the same as the last computation
-        if (
-            (self.cache_foreground_series != foreground_series)
-            or (self.cache_foreground_past_covariates != foreground_past_covariates)
-            or (self.cache_foreground_future_covariates != foreground_future_covariates)
-        ):
+        # Creation of an unified dictionary between multiOutputRegressor and native
+        shap_explanations = {}
+        if self.is_multiOutputRegressor:
 
-            foreground_X = self._create_regressionmodel_shap_X(
-                foreground_series,
-                foreground_past_covariates,
-                foreground_future_covariates,
-                None,
-            )
-            self.cache_foreground_series = foreground_series
-            self.cache_foreground_past_covariates = foreground_past_covariates
-            self.cache_foreground_future_covariates = foreground_future_covariates
-
-            self.foreground_changed = True
-
-            self.cache_foreground_X = foreground_X.copy()
+            for i in range(self.n):
+                tmp_n = {}
+                for j in range(self.target_dim):
+                    explainer = self.explainers[i][j](foreground_X)
+                    explainer.base_values = explainer.base_values.ravel()
+                    explainer.time_index = foreground_X.index
+                    tmp_n[j] = explainer
+                shap_explanations[i] = tmp_n
         else:
-            self.foreground_changed = False
+            shap_explanation_tmp = self.explainers(foreground_X)
+            for i in range(self.n):
+                tmp_n = {}
+                for j in range(self.target_dim):
+                    # If we don't use shap._explanation.Explanation native private class, it is impossible
+                    # to use shap plot functions later.
+                    if self.single_output is False:
+                        tmp_t = shap._explanation.Explanation(
+                            shap_explanation_tmp.values[:, :, self.target_dim * i + j]
+                        )
+                        tmp_t.base_values = shap_explanation_tmp.base_values[
+                            :, self.target_dim * i + j
+                        ].ravel()
+                    else:
+                        tmp_t = shap_explanation_tmp
+                        tmp_t.base_values = shap_explanation_tmp.base_values.ravel()
 
-        return self.shap_values_from_X(self.cache_foreground_X, horizon, target_name)
+                    tmp_t.feature_names = shap_explanation_tmp.feature_names
+                    tmp_t.time_index = foreground_X.index
+                    tmp_n[j] = tmp_t
+                shap_explanations[i] = tmp_n
 
-    def shap_values_from_X(
-        self, X, horizon: Optional[int] = None, target_name: Optional[str] = None
-    ):
-        "-> shap._explanation.Explanation"
+        return shap_explanations
 
-        # Multioutput case
-        if self.target_dim > 1 or self.model.output_chunk_length > 1:
-
-            # MultioutputRegressor case
-            if isinstance(self.explainers, dict):
-                assert isinstance(self.model.model, MultiOutputRegressor)
-                shap_values = self.explainers[horizon][self.target_dict[target_name]](X)
-            # Supported sikit-learn multioutput case
-            else:
-                # We compute it only once
-                if self.foreground_changed:
-                    self.cache_explainers = self.explainers(X)
-                shap_values = self.cache_explainers[
-                    :,
-                    :,
-                    horizon * self.target_dict[target_name]
-                    + self.target_dict[target_name],
-                ]
-        else:
-            shap_values = self.explainers(X)
-
-        # We add one property to the shap._explanation.Explanation which is the index of time steps we explain
-        shap_values.time_index = X.index
-
-        # When MultiOutputRegressor, or when pure univariate and output_chun_legth = 1, we need to ravel base_values
-        # to make work force plot.
-        shap_values.base_values = shap_values.base_values.ravel()
-
-        return shap_values
-
-    def _get_explainer(
+    def _get_explainer_sklearn(
         self,
-        model: GlobalForecastingModel,
+        model_sklearn,
         background_X: pd.DataFrame,
         shap_method: Optional[ShapMethod] = None,
         **kwargs,
     ):
 
-        model_name = type(model).__name__
-        print(model_name)
+        model_name = type(model_sklearn).__name__
+
         if shap_method is None:
-            shap_method = default_sklearn_shap_explainers[model_name]
+            if model_name in default_sklearn_shap_explainers.keys():
+                shap_method = default_sklearn_shap_explainers[model_name]
+            else:
+                shap_method = _ShapMethod.KERNEL
 
         if shap_method == _ShapMethod.TREE:
             if "feature_perturbation" in kwargs:
                 if kwargs.get("feature_perturbation") == "interventional":
-                    explainer = shap.TreeExplainer(model, background_X, **kwargs)
+                    explainer = shap.TreeExplainer(
+                        model_sklearn, background_X, **kwargs
+                    )
                 else:
-                    explainer = shap.TreeExplainer(model, **kwargs)
+                    explainer = shap.TreeExplainer(model_sklearn, **kwargs)
             else:
-                explainer = shap.TreeExplainer(model, **kwargs)
+                explainer = shap.TreeExplainer(model_sklearn, **kwargs)
         elif shap_method == _ShapMethod.PERMUTATION:
-            explainer = shap.PermutationExplainer(model)
+            explainer = shap.PermutationExplainer(
+                model_sklearn.predict, background_X, **kwargs
+            )
         elif shap_method == _ShapMethod.KERNEL:
-            print("test")
-            explainer = shap.KernelExplainer(model.model.predict, background_X)
+            explainer = shap.KernelExplainer(
+                model_sklearn.predict, background_X, keep_index=True
+            )
         elif shap_method == _ShapMethod.LINEAR:
-            explainer = shap.LinearExplainer(model, background_X)
+            explainer = shap.LinearExplainer(model_sklearn, background_X, **kwargs)
 
         logger.info("The shap method used is of type: " + str(type(explainer)))
 
@@ -569,8 +511,7 @@ class _RegressionShapExplainers:
 
         # combine samples from all series
         X = pd.concat(Xs, axis=0)
-
         if n_samples:
-            X = shap.utils.sample(n_samples, X)
+            X = shap.utils.sample(X, n_samples)
 
         return X
