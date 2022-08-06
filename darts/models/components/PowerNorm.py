@@ -139,6 +139,7 @@ class MaskPowerNorm(nn.Module):
     ----------
     .. [1] Shen, Sheng, et al. "Powernorm: Rethinking batch normalization in transformers."
            International Conference on Machine Learning. PMLR, 2020.
+           https://arxiv.org/abs/2003.07845
     """
 
     def __init__(
