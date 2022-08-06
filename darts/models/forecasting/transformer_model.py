@@ -9,7 +9,7 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-from darts.logging import get_logger, raise_if_not
+from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.components import glu_variants
 from darts.models.components.glu_variants import GLU_FFN
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
@@ -20,6 +20,20 @@ logger = get_logger(__name__)
 
 BUILT_IN = ["relu", "gelu"]
 FFN = GLU_FFN + BUILT_IN
+
+
+class _CustomFeedForwardEncoderLayer(nn.TransformerEncoderLayer):
+    # overwrite the feed forward block
+    def _ff_block(self, x):
+        x = self.activation(x)
+        return self.dropout2(x)
+
+
+class _CustomFeedForwardDecoderLayer(nn.TransformerDecoderLayer):
+    # overwrite the feed forward block
+    def _ff_block(self, x):
+        x = self.activation(x)
+        return self.dropout2(x)
 
 
 # This implementation of positional encoding is taken from the PyTorch documentation:
@@ -142,9 +156,42 @@ class _TransformerModule(PLPastCovariatesModule):
 
         raise_if_not(activation in FFN, f"'{activation}' is not in {FFN}")
         if activation in GLU_FFN:
+            raise_if(
+                custom_encoder is not None or custom_decoder is not None,
+                "Cannot use `custom_encoder` or `custom_decoder` along with an `activation` from "
+                f"{GLU_FFN}",
+                logger=logger,
+            )
             # use glu variant feedforward layers
             self.activation = getattr(glu_variants, activation)(
                 d_model=d_model, d_ff=dim_feedforward, dropout=dropout
+            )
+            encoder_layer = _CustomFeedForwardEncoderLayer(
+                d_model=d_model,
+                nhead=nhead,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
+                activation=self.activation,
+            )
+            encoder_norm = nn.LayerNorm(d_model)
+            custom_encoder = nn.TransformerEncoder(
+                encoder_layer=encoder_layer,
+                num_layers=num_encoder_layers,
+                norm=encoder_norm,
+            )
+
+            decoder_layer = _CustomFeedForwardDecoderLayer(
+                d_model=d_model,
+                nhead=nhead,
+                dim_feedforward=dim_feedforward,
+                dropout=dropout,
+                activation=self.activation,
+            )
+            decoder_norm = nn.LayerNorm(d_model)
+            custom_decoder = nn.TransformerDecoder(
+                decoder_layer=decoder_layer,
+                num_layers=num_decoder_layers,
+                norm=decoder_norm,
             )
         else:
             # use nn.Transformer built in feedforward layers
