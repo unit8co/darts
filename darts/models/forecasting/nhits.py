@@ -158,7 +158,7 @@ class _Block(nn.Module):
 
         self.layers = nn.Sequential(*layers)
 
-        # Fully connected layer producing forecast/backcast expansion coeffcients (waveform generator parameters).
+        # Fully connected layer producing forecast/backcast expansion coefficients (waveform generator parameters).
         # The coefficients are emitted for each parameter of the likelihood for the forecast.
         self.backcast_linear_layer = nn.Linear(
             in_features=layer_width, out_features=n_theta_backcast
