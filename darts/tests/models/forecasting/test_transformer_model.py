@@ -2,7 +2,6 @@ import shutil
 import tempfile
 
 import pandas as pd
-import torch.nn as nn
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -12,6 +11,8 @@ from darts.utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
+    import torch.nn as nn
+
     from darts.models.components.transformer import (
         CustomFeedForwardDecoderLayer,
         CustomFeedForwardEncoderLayer,
