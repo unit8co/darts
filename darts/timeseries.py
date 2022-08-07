@@ -649,7 +649,7 @@ class TimeSeries:
         else:
             raise_if_not(
                 isinstance(df.index, VALID_INDEX_TYPES),
-                "If time_col is not specified, the DataFrame must be indexed either with"
+                "If time_col is not specified, the DataFrame must be indexed either with "
                 "a DatetimeIndex, or with a RangeIndex.",
                 logger,
             )

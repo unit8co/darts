@@ -1382,7 +1382,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         path_ptl_ckpt = base_path + "_ptl-ckpt.pth.tar"
         if os.path.exists(path_ptl_ckpt):
             model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
-            model.trainer = model.model.trainer
+            model.trainer = None
 
         return model
 
