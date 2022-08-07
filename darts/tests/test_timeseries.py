@@ -105,6 +105,31 @@ class TimeSeriesTestCase(DartsBaseTestClass):
             list(indexed_ts.time_index) == list(pd.RangeIndex(2, 7, step=1))
         )
 
+    def test_univariate_component(self):
+        series = TimeSeries.from_values(np.array([10, 20, 30])).with_columns_renamed(
+            "0", "component"
+        )
+        mseries = concatenate([series] * 3, axis="component")
+        mseries = mseries.with_hierarchy(
+            {"component_1": ["component"], "component_2": ["component"]}
+        )
+
+        static_cov = pd.DataFrame(
+            {"dim0": [1, 2, 3], "dim1": [-2, -1, 0], "dim2": [0.0, 0.1, 0.2]}
+        )
+
+        mseries = mseries.with_static_covariates(static_cov)
+
+        for univ_series in [
+            mseries.univariate_component(1),
+            mseries.univariate_component("component_1"),
+        ]:
+            # hierarchy should be dropped
+            self.assertIsNone(univ_series.hierarchy)
+
+            # only the right static covariate column should be retained
+            self.assertEqual(univ_series.static_covariates.sum().sum(), 1.1)
+
     def test_column_names(self):
         # test the column names resolution
         columns_before = [
