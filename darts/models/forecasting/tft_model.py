@@ -740,7 +740,7 @@ class TFTModel(MixedCovariatesTorchModel):
             a ``QuantileRegression`` likelihood.
         norm_type: str
             The type of LayerNorm variant to use.  Default: ``LayerNorm``. Options available are
-            ["LayerNorm", "ScaleNorm", "RMSNorm"]
+            ["LayerNorm", "ScaleNorm", "RMSNorm", "PowerNorm"]
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
