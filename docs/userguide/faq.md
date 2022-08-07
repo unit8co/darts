@@ -7,7 +7,7 @@
 
 - *Darts looks like an awesome project, can I contribute?*
 
-  Absolutely! We are constantly welcoming contributions from the community. If you contribute, you will be acknowledged in the [wall of fame (a.k.a the changelog)](https://github.com/unit8co/darts/blob/master/CHANGELOG.md)! Contributions don't have to be code only but can also be e.g., documentation. In addition, we're also happy to receive suggestions in the form of issues on Github. The best place to start for contributors is the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md).
+  Absolutely! We are constantly welcoming contributions from the community. If you contribute, you will be acknowledged in the [wall of fame (a.k.a. the changelog)](https://github.com/unit8co/darts/blob/master/CHANGELOG.md)! Contributions don't have to be code only but can also be e.g., documentation. In addition, we're also happy to receive suggestions in the form of issues on GitHub. The best place to start for contributors is the [contribution guidelines](https://github.com/unit8co/darts/blob/master/CONTRIBUTING.md).
 
 - *I have some ideas for contributing a new model into Darts, is that possible?*
 

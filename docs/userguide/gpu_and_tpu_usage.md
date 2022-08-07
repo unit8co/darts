@@ -1,11 +1,11 @@
 # Using Torch Models with GPUs and TPUs
 This section was written for Darts 0.17.0 and later.
 
-We assume that you already know about Torch Forecasting Models in Darts. If you're new to the topic we recommend you to read the [guide on Torch Forecasting Models](https://unit8co.github.io/darts/userguide/torch_forecasting_models.html) first. This guide also contains a section about performance recommendations, which we recommend reading first. Finally, here is also an [Recurrent Neural Network (RNN) Model example](https://unit8co.github.io/darts/examples/04-RNN-examples.html), on which this section is going to be based on.
+We assume that you already know about Torch Forecasting Models in Darts. If you're new to the topic we recommend you to read the [guide on Torch Forecasting Models](https://unit8co.github.io/darts/userguide/torch_forecasting_models.html) first. This guide also contains a section about performance recommendations, which we recommend reading first. Finally, here is also a [Recurrent Neural Network (RNN) Model example](https://unit8co.github.io/darts/examples/04-RNN-examples.html), on which this section is going to be based on.
 
 ## Use CPU
 
-By default all models will run on CPU. As shown in the RNN example above, we'll import the Air Passenger dataset, as well as other necessary modules.
+By default, all models will run on CPU. As shown in the RNN example above, we'll import the Air Passenger dataset, as well as other necessary modules.
 ```python
 import numpy as np
 import pandas as pd

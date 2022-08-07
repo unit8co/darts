@@ -162,7 +162,7 @@ Anyone is welcome to join our ~~[Discord server](https://discord.gg/Um3jBTYFsA)~
 ask questions, make proposals, discuss use-cases, and more. If you spot a bug or
 have suggestions, GitHub issues are also welcome.
 
-If what you want to tell us is not suitable for Discord or Github,
+If what you want to tell us is not suitable for Discord or GitHub,
 feel free to send us an email at <a href="mailto:darts@unit8.co">darts@unit8.co</a> for
 darts related matters or <a href="mailto:info@unit8.co">info@unit8.co</a> for any other
 inquiries.

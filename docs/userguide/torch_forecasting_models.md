@@ -123,9 +123,9 @@ Side note: Our `*RNNModels` accept a `training_length` parameter at model creati
 
 Let's have a look at how the models work under the hood.
 
-Let's assume we run an ice-cream shop and we want to predict sales for the next day.
+Let's assume we run an ice-cream shop and, we want to predict sales for the next day.
 We have one year (365 days) past data of our end-of-day ice-cream sales and of the average measured daily ambient temperature.
-We also noticed that our ice-cream sales depend on the day of the week so we want to include this in our model.
+We also noticed that our ice-cream sales depend on the day of the week so, we want to include this in our model.
 
 - past target: actual past ice-cream sales `ice_cream_sales`
 - future target: predict the ice-cream sales for the next day
@@ -277,11 +277,11 @@ for more information on how to setup a GPU (or a TPU) via PyTorch Lightning.
 
 ### Tune the batch size
 A larger batch size tends to speed up the training because it reduces the number
-of backward passes per epoch and has the potential to better parallelize computation. However it also changes the training dynamics (e.g. you might need more epochs, and the convergence dynamics is affected). Furthermore larger batch sizes increase memory consumption. So here too some testing is required.
+of backward passes per epoch and has the potential to better parallelize computation. However, it also changes the training dynamics (e.g. you might need more epochs, and the convergence dynamics is affected). Furthermore, larger batch sizes increase memory consumption. So here too some testing is required.
 
 ### Tune `num_loader_workers`
 All deep learning models in Darts have a parameter `num_loader_workers` in their `fit()` and `predict()` functions, which
-configures the `num_workers` parameter in the PyTorch `DataLoaders`. By default
+configures the `num_workers` parameter in the PyTorch `DataLoaders`. By default,
 it is set to 0, which means that the main process will also take care of loading the data. Setting `num_workers > 0` will use additional workers to load the data. This typically incurs some overhead (notably increasing memory consumption), but in some cases it can also substantially improve performance.
 The ideal value depends on many factors such as the batch size, whether you are using a GPU, the number of CPU cores available, and whether
 loading the data involved I/O operations (if the series are stored on disk).
@@ -470,7 +470,7 @@ print("Best hyperparameters found were: ", analysis.best_config)
 
 ### Example Benchmark
 As an example, we show here the time required to train one epoch on the first 80% of the energy dataset (`darts.datasets.EnergyDataset`), which consists of one multivariate series that is 28050 timesteps long and has 28 dimensions.
-We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `input_chunk_length=48` and `output_chunk_length=12` (which results in 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter `add_cyclic_encoder='hour'`. The tests are made on a Intel CPU i9-10900K CPU @ 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM. All `TimeSeries` are pre-loaded in memory and given to the models as a list.
+We train two models; `NBEATSModel` and `TFTModel`, with default parameters and `input_chunk_length=48` and `output_chunk_length=12` (which results in 27991 training samples with default sequential training datasets). For the TFT model, we also set the parameter `add_cyclic_encoder='hour'`. The tests are made on an Intel CPU i9-10900K CPU @ 3.70GHz, with an Nvidia RTX 2080s GPU, 32 GB of RAM. All `TimeSeries` are pre-loaded in memory and given to the models as a list.
 
 | Model         | Dataset | dtype | CUDA | Batch size | num workers | time per epoch |
 |---------------|---------|-------|------|------------|-------------|----------------|

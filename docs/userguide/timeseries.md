@@ -97,7 +97,7 @@ Optionally, `TimeSeries` objects can contain a hierarchy, which specifies how it
 
 For instance, the following hierarchy means that the two components `"a"` and `"b"` add up to `"total"`:
 ```python
-hierarchy = {"a": ["total"], "b", ["total"]}
+hierarchy = {"a": ["total"], "b": ["total"]}
 ```
 
 Hierarchies can be used for posthoc forecast reconciliation. Darts offers several reconciliation transformers (usable with `fit()`/`transform()`) - see the [corresponding API documentation](https://unit8co.github.io/darts/generated_api/darts.dataprocessing.transformers.reconciliation.html).
