@@ -4,6 +4,8 @@
 Darts is still in an early development phase and we cannot always guarantee backwards compatibility. Changes that may **break code which uses a previous release of Darts** are marked with a "&#x1F534;".
 
 ## [Unreleased](https://github.com/unit8co/darts/tree/master)
+New model: `QuerySelectorModel` implementing the Query Selector Model. [#1120](https://github.com/unit8co/darts/issues/1120) by [Greg DeVos](https://github.com/gdevos010).
+
 [Full Changelog](https://github.com/unit8co/darts/compare/0.20.0...master)
 
 

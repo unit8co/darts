@@ -21,7 +21,7 @@ TFMs train and predict on fixed-length chunks (sub-samples) of your input `targe
 
 Each chunk contains an input chunk - representing the sample's past - and an output chunk - the sample's future. The sample's prediction point lies at the end of the input chunk. The length of these chunks has to be specified at model creation with parameters `input_chunk_length` and `output_chunk_length` (more on chunks in [the next subsection](#top-level-look-at-training-and-predicting-with-chunks)).
 
-```
+```python
 # model that looks 7 time steps back (past) and 1 time step ahead (future)
 model = SomeTorchForecastingModel(input_chunk_length=7,
                                   output_chunk_length=1,
@@ -91,14 +91,16 @@ Under the hood, Darts has 5 types of `{X}CovariatesModel` classes implemented to
 
 Each Torch Forecasting Model inherits from one `{X}CovariatesModel` (covariate class names are abbreviated by the `X`-part):
 
-| TFM                | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
-|--------------------|--------|----------|--------|---------|---------|
-| `RNNModel`         |        |          | ✅      |         |         |
-| `BlockRNNModel`    | ✅      |          |        |         |         |
-| `NBEATSModel`      | ✅      |          |        |         |         |
-| `TCNModel`         | ✅      |          |        |         |         |
-| `TransformerModel` | ✅      |          |        |         |         |
-| `TFTModel`         |        |          |        | ✅       |         |
+| TFM                  | `Past` | `Future` | `Dual` | `Mixed` | `Split` |
+|----------------------|--------|----------|--------|---------|---------|
+| `RNNModel`           |        |          | ✅      |         |         |
+| `BlockRNNModel`      | ✅      |          |        |         |         |
+| `NBEATSModel`        | ✅      |          |        |         |         |
+| `NHiTSModel`         | ✅      |          |        |         |         |
+| `TCNModel`           | ✅      |          |        |         |         |
+| `TransformerModel`   | ✅      |          |        |         |         |
+| `QuerySelectorModel` | ✅      |          |        |         |         |
+| `TFTModel`           |        |          |        | ✅       |         |
 
 **Table 2: Darts' Torch Forecasting Model covariate support**
 
@@ -112,7 +114,7 @@ You can use the same covariates series for both `fit()` and `predict()` if they 
 
 For **prediction** you have to supply the `target` series that you wish to forecast. For any forecast horizon `n` the minimum time span requirements are:
 - `target` series of minimum length `input_chunk_length`
-- `*_covariates` time span requirements for `predict()` also from from [covariates guide section 2.3.](https://unit8co.github.io/darts/userguide/covariates.html#id6)
+- `*_covariates` time span requirements for `predict()` also from [covariates guide section 2.3.](https://unit8co.github.io/darts/userguide/covariates.html#id6)
 
 Side note: Our `*RNNModels` accept a `training_length` parameter at model creation instead of `output_chunk_length`. Internally the `output_chunk_length` for these models is automatically set to `1`. For training, past `target` must have a minimum length of `training_length + 1` and for prediction, a length of `input_chunk_length`.
 

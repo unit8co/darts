@@ -66,7 +66,7 @@ If you train a model using `past_covariates`, you'll have to provide these `past
 **Figure 1: Top level summary of how forecasting models work with target and covariates for a prediction with forecast horizon n=2**
 
 There are some extra nuances that might be good to know. For instance, deep learning models in Darts
-can (in general) forecast `output_chunk_length` points at a time. However it is still possible for models
+can (in general) forecast `output_chunk_length` points at a time. However, it is still possible for models
 trained with past covariates to make forecasts for some horizon `n > output_chunk_length` if the `past_covariates`
 are known far enough into the future. In such cases, the forecasts are obtained by consuming future values
 of the past covariates, and using auto-regression on the target series. If you want to know more details, read on.
@@ -89,7 +89,7 @@ Let's have a look at some examples of past, future, and static covariates:
 - `future_covariates`: typically forecasts (future known data) or temporal attributes
     -   daily average **forecasted** temperatures (known in the future)
     -   day of week, month, year, ...
-- `static_covariates`: time independent/constant/static `target` characterstics
+- `static_covariates`: time independent/constant/static `target` characteristics
     -   categorical: 
         - location of `target` (country, city, .. name)
         - `target` identifier: (product ID, store ID, ...)
@@ -121,29 +121,30 @@ GFMs are broadly speaking "machine learning based" models, which denote PyTorch-
 
 ----
 
-Model | Past Covariates | Future Covariates | Static Covariates
---- | :---: | :---: | :---:
-**Local Forecasting Models (LFMs)** | | |
-`ExponentialSmoothing` |  | |
-`BATS` and `TBATS` |  | |
-`Theta` and `FourTheta` |   | |
-`FFT` |  | |
-`Croston method`|  | |
-`ARIMA` |  | ✅ |
-`VARIMA` |  | ✅ |
-`AutoARIMA` |  | ✅ |
-`StatsForecastAutoARIMA` |  | ✅ |
-`KalmanForecaster` |  | ✅ |
-`Prophet` |  | ✅ |
-**Global Forecasting Models (GFMs)** | | |
-`RegressionModel`* | ✅ | ✅ |
-`RNNModel`** |  | ✅ |
-`BlockRNNModel`*** | ✅ | |
-`NBEATSModel` | ✅ | |
-`NHiTSModel` | ✅ | |
-`TCNModel` | ✅ | |
-`TransformerModel` | ✅ | |
-`TFTModel` | ✅ | ✅ | ✅ 
+| Model                                | Past Covariates | Future Covariates | Static Covariates |
+|--------------------------------------|:---------------:|:-----------------:|:-----------------:|
+| **Local Forecasting Models (LFMs)**  |                 |                   |                   |
+| `ExponentialSmoothing`               |                 |                   |                   |
+| `BATS` and `TBATS`                   |                 |                   |                   |
+| `Theta` and `FourTheta`              |                 |                   |                   |
+| `FFT`                                |                 |                   |                   |
+| `Croston method`                     |                 |                   |                   |
+| `ARIMA`                              |                 |         ✅         |                   |
+| `VARIMA`                             |                 |         ✅         |                   |
+| `AutoARIMA`                          |                 |         ✅         |                   |
+| `StatsForecastAutoARIMA`             |                 |         ✅         |                   |
+| `KalmanForecaster`                   |                 |         ✅         |                   |
+| `Prophet`                            |                 |         ✅         |                   |
+| **Global Forecasting Models (GFMs)** |                 |                   |                   |
+| `RegressionModel`*                   |        ✅        |         ✅         |                   |
+| `RNNModel`**                         |                 |         ✅         |                   |
+| `BlockRNNModel`***                   |        ✅        |                   |                   |
+| `NBEATSModel`                        |        ✅        |                   |                   |
+| `NHiTSModel`                         |        ✅        |                   |                   |
+| `TCNModel`                           |        ✅        |                   |                   |
+| `TransformerModel`                   |        ✅        |                   |                   |
+| `QuerySelectorModel`                 |        ✅        |                   |                   |
+| `TFTModel`                           |        ✅        |         ✅         |         ✅         |
 
 **Table 1: Darts' forecasting models and their covariate support**
 
