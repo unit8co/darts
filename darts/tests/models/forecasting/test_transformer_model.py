@@ -2,6 +2,7 @@ import shutil
 import tempfile
 
 import pandas as pd
+import torch.nn as nn
 
 from darts import TimeSeries
 from darts.logging import get_logger
@@ -11,6 +12,10 @@ from darts.utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
+    from darts.models.components.transformer import (
+        CustomFeedForwardDecoderLayer,
+        CustomFeedForwardEncoderLayer,
+    )
     from darts.models.forecasting.transformer_model import (
         TransformerModel,
         _TransformerModule,
@@ -118,14 +123,28 @@ if TORCH_AVAILABLE:
                 )
                 model1.fit(self.series, epochs=1)
 
-            # internal activation function
+            # internal activation function uses PyTorch TransformerEncoderLayer
             model2 = TransformerModel(
                 input_chunk_length=1, output_chunk_length=1, activation="gelu"
             )
             model2.fit(self.series, epochs=1)
+            assert isinstance(
+                model2.model.transformer.encoder.layers[0], nn.TransformerEncoderLayer
+            )
+            assert isinstance(
+                model2.model.transformer.decoder.layers[0], nn.TransformerDecoderLayer
+            )
 
-            # glue variant FFN
+            # glue variant FFN uses our custom _FeedForwardEncoderLayer
             model3 = TransformerModel(
                 input_chunk_length=1, output_chunk_length=1, activation="SwiGLU"
             )
             model3.fit(self.series, epochs=1)
+            assert isinstance(
+                model3.model.transformer.encoder.layers[0],
+                CustomFeedForwardEncoderLayer,
+            )
+            assert isinstance(
+                model3.model.transformer.decoder.layers[0],
+                CustomFeedForwardDecoderLayer,
+            )
