@@ -130,6 +130,8 @@ def _const_fill(series: TimeSeries, fill: float = 0) -> TimeSeries:
         series.pd_dataframe().fillna(value=fill),
         freq=series.freq,
         columns=series.columns,
+        static_covariates=series.static_covariates,
+        hierarchy=series.hierarchy,
     )
 
 
@@ -160,4 +162,9 @@ def _auto_fill(series: TimeSeries, **interpolate_kwargs) -> TimeSeries:
         interpolate_kwargs["limit_direction"] = "both"
     interpolate_kwargs["inplace"] = True
     series_temp.interpolate(**interpolate_kwargs)
-    return TimeSeries.from_dataframe(series_temp, freq=series.freq)
+    return TimeSeries.from_dataframe(
+        series_temp,
+        freq=series.freq,
+        static_covariates=series.static_covariates,
+        hierarchy=series.hierarchy,
+    )
