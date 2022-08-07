@@ -6,13 +6,17 @@ from darts.logging import get_logger
 from darts.metrics import mape
 from darts.models import (
     ARIMA,
+    BATS,
     FFT,
+    TBATS,
     VARIMA,
+    AutoARIMA,
     Croston,
     ExponentialSmoothing,
     FourTheta,
     KalmanForecaster,
     NaiveSeasonal,
+    Prophet,
     StatsForecastAutoARIMA,
     Theta,
 )
@@ -70,25 +74,14 @@ multivariate_models = [
 dual_models = [ARIMA(), StatsForecastAutoARIMA(period=12)]
 
 
-try:
-    from darts.models import Prophet
+models.append((Prophet(), 13.5))
+dual_models.append(Prophet())
 
-    models.append((Prophet(), 13.5))
-    dual_models.append(Prophet())
-except ImportError:
-    logger.warning("Prophet not installed - will be skipping Prophet tests")
+models.append((AutoARIMA(), 12.2))
+models.append((TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0))
+models.append((BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0))
+dual_models.append(AutoARIMA())
 
-try:
-    from darts.models import BATS, TBATS, AutoARIMA
-
-    models.append((AutoARIMA(), 12.2))
-    models.append((TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0))
-    models.append((BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0))
-    dual_models.append(AutoARIMA())
-    PMDARIMA_AVAILABLE = True
-except ImportError:
-    logger.warning("pmdarima not installed - will be skipping AutoARIMA tests")
-    PMDARIMA_AVAILABLE = False
 
 try:
     from darts.models import TCNModel  # noqa: F401
@@ -228,7 +221,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         with self.assertRaises(ValueError):
             varima.fit(series=ts)
 
-        if PMDARIMA_AVAILABLE:
-            autoarima = AutoARIMA(trend="t")
-            with self.assertRaises(ValueError):
-                autoarima.fit(series=ts)
+        autoarima = AutoARIMA(trend="t")
+        with self.assertRaises(ValueError):
+            autoarima.fit(series=ts)
