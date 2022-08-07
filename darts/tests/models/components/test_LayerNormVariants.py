@@ -12,8 +12,8 @@ except ImportError:
 
 
 if TORCH_AVAILABLE:
-    from darts.models.components.LayerNormVariants import RMSNorm, ScaleNorm
-    from darts.models.components.PowerNorm import MaskPowerNorm
+    from darts.models.components.layer_norm_variants import RMSNorm, ScaleNorm
+    from darts.models.components.power_norm import MaskPowerNorm
     from darts.tests.base_test_class import DartsBaseTestClass
 
     class LayerNormVariantsTestCase(DartsBaseTestClass):

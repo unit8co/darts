@@ -13,9 +13,9 @@ from torch.nn import LSTM as _LSTM
 
 from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
-from darts.models.components import LayerNormVariants, glu_variants
+from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
-from darts.models.components.PowerNorm import MaskPowerNorm
+from darts.models.components.power_norm import MaskPowerNorm
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
@@ -131,7 +131,7 @@ class _TFTModule(PLMixedCovariatesModule):
             self.layerNorm = MaskPowerNorm
         else:
             try:
-                self.layerNorm = getattr(LayerNormVariants, norm_type)
+                self.layerNorm = getattr(layer_norm_variants, norm_type)
             except AttributeError:
                 raise_log(
                     AttributeError("please provide a valid layer norm type"),
