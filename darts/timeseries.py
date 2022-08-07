@@ -2702,6 +2702,9 @@ class TimeSeries:
         Retrieve one of the components of the series
         and return it as new univariate ``TimeSeries`` instance.
 
+        This drops the hierarchy (if any), and retains only the relevant static
+        covariates column.
+
         Parameters
         ----------
         index
@@ -2713,11 +2716,10 @@ class TimeSeries:
         TimeSeries
             A new univariate TimeSeries instance.
         """
-        if isinstance(index, int):
-            new_xa = self._xa.isel(component=index).expand_dims(DIMS[1], axis=1)
-        else:
-            new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
-        return self.__class__(new_xa)
+
+        return self.__getitem__(
+            index if isinstance(index, str) else self.components[index]
+        )
 
     def add_datetime_attribute(
         self, attribute, one_hot: bool = False, cyclic: bool = False
