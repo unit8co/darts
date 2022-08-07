@@ -2717,9 +2717,7 @@ class TimeSeries:
             A new univariate TimeSeries instance.
         """
 
-        return self.__getitem__(
-            index if isinstance(index, str) else self.components[index]
-        )
+        return self[index if isinstance(index, str) else self.components[index]]
 
     def add_datetime_attribute(
         self, attribute, one_hot: bool = False, cyclic: bool = False
