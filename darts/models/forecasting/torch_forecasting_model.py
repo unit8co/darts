@@ -26,6 +26,7 @@ from glob import glob
 from typing import Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
+import pandas as pd
 import pytorch_lightning as pl
 import torch
 from pytorch_lightning import loggers as pl_loggers
@@ -607,6 +608,30 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         pass
 
+    @staticmethod
+    @abstractmethod
+    def _supports_static_covariates() -> bool:
+        """
+        Whether model supports static covariates
+        """
+        pass
+
+    def _verify_static_covariates(self, static_covariates: Optional[pd.DataFrame]):
+        """
+        Verify that all static covariates are numeric.
+        """
+        if static_covariates is not None and self._supports_static_covariates():
+            numeric_mask = static_covariates.columns.isin(
+                static_covariates.select_dtypes(include=np.number)
+            )
+            raise_if(
+                sum(~numeric_mask),
+                "TorchForecastingModels can only interpret numeric static covariate data. Consider "
+                "encoding/transforming categorical static covariates with "
+                "`darts.dataprocessing.transformers.static_covariates_transformer.StaticCovariatesTransformer`.",
+                logger,
+            )
+
     @random_method
     def fit(
         self,
@@ -694,6 +719,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self._verify_past_future_covariates(
             past_covariates=past_covariates, future_covariates=future_covariates
         )
+        self._verify_static_covariates(series[0].static_covariates)
 
         def wrap_fn(
             ts: Union[TimeSeries, Sequence[TimeSeries]]
@@ -1056,6 +1082,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             else future_covariates
         )
 
+        self._verify_static_covariates(series[0].static_covariates)
         # encoders are set when calling fit(), but not when calling fit_from_dataset()
         if self.encoders is not None and self.encoders.encoding_available:
             past_covariates, future_covariates = self.encoders.encode_inference(
