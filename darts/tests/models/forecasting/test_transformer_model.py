@@ -12,10 +12,12 @@ from darts.utils import timeseries_generation as tg
 logger = get_logger(__name__)
 
 try:
+    from darts.models.components.transformer import (
+        CustomFeedForwardDecoderLayer,
+        CustomFeedForwardEncoderLayer,
+    )
     from darts.models.forecasting.transformer_model import (
         TransformerModel,
-        _CustomFeedForwardDecoderLayer,
-        _CustomFeedForwardEncoderLayer,
         _TransformerModule,
     )
 
@@ -140,9 +142,9 @@ if TORCH_AVAILABLE:
             model3.fit(self.series, epochs=1)
             assert isinstance(
                 model3.model.transformer.encoder.layers[0],
-                _CustomFeedForwardEncoderLayer,
+                CustomFeedForwardEncoderLayer,
             )
             assert isinstance(
                 model3.model.transformer.decoder.layers[0],
-                _CustomFeedForwardDecoderLayer,
+                CustomFeedForwardDecoderLayer,
             )

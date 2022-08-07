@@ -12,6 +12,10 @@ import torch.nn as nn
 from darts.logging import get_logger, raise_if, raise_if_not
 from darts.models.components import glu_variants
 from darts.models.components.glu_variants import GLU_FFN
+from darts.models.components.transformer import (
+    CustomFeedForwardDecoderLayer,
+    CustomFeedForwardEncoderLayer,
+)
 from darts.models.forecasting.pl_forecasting_module import PLPastCovariatesModule
 from darts.models.forecasting.torch_forecasting_model import PastCovariatesTorchModel
 
@@ -22,18 +26,32 @@ BUILT_IN = ["relu", "gelu"]
 FFN = GLU_FFN + BUILT_IN
 
 
-class _CustomFeedForwardEncoderLayer(nn.TransformerEncoderLayer):
-    # overwrite the feed forward block
-    def _ff_block(self, x):
-        x = self.activation(x)
-        return self.dropout2(x)
-
-
-class _CustomFeedForwardDecoderLayer(nn.TransformerDecoderLayer):
-    # overwrite the feed forward block
-    def _ff_block(self, x):
-        x = self.activation(x)
-        return self.dropout2(x)
+def _generate_coder(
+    d_model, dim_ff, dropout, nhead, num_layers, coder_cls, layer_cls, ffn_cls
+):
+    """Generates an Encoder or Decoder with one of Darts' Feed-forward Network variants.
+    Parameters
+    ----------
+    coder_cls
+        Either `torch.nn.TransformerEncoder` or `...TransformerDecoder`
+    layer_cls
+        Either `darts.models.components.transformer.CustomFeedForwardEncoderLayer` or
+        `...CustomFeedForwardDecoderLayer`
+    ffn_cls
+        One of Darts' Position-wise Feed-Forward Network variants `from darts.models.components.glu_variants`
+    """
+    layer = layer_cls(
+        ffn=ffn_cls(d_model=d_model, d_ff=dim_ff, dropout=dropout),
+        dropout=dropout,
+        d_model=d_model,
+        nhead=nhead,
+        dim_feedforward=dim_ff,
+    )
+    return coder_cls(
+        layer,
+        num_layers=num_layers,
+        norm=nn.LayerNorm(d_model),
+    )
 
 
 # This implementation of positional encoding is taken from the PyTorch documentation:
@@ -162,40 +180,33 @@ class _TransformerModule(PLPastCovariatesModule):
                 f"{GLU_FFN}",
                 logger=logger,
             )
-            # use glu variant feedforward layers
-            self.activation = getattr(glu_variants, activation)(
-                d_model=d_model, d_ff=dim_feedforward, dropout=dropout
-            )
-            encoder_layer = _CustomFeedForwardEncoderLayer(
-                d_model=d_model,
-                nhead=nhead,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-                activation=self.activation,
-            )
-            encoder_norm = nn.LayerNorm(d_model)
-            custom_encoder = nn.TransformerEncoder(
-                encoder_layer=encoder_layer,
-                num_layers=num_encoder_layers,
-                norm=encoder_norm,
+            # use glu variant feed-forward layers
+            ffn_cls = getattr(glu_variants, activation)
+
+            # custom feed-forward layers have activation built-in. reset activation
+            activation = None
+
+            custom_encoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_encoder_layers,
+                nn.TransformerEncoder,
+                CustomFeedForwardEncoderLayer,
+                ffn_cls,
             )
 
-            decoder_layer = _CustomFeedForwardDecoderLayer(
-                d_model=d_model,
-                nhead=nhead,
-                dim_feedforward=dim_feedforward,
-                dropout=dropout,
-                activation=self.activation,
+            custom_decoder = _generate_coder(
+                d_model,
+                dim_feedforward,
+                dropout,
+                nhead,
+                num_decoder_layers,
+                nn.TransformerDecoder,
+                CustomFeedForwardDecoderLayer,
+                ffn_cls,
             )
-            decoder_norm = nn.LayerNorm(d_model)
-            custom_decoder = nn.TransformerDecoder(
-                decoder_layer=decoder_layer,
-                num_layers=num_decoder_layers,
-                norm=decoder_norm,
-            )
-        else:
-            # use nn.Transformer built in feedforward layers
-            self.activation = activation
 
         # Defining the Transformer module
         self.transformer = nn.Transformer(
@@ -205,7 +216,7 @@ class _TransformerModule(PLPastCovariatesModule):
             num_decoder_layers=num_decoder_layers,
             dim_feedforward=dim_feedforward,
             dropout=dropout,
-            activation=self.activation,
+            activation=activation,
             custom_encoder=custom_encoder,
             custom_decoder=custom_decoder,
         )
