@@ -281,7 +281,7 @@ class _GateAddNorm(nn.Module):
         skip_size: int = None,
         trainable_add: bool = False,
         dropout: float = None,
-        layerNorm: nn.Module = nn.LayerNorm,
+        layer_norm: nn.Module = nn.LayerNorm,
     ):
         super().__init__()
 
@@ -297,7 +297,7 @@ class _GateAddNorm(nn.Module):
             self.hidden_size,
             skip_size=self.skip_size,
             trainable_add=trainable_add,
-            norm=layerNorm,
+            norm=layer_norm,
         )
 
     def forward(self, x, skip):
@@ -315,7 +315,7 @@ class _GatedResidualNetwork(nn.Module):
         dropout: float = 0.1,
         context_size: int = None,
         residual: bool = False,
-        layerNorm: nn.Module = nn.LayerNorm,
+        layer_norm: nn.Module = nn.LayerNorm,
     ):
         super().__init__()
         self.input_size = input_size
@@ -332,7 +332,7 @@ class _GatedResidualNetwork(nn.Module):
 
         if self.output_size != residual_size:
             self.resample_norm = _ResampleNorm(
-                residual_size, self.output_size, norm=layerNorm
+                residual_size, self.output_size, norm=layer_norm
             )
 
         self.fc1 = nn.Linear(self.input_size, self.hidden_size)
@@ -390,7 +390,7 @@ class _VariableSelectionNetwork(nn.Module):
         context_size: int = None,
         single_variable_grns: Optional[Dict[str, _GatedResidualNetwork]] = None,
         prescalers: Optional[Dict[str, nn.Linear]] = None,
-        layerNorm: nn.Module = nn.LayerNorm,
+        layer_norm: nn.Module = nn.LayerNorm,
     ):
         """
         Calcualte weights for ``num_inputs`` variables  which are each of size ``input_size``
@@ -439,7 +439,7 @@ class _VariableSelectionNetwork(nn.Module):
                 self.single_variable_grns[name] = _ResampleNorm(
                     input_size,
                     self.hidden_size,
-                    norm=layerNorm,
+                    norm=layer_norm,
                 )
             else:
                 self.single_variable_grns[name] = _GatedResidualNetwork(
