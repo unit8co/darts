@@ -105,7 +105,7 @@ class _TFTModule(PLMixedCovariatesModule):
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
         norm_type: str
-            The type of LayerNorm vairant to use.
+            The type of LayerNorm variant to use.
         **kwargs
             all parameters required for :class:`darts.model.forecasting_models.PLForecastingModule` base class.
         """
@@ -739,7 +739,7 @@ class TFTModel(MixedCovariatesTorchModel):
             The likelihood model to be used for probabilistic forecasts. By default, the TFT uses
             a ``QuantileRegression`` likelihood.
         norm_type: str
-            The type of LayerNorm vairant to use.  Default: ``LayerNorm``. Options available are
+            The type of LayerNorm variant to use.  Default: ``LayerNorm``. Options available are
             ["LayerNorm", "ScaleNorm", "RMSNorm"]
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
