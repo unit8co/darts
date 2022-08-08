@@ -15,7 +15,6 @@ from darts import TimeSeries
 from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.components import glu_variants, layer_norm_variants
 from darts.models.components.glu_variants import GLU_FFN
-from darts.models.components.power_norm import MaskPowerNorm
 from darts.models.forecasting.pl_forecasting_module import PLMixedCovariatesModule
 from darts.models.forecasting.tft_submodels import (
     _GateAddNorm,
@@ -126,12 +125,10 @@ class _TFTModule(PLMixedCovariatesModule):
         self.add_relative_index = add_relative_index
 
         if norm_type == "LayerNorm":
-            self.layerNorm = nn.LayerNorm
-        elif norm_type == "PowerNorm":
-            self.layerNorm = MaskPowerNorm
+            self.layer_norm = nn.LayerNorm
         else:
             try:
-                self.layerNorm = getattr(layer_norm_variants, norm_type)
+                self.layer_norm = getattr(layer_norm_variants, norm_type)
             except AttributeError:
                 raise_log(
                     AttributeError("please provide a valid layer norm type"),
@@ -189,7 +186,7 @@ class _TFTModule(PLMixedCovariatesModule):
             prescalers=self.prescalers_linear,
             single_variable_grns={},
             context_size=None,  # no context for static variables
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         # variable selection for encoder and decoder
@@ -209,7 +206,7 @@ class _TFTModule(PLMixedCovariatesModule):
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         self.decoder_vsn = _VariableSelectionNetwork(
@@ -220,7 +217,7 @@ class _TFTModule(PLMixedCovariatesModule):
             context_size=self.hidden_size,
             prescalers=self.prescalers_linear,
             single_variable_grns={},
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         # static encoders
@@ -230,7 +227,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         # for hidden state of the lstm
@@ -239,7 +236,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         # for cell state of the lstm
@@ -248,7 +245,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         # for post lstm static enrichment
@@ -257,7 +254,7 @@ class _TFTModule(PLMixedCovariatesModule):
             hidden_size=self.hidden_size,
             output_size=self.hidden_size,
             dropout=self.dropout,
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         # lstm encoder (history) and decoder (future) for local processing
@@ -279,7 +276,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # post lstm GateAddNorm
         self.post_lstm_gan = _GateAddNorm(
-            input_size=self.hidden_size, dropout=dropout, layerNorm=self.layerNorm
+            input_size=self.hidden_size, dropout=dropout, layer_norm=self.layer_norm
         )
 
         # static enrichment and processing past LSTM
@@ -289,7 +286,7 @@ class _TFTModule(PLMixedCovariatesModule):
             output_size=self.hidden_size,
             dropout=self.dropout,
             context_size=self.hidden_size,
-            layerNorm=self.layerNorm,
+            layer_norm=self.layer_norm,
         )
 
         # attention for long-range processing
@@ -299,7 +296,7 @@ class _TFTModule(PLMixedCovariatesModule):
             dropout=self.dropout,
         )
         self.post_attn_gan = _GateAddNorm(
-            self.hidden_size, dropout=self.dropout, layerNorm=self.layerNorm
+            self.hidden_size, dropout=self.dropout, layer_norm=self.layer_norm
         )
 
         if self.feed_forward == "GatedResidualNetwork":
@@ -308,7 +305,7 @@ class _TFTModule(PLMixedCovariatesModule):
                 self.hidden_size,
                 self.hidden_size,
                 dropout=self.dropout,
-                layerNorm=self.layerNorm,
+                layer_norm=self.layer_norm,
             )
         else:
             raise_if_not(
@@ -323,7 +320,7 @@ class _TFTModule(PLMixedCovariatesModule):
 
         # output processing -> no dropout at this late stage
         self.pre_output_gan = _GateAddNorm(
-            self.hidden_size, dropout=None, layerNorm=self.layerNorm
+            self.hidden_size, dropout=None, layer_norm=self.layer_norm
         )
 
         self.output_layer = nn.Linear(self.hidden_size, self.n_targets * self.loss_size)
@@ -740,7 +737,7 @@ class TFTModel(MixedCovariatesTorchModel):
             a ``QuantileRegression`` likelihood.
         norm_type: str
             The type of LayerNorm variant to use.  Default: ``LayerNorm``. Options available are
-            ["LayerNorm", "ScaleNorm", "RMSNorm", "PowerNorm"]
+            ["LayerNorm", "RMSNorm", "PowerNorm"]
         **kwargs
             Optional arguments to initialize the pytorch_lightning.Module, pytorch_lightning.Trainer, and
             Darts' :class:`TorchForecastingModel`.
