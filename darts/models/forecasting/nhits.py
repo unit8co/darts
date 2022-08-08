@@ -701,7 +701,7 @@ class NHiTSModel(PastCovariatesTorchModel):
         self.pooling_kernel_sizes, self.n_freq_downsample = sizes
 
         if isinstance(layer_widths, int):
-            self.layer_widths = [layer_widths] * num_stacks
+            self.layer_widths = [layer_widths] * self.num_stacks
 
     @staticmethod
     def _prepare_pooling_downsampling(
