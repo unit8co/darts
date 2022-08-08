@@ -20,6 +20,9 @@ from darts.models import (
     StatsForecastAutoARIMA,
     Theta,
 )
+from darts.models.forecasting.forecasting_model import (
+    TransferableDualCovariatesForecastingModel,
+)
 from darts.tests.base_test_class import DartsBaseTestClass
 from darts.timeseries import TimeSeries
 from darts.utils import timeseries_generation as tg
@@ -224,3 +227,112 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         autoarima = AutoARIMA(trend="t")
         with self.assertRaises(ValueError):
             autoarima.fit(series=ts)
+
+    def test_statsmodels_dual_models(self):
+
+        # same tests, but VARIMA requires to work on a multivariate target series
+        UNIVARIATE = "univariate"
+        MULTIVARIATE = "multivariate"
+
+        params = [
+            (ARIMA, {}, UNIVARIATE),
+            (VARIMA, {"d": 0}, MULTIVARIATE),
+            (VARIMA, {"d": 1}, MULTIVARIATE),
+        ]
+
+        for model_cls, kwargs, model_type in params:
+            pred_len = 5
+            if model_type == MULTIVARIATE:
+                series1 = self.ts_ice_heater_train
+                series2 = self.ts_ice_heater_val
+            else:
+                series1 = self.ts_pass_train
+                series2 = self.ts_pass_val
+
+            # creating covariates from series + noise
+            noise1 = tg.gaussian_timeseries(length=len(series1))
+            noise2 = tg.gaussian_timeseries(length=len(series2))
+
+            for _ in range(1, series1.n_components):
+                noise1 = noise1.stack(tg.gaussian_timeseries(length=len(series1)))
+                noise2 = noise2.stack(tg.gaussian_timeseries(length=len(series2)))
+
+            exog1 = series1 + noise1
+            exog2 = series2 + noise2
+
+            exog1_longer = exog1.concatenate(exog1, ignore_time_axis=True)
+            exog2_longer = exog2.concatenate(exog2, ignore_time_axis=True)
+
+            # shortening of pred_len so that exog are enough for the training series prediction
+            series1 = series1[:-pred_len]
+            series2 = series2[:-pred_len]
+
+            # check runnability with different time series
+            model = model_cls(**kwargs)
+            model.fit(series1)
+            pred1 = model.predict(n=pred_len)
+            pred2 = model.predict(n=pred_len, series=series2)
+
+            # check probabilistic forecast
+            n_samples = 3
+            pred1 = model.predict(n=pred_len, num_samples=n_samples)
+            pred2 = model.predict(n=pred_len, series=series2, num_samples=n_samples)
+
+            # check that the results with a second custom ts are different from the results given with the training ts
+            self.assertFalse(np.array_equal(pred1.values, pred2.values()))
+
+            # check runnability with exogeneous variables
+            model = model_cls(**kwargs)
+            model.fit(series1, future_covariates=exog1)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1)
+            pred2 = model.predict(n=pred_len, series=series2, future_covariates=exog2)
+
+            self.assertFalse(np.array_equal(pred1.values(), pred2.values()))
+
+            # check runnability with future covariates with extra time steps in the past compared to the target series
+            model = model_cls(**kwargs)
+            model.fit(series1, future_covariates=exog1_longer)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1_longer)
+            pred2 = model.predict(
+                n=pred_len, series=series2, future_covariates=exog2_longer
+            )
+
+            # check error is raised if model expects covariates but those are not passed when predicting with new data
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(n=pred_len, series=series2)
+
+            # check error is raised if new future covariates are not wide enough for prediction (on the original series)
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(n=pred_len, future_covariates=exog1[:-pred_len])
+
+            # check error is raised if new future covariates are not wide enough for prediction (on a new series)
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(
+                    n=pred_len, series=series2, future_covariates=exog2[:-pred_len]
+                )
+            # and checking the case with unsufficient historic future covariates
+            with self.assertRaises(ValueError):
+                model = model_cls(**kwargs)
+                model.fit(series1, future_covariates=exog1)
+                model.predict(
+                    n=pred_len, series=series2, future_covariates=exog2[pred_len:]
+                )
+
+            # verify that we can still forecast the original training series after predicting a new target series
+            model = model_cls(**kwargs)
+            model.fit(series1, future_covariates=exog1)
+            pred1 = model.predict(n=pred_len, future_covariates=exog1)
+            model.predict(n=pred_len, series=series2, future_covariates=exog2)
+            pred3 = model.predict(n=pred_len, future_covariates=exog1)
+
+            self.assertTrue(np.array_equal(pred1.values(), pred3.values()))
+
+            # check backtesting with retrain=False
+            model: TransferableDualCovariatesForecastingModel = model_cls(**kwargs)
+            model.backtest(series1, future_covariates=exog1, retrain=False)
