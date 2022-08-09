@@ -168,6 +168,17 @@ class Theta(ForecastingModel):
     def __str__(self):
         return f"Theta({self.theta})"
 
+    @property
+    def min_train_series_length(self) -> int:
+        if (
+            self.season_mode != SeasonalityMode.NONE
+            and self.seasonality_period
+            and self.seasonality_period > 1
+        ):
+            return 2 * self.seasonality_period
+        else:
+            return 3
+
 
 class FourTheta(ForecastingModel):
     def __init__(
@@ -457,3 +468,14 @@ class FourTheta(ForecastingModel):
         return "4Theta(theta:{}, curve:{}, model:{}, seasonality:{})".format(
             self.theta, self.trend_mode, self.model_mode, self.season_mode
         )
+
+    @property
+    def min_train_series_length(self) -> int:
+        if (
+            self.season_mode != SeasonalityMode.NONE
+            and self.seasonality_period
+            and self.seasonality_period > 1
+        ):
+            return 2 * self.seasonality_period
+        else:
+            return 3
