@@ -7,17 +7,21 @@ This 'explanation' depends on the characteristics of the XAI model chosen (shap,
 
 """
 from abc import ABC, abstractmethod
+from cmath import inf
 from typing import Dict, Optional, Sequence, Union
 
 from numpy import integer
 
 from darts import TimeSeries
-from darts.logging import get_logger, raise_if, raise_log
+from darts.logging import get_logger, raise_if, raise_if_not, raise_log
 from darts.models.forecasting.forecasting_model import ForecastingModel
-from darts.utils import retain_period_common_to_all
+from darts.models.forecasting.regression_model import RegressionModel
+from darts.models.forecasting.torch_forecasting_model import TorchForecastingModel
 from darts.utils.statistics import stationarity_tests
 
 logger = get_logger(__name__)
+
+MIN_BACKGROUND_SAMPLE = 10
 
 
 class ForecastingModelExplainer(ABC):
@@ -36,8 +40,8 @@ class ForecastingModelExplainer(ABC):
         """The base class for forecasting model explainers. It defines the *minimal* behavior that all
         forecasting model explainers support.
 
-        Nomenclature:
-        - A background time series is a time series with which we train the Explainer model.
+        Naming:
+        - A background time series is a time series with which we 'train' the Explainer model.
         - A foreground time series is the time series we will explain according to the fitted Explainer model.
 
         Parameters
@@ -45,7 +49,7 @@ class ForecastingModelExplainer(ABC):
         model
             A ForecastingModel we want to explain. It has to be fitted first.
         background_series
-            A TimeSeries or a list of time series we want to use to compare with any foreground we want to explain.
+            A TimeSeries or a list of time series we want to use to 'train' with any foreground we want to explain.
             This is optional, for 2 reasons:
                 - In general we want to keep the training_series of the model and this is the default one,
                 but in case of multiple time series training (global or meta learning) the ForecastingModel doesn't
@@ -94,68 +98,113 @@ class ForecastingModelExplainer(ABC):
 
         else:
 
-            # ensure list of TimeSeries format
-            if isinstance(background_series, TimeSeries):
-                self.background_series = [background_series]
-                self.background_past_covariates = (
-                    [background_past_covariates] if background_past_covariates else None
-                )
-                self.background_future_covariates = (
-                    [background_future_covariates]
-                    if background_future_covariates
-                    else None
-                )
+            self.background_series = background_series
+            self.background_past_covariates = background_past_covariates
+            self.background_future_covariates = background_future_covariates
 
-            for idx in range(len(self.background_series)):
-                if not all(
-                    self.background_series[idx].has_same_time_as(
-                        self.background_past_covariates[idx]
-                    ),
-                    self.background_series[idx].has_same_time_as(
-                        self.background_future_covariates[idx]
-                    ),
-                ):
-
-                    logger.warniplainabilityng(
-                        "Some series and their covariates don't share the same time index. We will take "
-                        "the time index common to all."
-                    )
-
-                (
-                    self.background_series[idx],
-                    self.background_past_covariates[idx],
-                    self.background_future_covariates[idx],
-                ) = retain_period_common_to_all(
-                    [
-                        self.background_series[idx],
-                        self.background_past_covariates[idx],
-                        self.background_future_covariates[idx],
-                    ]
-                )
-
-        self.target_names = self.background_series.columns
-        if self.background_past_covariates is not None:
-            self.past_covariates_names = self.background_past_covariates.columns
-        if self.background_future_covariates is not None:
-            self.future_covariates_names = self.background_future_covariates.columns
+        # ensure list of TimeSeries format
+        if isinstance(self.background_series, TimeSeries):
+            self.background_series = [self.background_series]
+            self.background_past_covariates = (
+                [self.background_past_covariates]
+                if self.background_past_covariates
+                else None
+            )
+            self.background_future_covariates = (
+                [self.background_future_covariates]
+                if self.background_future_covariates
+                else None
+            )
 
         raise_if(
-            self.model._expect_past_covariates
-            and self.background_past_covariates is None,
+            self.model.uses_past_covariates and self.background_past_covariates is None,
             "A background past covariates is not provided, but the model needs past covariates.",
         )
 
         raise_if(
-            self.model._expect_future_covariates
+            self.model.uses_future_covariates
             and self.background_future_covariates is None,
             "A background future covariates is not provided, but the model needs future covariates.",
         )
 
-        if not self.test_stationarity():
+        self.target_names = self.background_series[0].columns.to_list()
+        if self.background_past_covariates is not None:
+            self.past_covariates_names = self.background_past_covariates[
+                0
+            ].columns.to_list()
+        if self.background_future_covariates is not None:
+            self.future_covariates_names = self.background_future_covariates[
+                0
+            ].columns.to_list()
+
+        self._check_background_covariates()
+
+        if not self._test_stationarity():
             logger.warning(
                 "One time series component of the background time series is not stationary."
                 " Beware of wrong interpretation with chosen explainability."
             )
+
+    def _check_background_covariates(self):
+
+        if isinstance(self.model, RegressionModel):
+            len_target_min = (
+                len(self.model.lags["target"]) if self.model.lags["target"] else 0
+            )
+            len_past_min = (
+                len(self.model.lags["past"]) if self.model.lags["past"] else 0
+            )
+            len_future_min = (
+                len(self.model.lags["future"]) if self.model.lags["future"] else 0
+            )
+            min_length = max(len_target_min, len_past_min, len_future_min)
+
+        elif isinstance(self.model, TorchForecastingModel):
+            min_length = self.model.input_chunk_length
+        else:
+            min_length = inf
+
+        # ensure we have the same names between TimeSeries (if list of). Important to ensure homogeneity
+        # for explained features.
+        for idx in range(len(self.background_series)):
+            raise_if_not(
+                all(
+                    [
+                        self.background_series[idx].columns.to_list()
+                        == self.target_names,
+                        self.background_past_covariates[idx].columns.to_list()
+                        == self.past_covariates_names
+                        if self.background_past_covariates is not None
+                        else True,
+                        self.background_future_covariates[idx].columns.to_list()
+                        == self.future_covariates_names
+                        if self.background_future_covariates is not None
+                        else True,
+                    ]
+                ),
+                "Columns names must be identical between TimeSeries list components (multi-TimeSeries).",
+            )
+
+        # the number of samples we will build for explanation is:
+        # sum(len(intersection(target, fut_cov, past_cov))- min_length+1). We compare this to a fixed constant min.
+        nb_background_samples = 0
+        for idx in range(len(self.background_series)):
+            nb_background_samples += max(
+                len(
+                    self.background_series[idx].time_index.intersection(
+                        self.background_past_covariates[idx].time_index.intersection(
+                            self.background_future_covariates[idx].time_index
+                        )
+                    )
+                )
+                - min_length
+                + 1,
+                0,
+            )
+        raise_if(
+            nb_background_samples <= MIN_BACKGROUND_SAMPLE,
+            "The number of samples for the background series is too small.",
+        )
 
     @abstractmethod
     def explain(
@@ -167,30 +216,34 @@ class ForecastingModelExplainer(ABC):
         foreground_future_covariates: Optional[
             Union[TimeSeries, Sequence[TimeSeries]]
         ] = None,
+        horizons: Optional[Sequence[int]] = None,
+        target_names: Optional[Sequence[str]] = None,
     ) -> Union[
         Dict[integer, Dict[str, TimeSeries]],
         Sequence[Dict[integer, Dict[str, TimeSeries]]],
     ]:
         """
-        Main method of the ForecastingExplainer object.
-        Return a dictionary of dictionaries (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
-        - the first dimension corresponds to the n forecasts ahead we want to explain (Horizon).
-        - the second dimension corresponds to each component of the target time series.
+        Main method of the ForecastingExplainer class.
+        Return a dictionary of dictionaries of (mutivariates) TimeSeries instances
+        (or a list of dictionaries of dictionaries, il multiple TimeSeries list):
+        - the first dimension corresponds to the horizons we want to explain.
+        - the second dimension corresponds to the components of the target time series we want to explain.
 
 
-        The value of the second dimension dictionary is a (multivariate) TimeSeries object giving the 'explanation'
-        for a given forecast (horizon, target) at any timestamp forecastable given the foreground TimeSeries
-        time dimension.
+        The value of the second dimension dictionary is a (multivariate) TimeSeries instance giving the 'explanation'
+        for a given forecast (horizon, target) at any timestamp forecastable corresponding to the foreground
+        TimeSeries input.
 
         The name convention for each component of this multivariate TimeSeries is:
         `name`_`type_of_cov`_lag_`int` where:
-        - `name` is the existing name of the component in the original foreground TimeSeries (target or past or future).
+        - `name` is the existing name of the component in the original different foreground TimeSeries (target or past
+        or future).
         - `type_of_cov` is the type of covariates. It can take 3 different values: `target`, `past`, `future`.
         - `int` is the lag index.
 
         Example:
         Let's say we have a model with 2 targets (multivariates) named "T_1" and "T_2", three past covariates we didn't
-        name and one future covariate we didn't name. Also, n = 2.
+        name and one future covariate we didn't name. Also, horizons = [0, 1].
         The model is a regression model, with lags = 3, lags_past_covariates=[-1, -3], lags_future_covariates = [0]
 
         We provide a foreground_series (not a list), past covariates, future covariates, of length 5.
@@ -205,13 +258,13 @@ class ForecastingModelExplainer(ABC):
             - T_1_target_lag-1
             - T_1_target_lag-2
             - T_1_target_lag-3
-            - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
-            - 0_past_cov_lag-3 (we didn't name the past covariate so it took the default name)
-            - 1_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
-            - 1_past_cov_lag-3 (we didn't name the past covariate so it took the default name)
-            - 2_past_cov_lag-1 (we didn't name the past covariate so it took the default name)
-            - 2_past_cov_lag-3 (we didn't name the past covariate so it took the default name)
-            - 0_fut_cov_lag_0  (we didn't name the future covariate so it took the default name)
+            - 0_past_cov_lag-1 (we didn't name the past covariate so it took the default name 0)
+            - 0_past_cov_lag-3 (we didn't name the past covariate so it took the default name 0)
+            - 1_past_cov_lag-1 (we didn't name the past covariate so it took the default name 1)
+            - 1_past_cov_lag-3 (we didn't name the past covariate so it took the default name 1)
+            - 2_past_cov_lag-1 (we didn't name the past covariate so it took the default name 2)
+            - 2_past_cov_lag-3 (we didn't name the past covariate so it took the default name 2)
+            - 0_fut_cov_lag_0  (we didn't name the future covariate so it took the default name 0)
 
         of length 3, as we can explain 5-3+1 forecasts (basically timestamp indexes 4, 5, and 6)
 
@@ -222,23 +275,31 @@ class ForecastingModelExplainer(ABC):
             Optionally, target timeseries we want to explain. Can be multivariate.
             If none is provided, explain will automatically provide the whole background TimeSeries explanation.
         foreground_past_covariates
-            Optionally, past covariate timeseries if needed by model.
+            Optionally, past covariate timeseries if needed by the ForecastingModel.
         foreground_future_covariates
-            Optionally, future covariate timeseries if needed by model.
+            Optionally, future covariate timeseries if needed by the ForecastingModel.
+        horizons
+            Optionally, a list of integer values representing which elements in the future
+            we want to explain, starting from the first timestamp prediction at 0.
+            For now we consider only models with output_chunk_length and it can't be bigger than output_chunk_length.
+        target_names
+            Optionally, A list of string naming the target names we want to explain.
 
         Returns
         -------
         a dictionary of dictionary of Timeseries (or a list of such) of explaining values :
             - each element of the first dimension dictionary is corresponding to a forecast horizon
-            - each element of the second dimension dictionary is corresponding to a target
+            - each element of the second dimension dictionary is corresponding to a target name
         """
-
         pass
 
-    def test_stationarity(self):
+    def _test_stationarity(self):
         return all(
             [
-                stationarity_tests(self.background_series[c])
-                for c in self.background_series.components
+                (
+                    stationarity_tests(background_serie[c])
+                    for c in background_serie.components
+                )
+                for background_serie in self.background_series
             ]
         )
