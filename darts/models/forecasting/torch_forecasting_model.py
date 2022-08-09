@@ -1307,7 +1307,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         if path is None:
             # default path
-            path = f"{type(self).__name__}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pt"
+            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pt"
 
         # We save the whole object to keep track of everything
         with open(path, "wb") as f_out:
@@ -1387,8 +1387,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
     @staticmethod
     def load_model(path: str) -> "TorchForecastingModel":
         """
-        `TorchForecastingModel.save_model()` is deprecated and will be removed in a future darts version.
-        Please use `TorchForecastingModel.save()` instead.
+        `TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts version.
+        Please use `TorchForecastingModel.load()` instead.
 
         Loads a model from a given file path. The file name should end with '.pth.tar'
 
@@ -1408,8 +1408,10 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             Path under which to save the model at its current state. The path should end with '.pth.tar'
         """
 
-        load_warning = """`TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts version.
-        Please use `TorchForecastingModel.load()` instead."""
+        load_warning = (
+            "`TorchForecastingModel.load_model()` is deprecated and will be removed in a future darts "
+            "version. Please use `TorchForecastingModel.load()` instead."
+        )
         raise_deprecation_warning(load_warning, logger)
 
         raise_if_not(

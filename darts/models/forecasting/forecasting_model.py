@@ -903,22 +903,20 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
 
-    def save(
-        self, path: Optional[Union[str, BinaryIO]] = None, **joblib_kwargs
-    ) -> None:
+    def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
         """Saves the model under a given path or file handle.
 
         Parameters
         ----------
         path
             Path under which to save the model at its current state.
-        joblib_kwargs
+        pkl_kwargs
             Keyword arguments passed to `joblib.dump()`
         """
 
         if path is None:
             # default path
-            path = f"{type(self).__name__}_{datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pkl"
+            path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pkl"
 
         if isinstance(path, str):
             raise_if_not(
@@ -927,12 +925,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 logger,
             )
 
-            # save the whole object using joblib
+            # save the whole object using pickle
             with open(path, "wb") as handle:
-                pickle.dump(value=self, filename=handle, **joblib_kwargs)
+                pickle.dump(obj=self, file=handle, **pkl_kwargs)
         else:
-            # save the whole object using joblib
-            pickle.dump(value=self, filename=path, **joblib_kwargs)
+            # save the whole object using pickle
+            pickle.dump(obj=self, file=path, **pkl_kwargs)
 
     @staticmethod
     def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
@@ -953,10 +951,10 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # Load the object using joblib
             with open(path, "rb") as handle:
-                model = pickle.load(filename=handle)
+                model = pickle.load(file=handle)
         else:
 
-            model = pickle.load(filename=path)
+            model = pickle.load(file=path)
 
         return model
 
