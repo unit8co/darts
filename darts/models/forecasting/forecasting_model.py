@@ -469,7 +469,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
 
             # train_cov = covariates.drop_after(pred_time) if covariates else None
 
-            if not self._fit_called or retrain_func(
+            if (not self._fit_called) or retrain_func(
                 counter=_counter,
                 pred_time=pred_time,
                 series=train,
