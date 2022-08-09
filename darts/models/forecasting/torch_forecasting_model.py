@@ -507,7 +507,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # we need to save the initialized TorchForecastingModel as PyTorch-Lightning only saves module checkpoints
         if self.save_checkpoints:
-            self.save_model(
+            self.save(
                 os.path.join(
                     _get_runs_folder(self.work_dir, self.model_name), INIT_MODEL_NAME
                 )
@@ -1303,7 +1303,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
                 from darts.models import RNNModel
 
-                model_loaded = RNNModel.load_model("my_model.pth.tar")
+                model_loaded = RNNModel.load("my_model.pth.tar")
             ..
 
         Parameters
@@ -1332,7 +1332,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
 
-        If you manually saved your model, consider using :meth:`load_model() <TorchForeCastingModel.load_model()>`.
+        If you manually saved your model, consider using :meth:`load() <TorchForeCastingModel.load()>`.
 
         Example for loading a :class:`RNNModel` from checkpoint (``model_name`` is the ``model_name`` used at model
         creation):
@@ -1383,7 +1383,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             logger,
         )
 
-        model = TorchForecastingModel.load_model(base_model_path)
+        model = TorchForecastingModel.load(base_model_path)
 
         # load pytorch lightning module from checkpoint
         # if file_name is None, find most recent file in savepath that is a checkpoint
