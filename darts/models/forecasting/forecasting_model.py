@@ -393,8 +393,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         # only GlobalForecastingModels support historical forecastings without retraining the model
         base_class_name = self.__class__.__base__.__name__
         raise_if(
-            (retrain is True)
-            and not self._supports_non_retrainable_historical_forecasts(),
+            (isinstance(retrain, Callable) or int(retrain) != 1)
+            and (not self._supports_non_retrainable_historical_forecasts()),
             f"{base_class_name} does not support historical forecastings with `retrain` set to `False`. "
             f"For now, this is only supported with GlobalForecastingModels such as TorchForecastingModels. "
             f"Fore more information, read the documentation for `retrain` in `historical_forecastings()`",
