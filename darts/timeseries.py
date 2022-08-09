@@ -241,10 +241,15 @@ class TimeSeries:
             )
             static_covariates.columns.name = STATIC_COV_TAG
             # convert numerical columns to same dtype as series
-            numeric_cols = static_covariates.select_dtypes(include=np.number).columns
-            static_covariates = static_covariates.astype(
-                {col: self.dtype for col in numeric_cols}
-            )
+            # we get all numerical columns, except those that have right dtype already
+            cols_to_cast = static_covariates.select_dtypes(
+                include=np.number, exclude=self.dtype
+            ).columns
+
+            changes = {col: self.dtype for col in cols_to_cast}
+            # Calling astype is costly even when there's no change...
+            if len(changes) > 0:
+                static_covariates = static_covariates.astype(changes, copy=False)
 
         # handle hierarchy
         hierarchy = self._xa.attrs.get(HIERARCHY_TAG, None)
@@ -644,7 +649,7 @@ class TimeSeries:
         else:
             raise_if_not(
                 isinstance(df.index, VALID_INDEX_TYPES),
-                "If time_col is not specified, the DataFrame must be indexed either with"
+                "If time_col is not specified, the DataFrame must be indexed either with "
                 "a DatetimeIndex, or with a RangeIndex.",
                 logger,
             )
@@ -1797,7 +1802,7 @@ class TimeSeries:
         self,
         other: "TimeSeries",
         axis: Optional[Union[str, int]] = 0,
-        ignore_time_axes: Optional[bool] = False,
+        ignore_time_axis: Optional[bool] = False,
         ignore_static_covariates: bool = False,
         drop_hierarchy: bool = True,
     ) -> "TimeSeries":
@@ -1810,7 +1815,7 @@ class TimeSeries:
             another timeseries to concatenate to this one
         axis : str or int
             axis along which timeseries will be concatenated. ['time', 'component' or 'sample'; Default: 0 (time)]
-        ignore_time_axes : bool, default False
+        ignore_time_axis : bool, default False
             Ignore errors when time axis varies for some timeseries. Note that this may yield unexpected results
         ignore_static_covariates : bool
             whether to ignore all requirements for static covariate concatenation and only transfer the
@@ -1841,7 +1846,7 @@ class TimeSeries:
         return concatenate(
             series=[self, other],
             axis=axis,
-            ignore_time_axis=ignore_time_axes,
+            ignore_time_axis=ignore_time_axis,
             ignore_static_covariates=ignore_static_covariates,
             drop_hierarchy=drop_hierarchy,
         )
@@ -2565,6 +2570,12 @@ class TimeSeries:
             'applied' to all components of the TimeSeries. If a multi-row DataFrame, the number of rows must match the
             number of components of the TimeSeries. This adds component-specific static covariates.
 
+        Notes
+        -----
+        If there are a large number of static covariates variables (i.e., the static covariates have a very large
+        dimension), there might be a noticable performance penalty for creating ``TimeSeries`` objects, unless
+        the covariates already have the same ``dtype`` as the series data.
+
         Examples
         --------
         >>> import pandas as pd
@@ -2691,6 +2702,9 @@ class TimeSeries:
         Retrieve one of the components of the series
         and return it as new univariate ``TimeSeries`` instance.
 
+        This drops the hierarchy (if any), and retains only the relevant static
+        covariates column.
+
         Parameters
         ----------
         index
@@ -2702,11 +2716,8 @@ class TimeSeries:
         TimeSeries
             A new univariate TimeSeries instance.
         """
-        if isinstance(index, int):
-            new_xa = self._xa.isel(component=index).expand_dims(DIMS[1], axis=1)
-        else:
-            new_xa = self._xa.sel(component=index).expand_dims(DIMS[1], axis=1)
-        return self.__class__(new_xa)
+
+        return self[index if isinstance(index, str) else self.components[index]]
 
     def add_datetime_attribute(
         self, attribute, one_hot: bool = False, cyclic: bool = False
@@ -2989,6 +3000,7 @@ class TimeSeries:
         central_quantile: Union[float, str] = 0.5,
         low_quantile: Optional[float] = 0.05,
         high_quantile: Optional[float] = 0.95,
+        default_formatting: bool = True,
         *args,
         **kwargs,
     ):
@@ -3013,6 +3025,8 @@ class TimeSeries:
             The quantile to use for the upper bound of the plotted confidence interval. Similar to `central_quantile`,
             this is applied to each component separately (i.e., displaying marginal distributions). No confidence
             interval is shown if `high_quantile` is None (default 0.95).
+        default_formatting
+            Whether or not to use the darts default scheme.
         args
             some positional arguments for the `plot()` method
         kwargs
@@ -3080,7 +3094,7 @@ class TimeSeries:
             kwargs["label"] = label_to_use
 
             p = central_series.plot(*args, **kwargs)
-            color_used = p[0].get_color()
+            color_used = p[0].get_color() if default_formatting else None
             kwargs["alpha"] = alpha if alpha is not None else alpha_confidence_intvls
 
             # Optionally show confidence intervals

@@ -33,7 +33,7 @@ In addition, some models can work on *multiple time series*, meaning that they c
 
 * **Example of a multivariate series:** The blood pressure and heart rate of a single patient over time (one multivariate series with 2 components).
 
-* **Example of multiple series:** The blood pressure and heart rate of multiple patients; potentially measured at different times for different patients (one univariate series per patient).
+* **Example of multiple series:** The blood pressure and heart rate of multiple patients; potentially measured at different times for different patients (one multivariate series with 2 components per patient).
 
 
 ### Should I use a multivariate series or multiple series for my problem?
@@ -50,9 +50,9 @@ In Darts, probabilistic forecasts are represented by drawing Monte Carlo samples
 ## Creating `TimeSeries`
 `TimeSeries` objects can be created using factory methods, for example:
 
-* [TimeSeries.from_dataframe()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe) can create `TimeSeries` from a Pandas Dataframe having one or several columns representing values (several columns would correspond to a multivariate series).
+* [TimeSeries.from_dataframe()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_dataframe) can create `TimeSeries` from a Pandas Dataframe having one or several columns representing values (columns correspond to components, and several columns would correspond to a multivariate series).
 
-* [TimeSeries.from_values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_values) can create `TimeSeries` from a 2-D or 3-D NumPy array. It will generate an integer-based time index (of type `pandas.RangeIndex`). 2-D corresponds to deterministic (potentially multivariate) series, and 3-D to stochastic series.
+* [TimeSeries.from_values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_values) can create `TimeSeries` from a 1-D, 2-D or 3-D NumPy array. It will generate an integer-based time index (of type `pandas.RangeIndex`). 1-D corresponds to univariate deterministic series, 2-D to multivariate deterministic series, and 3-D to multivariate stochastic series.
 
 * [TimeSeries.from_times_and_values()](https://unit8co.github.io/darts/generated_api/darts.timeseries.html#darts.timeseries.TimeSeries.from_times_and_values) is similar to `TimeSeries.from_values()` but also accepts a time index.
 
@@ -67,7 +67,7 @@ my_multivariate_series = concatenate([series1, series2, ...], axis=1)
 produces a multivariate series from some series that share the same time axis.
 
 ## Implementation
-Behind the scenes, `TimeSeries` is wrapping around a 3-dimensional `xarray.DataArray` object. The dimensions are *(time, component, sample)*, where the size of the *component* dimension is larger than 1 for multivariate series and the size of the *sample* dimension is larger than 1 for stochastic series. The `DataArray` is itself backed by a a 3-dimensional NumPy array, and it has a time index (either `pandas.DatetimeIndex` or `pandas.RangeIndex`) on the *time* dimension and another `pandas.Index` on the *component* (or "columns") dimension. `TimeSeries` is intended to be immutable.
+Behind the scenes, `TimeSeries` is wrapping around a 3-dimensional `xarray.DataArray` object. The dimensions are *(time, component, sample)*, where the size of the *component* dimension is larger than 1 for multivariate series and the size of the *sample* dimension is larger than 1 for stochastic series. The `DataArray` is itself backed by a 3-dimensional NumPy array, and it has a time index (either `pandas.DatetimeIndex` or `pandas.RangeIndex`) on the *time* dimension and another `pandas.Index` on the *component* (or "columns") dimension. `TimeSeries` is intended to be immutable and most operations return new `TimeSeries` objects.
 
 ## Exporting data from a `TimeSeries`
 `TimeSeries` objects offer a few ways to export the data, for example:

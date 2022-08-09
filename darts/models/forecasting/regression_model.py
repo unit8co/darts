@@ -29,6 +29,7 @@ from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
+from catboost import CatBoostRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.multioutput import MultiOutputRegressor
 
@@ -417,6 +418,15 @@ class RegressionModel(GlobalForecastingModel):
                     self.model = MultiOutputRegressor(
                         self.model, n_jobs=n_jobs_multioutput_wrapper
                     )
+                elif isinstance(self.model, CatBoostRegressor):
+                    if (
+                        self.model.get_params()["loss_function"]
+                        == "RMSEWithUncertainty"
+                    ):
+                        self.model = MultiOutputRegressor(
+                            self.model, n_jobs=n_jobs_multioutput_wrapper
+                        )
+
         # warn if n_jobs_multioutput_wrapper was provided but not used
         if (
             not isinstance(self.model, MultiOutputRegressor)
@@ -635,7 +645,7 @@ class RegressionModel(GlobalForecastingModel):
 
 class _LikelihoodMixin:
     """
-    A class containing functions supporting quantile and poisson regression, to be used as a mixin for some
+    A class containing functions supporting quantile, poisson and gaussian regression, to be used as a mixin for some
     `RegressionModel` subclasses.
     """
 
@@ -699,6 +709,67 @@ class _LikelihoodMixin:
         # sampled has shape (n_series * n_samples, output_chunk_length, n_components)
 
         return sampled
+
+    def _predict_normal(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
+        """Method intended for CatBoost's RMSEWithUncertainty loss. Returns samples
+        computed from double-valued inputs [mean, variance].
+        X is of shape (n_series * n_samples, n_regression_features)
+        """
+        k = x.shape[0]
+
+        # model_output shape:
+        # if univariate & output_chunk_length = 1: (num_samples, 2)
+        # else: (2, num_samples, n_components * output_chunk_length)
+        # where the axis with 2 dims is mu, sigma
+        model_output = self.model.predict(x, **kwargs)
+        output_dim = len(model_output.shape)
+
+        # deterministic case: we return the mean only
+        if num_samples == 1:
+            # univariate & single-chunk output
+            if output_dim <= 2:
+                output_slice = model_output[:, 0]
+            else:
+                output_slice = model_output[0, :, :]
+
+            return output_slice.reshape(k, self.output_chunk_length, -1)
+
+        # probabilistic case
+        # univariate & single-chunk output
+        if output_dim <= 2:
+            # embedding well shaped 2D output into 3D
+            model_output = np.expand_dims(model_output, axis=0)
+
+        else:
+            # we transpose to get mu, sigma couples on last axis
+            # shape becomes: (n_components * output_chunk_length, num_samples, 2)
+            model_output = model_output.transpose()
+
+        return self._normal_sampling(model_output, num_samples)
+
+    def _normal_sampling(self, model_output: np.ndarray, n_samples: int) -> np.ndarray:
+        """Sampling method for CatBoost's [mean, variance] output.
+        model_output is of shape (n_components * output_chunk_length, n_samples, 2),
+        where the last 2 dimensions are mu and sigma.
+        """
+        shape = model_output.shape
+        chunk_len = self.output_chunk_length
+
+        # treating each component separately
+        mu_sigma_list = [model_output[i, :, :] for i in range(shape[0])]
+
+        list_of_samples = [
+            self._rng.normal(
+                mu_sigma[:, 0],  # mean vector
+                mu_sigma[:, 1],  # diagonal covariance matrix
+            )
+            for mu_sigma in mu_sigma_list
+        ]
+
+        samples_transposed = np.array(list_of_samples).transpose()
+        samples_reshaped = samples_transposed.reshape(n_samples, chunk_len, -1)
+
+        return samples_reshaped
 
     def _predict_poisson(self, x: np.ndarray, num_samples: int, **kwargs) -> np.ndarray:
         """

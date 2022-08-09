@@ -257,12 +257,12 @@ class RNNModel(DualCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -466,3 +466,7 @@ class RNNModel(DualCovariatesTorchModel):
             train_dataset.ds_past.shift == 1,
             "RNNModel requires a shifted training dataset with shift=1.",
         )
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False

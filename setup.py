@@ -8,10 +8,9 @@ def read_requirements(path):
 
 
 base_reqs = read_requirements("requirements/core.txt")
-pmdarima_reqs = read_requirements("requirements/pmdarima.txt")
 torch_reqs = read_requirements("requirements/torch.txt")
 
-all_reqs = base_reqs + pmdarima_reqs + torch_reqs
+all_reqs = base_reqs + torch_reqs
 
 with open("README.md") as fh:
     LONG_DESCRIPTION = fh.read()

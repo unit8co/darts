@@ -15,3 +15,4 @@ from .reconciliation import (
     TopDownReconciliator,
 )
 from .scaler import Scaler
+from .static_covariates_transformer import StaticCovariatesTransformer

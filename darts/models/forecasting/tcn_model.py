@@ -300,12 +300,12 @@ class TCNModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -490,3 +490,7 @@ class TCNModel(PastCovariatesTorchModel):
             shift=self.output_chunk_length,
             max_samples_per_ts=max_samples_per_ts,
         )
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False

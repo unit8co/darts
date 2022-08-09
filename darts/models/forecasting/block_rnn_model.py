@@ -178,12 +178,12 @@ class BlockRNNModel(PastCovariatesTorchModel):
             PyTorch loss function used for training.
             This parameter will be ignored for probabilistic models if the ``likelihood`` parameter is specified.
             Default: ``torch.nn.MSELoss()``.
-        torch_metrics
-            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
-            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         likelihood
             One of Darts' :meth:`Likelihood <darts.utils.likelihood_models.Likelihood>` models to be used for
             probabilistic forecasts. Default: ``None``.
+        torch_metrics
+            A torch metric or a ``MetricCollection`` used for evaluation. A full list of available metrics can be found
+            at https://torchmetrics.readthedocs.io/en/latest/. Default: ``None``.
         optimizer_cls
             The PyTorch optimizer class to be used. Default: ``torch.optim.Adam``.
         optimizer_kwargs
@@ -324,6 +324,10 @@ class BlockRNNModel(PastCovariatesTorchModel):
         self.hidden_size = hidden_size
         self.n_rnn_layers = n_rnn_layers
         self.dropout = dropout
+
+    @staticmethod
+    def _supports_static_covariates() -> bool:
+        return False
 
     def _create_model(self, train_sample: Tuple[torch.Tensor]) -> torch.nn.Module:
         # samples are made of (past_target, past_covariates, future_target)
