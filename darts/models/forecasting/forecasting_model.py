@@ -1118,7 +1118,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
     Among other things, it lets Darts forecasting models wrap around statsmodels models
     having a `future_covariates` parameter, which corresponds to future-known covariates.
 
-    All implementations have to implement the `fit()` and `predict()` methods defined below.
+    All implementations have to implement the `_fit()` and `_predict()` methods defined below.
     """
 
     _expect_covariate = False
@@ -1172,6 +1172,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         n: int,
         future_covariates: Optional[TimeSeries] = None,
         num_samples: int = 1,
+        **kwargs,
     ) -> TimeSeries:
         """Forecasts values for `n` time steps after the end of the training series.
 
@@ -1194,8 +1195,7 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         TimeSeries, a single time series containing the `n` next points after then end of the training series.
         """
 
-        if future_covariates is None:
-            super().predict(n, num_samples)
+        super().predict(n, num_samples)
 
         if self._expect_covariate and future_covariates is None:
             raise_log(
@@ -1204,6 +1204,12 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
                     "`future_covariates` variables have to be provided to `predict()`."
                 )
             )
+
+        raise_if(
+            not self._expect_covariate and future_covariates is not None,
+            "The model has been trained without `future_covariates` variable, but the "
+            "`future_covariates` parameter provided to `predict()` is not None.",
+        )
 
         if future_covariates is not None:
             start = self.training_series.end_time() + self.training_series.freq
@@ -1229,13 +1235,13 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
             ]
 
             raise_if_not(
-                len(future_covariates) == n and self._expect_covariate,
+                len(future_covariates) == n,
                 invalid_time_span_error,
                 logger,
             )
 
         return self._predict(
-            n, future_covariates=future_covariates, num_samples=num_samples
+            n, future_covariates=future_covariates, num_samples=num_samples, **kwargs
         )
 
     @abstractmethod
@@ -1269,3 +1275,132 @@ class DualCovariatesForecastingModel(ForecastingModel, ABC):
         return self.predict(
             n, future_covariates=future_covariates, num_samples=num_samples
         )
+
+
+class TransferableDualCovariatesForecastingModel(DualCovariatesForecastingModel, ABC):
+    """The base class for the forecasting models that are not global, but support future covariates, and can
+    additionally be applied to new data unrelated to the original series used for fitting the model. Currently,
+    all the derived classes wrap statsmodels models.
+
+    All implementations have to implement the `_fit()`, `_predict()` methods.
+    """
+
+    def predict(
+        self,
+        n: int,
+        series: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+        **kwargs,
+    ) -> TimeSeries:
+        """If the `series` parameter is not set, forecasts values for `n` time steps after the end of the training
+        series. If some future covariates were specified during the training, they must also be specified here.
+
+        If the `series` parameter is set, forecasts values for `n` time steps after the end of the new target
+        series. If some future covariates were specified during the training, they must also be specified here.
+
+        Parameters
+        ----------
+        n
+            Forecast horizon - the number of time steps after the end of the series for which to produce predictions.
+        series
+            Optionally, a new target series whose future values will be predicted. Defaults to `None`, meaning that the
+            model will forecast the future value of the training series.
+        future_covariates
+            The time series of future-known covariates which can be fed as input to the model. It must correspond to
+            the covariate time series that has been used with the :func:`fit()` method for training.
+
+            If `series` is not set, it must contain at least the next `n` time steps/indices after the end of the
+            training target series. If `series` is set, it must contain at least the time steps/indices corresponding
+            to the new target series (historic future covariates), plus the next `n` time steps/indices after the end.
+        num_samples
+            Number of times a prediction is sampled from a probabilistic model. Should be left set to 1
+            for deterministic models.
+
+        Returns
+        -------
+        TimeSeries, a single time series containing the `n` next points after then end of the training series.
+        """
+
+        if self._expect_covariate and future_covariates is None:
+            raise_log(
+                ValueError(
+                    "The model has been trained with `future_covariates` variable. Some matching "
+                    "`future_covariates` variables have to be provided to `predict()`."
+                )
+            )
+
+        historic_future_covariates = None
+
+        if series is not None and future_covariates:
+            raise_if_not(
+                future_covariates.start_time() <= series.start_time()
+                and future_covariates.end_time() >= series.end_time() + n * series.freq,
+                "The provided `future_covariates` related to the new target series must contain at least the same time"
+                "steps/indices as the target `series` + `n`.",
+                logger,
+            )
+            # splitting the future covariates
+            (
+                historic_future_covariates,
+                future_covariates,
+            ) = future_covariates.split_after(series.end_time())
+
+            # in case future covariate have more values on the left end side that we don't need
+            if not series.has_same_time_as(historic_future_covariates):
+                historic_future_covariates = historic_future_covariates.slice_intersect(
+                    series
+                )
+
+        # DualCovariatesForecastingModel performs some checks on self.training_series. We temporary replace that with
+        # the new ts
+        if series is not None:
+            self._orig_training_series = self.training_series
+            self.training_series = series
+
+        result = super().predict(
+            n=n,
+            series=series,
+            historic_future_covariates=historic_future_covariates,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+            **kwargs,
+        )
+
+        # restoring the original training ts
+        if series is not None:
+            self.training_series = self._orig_training_series
+
+        return result
+
+    @abstractmethod
+    def _predict(
+        self,
+        n: int,
+        series: Optional[TimeSeries] = None,
+        historic_future_covariates: Optional[TimeSeries] = None,
+        future_covariates: Optional[TimeSeries] = None,
+        num_samples: int = 1,
+    ) -> TimeSeries:
+        """Forecasts values for a certain number of time steps after the end of the series.
+        TransferableDualCovariatesForecastingModel must implement the predict logic in this method.
+        """
+        pass
+
+    def _predict_wrapper(
+        self,
+        n: int,
+        series: TimeSeries,
+        past_covariates: Optional[TimeSeries],
+        future_covariates: Optional[TimeSeries],
+        num_samples: int,
+    ) -> TimeSeries:
+        return self.predict(
+            n=n,
+            series=series,
+            future_covariates=future_covariates,
+            num_samples=num_samples,
+        )
+
+    def _supports_non_retrainable_historical_forecasts(self) -> bool:
+        return True
