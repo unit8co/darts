@@ -52,7 +52,7 @@ models = [
     (NaiveSeasonal(), 32.4),
     (KalmanForecaster(dim_x=3), 17.0),
     (LinearRegressionModel(lags=12), 11.0),
-    (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5),
+    (RandomForest(lags=12, n_estimators=5, max_depth=3), 17.0),
 ]
 
 # forecasting models with exogenous variables support
