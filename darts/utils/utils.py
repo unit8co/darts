@@ -318,7 +318,7 @@ def _check_quantiles(quantiles):
     )
 
 
-def _retrain_checks(func: Callable[..., bool]):
+def _retrain_wrapper(func: Callable[..., bool]):
     @wraps(func)
     def wrapper(*args, **kwargs):
 
@@ -328,7 +328,7 @@ def _retrain_checks(func: Callable[..., bool]):
         )
 
         if not isinstance(result, bool):
-            raise ValueError("Return value of `retrain` must be bool")
+            raise_log(ValueError("Return value of `retrain` must be bool"), logger)
 
         return result
 

@@ -1,3 +1,5 @@
+from typing import Callable
+
 import numpy as np
 import pandas as pd
 
@@ -336,3 +338,43 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             # check backtesting with retrain=False
             model: TransferableDualCovariatesForecastingModel = model_cls(**kwargs)
             model.backtest(series1, future_covariates=exog1, retrain=False)
+
+    def test_backtest_retrain(self):
+        """
+        Test backtest method with different retrain arguments
+        """
+
+        series = self.ts_pass_train
+
+        RETRAINABLE = "retrainable"
+        NON_RETRAINABLE = "non-retrainable"  # retrain must always be True
+
+        def retrain_year_1st(pred_time: pd.Timestamp):
+            """
+            Retrains model on 1st month of the year
+            Remark that AirPassengersDataset has monthly freq
+            """
+            return pred_time.month == 1
+
+        params = [
+            (ExponentialSmoothing(), NON_RETRAINABLE, True),
+            (ExponentialSmoothing(), NON_RETRAINABLE, -2),
+            (ExponentialSmoothing(), NON_RETRAINABLE, retrain_year_1st),
+            (LinearRegressionModel(lags=[-1, -2, -3]), RETRAINABLE, True),
+            (LinearRegressionModel(lags=[-1, -2, -3]), RETRAINABLE, -2),
+            (LinearRegressionModel(lags=[-1, -2, -3]), RETRAINABLE, retrain_year_1st),
+        ]
+
+        for model_cls, model_type, retrain in params:
+
+            if (
+                not isinstance(retrain, (int, bool, Callable))
+                or (isinstance(retrain, int) and retrain < 0)
+                or ((model_type == NON_RETRAINABLE) and isinstance(retrain, (Callable)))
+                or ((model_type == NON_RETRAINABLE) and (retrain != 1))
+            ):
+                with self.assertRaises(ValueError):
+                    model_cls.backtest(series, retrain=retrain)
+
+            else:
+                model_cls.backtest(series, retrain=retrain)

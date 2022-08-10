@@ -30,7 +30,7 @@ from darts.utils import (
     _build_tqdm_iterator,
     _historical_forecasts_general_checks,
     _parallel_apply,
-    _retrain_checks,
+    _retrain_wrapper,
     _with_sanity_checks,
 )
 from darts.utils.timeseries_generation import (
@@ -420,12 +420,12 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             )
 
         if isinstance(retrain, bool) or (isinstance(retrain, int) and retrain >= 0):
-            retrain_func = _retrain_checks(
+            retrain_func = _retrain_wrapper(
                 lambda counter: counter % int(retrain) == 0 if retrain else False
             )
 
         elif isinstance(retrain, Callable):
-            retrain_func = _retrain_checks(retrain)
+            retrain_func = _retrain_wrapper(retrain)
 
         else:
             raise_log(
