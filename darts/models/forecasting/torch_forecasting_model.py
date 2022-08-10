@@ -1315,8 +1315,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         # In addition, we need to use PTL save_checkpoint() to properly save the trainer and model
         if self.trainer is not None:
-            base_path = path.rsplit(".", 1)[0]
-            path_ptl_ckpt = base_path + ".ckpt"
+            path_ptl_ckpt = path + ".ckpt"
             self.trainer.save_checkpoint(path_ptl_ckpt)
 
     def save_model(self, path: str) -> None:
@@ -1376,8 +1375,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             model = torch.load(fin)
 
         # If a PTL checkpoint was saved, we also need to load it:
-        base_path = path.rsplit(".", 1)[0]
-        path_ptl_ckpt = base_path + ".ckpt"
+        path_ptl_ckpt = path + ".ckpt"
         if os.path.exists(path_ptl_ckpt):
             model.model = model.model.__class__.load_from_checkpoint(path_ptl_ckpt)
             model.trainer = None

@@ -132,7 +132,7 @@ if TORCH_AVAILABLE:
             model_path_manual = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name
             )
-            checkpoint_file_name_cpkt = "checkpoint_0.pth.ckpt"
+            checkpoint_file_name_cpkt = "checkpoint_0.pth.tar.ckpt"
             model_path_manual_ckpt = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name_cpkt
             )
