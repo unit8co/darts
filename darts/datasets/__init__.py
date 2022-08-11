@@ -81,7 +81,7 @@ class AustralianTourismDataset(DatasetLoaderCSV):
             metadata=DatasetLoaderMetadata(
                 "australian_tourism.csv",
                 uri=_DEFAULT_PATH + "/australian_tourism.csv",
-                hash="0d660d9eb9eb118afcceed54e0a0a9bf",
+                hash="6eeea6b56e16e01123f303b492d9901c",
                 header_time=None,
                 format_time=None,
             )
