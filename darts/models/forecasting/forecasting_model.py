@@ -917,7 +917,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         path
-            Path under which to save the model at its current state.
+            Path or file handle under which to save the model at its current state.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
@@ -941,7 +941,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         path
-            Path from which to load the model.
+            Path or file handle from which to load the model.
         """
 
         if isinstance(path, str):
