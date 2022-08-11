@@ -4,6 +4,7 @@ Datasets
 
 A few popular time series datasets
 """
+
 from pathlib import Path
 from typing import List
 
@@ -59,6 +60,30 @@ class AusBeerDataset(DatasetLoaderCSV):
                 hash="1f4028a570a20939411cc04de7364bbd",
                 header_time="date",
                 format_time="%Y-%m-%d",
+            )
+        )
+
+
+class AustralianTourismDataset(DatasetLoaderCSV):
+    """
+    A single multivariate TimeSeries, containing monthly tourism numbers over
+    36 months in Australia. The numbers are broken down per region
+    ("NSW", "VIC", "QLD", "SA", "WA", "TAS", "NT"), reason ("Hol", "VFR", "Bus", "Oth"),
+    (region, reason) pairs, and (region, reason, <city>) tuples, where <city>
+    can be either "city" or "noncity".
+
+    This is an augmented version of the Australian tourism dataset available in [1]_,
+    where we pre-computed the groupings per region (not available in the original dataset).
+    """
+
+    def __init__(self):
+        super().__init__(
+            metadata=DatasetLoaderMetadata(
+                "australian_tourism.csv",
+                uri=_DEFAULT_PATH + "/australian_tourism.csv",
+                hash="0d660d9eb9eb118afcceed54e0a0a9bf",
+                header_time=None,
+                format_time=None,
             )
         )
 
