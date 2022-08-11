@@ -5,6 +5,7 @@ from darts.datasets import (
     _DEFAULT_PATH,
     AirPassengersDataset,
     AusBeerDataset,
+    AustralianTourismDataset,
     ElectricityDataset,
     EnergyDataset,
     ETTh1Dataset,
@@ -35,6 +36,7 @@ from darts.tests.base_test_class import DartsBaseTestClass
 datasets = [
     AirPassengersDataset,
     AusBeerDataset,
+    AustralianTourismDataset,
     EnergyDataset,
     HeartRateDataset,
     IceCreamHeaterDataset,
@@ -57,7 +59,7 @@ datasets = [
 
 _DEFAULT_PATH_TEST = _DEFAULT_PATH + "/tests"
 
-width_datasets = [1, 1, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370, 262]
+width_datasets = [1, 1, 96, 28, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 7, 7, 7, 7, 370, 262]
 
 wrong_hash_dataset = DatasetLoaderCSV(
     metadata=DatasetLoaderMetadata(
