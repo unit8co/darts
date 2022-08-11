@@ -358,16 +358,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
             ``Callable`` (returning a ``bool``).
             In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
-            Not all models support setting `retrain` to `False`.
-            Notably, this is supported by neural networks based models.
             In the case of ``int``: the model is retrained every `retrain` iterations.
             In the case of ``Callable``: the model is retrained whenever callable returns `True`.
-            Notice that the arguments passed to the callable are as follows:
-                - `pred_time (pd.Timestamp)`: next timestamp to predict (retraining happens before)
-                - `series (TimeSeries)`: train series up to `pred_time`
+            Arguments passed to the callable are as follows:
+                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
+                - `train_series (TimeSeries)`: train series up to `pred_time`
                 - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
                 - `future_covariates (TimeSeries)`: future_covariates series up
-                to `pred_time + series.freq * forecast_horizon`
+                to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+            Note: some models do require being retrained every time
+            and do not support anything else than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only
@@ -434,6 +434,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
                 ),
                 logger,
             )
+        retrain_func_signature = tuple(
+            inspect.signature(retrain_func).parameters.keys()
+        )
 
         # prepare the start parameter -> pd.Timestamp
         start = series.get_timestamp_at_point(start)
@@ -472,14 +475,14 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             if (not self._fit_called) or retrain_func(
                 counter=_counter,
                 pred_time=pred_time,
-                series=train,
+                train_series=train,
                 past_covariates=past_covariates.drop_after(pred_time)
-                if past_covariates
+                if past_covariates and ("past_covariates" in retrain_func_signature)
                 else None,
                 future_covariates=future_covariates.drop_after(
-                    pred_time + series.freq * forecast_horizon
+                    min(pred_time + series.freq * forecast_horizon, series.end_time())
                 )
-                if future_covariates
+                if future_covariates and ("future_covariates" in retrain_func_signature)
                 else None,
             ):
                 self._fit_wrapper(
@@ -598,16 +601,16 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             This parameter supports 3 different datatypes: ``bool``, (positive) ``int``, and
             ``Callable`` (returning a ``bool``).
             In the case of ``bool``: retrain the model at each step (`True`), or never retrains the model (`False`).
-            Not all models support setting `retrain` to `False`.
-            Notably, this is supported by neural networks based models.
             In the case of ``int``: the model is retrained every `retrain` iterations.
             In the case of ``Callable``: the model is retrained whenever callable returns `True`.
-            Notice that the arguments passed to the callable are as follows:
-                - `pred_time (pd.Timestamp)`: next timestamp to predict (retraining happens before)
-                - `series (TimeSeries)`: train series up to `pred_time`
+            Arguments passed to the callable are as follows:
+                - `pred_time (pd.Timestamp or int)`: timestamp of forecast time (end of the training series)
+                - `train_series (TimeSeries)`: train series up to `pred_time`
                 - `past_covariates (TimeSeries)`: past_covariates series up to `pred_time`
                 - `future_covariates (TimeSeries)`: future_covariates series up
-                to `pred_time + series.freq * forecast_horizon`
+                to `min(pred_time + series.freq * forecast_horizon, series.end_time())`
+            Note: some models do require being retrained every time
+            and do not support anything else than `retrain=True`.
         overlap_end
             Whether the returned forecasts can go beyond the series' end or not
         last_points_only

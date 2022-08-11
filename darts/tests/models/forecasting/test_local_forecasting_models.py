@@ -346,9 +346,6 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
 
         series = self.ts_pass_train
 
-        RETRAINABLE = "retrainable"
-        NON_RETRAINABLE = "non-retrainable"  # retrain must always be True
-
         def retrain_year_1st(pred_time: pd.Timestamp):
             """
             Retrains model on 1st month of the year
@@ -356,25 +353,63 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
             """
             return pred_time.month == 1
 
-        params = [
-            (ExponentialSmoothing(), NON_RETRAINABLE, True),
-            (ExponentialSmoothing(), NON_RETRAINABLE, -2),
-            (ExponentialSmoothing(), NON_RETRAINABLE, retrain_year_1st),
-            (LinearRegressionModel(lags=[-1, -2, -3]), RETRAINABLE, True),
-            (LinearRegressionModel(lags=[-1, -2, -3]), RETRAINABLE, -2),
-            (LinearRegressionModel(lags=[-1, -2, -3]), RETRAINABLE, retrain_year_1st),
+        def retrain_on_condition(
+            train_series: TimeSeries,
+            past_covariates: TimeSeries,
+            future_covariates: TimeSeries,
+        ):
+            """
+            Retrains model on some custom condition based on train_series, past and future covariates
+            """
+            c1 = bool(
+                train_series[-1].values()
+                < np.quantile(train_series[-20:-2].values(), 0.1)
+            )
+            c2 = bool(
+                past_covariates[-1].values()
+                < np.quantile(past_covariates[-20:-2].values(), 0.1)
+            )
+            c3 = bool(future_covariates[-1].values() > 0)
+            return all([c1, c2, c3])
+
+        lr_univ_args = {"lags": [-1, -2, -3]}
+
+        lr_multi_args = {
+            "lags": [-1, -2, -3],
+            "lags_past_covariates": [-1, -2, -3],
+            "lags_future_covariates": [2, 3],
+        }
+        params = [  # tuple of (model, retrain-able, multivariate, retrain parameter)
+            (ExponentialSmoothing(), False, False, True),
+            (ExponentialSmoothing(), False, False, -2),
+            (ExponentialSmoothing(), False, False, 2),
+            (ExponentialSmoothing(), False, False, retrain_year_1st),
+            (LinearRegressionModel(**lr_univ_args), True, False, True),
+            (LinearRegressionModel(**lr_univ_args), True, False, -2),
+            (LinearRegressionModel(**lr_univ_args), True, False, 2),
+            (LinearRegressionModel(**lr_univ_args), True, False, retrain_year_1st),
+            (LinearRegressionModel(**lr_multi_args), True, True, True),
+            (LinearRegressionModel(**lr_multi_args), True, True, -2),
+            (LinearRegressionModel(**lr_multi_args), True, True, 2),
+            (LinearRegressionModel(**lr_multi_args), True, True, retrain_year_1st),
+            (LinearRegressionModel(**lr_multi_args), True, True, retrain_on_condition),
         ]
 
-        for model_cls, model_type, retrain in params:
+        for model_cls, retrainable, multivariate, retrain in params:
 
             if (
                 not isinstance(retrain, (int, bool, Callable))
                 or (isinstance(retrain, int) and retrain < 0)
-                or ((model_type == NON_RETRAINABLE) and isinstance(retrain, (Callable)))
-                or ((model_type == NON_RETRAINABLE) and (retrain != 1))
+                or (isinstance(retrain, (Callable)) and (not retrainable))
+                or ((retrain != 1) and (not retrainable))
             ):
                 with self.assertRaises(ValueError):
                     model_cls.backtest(series, retrain=retrain)
 
             else:
-                model_cls.backtest(series, retrain=retrain)
+                model_cls.backtest(
+                    series,
+                    past_covariates=series if multivariate else None,
+                    future_covariates=series if multivariate else None,
+                    retrain=retrain,
+                )
