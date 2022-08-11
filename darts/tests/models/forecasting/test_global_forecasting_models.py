@@ -1,3 +1,6 @@
+import os
+import shutil
+import tempfile
 from copy import deepcopy
 from unittest.mock import ANY, patch
 
@@ -154,6 +157,12 @@ if TORCH_AVAILABLE:
         target = sine_1_ts + sine_2_ts + linear_ts + sine_3_ts
         target_past, target_future = target.split_after(split_ratio)
 
+        def setUp(self):
+            self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+        def tearDown(self):
+            shutil.rmtree(self.temp_work_dir)
+
         def test_save_model_parameters(self):
             # model creation parameters were saved before. check if re-created model has same params as original
             for model_cls, kwargs, err in models_cls_kwargs_errs:
@@ -163,6 +172,45 @@ if TORCH_AVAILABLE:
                 self.assertTrue(
                     model._model_params, model.untrained_model()._model_params
                 )
+
+        def test_save_load_model(self):
+            # check if save and load methods work and if loaded model creates same forecasts as original model
+            cwd = os.getcwd()
+            os.chdir(self.temp_work_dir)
+
+            for model in [
+                RNNModel(
+                    input_chunk_length=4, hidden_dim=10, batch_size=32, n_epochs=10
+                ),
+                TCNModel(
+                    input_chunk_length=4,
+                    output_chunk_length=3,
+                    n_epochs=10,
+                    batch_size=32,
+                ),
+            ]:
+                forecasting_horizon = 4
+                model_path = type(model).__name__
+
+                full_model_path = os.path.join(self.temp_work_dir, model_path)
+
+                model.fit(self.ts_pass_train)
+                model_prediction = model.predict(forecasting_horizon)
+
+                # test save
+                model.save()
+                model.save(model_path)
+
+                self.assertTrue(os.path.exists(full_model_path))
+
+                # test load
+                loaded_model = type(model).load(model_path)
+
+                self.assertEqual(
+                    model_prediction, loaded_model.predict(forecasting_horizon)
+                )
+
+            os.chdir(cwd)
 
         def test_single_ts(self):
             for model_cls, kwargs, err in models_cls_kwargs_errs:

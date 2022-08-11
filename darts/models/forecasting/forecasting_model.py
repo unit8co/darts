@@ -919,7 +919,7 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         path
             Path under which to save the model at its current state.
         pkl_kwargs
-            Keyword arguments passed to `joblib.dump()`
+            Keyword arguments passed to `pickle.dump()`
         """
 
         if path is None:
@@ -927,12 +927,6 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
             path = f"{type(self).__name__}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}.pkl"
 
         if isinstance(path, str):
-            raise_if_not(
-                os.path.isdir(os.path.dirname(path)),
-                f"The directory {os.path.dirname(path)} doesn't exist",
-                logger,
-            )
-
             # save the whole object using pickle
             with open(path, "wb") as handle:
                 pickle.dump(obj=self, file=handle, **pkl_kwargs)

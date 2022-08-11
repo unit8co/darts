@@ -1,3 +1,7 @@
+import os
+import shutil
+import tempfile
+
 import numpy as np
 import pandas as pd
 
@@ -97,12 +101,55 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
     ts_ice_heater = IceCreamHeaterDataset().load()
     ts_ice_heater_train, ts_ice_heater_val = ts_ice_heater.split_after(split_point=0.7)
 
+    def setUp(self):
+        self.temp_work_dir = tempfile.mkdtemp(prefix="darts")
+
+    def tearDown(self):
+        shutil.rmtree(self.temp_work_dir)
+
     def test_save_model_parameters(self):
         # model creation parameters were saved before. check if re-created model has same params as original
         for model, _ in models:
             self.assertTrue(
                 model._model_params == model.untrained_model()._model_params
             )
+
+    def test_save_load_model(self):
+        # check if save and load methods work and if loaded model creates same forecasts as original model
+        cwd = os.getcwd()
+        os.chdir(self.temp_work_dir)
+
+        for model in [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)]:
+            model_path = type(model).__name__
+            model_path_f = model_path + "_f"
+
+            full_model_path = os.path.join(self.temp_work_dir, model_path)
+            full_model_path_f = os.path.join(self.temp_work_dir, model_path_f)
+            full_model_paths = [full_model_path, full_model_path_f]
+
+            model.fit(self.ts_gaussian)
+            model_prediction = model.predict(self.forecasting_horizon)
+
+            # test save
+            model.save()
+            model.save(model_path)
+            with open(model_path_f, "wb") as f:
+                model.save(f)
+
+            for full_model_p in full_model_paths:
+                self.assertTrue(os.path.exists(full_model_p))
+
+            # test load
+            loaded_model = type(model).load(model_path)
+            loaded_model_f = type(model).load(model_path_f)
+            loaded_models = [loaded_model, loaded_model_f]
+
+            for loaded_model in loaded_models:
+                self.assertEqual(
+                    model_prediction, loaded_model.predict(self.forecasting_horizon)
+                )
+
+        os.chdir(cwd)
 
     def test_models_runnability(self):
         for model, _ in models:
