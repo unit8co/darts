@@ -15,8 +15,10 @@ from darts.models import (
     ExponentialSmoothing,
     FourTheta,
     KalmanForecaster,
+    LinearRegressionModel,
     NaiveSeasonal,
     Prophet,
+    RandomForest,
     StatsForecastAutoARIMA,
     Theta,
 )
@@ -29,16 +31,6 @@ from darts.utils import timeseries_generation as tg
 from darts.utils.utils import ModelMode, SeasonalityMode, TrendMode
 
 logger = get_logger(__name__)
-
-try:
-    from darts.models import LinearRegressionModel, RandomForest
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning(
-        "Torch not installed - some local forecasting models tests will be skipped"
-    )
-    TORCH_AVAILABLE = False
 
 # (forecasting models, maximum error) tuples
 models = [
@@ -59,13 +51,9 @@ models = [
     (FFT(trend="poly"), 11.4),
     (NaiveSeasonal(), 32.4),
     (KalmanForecaster(dim_x=3), 17.0),
+    (LinearRegressionModel(lags=12), 11.0),
+    (RandomForest(lags=12, n_estimators=5, max_depth=3), 17.0),
 ]
-
-if TORCH_AVAILABLE:
-    models += [
-        (LinearRegressionModel(lags=12), 11.0),
-        (RandomForest(lags=12, n_estimators=200, max_depth=3), 15.5),
-    ]
 
 # forecasting models with exogenous variables support
 multivariate_models = [
@@ -84,15 +72,6 @@ models.append((AutoARIMA(), 12.2))
 models.append((TBATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 8.0))
 models.append((BATS(use_trend=True, use_arma_errors=True, use_box_cox=True), 10.0))
 dual_models.append(AutoARIMA())
-
-
-try:
-    from darts.models import TCNModel  # noqa: F401
-
-    TORCH_AVAILABLE = True
-except ImportError:
-    logger.warning("Torch not installed - will be skipping Torch models tests")
-    TORCH_AVAILABLE = False
 
 
 class LocalForecastingModelsTestCase(DartsBaseTestClass):

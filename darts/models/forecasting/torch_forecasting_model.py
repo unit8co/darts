@@ -23,7 +23,7 @@ import os
 import shutil
 from abc import ABC, abstractmethod
 from glob import glob
-from typing import Dict, List, Optional, Sequence, Tuple, Union
+from typing import List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -47,7 +47,6 @@ from darts.models.forecasting.forecasting_model import (
 )
 from darts.models.forecasting.pl_forecasting_module import PLForecastingModule
 from darts.timeseries import TimeSeries
-from darts.utils.data.encoders import SequentialEncoder
 from darts.utils.data.inference_dataset import (
     DualCovariatesInferenceDataset,
     FutureCovariatesInferenceDataset,
@@ -126,9 +125,9 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         torch_device_str: Optional[str] = None,
         force_reset: bool = False,
         save_checkpoints: bool = False,
-        add_encoders: Optional[Dict] = None,
+        add_encoders: Optional[dict] = None,
         random_state: Optional[int] = None,
-        pl_trainer_kwargs: Optional[Dict] = None,
+        pl_trainer_kwargs: Optional[dict] = None,
         show_warnings: bool = False,
     ):
 
@@ -253,7 +252,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             whether to show warnings raised from PyTorch Lightning. Useful to detect potential issues of
             your forecasting use case. Default: ``False``.
         """
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
         suppress_lightning_warnings(suppress_all=not show_warnings)
 
         # We will fill these dynamically, upon first call of fit_from_dataset():
@@ -263,10 +262,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
         self.n_epochs = n_epochs
         self.batch_size = batch_size
-
-        # by default models do not use encoders
-        self.add_encoders = add_encoders
-        self.encoders: Optional[SequentialEncoder] = None
 
         # get model name and work dir
         if model_name is None:
@@ -353,7 +348,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         self.load_ckpt_path: Optional[str] = None
 
         # pl_module_params must be set in __init__ method of TorchForecastingModel subclass
-        self.pl_module_params: Optional[Dict] = None
+        self.pl_module_params: Optional[dict] = None
 
     @staticmethod
     def _extract_torch_devices(
@@ -536,7 +531,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
 
     @staticmethod
     def _init_trainer(
-        trainer_params: Dict, max_epochs: Optional[int] = None
+        trainer_params: dict, max_epochs: Optional[int] = None
     ) -> pl.Trainer:
         """Initializes the PyTorch-Lightning trainer for training or prediction from `trainer_params`."""
         trainer_params_copy = {param: val for param, val in trainer_params.items()}
@@ -1259,33 +1254,6 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         predictions = self.trainer.predict(self.model, pred_loader)
         # flatten and return
         return [ts for batch in predictions for ts in batch]
-
-    @property
-    @abstractmethod
-    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
-        """Abstract property that returns model specific encoder settings that are used to initialize the encoders.
-
-        Must return Tuple (input_chunk_length, output_chunk_length, takes_past_covariates, takes_future_covariates)
-        """
-        pass
-
-    def initialize_encoders(self) -> SequentialEncoder:
-        """instantiates the SequentialEncoder object based on self._model_encoder_settings and parameter
-        ``add_encoders`` used at model creation"""
-        (
-            input_chunk_length,
-            output_chunk_length,
-            takes_past_covariates,
-            takes_future_covariates,
-        ) = self._model_encoder_settings
-
-        return SequentialEncoder(
-            add_encoders=self.add_encoders,
-            input_chunk_length=input_chunk_length,
-            output_chunk_length=output_chunk_length,
-            takes_past_covariates=takes_past_covariates,
-            takes_future_covariates=takes_future_covariates,
-        )
 
     @property
     def first_prediction_index(self) -> int:

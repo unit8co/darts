@@ -48,6 +48,7 @@ class RegressionModel(GlobalForecastingModel):
         lags_past_covariates: Union[int, List[int]] = None,
         lags_future_covariates: Union[Tuple[int, int], List[int]] = None,
         output_chunk_length: int = 1,
+        add_encoders: Optional[dict] = None,
         model=None,
     ):
         """Regression Model
@@ -71,6 +72,26 @@ class RegressionModel(GlobalForecastingModel):
             Number of time steps predicted at once by the internal regression model. Does not have to equal the forecast
             horizon `n` used in `predict()`. However, setting `output_chunk_length` equal to the forecast horizon may
             be useful if the covariates don't extend far enough into the future.
+        add_encoders
+            A large number of past and future covariates can be automatically generated with `add_encoders`.
+            This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
+            will be used as index encoders. Additionally, a transformer such as Darts' :class:`Scaler` can be added to
+            transform the generated covariates. This happens all under one hood and only needs to be specified at
+            model creation.
+            Read :meth:`SequentialEncoder <darts.utils.data.encoders.SequentialEncoder>` to find out more about
+            ``add_encoders``. Default: ``None``. An example showing some of ``add_encoders`` features:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                add_encoders={
+                    'cyclic': {'future': ['month']},
+                    'datetime_attribute': {'future': ['hour', 'dayofweek']},
+                    'position': {'past': ['absolute'], 'future': ['relative']},
+                    'custom': {'past': [lambda idx: (idx.year - 1950) / 50]},
+                    'transformer': Scaler()
+                }
+            ..
         model
             Scikit-learn-like model with ``fit()`` and ``predict()`` methods. Also possible to use model that doesn't
             support multi-output regression for multivariate timeseries, in which case one regressor
@@ -78,7 +99,7 @@ class RegressionModel(GlobalForecastingModel):
             If None, defaults to: ``sklearn.linear_model.LinearRegression(n_jobs=-1)``.
         """
 
-        super().__init__()
+        super().__init__(add_encoders=add_encoders)
 
         self.model = model
         self.lags = {}
@@ -201,6 +222,46 @@ class RegressionModel(GlobalForecastingModel):
         self.output_chunk_length = output_chunk_length
 
     @property
+    def _model_encoder_settings(self) -> Tuple[int, int, bool, bool]:
+        lags_covariates = {
+            lag for key in ["past", "future"] for lag in self.lags.get(key, [])
+        }
+        if lags_covariates:
+            # for lags < 0 we need to take `n` steps backwards from past and/or historic future covariates
+            # for minimum lag = -1 -> steps_back_inclusive = 1
+            # inclusive means n steps back including the end of the target series
+            n_steps_back_inclusive = abs(min(min(lags_covariates), 0))
+            # for lags >= 0 we need to take `n` steps ahead from future covariates
+            # for maximum lag = 0 -> output_chunk_length = 1
+            # exclusive means n steps ahead after the last step of the target series
+            n_steps_ahead_exclusive = max(max(lags_covariates), 0) + 1
+            takes_past_covariates = "past" in self.lags
+            takes_future_covariates = "future" in self.lags
+        else:
+            n_steps_back_inclusive = 0
+            n_steps_ahead_exclusive = 0
+            takes_past_covariates = False
+            takes_future_covariates = False
+        return (
+            n_steps_back_inclusive,
+            n_steps_ahead_exclusive,
+            takes_past_covariates,
+            takes_future_covariates,
+        )
+
+    def _get_encoders_n(self, n):
+        """Returns the `n` encoder prediction steps specific to RegressionModels.
+        This will generate slightly more past covariates than the minimum requirement when using past and future
+        covariate lags simultaneously. This is because encoders were written for TorchForecastingModels where we only
+        needed `n` future covariates. For RegressionModel we need `n + max_future_lag`
+        """
+        _, n_steps_ahead, _, takes_future_covariates = self._model_encoder_settings
+        if not takes_future_covariates:
+            return n
+        else:
+            return n + (n_steps_ahead - 1)
+
+    @property
     def min_train_series_length(self) -> int:
         return max(
             3,
@@ -319,6 +380,7 @@ class RegressionModel(GlobalForecastingModel):
         Function that fit the model. Deriving classes can override this method for adding additional parameters (e.g.,
         adding validation data), keeping the sanity checks on series performed by fit().
         """
+
         training_samples, training_labels = self._create_lagged_data(
             target_series, past_covariates, future_covariates, max_samples_per_ts
         )
@@ -361,6 +423,15 @@ class RegressionModel(GlobalForecastingModel):
         **kwargs
             Additional keyword arguments passed to the `fit` method of the model.
         """
+
+        self.encoders = self.initialize_encoders()
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_train(
+                target=series,
+                past_covariate=past_covariates,
+                future_covariate=future_covariates,
+            )
+
         super().fit(
             series=series,
             past_covariates=past_covariates,
@@ -476,6 +547,14 @@ class RegressionModel(GlobalForecastingModel):
             "`num_samples > 1` is only supported for probabilistic models.",
             logger,
         )
+
+        if self.encoders.encoding_available:
+            past_covariates, future_covariates = self.encoders.encode_inference(
+                n=self._get_encoders_n(n),
+                target=series,
+                past_covariate=past_covariates,
+                future_covariate=future_covariates,
+            )
 
         super().predict(n, series, past_covariates, future_covariates, num_samples)
 
