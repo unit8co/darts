@@ -935,7 +935,9 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         Parameters
         ----------
         path
-            Path or file handle under which to save the model at its current state.
+            Path or file handle under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
         pkl_kwargs
             Keyword arguments passed to `pickle.dump()`
         """
