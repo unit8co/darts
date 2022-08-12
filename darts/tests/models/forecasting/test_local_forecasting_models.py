@@ -120,29 +120,40 @@ class LocalForecastingModelsTestCase(DartsBaseTestClass):
         os.chdir(self.temp_work_dir)
 
         for model in [ARIMA(1, 1, 1), LinearRegressionModel(lags=12)]:
-            model_path = type(model).__name__
-            model_path_f = model_path + "_f"
-
-            full_model_path = os.path.join(self.temp_work_dir, model_path)
-            full_model_path_f = os.path.join(self.temp_work_dir, model_path_f)
-            full_model_paths = [full_model_path, full_model_path_f]
+            model_path_str = type(model).__name__
+            model_path_file = model_path_str + "_file"
+            model_paths = [model_path_str, model_path_file]
+            full_model_paths = [
+                os.path.join(self.temp_work_dir, p) for p in model_paths
+            ]
 
             model.fit(self.ts_gaussian)
             model_prediction = model.predict(self.forecasting_horizon)
 
             # test save
             model.save()
-            model.save(model_path)
-            with open(model_path_f, "wb") as f:
+            model.save(model_path_str)
+            with open(model_path_file, "wb") as f:
                 model.save(f)
 
-            for full_model_p in full_model_paths:
-                self.assertTrue(os.path.exists(full_model_p))
+            for p in full_model_paths:
+                self.assertTrue(os.path.exists(p))
+
+            self.assertTrue(
+                len(
+                    [
+                        p
+                        for p in os.listdir(self.temp_work_dir)
+                        if p.startswith(type(model).__name__)
+                    ]
+                )
+                == 3
+            )
 
             # test load
-            loaded_model = type(model).load(model_path)
-            loaded_model_f = type(model).load(model_path_f)
-            loaded_models = [loaded_model, loaded_model_f]
+            loaded_model_str = type(model).load(model_path_str)
+            loaded_model_file = type(model).load(model_path_file)
+            loaded_models = [loaded_model_str, loaded_model_file]
 
             for loaded_model in loaded_models:
                 self.assertEqual(

@@ -912,8 +912,8 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         )
 
     @classmethod
-    def _default_save_path(cls):
-        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d-%H-%M-%S')}"
+    def _default_save_path(cls) -> str:
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
 
     def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
         """

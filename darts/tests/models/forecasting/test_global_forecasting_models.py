@@ -189,25 +189,33 @@ if TORCH_AVAILABLE:
                     batch_size=32,
                 ),
             ]:
-                forecasting_horizon = 4
-                model_path = type(model).__name__
-
-                full_model_path = os.path.join(self.temp_work_dir, model_path)
+                model_path_str = type(model).__name__
+                full_model_path_str = os.path.join(self.temp_work_dir, model_path_str)
 
                 model.fit(self.ts_pass_train)
-                model_prediction = model.predict(forecasting_horizon)
+                model_prediction = model.predict(self.forecasting_horizon)
 
                 # test save
                 model.save()
-                model.save(model_path)
+                model.save(model_path_str)
 
-                self.assertTrue(os.path.exists(full_model_path))
+                self.assertTrue(os.path.exists(full_model_path_str))
+                self.assertTrue(
+                    len(
+                        [
+                            p
+                            for p in os.listdir(self.temp_work_dir)
+                            if p.startswith(type(model).__name__)
+                        ]
+                    )
+                    == 4
+                )
 
                 # test load
-                loaded_model = type(model).load(model_path)
+                loaded_model = type(model).load(model_path_str)
 
                 self.assertEqual(
-                    model_prediction, loaded_model.predict(forecasting_horizon)
+                    model_prediction, loaded_model.predict(self.forecasting_horizon)
                 )
 
             os.chdir(cwd)

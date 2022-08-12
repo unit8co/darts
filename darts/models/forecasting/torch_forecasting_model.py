@@ -189,7 +189,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
             To load the model from checkpoint, call :func:`MyModelClass.load_from_checkpoint()`, where
             :class:`MyModelClass` is the :class:`TorchForecastingModel` class that was used (such as :class:`TFTModel`,
             :class:`NBEATSModel`, etc.). If set to ``False``, the model can still be manually saved using
-            :func:`save_model()` and loaded using :func:`load_model()`. Default: ``False``.
+            :func:`save()` and loaded using :func:`load()`. Default: ``False``.
         add_encoders
             A large number of past and future covariates can be automatically generated with `add_encoders`.
             This can be done by adding multiple pre-defined index encoders and/or custom user-made functions that
@@ -1293,6 +1293,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         """
         Saves the model under a given path.
 
+        Creates two files under ``path`` (model object) and ``path``.ckpt (checkpoint).
+
         Example for saving and loading a :class:`RNNModel`:
 
             .. highlight:: python
@@ -1309,7 +1311,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         path
-            Path under which to save the model at its current state.
+            Path under which to save the model at its current state. If no path is specified, the model is automatically
+            saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pt"``. E.g., ``"RNNModel_2020-01-01_12:00:00.pt"``.
         """
         # TODO: the parameters are saved twice currently, once with complete
         # object, and once with PTL checkpointing.
@@ -1357,7 +1360,8 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Parameters
         ----------
         path
-            Path from which to load the model.
+            Path from which to load the model. If no path was specified when saving the model, the automatically
+            generated path ending with ".pt" has to be provided.
         """
 
         with open(path, "rb") as fin:
@@ -1404,7 +1408,7 @@ class TorchForecastingModel(GlobalForecastingModel, ABC):
         Load the model from automatically saved checkpoints under '{work_dir}/darts_logs/{model_name}/checkpoints/'.
         This method is used for models that were created with ``save_checkpoints=True``.
 
-        If you manually saved your model, consider using :meth:`load() <TorchForeCastingModel.load()>`.
+        If you manually saved your model, consider using :meth:`load() <TorchForecastingModel.load()>`.
 
         Example for loading a :class:`RNNModel` from checkpoint (``model_name`` is the ``model_name`` used at model
         creation):
