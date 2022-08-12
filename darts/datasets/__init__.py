@@ -74,6 +74,10 @@ class AustralianTourismDataset(DatasetLoaderCSV):
 
     This is an augmented version of the Australian tourism dataset available in [1]_,
     where we pre-computed the groupings per region (not available in the original dataset).
+
+    References
+    ----------
+    .. [1] https://robjhyndman.com/publications/hierarchical-tourism/
     """
 
     def __init__(self):
