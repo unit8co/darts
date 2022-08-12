@@ -53,6 +53,18 @@ series that have not been seen during training:
    examples/14-transfer-learning.ipynb
 
 
+Hierarchical Reconciliation
+===========================
+
+A self-contained notebook showcasing how to reconcile forecasts
+for hierarchical time series, using the Australian domestic tourism dataset.
+
+.. toctree::
+   :maxdepth: 1
+
+   examples/16-hierarchical-reconciliation.ipynb
+
+
 Fast Fourier Transform
 ======================
 
