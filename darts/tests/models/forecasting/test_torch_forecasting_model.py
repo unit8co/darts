@@ -49,7 +49,7 @@ if TORCH_AVAILABLE:
             self.assertTrue(model._model_params, model.untrained_model()._model_params)
 
         @patch(
-            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save_model"
+            "darts.models.forecasting.torch_forecasting_model.TorchForecastingModel.save"
         )
         def test_suppress_automatic_save(self, patch_save_model):
             model_name = "test_model"
@@ -81,7 +81,7 @@ if TORCH_AVAILABLE:
 
             patch_save_model.assert_not_called()
 
-            model1.save_model(path=os.path.join(self.temp_work_dir, model_name))
+            model1.save(path=os.path.join(self.temp_work_dir, model_name))
             patch_save_model.assert_called()
 
         def test_manual_save_and_load(self):
@@ -132,25 +132,25 @@ if TORCH_AVAILABLE:
             model_path_manual = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name
             )
-            checkpoint_file_name_cpkt = "checkpoint_0_ptl-ckpt.pth.tar"
+            checkpoint_file_name_cpkt = "checkpoint_0.pth.tar.ckpt"
             model_path_manual_ckpt = os.path.join(
                 checkpoint_path_manual, checkpoint_file_name_cpkt
             )
 
             # save manually saved model
-            model_manual_save.save_model(model_path_manual)
+            model_manual_save.save(model_path_manual)
             self.assertTrue(os.path.exists(model_path_manual))
 
             # check that the PTL checkpoint path is also there
             self.assertTrue(os.path.exists(model_path_manual_ckpt))
 
             # load manual save model and compare with automatic model results
-            model_manual_save = RNNModel.load_model(model_path_manual)
+            model_manual_save = RNNModel.load(model_path_manual)
             self.assertEqual(
                 model_manual_save.predict(n=4), model_auto_save.predict(n=4)
             )
 
-            # load automatically saved model with manual load_model() and load_from_checkpoint()
+            # load automatically saved model with manual load() and load_from_checkpoint()
             model_auto_save1 = RNNModel.load_from_checkpoint(
                 model_name=auto_name, work_dir=self.temp_work_dir, best=False
             )

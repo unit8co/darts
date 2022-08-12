@@ -12,13 +12,16 @@ one or several time series. The function `predict()` applies `f()` on one or sev
 to obtain forecasts for a desired number of time stamps into the future.
 """
 import copy
+import datetime
 import inspect
+import os
+import pickle
 import time
 from abc import ABC, ABCMeta, abstractmethod
 from collections import OrderedDict
 from itertools import product
 from random import sample
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
+from typing import Any, BinaryIO, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -907,6 +910,75 @@ class ForecastingModel(ABC, metaclass=ModelMeta):
         return (
             self._model_params if hasattr(self, "_model_params") else self._model_call
         )
+
+    @classmethod
+    def _default_save_path(cls) -> str:
+        return f"{cls.__name__}_{datetime.datetime.now().strftime('%Y-%m-%d_%H:%M:%S')}"
+
+    def save(self, path: Optional[Union[str, BinaryIO]] = None, **pkl_kwargs) -> None:
+        """
+        Saves the model under a given path or file handle.
+
+        Example for saving and loading a :class:`RegressionModel`:
+
+            .. highlight:: python
+            .. code-block:: python
+
+                from darts.models import RegressionModel
+
+                model = RegressionModel(lags=4)
+
+                model.save("my_model.pkl")
+                model_loaded = RegressionModel.load("my_model.pkl")
+            ..
+
+        Parameters
+        ----------
+        path
+            Path or file handle under which to save the model at its current state. If no path is specified, the model
+            is automatically saved under ``"{ModelClass}_{YYYY-mm-dd_HH:MM:SS}.pkl"``.
+            E.g., ``"RegressionModel_2020-01-01_12:00:00.pkl"``.
+        pkl_kwargs
+            Keyword arguments passed to `pickle.dump()`
+        """
+
+        if path is None:
+            # default path
+            path = self._default_save_path() + ".pkl"
+
+        if isinstance(path, str):
+            # save the whole object using pickle
+            with open(path, "wb") as handle:
+                pickle.dump(obj=self, file=handle, **pkl_kwargs)
+        else:
+            # save the whole object using pickle
+            pickle.dump(obj=self, file=path, **pkl_kwargs)
+
+    @staticmethod
+    def load(path: Union[str, BinaryIO]) -> "ForecastingModel":
+        """
+        Loads the model from a given path or file handle.
+
+        Parameters
+        ----------
+        path
+            Path or file handle from which to load the model.
+        """
+
+        if isinstance(path, str):
+            raise_if_not(
+                os.path.exists(path),
+                f"The file {path} doesn't exist",
+                logger,
+            )
+
+            with open(path, "rb") as handle:
+                model = pickle.load(file=handle)
+        else:
+
+            model = pickle.load(file=path)
+
+        return model
 
 
 class GlobalForecastingModel(ForecastingModel, ABC):
